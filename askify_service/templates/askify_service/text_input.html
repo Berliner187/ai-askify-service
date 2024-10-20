@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Генерация опросов</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'css/loader.css' %}">
+</head>
+<body>
+    <div class="loader-container" id="loading-container">
+        <div class="line"></div>
+        <div class="line"></div>
+        <div class="line"></div>
+        <div class="line"></div>
+        <div class="line"></div>
+        <div class="line"></div>
+    </div>
+      
+    <div class="preview-content">
+        <h1>Создавайте опросы за считанные секунды</h1>
+    </div>
+
+    <div class="container" id="block-generate">
+        <h2>На какую тему создать?</h2>
+        <textarea id="user-text" rows="4" cols="60" placeholder="Введите текст здесь..."></textarea><br>
+        <button class="btn" onclick="submitText()">Создать</button>
+    </div>
+
+    <div class="container" id="generated-tests" style="display: none;">
+        <h2>Сгенерированные вопросы:</h2>
+        <div id="survey-container"></div> 
+    </div>
+
+    <script src="{% static 'js/main.js' %}"></script>
+</body>
+</html>
