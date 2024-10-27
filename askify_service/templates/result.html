@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% load static %}
+    <link rel="shortcut icon" href="{% static 'img/logo.png' %}" type="image/png">
+    <link rel="stylesheet" href="{% static 'css/adaptive.css' %}">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <title>Результаты</title>
+</head>
+<body>
+    {% include 'header.html' %}
+
+    <div class="container">
+
+        <div class="head-button">
+
+            <div class="button-medium">
+                <a href="{% url 'create' %}">
+                    <div>
+                        <img src="{% static 'img/icon-history.png' %}" alt="">
+                        <p>История</p>
+                    </div>
+                </a>
+            </div>
+
+            <div class="button-medium">
+                <a href="{% url 'create' %}">
+                    <div>
+                        <p>Создать новый</p>
+                        <img src="{% static 'img/icon-new.png' %}" alt="">
+                    </div>
+                </a>
+            </div>
+
+        </div>
+        
+        <div class="result-container">
+
+            <h2 class="result-survey-title">«{{ title }}»</h2>
+            
+            <div class="progress-container">
+                <svg class="progress-circle" width="200" height="200">
+                    <circle class="progress-bg" cx="100" cy="100" r="90" />
+                    <circle class="progress-fill" cx="100" cy="100" r="90" />
+                </svg>
+                <div class="progress-text">{{ score }}/{{ total }}</div>
+            </div>
+
+            <div class="button-medium button-accent">
+                <a href="{% url 'survey' survey_id=survey_id %}">
+                    <div>
+                        <img src="{% static 'img/icon-retry.png' %}" alt="">
+                        <p>Пройти заново</p>
+                    </div>
+                </a> 
+            </div>
+
+            <div class="button-medium button-red">
+                <a href="{% url 'drop-survey' survey_id=survey_id %}">
+                    <div>
+                        <img src="{% static 'img/icon-delete.png' %}" alt="">
+                        <p>Удалить опрос</p>
+                    </div>
+                </a> 
+            </div>
+
+            <div class="result-summary">
+                <p>Вы правильно ответили на <span class="result-score">{{ score }}</span> из <span class="result-total">{{ total }}</span> вопросов.</p>
+            </div>
+
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const score = parseInt(document.querySelector('.result-score').textContent);
+            const total = parseInt(document.querySelector('.result-total').textContent);
+            const percentage = (score / total) * 100;
+            const progressFill = document.querySelector('.progress-fill');
+            
+            const radius = 90;
+            const circumference = 2 * Math.PI * radius;
+        
+            progressFill.style.strokeDasharray = `${circumference} ${circumference}`;
+            progressFill.style.strokeDashoffset = `${circumference}`;
+        
+            setTimeout(() => {
+                progressFill.style.strokeDashoffset = `${circumference - (percentage / 100 * circumference)}`;
+            }, 100);
+        });
+        
+    </script>
+
+    {% include 'footer.html' %}
+
+</body>
+</html>

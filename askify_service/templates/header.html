@@ -1,0 +1,33 @@
+<header class="header">
+    {% load static %}
+    <div class="logo-header">
+        <a href="{% url 'create' %}">
+            <img src="{% static 'img/logo-header.png' %}" alt="">
+        </a>
+    </div>
+    <nav class="navigation">
+        <ul>
+            <li><a href="#home">Цели</a></li>
+            <li><a href="#about">Преимущества</a></li>
+            <li><a href="#features">Функции</a></li>
+        </ul>
+    </nav>
+
+    <div class="auth-buttons">
+        <div class="button-medium">
+            <a href="{% url 'create' %}">
+                <div>
+                    <p>Вход</p>
+                </div>
+            </a>
+        </div>
+        <div class="button-medium button-accent">
+            <a href="{% url 'create' %}">
+                <div>
+                    <p>Регистрация</p>
+                </div>
+            </a>
+        </div>
+    </div>
+
+</header>

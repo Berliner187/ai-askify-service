@@ -6,7 +6,7 @@ async function submitText() {
 
     // Показать индикатор загрузки
     loadingIndicator.style.display = 'block';
-    blockGeneratedTests.style.display = 'none';
+    // blockGeneratedTests.style.display = 'none';
     blockGenerate.style.opacity = 0.3;
 
     try {
@@ -21,24 +21,16 @@ async function submitText() {
         const result = await response.json();
         if (response.ok) {
             console.log("response -", 200);
-            blockGeneratedTests.style.display = 'block';
-            displaySurvey(result.survey);
+            // blockGeneratedTests.style.display = 'block';
+            window.location.reload();
         } else {
-            console.error('Error: ' + result.error);
+            console.error('Error:', result);
         }
         blockGenerate.style.opacity = 1;
     } catch (error) {
         console.error('Ошибка:', error);
+        alert('Произошла ошибка при отправке запроса: ' + error.message);
     } finally {
         loadingIndicator.style.display = 'none';
     }
-}
-
-function displaySurvey(survey) {
-    const surveyContainer = document.getElementById('survey-container');
-    surveyContainer.innerHTML = '';
-
-    const surveyElement = document.createElement('div');
-    surveyElement.innerHTML = survey;
-    surveyContainer.appendChild(surveyElement);
 }

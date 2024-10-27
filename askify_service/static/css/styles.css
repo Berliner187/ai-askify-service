@@ -1,17 +1,26 @@
-/* styles.css */
-
-body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    background-color: #f1f1f6;
-    color: #333;
-    margin: 0;
-    padding: 0;
+@font-face {
+    font-family: 'Unbounded Medium';
+    src: url(../fonts/Unbounded-Medium.ttf);
 }
 
-header {
-    padding: 20px;
-    text-align: center;
-    box-shadow: 0 4px 4px rgba(0, 0, 0, 0.1);
+@font-face {
+    font-family: 'Unbounded Regular';
+    src: url(../fonts/Unbounded-Regular.ttf);
+}
+
+@font-face {
+    font-family: 'Unbounded Bold';
+    src: url(../fonts/Unbounded-Bold.ttf);
+}
+
+body {
+    /* font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; */
+    font-family: "Unbounded Regular";
+    background-color: #141312;
+    color: #fffff8;
+    margin: 0;
+    padding: 0;
+    transition: .5s;
 }
 
 h1 {
@@ -20,8 +29,17 @@ h1 {
 }
 
 h2 {
+    font-family: "Unbounded Bold";
     margin-top: 20px;
-    color: #333;
+    color: #fffff8;
+    font-size: 2em;
+    margin-bottom: 10px;
+    font-size: 36px;
+}
+
+h3 {
+    font-family: "Unbounded Bold";
+    font-size: 20px;
 }
 
 p {
@@ -38,11 +56,6 @@ section {
     margin: 20px 0;
 }
 
-h2 {
-    font-size: 2em;
-    margin-bottom: 10px;
-}
-
 ul {
     list-style-type: none;
     padding: 0;
@@ -53,78 +66,409 @@ li {
     margin: 5px 0;
 }
 
+a {
+    color: #616DF0;
+}
+
 .btn, button {
     display: inline-block;
     padding: 10px 20px;
-    font-size: 1.1em;
     color: #ffffff;
-    background-color: #6a61f0; /* Цвет кнопки */
+    background-color: #616DF0; /* Цвет кнопки */
     border-radius: 15px;
     text-decoration: none;
     transition: background-color 0.3s;
     border: none;
 }
-
 .btn:hover, button {
     background-color: #4d44d7; /* Цвет кнопки при наведении */
     cursor: pointer;
 }
 
-.question {
-    margin-bottom: 15px;
+.btn, button img {
+    width: 72px;
 }
 
-.question strong {
-    display: block;
-    margin-bottom: 5px;
+.question {
+    display: flex;
+    margin-bottom: 15px;
+    transition-duration: .25s;
+}
+.question label {
+}
+.question label input[type="radio"] {
+    display: none; /* Скрываем стандартный радиокнопку */
+}
+
+.question label {
+    padding-left: 25px;
+    cursor: pointer;
+    transition-duration: .3s;
+}
+
+.question label p {
+    margin: 0;
+    padding: 8px 16px 8px 16px;
+    border-radius: 8px;
+}
+.question label p:hover {
+    background-color: #616DF0;
+    opacity: .9;
+}
+.question input[type="radio"]:checked + p {
+    background-color: #616DF0;
+}
+
+
+.survey-block {
+    border-radius: 10px;
+    background-color: #28272F;
+}
+
+.survey-block a {
+    padding: 20px;
+    color: #fffff8;
 }
 
 textarea, #survey-container {
     width: 100%;
+    background-color: #141414;
+    color: #fffff8;
     max-width: 900px;
-    height: fit-content;
+    min-width: 400px;
+    min-height: 72px;
+    height: 72px;
     padding: 10px;
-    border: 1px solid #ccc;
+    border: 1px solid #4d44d7;
     border-radius: 15px;
     font-size: 16px;
     box-sizing: border-box;
     margin-bottom: 10px;
+    margin-right: 20px;
+}
+
+#block-generate {
+    margin-top: 20%;
 }
 
 .container, .preview-content {
     margin: 0 auto;
-    margin-top: 1em;
     display: block;
+    background-color: rgba(27, 26, 32, .8);
+    backdrop-filter: blur(4px);
     width: 80%;
     min-width: 400px;
-    max-width: 900px;
-    padding: 30px;
+    max-width: 1200px;
+    margin-top: 10%;
+    margin-bottom: 10%;
+    padding: 20px;
     box-shadow: 8px 8px 20px rgba(36, 36, 36, .1);
     border-radius: 30px;
-    transition-duration: .3s;
+    position: relative; /* Для позиционирования псевдоэлементов */
+    overflow: hidden; /* Чтобы фигуры не выходили за пределы блока */
 }
+
+.container::before, .preview-content::before,
+.container::after, .preview-content::after {
+    content: '';
+    position: absolute;
+    border-radius: 50%;
+    opacity: 0.5; /* Прозрачность фигурок */
+    pointer-events: none; /* Чтобы фигуры не мешали взаимодействию с содержимым */
+}
+
+.container::before {
+    width: 200px; /* Ширина первой фигуры */
+    height: 200px; /* Высота первой фигуры */
+    background: rgba(119, 12, 249, 0.945); /* Цвет первой фигуры */
+    top: -50px; /* Позиция по вертикали */
+    left: -50px; /* Позиция по горизонтали */
+    filter: blur(8em); /* Размытие первой фигуры */
+}
+
+.container::after {
+    width: 300px; /* Ширина второй фигуры */
+    height: 300px; /* Высота второй фигуры */
+    background: rgba(38, 255, 208, 0.929); /* Цвет второй фигуры */
+    bottom: -100px; /* Позиция по вертикали */
+    right: -100px; /* Позиция по горизонтали */
+    filter: blur(16em); /* Размытие второй фигуры */
+}
+
+.input-area {
+    display: flex;
+    justify-content: space-between;
+}
+.container div img {
+    transition-duration: .25s;
+}
+.container div img:hover,
+.button-medium:hover {
+    opacity: .33;
+}
+
+.head-button {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 20px;
+}
+
+.button-medium {
+    margin: 0 10px;
+}
+
+.button-medium a {
+    text-decoration: none;
+}
+
+
+.result-container {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.result-title {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.result-survey-title {
+    margin-bottom: 20px;
+}
+
+.result-summary {
+    font-size: 18px;
+    margin-bottom: 20px;
+}
+
+.result-score {
+    font-weight: bold;
+    color: #6a61f0;
+}
+
+
+.progress-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.progress-circle {
+    transform: rotate(-90deg); /* Поворачиваем круг, чтобы начинать заполнение сверху */
+}
+
+.progress-bg {
+    fill: none;
+    stroke-width: 10;
+    stroke: #27293d;
+}
+
+.progress-fill {
+    fill: none;
+    stroke: #5A66EB;
+    stroke-width: 10;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 1s ease;
+}
+
+.progress-text {
+    margin-top: 10px;
+    font-size: 1.5rem;
+    color: #6a61f0;
+}
+
 
 .preview-content {
     background-color: #6a61f0;
     color: #f5f5f7;
-    padding-top: 200px;
 }
 
-footer {
-    text-align: center;
-    padding: 10px 0;
-    background-color: #ffffff;
-    box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
-    position: relative;
-    bottom: 0;
-    width: 100%;
+.history-container, .surveys-container {
+    display: flex;
 }
 
-footer a {
-    color: #6a61f0;
+#saved-survey-container {
+    margin-top: 50px;
+}
+#saved-survey-container div {
+    padding: 10px;
+}
+
+.history-container a {
+    color: #BAB8C1;
+}
+
+.surveys-container {
+    flex-direction: row;
+    margin: 0;
+}
+
+
+.head-button {
+    display: flex;
+    justify-content: space-between;
+}
+
+.button-medium {
+    font-family: "Unbounded Medium";
+    display: inline-block;
+    flex-wrap: nowrap;
+    background-color: #28272F;
+    width: fit-content;
+    transition: .25s;
+    border-radius: 8px;
+    padding:  0px 8px 0px 8px;
+    justify-content: space-between;
+}
+.button-medium div {
+    display: flex;
+    align-items: center;
+}
+.button-medium div p {
+    text-decoration: none;
+    color: #d5d3db;
+    font-size: 14px;
+    padding-left: 4px;
+    padding-right: 4px;
+}
+.button-medium div a {
     text-decoration: none;
 }
 
-footer a:hover {
+.button-medium img {
+    width: 16px;
+}
+
+.button-accent {
+    background-color: #616DF0;
+    color: #ffffff;
+}
+.button-red {
+    background-color: #ea4a75;
+    color: #ffffff;
+}
+
+
+.header {
+    display: flex;
+    padding: 10px 10px;
+}
+
+.logo-header {
+    flex: 1;
+    transition: .25s;
+}
+.logo-header:hover {
+    opacity: .75;
+}
+
+.navigation {
+    flex: 2;
+    text-align: center;
+}
+
+.navigation ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+}
+
+.navigation li {
+    margin-left: 20px;
+}
+
+.navigation a {
+    text-decoration: none;
+    color: white;
+    font-size: 1rem;
+    transition: color 0.3s;
+}
+
+.navigation a:hover {
+    color: #616DF0;
+}
+
+.auth-buttons {
+    flex: 1;
+    text-align: right; 
+}
+
+.auth-buttons .btn {
+    text-decoration: none;
+    color: white;
+    background-color: #4A90E2; /* Цвет кнопок */
+    padding: 10px 15px;
+    border-radius: 5px;
+    margin-left: 10px;
+    transition: background-color 0.3s;
+}
+
+.auth-buttons .btn:hover {
+    background-color: #3A7BD5; /* Цвет кнопок при наведении */
+}
+
+
+
+footer {
+    color: #fff;
+    padding: 20px 0;
+    text-align: center;
+}
+
+footer hr {
+    border: #4d44d7;
+}
+
+.footer-container {
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.footer-links,
+.footer-contact,
+.footer-social {
+    flex: 1;
+    margin: 0 20px;
+}
+
+.footer-links h4,
+.footer-contact h4,
+.footer-social h4 {
+    margin-bottom: 10px;
+}
+
+.footer-links ul,
+.footer-social ul {
+    list-style: none;
+    padding: 0;
+}
+
+.footer-links li,
+.footer-social li {
+    margin: 5px 0;
+}
+
+.footer-links a,
+.footer-social a {
+    color: #76c7c0;
+    text-decoration: none;
+}
+
+.footer-links a:hover,
+.footer-social a:hover {
     text-decoration: underline;
 }
+
+.footer-bottom {
+    margin-top: 20px;
+    font-size: 14px;
+}
+
