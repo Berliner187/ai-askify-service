@@ -42,7 +42,8 @@ def generate_survey(request):
             text_from_user = data.get('text')
 
             forbidden_words_file = open('./askify_app/forbidden_words.txt')
-            forbidden_words = forbidden_words_file.read()
+            forbidden_words = forbidden_words_file.readlines()
+
             if any(word in text_from_user for word in forbidden_words):
                 return JsonResponse({'error': 'К сожалению, не удалось выполнить запрос'}, status=400)
 
@@ -70,7 +71,7 @@ def generate_survey(request):
             survey.save()
             print(cleaned_generated_text)
 
-            return JsonResponse({'survey': cleaned_generated_text, 'new_survey_id': new_survey_id}, status=200)
+            return JsonResponse({'survey': cleaned_generated_text, 'survey_id': new_survey_id}, status=200)
 
         except json.JSONDecodeError:
             return JsonResponse({'error': 'Invalid JSON in request body'}, status=400)
@@ -162,7 +163,25 @@ def result_view(request, survey_id):
     user_answers = UserAnswers.objects.filter(survey_id=survey_id)
     score = sum(answer.scored_points for answer in user_answers)
 
-    json_response = {'title': survey.title, 'score': score, 'total': len(user_answers), 'survey_id': survey_id}
+    questions = survey.get_questions()
+    selected_answers = {answer.selected_answer for answer in user_answers}
+    selected_answers_list = list(user_answers.values_list('selected_answer', flat=True))
+
+    json_response = {
+        'title': survey.title,
+        'score': score,
+        'total': len(user_answers),
+        'survey_id': survey_id,
+        'questions': questions,
+        'selected_answers': selected_answers,
+        'selected_answers_list': selected_answers_list,
+    }
     print("result_view", score, len(user_answers))
 
     return render(request, 'result.html', json_response)
+
+
+def download_survey_pdf(request, survey_id):
+    print('зашел')
+    survey = get_object_or_404(Survey, survey_id=uuid.UUID(survey_id))
+    return survey.generate_pdf()

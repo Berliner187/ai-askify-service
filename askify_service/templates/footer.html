@@ -1,5 +1,7 @@
 <footer>
+    {% load static %}
     <div class="footer-container">
+        
         <div class="footer-social">
             <h3>Социальные сети</h3>
             <ul>
@@ -11,7 +13,7 @@
         
         <div class="footer-contact">
             <h3>Контакты</h3>
-            <p>Написать в бот<br><a href="https://t.me/Robot">LetuchkaRobot</a></p>
+            <p>Перейти в бот<br><a href="https://t.me/Robot">LetuchkaRobot</a></p>
             <p>Написать на почту<br><a href="mailto:info@example.com">letuchka@support.com</a></p>
         </div>
         
@@ -19,10 +21,13 @@
             <h3>Полезные ссылки</h3>
             <ul>
                 <li><a href="{% url 'home' %}">Публичная оферта</a></li>
+                <li><a href="{% url 'home' %}">Часто задаваемые вопросы</a></li>
                 <li><a href="{% url 'home' %}">Политика конфиденциальности</a></li>
             </ul>
         </div>
+
     </div>
+    
     <div class="footer-bottom">
         <p>&copy; 2024 Летучка. Все права защищены.</p>
     </div>

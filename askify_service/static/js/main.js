@@ -26,7 +26,8 @@ async function submitText() {
         const result = await response.json();
         if (response.ok) {
             console.log("response -", 200);
-            window.location.href = '/history/';
+            // window.location.href = '/history/';
+            window.location.href = `/survey/${survey_id}/`;
             // blockGeneratedTests.style.display = 'block';
             // window.location.reload();
             console.log(result);

@@ -16,7 +16,7 @@
 body {
     /* font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; */
     font-family: "Unbounded Regular";
-    background-color: #141312;
+    background-color: #18171a;
     color: #fffff8;
     margin: 0;
     padding: 0;
@@ -43,7 +43,7 @@ h3 {
 }
 
 p {
-    font-size: 1.1em;
+    font-size: 1em;
     margin: 10px 0;
 }
 
@@ -131,6 +131,9 @@ a {
     width: 100%;
     color: #BAB8C1;
 }
+.survey-block p {
+    margin: 0;
+}
 .survey-block a {
     padding: 20px;
     color: #d5d3db;
@@ -164,12 +167,10 @@ textarea, #survey-container {
     display: block;
     background-color: rgba(27, 26, 32, .8);
     backdrop-filter: blur(4px);
-    margin-top: 20px;
     width: 80%;
     min-width: 320px;
     max-width: 1200px;
-    margin-top: 10%;
-    margin-bottom: 15%;
+    margin-top: 100px;
     padding: 20px;
     box-shadow: 8px 8px 20px rgba(36, 36, 36, .1);
     border-radius: 30px;
@@ -262,6 +263,10 @@ textarea, #survey-container {
     font-weight: bold;
     color: #6a61f0;
 }
+.result-full {
+    width: 70%;
+    max-width: 800px;
+}
 
 
 .progress-container {
@@ -272,7 +277,7 @@ textarea, #survey-container {
 }
 
 .progress-circle {
-    transform: rotate(-90deg); /* Поворачиваем круг, чтобы начинать заполнение сверху */
+    transform: rotate(-90deg);
 }
 
 .progress-bg {
@@ -326,6 +331,10 @@ textarea, #survey-container {
 }
 
 
+.container-buttons {
+    display: block;
+}
+
 .head-button {
     display: flex;
     justify-content: space-between;
@@ -373,6 +382,7 @@ textarea, #survey-container {
 
 .header {
     display: flex;
+    justify-content: space-between;
     padding: 10px 10px;
 }
 
@@ -430,64 +440,37 @@ textarea, #survey-container {
     transition: background-color 0.3s;
 }
 
-.auth-buttons .btn:hover {
-    background-color: #3A7BD5; /* Цвет кнопок при наведении */
-}
-
-
 
 footer {
-    color: #d5d3db;
-    padding: 0;
-    text-align: center;
+    color: #a09ea6;
+    padding: 40px 20px;
+    margin-top: 10%;
 }
-
+footer h3 {
+    margin-bottom: 0;
+    margin-top: 20px;
+}
 .footer-container {
     display: flex;
-    justify-content: space-around;
     flex-wrap: wrap;
+    justify-content: space-between;
     max-width: 1200px;
     margin: 0 auto;
     padding: 0 20px;
 }
-
-.footer-links,
-.footer-contact,
-.footer-social {
-    flex: 1;
-    margin: 0 20px 20px 20px;
-}
-
-.footer-links h4,
-.footer-contact h4,
-.footer-social h4 {
-    margin-bottom: 10px;
-}
-
-.footer-links ul,
-.footer-social ul {
+ul {
     list-style: none;
     padding: 0;
 }
-
-.footer-links li,
-.footer-social li {
+li {
     margin: 5px 0;
 }
-
-.footer-links a,
-.footer-social a {
-    text-decoration: underline;
-}
-
-.footer-links a:hover,
-.footer-social a:hover {
-    text-decoration: underline;
-}
-
 .footer-bottom {
+    text-align: center;
     margin-top: 20px;
-    font-size: 10px;
+    flex: 1 1 100%;
+    font-size: 14px;
+    color: #777777;
 }
 
 

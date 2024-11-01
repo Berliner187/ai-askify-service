@@ -1,6 +1,8 @@
 import json
 import openai
 
+import datetime
+
 
 class ManageConfidentFields:
     def __init__(self, filename):
@@ -53,3 +55,7 @@ class GenerationModelsControl:
         cleaned_generated_text = generated_text.replace("json", "").replace("`", "")
 
         return cleaned_generated_text
+
+
+def get_year_now():
+    return datetime.datetime.now().strftime("%Y")

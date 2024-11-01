@@ -1,0 +1,28 @@
+.question-item {
+    border-radius: 15px;
+    padding: 20px 0 20px 0;
+    margin-top: 20px;
+}
+.question-item h3 {
+    margin-top: 0;
+}
+.question-item p {
+    padding: 5px 15px 5px 15px;
+    width: fit-content;
+    font-size: 14px;
+}
+
+
+.option-item {
+    border-radius: 12px;
+}
+.option-item.correct {
+    border: 2px solid #00DFAF;
+}
+
+.option-item.incorrect {
+    border: 2px solid #e74c75;
+}
+.correct-answer-highlight p {
+    font-size: 14px;
+}
