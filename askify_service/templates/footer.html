@@ -1,23 +1,25 @@
 <footer>
-    <hr>
     <div class="footer-container">
-        <div class="footer-links">
-            <h4>Полезные ссылки</h4>
+        <div class="footer-social">
+            <h3>Социальные сети</h3>
             <ul>
-                <li><a href="{% url 'home' %}">Цели</a></li>
-                <li><a href="{% url 'home' %}">Преимущества</a></li>
-                <li><a href="{% url 'home' %}">Контакты</a></li>
-                <li><a href="{% url 'home' %}">Политика конфиденциальности</a></li>
+                <li><a href="https://behance.com" target="_blank">Behance</a></li>
+                <li><a href="https://dprofile.ru/kozak_developer" target="_blank">Dprofile</a></li>
+                <li><a href="https://dribbble.com" target="_blank">Dribbble</a></li>
             </ul>
         </div>
+        
         <div class="footer-contact">
-            <h4>Контакты</h4>
-            <p>Email: <a href="mailto:info@example.com">letuchka@support.com</a></p>
+            <h3>Контакты</h3>
+            <p>Написать в бот<br><a href="https://t.me/Robot">LetuchkaRobot</a></p>
+            <p>Написать на почту<br><a href="mailto:info@example.com">letuchka@support.com</a></p>
         </div>
-        <div class="footer-social">
-            <h4>Социальные сети</h4>
+        
+        <div class="footer-links">
+            <h3>Полезные ссылки</h3>
             <ul>
-                <li><a href="https://linkedin.com" target="_blank">Product Radar</a></li>
+                <li><a href="{% url 'home' %}">Публичная оферта</a></li>
+                <li><a href="{% url 'home' %}">Политика конфиденциальности</a></li>
             </ul>
         </div>
     </div>

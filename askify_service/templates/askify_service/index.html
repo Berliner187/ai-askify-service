@@ -6,35 +6,26 @@
     <title>Создание опросов и тестов с помощью AI | ЛЕТУЧКА</title>
     <meta name="description" content="Создавайте опросы и тесты легко и быстро, загружая текстовые данные. Используйте мощь нейросетей для анализа и генерации вопросов.">
     {% load static %}
+    <link rel="shortcut icon" href="{% static 'img/logo.png' %}" type="image/png">
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'css/adaptive.css' %}">
 </head>
 <body>
-    <header>
-        <h1>Добро пожаловать в Летучку</h1>
-        <p>Создавайте опросы и тесты легко и быстро!</p>
-    </header>
+    {% include 'header.html' %}
+    
     <main>
         <section>
-            <h2>Как это работает?</h2>
-            <p>Загрузите ваши данные, и мы сгенерируем для вас опросы.</p>
-            <a href="/create" class="btn">Начать</a>
-        </section>
-        <section>
-            <h2>Преимущества</h2>
-            <ul>
-                <li>Интуитивно понятный интерфейс</li>
-                <li>Быстрая генерация опросов</li>
-                <li>Поддержка различных форматов файлов</li>
-                <li>Анализ текстов с помощью AI</li>
-            </ul>
-        </section>
-        <section>
-            <h2>Часто задаваемые вопросы</h2>
-            <p>Как загружать данные? Как работает генерация опросов? Узнайте больше в нашем <a href="/generate-survey">блоге</a>.</p>
+            <div class="button-medium">
+                <a href="{% url 'history' %}">
+                    <div>
+                        <p>Начать сейчас</p>
+                        <img src="{% static 'img/icon-forward.png' %}" alt="">
+                    </div>
+                </a>
+            </div>
         </section>
     </main>
-    <footer>
-        <p>&copy; 2024 Летучка. Все права защищены.</p>
-    </footer>
+
+    {% include 'footer.html' %}
 </body>
 </html>

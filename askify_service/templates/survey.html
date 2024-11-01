@@ -5,58 +5,63 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     {% load static %}
     <link rel="shortcut icon" href="{% static 'img/logo.png' %}" type="image/png">
+    <link rel="stylesheet" href="{% static 'css/adaptive.css' %}">
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
     <title>Опрос</title>
 </head>
 <body>
-    {% include 'header.html' %}
+    <script src="{% static 'js/load-effect.js' %}"></script>
 
-    <form id="survey-form" method="post">
-        {% csrf_token %}
-        <div class="container" id="question-container">
-            <div class="head-button">
-                <div class="button-medium">
-                    <a href="{% url 'create' %}">
-                        <div>
-                            <p>Создать новый</p>
-                            <img src="{% static 'img/icon-new.png' %}" alt="">
-                        </div>
-                    </a>
-                </div>
-            </div>
-                {% for question in questions %}
-                    <div class="question" style="display: none;">
-                        <h3>Вопрос {{ forloop.counter }}: {{ question.question }}</h3>
-                        {% for option in question.options %}
-                            <label>
-                                <input type="radio" name="answers_{{ forloop.parentloop.counter }}" value="{{ option }}">
-                                <p>{{ forloop.counter }}) {{ option }}</p>
-                            </label><br>
-                        {% endfor %}
-                        <div class="head-button">
+    <div id="page-container" class="fade">
+        {% include 'header.html' %}
 
-                            <div class="button-medium">
-                                <a href="{% url 'survey' survey_id=survey.survey_id %}">
-                                    <div>
-                                        <img src="{% static 'img/icon-retry.png' %}" alt="">
-                                        <p>Заново</p>
-                                    </div>
-                                </a> 
+        <form id="survey-form" method="post">
+            {% csrf_token %}
+            <div class="container" id="question-container">
+                <div class="head-button">
+                    <div class="button-medium">
+                        <a href="{% url 'create' %}">
+                            <div>
+                                <p>Создать новый</p>
+                                <img src="{% static 'img/icon-new.png' %}" alt="">
                             </div>
-
-                            <button type="button" class="next-button button-medium">
-                                <div>
-                                    <p>Дальше</p>
-                                    <img src="{% static 'img/icon-forward.png' %}" alt="">
-                                </div>
-                            </button>
-                            
-                        </div>
+                        </a>
                     </div>
-                {% endfor %}
-            <button type="submit" id="submit-button" disabled style="display: none;">Отправить</button>
-        </div>
-    </form>
+                </div>
+                    {% for question in questions %}
+                        <div class="question" style="display: none;">
+                            <h3>Вопрос {{ forloop.counter }}: {{ question.question }}</h3>
+                            {% for option in question.options %}
+                                <label>
+                                    <input type="radio" name="answers_{{ forloop.parentloop.counter }}" value="{{ option }}">
+                                    <p>{{ forloop.counter }}) {{ option }}</p>
+                                </label><br>
+                            {% endfor %}
+                            <div class="head-button">
+
+                                <div class="button-medium">
+                                    <a href="{% url 'survey' survey_id=survey.survey_id %}">
+                                        <div>
+                                            <img src="{% static 'img/icon-retry.png' %}" alt="">
+                                            <p>Заново</p>
+                                        </div>
+                                    </a> 
+                                </div>
+
+                                <button type="button" class="next-button button-medium">
+                                    <div>
+                                        <p>Дальше</p>
+                                        <img src="{% static 'img/icon-forward.png' %}" alt="">
+                                    </div>
+                                </button>
+                                
+                            </div>
+                        </div>
+                    {% endfor %}
+                <button type="submit" id="submit-button" disabled style="display: none;">Отправить</button>
+            </div>
+        </form>
+    </div>
 
     {% include 'footer.html' %}
 

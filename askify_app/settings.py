@@ -27,7 +27,7 @@ SECRET_KEY = manager_confident_fields.get_confident_key("secret_key")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition

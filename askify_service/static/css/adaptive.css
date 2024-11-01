@@ -1,37 +1,74 @@
 @media (max-width: 768px) {
+    h1 {
+        font-size: 0.8em;
+    }
+    .container h2 {
+        font-size: 24px;
+    }
+    h3 {
+        font-size: 22px;
+    }
+
+    .reg-button {
+        display: none;
+    }
+
+    .button-medium {
+        font-size: 14px;
+    }
+    
+    #saved-survey-container div {
+        padding: 2px;
+    }
+
+    .surveys-container p {
+        font-size: .8em;
+    }
+
     .header {
-        flex-direction: row; /* Изменяем направление на колонку */
-        align-items: center; /* Центрируем элементы */
+        flex-direction: row;
+        align-items: center;
     }
 
     .navigation {
-        display: none; /* Скрываем навигацию по умолчанию */
-        width: 100%; /* Занимаем всю ширину */
-        margin: 10px 0; /* Отступы сверху и снизу */
+        display: none;
+        width: 100%;
+        margin: 10px 0;
     }
 
     .navigation.active {
-        display: flex; /* Показываем навигацию при активации */
-        flex-direction: column; /* Изменяем направление списка на колонку */
-        align-items: center; /* Центрируем элементы списка */
+        display: flex; 
+        flex-direction: column; 
+        align-items: center;
     }
 
     .navigation li {
-        margin: 5px 0; /* Отступы между элементами списка */
+        margin: 5px 0; 
     }
 
     .auth-buttons {
-        width: 100%; /* Занимаем всю ширину */
-        text-align: center; /* Центрируем кнопки */
-        margin: 10px 0; /* Отступы сверху и снизу */
+        width: 100%;
+        text-align: center;
+        margin: 10px 0;
     }
 
     .auth-buttons .btn {
-        width: 100%; /* Кнопки занимают всю ширину */
-        margin: 5px 0; /* Отступы между кнопками */
+        width: 100%;
+        margin: 5px 0;
     }
 
     .burger-menu {
-        display: flex; /* Показываем бургер-меню на мобильных устройствах */
+        display: flex;
+    }
+    
+    .footer-bottom {
+        font-size: .8em;
+    }
+    
+    footer ul {
+        font-size: .8em;
+    }
+    footer p {
+        font-size: .8em;
     }
 }

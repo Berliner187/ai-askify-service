@@ -15,62 +15,61 @@
     <meta property="og:type" content="website">
     <link rel="preconnect" href="">
     <link rel="dns-prefetch" href="">
-    <meta name="theme-color" content="#616DF0">
+    <meta name="theme-color" content="#141312">
     {% load static %}
     <link rel="shortcut icon" href="{% static 'img/logo.png' %}" type="image/png">
+    <link rel="stylesheet" href="{% static 'css/adaptive.css' %}">
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
     <link rel="stylesheet" href="{% static 'css/loader.css' %}">
 </head>
 <body>
-    {% include 'header.html' %}
-    
-    <div class="loader-container" id="loading-container">
-        <div class="line"></div>
-        <div class="line"></div>
-        <div class="line"></div>
-        <div class="line"></div>
-        <div class="line"></div>
-        <div class="line"></div>
-    </div>
-    
-    <div class="container" id="block-generate">
-        <h2>На какую тему создать?</h2>
-        <div class="input-area">
-            <textarea id="user-text" rows="4" cols="60" placeholder="Введите текст здесь..."></textarea><br>
-            <button onclick="submitText()">
-                <img src="{% static 'img/icon-send.png' %}" alt="">
-            </a>
+    <script src="{% static 'js/load-effect.js' %}"></script>
+
+    <div id="page-container" class="fade">
+        {% include 'header.html' %}
+        
+        <div class="loader-container" id="loading-container">
+            <div class="line"></div>
+            <div class="line"></div>
+            <div class="line"></div>
+            <div class="line"></div>
+            <div class="line"></div>
+            <div class="line"></div>
         </div>
-    </div>
-    
-    <div class="container question" id="saved-survey-container">
-        <div class="head-button">
-            <h2>История</h2>
+        
+        <div class="container" id="block-generate">
+            <h2>На какую тему создать?</h2>
+            <div class="input-area">
+                <textarea id="user-text" rows="4" cols="60" placeholder="Введите запрос"></textarea><br>
+                <button onclick="submitText()">
+                    <img src="{% static 'img/icon-send.png' %}" alt="">
+                </a>
+            </div>
             <div class="button-medium">
-                <a href="{% url 'create' %}">
+                <a href="{% url 'history' %}">
                     <div>
-                        <p>Создать новый</p>
-                        <img src="{% static 'img/icon-new.png' %}" alt="">
+                        <img src="{% static 'img/icon-history.png' %}" alt="">
+                        <p>История</p>
                     </div>
                 </a>
             </div>
         </div>
-
-        <div id="surveys-container">
-        <p>Ваши предыдущие опросы</p>
-            {% for survey_id, survey_title in surveys_data.items %}
-                <label>
-                    <a href="/result/{{ survey_id }}">
-                        <div class="survey-block">{{ survey_title }}</div>
-                    </a>
-                </label><br>
-            {% endfor %}
-        </div>
         
-    </div>
+        {% include 'footer.html' %}
+        
+        <script src="{% static 'js/main.js' %}"></script>
 
-    {% include 'footer.html' %}
-    
-    <script src="{% static 'js/main.js' %}"></script>
+        <script>
+            const text = document.getElementById('user-text');
+
+            text.addEventListener('input', function() {
+                console.log("ok");
+                this.style.height = 'auto';
+                this.style.height = (this.scrollHeight) + 'px';
+            });
+
+            text.style.height = (text.scrollHeight) + 'px';
+        </script>
+    </div>
 </body>
 </html>

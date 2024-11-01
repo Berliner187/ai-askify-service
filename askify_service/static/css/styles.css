@@ -20,7 +20,7 @@ body {
     color: #fffff8;
     margin: 0;
     padding: 0;
-    transition: .5s;
+    transition-duration: .5s;
 }
 
 h1 {
@@ -30,7 +30,7 @@ h1 {
 
 h2 {
     font-family: "Unbounded Bold";
-    margin-top: 20px;
+    margin-top: 10px;
     color: #fffff8;
     font-size: 2em;
     margin-bottom: 10px;
@@ -43,7 +43,7 @@ h3 {
 }
 
 p {
-    font-size: 1.2em;
+    font-size: 1.1em;
     margin: 10px 0;
 }
 
@@ -68,25 +68,30 @@ li {
 
 a {
     color: #616DF0;
+    text-decoration: none;
 }
 
 .btn, button {
     display: inline-block;
-    padding: 10px 20px;
+    /* padding: 10px 20px; */
     color: #ffffff;
-    background-color: #616DF0; /* Цвет кнопки */
+    max-height: fit-content;
+    /* background-color: #616DF0; */
     border-radius: 15px;
     text-decoration: none;
     transition: background-color 0.3s;
     border: none;
 }
 .btn:hover, button {
-    background-color: #4d44d7; /* Цвет кнопки при наведении */
+    background-color: rgba(77, 68, 215, 0); /* Цвет кнопки при наведении */
     cursor: pointer;
+    opacity: .75;
 }
 
 .btn, button img {
     width: 72px;
+    border: 2px solid #616DF0;
+    border-radius: 15px;
 }
 
 .question {
@@ -94,26 +99,27 @@ a {
     margin-bottom: 15px;
     transition-duration: .25s;
 }
-.question label {
-}
 .question label input[type="radio"] {
-    display: none; /* Скрываем стандартный радиокнопку */
+    display: none;
 }
 
 .question label {
-    padding-left: 25px;
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    align-items: center;
     cursor: pointer;
     transition-duration: .3s;
+    border-radius: 8px;
+}
+.question label:hover {
+    background-color: #616DF0;
 }
 
 .question label p {
     margin: 0;
     padding: 8px 16px 8px 16px;
     border-radius: 8px;
-}
-.question label p:hover {
-    background-color: #616DF0;
-    opacity: .9;
 }
 .question input[type="radio"]:checked + p {
     background-color: #616DF0;
@@ -122,28 +128,30 @@ a {
 
 .survey-block {
     border-radius: 10px;
-    background-color: #28272F;
+    width: 100%;
+    color: #BAB8C1;
 }
-
 .survey-block a {
     padding: 20px;
-    color: #fffff8;
+    color: #d5d3db;
 }
 
+textarea {
+    resize: none;
+    overflow:hidden;
+}
 textarea, #survey-container {
     width: 100%;
     background-color: #141414;
-    color: #fffff8;
-    max-width: 900px;
-    min-width: 400px;
+    color: #d5d3db;
+    min-width: 100px;
     min-height: 72px;
-    height: 72px;
+    height: 78px;
     padding: 10px;
-    border: 1px solid #4d44d7;
+    border: 1px solid #616DF0;
     border-radius: 15px;
     font-size: 16px;
     box-sizing: border-box;
-    margin-bottom: 10px;
     margin-right: 20px;
 }
 
@@ -156,16 +164,17 @@ textarea, #survey-container {
     display: block;
     background-color: rgba(27, 26, 32, .8);
     backdrop-filter: blur(4px);
+    margin-top: 20px;
     width: 80%;
-    min-width: 400px;
+    min-width: 320px;
     max-width: 1200px;
     margin-top: 10%;
-    margin-bottom: 10%;
+    margin-bottom: 15%;
     padding: 20px;
     box-shadow: 8px 8px 20px rgba(36, 36, 36, .1);
     border-radius: 30px;
-    position: relative; /* Для позиционирования псевдоэлементов */
-    overflow: hidden; /* Чтобы фигуры не выходили за пределы блока */
+    position: relative;
+    overflow: hidden;
 }
 
 .container::before, .preview-content::before,
@@ -173,31 +182,38 @@ textarea, #survey-container {
     content: '';
     position: absolute;
     border-radius: 50%;
-    opacity: 0.5; /* Прозрачность фигурок */
-    pointer-events: none; /* Чтобы фигуры не мешали взаимодействию с содержимым */
+    opacity: 0;
+    pointer-events: none; 
+    transition: opacity 2s ease;
 }
 
 .container::before {
-    width: 200px; /* Ширина первой фигуры */
-    height: 200px; /* Высота первой фигуры */
-    background: rgba(119, 12, 249, 0.945); /* Цвет первой фигуры */
-    top: -50px; /* Позиция по вертикали */
-    left: -50px; /* Позиция по горизонтали */
-    filter: blur(8em); /* Размытие первой фигуры */
+    width: 400px;
+    height: 400px;
+    background: rgba(119, 12, 249, 0.945);
+    top: -50px;
+    left: -50px;
+    filter: blur(12em);
 }
 
 .container::after {
-    width: 300px; /* Ширина второй фигуры */
-    height: 300px; /* Высота второй фигуры */
-    background: rgba(38, 255, 208, 0.929); /* Цвет второй фигуры */
-    bottom: -100px; /* Позиция по вертикали */
-    right: -100px; /* Позиция по горизонтали */
-    filter: blur(16em); /* Размытие второй фигуры */
+    width: 500px;
+    height: 500px; 
+    background: #26BAE7;
+    bottom: -100px;
+    right: -100px;
+    filter: blur(20em);
+}
+
+.container.show::before,
+.container.show::after {
+    opacity: 0.5;
 }
 
 .input-area {
     display: flex;
     justify-content: space-between;
+    max-width: 1200px;
 }
 .container div img {
     transition-duration: .25s;
@@ -210,11 +226,11 @@ textarea, #survey-container {
 .head-button {
     display: flex;
     justify-content: space-around;
-    margin-bottom: 20px;
+    margin-bottom: 0;
 }
 
 .button-medium {
-    margin: 0 10px;
+    margin: 5px 10px;
 }
 
 .button-medium a {
@@ -274,7 +290,8 @@ textarea, #survey-container {
 }
 
 .progress-text {
-    margin-top: 10px;
+    margin-top: -110px;
+    margin-bottom: 110px;
     font-size: 1.5rem;
     color: #6a61f0;
 }
@@ -293,7 +310,7 @@ textarea, #survey-container {
     margin-top: 50px;
 }
 #saved-survey-container div {
-    padding: 10px;
+    padding: 5px;
 }
 
 .history-container a {
@@ -303,6 +320,9 @@ textarea, #survey-container {
 .surveys-container {
     flex-direction: row;
     margin: 0;
+}
+.surveys-container p {
+    margin-bottom: 200px;
 }
 
 
@@ -329,7 +349,7 @@ textarea, #survey-container {
 .button-medium div p {
     text-decoration: none;
     color: #d5d3db;
-    font-size: 14px;
+    font-size: .8em;
     padding-left: 4px;
     padding-right: 4px;
 }
@@ -343,11 +363,11 @@ textarea, #survey-container {
 
 .button-accent {
     background-color: #616DF0;
-    color: #ffffff;
+    color: #d5d3db;
 }
 .button-red {
-    background-color: #ea4a75;
-    color: #ffffff;
+    background-color: #e74c75;
+    color: #d5d3db;
 }
 
 
@@ -362,6 +382,9 @@ textarea, #survey-container {
 }
 .logo-header:hover {
     opacity: .75;
+}
+.logo-header img {
+    width: 160px;
 }
 
 .navigation {
@@ -414,13 +437,9 @@ textarea, #survey-container {
 
 
 footer {
-    color: #fff;
-    padding: 20px 0;
+    color: #d5d3db;
+    padding: 0;
     text-align: center;
-}
-
-footer hr {
-    border: #4d44d7;
 }
 
 .footer-container {
@@ -436,7 +455,7 @@ footer hr {
 .footer-contact,
 .footer-social {
     flex: 1;
-    margin: 0 20px;
+    margin: 0 20px 20px 20px;
 }
 
 .footer-links h4,
@@ -458,8 +477,7 @@ footer hr {
 
 .footer-links a,
 .footer-social a {
-    color: #76c7c0;
-    text-decoration: none;
+    text-decoration: underline;
 }
 
 .footer-links a:hover,
@@ -469,6 +487,34 @@ footer hr {
 
 .footer-bottom {
     margin-top: 20px;
-    font-size: 14px;
+    font-size: 10px;
+}
+
+
+/* Анимации */
+.fade {
+    opacity: 0;
+    transition: opacity 0.8s ease-in-out;
+}
+
+.fade-in {
+    opacity: 1;
+}
+
+.error-message {
+    background-color: #e74c75;
+    color: #d5d3db;
+    padding: 15px;
+    border-radius: 5px;
+    position: fixed;
+    top: -100px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    transition: top 0.5s ease;
+}
+
+.error-message.show {
+    top: 20px; /* Конечная позиция */
 }
 

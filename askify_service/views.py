@@ -12,14 +12,6 @@ import openai
 import uuid
 import random
 
-manage_confident_fields = ManageConfidentFields("config.json")
-
-
-client = openai.OpenAI(
-    api_key=manage_confident_fields.get_confident_key("api_openai"),
-    base_url="https://glhf.chat/api/openai/v1",
-)
-
 
 def index(request):
     return render(request, 'askify_service/index.html')
@@ -27,14 +19,19 @@ def index(request):
 
 @csrf_exempt
 def page_create_survey(request):
-    surveys_data = get_all_surveys()  # Предполагается, что это возвращает словарь
-    return render(request, 'askify_service/text_input.html', {'surveys_data': surveys_data})
+    surveys_data = get_all_surveys()
+    return render(request, 'askify_service/text_input.html')
+
+
+def page_history_surveys(request):
+    surveys_data = get_all_surveys()
+    return render(request, 'askify_service/history.html', {'surveys_data': surveys_data})
 
 
 def drop_survey(request, survey_id):
     survey_obj = Survey.objects.get(survey_id=uuid.UUID(survey_id))
     survey_obj.delete()
-    return redirect('create')
+    return redirect('history')
 
 
 @csrf_exempt
@@ -44,44 +41,36 @@ def generate_survey(request):
             data = json.loads(request.body)
             text_from_user = data.get('text')
 
+            forbidden_words_file = open('./askify_app/forbidden_words.txt')
+            forbidden_words = forbidden_words_file.read()
+            if any(word in text_from_user for word in forbidden_words):
+                return JsonResponse({'error': 'К сожалению, не удалось выполнить запрос'}, status=400)
+
             if DEBUG:
                 print("\nstart the generated...")
 
-            completion = client.chat.completions.create(
-                model=f"hf:{manage_confident_fields.get_confident_key('llm_model_name')}",
-                messages=[
-                    {
-                        "role": "system",
-                        "content": f"{manage_confident_fields.get_confident_key('system_prompt')}"
-                    },
-                    {
-                        "role": "user",
-                        "content": f"На основе следующего текста: {text_from_user}{manage_confident_fields.get_confident_key('user_prompt')}"
-                    }
-                ]
-            )
-
-            generated_text = completion.choices[0].message.content
-            cleaned_generated_text = generated_text.replace("json", "").replace("`", "")
+            generation_models_control = GenerationModelsControl()
+            generated_text = generation_models_control.get_service_0001(text_from_user)
 
             if DEBUG:
                 print("\n"*3)
-                print("generated_text", cleaned_generated_text)
+                print("generated_text", generated_text)
 
             try:
-                cleaned_generated_text = json.loads(cleaned_generated_text)
+                cleaned_generated_text = json.loads(generated_text)
             except json.JSONDecodeError:
                 return JsonResponse({'error': 'Generated text is not valid JSON'}, status=400)
 
+            new_survey_id = uuid.uuid4()
             survey = Survey(
-                survey_id=uuid.uuid4(),
+                survey_id=new_survey_id,
                 title=cleaned_generated_text['title'],
                 questions=json.dumps(cleaned_generated_text['questions'])
             )
             survey.save()
             print(cleaned_generated_text)
 
-            return JsonResponse({'survey': cleaned_generated_text}, status=200)
+            return JsonResponse({'survey': cleaned_generated_text, 'new_survey_id': new_survey_id}, status=200)
 
         except json.JSONDecodeError:
             return JsonResponse({'error': 'Invalid JSON in request body'}, status=400)
@@ -161,8 +150,6 @@ def take_survey(request, survey_id):
 
         json_response = {'score': correct_count, 'total': len(user_answers), 'survey_id': survey_id}
 
-        if DEBUG:
-            print("Правильные ответы:", correct_count)
         return render(request, 'result.html', json_response)
 
     return render(request, 'survey.html', {'survey': survey, 'questions': questions})
@@ -176,5 +163,6 @@ def result_view(request, survey_id):
     score = sum(answer.scored_points for answer in user_answers)
 
     json_response = {'title': survey.title, 'score': score, 'total': len(user_answers), 'survey_id': survey_id}
+    print("result_view", score, len(user_answers))
 
     return render(request, 'result.html', json_response)

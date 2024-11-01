@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Летучка • История</title>
+        <meta name="description" content="">
+        <meta name="keywords" content="">
+        <meta property="og:title" content="">
+        <meta property="og:description" content="">
+        <meta property="og:image" content="">
+        <meta property="og:image:width" content="1058">
+        <meta property="og:image:height" content="569">
+        <meta property="og:url" content="">
+        <meta property="og:type" content="website">
+        <link rel="preconnect" href="">
+        <link rel="dns-prefetch" href="">
+        <meta name="theme-color" content="#141312">
+        {% load static %}
+        <link rel="shortcut icon" href="{% static 'img/logo.png' %}" type="image/png">
+        <link rel="stylesheet" href="{% static 'css/adaptive.css' %}">
+        <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+        <link rel="stylesheet" href="{% static 'css/loader.css' %}">
+    </head>
+    <body>
+        <script src="{% static 'js/load-effect.js' %}"></script>
+
+        <div id="page-container" class="fade">
+            {% include 'header.html' %}
+            
+            <div class="container question" id="saved-survey-container">
+                <div class="head-button">
+                    <h2>История</h2>
+                    <div class="button-medium">
+                        <a href="{% url 'create' %}">
+                            <div>
+                                <p>Создать новый</p>
+                                <img src="{% static 'img/icon-new.png' %}" alt="">
+                            </div>
+                        </a>
+                    </div>
+                </div>
+    
+                <div id="surveys-container">
+                    <p>Ваши предыдущие опросы</p>
+                    {% for survey_id, survey_title in surveys_data.items %}
+                        <label>
+                            <a href="/result/{{ survey_id }}">
+                                <div class="survey-block">{{ survey_title }}</div>
+                            </a>
+                            <div class="button-medium button-red">
+                                <a href="{% url 'drop-survey' survey_id=survey_id %}">
+                                    <div>
+                                        <img src="{% static 'img/icon-delete.png' %}" alt="">
+                                        <p>Удалить</p>
+                                    </div>
+                                </a> 
+                            </div>
+                        </label><br>
+                    {% endfor %}
+                </div>
+            </div>
+    
+            {% include 'footer.html' %}
+        </div>
+        
+    </body>
+    <script src="{% static 'js/main.js' %}"></script>
+</html>
