@@ -2,19 +2,30 @@
     font-family: 'Unbounded Medium';
     src: url(../fonts/Unbounded-Medium.ttf);
 }
-
 @font-face {
     font-family: 'Unbounded Regular';
     src: url(../fonts/Unbounded-Regular.ttf);
 }
-
 @font-face {
     font-family: 'Unbounded Bold';
     src: url(../fonts/Unbounded-Bold.ttf);
 }
 
+@font-face {
+    font-family: 'Manrope Regular';
+    src: url(../fonts/Manrope-Regular.ttf);
+}
+@font-face {
+    font-family: 'Manrope Medium';
+    src: url(../fonts/Manrope-Medium.ttf);
+}
+@font-face {
+    font-family: 'Manrope Bold';
+    src: url(../fonts/Manrope-Bold.ttf);
+}
+
 body {
-    /* font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; */
+    font-family: Arial, sans-serif;
     font-family: "Unbounded Regular";
     background-color: #18171a;
     color: #fffff8;
@@ -62,7 +73,7 @@ ul {
 }
 
 li {
-    font-size: 1.1em;
+    font-size: 1em;
     margin: 5px 0;
 }
 
@@ -113,7 +124,7 @@ a {
     border-radius: 8px;
 }
 .question label:hover {
-    background-color: #616DF0;
+    background-color: #28272F;
 }
 
 .question label p {
@@ -141,7 +152,7 @@ a {
 
 textarea {
     resize: none;
-    overflow:hidden;
+    overflow: hidden;
 }
 textarea, #survey-container {
     width: 100%;
@@ -443,7 +454,7 @@ textarea, #survey-container {
 
 footer {
     color: #a09ea6;
-    padding: 40px 20px;
+    padding: 10px 20px;
     margin-top: 10%;
 }
 footer h3 {
