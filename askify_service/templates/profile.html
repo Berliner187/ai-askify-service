@@ -11,15 +11,16 @@
     <meta name="theme-color" content="#18171a">
     {% load static %}
     <link rel="shortcut icon" href="{% static 'img/logo.png' %}" type="image/png">
+    <link rel="stylesheet" href="{% static 'css/second-loader.css' %}">
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
     <link rel="stylesheet" href="{% static 'css/adaptive.css' %}">
-    <link rel="stylesheet" href="{% static 'css/loader.css' %}">
     <link rel="stylesheet" href="{% static 'css/footer.css' %}">
 </head>
 <body>
-    <script src="{% static 'js/load-effect.js' %}"></script>
+    <script src="{% static 'js/second-loader.js' %}"></script>
+    {% include 'components/loader.html' %}
 
-    <div id="page-container" class="fade">
+    <div id="page-container" class="fade" style="display: none;">
         {% include 'header.html' %}
         
         <div class="container profile" id="profile-container">
@@ -35,7 +36,7 @@
                 <h3>Статистика</h3>
                 <ul>
                     <li>Создано тестов: <span class="accent-color-text">{{ statistics.total_tests }}</span></li>
-                    <li>Средний балл: <span class="accent-color-text">{{ statistics.average_score }} / 5</span></li>
+                    <li>Средний балл: <span id="accent-color">{{ statistics.average_score }} / 5</span></li>
                 </ul>
             <hr>
                 <ul>
@@ -67,6 +68,35 @@
         {% include 'footer.html' %}
     </div>
     
+    <script>
+        function getColor(averageScore) {
+            averageScore = Math.max(0, Math.min(5, averageScore));
+
+            let red, green;
+
+            if (averageScore <= 3) {
+                red = 255;
+                green = Math.round(255 * (averageScore / 5));
+            } else if (averageScore <= 3.8) {
+                red = 255;
+                green = 255;
+            } else if (averageScore <= 4.2) {
+                red = Math.round(255 * (1 - (averageScore - 3) / 1.5));
+                green = 255;
+            } else {
+                red = 0;
+                green = 255;
+            }
+        
+            return `rgb(${red}, ${green}, 0)`;
+        }
+        
+        const averageScore = {{ statistics.average_score }};
+        const color = getColor(averageScore);
+        
+        const scoreElement = document.getElementById('accent-color');
+        scoreElement.style.color = color;
+    </script>
     <script src="{% static 'js/main.js' %}"></script>
 </body>
 </html>

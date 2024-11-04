@@ -5,16 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     {% load static %}
     <link rel="shortcut icon" href="{% static 'img/logo.png' %}" type="image/png">
+    <link rel="stylesheet" href="{% static 'css/second-loader.css' %}">
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
     <link rel="stylesheet" href="{% static 'css/adaptive.css' %}">
     <link rel="stylesheet" href="{% static 'css/results.css' %}">
     <link rel="stylesheet" href="{% static 'css/footer.css' %}">
-    <title>Результаты</title>
+    <title>Результаты теста</title>
 </head>
 <body>
-    <script src="{% static 'js/load-effect.js' %}"></script>
+    <script src="{% static 'js/second-loader.js' %}"></script>
+    {% include 'components/loader.html' %}
 
-    <div id="page-container" class="fade">
+    <!-- <script src="{% static 'js/load-effect.js' %}"></script> -->
+
+    <div id="page-container" class="fade" style="display: none;">
         {% include 'header.html' %}
 
         <div class="container">
@@ -43,21 +47,42 @@
             
             <div class="result-container">
                 <h2 class="result-survey-title">{{ title }}</h2>
-                
-                <div class="progress-container">
-                    <svg class="progress-circle" width="200" height="200">
-                        <circle class="progress-bg" cx="100" cy="100" r="90" />
-                        <circle class="progress-fill" cx="100" cy="100" r="90" />
-                    </svg>
-                    <div class="progress-text">{{ score }}/{{ total }}</div>
-                </div>
-                
+
+                {% if total > 0 %}
+                    <div class="progress-container">
+                        <svg class="progress-circle" width="200" height="200">
+                            <circle class="progress-bg" cx="100" cy="100" r="90" />
+                            <circle class="progress-fill" cx="100" cy="100" r="90" />
+                        </svg>
+                        <div class="progress-text">{{ score }}/{{ total }}</div>
+                    </div>
+                    
+                    <div class="container-buttons">
+                        <div class="button-medium button-accent">
+                            <a href="{% url 'survey' survey_id=survey_id %}">
+                                <div>
+                                    <img src="{% static 'img/icon-retry.png' %}" alt="">
+                                    <p>Пройти заново</p>
+                                </div>
+                            </a> 
+                        </div>
+
+                        <div class="button-medium">
+                            <a href="{% url 'download-survey_pdf' survey_id=survey_id %}">
+                                <div>
+                                    <img src="{% static 'img/icon-file.png' %}" alt="">
+                                    <p>Скачать в PDF</p>
+                                </div>
+                            </a> 
+                        </div>
+                    </div>
+                {% else %}
                 <div class="container-buttons">
                     <div class="button-medium button-accent">
                         <a href="{% url 'survey' survey_id=survey_id %}">
                             <div>
-                                <img src="{% static 'img/icon-retry.png' %}" alt="">
-                                <p>Пройти заново</p>
+                                <p>Пройти тест</p>
+                                <img src="{% static 'img/icon-forward.png' %}" alt="">
                             </div>
                         </a> 
                     </div>
@@ -71,47 +96,51 @@
                         </a> 
                     </div>
                 </div>
+                {% endif %}
                 
             </div>
 
         </div>
 
-        <div class="container result-full">
-            <h2>Результаты теста</h2>
-            <div class="questions-container">
-                {% for question in questions %}
-                    <div class="question-item">
-                        <h3>{{ question.question }}</h3>
-                        <div class="options-container">
-                            {% for option in question.options %}
-                                <div class="option-item {% if option in selected_answers %} 
-                                    {% if option == question.correct_answer %}correct{% else %}incorrect{% endif %} {% endif %}">
-                                    <p>{{ option }}</p>
-                                </div>
-                            {% endfor %}
-                        </div>
-                        {% if question.correct_answer not in selected_answers and question.correct_answer in question.options %}
-                            <div class="correct-answer-highlight">
-                                <p><i>Правильный ответ: {{ question.correct_answer }}</i></p>
+        <div>
+            {% if total > 0 %}
+            <div class="container result-full">
+                <h2>Результаты теста</h2>
+                <div class="questions-container">
+                    {% for question in questions %}
+                        <div class="question-item">
+                            <h3>{{ question.question }}</h3>
+                            <div class="options-container">
+                                {% for option in question.options %}
+                                    <div class="option-item {% if option in selected_answers %} 
+                                        {% if option == question.correct_answer %}correct{% else %}incorrect{% endif %} {% endif %}">
+                                        <p>{{ option }}</p>
+                                    </div>
+                                {% endfor %}
                             </div>
-                        {% endif %}
-                    </div>
-                {% endfor %}
+                            {% if question.correct_answer not in selected_answers and question.correct_answer in question.options %}
+                                <div class="correct-answer-highlight">
+                                    <p><i>Правильный ответ: {{ question.correct_answer }}</i></p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+                
+                <div class="result-summary">
+                    <p>Вы ответили правильно на <span class="result-score">{{ score }}</span> из <span class="result-total">{{ total }}</span> вопросов.</p>
+                </div>
+                <div class="button-medium button-red">
+                    <a href="{% url 'drop-survey' survey_id=survey_id %}">
+                        <div>
+                            <img src="{% static 'img/icon-delete.png' %}" alt="">
+                            <p>Удалить тест</p>
+                        </div>
+                    </a> 
+                </div>
             </div>
-            
-            <div class="result-summary">
-                <p>Вы ответили правильно на <span class="result-score">{{ score }}</span> из <span class="result-total">{{ total }}</span> вопросов.</p>
-            </div>
-            <div class="button-medium button-red">
-                <a href="{% url 'drop-survey' survey_id=survey_id %}">
-                    <div>
-                        <img src="{% static 'img/icon-delete.png' %}" alt="">
-                        <p>Удалить тест</p>
-                    </div>
-                </a> 
-            </div>
+            {% endif %}
         </div>
-
         
     </div>
 
@@ -143,6 +172,36 @@
     </script>
 
     {% include 'footer.html' %}
+
+    <script>
+        function getColor(averageScore) {
+            averageScore = Math.max(0, Math.min(5, averageScore));
+
+            let red, green;
+
+            if (averageScore <= 3) {
+                red = 255;
+                green = Math.round(255 * (averageScore / 5));
+            } else if (averageScore <= 3.8) {
+                red = 255;
+                green = 255;
+            } else if (averageScore <= 4.2) {
+                red = Math.round(255 * (1 - (averageScore - 3) / 1.5));
+                green = 255;
+            } else {
+                red = 0;
+                green = 255;
+            }
+        
+            return `rgb(${red}, ${green}, 0)`;
+        }
+        
+        const averageScore = {{ score }};
+        const color = getColor(averageScore);
+        
+        const scoreElement = document.querySelector('.progress-text');
+        scoreElement.style.color = color;
+    </script>
 
 </body>
 </html>

@@ -63,7 +63,6 @@ class UserAnswers(models.Model):
         user_answers = cls.objects.filter(id_staff=id_staff)
 
         total_scored_points = 0
-        total_surveys = user_answers.count()
 
         total_points = 0
         for answer in user_answers:
@@ -73,7 +72,7 @@ class UserAnswers(models.Model):
         total_tests = user_surveys.count()
         # average_score = user_answers.aggregate(Avg('scored_points'))['scored_points__avg'] or 0
         # passed_tests =
-        average_score = total_scored_points / total_tests
+        average_score = round(total_scored_points / total_tests, 2)
 
         return {
             'total_tests': total_tests,

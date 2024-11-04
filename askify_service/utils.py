@@ -60,6 +60,8 @@ def get_formate_date(date):
     date_str = str(date)
     date_obj = datetime.datetime.fromisoformat(date_str[:-6])
 
+    date_obj += datetime.timedelta(hours=3)
+
     return date_obj.strftime("%-d %B, в %H:%M")
 
 

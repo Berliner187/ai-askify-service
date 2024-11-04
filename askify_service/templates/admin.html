@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% load static %}
+    <link rel="shortcut icon" href="{% static 'img/logo.png' %}" type="image/png">
+    <link rel="stylesheet" href="{% static 'css/second-loader.css' %}">
+    <link rel="stylesheet" href="{% static 'css/adaptive.css' %}">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'css/footer.css' %}">
+    <title>Летучка | Админам</title>
+</head>
+<style>
+    .survey-block {
+        background-color: #2A2A2E;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+    .survey-block p {
+        margin: 10px 0;
+        color: #d5d3db;
+    }
+    .head-button {
+        margin-top: 20px;
+    }
+    #date-filter-form {
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 20px;
+        background-color: #2A2A2E;
+        padding: 20px;
+        border-radius: 10px;
+    }
+
+    #date-filter-form label {
+        margin-bottom: 5px;
+        color: #d5d3db;
+        font-weight: bold;
+    }
+
+    #date-filter-form input[type="date"] {
+        padding: 10px;
+        border: 1px solid #616DF0;
+        border-radius: 5px;
+        margin-bottom: 15px;
+        background-color: #3A3A3E;
+        color: #d5d3db;
+    }
+
+    #date-filter-form input[type="date"]:focus {
+        outline: none;
+        border-color: #616DF0;
+    }
+
+    #date-filter-form .button-medium {
+        background-color: #616DF0;
+        color: #fff;
+        padding: 10px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+
+    #date-filter-form .button-medium:hover {
+        background-color: #4E54D4;
+    }
+</style>
+<body>
+    <script src="{% static 'js/second-loader.js' %}"></script>
+    {% include 'components/loader.html' %}
+
+    <div id="page-container" class="fade" style="display: block;">
+        {% include 'header.html' %}
+    
+        <div class="container question" id="stats-container">
+            <h2>Админ панель</h2>
+    
+            <form method="get" id="date-filter-form">
+                <label for="start_date">Начальная дата:</label>
+                <input type="date" name="start_date" id="start_date" required>
+                
+                <label for="end_date">Конечная дата:</label>
+                <input type="date" name="end_date" id="end_date" required>
+                
+                <button type="submit" class="button-medium">Фильтровать</button>
+            </form>
+    
+            <div>
+                <p><strong>Всего пользователей –</strong> {{ total_users }}</p>
+                <hr>
+                <p><strong>Новых пользователей –</strong> {{ total_users }}</p>
+                <p><strong>Созданных тестов –</strong> {{ total_surveys }}</p>
+                <p><strong>Ответов на тесты –</strong> {{ total_answers }}</p>
+            </div>
+    
+            <div class="head-button">
+                <div class="button-medium">
+                    <a href="{% url 'profile' username %}">
+                        <div>
+                            <img src="{% static 'img/icon-back.png' %}" alt="">
+                            <p>Вернуться в профиль</p>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="{% static 'js/second-loader.js' %}"></script>
+    
+    {% include 'footer.html' %}
+</body>
+</html>

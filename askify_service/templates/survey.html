@@ -1,70 +1,63 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     {% load static %}
     <link rel="shortcut icon" href="{% static 'img/logo.png' %}" type="image/png">
+    <link rel="stylesheet" href="{% static 'css/second-loader.css' %}">
     <link rel="stylesheet" href="{% static 'css/adaptive.css' %}">
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
     <link rel="stylesheet" href="{% static 'css/footer.css' %}">
     <title>Летучка | Прохождение теста</title>
 </head>
 <body>
-    <script src="{% static 'js/load-effect.js' %}"></script>
+    <script src="{% static 'js/second-loader.js' %}"></script>
+    {% include 'components/loader.html' %}
 
-    <div id="page-container" class="fade">
+    <div id="page-container" class="fade" style="display: none;">
         {% include 'header.html' %}
 
         <form id="survey-form" method="post">
             {% csrf_token %}
             <div class="container" id="question-container">
-                <!-- <div class="head-button">
-                    <div class="button-medium">
-                        <a href="{% url 'create' %}">
-                            <div>
-                                <p>Создать новый</p>
-                                <img src="{% static 'img/icon-new.png' %}" alt="">
-                            </div>
-                        </a>
-                    </div>
-                </div> -->
-                    {% for question in questions %}
-                        <div class="question" style="display: none;">
-                            <h3>Вопрос {{ forloop.counter }}: {{ question.question }}</h3>
-                            {% for option in question.options %}
-                                <label>
-                                    <input type="radio" name="answers_{{ forloop.parentloop.counter }}" value="{{ option }}">
-                                    <p>{{ forloop.counter }}) {{ option }}</p>
-                                </label><br>
-                            {% endfor %}
-                            <div class="head-button">
+                {% for question in questions %}
+                    <div class="question" style="display: none;">
+                        <h3>Вопрос {{ forloop.counter }}: {{ question.question }}</h3>
+                        {% for option in question.options %}
+                            <label>
+                                <input type="radio" name="answers_{{ forloop.parentloop.counter }}" value="{{ option }}">
+                                <p>{{ forloop.counter }}) {{ option }}</p>
+                            </label><br>
+                        {% endfor %}
+                        <div class="head-button">
 
-                                <div class="button-medium">
-                                    <a href="{% url 'survey' survey_id=survey.survey_id %}">
-                                        <div>
-                                            <img src="{% static 'img/icon-retry.png' %}" alt="">
-                                            <p>Заново</p>
-                                        </div>
-                                    </a> 
-                                </div>
-
-                                <button type="button" class="next-button button-medium">
+                            <div class="button-medium">
+                                <a href="{% url 'survey' survey_id=survey.survey_id %}">
                                     <div>
-                                        <p>Дальше</p>
-                                        <img src="{% static 'img/icon-forward.png' %}" alt="">
+                                        <img src="{% static 'img/icon-retry.png' %}" alt="">
+                                        <p>Заново</p>
                                     </div>
-                                </button>
-                                
+                                </a> 
                             </div>
+
+                            <button type="button" class="next-button button-medium">
+                                <div>
+                                    <p>Дальше</p>
+                                    <img src="{% static 'img/icon-forward.png' %}" alt="">
+                                </div>
+                            </button>
+                            
                         </div>
-                    {% endfor %}
+                    </div>
+                {% endfor %}
                 <div class="submit-container">
                     <button type="submit" id="submit-button" disabled style="display: none">Посмотреть результат</button>
                 </div>
             </div>
         </form>
     </div>
+    <script src="{% static 'js/second-loader.js' %}"></script>
 
     {% include 'footer.html' %}
 

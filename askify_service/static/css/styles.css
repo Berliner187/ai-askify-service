@@ -202,6 +202,7 @@ textarea, #survey-container {
     border-radius: 30px;
     position: relative;
     overflow: hidden;
+    transition: opacity 3s ease-in-out;
 }
 
 .container::before, .preview-content::before,
@@ -318,14 +319,13 @@ textarea, #survey-container {
     stroke: #5A66EB;
     stroke-width: 10;
     stroke-linecap: round;
-    transition: stroke-dashoffset 1s ease;
+    transition: stroke-dashoffset 1.8s ease;
 }
 
 .progress-text {
     margin-top: -110px;
     margin-bottom: 110px;
     font-size: 1.5rem;
-    color: #6a61f0;
 }
 
 
@@ -359,7 +359,12 @@ textarea, #survey-container {
 
 
 .container-buttons {
-    display: block;
+    display: flex;
+    flex-direction: column;
+}
+.container-buttons .button-medium {
+    margin: 0 auto;
+    margin-top: 20px;
 }
 
 .head-button {
@@ -487,17 +492,6 @@ hr {
 .profile-info {
     margin-top: 2em;
     margin-bottom: 1.5em;
-}
-
-
-/* Анимации */
-.fade {
-    opacity: 0;
-    transition: opacity 0.8s ease-in-out;
-}
-
-.fade-in {
-    opacity: 1;
 }
 
 .error-message {

@@ -123,7 +123,7 @@ SESSION_COOKIE_AGE = 604800
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 STATIC_ROOT = 'static/'
 
 LOGIN_URL = '/login/'

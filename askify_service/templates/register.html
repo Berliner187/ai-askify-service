@@ -6,13 +6,18 @@
     <title>Летучка • Вход</title>
     {% load static %}
     <link rel="shortcut icon" href="{% static 'img/logo.png' %}" type="image/png">
+    <link rel="stylesheet" href="{% static 'css/second-loader.css' %}">
     <link rel="stylesheet" href="{% static 'css/loader.css' %}">
     <link rel="stylesheet" href="{% static 'css/auth.css' %}">
     <link rel="stylesheet" href="{% static 'css/footer.css' %}">
 </head>
 <body>
 <body>
-    <div>
+    <script src="{% static 'js/second-loader.js' %}"></script>
+    {% include 'components/loader.html' %}
+    
+    <div id="page-container" class="container fade" style="display: none;">
+
         <div class="container">
 
             {% include 'components/auth-block.html' %}
@@ -23,7 +28,7 @@
                     {% csrf_token %}
                     <p>
                         <label for="id_username">Никнейм</label>
-                        <input type="text" id="username" maxlength="64" name="username" placeholder="Никнейм" required>
+                        <input type="text" id="username" maxlength="64" name="username" required>
                         <!-- <input type="text" id="id_username"  autofocus name="username" placeholder="Например: navivavi" required> -->
                         <!-- <input type="text" name="username" maxlength="150" autofocus required id="id_username"> -->
                     </p>

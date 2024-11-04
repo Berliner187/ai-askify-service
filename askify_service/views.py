@@ -7,6 +7,7 @@ from django.contrib.auth import login, authenticate
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.utils import timezone
 
 from .utils import *
 from .models import *
@@ -386,3 +387,35 @@ def profile_view(request, username):
     }
 
     return render(request, 'profile.html', user_data)
+
+
+@login_required
+def admin_stats(request):
+    staff_id = get_staff_id(request)
+    user = AuthUser.objects.get(id_staff=staff_id)
+    print(user.is_staff)
+
+    if user.is_staff:
+        start_date = request.GET.get('start_date')
+        end_date = request.GET.get('end_date')
+
+        if start_date and end_date:
+            start_date = timezone.datetime.strptime(start_date, '%Y-%m-%d')
+            end_date = timezone.datetime.strptime(end_date, '%Y-%m-%d') + timezone.timedelta(days=1)  # Включаем конец дня
+
+            total_users = AuthUser.objects.filter(date_joined__range=(start_date, end_date)).count()
+            total_surveys = Survey.objects.filter(updated_at__range=(start_date, end_date)).count()
+            total_answers = UserAnswers.objects.filter(created_at__range=(start_date, end_date)).count()
+        else:
+            total_users = total_surveys = total_answers = 0
+
+        context = {
+            'total_users': total_users,
+            'total_surveys': total_surveys,
+            'total_answers': total_answers,
+            'username': request.user.username if request.user.is_authenticated else None
+        }
+
+        return render(request, 'admin.html', context)
+    else:
+        redirect(f'profile/{request.user.username}')
