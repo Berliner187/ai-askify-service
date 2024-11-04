@@ -7,27 +7,42 @@
     </div>
     <nav class="navigation">
         <ul>
-            <li><a href="#home">Цели</a></li>
-            <li><a href="#about">Преимущества</a></li>
+            <li><a href="#home">Создать</a></li>
+            <li><a href="#about">История</a></li>
             <li><a href="#features">Функции</a></li>
         </ul>
     </nav>
 
-    <div class="auth-buttons">
+    <div class="button-medium">
+        <p>{{ username }}</p>
+    </div>
+
+    <div class="auth-buttons" data-authenticated="{% if user.is_authenticated %}true{% else %}false{% endif %}">
         <div class="button-medium">
-            <a href="{% url 'create' %}">
+            <a href="{% url 'login' %}">
                 <div>
                     <p>Вход</p>
                 </div>
             </a>
         </div>
         <div class="button-medium button-accent reg-button">
-            <a href="{% url 'create' %}">
+            <a href="{% url 'register' %}">
                 <div>
                     <p>Регистрация</p>
                 </div>
             </a>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const authButtons = document.querySelector('.auth-buttons');
+            const isAuthenticated = authButtons.getAttribute('data-authenticated') === 'true';
+    
+            if (isAuthenticated) {
+                authButtons.style.display = 'none';
+            }
+        });
+    </script>
 
 </header>

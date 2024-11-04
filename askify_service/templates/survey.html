@@ -7,7 +7,8 @@
     <link rel="shortcut icon" href="{% static 'img/logo.png' %}" type="image/png">
     <link rel="stylesheet" href="{% static 'css/adaptive.css' %}">
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
-    <title>Опрос</title>
+    <link rel="stylesheet" href="{% static 'css/footer.css' %}">
+    <title>Летучка | Прохождение теста</title>
 </head>
 <body>
     <script src="{% static 'js/load-effect.js' %}"></script>
@@ -18,7 +19,7 @@
         <form id="survey-form" method="post">
             {% csrf_token %}
             <div class="container" id="question-container">
-                <div class="head-button">
+                <!-- <div class="head-button">
                     <div class="button-medium">
                         <a href="{% url 'create' %}">
                             <div>
@@ -27,7 +28,7 @@
                             </div>
                         </a>
                     </div>
-                </div>
+                </div> -->
                     {% for question in questions %}
                         <div class="question" style="display: none;">
                             <h3>Вопрос {{ forloop.counter }}: {{ question.question }}</h3>
@@ -70,7 +71,7 @@
         const questions = document.querySelectorAll('.question');
         const nextButtons = document.querySelectorAll('.next-button');
         const submitButton = document.getElementById('submit-button');
-        const answers = {}; // Хранение ответов пользователя
+        const answers = {};
     
         function showQuestion(index) {
             questions.forEach((q, i) => {

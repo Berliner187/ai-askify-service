@@ -1,17 +1,17 @@
 async function submitText() {
+    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]') 
+                    ? document.querySelector('[name=csrfmiddlewaretoken]').value
+                    : document.querySelector('meta[name="csrf-token"]').getAttribute('content');
     const text = document.getElementById('user-text').value;
-    const blockGeneratedTests = document.getElementById('generated-tests');
     const blockGenerate = document.getElementById('block-generate');
     const loadingIndicator = document.getElementById('loading-container');
 
     if (validatorText(text)) {
-        console.log('ok');
+        console.log('Text validation failed');
         return;
     }
 
-    // Показать индикатор загрузки
     loadingIndicator.style.display = 'block';
-    // blockGeneratedTests.style.display = 'none';
     blockGenerate.style.opacity = 0.3;
 
     try {
@@ -19,31 +19,31 @@ async function submitText() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
             },
             body: JSON.stringify({ text }),
         });
 
+        console.log('Response status:', response.status);
         const result = await response.json();
+
         if (response.ok) {
-            console.log("response -", 200);
-            // window.location.href = '/history/';
-            window.location.href = `/survey/${survey_id}/`;
-            // blockGeneratedTests.style.display = 'block';
-            // window.location.reload();
+            console.log("Response -", 200);
+            window.location.href = `/history/`;
             console.log(result);
         } else {
             console.error('Error:', result);
-            alert(result.error);
-            // showError('Неверный запрос');
+            alert(result.error || 'Не удалось выполнить запрос');
         }
-        blockGenerate.style.opacity = 1;
     } catch (error) {
         console.error('Ошибка:', error);
         alert('Произошла ошибка при отправке запроса: ' + error.message);
     } finally {
         loadingIndicator.style.display = 'none';
+        blockGenerate.style.opacity = 1;
     }
 }
+
 
 
 function showError(message) {

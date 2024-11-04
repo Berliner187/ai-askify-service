@@ -54,7 +54,6 @@ h3 {
 }
 
 p {
-    font-size: 1em;
     margin: 10px 0;
 }
 
@@ -444,44 +443,11 @@ textarea, #survey-container {
 .auth-buttons .btn {
     text-decoration: none;
     color: white;
-    background-color: #4A90E2; /* Цвет кнопок */
+    background-color: #4A90E2;
     padding: 10px 15px;
     border-radius: 5px;
     margin-left: 10px;
     transition: background-color 0.3s;
-}
-
-
-footer {
-    color: #a09ea6;
-    padding: 10px 20px;
-    margin-top: 10%;
-}
-footer h3 {
-    margin-bottom: 0;
-    margin-top: 20px;
-}
-.footer-container {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 20px;
-}
-ul {
-    list-style: none;
-    padding: 0;
-}
-li {
-    margin: 5px 0;
-}
-.footer-bottom {
-    text-align: center;
-    margin-top: 20px;
-    flex: 1 1 100%;
-    font-size: 14px;
-    color: #777777;
 }
 
 

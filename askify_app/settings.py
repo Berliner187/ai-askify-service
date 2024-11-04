@@ -115,11 +115,18 @@ USE_I18N = True
 
 USE_TZ = True
 
+AUTH_USER_MODEL = 'askify_service.AuthUser'
+
+SESSION_COOKIE_AGE = 604800
+
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = 'static/'
+
+LOGIN_URL = '/login/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field

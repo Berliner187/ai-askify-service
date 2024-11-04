@@ -1,5 +1,8 @@
 import json
 import datetime
+import random
+import string
+import os
 
 import openai
 import requests
@@ -18,7 +21,11 @@ class ManageConfidentFields:
         self.filename = filename
 
     def __read_confident_file(self):
-        with open(f'./askify_app/{self.filename}') as config_file:
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+
+        config_path = os.path.join(base_dir, '../askify_app', self.filename)
+
+        with open(config_path) as config_file:
             return json.load(config_file)
 
     def get_confident_key(self, keyname):
@@ -32,6 +39,18 @@ class AccessControlUser:
         """ Проверка допуска к генерации текста от пользователя """
         # if len(text) <
         pass
+
+
+def get_staff_id(request):
+    user = request.user
+    if user.is_authenticated:
+        return user.id_staff
+    return None
+
+
+def generate_payment_id(length=10):
+    characters = string.ascii_letters + string.digits
+    return ''.join(random.choice(characters) for _ in range(length))
 
 
 class GenerationModelsControl:

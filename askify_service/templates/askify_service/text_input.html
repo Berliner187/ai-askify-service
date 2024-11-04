@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Летучка • Создать опрос</title>
+    <title>Летучка • Создать тест</title>
     <meta name="description" content="">
     <meta name="keywords" content="">
     <meta property="og:title" content="">
@@ -16,11 +16,13 @@
     <link rel="preconnect" href="">
     <link rel="dns-prefetch" href="">
     <meta name="theme-color" content="#18171a">
+    <meta name="csrf-token" content="{{ csrf_token }}">
     {% load static %}
     <link rel="shortcut icon" href="{% static 'img/logo.png' %}" type="image/png">
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
     <link rel="stylesheet" href="{% static 'css/adaptive.css' %}">
     <link rel="stylesheet" href="{% static 'css/loader.css' %}">
+    <link rel="stylesheet" href="{% static 'css/footer.css' %}">
 </head>
 <body>
     <script src="{% static 'js/load-effect.js' %}"></script>
@@ -39,21 +41,25 @@
         
         <div class="container" id="block-generate">
             <h2>На какую тему создать?</h2>
-            <div class="input-area">
-                <textarea id="user-text" rows="4" cols="60" placeholder="Введите запрос"></textarea><br>
-                <button onclick="submitText()">
-                    <img src="{% static 'img/icon-send.png' %}" alt="">
-                </a>
-            </div>
-            <div class="button-medium">
-                <a href="{% url 'history' %}">
-                    <div>
-                        <img src="{% static 'img/icon-history.png' %}" alt="">
-                        <p>История</p>
-                    </div>
-                </a>
-            </div>
+            <form id="text-form" method="post" onsubmit="event.preventDefault(); submitText();">
+                {% csrf_token %}
+                <div class="input-area">
+                    <textarea id="user-text" rows="4" cols="60" placeholder="Введите запрос"></textarea><br>
+                    <button type="button" onclick="submitText()">
+                        <img src="{% static 'img/icon-send.png' %}" alt="">
+                    </button>
+                </div>
+                <div class="button-medium">
+                    <a href="{% url 'history' %}">
+                        <div>
+                            <img src="{% static 'img/icon-history.png' %}" alt="">
+                            <p>История</p>
+                        </div>
+                    </a>
+                </div>
+            </form>
         </div>
+        
         
         {% include 'footer.html' %}
         
