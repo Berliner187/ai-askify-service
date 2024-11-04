@@ -3,6 +3,7 @@ import datetime
 import random
 import string
 import os
+import locale
 
 import openai
 import requests
@@ -51,6 +52,15 @@ def get_staff_id(request):
 def generate_payment_id(length=10):
     characters = string.ascii_letters + string.digits
     return ''.join(random.choice(characters) for _ in range(length))
+
+
+def get_formate_date(date):
+    locale.setlocale(locale.LC_TIME, 'ru_RU.UTF-8')
+
+    date_str = str(date)
+    date_obj = datetime.datetime.fromisoformat(date_str[:-6])
+
+    return date_obj.strftime("%-d %B, в %H:%M")
 
 
 class GenerationModelsControl:

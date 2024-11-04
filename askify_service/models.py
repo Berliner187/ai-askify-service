@@ -1,9 +1,10 @@
 from django.http import HttpResponse
 from django.db import models
 from django.contrib.auth.models import AbstractUser, Group, Permission
+from django.db.models import Avg, Count, Max, Min
 from django.contrib.auth.models import User
-from datetime import timedelta
 
+from datetime import timedelta
 import datetime
 import json
 import uuid
@@ -55,6 +56,29 @@ class UserAnswers(models.Model):
 
     def save_user_answers(self, answers):
         self.user_answers = json.dumps(answers)
+
+    @classmethod
+    def calculate_user_statistics(cls, id_staff):
+        user_surveys = Survey.objects.filter(id_staff=id_staff)
+        user_answers = cls.objects.filter(id_staff=id_staff)
+
+        total_scored_points = 0
+        total_surveys = user_answers.count()
+
+        total_points = 0
+        for answer in user_answers:
+            total_scored_points += answer.scored_points
+            total_points += answer.total_points
+
+        total_tests = user_surveys.count()
+        # average_score = user_answers.aggregate(Avg('scored_points'))['scored_points__avg'] or 0
+        # passed_tests =
+        average_score = total_scored_points / total_tests
+
+        return {
+            'total_tests': total_tests,
+            'average_score': average_score,
+        }
 
 
 class AuthUser(AbstractUser):

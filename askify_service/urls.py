@@ -13,5 +13,18 @@ urlpatterns = [
     path('survey/<str:survey_id>/download/', download_survey_pdf, name='download-survey_pdf'),
     path('register/', register, name='register'),
     path('login/', login_view, name='login'),
-    path('logout/', logout_view, name='logout')
+    path('logout/', logout_view, name='logout'),
+    path('profile/<str:username>/', profile_view, name='profile'),
 ]
+
+
+def custom_404_view(request, exception):
+    return render(request, 'error.html', status=404)
+
+
+def custom_500_view(request):
+    return render(request, 'error.html', status=500)
+
+
+handler404 = custom_404_view
+handler500 = custom_500_view

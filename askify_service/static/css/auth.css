@@ -27,7 +27,7 @@
 body {
     font-family: 'Unbounded Regular';
     background-color: #18171a;
-    color: #fffff8;
+    color: #e8e7f1;
     margin: 0;
     padding: 0;
     transition-duration: .5s;
@@ -70,7 +70,7 @@ h2 {
     left: 50%;
     transform: translate(-50%, -50%);
     text-align: center;
-    color: #fffff8;
+    color: #e8e7f1;
     padding: 10px;
     border-radius: 5px;
 }
@@ -176,6 +176,13 @@ button:hover {
     display: flex;
     flex-direction: column;
     margin: 5px;
+}
+
+
+.error-message {
+    color: #d9534f;
+    font-size: 0.8em;
+    margin-top: 5px;
 }
 
 

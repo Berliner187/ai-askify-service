@@ -24,36 +24,25 @@
 
             <section class="content-container">
                 <h2>Вход</h2>
-                <form method="post">
+                <form id="loginForm" method="post">
                     {% csrf_token %}
-                    <input type="text" name="username" placeholder="Никнейм" required>
+                    <input type="text" id="username" name="username" placeholder="Никнейм" required>
+                    <div id="usernameError" class="error-message" style="display: none;"></div>
                     <input type="password" name="password" placeholder="Пароль" required>
                     <button type="submit">Войти</button>
                 </form>
                 <div class="already-exist">
                     <p>Нет аккаунта? <a href="{% url 'register' %}">Зарегистрироваться</a></p>
                 </div>
+                <div class="already-exist">
+                    <p><a href="{% url 'register' %}">Забыли пароль?</a></p>
+                </div>
             </section>
 
         </div>
 
         {% include 'footer.html' %}
-
-        <script>
-            document.addEventListener('DOMContentLoaded', () => {
-                const alerts = document.querySelectorAll('.alert');
-                alerts.forEach((alert) => {
-                    alert.classList.add('show'); // Показываем алерт
-    
-                    setTimeout(() => {
-                        alert.classList.remove('show'); // Убираем класс show для анимации исчезновения
-                        setTimeout(() => {
-                            alert.remove(); // Удаляем элемент из DOM после анимации
-                        }, 500); // Время, соответствующее CSS transition
-                    }, 5000); // Задержка перед исчезновением
-                });
-            });
-        </script>
+        <script src="{% static 'js/validation.js' %}"></script>
 
     </body>
 </html>

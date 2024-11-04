@@ -64,4 +64,8 @@
     footer ul {
         font-size: .8em;
     }
+
+    .small-text {
+        font-size: 8px;
+    }
 }

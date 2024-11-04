@@ -19,12 +19,15 @@
 
             <section class="content-container">
                 <h2>Регистрация</h2>
-                <form method="post" class="registration-form">
+                <form id="loginForm" method="post" class="registration-form">
                     {% csrf_token %}
                     <p>
                         <label for="id_username">Никнейм</label>
-                        <input type="text" name="username" maxlength="150" autofocus required id="id_username">
+                        <input type="text" id="username" maxlength="64" name="username" placeholder="Никнейм" required>
+                        <!-- <input type="text" id="id_username"  autofocus name="username" placeholder="Например: navivavi" required> -->
+                        <!-- <input type="text" name="username" maxlength="150" autofocus required id="id_username"> -->
                     </p>
+                    <div id="usernameError" class="error-message" style="display: none;"></div>
             
                     <p>
                         <label for="id_email">Email адрес</label>
@@ -69,6 +72,7 @@
         </div>
 
         {% include 'footer.html' %}
+        <script src="{% static 'js/validation.js' %}"></script>
 
     </body>
 </html>

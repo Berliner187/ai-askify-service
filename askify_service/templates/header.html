@@ -5,6 +5,7 @@
             <img src="{% static 'img/logo-header.png' %}" alt="">
         </a>
     </div>
+
     <nav class="navigation">
         <ul>
             <li><a href="#home">Создать</a></li>
@@ -14,7 +15,7 @@
     </nav>
 
     <div class="button-medium">
-        <p>{{ username }}</p>
+        <p><a href="/profile/{{ username }}">{{ username }}</a></p>
     </div>
 
     <div class="auth-buttons" data-authenticated="{% if user.is_authenticated %}true{% else %}false{% endif %}">
@@ -36,11 +37,13 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            const navigation = document.querySelector('.navigation');
             const authButtons = document.querySelector('.auth-buttons');
             const isAuthenticated = authButtons.getAttribute('data-authenticated') === 'true';
     
             if (isAuthenticated) {
                 authButtons.style.display = 'none';
+                navigation.style.display = 'none';
             }
         });
     </script>

@@ -16,6 +16,9 @@ from .tracer import *
 
 import openai
 
+from datetime import datetime
+import time
+
 import uuid
 import random
 import os
@@ -67,10 +70,11 @@ def generate_survey(request):
             text_from_user = data.get('text')
 
             base_dir = os.path.dirname(os.path.abspath(__file__))
-            forbidden_words_file_path = os.path.join(base_dir, '../askify_app/forbidden_words.txt')
+            forbidden_words_file_path = os.path.join(base_dir, '../askify_app', "forbidden_words.txt")
 
             forbidden_words_file = open(forbidden_words_file_path)
-            forbidden_words = forbidden_words_file.readlines()
+            forbidden_words = [word.strip().lower() for word in forbidden_words_file.read().splitlines()]
+            text_from_user = text_from_user.lower()
 
             if any(word in text_from_user for word in forbidden_words):
                 return JsonResponse({'error': 'К сожалению, не удалось выполнить запрос'}, status=400)
@@ -81,10 +85,62 @@ def generate_survey(request):
                 'INFO', request.user.username, generate_survey.__name__, f"start the generated: {text_from_user}")
 
             generation_models_control = GenerationModelsControl()
-            generated_text = generation_models_control.get_service_0001(text_from_user)
-
-            tracer_l.tracer_charge(
-                'INFO', request.user.username, generate_survey.__name__, f"user request: {generated_text}")
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                    if DEBUG is False:
+                        generated_text = generation_models_control.get_service_0001(text_from_user)
+                    else:
+                        generated_text = """
+                        {
+                            "title": "Тест по архитектуре основной памяти",
+                            "questions": [
+                                {
+                                    "question": "Какой тип памяти используется для временного хранения данных, которые обрабатываются процессором?",
+                                    "options": ["ОЗУ", "ПЗУ", "Кэш-память", "Жесткий диск"],
+                                    "correct_answer": "ОЗУ"
+                                },
+                                {
+                                    "question": "Что такое кэш-память и для чего она используется?",
+                                    "options": ["Для хранения программ", "Для хранения данных",
+                                                "Для ускорения доступа к часто используемым данным",
+                                                "Для хранения настроек системы"],
+                                    "correct_answer": "Для ускорения доступа к часто используемым данным"
+                                },
+                                {
+                                    "question": "Какой принцип используется при организации памяти для обеспечения быстрого доступа к данным?",
+                                    "options": ["Последовательный доступ", "Прямой доступ", "Ассоциативный доступ",
+                                                "Адресный доступ"],
+                                    "correct_answer": "Ассоциативный доступ"
+                                },
+                                {
+                                    "question": "Что такое страница памяти и для чего она используется?",
+                                    "options": ["Для хранения программ", "Для хранения данных",
+                                                "Для организации виртуальной памяти",
+                                                "Для управления доступом к памяти"],
+                                    "correct_answer": "Для организации виртуальной памяти"
+                                },
+                                {
+                                    "question": "Какой алгоритм используется для замены страниц памяти при нехватке свободной памяти?",
+                                    "options": ["LRU (Least Recently Used)", "FIFO (First-In-First-Out)",
+                                                "OPT (Оптимальный)", "RANDOM"],
+                                    "correct_answer": "LRU (Least Recently Used)"
+                                }
+                            ]
+                        }
+                        """
+                    break
+                except Exception as e:
+                    if e.response.status_code == 429:
+                        if attempt < max_retries - 1:
+                            wait_time = 60
+                            print(f"Слишком много запросов. Повтор через {wait_time} секунд.")
+                            time.sleep(wait_time)
+                            return JsonResponse({'error': f"Сервер перегружен. Пожалуйста, повторите попытку через {wait_time} секунд."}, status=429)
+                        else:
+                            return JsonResponse({'error': 'Сервер перегружен, попробуйте позже.'}, status=429)
+                    else:
+                        raise
 
             if DEBUG:
                 print("\n"*3)
@@ -97,7 +153,7 @@ def generate_survey(request):
             except json.JSONDecodeError:
                 tracer_l.tracer_charge(
                     'ERROR', request.user.username, generate_survey.__name__, "text is not valid JSON", "status: 400")
-                return JsonResponse({'error': 'Generated text is not valid JSON'}, status=400)
+                return JsonResponse({'error': generated_text}, status=400)
             except Exception as fail:
                 tracer_l.tracer_charge(
                     'CRITICAL', request.user.username, generate_survey.__name__, f"{fail}", "status: 400")
@@ -310,3 +366,23 @@ def logout_view(request):
     logout(request)
     request.session.flush()
     return redirect('login')
+
+
+def profile_view(request, username):
+    staff_id = get_staff_id(request)
+    user = AuthUser.objects.get(id_staff=staff_id)
+
+    statistics = UserAnswers.calculate_user_statistics(staff_id)
+
+    date_join = get_formate_date(user.date_joined)
+    date_last_login = get_formate_date(user.last_login)
+
+    user_data = {
+        'username': username,
+        'email': user.email,
+        'date_join': date_join,
+        'date_last_login': date_last_login,
+        'statistics': statistics
+    }
+
+    return render(request, 'profile.html', user_data)

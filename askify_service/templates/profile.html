@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Профиль пользователя • {{ user.username }}</title>
+    <meta name="description" content="Профиль пользователя {{ user.username }}">
+    <meta name="keywords" content="профиль, пользователь, {{ user.username }}">
+    <link rel="preconnect" href="">
+    <link rel="dns-prefetch" href="">
+    <meta name="theme-color" content="#18171a">
+    {% load static %}
+    <link rel="shortcut icon" href="{% static 'img/logo.png' %}" type="image/png">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'css/adaptive.css' %}">
+    <link rel="stylesheet" href="{% static 'css/loader.css' %}">
+    <link rel="stylesheet" href="{% static 'css/footer.css' %}">
+</head>
+<body>
+    <script src="{% static 'js/load-effect.js' %}"></script>
+
+    <div id="page-container" class="fade">
+        {% include 'header.html' %}
+        
+        <div class="container profile" id="profile-container">
+            <h2>Профиль <span class="accent-color-text">{{ username }}</span></h2>
+
+            <div class="profile-info">
+                <p><strong>Email:</strong> {{ email }}</p>
+            </div>
+
+            <hr>
+
+            <div class="profile-info">
+                <h3>Статистика</h3>
+                <ul>
+                    <li>Создано тестов: <span class="accent-color-text">{{ statistics.total_tests }}</span></li>
+                    <li>Средний балл: <span class="accent-color-text">{{ statistics.average_score }} / 5</span></li>
+                </ul>
+            <hr>
+                <ul>
+                    <li class="small-text">Дата последнего входа: {{ date_last_login }}</li>
+                    <li class="small-text">Дата регистрации: {{ date_join }}</li>
+                </ul>
+            </div>
+
+            <div class="head-button">
+                <div class="button-medium">
+                    <a href="{% url 'profile' username %}">
+                        <div>
+                            <p>Редактировать профиль</p>
+                            <img src="{% static 'img/icon-edit.png' %}" alt="">
+                        </div>
+                    </a>
+                </div>
+                <div class="button-medium button-red">
+                    <a href="{% url 'logout' %}">
+                        <div>
+                            <p>Выйти из профиля</p>
+                            <img src="{% static 'img/icon-logout.png' %}" alt="">
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        {% include 'footer.html' %}
+    </div>
+    
+    <script src="{% static 'js/main.js' %}"></script>
+</body>
+</html>
