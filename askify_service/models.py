@@ -73,7 +73,10 @@ class UserAnswers(models.Model):
         total_tests = user_surveys.count()
         # average_score = user_answers.aggregate(Avg('scored_points'))['scored_points__avg'] or 0
         # passed_tests =
-        average_score = round(total_scored_points / total_tests, 2)
+        try:
+            average_score = round(total_scored_points / total_tests, 2)
+        except ZeroDivisionError:
+            average_score = '-'
 
         return {
             'total_tests': total_tests,
@@ -111,6 +114,7 @@ class Subscription(models.Model):
         ('canceled', 'Canceled'),
     ])
     billing_cycle = models.CharField(max_length=20, choices=[
+        ('weakly', 'Weakly'),
         ('monthly', 'Monthly'),
         ('yearly', 'Yearly'),
     ])

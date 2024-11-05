@@ -341,11 +341,32 @@ def register(request):
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
+
+            tracer_l.tracer_charge(
+                'INFO', user.username, register.__name__, "has benn register")
+
+            send_message_to_telegram(f"NEW USER – {user.username}")
+
+            plan_name, end_date, status, billing_cycle, discount = init_subscription()
+            subscription = Subscription.objects.create(
+                staff_id=user.id_staff,
+                plan_name=plan_name,
+                end_date=end_date,
+                status=status,
+                billing_cycle=billing_cycle,
+                discount=0.00
+            )
+            subscription.save()
+
             login(request, user)
             return redirect('/create')
+        else:
+            error_messages = form.errors
     else:
         form = CustomUserCreationForm()
-    return render(request, 'register.html', {'form': form})
+        error_messages = None
+    print(error_messages)
+    return render(request, 'register.html', {'form': form, 'error_messages': error_messages})
 
 
 def login_view(request):

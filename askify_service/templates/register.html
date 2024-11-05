@@ -15,6 +15,12 @@
 <body>
     <script src="{% static 'js/second-loader.js' %}"></script>
     {% include 'components/loader.html' %}
+
+    {% if error_messages %}
+        <div id="alertContainer" class="alert" role="alert">
+            {{ form.errors.as_ul }}
+        </div>
+    {% endif %}
     
     <div id="page-container" class="container fade" style="display: none;">
 
@@ -27,10 +33,9 @@
                 <form id="loginForm" method="post" class="registration-form">
                     {% csrf_token %}
                     <p>
-                        <label for="id_username">Никнейм</label>
-                        <input type="text" id="username" maxlength="64" name="username" required>
+                        <label for="username">Никнейм</label>
+                        <input type="text" id="username" maxlength="32" name="username" required>
                         <!-- <input type="text" id="id_username"  autofocus name="username" placeholder="Например: navivavi" required> -->
-                        <!-- <input type="text" name="username" maxlength="150" autofocus required id="id_username"> -->
                     </p>
                     <div id="usernameError" class="error-message" style="display: none;"></div>
             
@@ -38,6 +43,7 @@
                         <label for="id_email">Email адрес</label>
                         <input type="email" name="email" maxlength="254" id="id_email">
                     </p>
+                    <div id="emailError" class="error-message" style="display: none;"></div>
             
                     <p>
                         <label for="id_password1">Пароль</label>
@@ -48,6 +54,7 @@
                         <label for="id_password2">Подтверждение пароля</label>
                         <input type="password" name="password2" autocomplete="new-password" id="id_password2" required>
                     </p>
+                    <div id="confirmPasswordError" class="error-message" style="display: none;"></div>
             
                     <p class="usable_password">
                         <div id="id_usable_password" class="radiolist inline">

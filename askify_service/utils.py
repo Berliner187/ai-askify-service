@@ -16,6 +16,12 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
 
+from decouple import config
+
+
+TELEGRAM_BOT_TOKEN = config('TELEGRAM_BOT_TOKEN')
+TELEGRAM_CHAT_ID = config('TELEGRAM_CHAT_ID')
+
 
 class ManageConfidentFields:
     def __init__(self, filename):
@@ -47,6 +53,15 @@ def get_staff_id(request):
     if user.is_authenticated:
         return user.id_staff
     return None
+
+
+def init_subscription():
+    plan_name = 'free'
+    end_date = datetime.datetime.now() + datetime.timedelta(days=7)
+    status = 'active'
+    billing_cycle = 'weakly'
+    discount = 0.00
+    return plan_name, end_date, status, billing_cycle, discount
 
 
 def generate_payment_id(length=32):
@@ -198,3 +213,14 @@ class ConverterPDF:
 
 def get_year_now():
     return datetime.datetime.now().strftime("%Y")
+
+
+def send_message_to_telegram(message):
+    url = f'https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage'
+    payload = {
+        'chat_id': TELEGRAM_CHAT_ID,
+        'text': message,
+        'parse_mode': 'HTML'
+    }
+    response = requests.post(url, json=payload)
+    return response.json()
