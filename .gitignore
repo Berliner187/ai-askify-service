@@ -3,3 +3,4 @@ askify_app/config.json
 db.sqlite3
 askify_app/forbidden_words.txt
 logger.csv
+.env

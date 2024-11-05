@@ -76,7 +76,7 @@ class UserAnswers(models.Model):
         try:
             average_score = round(total_scored_points / total_tests, 2)
         except ZeroDivisionError:
-            average_score = '-'
+            average_score = 0
 
         return {
             'total_tests': total_tests,
