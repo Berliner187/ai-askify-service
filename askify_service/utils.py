@@ -49,7 +49,7 @@ def get_staff_id(request):
     return None
 
 
-def generate_payment_id(length=10):
+def generate_payment_id(length=32):
     characters = string.ascii_letters + string.digits
     return ''.join(random.choice(characters) for _ in range(length))
 

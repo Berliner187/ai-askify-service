@@ -31,4 +31,9 @@ li {
     margin-top: 20px;
     flex: 1 1 100%;
     color: #777777;
+    font-size: 10px;
+}
+.footer-bottom p {
+    margin: 0;
+    padding: 1px;
 }

@@ -27,7 +27,22 @@
             <h2>Профиль <span class="accent-color-text">{{ username }}</span></h2>
 
             <div class="profile-info">
-                <p><strong>Email:</strong> {{ email }}</p>
+                <p><strong>Email: </strong>{{ email }}</p>
+                
+                <p><strong>Пароль: </strong>*********</p>
+                <div class="button-medium">
+                    <a href="{% url 'profile' username %}">
+                        <div>
+                            <p>Сбросить пароль</p>
+                            <img src="{% static 'img/icon-retry.png' %}" alt="">
+                        </div>
+                    </a>
+                </div>
+                
+                <ul>
+                    <li class="small-text">Последний вход: {{ date_last_login }}</li>
+                    <li class="small-text">Дата регистрации: {{ date_join }}</li>
+                </ul>
             </div>
 
             <hr>
@@ -38,12 +53,17 @@
                     <li>Создано тестов: <span class="accent-color-text">{{ statistics.total_tests }}</span></li>
                     <li>Средний балл: <span id="accent-color">{{ statistics.average_score }} / 5</span></li>
                 </ul>
-            <hr>
+            </div>
+
+            <div class="profile-info">
+                <h3>Активная подписка</h3>
                 <ul>
-                    <li class="small-text">Дата последнего входа: {{ date_last_login }}</li>
-                    <li class="small-text">Дата регистрации: {{ date_join }}</li>
+                    <li>План {{subscription.plan_name}}</li>
+                    <li>Заканчивается {{subscription.end_date}}</li>
                 </ul>
             </div>
+
+            <hr>
 
             <div class="head-button">
                 <div class="button-medium">

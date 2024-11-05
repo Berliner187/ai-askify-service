@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% load static %}
+    <title>Успешно</title>
+    <link rel="stylesheet" href="{% static 'css/second-loader.css' %}">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'css/adaptive.css' %}">
+    <link rel="stylesheet" href="{% static 'css/loader.css' %}">
+    <link rel="stylesheet" href="{% static 'css/footer.css' %}">
+</head>
+<body>
+    <script src="{% static 'js/second-loader.js' %}"></script>
+    {% include 'components/loader.html' %}
+
+    <div id="page-container" class="fade" style="display: block;">
+        {% include 'header.html' %}
+    
+        <div class="container" id="success-payment-container">
+            <h2>Успешная подписка!</h2>
+            <div class="payment-info">
+                <h3>Спасибо за вашу подписку!</h3>
+                <p>Вы успешно подписались на план: <strong>{{ payment.subscription.plan_name }}</strong></p>
+                <p>Сумма платежа: <strong>{{ payment.amount }} руб.</strong></p>
+                <p>Статус платежа: <strong>{{ payment.status }}</strong></p>
+                <p>Дата подписки: <strong>{{ payment.created_at }}</strong></p>
+            </div>
+        </div>
+    </div>
+    
+    <script src="{% static 'js/second-loader.js' %}"></script>
+    
+    {% include 'footer.html' %}
+    
+    <style>
+        #success-payment-container {
+            text-align: center;
+        }
+        .payment-info {
+            margin: 0 auto;
+            padding: 20px;
+            border-radius: 10px;
+            display: inline-block;
+            margin-top: 20px;
+        }
+        .payment-info h3 {
+            margin: 0 0 10px;
+        }
+        .payment-info p {
+            margin: 5px 0;
+            font-size: 18px;
+        }
+    </style>
+    
+</body>
+</html>

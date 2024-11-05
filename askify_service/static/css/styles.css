@@ -202,7 +202,7 @@ textarea, #survey-container {
     border-radius: 30px;
     position: relative;
     overflow: hidden;
-    transition: opacity 3s ease-in-out;
+    transition: opacity .75s ease-in-out;
 }
 
 .container::before, .preview-content::before,
@@ -380,7 +380,7 @@ textarea, #survey-container {
     width: fit-content;
     transition: .25s;
     border-radius: 8px;
-    padding:  0px 8px 0px 8px;
+    padding:  0px 10px 0px 10px;
     justify-content: space-between;
 }
 .button-medium div {
@@ -416,6 +416,8 @@ textarea, #survey-container {
     display: flex;
     justify-content: space-between;
     padding: 10px 10px;
+    max-width: 2000px;
+    margin: 0 auto;
 }
 
 .logo-header {

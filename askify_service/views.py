@@ -8,6 +8,8 @@ from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.utils import timezone
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 from .utils import *
 from .models import *
@@ -59,6 +61,8 @@ def page_history_surveys(request):
 def drop_survey(request, survey_id):
     survey_obj = Survey.objects.get(survey_id=uuid.UUID(survey_id))
     survey_obj.delete()
+    survey_user_answers = UserAnswers.objects.get(survey_id=uuid.UUID(survey_id))
+    survey_user_answers.delete()
     return redirect('history')
 
 
@@ -150,7 +154,7 @@ def generate_survey(request):
             try:
                 cleaned_generated_text = json.loads(generated_text)
                 tracer_l.tracer_charge(
-                    'INFO', request.user.username, generate_survey.__name__, f"success json.loads: {cleaned_generated_text}")
+                    'INFO', request.user.username, generate_survey.__name__, f"success json.loads: {cleaned_generated_text.get('title')}")
             except json.JSONDecodeError:
                 tracer_l.tracer_charge(
                     'ERROR', request.user.username, generate_survey.__name__, "text is not valid JSON", "status: 400")
@@ -378,12 +382,19 @@ def profile_view(request, username):
     date_join = get_formate_date(user.date_joined)
     date_last_login = get_formate_date(user.last_login)
 
+    try:
+        subscription = Subscription.objects.get(staff_id=staff_id)
+        subscription.end_date = get_formate_date(subscription.end_date)
+    except Subscription.DoesNotExist:
+        subscription = 'Free 0₽'
+
     user_data = {
         'username': username,
         'email': user.email,
         'date_join': date_join,
         'date_last_login': date_last_login,
-        'statistics': statistics
+        'statistics': statistics,
+        'subscription': subscription
     }
 
     return render(request, 'profile.html', user_data)
@@ -393,29 +404,129 @@ def profile_view(request, username):
 def admin_stats(request):
     staff_id = get_staff_id(request)
     user = AuthUser.objects.get(id_staff=staff_id)
-    print(user.is_staff)
 
-    if user.is_staff:
+    all_users = AuthUser.objects.all().count()
+
+    if user.is_superuser:
         start_date = request.GET.get('start_date')
         end_date = request.GET.get('end_date')
 
         if start_date and end_date:
             start_date = timezone.datetime.strptime(start_date, '%Y-%m-%d')
-            end_date = timezone.datetime.strptime(end_date, '%Y-%m-%d') + timezone.timedelta(days=1)  # Включаем конец дня
+            end_date = timezone.datetime.strptime(end_date, '%Y-%m-%d') + timezone.timedelta(days=1)
 
-            total_users = AuthUser.objects.filter(date_joined__range=(start_date, end_date)).count()
+            selected_users = AuthUser.objects.filter(date_joined__range=(start_date, end_date)).count()
             total_surveys = Survey.objects.filter(updated_at__range=(start_date, end_date)).count()
             total_answers = UserAnswers.objects.filter(created_at__range=(start_date, end_date)).count()
+            subscriptions = Subscription.objects.filter(start_date__range=(start_date, end_date)).count()
         else:
-            total_users = total_surveys = total_answers = 0
+            selected_users = total_surveys = subscriptions = total_answers = 0
 
         context = {
-            'total_users': total_users,
+            'selected_users': selected_users,
+            'total_users': all_users,
             'total_surveys': total_surveys,
             'total_answers': total_answers,
-            'username': request.user.username if request.user.is_authenticated else None
+            'username': request.user.username,
+            'subscriptions': subscriptions
         }
 
         return render(request, 'admin.html', context)
     else:
         redirect(f'profile/{request.user.username}')
+
+
+def create_subscription(request):
+    if request.method == 'POST':
+        staff_id = get_staff_id(request)
+        plan_name = request.POST.get('plan_name')
+        end_date = datetime.now() + timedelta(days=30)
+        status = 'active'
+        billing_cycle = request.POST.get('billing_cycle')
+        discount = request.POST.get('discount', 0.00)
+
+        # free_subscription = AvailableSubscription.objects.create(
+        #     plan_name='Free Plan', amount=0.0, plan_type='free')
+        # standard_subscription = AvailableSubscription.objects.create(
+        #     plan_name='Standard Plan', amount=190, plan_type='standard')
+        # plus_subscription = AvailableSubscription.objects.create(
+        #     plan_name='Plus Plan', amount=590, plan_type='plus')
+        #
+        # print(f'Free Subscription Expires on: {free_subscription.expiration_date}')
+        # print(f'Standard Subscription Expires on: {standard_subscription.expiration_date}')
+        # print(f'Plus Subscription Expires on: {plus_subscription.expiration_date}')
+
+        subscription = Subscription(
+            staff_id=staff_id,
+            plan_name=plan_name,
+            end_date=end_date,
+            status=status,
+            billing_cycle=billing_cycle,
+            discount=discount
+        )
+        subscription.save()
+        return redirect('success_page')
+
+    return render(request, 'subscription.html')
+
+
+def subscription_list(request):
+    subscriptions = AvailableSubscription.objects.all()
+    staff_id = get_staff_id(request)
+
+    if request.method == 'POST':
+        plan_name = request.POST.get('plan_name')
+        print(plan_name)
+        selected_subscription = AvailableSubscription.objects.get(plan_name=plan_name)
+        end_date = datetime.now() + timedelta(days=30)
+        status = 'active'
+        billing_cycle = 'monthly'
+        discount = 0.00
+        amount = selected_subscription.amount
+
+        # free_subscription = AvailableSubscription.objects.create(
+        #     plan_name='free', amount=0.00, plan_type='free')
+        # standard_subscription = AvailableSubscription.objects.create(
+        #     plan_name='standard', amount=190.00, plan_type='standard')
+        # plus_subscription = AvailableSubscription.objects.create(
+        #     plan_name='plus', amount=590.00, plan_type='plus')
+        #
+        # print(f'Free Subscription Expires on: {free_subscription.expiration_date}')
+        # print(f'Standard Subscription Expires on: {standard_subscription.expiration_date}')
+        # print(f'Plus Subscription Expires on: {plus_subscription.expiration_date}')
+
+        try:
+            subscription = Subscription.objects.get(staff_id=staff_id)
+            subscription.plan_name = plan_name
+            subscription.end_date = end_date
+            subscription.status = status
+            subscription.billing_cycle = billing_cycle
+            subscription.discount = discount
+            subscription.save()
+            print("Обновлена")
+        except Subscription.DoesNotExist:
+            subscription = Subscription.objects.create(
+                staff_id=staff_id,
+                plan_name=plan_name,
+                end_date=end_date,
+                status=status,
+                billing_cycle=billing_cycle,
+                discount=discount
+            )
+            print("Новая подписка")
+
+        payment = Payment.objects.create(
+            subscription=subscription,
+            payment_id=generate_payment_id(),
+            amount=amount,
+            status='completed' if amount > 0 else 'free'
+        )
+
+        return redirect('success_payment', payment_id=payment.payment_id)
+
+    return render(request, 'subscription.html', {'subscriptions': subscriptions})
+
+
+def success_payment(request, payment_id):
+    payment = Payment.objects.get(payment_id=payment_id)
+    return render(request, 'payment.html', {'payment': payment})

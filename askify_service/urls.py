@@ -16,6 +16,8 @@ urlpatterns = [
     path('logout/', logout_view, name='logout'),
     path('stats2975/', admin_stats, name='stats2975'),
     path('profile/<str:username>/', profile_view, name='profile'),
+    path('subscriptions/', subscription_list, name='subscription_list'),
+    path('success_payment/<str:payment_id>/', success_payment, name='success_payment'),
 ]
 
 

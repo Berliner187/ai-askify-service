@@ -3,6 +3,7 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser, Group, Permission
 from django.db.models import Avg, Count, Max, Min
 from django.contrib.auth.models import User
+from django.utils import timezone
 
 from datetime import timedelta
 import datetime
@@ -99,40 +100,65 @@ class AuthUser(AbstractUser):
         return self.username
 
 
-# class Subscription(models.Model):
-#     staff_id = models.ForeignKey(default=uuid.uuid4, blank=False, null=False)
-#     plan_name = models.CharField(max_length=100)
-#     start_date = models.DateTimeField(auto_now_add=True)
-#     end_date = models.DateTimeField()
-#     status = models.CharField(max_length=20, choices=[
-#         ('active', 'Active'),
-#         ('inactive', 'Inactive'),
-#         ('canceled', 'Canceled'),
-#     ])
-#     billing_cycle = models.CharField(max_length=20, choices=[
-#         ('monthly', 'Monthly'),
-#         ('yearly', 'Yearly'),
-#     ])
-#     discount = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
-#
-#     def remaining_time(self):
-#         return self.end_date - datetime.datetime.now()
-#
-#     def __str__(self):
-#         # auth_user = AuthUser.objects.get(id_staff=staff_id)
-#         return f'Subscription {self.plan_name} for {self.staff_id}'
-#
-#
-# class Payment(models.Model):
-#     subscription = models.ForeignKey(Subscription, on_delete=models.CASCADE)
-#     payment_id = models.CharField(default=generate_payment_id(), max_length=100, unique=True)
-#     amount = models.DecimalField(max_digits=10, decimal_places=2)
-#     created_at = models.DateTimeField(auto_now_add=True)
-#     status = models.CharField(max_length=20, choices=[
-#         ('pending', 'Pending'),
-#         ('completed', 'Completed'),
-#         ('failed', 'Failed'),
-#     ])
-#
-#     def __str__(self):
-#         return f'Payment {self.payment_id} for {self.subscription.plan_name} - {self.amount}'
+class Subscription(models.Model):
+    staff_id = models.UUIDField()
+    plan_name = models.CharField(max_length=100)
+    start_date = models.DateTimeField(auto_now_add=True)
+    end_date = models.DateTimeField()
+    status = models.CharField(max_length=20, choices=[
+        ('active', 'Active'),
+        ('inactive', 'Inactive'),
+        ('canceled', 'Canceled'),
+    ])
+    billing_cycle = models.CharField(max_length=20, choices=[
+        ('monthly', 'Monthly'),
+        ('yearly', 'Yearly'),
+    ])
+    discount = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
+
+    def remaining_time(self):
+        return self.end_date - datetime.datetime.now()
+
+    def __str__(self):
+        return f'Subscription {self.plan_name} for {self.staff_id}'
+
+
+class Payment(models.Model):
+    subscription = models.ForeignKey(Subscription, on_delete=models.CASCADE)
+    payment_id = models.CharField(max_length=100, unique=True, default=generate_payment_id)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    created_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=20, choices=[
+        ('pending', 'Pending'),
+        ('completed', 'Completed'),
+        ('failed', 'Failed'),
+    ])
+
+    def __str__(self):
+        return f'Payment {self.payment_id} for {self.subscription.plan_name} - {self.amount}'
+
+
+class AvailableSubscription(models.Model):
+    PLAN_TYPES = [
+        ('free', 'Free – 7 days'),
+        ('standard', 'Standard – 30 days'),
+        ('plus', 'Plus – 90 days'),
+    ]
+
+    plan_name = models.CharField(max_length=100, unique=True)
+    amount = models.FloatField()
+    plan_type = models.CharField(max_length=20, choices=PLAN_TYPES)
+    expiration_date = models.DateTimeField()
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        if self.plan_type == 'free':
+            self.expiration_date = timezone.now() + datetime.timedelta(days=7)
+        elif self.plan_type == 'standard':
+            self.expiration_date = timezone.now() + datetime.timedelta(days=30)
+        elif self.plan_type == 'plus':
+            self.expiration_date = timezone.now() + datetime.timedelta(days=90)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f'Available Subscription: {self.plan_name} - {self.amount} (Expires on: {self.expiration_date})'
