@@ -66,6 +66,7 @@
         const questions = document.querySelectorAll('.question');
         const nextButtons = document.querySelectorAll('.next-button');
         const submitButton = document.getElementById('submit-button');
+        const questionContainer = document.getElementById('question-container');
         const answers = {};
     
         function showQuestion(index) {
@@ -90,6 +91,7 @@
                 if (currentQuestion < questions.length) {
                     showQuestion(currentQuestion);
                 } else {
+                    questionContainer.style.backgroundColor = `rgba(0, 0, 0, 0)`;
                     submitButton.disabled = false;
                     questions[currentQuestion - 1].style.display = 'none';
                     submitButton.style.display = 'block';

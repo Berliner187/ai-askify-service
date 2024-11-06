@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ошибка 404</title>
+    {% load static %}
+
+    <link rel="stylesheet" href="{% static 'css/second-loader.css' %}">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'css/adaptive.css' %}">
+    <link rel="stylesheet" href="{% static 'css/footer.css' %}">
+</head>
+<body>
+    <script src="{% static 'js/second-loader.js' %}"></script>
+    {% include 'components/loader.html' %}
+
+    <div id="page-container" class="fade" style="display: none;">
+        {% include 'header.html' %}
+        <div class="container result-container">
+            
+            <h1>500</h1>
+            <h2>Ошибка на стороне сервера</h2>
+            <p>Приносим свои извинения :(</p>
+
+            <div class="button-medium">
+                <a href="{% url 'create' %}">
+                    <div>
+                        <img src="{% static 'img/icon-back.png' %}" alt="">
+                        <p>Вернуться назад</p>
+                    </div>
+                </a> 
+            </div>
+
+        </div>
+        {% include 'footer.html' %}
+    </div>
+
+</body>
+</html>

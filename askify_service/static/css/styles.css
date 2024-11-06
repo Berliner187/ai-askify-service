@@ -110,15 +110,50 @@ a {
     width: fit-content;
     transition: .25s;
 }
+
 .submit-container:hover {
     opacity: .5;
 }
+
 .submit-container button {
     font-family: 'Unbounded Medium';
-    padding: 12px 10px 12px 10px;
-    background-color: #5A66EB;
+    padding: 12px;
+    border: 8px solid #5A66EB;
+    border-radius: 50%;
+    width: 300px;
+    height: 300px;
+    cursor: pointer;
+    transition: transform 0.1s;
+    max-height: none;
+    animation: borderWave 2s infinite;
 }
 
+.submit-container button:active {
+    transform: scale(0.9);
+}
+
+@keyframes borderWave {
+    0% {
+        border-color: #5A66EB;
+        border-width: 8px;
+    }
+    25% {
+        border-color: #b5bfff;
+        border-width: 12px;
+    }
+    50% {
+        border-color: #7A8FFF;
+        border-width: 24px;
+    }
+    75% {
+        border-color: #5A66EB;
+        border-width: 12px;
+    }
+    100% {
+        border-color: #5A66EB;
+        border-width: 8px;
+    }
+}
 
 .question {
     display: flex;
@@ -174,14 +209,13 @@ textarea, #survey-container {
     background-color: #141414;
     color: #d5d3db;
     min-width: 100px;
-    min-height: 72px;
+    min-height: 76px;
     height: 78px;
     padding: 10px;
-    border: 1px solid #616DF0;
+    /* border: 1px solid #616DF0; */
     border-radius: 15px;
     font-size: 16px;
     box-sizing: border-box;
-    margin-right: 20px;
 }
 
 #block-generate {

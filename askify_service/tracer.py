@@ -3,6 +3,21 @@ import os
 from datetime import datetime
 from typing import List, Dict
 
+from decouple import config
+
+import requests
+
+
+TELEGRAM_BOT_TOKEN = config('TELEGRAM_BOT_TOKEN')
+TELEGRAM_CHAT_ID = config('TELEGRAM_CHAT_ID')
+
+CONFIRM_SYMBOL = "✅"
+GREEN_SYMBOL = "🟢"
+WARNING_SYMBOL = "🚧"
+WARNING_2_SYMBOL = "⚠️"
+STOP_SYMBOL = "❌"
+CRITICAL_SYMBOL = "⚡☠️"
+ADMIN_PREFIX_TEXT = '⚠ CONTROL PANEL ⚠\n'
 
 TRACER_FILE = "logger.csv"
 HEADERS_LOG_FILE = ["timestamp", "log_level", "user_name", "function", "message_text", "error_details", "additional_info"]
@@ -26,6 +41,18 @@ class TracerManager:
         r, g, b = [int(hex_color[item:item+2], 16) for item in range(1, len(hex_color), 2)]
         return f"\x1b[38;2;{r};{g};{b}m".format(**vars())
 
+    @staticmethod
+    def send_message_to_telegram(message):
+        url = f'https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage'
+        payload = {
+            'chat_id': TELEGRAM_CHAT_ID,
+            'text': message,
+            'parse_mode': 'HTML'
+        }
+        response = requests.post(url, json=payload)
+        print(response)
+        return response.json()
+
     def __create_file_if_not_exists(self):
         if os.path.exists(self.log_file) is False:
             with open(self.log_file, "w") as log_file:
@@ -34,6 +61,22 @@ class TracerManager:
             log_file.close()
 
     def tracer_charge(self, log_level: str, user_name: str, function, message_text, error_details='', additional_info=''):
+        if log_level == 'WARNING':
+            self.send_message_to_telegram(
+                f"{WARNING_SYMBOL} WARNING\n\n{message_text}\n\n---\n{function}\n\n---{error_details}\n\n"
+                f"Username: {user_name}\n\n{additional_info}")
+        elif log_level == 'ERROR':
+            print('zашел')
+            self.send_message_to_telegram(
+                f"{STOP_SYMBOL} ERROR\n\n{message_text}\n\n---\n{function}")
+        elif log_level == 'CRITICAL':
+            self.send_message_to_telegram(
+                f"{CRITICAL_SYMBOL} CRITICAL\n\n{message_text}\n\n---\n{function}\n\n---{error_details}\n\n"
+                f"Username: {user_name}\n\n{additional_info}")
+        elif log_level == 'ADMIN':
+            self.send_message_to_telegram(
+                f"{WARNING_2_SYMBOL} {message_text}\n\n---\n{function}\n\nUsername: {user_name}")
+
         self.__create_file_if_not_exists()
         with open(self.log_file, mode='a', newline='', encoding='utf-8') as file:
             writer = csv.writer(file)

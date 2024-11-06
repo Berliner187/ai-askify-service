@@ -16,6 +16,24 @@
     .button-medium {
         font-size: 14px;
     }
+
+    .input-area, textarea {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        max-width: 1200px;
+        min-height: 120px;
+    }
+    .input-area button {
+        width: 100%;
+        border: 2px solid #616DF0;
+        margin: 10px 0 10px 0;
+    }
+    .input-area button img {
+        width: 64px;
+        border: none;
+        border-radius: 15px;
+    }
     
     #saved-survey-container div {
         padding: 2px;

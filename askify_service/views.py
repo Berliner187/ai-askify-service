@@ -25,6 +25,7 @@ import time
 import uuid
 import random
 import os
+import re
 
 
 tracer_l = TracerManager(TRACER_FILE)
@@ -61,8 +62,17 @@ def page_history_surveys(request):
 def drop_survey(request, survey_id):
     survey_obj = Survey.objects.get(survey_id=uuid.UUID(survey_id))
     survey_obj.delete()
-    survey_user_answers = UserAnswers.objects.get(survey_id=uuid.UUID(survey_id))
-    survey_user_answers.delete()
+    tracer_l.tracer_charge(
+        'INFO', request.user.username, drop_survey.__name__, "Delete Survey")
+    try:
+        survey_user_answers = UserAnswers.objects.get(survey_id=uuid.UUID(survey_id))
+        survey_user_answers.delete()
+        tracer_l.tracer_charge(
+            'INFO', request.user.username, drop_survey.__name__, "Delete Survey")
+    except Exception as pass_fail:
+        print("Не найдено записей", pass_fail)
+        tracer_l.tracer_charge(
+            'INFO', request.user.username, drop_survey.__name__, "Delete UserAnswers", pass_fail)
     return redirect('history')
 
 
@@ -82,12 +92,16 @@ def generate_survey(request):
             text_from_user = text_from_user.lower()
 
             if any(word in text_from_user for word in forbidden_words):
+                tracer_l.tracer_charge(
+                    'WARNING', request.user.username, generate_survey.__name__,
+                    f"Detected forbidden words", "status: 400", text_from_user)
                 return JsonResponse({'error': 'К сожалению, не удалось выполнить запрос'}, status=400)
 
             if DEBUG:
                 print("\nstart the generated...")
             tracer_l.tracer_charge(
-                'INFO', request.user.username, generate_survey.__name__, f"start the generated: {text_from_user}")
+                'INFO', request.user.username, generate_survey.__name__,
+                f"start the generated: {text_from_user}")
 
             generation_models_control = GenerationModelsControl()
             max_retries = 3
@@ -134,17 +148,51 @@ def generate_survey(request):
                             ]
                         }
                         """
+
+                    json_match = re.search(r'(\{.*\})', generated_text, re.DOTALL)
+
+                    if json_match:
+                        generated_text = json_match.group(0)
+                        try:
+                            generated_text = json.loads(generated_text)
+                        except json.JSONDecodeError as fail:
+                            print(f"Ошибка декодирования JSON: {fail}")
+                            tracer_l.tracer_charge(
+                                'ERROR', request.user.username, generate_survey.__name__,
+                                f"json.JSONDecodeError", str(fail))
+
+                    else:
+                        tracer_l.tracer_charge(
+                            'WARNING', request.user.username, generate_survey.__name__,
+                            f"JSON not found", "JSON not found in AI response")
+                        print("JSON не найден в ответе")
+                        return JsonResponse(
+                            {'error': f"{generated_text}"},
+                            status=429)
                     break
-                except Exception as e:
-                    if e.response.status_code == 429:
+
+                except Exception as fail:
+                    if fail.response.status_code == 429:
+                        tracer_l.tracer_charge(
+                            'ERROR', request.user.username, generate_survey.__name__,
+                            f"Code 429", str(fail))
                         if attempt < max_retries - 1:
                             wait_time = 60
                             print(f"Слишком много запросов. Повтор через {wait_time} секунд.")
+                            tracer_l.tracer_charge(
+                                'ERROR', request.user.username, generate_survey.__name__,
+                                f"AI: Too many requests")
                             time.sleep(wait_time)
                             return JsonResponse({'error': f"Сервер перегружен. Пожалуйста, повторите попытку через {wait_time} секунд."}, status=429)
                         else:
+                            tracer_l.tracer_charge(
+                                'ERROR', request.user.username, generate_survey.__name__,
+                                f"AI: Server Overloaded")
                             return JsonResponse({'error': 'Сервер перегружен, попробуйте позже.'}, status=429)
                     else:
+                        tracer_l.tracer_charge(
+                            'CRITICAL', request.user.username, generate_survey.__name__,
+                            f"Code XXX", "unknown critical error", str(fail))
                         raise
 
             if DEBUG:
@@ -152,12 +200,12 @@ def generate_survey(request):
                 print("generated_text", generated_text)
 
             try:
-                cleaned_generated_text = json.loads(generated_text)
+                cleaned_generated_text = generated_text#json.loads(generated_text)
                 tracer_l.tracer_charge(
                     'INFO', request.user.username, generate_survey.__name__, f"success json.loads: {cleaned_generated_text.get('title')}")
-            except json.JSONDecodeError:
+            except json.JSONDecodeError as json_error:
                 tracer_l.tracer_charge(
-                    'ERROR', request.user.username, generate_survey.__name__, "text is not valid JSON", "status: 400")
+                    'ERROR', request.user.username, generate_survey.__name__, "text is not valid JSON", str(json_error), "status: 400")
                 return JsonResponse({'error': generated_text}, status=400)
             except Exception as fail:
                 tracer_l.tracer_charge(
@@ -174,22 +222,16 @@ def generate_survey(request):
                 survey.save_questions(cleaned_generated_text['questions'])
                 survey.save()
 
-                # survey = Survey(
-                #     survey_id=new_survey_id,
-                #     title=cleaned_generated_text['title'],
-                #     questions=json.dumps(cleaned_generated_text['questions']),
-                #     id_staff=get_staff_id(request)
-                # )
-                # survey.save()
                 tracer_l.tracer_charge(
-                    'INFO', request.user.username, generate_survey.__name__, "success save to DB")
+                    'DB', request.user.username, generate_survey.__name__, "success save to DB")
 
                 return JsonResponse({'survey': cleaned_generated_text, 'survey_id': new_survey_id}, status=200)
             except Exception as fail:
                 tracer_l.tracer_charge(
                     'ERROR', request.user.username, generate_survey.__name__, "error in save to DB", f"{fail}")
 
-            print(cleaned_generated_text)
+            if DEBUG:
+                print(cleaned_generated_text)
 
         except json.JSONDecodeError as json_decode:
             tracer_l.tracer_charge(
@@ -201,9 +243,11 @@ def generate_survey(request):
             tracer_l.tracer_charge(
                 'CRITICAL', request.user.username, generate_survey.__name__,
                 "FATAL Exception", f"{e}",
-                f"status: 400")
+                f"status: 500")
             return JsonResponse({'error': str(e)}, status=500)
 
+    tracer_l.tracer_charge(
+        'CRITICAL', request.user.username, generate_survey.__name__, "Invalid request method", "status: 400")
     return JsonResponse({'error': 'Invalid request method'}, status=400)
 
 
@@ -222,8 +266,6 @@ def get_all_surveys(request):
 
     print(response_data_all)
     return response_data_all
-    # return render(request, 'askify_service/text_input.html', {'surveys_data': response_data_all})
-    # return JsonResponse(response_data_all, status=200)
 
 
 @login_required
@@ -343,9 +385,7 @@ def register(request):
             user = form.save()
 
             tracer_l.tracer_charge(
-                'INFO', user.username, register.__name__, "has benn register")
-
-            send_message_to_telegram(f"NEW USER – {user.username}")
+                'ADMIN', request.user.username, generate_survey.__name__, f"NEW USER")
 
             plan_name, end_date, status, billing_cycle, discount = init_subscription()
             subscription = Subscription.objects.create(

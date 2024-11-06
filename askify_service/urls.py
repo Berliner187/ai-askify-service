@@ -19,15 +19,3 @@ urlpatterns = [
     path('subscriptions/', subscription_list, name='subscription_list'),
     path('success_payment/<str:payment_id>/', success_payment, name='success_payment'),
 ]
-
-
-def custom_404_view(request, exception):
-    return render(request, 'error.html', status=404)
-
-
-def custom_500_view(request):
-    return render(request, 'error.html', status=500)
-
-
-handler404 = custom_404_view
-handler500 = custom_500_view

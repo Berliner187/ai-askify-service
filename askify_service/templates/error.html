@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ошибка {{ error_code }}</title>
+    {% load static %}
+
+    <link rel="stylesheet" href="{% static 'css/second-loader.css' %}">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'css/adaptive.css' %}">
+    <link rel="stylesheet" href="{% static 'css/footer.css' %}">
+</head>
+<body>
+    <script src="{% static 'js/second-loader.js' %}"></script>
+    {% include 'components/loader.html' %}
+
+    <div id="page-container" class="fade" style="display: none;">
+        <div class="container profile">
+            <div class="error-code">{{ error_code }}</div>
+            <div class="error-message">Что-то пошло не так!</div>
+            <div class="error-description">{{ error_message }}</div>
+            <a href="{% url 'create' %}" class="button-medium">Вернуться назад</a>
+        </div>
+
+        {% include 'footer.html' %}
+    </div>
+
+</body>
+</html>
