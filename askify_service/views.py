@@ -32,7 +32,10 @@ tracer_l = TracerManager(TRACER_FILE)
 
 
 def index(request):
-    return render(request, 'askify_service/index.html')
+    context = {
+        'username': request.user.username if request.user.is_authenticated else 0
+    }
+    return render(request, 'askify_service/index.html', context)
 
 
 @csrf_exempt
@@ -65,7 +68,7 @@ def drop_survey(request, survey_id):
     tracer_l.tracer_charge(
         'INFO', request.user.username, drop_survey.__name__, "Delete Survey")
     try:
-        survey_user_answers = UserAnswers.objects.get(survey_id=uuid.UUID(survey_id))
+        survey_user_answers = get_object_or_404(UserAnswers, survey_id=uuid.UUID(survey_id))
         survey_user_answers.delete()
         tracer_l.tracer_charge(
             'INFO', request.user.username, drop_survey.__name__, "Delete Survey")
@@ -436,7 +439,7 @@ def logout_view(request):
 
 def profile_view(request, username):
     staff_id = get_staff_id(request)
-    user = AuthUser.objects.get(id_staff=staff_id)
+    user = get_object_or_404(AuthUser, id_staff=staff_id)
 
     statistics = UserAnswers.calculate_user_statistics(staff_id)
 
@@ -444,7 +447,7 @@ def profile_view(request, username):
     date_last_login = get_formate_date(user.last_login)
 
     try:
-        subscription = Subscription.objects.get(staff_id=staff_id)
+        subscription = get_object_or_404(Subscription, staff_id=staff_id)
         subscription.end_date = get_formate_date(subscription.end_date)
     except Subscription.DoesNotExist:
         subscription = 'Free 0₽'
@@ -464,7 +467,7 @@ def profile_view(request, username):
 @login_required
 def admin_stats(request):
     staff_id = get_staff_id(request)
-    user = AuthUser.objects.get(id_staff=staff_id)
+    user = get_object_or_404(AuthUser, id_staff=staff_id)
 
     all_users = AuthUser.objects.all().count()
 
@@ -538,7 +541,7 @@ def subscription_list(request):
     if request.method == 'POST':
         plan_name = request.POST.get('plan_name')
         print(plan_name)
-        selected_subscription = AvailableSubscription.objects.get(plan_name=plan_name)
+        selected_subscription = get_object_or_404(AvailableSubscription, plan_name=plan_name)
         end_date = datetime.now() + timedelta(days=30)
         status = 'active'
         billing_cycle = 'monthly'
@@ -557,7 +560,7 @@ def subscription_list(request):
         # print(f'Plus Subscription Expires on: {plus_subscription.expiration_date}')
 
         try:
-            subscription = Subscription.objects.get(staff_id=staff_id)
+            subscription = get_object_or_404(Subscription, staff_id=staff_id)
             subscription.plan_name = plan_name
             subscription.end_date = end_date
             subscription.status = status
@@ -589,5 +592,5 @@ def subscription_list(request):
 
 
 def success_payment(request, payment_id):
-    payment = Payment.objects.get(payment_id=payment_id)
+    payment = get_object_or_404(Payment, payment_id=payment_id)
     return render(request, 'payment.html', {'payment': payment})

@@ -1,10 +1,14 @@
 footer {
+    background-color: #1B1A20;
+    border-top-left-radius: 16px;
+    border-top-right-radius: 16px;
     color: #BAB8C1;
     padding: 10px 20px;
     margin-top: 10%;
 }
 footer a {
     color: #A190F8;
+    text-decoration: none;
 }
 
 footer h3 {
@@ -36,4 +40,15 @@ li {
 .footer-bottom p {
     margin: 0;
     padding: 1px;
+}
+
+
+@media (max-width: 768px) {
+    footer ul {
+        font-size: .8em;
+    }
+    
+    .small-text {
+        font-size: 8px;
+    }
 }

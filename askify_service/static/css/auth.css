@@ -115,7 +115,7 @@ input, button {
 }
 
 input:hover, button:hover {
-    opacity: .33;
+    opacity: .75;
     cursor: pointer;
 }
 
@@ -161,9 +161,6 @@ button:hover, .registration-form button:hover {
 }
 
 
-input:hover, button:hover {
-    opacity: .33;
-}
 input:hover {
     cursor: auto;
 }

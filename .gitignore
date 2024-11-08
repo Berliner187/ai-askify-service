@@ -4,3 +4,5 @@ db.sqlite3
 askify_app/forbidden_words.txt
 logger.csv
 .env
+*.csv
+logger.csv
