@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ошибка {{ error_code }}</title>
     {% load static %}
-
     <link rel="stylesheet" href="{% static 'css/second-loader.css' %}">
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
     <link rel="stylesheet" href="{% static 'css/adaptive.css' %}">
@@ -16,11 +15,14 @@
     {% include 'components/loader.html' %}
 
     <div id="page-container" class="fade" style="display: none;">
+        {% include 'header.html' %}
+
         <div class="container profile">
-            <div class="error-code">{{ error_code }}</div>
-            <div class="error-message">Что-то пошло не так!</div>
-            <div class="error-description">{{ error_message }}</div>
-            <a href="{% url 'create' %}" class="button-medium">Вернуться назад</a>
+            <h1>{{ error_code }}</h1>
+            <hr>
+            <h3>Что-то пошло не так :(</h3>
+            <p>{{ error_message }}</p>
+            <a href="{% url 'home' %}" class="button-medium">Вернуться назад</a>
         </div>
 
         {% include 'footer.html' %}

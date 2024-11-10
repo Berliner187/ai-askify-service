@@ -17,5 +17,18 @@ urlpatterns = [
     path('stats2975/', admin_stats, name='stats2975'),
     path('profile/<str:username>/', profile_view, name='profile'),
     path('subscriptions/', subscription_list, name='subscription_list'),
-    path('success_payment/<str:payment_id>/', success_payment, name='success_payment'),
+    path('docs/<slug:slug>/', document_view, name='document_view'),
+    path('success_payment/', success_payment, name='success_payment_view'),
+    path('payment/success/', payment_success, name='payment_success'),
+    path('payment/success/<str:payment_id>/', success_payment, name='success_payment_detail'),
+    path('get_ip/', get_ip, name='get_ip'),
+    path('payment/', payment_view, name='payment'),
+    path('api/payment/confirm/', confirm_payment, name='confirm_payment'),
+
+    # path('unblock-ip/<str:ip_address>/', unblock_ip, name='unblock_ip'),
+    path('block-user/<str:id_staff>/', block_by_staff_id, name='block_by_staff_id'),
+    path('unblock-user/<str:id_staff>/', unblock_by_staff_id, name='unblock_by_staff_id'),
+
+    path('block-ip/<str:ip_address>/', block_by_ip, name='block_ip'),
+    path('unblock-ip/<str:ip_address>/', unblock_by_ip, name='unblock_ip')
 ]

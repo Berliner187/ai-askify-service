@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
     <link rel="stylesheet" href="{% static 'css/adaptive.css' %}">
     <link rel="stylesheet" href="{% static 'css/footer.css' %}">
+    <link rel="stylesheet" href="{% static 'css/admin.css' %}">
     <title>2975</title>
 </head>
 <style>
@@ -101,13 +102,71 @@
             </form>
     
             <div>
-                <p><strong>Всего пользователей –</strong> {{ total_users }}</p>
-                <hr>
                 <p><strong>Новых пользователей –</strong> {{ selected_users }}</p>
                 <p><strong>Созданных тестов –</strong> {{ total_surveys }}</p>
                 <p><strong>Ответов на тесты –</strong> {{ total_answers }}</p>
                 <hr>
                 <p><strong>Подписок –</strong> {{ subscriptions }}</p>
+                <hr>
+                
+                <div class="activity-container">
+                    <p><strong>Активность –</strong> {{ count_activities }}</p>
+                    {% for activity in user_activities %}
+                        <div class="activity-item">
+                            <ul class="activity-details">
+                                <li class="small-text">Username: {{ activity.username }}</li>
+                                <li class="small-text">IP Address: {{ activity.ip_address }}</li>
+                                <li class="small-text">Дата: {{ activity.created_at }}</li>
+                                <li class="small-text">Статус: {{ activity.is_blocked|yesno:"Заблокирован,Не заблокирован" }}</li>
+                            </ul>
+                            <div class="button-group">
+                                {% if activity.is_blocked %}
+                                    <div class="button-medium">
+                                        <a href="{% url 'unblock_ip' activity.ip_address %}">
+                                            <div class="button-content">
+                                                <img src="{% static 'img/icon-lock.png' %}" alt="">
+                                                <p>Разблокировать по IP</p>
+                                            </div>
+                                        </a>
+                                    </div>
+                                {% else %}
+                                    <div class="button-medium">
+                                        <a href="{% url 'block_ip' activity.ip_address %}">
+                                            <div class="button-content">
+                                                <img src="{% static 'img/icon-unlock.png' %}" alt="">
+                                                <p>Заблокировать по IP</p>
+                                            </div>
+                                        </a>
+                                    </div>
+                                {% endif %}
+
+                                {% if activity.is_blocked %}
+                                    <div class="button-medium">
+                                        <a href="{% url 'unblock_ip' activity.ip_address %}">
+                                            <div class="button-content">
+                                                <img src="{% static 'img/icon-lock.png' %}" alt="">
+                                                <p>Разблокировать по ID</p>
+                                            </div>
+                                        </a>
+                                    </div>
+                                {% else %}
+                                    <div class="button-medium">
+                                        <a href="{% url 'unblock_by_staff_id' activity.id_staff %}">
+                                            <div class="button-content">
+                                                <img src="{% static 'img/icon-unlock.png' %}" alt="">
+                                                <p>Заблокировать по ID</p>
+                                            </div>
+                                        </a>
+                                    </div>
+                                {% endif %}
+                                
+                            </div>
+                        </div>
+                    {% empty %}
+                        <p>Нет активности за выбранный период.</p>
+                    {% endfor %}
+                </div>
+
             </div>
     
             <div class="head-button">

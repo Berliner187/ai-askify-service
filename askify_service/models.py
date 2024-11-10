@@ -4,6 +4,7 @@ from django.contrib.auth.models import AbstractUser, Group, Permission
 from django.db.models import Avg, Count, Max, Min
 from django.contrib.auth.models import User
 from django.utils import timezone
+from django.utils.translation import get_language
 
 from datetime import timedelta
 import datetime
@@ -102,6 +103,30 @@ class AuthUser(AbstractUser):
     def __str__(self):
         return self.username
 
+    def log_activity(self, request):
+        language_code = get_language() if hasattr(request, 'LANGUAGE_CODE') else None
+
+        try:
+            UserActivity.objects.create(
+                id_staff=self.id_staff,
+                ip_address=request.META.get('REMOTE_ADDR'),
+                user_agent=request.META.get('HTTP_USER_AGENT'),
+                referer=request.META.get('HTTP_REFERER'),
+                language_code=language_code,
+                created_at=timezone.now()
+            )
+        except Exception as fail:
+            pass
+
+
+class UserActivity(models.Model):
+    id_staff = models.UUIDField(null=True, blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.CharField(max_length=255, null=True, blank=True)
+    referer = models.URLField(null=True, blank=True)
+    language_code = models.CharField(max_length=10, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
 
 class Subscription(models.Model):
     staff_id = models.UUIDField()
@@ -161,8 +186,18 @@ class AvailableSubscription(models.Model):
         elif self.plan_type == 'standard':
             self.expiration_date = timezone.now() + datetime.timedelta(days=30)
         elif self.plan_type == 'plus':
-            self.expiration_date = timezone.now() + datetime.timedelta(days=90)
+            self.expiration_date = timezone.now() + datetime.timedelta(days=30)
         super().save(*args, **kwargs)
 
     def __str__(self):
         return f'Available Subscription: {self.plan_name} - {self.amount} (Expires on: {self.expiration_date})'
+
+
+class BlockedUsers(models.Model):
+    id_staff = models.UUIDField(null=True, blank=True, unique=True)
+    ip_address = models.GenericIPAddressField(unique=True)
+    reason = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.ip_address

@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    {% load static %}
+    <link rel="shortcut icon" href="{% static 'img/logo.png' %}" type="image/png">
+    <link rel="stylesheet" href="{% static 'css/adaptive.css' %}">
+    <link rel="stylesheet" href="{% static 'css/footer.css' %}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Commissioner:wght@100..900&family=Mulish:ital,wght@0,200..1000;1,200..1000&family=PT+Serif+Caption:ital@0;1&family=Unbounded:wght@200..900&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@200..900&display=swap" rel="stylesheet">
+</head>
+<style>
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: 'PT Serif Caption', sans-serif;
+    }
+
+    body {
+        background-color: #18171a;
+        color: #cecdd9;
+        line-height: 1.6;
+    }
+    
+    header {
+        padding: 1em 2em;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        margin: 10px;
+        background-color: #151417;
+        border-radius: 25px;
+        transition-duration: .25s;
+        margin-top: 20px;
+    }
+
+    a {
+        color: #cecdd9;
+        text-decoration: underline;
+    }
+
+    header h1 {
+        font-size: 1.5em;
+        font-weight: 400;
+        letter-spacing: 1px;
+    }
+    
+    .burger {
+        cursor: pointer;
+        width: 25px;
+        height: 18px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+    
+    .burger div {
+        background-color: #cecdd9;
+        height: 3px;
+        width: 100%;
+        border-radius: 15px;
+        transition: all 0.3s ease;
+    }
+    
+    nav {
+        display: none;
+    }
+    
+    nav.active {
+        display: block;
+        position: absolute;
+        top: 100%;
+        right: 0;
+        width: 100%;
+        padding: 1em;
+        border-radius: 15px;
+        background-color: #151417;
+        margin-top: 10px;
+    }
+
+    img {
+        width: 128px;
+    }
+    
+    nav ul {
+        list-style-type: none;
+    }
+    
+    nav ul li {
+        margin: 1em 0;
+    }
+    
+    nav ul li a {
+        text-decoration: none;
+        font-size: 1em;
+        transition: color 0.2s;
+    }
+    
+    nav ul li a:hover {
+        color: #1abc9c;
+    }
+    
+    main {
+        max-width: 800px;
+        margin: 2em auto;
+        padding: 1em;
+        border-radius: 5px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    main p {
+        color: #b7b6c0;
+        margin-bottom: 30px;
+    }
+
+    footer a, footer h3, footer p {
+        font-family: 'Unbounded';
+    }
+    
+    @media (min-width: 900px) {
+        nav {
+            display: block;
+            position: static;
+            background-color: transparent;
+            width: auto;
+            padding: 0;
+            box-shadow: none;
+        }
+        
+        nav ul {
+            display: flex;
+        }
+        
+        nav ul li {
+            margin: 0 1em;
+        }
+        
+        .burger {
+            display: none;
+        }
+    }
+</style>
+<body>
+    <header>
+        <a href="{% url 'home' %}">
+            <img src="{% static 'img/logo-header.png' %}" alt="">
+        </a>
+        
+        <div class="burger" id="burger">
+            <div></div>
+            <div></div>
+            <div></div>
+        </div>
+        <nav id="nav">
+            <ul>
+                <li><a href="/create">Начать создавать</a></li>
+                <li><a href="/docs/public-offer">Публичная оферта</a></li>
+                <li><a href="/docs/user-agreement">Вопросы и ответы</a></li>
+                <li><a href="/docs/privacy-policy">Пользовательское соглашение</a></li>
+                <li><a href="/docs/privacy-policy">Политика конфиденциальности</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <div>{{ content|safe }}</div>
+    </main>
+
+    {% include 'footer.html' %}
+
+    <script>
+        const burger = document.getElementById('burger');
+        const nav = document.getElementById('nav');
+
+        burger.addEventListener('click', () => {
+            nav.classList.toggle('active');
+        });
+    </script>
+</body>
+</html>

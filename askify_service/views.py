@@ -2,7 +2,6 @@ from django.contrib.auth.models import User
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import render, redirect, get_object_or_404
-from django.shortcuts import render, redirect
 from django.contrib.auth import login, authenticate
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
@@ -10,18 +9,22 @@ from django.contrib import messages
 from django.utils import timezone
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.http import JsonResponse, HttpResponseBadRequest
 
 from .utils import *
 from .models import *
 from .forms import *
-from askify_app.settings import DEBUG
+from askify_app.settings import DEBUG, BASE_DIR
+from askify_app.middleware import check_blocked
 from .tracer import *
 
 import openai
+import markdown
+import requests
 
 from datetime import datetime
 import time
-
+import hashlib
 import uuid
 import random
 import os
@@ -81,6 +84,7 @@ def drop_survey(request, survey_id):
 
 @csrf_exempt
 @login_required
+@check_blocked
 def generate_survey(request):
     if request.method == 'POST':
         try:
@@ -276,6 +280,8 @@ def take_survey(request, survey_id):
     if DEBUG:
         print("take_survey: work")
 
+    request.user.log_activity(request)
+
     survey_id = uuid.UUID(survey_id)
     survey = get_object_or_404(Survey, survey_id=survey_id)
     questions = json.loads(survey.questions)
@@ -377,6 +383,7 @@ def result_view(request, survey_id):
 
 
 def download_survey_pdf(request, survey_id):
+    request.user.log_activity(request)
     survey = get_object_or_404(Survey, survey_id=uuid.UUID(survey_id))
     return survey.generate_pdf()
 
@@ -388,7 +395,7 @@ def register(request):
             user = form.save()
 
             tracer_l.tracer_charge(
-                'ADMIN', request.user.username, generate_survey.__name__, f"NEW USER")
+                'ADMIN', user.username, register.__name__, f"NEW USER")
 
             plan_name, end_date, status, billing_cycle, discount = init_subscription()
             subscription = Subscription.objects.create(
@@ -423,6 +430,12 @@ def login_view(request):
         if user is not None:
             login(request, user)
             request.session['user_id'] = user.id
+
+            request.user.log_activity(request)
+
+            tracer_l.tracer_charge(
+                'ADMIN', request.user.username, register.__name__, f"user has been login in")
+
             return redirect('/create')
         else:
             print('Неверное имя пользователя или пароль')
@@ -483,8 +496,35 @@ def admin_stats(request):
             total_surveys = Survey.objects.filter(updated_at__range=(start_date, end_date)).count()
             total_answers = UserAnswers.objects.filter(created_at__range=(start_date, end_date)).count()
             subscriptions = Subscription.objects.filter(start_date__range=(start_date, end_date)).count()
+
+            user_activities = UserActivity.objects.filter(created_at__range=(start_date, end_date)).values('id_staff', 'ip_address', 'created_at')
+            user_activities_count = UserActivity.objects.filter(created_at__range=(start_date, end_date)).count()
+
+            blocked_users = BlockedUsers.objects.values_list('id_staff', 'ip_address')
+
+            blocked_users_set = set(blocked_users)
+
+            for user_record in user_activities:
+                if user_record['id_staff'] is not None:
+                    user_record['id_staff'] = AuthUser.objects.get(id_staff=user_record['id_staff']).id_staff
+
+                    user_record['is_blocked'] = (
+                        (user_record['id_staff'], None) in blocked_users_set or
+                        (None, user_record['ip_address']) in blocked_users_set
+                    )
+
+                    print(f"Checking: {(user_record['id_staff'], user_record['ip_address'])} in {blocked_users_set}")
+                    print(f"Is blocked: {user_record['is_blocked']}")
+
+                    user_record['username'] = AuthUser.objects.get(id_staff=staff_id)
+                else:
+                    user_record['is_blocked'] = False
+
+            print(user_activities)
         else:
             selected_users = total_surveys = subscriptions = total_answers = 0
+            user_activities = UserActivity.objects.none()
+            user_activities_count = 0
 
         context = {
             'selected_users': selected_users,
@@ -492,12 +532,63 @@ def admin_stats(request):
             'total_surveys': total_surveys,
             'total_answers': total_answers,
             'username': request.user.username,
-            'subscriptions': subscriptions
+            'subscriptions': subscriptions,
+            'user_activities': user_activities,
+            'count_activities': user_activities_count
         }
 
         return render(request, 'admin.html', context)
     else:
-        redirect(f'profile/{request.user.username}')
+        return redirect(f'profile/{request.user.username}')
+
+
+def block_by_staff_id(request, id_staff):
+    maybe_admin = get_object_or_404(AuthUser, username=request.user.username)
+
+    if maybe_admin.is_superuser:
+        user = get_object_or_404(AuthUser, id_staff=id_staff)
+        BlockedUsers.objects.get_or_create(ip_address=user.last_login_ip, reason=f'Blocked user {user.username}')
+        return redirect('stats2975')
+
+    return redirect('login')
+
+
+def block_by_ip(request, ip_address):
+    maybe_admin = get_object_or_404(AuthUser, username=request.user.username)
+
+    if maybe_admin.is_superuser:
+        BlockedUsers.objects.get_or_create(ip_address=ip_address)
+        return redirect(request.META.get('HTTP_REFERER', 'stats2975'))
+
+    return redirect('login')
+
+
+def unblock_by_ip(request, ip_address):
+    maybe_admin = get_object_or_404(AuthUser, username=request.user.username)
+
+    if maybe_admin.is_superuser:
+        blocked_user = BlockedUsers.objects.filter(ip_address=ip_address)
+        if blocked_user.exists():
+            blocked_user.delete()
+            return redirect(request.META.get('HTTP_REFERER', 'stats2975'))
+        else:
+            return JsonResponse({"success": False, "message": "IP не найден в заблокированных."})
+
+    return redirect('login')
+
+
+def unblock_by_staff_id(request, id_staff):
+    maybe_admin = get_object_or_404(AuthUser, username=request.user.username)
+
+    if maybe_admin.is_superuser:
+        try:
+            blocked_user = BlockedUsers.objects.filter(id_staff=id_staff)
+            blocked_user.delete()
+            return JsonResponse({"success": True})
+        except Exception as e:
+            return HttpResponse(f"Fail - {e}")
+
+    return redirect('login')
 
 
 def create_subscription(request):
@@ -534,6 +625,7 @@ def create_subscription(request):
     return render(request, 'subscription.html')
 
 
+@login_required
 def subscription_list(request):
     subscriptions = AvailableSubscription.objects.all()
     staff_id = get_staff_id(request)
@@ -592,5 +684,87 @@ def subscription_list(request):
 
 
 def success_payment(request, payment_id):
+    print("GET запрос на success_payment с payment_id:", payment_id)
     payment = get_object_or_404(Payment, payment_id=payment_id)
     return render(request, 'payment.html', {'payment': payment})
+
+
+def payment_success(request):
+    if request.method == 'POST':
+        print('прилет payment_success')
+        data = json.loads(request.body)
+        payment_id = data.get('payment_id')
+        amount = data.get('amount')
+        status = data.get('status')
+
+        if not payment_id or not amount or not status:
+            return HttpResponseBadRequest("Missing required fields")
+
+        staff_id = get_staff_id(request)
+        subscription = get_object_or_404(Subscription, staff_id=staff_id)
+
+        payment = Payment.objects.create(
+            subscription=subscription,
+            payment_id=payment_id,
+            amount=amount,
+            status=status
+        )
+
+        return JsonResponse({'status': 'success', 'payment_id': payment.payment_id})
+
+    return HttpResponseBadRequest("Invalid request method")
+
+
+def get_ip(request):
+    ip = get_client_ip(request)
+    print(os.path.join(BASE_DIR, 'documents'))
+    return JsonResponse({'ip': ip})
+
+
+def document_view(request, slug):
+    file_path = os.path.join(BASE_DIR, 'docs', f'{slug}.md')
+    print(file_path)
+
+    if not os.path.exists(file_path):
+        return render(request, '404.html', status=404)
+
+    with open(file_path, 'r', encoding='utf-8') as file:
+        content = file.read()
+
+    content_html = markdown.markdown(content)
+
+    content = {
+        'title': slug.replace('-', ' ').title(), 'content': content_html,
+        'year': get_year_now()
+    }
+
+    return render(request, 'document.html', content)
+
+
+def create_token(values):
+    # Сортируем параметры по ключам
+    sorted_values = sorted(values.items())
+    # Конкатенируем значения
+    concatenated_values = ''.join(value for key, value in sorted_values)
+    # Генерируем SHA256 токен
+    token = hashlib.sha256(concatenated_values.encode('utf-8')).hexdigest()
+    return token
+
+
+def payment_view(request):
+    print('дернул')
+    return render(request, 'payments/payment.html')
+
+
+def confirm_payment(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        order_id = data.get('orderId')
+        amount = data.get('amount')
+        email = data.get('email')
+
+        # Здесь добавь логику для обработки платежа
+        # Например, сохранить информацию в базе данных
+
+        return JsonResponse({'status': 'success', 'message': 'Payment confirmed'})
+    return JsonResponse({'status': 'error', 'message': 'Invalid request'}, status=400)
