@@ -285,7 +285,6 @@ def take_survey(request, survey_id):
     survey_id = uuid.UUID(survey_id)
     survey = get_object_or_404(Survey, survey_id=survey_id)
     questions = json.loads(survey.questions)
-    print(questions, survey)
 
     # random.shuffle(questions)
 
@@ -334,25 +333,37 @@ def take_survey(request, survey_id):
                 }
             )
 
-            # UserAnswers.objects.get_or_create(
-            #     survey_id=survey_id,
-            #     selected_answer=selected_answer,
-            #     defaults={
-            #         'scored_points': correct_count if is_correct else 0,
-            #         'total_points': len(questions),
-            #         'user_answers': user_answers_dict
-            #     },
-            #     id_staff=get_staff_id(request)
-            # )
-
             if DEBUG:
                 print(f"\n\nВопрос: {question['question']}\nПравильный ответ: {question['correct_answer']}\nОтвет пользователя: {selected_answer}")
 
-        json_response = {'score': correct_count, 'total': len(user_answers), 'survey_id': survey_id}
+        try:
+            print(">>>>> ЗАГРУЗКА FEEDBACK <<<<<")
+            feedback_obj = FeedbackFromAI.objects.filter(survey_id=survey_id)
+
+            if feedback_obj.exists():
+                feedback_obj.delete()
+
+            generation_models_control = GenerationModelsControl()
+            ai_feedback = generation_models_control.get_feedback_001(f"{questions}{survey}")
+            FeedbackFromAI.objects.create(
+                survey_id=survey_id,
+                id_staff=get_staff_id(request),
+                feedback_data=ai_feedback
+            )
+        except Exception as fail:
+            tracer_l.tracer_charge(
+                'CRITICAL', request.user.username, take_survey.__name__,
+                "Invalid FEEDBACK", f"{fail}")
+
+        json_response = {'score': correct_count, 'total': user_answers, 'survey_id': survey_id}
 
         return render(request, 'result.html', json_response)
 
-    return render(request, 'survey.html', {'survey': survey, 'questions': questions, 'username': request.user.username if request.user.is_authenticated else None})
+    context = {
+        'survey': survey, 'questions': questions,
+        'username': request.user.username if request.user.is_authenticated else None
+    }
+    return render(request, 'survey.html', context)
 
 
 @login_required
@@ -367,6 +378,13 @@ def result_view(request, survey_id):
     selected_answers = {answer.selected_answer for answer in user_answers}
     selected_answers_list = list(user_answers.values_list('selected_answer', flat=True))
 
+    try:
+        feedback_obj = FeedbackFromAI.objects.get(survey_id=survey_id)
+        feedback_text = markdown.markdown(feedback_obj.feedback_data)
+    except Exception as fail:
+        feedback_text = None
+        pass
+
     json_response = {
         'title': survey.title,
         'score': score,
@@ -375,7 +393,8 @@ def result_view(request, survey_id):
         'questions': questions,
         'selected_answers': selected_answers,
         'selected_answers_list': selected_answers_list,
-        'username': request.user.username if request.user.is_authenticated else None
+        'username': request.user.username if request.user.is_authenticated else None,
+        'feedback_text': feedback_text
     }
     print("result_view", score, len(user_answers))
 
@@ -430,7 +449,6 @@ def login_view(request):
         if user is not None:
             login(request, user)
             request.session['user_id'] = user.id
-
             request.user.log_activity(request)
 
             tracer_l.tracer_charge(
@@ -448,6 +466,78 @@ def logout_view(request):
     logout(request)
     request.session.flush()
     return redirect('login')
+
+
+def vk_auth(request):
+    tracer_l.tracer_charge(
+        'ERROR', request.user.username, vk_auth.__name__, "start")
+    if request.method == 'POST':
+        tracer_l.tracer_charge(
+            'ERROR', request.user.username, vk_auth.__name__, "post")
+
+        try:
+            data = json.loads(request.body)
+            vk_id = data.get('vk_id')
+            name = data.get('name')
+            phone = data.get('phone')
+            email = data.get('email')
+
+            user_profile, created = AuthUser.objects.update_or_create(
+                vk_id=vk_id,
+                defaults={
+                    'name': name,
+                    'phone': phone,
+                    'email': email,
+                }
+            )
+            user = authenticate(request, username=vk_id)
+            if user is not None:
+                login(request, user)
+                request.session['user_id'] = user.id
+                request.user.log_activity(request)
+
+            tracer_l.tracer_charge(
+                'ERROR', request.user.username, vk_auth.__name__, f"success")
+            return JsonResponse({'status': 'success', 'created': created})
+        except Exception as fail:
+            tracer_l.tracer_charge(
+                'ERROR', request.user.username, vk_auth.__name__, f"ERROR {fail}")
+    return JsonResponse({'status': 'error'}, status=400)
+
+
+def vk_callback(request):
+    code = request.GET.get('code')
+    state = request.GET.get('state')
+    device_id = request.GET.get('device_id')
+    code_verifier = request.session.get('code_verifier')  # Получаем code_verifier из session
+
+    if code:
+        token_url = 'https://id.vk.com/oauth2/access_token'
+        params = {
+            'client_id': '7b09de637b09de637b09de6325782ab3af77b097b09de631c385ca246d43f689073405f',  # Замените на ваш client_id
+            'client_secret': 'our2AXXhor7xIUA82DpH',
+            'code': code,
+            'redirect_uri': '/create/',
+            'grant_type': 'authorization_code',
+            'code_verifier': code_verifier,
+            'device_id': device_id,
+        }
+
+        response = requests.post(token_url, data=params)
+        tokens = response.json()
+
+        if 'access_token' in tokens:
+            # Успешно получили токены
+            access_token = tokens['access_token']
+            refresh_token = tokens.get('refresh_token')
+            id_token = tokens.get('id_token')
+
+            print()
+
+            # Здесь вы можете сохранить токены в сессии или базе данных
+            return JsonResponse({'status': 'success', 'access_token': access_token})
+
+    return JsonResponse({'status': 'error', 'message': 'Authorization failed'}, status=400)
 
 
 def profile_view(request, username):
@@ -526,11 +616,14 @@ def admin_stats(request):
             user_activities = UserActivity.objects.none()
             user_activities_count = 0
 
+        usernames = AuthUser.objects.values_list('username', flat=True)
+
         context = {
             'selected_users': selected_users,
             'total_users': all_users,
             'total_surveys': total_surveys,
             'total_answers': total_answers,
+            'usernames': usernames,
             'username': request.user.username,
             'subscriptions': subscriptions,
             'user_activities': user_activities,
@@ -547,7 +640,7 @@ def block_by_staff_id(request, id_staff):
 
     if maybe_admin.is_superuser:
         user = get_object_or_404(AuthUser, id_staff=id_staff)
-        BlockedUsers.objects.get_or_create(ip_address=user.last_login_ip, reason=f'Blocked user {user.username}')
+        BlockedUsers.objects.get_or_create(ip_address=get_client_ip(request), reason=f'Blocked user {user.username}')
         return redirect('stats2975')
 
     return redirect('login')

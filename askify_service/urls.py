@@ -18,6 +18,10 @@ urlpatterns = [
     path('profile/<str:username>/', profile_view, name='profile'),
     path('subscriptions/', subscription_list, name='subscription_list'),
     path('docs/<slug:slug>/', document_view, name='document_view'),
+
+    path('api/auth/vk/', vk_auth, name='vk_auth'),
+    path('callback/', vk_callback, name='vk_callback'),
+
     path('success_payment/', success_payment, name='success_payment_view'),
     path('payment/success/', payment_success, name='payment_success'),
     path('payment/success/<str:payment_id>/', success_payment, name='success_payment_detail'),

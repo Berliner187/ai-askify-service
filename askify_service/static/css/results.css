@@ -1,3 +1,9 @@
+@font-face {
+    font-family: 'Namu Pro';
+    src: url(../fonts/NAMU-Pro.woff2);
+}
+
+
 .question-item {
     border-radius: 15px;
     padding: 20px 0 20px 0;
@@ -25,4 +31,47 @@
 }
 .correct-answer-highlight p {
     font-size: 14px;
+}
+
+
+.feedback-container {
+    max-width: 800px;
+    padding: 20px;
+    font-family: 'Namu Pro', sans-serif;
+}
+
+.feedback-container h2 {
+    border-bottom: 2px solid #A190F8;
+    padding-bottom: 10px;
+}
+
+.feedback-container h3 {
+    color: #A190F8;
+    margin-top: 20px;
+}
+
+.feedback-container p, ul, ol {
+    line-height: 1.2;
+    color: #d0d0d0;
+}
+
+.feedback-container ul, .feedback-container ol {
+    padding-left: 20px;
+}
+
+.feedback-container strong {
+    color: #A190F8;
+}
+
+.feedback-container li {
+    margin-bottom: 10px;
+}
+
+.feedback-container a {
+    color: #A190F8;
+    text-decoration: none;
+}
+
+.feedback-container a:hover {
+    text-decoration: underline;
 }

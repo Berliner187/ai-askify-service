@@ -22,7 +22,14 @@
             <hr>
             <h3>Что-то пошло не так :(</h3>
             <p>{{ error_message }}</p>
-            <a href="{% url 'home' %}" class="button-medium">Вернуться назад</a>
+            <div class="button-medium">
+                <a href="{% url 'home' %}">
+                    <div class="button-content">
+                        <img src="{% static 'img/icon-back.png' %}" alt="">
+                        <p>Вернуться назад</p>
+                    </div>
+                </a>
+            </div>
         </div>
 
         {% include 'footer.html' %}

@@ -12,21 +12,12 @@
 }
 
 @font-face {
-    font-family: 'Manrope Regular';
-    src: url(../fonts/Manrope-Regular.ttf);
-}
-@font-face {
-    font-family: 'Manrope Medium';
-    src: url(../fonts/Manrope-Medium.ttf);
-}
-@font-face {
-    font-family: 'Manrope Bold';
-    src: url(../fonts/Manrope-Bold.ttf);
+    font-family: 'Namu Pro';
+    src: url(../fonts/NAMU-Pro.woff2);
 }
 
 body {
-    font-family: Arial, sans-serif;
-    font-family: "Unbounded Regular";
+    font-family: "Namu Pro", Arial, sans-serif;
     background-color: #18171a;
     color: #e8e7f1;
     margin: 0;
@@ -43,7 +34,7 @@ h2 {
     font-family: "Unbounded Bold";
     margin-top: 10px;
     color: #e8e7f1;
-    font-size: 2em;
+    font-size: 1.8em;
     margin-bottom: 10px;
     font-size: 36px;
 }

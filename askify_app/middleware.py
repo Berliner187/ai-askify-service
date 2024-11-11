@@ -42,7 +42,7 @@ def check_blocked(view_func):
             return HttpResponseForbidden("IP is blocked")
 
         if request.user.is_authenticated:
-            if BlockedUsers.objects.filter(ip_address=request.user.last_login_ip).exists():
+            if BlockedUsers.objects.filter(ip_address=get_client_ip(request)).exists():
                 return HttpResponseForbidden("Account is blocked")
 
         return view_func(request, *args, **kwargs)

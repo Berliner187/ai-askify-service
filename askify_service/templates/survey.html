@@ -53,6 +53,7 @@
                 {% endfor %}
                 <div class="submit-container">
                     <button type="submit" id="submit-button" disabled style="display: none">Посмотреть результат</button>
+                    <div id="loading-indicator" style="display: none;">Загрузка...</div>
                 </div>
             </div>
         </form>
@@ -102,14 +103,21 @@
         // Обработчик отправки формы
         document.getElementById('survey-form').addEventListener('submit', (e) => {
             e.preventDefault();
-    
+
+            // Скрываем кнопку и показываем индикатор загрузки
+            const submitButton = document.getElementById('submit-button');
+            const loadingIndicator = document.getElementById('loading-indicator');
+
+            submitButton.style.display = 'none';
+            loadingIndicator.style.display = 'block';
+
             const formData = new FormData();
             for (const key in answers) {
                 formData.append(key, answers[key]);
             }
-    
+
             formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
-    
+
             fetch('{% url "survey" survey_id=survey.survey_id %}', {
                 method: 'POST',
                 body: formData
@@ -123,6 +131,8 @@
                 }
             }).catch(error => {
                 console.error('Ошибка при отправке данных:', error);
+            }).finally(() => {
+                loadingIndicator.style.display = 'none';
             });
         });
     

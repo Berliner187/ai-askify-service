@@ -6,3 +6,5 @@ logger.csv
 .env
 *.csv
 logger.csv
+/docs
+/backup

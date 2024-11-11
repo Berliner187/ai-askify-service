@@ -100,6 +100,11 @@ class AuthUser(AbstractUser):
         blank=True,
     )
 
+    vk_id = models.CharField(max_length=255, unique=True, null=True, blank=True)
+    name = models.CharField(max_length=255, unique=False, null=True, blank=True)
+    phone = models.CharField(max_length=20, null=True, blank=True)
+    email = models.EmailField(null=True, blank=True)
+
     def __str__(self):
         return self.username
 
@@ -201,3 +206,10 @@ class BlockedUsers(models.Model):
 
     def __str__(self):
         return self.ip_address
+
+
+class FeedbackFromAI(models.Model):
+    survey_id = models.UUIDField(blank=False)
+    id_staff = models.UUIDField(blank=False)
+    feedback_data = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)

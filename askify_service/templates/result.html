@@ -104,6 +104,11 @@
 
         <div>
             {% if total > 0 %}
+            <div class="container result-full feedback-container">
+                <h2>Рекомендации</h2>
+                {{ feedback_text|safe }}
+            </div>
+            
             <div class="container result-full">
                 <h2>Результаты теста</h2>
                 <div class="questions-container">
@@ -120,7 +125,7 @@
                             </div>
                             {% if question.correct_answer not in selected_answers and question.correct_answer in question.options %}
                                 <div class="correct-answer-highlight">
-                                    <p><i>Правильный ответ: {{ question.correct_answer }}</i></p>
+                                    <p>🟢 Правильный ответ {{ question.correct_answer }}</p>
                                 </div>
                             {% endif %}
                         </div>

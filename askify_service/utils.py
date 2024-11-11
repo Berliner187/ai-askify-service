@@ -137,10 +137,44 @@ class GenerationModelsControl:
         return response.json()
 
     def get_service_0002(self, text_from_user):
-        completion = self.response_service_0002(text_from_user)
+        messages = [
+            {
+                "role": "system",
+                "content": f"{self.__get_confidential_key('pre_feedback_prompt')}"
+            },
+            {
+                "role": "user",
+                "content": f"{text_from_user}{self.__get_confidential_key('post_feedback_prompt')}"
+            }
+        ]
 
-        assistant_response = completion['choices'][0]['message']['content']
-        print("Assistant's response:", assistant_response)
+        url = "https://api.arliai.com/v1/chat/completions"
+        payload = json.dumps({
+            "model": "Meta-Llama-3.1-8B-Instruct",
+            "messages": messages,
+            "temperature": 0.7,
+            "max_tokens": 1024,
+            "stream": False
+        })
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {self.__get_confidential_key("api_arliai")}'
+        }
+        assistant_response = requests.post(url, headers=headers, data=payload)
+
+        if assistant_response.status_code == 200:
+            response_data = assistant_response.json()
+            feedback_text = response_data.get('choices', [{}])[0].get('message', {}).get('content', '')
+            print("Feedback's response:", feedback_text)
+        else:
+            feedback_text = assistant_response.json()
+            print(f"Ошибка: {assistant_response.status_code}, {assistant_response.text}")
+
+        return feedback_text
+
+    def get_feedback_001(self, text_from_user):
+        assistant_response = self.get_service_0002(text_from_user)
+        print("Feedback's response:", assistant_response)
         return assistant_response
 
 

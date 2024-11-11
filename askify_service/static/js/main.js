@@ -15,6 +15,9 @@ async function submitText() {
     blockGenerate.style.opacity = 0.3;
 
     try {
+        console.log('Sending text:', text);
+        console.log('Object to send:', { text });
+
         const response = await fetch('/api-create-survey/', {
             method: 'POST',
             headers: {
@@ -43,6 +46,7 @@ async function submitText() {
         blockGenerate.style.opacity = 1;
     }
 }
+
 
 
 
