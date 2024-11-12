@@ -114,47 +114,7 @@ def generate_survey(request):
             max_retries = 3
             for attempt in range(max_retries):
                 try:
-                    if DEBUG is False:
-                        generated_text = generation_models_control.get_service_0001(text_from_user)
-                    else:
-                        generated_text = """
-                        {
-                            "title": "Тест по архитектуре основной памяти",
-                            "questions": [
-                                {
-                                    "question": "Какой тип памяти используется для временного хранения данных, которые обрабатываются процессором?",
-                                    "options": ["ОЗУ", "ПЗУ", "Кэш-память", "Жесткий диск"],
-                                    "correct_answer": "ОЗУ"
-                                },
-                                {
-                                    "question": "Что такое кэш-память и для чего она используется?",
-                                    "options": ["Для хранения программ", "Для хранения данных",
-                                                "Для ускорения доступа к часто используемым данным",
-                                                "Для хранения настроек системы"],
-                                    "correct_answer": "Для ускорения доступа к часто используемым данным"
-                                },
-                                {
-                                    "question": "Какой принцип используется при организации памяти для обеспечения быстрого доступа к данным?",
-                                    "options": ["Последовательный доступ", "Прямой доступ", "Ассоциативный доступ",
-                                                "Адресный доступ"],
-                                    "correct_answer": "Ассоциативный доступ"
-                                },
-                                {
-                                    "question": "Что такое страница памяти и для чего она используется?",
-                                    "options": ["Для хранения программ", "Для хранения данных",
-                                                "Для организации виртуальной памяти",
-                                                "Для управления доступом к памяти"],
-                                    "correct_answer": "Для организации виртуальной памяти"
-                                },
-                                {
-                                    "question": "Какой алгоритм используется для замены страниц памяти при нехватке свободной памяти?",
-                                    "options": ["LRU (Least Recently Used)", "FIFO (First-In-First-Out)",
-                                                "OPT (Оптимальный)", "RANDOM"],
-                                    "correct_answer": "LRU (Least Recently Used)"
-                                }
-                            ]
-                        }
-                        """
+                    generated_text, tokens_used = generation_models_control.get_service_0001(text_from_user)
 
                     json_match = re.search(r'(\{.*\})', generated_text, re.DOTALL)
 
@@ -220,6 +180,7 @@ def generate_survey(request):
                 return JsonResponse({'error': 'Generated text is not valid JSON'}, status=400)
 
             try:
+                print(f"\n\n---- ТОКЕНОВ ИСПОЛЬЗОВАНО: {tokens_used}\n\n")
                 new_survey_id = uuid.uuid4()
                 survey = Survey(
                     survey_id=new_survey_id,
@@ -228,6 +189,12 @@ def generate_survey(request):
                 )
                 survey.save_questions(cleaned_generated_text['questions'])
                 survey.save()
+
+                _tokens_used = TokensUsed(
+                    id_staff=get_staff_id(request),
+                    tokens_survey_used=tokens_used
+                )
+                _tokens_used.save()
 
                 tracer_l.tracer_charge(
                     'DB', request.user.username, generate_survey.__name__, "success save to DB")
@@ -313,12 +280,16 @@ def take_survey(request, survey_id):
         if survey_obj.exists():
             survey_obj.delete()
 
+        user_answers_list = []
+
         correct_count = 0
+        total_count = 0
         for index_q, question in enumerate(questions):
             selected_answer = user_answers[index_q]
             is_correct = selected_answer == question['correct_answer']
             if is_correct:
                 correct_count = 1
+                total_count += 1
 
             user_answers_json = json.dumps(user_answers_dict)
 
@@ -333,23 +304,38 @@ def take_survey(request, survey_id):
                 }
             )
 
+            user_answers_list.append(
+                f"\n\nВопрос: {question['question']}\n"
+                f"Правильный ответ: {question['correct_answer']}\n"
+                f"Ответ пользователя: {selected_answer}"
+            )
+
             if DEBUG:
                 print(f"\n\nВопрос: {question['question']}\nПравильный ответ: {question['correct_answer']}\nОтвет пользователя: {selected_answer}")
 
         try:
-            print(">>>>> ЗАГРУЗКА FEEDBACK <<<<<")
             feedback_obj = FeedbackFromAI.objects.filter(survey_id=survey_id)
-
             if feedback_obj.exists():
                 feedback_obj.delete()
 
+            print(">>>>> ЗАГРУЗКА FEEDBACK <<<<<")
             generation_models_control = GenerationModelsControl()
-            ai_feedback = generation_models_control.get_feedback_001(f"{questions}{survey}")
+            ai_feedback, tokens_used = generation_models_control.get_feedback_001(
+                f"Список вопросов и моих ответов: {user_answers_list}.\n"
+                f"Набрано балов: {total_count} из {len(user_answers)}"
+            )
+
             FeedbackFromAI.objects.create(
                 survey_id=survey_id,
                 id_staff=get_staff_id(request),
                 feedback_data=ai_feedback
             )
+
+            _tokens_used = TokensUsed(
+                id_staff=get_staff_id(request),
+                tokens_feedback_used=tokens_used
+            )
+            _tokens_used.save()
         except Exception as fail:
             tracer_l.tracer_charge(
                 'CRITICAL', request.user.username, take_survey.__name__,
@@ -360,7 +346,7 @@ def take_survey(request, survey_id):
         return render(request, 'result.html', json_response)
 
     context = {
-        'survey': survey, 'questions': questions,
+        'survey': survey, 'questions': questions, 'survey_title': survey.title,
         'username': request.user.username if request.user.is_authenticated else None
     }
     return render(request, 'survey.html', context)
@@ -383,7 +369,6 @@ def result_view(request, survey_id):
         feedback_text = markdown.markdown(feedback_obj.feedback_data)
     except Exception as fail:
         feedback_text = None
-        pass
 
     json_response = {
         'title': survey.title,
@@ -509,7 +494,7 @@ def vk_callback(request):
     code = request.GET.get('code')
     state = request.GET.get('state')
     device_id = request.GET.get('device_id')
-    code_verifier = request.session.get('code_verifier')  # Получаем code_verifier из session
+    code_verifier = request.session.get('code_verifier')
 
     if code:
         token_url = 'https://id.vk.com/oauth2/access_token'
@@ -527,14 +512,12 @@ def vk_callback(request):
         tokens = response.json()
 
         if 'access_token' in tokens:
-            # Успешно получили токены
             access_token = tokens['access_token']
             refresh_token = tokens.get('refresh_token')
             id_token = tokens.get('id_token')
 
             print()
 
-            # Здесь вы можете сохранить токены в сессии или базе данных
             return JsonResponse({'status': 'success', 'access_token': access_token})
 
     return JsonResponse({'status': 'error', 'message': 'Authorization failed'}, status=400)
@@ -549,6 +532,11 @@ def profile_view(request, username):
     date_join = get_formate_date(user.date_joined)
     date_last_login = get_formate_date(user.last_login)
 
+    tokens_usage = TokensUsed.get_tokens_usage(staff_id)
+
+    total_tokens_for_surveys = f"{tokens_usage['tokens_survey_used']:,}"
+    total_tokens_for_feedback = f"{tokens_usage['tokens_feedback_used']:,}"
+
     try:
         subscription = get_object_or_404(Subscription, staff_id=staff_id)
         subscription.end_date = get_formate_date(subscription.end_date)
@@ -561,6 +549,7 @@ def profile_view(request, username):
         'date_join': date_join,
         'date_last_login': date_last_login,
         'statistics': statistics,
+        'tokens': {'surveys': total_tokens_for_surveys, 'feedback': total_tokens_for_feedback},
         'subscription': subscription
     }
 

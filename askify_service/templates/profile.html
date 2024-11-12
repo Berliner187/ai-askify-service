@@ -28,8 +28,13 @@
 
             <div class="profile-info">
                 <p><strong>Email: </strong>{{ email }}</p>
-                
                 <p><strong>Пароль: </strong>*********</p>
+
+                <ul>
+                    <li class="small-text">Последний вход: {{ date_last_login }}</li>
+                    <li class="small-text">Дата регистрации: {{ date_join }}</li>
+                </ul>
+
                 <div class="button-medium">
                     <a href="{% url 'profile' username %}">
                         <div>
@@ -38,11 +43,6 @@
                         </div>
                     </a>
                 </div>
-                
-                <ul>
-                    <li class="small-text">Последний вход: {{ date_last_login }}</li>
-                    <li class="small-text">Дата регистрации: {{ date_join }}</li>
-                </ul>
             </div>
 
             <hr>
@@ -58,12 +58,20 @@
             <div class="profile-info">
                 <h3>Активный план</h3>
                 <ul>
-                    <li>План {{subscription.plan_name}}</li>
-                    <li>Заканчивается {{subscription.end_date}}</li>
+                    <li>План <span class="accent-color-text">{{subscription.plan_name}}</span></li>
+                    <li>Заканчивается <span class="accent-color-text">{{subscription.end_date}}</span></li>
                 </ul>
             </div>
 
             <hr>
+
+            <div class="profile-info">
+                <h3>Токены</h3>
+                <ul>
+                    <li>Для тестов <span class="accent-color-text">{{tokens.surveys}}</span></li>
+                    <li>Для фидбэка <span class="accent-color-text">{{tokens.feedback}}</span></li>
+                </ul>
+            </div>
 
             <div class="head-button">
                 <div class="button-medium">

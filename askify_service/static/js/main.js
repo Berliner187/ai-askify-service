@@ -77,7 +77,7 @@ function validatorText(text_request) {
     else if (text_request.length < 10) {
         errors.push('Очень короткий запрос :(');
     }
-    else if (text_request.length > 128000) {
+    else if (text_request.length > 150000) {
         errors.push('Очень длинный запрос :(');
     }
     else if (containsHTMLTags(text_request)) {

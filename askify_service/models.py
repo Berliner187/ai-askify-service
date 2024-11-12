@@ -5,6 +5,7 @@ from django.db.models import Avg, Count, Max, Min
 from django.contrib.auth.models import User
 from django.utils import timezone
 from django.utils.translation import get_language
+from django.db.models import Sum
 
 from datetime import timedelta
 import datetime
@@ -213,3 +214,29 @@ class FeedbackFromAI(models.Model):
     id_staff = models.UUIDField(blank=False)
     feedback_data = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+class TokensUsed(models.Model):
+    id = models.IntegerField(primary_key=True)
+    id_staff = models.UUIDField(blank=False, null=False)
+    tokens_survey_used = models.IntegerField(blank=False, default=0, null=False)
+    tokens_feedback_used = models.IntegerField(blank=False, default=0, null=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        if not self.id:
+            last_id = TokensUsed.objects.order_by('id').last()
+            self.id = (last_id.id + 1) if last_id else 100000
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def get_tokens_usage(cls, staff_id):
+        """Метод для получения использованных токенов для конкретного сотрудника."""
+        tokens = cls.objects.filter(id_staff=staff_id).aggregate(
+            total_survey_tokens=Sum('tokens_survey_used'),
+            total_feedback_tokens=Sum('tokens_feedback_used')
+        )
+        return {
+            'tokens_survey_used': tokens['total_survey_tokens'] or 0,
+            'tokens_feedback_used': tokens['total_feedback_tokens'] or 0,
+        }

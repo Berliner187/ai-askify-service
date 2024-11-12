@@ -107,7 +107,9 @@ class GenerationModelsControl:
         generated_text = completion.choices[0].message.content
         cleaned_generated_text = generated_text.replace("json", "").replace("`", "")
 
-        return cleaned_generated_text
+        tokens_used = completion.usage.total_tokens
+
+        return cleaned_generated_text, tokens_used
 
     def response_service_0002(self, text_from_user):
         messages = [
@@ -166,16 +168,18 @@ class GenerationModelsControl:
             response_data = assistant_response.json()
             feedback_text = response_data.get('choices', [{}])[0].get('message', {}).get('content', '')
             print("Feedback's response:", feedback_text)
+            tokens_used = response_data.get('usage', {}).get('total_tokens', 0)
         else:
             feedback_text = assistant_response.json()
             print(f"Ошибка: {assistant_response.status_code}, {assistant_response.text}")
+            tokens_used = 0
 
-        return feedback_text
+        return feedback_text, tokens_used
 
     def get_feedback_001(self, text_from_user):
-        assistant_response = self.get_service_0002(text_from_user)
-        print("Feedback's response:", assistant_response)
-        return assistant_response
+        feedback_text, tokens_used = self.get_service_0002(text_from_user)
+        print("Feedback's response:", feedback_text)
+        return feedback_text, tokens_used
 
 
 class ConverterPDF:
