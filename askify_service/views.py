@@ -108,7 +108,7 @@ def generate_survey(request):
                 print("\nstart the generated...")
             tracer_l.tracer_charge(
                 'INFO', request.user.username, generate_survey.__name__,
-                f"start the generated: {text_from_user}")
+                f"start the generated: {text_from_user[:16]}")
 
             generation_models_control = GenerationModelsControl()
             max_retries = 3

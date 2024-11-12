@@ -480,7 +480,7 @@ textarea, #survey-container {
     transition: color 0.3s;
 }
 
-.navigation a:hover, .accent-color-text {
+.navigation a:hover, .accent-color-text, .profile-info strong {
     color: #616DF0;
 }
 .small-text {

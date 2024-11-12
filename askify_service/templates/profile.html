@@ -27,11 +27,11 @@
             <h2>Профиль <span class="accent-color-text">{{ username }}</span></h2>
 
             <div class="profile-info">
-                <p><strong>Email: </strong>{{ email }}</p>
-                <p><strong>Пароль: </strong>*********</p>
+                <p>Email: <strong>{{ email }}</strong></p>
+                <p>Пароль: <strong>*********</strong></p>
 
                 <ul>
-                    <li class="small-text">Последний вход: {{ date_last_login }}</li>
+                    <li class="small-text">Последняя авторизация: {{ date_last_login }}</li>
                     <li class="small-text">Дата регистрации: {{ date_join }}</li>
                 </ul>
 
@@ -58,8 +58,8 @@
             <div class="profile-info">
                 <h3>Активный план</h3>
                 <ul>
-                    <li>План <span class="accent-color-text">{{subscription.plan_name}}</span></li>
-                    <li>Заканчивается <span class="accent-color-text">{{subscription.end_date}}</span></li>
+                    <li>План <strong>{{subscription.plan_name}}</strong></li>
+                    <li>Заканчивается <strong>{{subscription.end_date}}</strong></li>
                 </ul>
             </div>
 
