@@ -26,6 +26,7 @@
     <link rel="stylesheet" href="{% static 'css/footer.css' %}">
     <!-- Yandex.Metrika counter --> <script type="text/javascript" > (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)}; m[i].l=1*new Date(); for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }} k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)}) (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym"); ym(98829160, "init", { clickmap:true, trackLinks:true, accurateTrackBounce:true }); </script> <noscript><div><img src="https://mc.yandex.ru/watch/98829160" style="position:absolute; left:-9999px;" alt="" /></div></noscript> <!-- /Yandex.Metrika counter -->
 </head>
+
 <body>
     <script src="{% static 'js/second-loader.js' %}"></script>
     <script src="{% static 'js/load-effect.js' %}"></script>
@@ -34,7 +35,21 @@
 
     <div id="page-container" class="fade" style="display: none;">
         {% include 'header.html' %}
-        
+
+        <div class="container upload-container" id="upload-container">
+            <div class="drop-area" id="drop-area">
+                <label class="upload-button" id="upload-button">
+                    <p>Загрузите файл</p>
+                    <img src="{% static 'img/icon-add-file.png' %}" alt="Иконка загрузки файла" class="upload-icon">
+                    <div class="checkmark" style="display: none;">
+                        <img src="{% static 'img/animation.gif' %}" alt="">
+                    </div>
+                </label>
+                <input type="file" id="file-upload" accept=".doc,.pdf" style="display: none;">
+                <p class="small-text">Или перетащите PDF-файл сюда</p>
+            </div>
+        </div>
+
         <div class="loader-container" id="loading-container">
             <div class="line"></div>
             <div class="line"></div>
@@ -45,7 +60,7 @@
         </div>
         
         <div class="container" id="block-generate">
-            <h2>На какую тему создать?</h2>
+            <h2>Или введите запрос с текстом</h2>
             <form id="text-form" method="post" onsubmit="event.preventDefault(); submitText();">
                 {% csrf_token %}
                 <div class="input-area">
@@ -65,9 +80,8 @@
             </form>
         </div>
         
-        
         {% include 'footer.html' %}
-        
+
         <script src="{% static 'js/main.js' %}"></script>
 
         <script>

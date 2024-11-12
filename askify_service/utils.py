@@ -2,8 +2,11 @@ import json
 import datetime
 import random
 import string
-import os
 import locale
+import os
+import re
+import time
+from django.http import JsonResponse
 
 import openai
 import requests
@@ -15,6 +18,11 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
+
+from .tracer import *
+
+
+tracer_l = TracerManager(TRACER_FILE)
 
 
 class ManageConfidentFields:
@@ -34,6 +42,103 @@ class ManageConfidentFields:
         return _config[keyname]
 
 
+class ManageGenerationSurveys:
+    def __init__(self, request, data):
+        self.request = request
+        self.data = data
+        self.text_from_user = self.get_text_from_request()
+        self.forbidden_words = self.load_forbidden_words()
+        self.generation_models_control = GenerationModelsControl()
+        self.max_retries = 3
+
+    def get_text_from_request(self):
+        print(self.data)
+        return self.data
+
+    def load_forbidden_words(self):
+        print('ошибка')
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        forbidden_words_file_path = os.path.join(base_dir, '../askify_app', "forbidden_words.txt")
+        with open(forbidden_words_file_path) as forbidden_words_file:
+            return [word.strip().lower() for word in forbidden_words_file.read().splitlines()]
+
+    def check_forbidden_words(self):
+        if any(word in self.text_from_user for word in self.forbidden_words):
+            self.log_warning("Detected forbidden words")
+            print("Detected forbidden words")
+            return True
+        return False
+
+    def log_warning(self, message):
+        print(message)
+        tracer_l.tracer_charge(
+            'WARNING', self.request.user.username, self.generate_survey_for_user.__name__,
+            message, "status: 400", self.text_from_user
+        )
+
+    def generate_survey_for_user(self):
+        print('на месте')
+        if self.check_forbidden_words():
+            return 420
+
+        self.log_info("start the generated: {}".format(self.text_from_user[:16]))
+        print("start the generated: {}".format(self.text_from_user[:16]))
+
+        for attempt in range(self.max_retries):
+            try:
+                generated_text, tokens_used = self.generation_models_control.get_service_0001(self.text_from_user)
+                return self.process_generated_text(generated_text), tokens_used
+
+            except Exception as fail:
+                print(fail, attempt)
+                response = self._handle_exception(fail, attempt)
+                if response:
+                    return response
+
+    def log_info(self, message):
+        tracer_l.tracer_charge(
+            'INFO', self.request.user.username, self.generate_survey_for_user.__name__,
+            message
+        )
+
+    def process_generated_text(self, generated_text):
+        json_match = re.search(r'(\{.*\})', generated_text, re.DOTALL)
+
+        if json_match:
+            try:
+                return json.loads(json_match.group(0))
+            except json.JSONDecodeError as fail:
+                self.log_error("json.JSONDecodeError", str(fail))
+                return JsonResponse({'error': 'Ошибка декодирования JSON'}, status=479)
+        else:
+            self.log_warning("JSON not found")
+            return JsonResponse({'error': f"{generated_text}"}, status=429)
+
+    def log_error(self, error_type, message):
+        print(error_type, message)
+        tracer_l.tracer_charge(
+            'ERROR', self.request.user.username, self.generate_survey_for_user.__name__,
+            error_type, message
+        )
+
+    def _handle_exception(self, fail, attempt):
+        if fail.response.status_code == 429:
+            self.log_error("Code 429", str(fail))
+            if attempt < self.max_retries - 1:
+                wait_time = 60
+                time.sleep(wait_time)
+                return JsonResponse(
+                    {'error': f"Сервер перегружен. Пожалуйста, повторите попытку через {wait_time} секунд."},
+                    status=429
+                )
+            else:
+                self.log_error(429, "AI: Server Overloaded")
+                return JsonResponse({'error': 'Сервер перегружен, попробуйте позже.'}, status=429)
+        else:
+            self.log_error("Code XXX", f"unknown critical error: {fail}")
+            raise
+
+
 class AccessControlUser:
     @staticmethod
     def validate_text(text):
@@ -47,6 +152,10 @@ def get_staff_id(request):
     if user.is_authenticated:
         return user.id_staff
     return None
+
+
+def get_username(request):
+    return request.user.username if request.user.is_authenticated else None
 
 
 def init_subscription():
@@ -67,9 +176,7 @@ def get_formate_date(date):
     locale.setlocale(locale.LC_TIME, 'ru_RU.UTF-8')
 
     date_str = str(date)
-    date_obj = datetime.datetime.fromisoformat(date_str[:-6])
-
-    date_obj += datetime.timedelta(hours=3)
+    date_obj = datetime.fromisoformat(date_str[:-6])
 
     return date_obj.strftime("%-d %B, в %H:%M")
 

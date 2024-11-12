@@ -5,7 +5,7 @@ from .views import *
 urlpatterns = [
     path('', index, name='home'),
     path('create/', page_create_survey, name='create'),
-    path('api-create-survey/', generate_survey, name='api-create-survey'),
+    path('api-create-survey/', ManageSurveysView.as_view(), name='api-create-survey'),
     path('survey/<str:survey_id>/', take_survey, name='survey'),
     path('result/<str:survey_id>/', result_view, name='result'),
     path('drop-survey/<str:survey_id>/', drop_survey, name='drop-survey'),
@@ -26,8 +26,10 @@ urlpatterns = [
     path('payment/success/', payment_success, name='payment_success'),
     path('payment/success/<str:payment_id>/', success_payment, name='success_payment_detail'),
     path('get_ip/', get_ip, name='get_ip'),
-    path('payment/', payment_view, name='payment'),
+    path('payment/', payment_success, name='payment'),
     path('api/payment/confirm/', confirm_payment, name='confirm_payment'),
+
+    path('upload/', FileUploadView.as_view(), name='file_upload'),
 
     # path('unblock-ip/<str:ip_address>/', unblock_ip, name='unblock_ip'),
     path('block-user/<str:id_staff>/', block_by_staff_id, name='block_by_staff_id'),

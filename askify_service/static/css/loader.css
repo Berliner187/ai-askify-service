@@ -1,17 +1,17 @@
-
   .loader-container {
-    --uib-size: 60px;
+    --uib-size: 100px;
     --uib-color: #6a61f0;
     --uib-speed: 0.7s;
     --uib-stroke: 3.5px;
     position: absolute;
-    margin-left: 50%;
-    margin-top: 20%;
     display: none;
     align-items: center;
     justify-content: center;
     height: var(--uib-size);
     width: var(--uib-size);
+    top: 45%;
+    left: 50%;
+    transform: translate(-50%, -50%);
   }
 
   .line {

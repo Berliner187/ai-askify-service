@@ -66,7 +66,6 @@ class TracerManager:
                 f"{WARNING_SYMBOL} WARNING\n\n{message_text}\n\n---\n{function}\n\n---{error_details}\n\n"
                 f"Username: {user_name}\n\n{additional_info}")
         elif log_level == 'ERROR':
-            print('zашел')
             self.send_message_to_telegram(
                 f"{STOP_SYMBOL} ERROR\n\n{message_text}\n\n---\n{function}")
         elif log_level == 'CRITICAL':
@@ -89,6 +88,7 @@ class TracerManager:
                 error_details,
                 additional_info
             ])
+            file.close()
 
     def tracer_load(self) -> List[Dict[str, str]]:
         logs = []

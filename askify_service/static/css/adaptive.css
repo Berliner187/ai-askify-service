@@ -78,4 +78,8 @@
     .burger-menu {
         display: flex;
     }
+
+    textarea, #survey-container {
+        width: 100%;
+    }
 }

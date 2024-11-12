@@ -3,3 +3,5 @@ openai
 requests
 markdown
 django-cors-headers
+aiofiles
+PyPDF2
