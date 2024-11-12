@@ -94,10 +94,7 @@ class ManageSurveysView(View):
         if request.method == 'POST':
             try:
                 text_from_user = json.loads(request.body)
-                text_from_user = text_from_user
-                print(text_from_user)
-
-                time.sleep(900)
+                text_from_user = text_from_user['text']
 
                 try:
                     print(f"\n\nGEN STAAAART")
