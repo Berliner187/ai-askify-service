@@ -384,9 +384,15 @@ def result_view(request, survey_id):
 
 
 def download_survey_pdf(request, survey_id):
-    request.user.log_activity(request)
-    survey = get_object_or_404(Survey, survey_id=uuid.UUID(survey_id))
-    return survey.generate_pdf()
+    try:
+        request.user.log_activity(request)
+        survey = get_object_or_404(Survey, survey_id=uuid.UUID(survey_id))
+        tracer_l.tracer_charge(
+            'INFO', request.user.username, download_survey_pdf.__name__, "View survey in PDF")
+        return survey.generate_pdf()
+    except Exception as fatal:
+        tracer_l.tracer_charge(
+            'CRITICAL', request.user.username, download_survey_pdf.__name__, "FATAL with View survey in PDF", fatal)
 
 
 def register(request):
@@ -531,8 +537,11 @@ def profile_view(request, username):
 
     tokens_usage = TokensUsed.get_tokens_usage(staff_id)
 
-    total_tokens_for_surveys = f"{tokens_usage['tokens_survey_used']:,}"
-    total_tokens_for_feedback = f"{tokens_usage['tokens_feedback_used']:,}"
+    total_tokens_for_surveys = get_format_number(tokens_usage['tokens_survey_used'])
+    total_tokens_for_feedback = get_format_number(tokens_usage['tokens_feedback_used'])
+
+    _total_tokens = tokens_usage['tokens_survey_used'] + tokens_usage['tokens_feedback_used']
+    total_tokens = get_format_number(_total_tokens)
 
     try:
         subscription = get_object_or_404(Subscription, staff_id=staff_id)
@@ -546,7 +555,10 @@ def profile_view(request, username):
         'date_join': date_join,
         'date_last_login': date_last_login,
         'statistics': statistics,
-        'tokens': {'surveys': total_tokens_for_surveys, 'feedback': total_tokens_for_feedback},
+        'tokens': {
+            'surveys': total_tokens_for_surveys, 'feedback': total_tokens_for_feedback,
+            'total_tokens': total_tokens
+        },
         'subscription': subscription
     }
 

@@ -7,8 +7,7 @@ from django.utils import timezone
 from django.utils.translation import get_language
 from django.db.models import Sum
 
-from datetime import timedelta
-import datetime
+from datetime import timedelta, datetime
 import json
 import uuid
 
@@ -152,7 +151,7 @@ class Subscription(models.Model):
     discount = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
 
     def remaining_time(self):
-        return self.end_date - datetime.datetime.now()
+        return self.end_date - datetime.now()
 
     def __str__(self):
         return f'Subscription {self.plan_name} for {self.staff_id}'

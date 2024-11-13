@@ -208,10 +208,6 @@ textarea, #survey-container {
     box-sizing: border-box;
 }
 
-#block-generate {
-    margin-top: 10%;
-}
-
 .container, .preview-content {
     margin: 0 auto;
     display: block;
@@ -228,7 +224,7 @@ textarea, #survey-container {
     overflow: hidden;
     transition: opacity .75s ease-in-out;
 }
-
+ 
 .container::before, .preview-content::before,
 .container::after, .preview-content::after {
     content: '';

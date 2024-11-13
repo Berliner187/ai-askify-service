@@ -86,7 +86,7 @@ class ManageGenerationSurveys:
 
         for attempt in range(self.max_retries):
             try:
-                generated_text, tokens_used = self.generation_models_control.get_service_0001(self.text_from_user)
+                generated_text, tokens_used = self.generation_models_control.get_generated_survey_0003(self.text_from_user)
                 return self.process_generated_text(generated_text), tokens_used
 
             except Exception as fail:
@@ -147,6 +147,10 @@ class AccessControlUser:
         pass
 
 
+def get_format_number(number) -> str:
+    return f"{number:,}".replace(',', ' ')
+
+
 def get_staff_id(request):
     user = request.user
     if user.is_authenticated:
@@ -160,7 +164,7 @@ def get_username(request):
 
 def init_subscription():
     plan_name = 'free'
-    end_date = datetime.datetime.now() + datetime.timedelta(days=7)
+    end_date = datetime.now() + datetime.timedelta(days=7)
     status = 'active'
     billing_cycle = 'weakly'
     discount = 0.00
@@ -190,35 +194,7 @@ class GenerationModelsControl:
         manage_confident_fields = ManageConfidentFields("config.json")
         return manage_confident_fields.get_confident_key(key_name)
 
-    def get_service_0001(self, text_from_user):
-
-        client = openai.OpenAI(
-            api_key=self.__get_confidential_key("api_openai"),
-            base_url="https://glhf.chat/api/openai/v1",
-        )
-
-        completion = client.chat.completions.create(
-            model=f"hf:{self.__get_confidential_key('llm_model_name')}",
-            messages=[
-                {
-                    "role": "system",
-                    "content": f"{self.__get_confidential_key('system_prompt')}"
-                },
-                {
-                    "role": "user",
-                    "content": f"{text_from_user}{self.__get_confidential_key('user_prompt')}"
-                }
-            ]
-        )
-
-        generated_text = completion.choices[0].message.content
-        cleaned_generated_text = generated_text.replace("json", "").replace("`", "")
-
-        tokens_used = completion.usage.total_tokens
-
-        return cleaned_generated_text, tokens_used
-
-    def response_service_0002(self, text_from_user):
+    def get_generated_survey_0002(self, text_from_user):
         messages = [
             {
                 "role": "system",
@@ -235,7 +211,7 @@ class GenerationModelsControl:
             "model": "Meta-Llama-3.1-8B-Instruct",
             "messages": messages,
             "temperature": 0.7,
-            "max_tokens": 1024,
+            "max_tokens": 2048,
             "stream": False
         })
         headers = {
@@ -245,46 +221,89 @@ class GenerationModelsControl:
         response = requests.post(url, headers=headers, data=payload)
         return response.json()
 
-    def get_service_0002(self, text_from_user):
+    def get_generated_feedback_0003(self, text_from_user):
+        client = openai.OpenAI(
+            base_url="https://openrouter.ai/api/v1",
+            api_key=self.__get_confidential_key('openrouter')
+        )
+
+        completion = client.chat.completions.create(
+            model="meta-llama/llama-3.2-90b-vision-instruct:free",
+            messages=[
+                {
+                    "role": "system",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": f"{self.__get_confidential_key('pre_feedback_prompt')}"
+                        },
+                        {
+                            "type": "text",
+                            "text": f"{text_from_user}{self.__get_confidential_key('post_feedback_prompt')}"
+                        }
+                    ]
+                }
+            ]
+        )
+
+        return self.__generate_completion(completion)
+
+    @staticmethod
+    def __generate_completion(completion):
+        generated_text = completion.choices[0].message.content
+        cleaned_generated_text = generated_text.replace("json", "").replace("`", "")
+        tokens_used = completion.usage.total_tokens
+        print(cleaned_generated_text, tokens_used)
+        return cleaned_generated_text, tokens_used
+
+    def get_generated_survey_0001(self, text_from_user):
+        client = openai.OpenAI(
+            api_key=self.__get_confidential_key("api_openai"),
+            base_url="https://glhf.chat/api/openai/v1",
+        )
+
         messages = [
             {
                 "role": "system",
-                "content": f"{self.__get_confidential_key('pre_feedback_prompt')}"
+                "content": f"{self.__get_confidential_key('system_prompt')}"
             },
             {
                 "role": "user",
-                "content": f"{text_from_user}{self.__get_confidential_key('post_feedback_prompt')}"
+                "content": f"{text_from_user}{self.__get_confidential_key('user_prompt')}"
             }
         ]
 
-        url = "https://api.arliai.com/v1/chat/completions"
-        payload = json.dumps({
-            "model": "Meta-Llama-3.1-8B-Instruct",
-            "messages": messages,
-            "temperature": 0.7,
-            "max_tokens": 1024,
-            "stream": False
-        })
-        headers = {
-            'Content-Type': 'application/json',
-            'Authorization': f'Bearer {self.__get_confidential_key("api_arliai")}'
-        }
-        assistant_response = requests.post(url, headers=headers, data=payload)
+        # return self.__generate_completion(client, messages)
 
-        if assistant_response.status_code == 200:
-            response_data = assistant_response.json()
-            feedback_text = response_data.get('choices', [{}])[0].get('message', {}).get('content', '')
-            print("Feedback's response:", feedback_text)
-            tokens_used = response_data.get('usage', {}).get('total_tokens', 0)
-        else:
-            feedback_text = assistant_response.json()
-            print(f"Ошибка: {assistant_response.status_code}, {assistant_response.text}")
-            tokens_used = 0
+    def get_generated_survey_0003(self, text_from_user):
+        client = openai.OpenAI(
+            base_url="https://openrouter.ai/api/v1",
+            api_key=self.__get_confidential_key('openrouter')
+        )
 
-        return feedback_text, tokens_used
+        completion = client.chat.completions.create(
+            model="meta-llama/llama-3.2-90b-vision-instruct:free",
+            messages=[
+                {
+                    "role": "system",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": f"{self.__get_confidential_key('system_prompt')}"
+                        },
+                        {
+                            "type": "text",
+                            "text": f"{text_from_user} {self.__get_confidential_key('user_prompt')}"
+                        }
+                    ]
+                }
+            ]
+        )
+
+        return self.__generate_completion(completion)
 
     def get_feedback_001(self, text_from_user):
-        feedback_text, tokens_used = self.get_service_0002(text_from_user)
+        feedback_text, tokens_used = self.get_generated_feedback_0003(text_from_user)
         print("Feedback's response:", feedback_text)
         return feedback_text, tokens_used
 
@@ -351,7 +370,7 @@ class ConverterPDF:
 
 
 def get_year_now():
-    return datetime.datetime.now().strftime("%Y")
+    return datetime.now().strftime("%Y")
 
 
 def get_client_ip(request):
