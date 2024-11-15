@@ -2,6 +2,7 @@ import json
 import datetime
 import random
 import string
+from datetime import timedelta
 import locale
 import os
 import re
@@ -166,7 +167,7 @@ def get_username(request):
 
 def init_subscription():
     plan_name = 'free'
-    end_date = datetime.now() + datetime.timedelta(days=7)
+    end_date = datetime.now() + timedelta(days=7)
     status = 'active'
     billing_cycle = 'weakly'
     discount = 0.00
