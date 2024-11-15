@@ -1,3 +1,5 @@
+const dropArea = document.getElementById('drop-area');
+
 async function submitText() {
     const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]') 
                     ? document.querySelector('[name=csrfmiddlewaretoken]').value
@@ -12,7 +14,8 @@ async function submitText() {
     }
 
     loadingIndicator.style.display = 'block';
-    blockGenerate.style.opacity = 0.3;
+    blockGenerate.style.opacity = 0;
+    dropArea.style.opacity = 0;
 
     try {
         console.log('Sending text:', text);
@@ -44,14 +47,13 @@ async function submitText() {
     } finally {
         loadingIndicator.style.display = 'none';
         blockGenerate.style.opacity = 1;
+        dropArea.style.opacity = 1;
     }
 }
 
-
-const dropArea = document.getElementById('drop-area');
-const fileInput = document.getElementById('file-upload');
 const uploadButton = document.querySelector('.upload-button');
 const checkmark = uploadButton.querySelector('.checkmark');
+const fileInput = document.getElementById('file-upload');
 
 ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
     dropArea.addEventListener(eventName, preventDefaults, false);
@@ -100,7 +102,9 @@ async function handleFiles(files) {
         const formData = new FormData();
         formData.append('file', file);
 
-        const csrftoken = document.cookie.split('; ').find(row => row.startsWith('csrftoken=')).split('=')[1];
+        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]') 
+        ? document.querySelector('[name=csrfmiddlewaretoken]').value
+        : document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
         try {
             const response = await fetch('/upload/', {

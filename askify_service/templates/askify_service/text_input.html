@@ -30,7 +30,7 @@
 
 <body>
     <script src="{% static 'js/second-loader.js' %}"></script>
-    <script src="{% static 'js/load-effect.js' %}"></script>
+    <!-- <script src="{% static 'js/load-effect.js' %}"></script> -->
 
     {% include 'components/loader.html' %}
 
@@ -47,7 +47,7 @@
                     </div>
                 </label>
                 <input type="file" id="file-upload" accept=".doc,.pdf" style="display: none;">
-                <p class="small-text">Или перетащите PDF-файл сюда</p>
+                <p class="small-text">Перетащите PDF-файл сюда</p>
             </div>
         </div>
 
@@ -61,11 +61,11 @@
         </div>
         
         <div class="container" id="block-generate">
-            <h2>Или введите запрос с текстом</h2>
+            <h2>Или введите тему</h2>
             <form id="text-form" method="post" onsubmit="event.preventDefault(); submitText();">
                 {% csrf_token %}
                 <div class="input-area">
-                    <textarea id="user-text" rows="4" cols="60" placeholder="Введите запрос"></textarea><br>
+                    <textarea id="user-text" rows="4" cols="60" placeholder="Или введите тему для генерации теста здесь"></textarea><br>
                     <button type="button" onclick="submitText()">
                         <img src="{% static 'img/icon-send-m.png' %}" alt="">
                     </button>
@@ -75,6 +75,14 @@
                         <div>
                             <img src="{% static 'img/icon-history.png' %}" alt="">
                             <p>История</p>
+                        </div>
+                    </a>
+                </div>
+                <div class="button-medium" id="#tokens-color">
+                    <a href="{% url 'history' %}">
+                        <div>
+                            <img src="{% static 'img/icon-tokens.png' %}" alt="">
+                            <p>Доступно <span>{{ tokens_f }}</span> токенов</p>
                         </div>
                     </a>
                 </div>
@@ -95,6 +103,40 @@
             });
 
             text.style.height = (text.scrollHeight) + 'px';
+        </script>
+
+        <script>
+            function getColor(averageScore) {
+                averageScore = Math.max(0, Math.min(40000, {{ tokens }}));
+    
+                let red, green, blue = 0;
+
+                if (averageScore <= 20000) {
+                    red = 255;
+                    green = Math.round(255 * (averageScore / 20000));
+                    blue = Math.round(100 * (averageScore / 20000));
+                } else if (averageScore > 20000 && averageScore < 30000) {
+                    red = 255;
+                    green = 255;
+                    blue = 0;
+                } else if (averageScore >= 30000 && averageScore < 40000) {
+                    red = Math.round(255 * (1 - (averageScore - 30000) / 10000));
+                    green = 255;
+                    blue = Math.round(100 * (1 - (averageScore - 30000) / 10000));
+                } else {
+                    red = 0;
+                    green = Math.round(255 * (1 - (averageScore - 40000) / 10000));
+                    blue = 255;
+                }
+
+                return `rgba(${red}, ${green}, ${blue}, 0.15)`;
+            }
+            
+            const averageScore = {{ limit_tokens }};
+            const color = getColor(averageScore);
+            
+            const scoreElement = document.getElementById('#tokens-color');
+            scoreElement.style.backgroundColor = color;
         </script>
     </div>
 </body>

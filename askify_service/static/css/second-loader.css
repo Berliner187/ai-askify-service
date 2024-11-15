@@ -1,5 +1,5 @@
 .loading-container {
-    --uib-size: 50px;
+    --uib-size: 72px;
     --uib-color: #616DF0;
     --uib-speed: 1s;
     --uib-dot-size: calc(var(--uib-size) * 0.18);

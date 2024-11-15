@@ -153,6 +153,9 @@ a {
 .question label input[type="radio"] {
     display: none;
 }
+.buttons-container {
+    float: right;
+}
 
 .question label {
     display: flex;
@@ -165,6 +168,9 @@ a {
 }
 .question label:hover {
     background-color: #28272F;
+}
+.question .button-accent {
+    border-radius: 12px;
 }
 
 .question label p {
@@ -222,9 +228,9 @@ textarea, #survey-container {
     border-radius: 30px;
     position: relative;
     overflow: hidden;
-    transition: opacity .75s ease-in-out;
+    transition: opacity .3s ease-in-out;
 }
- 
+
 .container::before, .preview-content::before,
 .container::after, .preview-content::after {
     content: '';
@@ -374,7 +380,7 @@ textarea, #survey-container {
 }
 #surveys-container h3 {
     margin-top: 0;
-    margin-bottom: 2em;
+    margin-bottom: 1em;
 }
 
 
@@ -403,6 +409,9 @@ textarea, #survey-container {
     padding:  0px 10px 0px 10px;
     justify-content: space-between;
 }
+.button-medium:active {
+    transform: scale(0.9);
+}
 .button-medium div {
     display: flex;
     align-items: center;
@@ -426,9 +435,10 @@ textarea, #survey-container {
     background-color: #616DF0;
     color: #d5d3db;
 }
+
 .button-red {
-    background-color: #e74c75;
-    color: #d5d3db;
+    background-color: rgba(231, 76, 117, 0.4);
+    backdrop-filter: blur(12px);
 }
 
 

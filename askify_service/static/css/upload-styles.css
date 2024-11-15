@@ -5,6 +5,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
+    transition-duration: .25s;
 }
 
 .upload-container div {

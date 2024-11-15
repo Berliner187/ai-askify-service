@@ -45,26 +45,39 @@ def index(request):
     return render(request, 'askify_service/index.html', context)
 
 
-@csrf_exempt
 @login_required
 def page_create_survey(request):
+    tokens = TokensUsed.objects.filter(id_staff=get_staff_id(request))
+
+    used_tokens = sum(token.tokens_survey_used for token in tokens)
+    limit_tokens = 40_000
+
     tracer_l.tracer_charge(
-        'INFO', request.user.username, page_history_surveys.__name__, "load page")
+        'INFO', request.user.username, page_create_survey.__name__, "load page")
     context = {
-        'username': request.user.username if request.user.is_authenticated else None
+        'tokens': limit_tokens - used_tokens,
+        'tokens_f': get_format_number(limit_tokens - used_tokens),
+        'limit_tokens': limit_tokens,
+        'username': get_username(request)
     }
+
     return render(request, 'askify_service/text_input.html', context)
 
 
 @login_required
 def page_history_surveys(request):
-    surveys_data = get_all_surveys(request)
-    context = {
-        'surveys_data': surveys_data,
-        'username': request.user.username if request.user.is_authenticated else None
-    }
-    tracer_l.tracer_charge(
-        'INFO', request.user.username, page_history_surveys.__name__, "load page")
+    try:
+        surveys_data = get_all_surveys(request)
+        context = {
+            'surveys_data': surveys_data,
+            'username': get_username(request)
+        }
+    except Exception as fatal:
+        context = {
+            'username': get_username(request)
+        }
+        tracer_l.tracer_charge(
+            'ERROR', request.user.username, page_history_surveys.__name__, f"{fatal}")
     return render(request, 'askify_service/history.html', context)
 
 
@@ -72,8 +85,6 @@ def page_history_surveys(request):
 def drop_survey(request, survey_id):
     survey_obj = Survey.objects.get(survey_id=uuid.UUID(survey_id))
     survey_obj.delete()
-    tracer_l.tracer_charge(
-        'INFO', request.user.username, drop_survey.__name__, "Delete Survey")
     try:
         survey_user_answers = get_object_or_404(UserAnswers, survey_id=uuid.UUID(survey_id))
         survey_user_answers.delete()
@@ -175,11 +186,13 @@ def get_all_surveys(request):
         return {}
 
     surveys = Survey.objects.filter(id_staff=staff_id)
-
     response_data_all = {}
 
     for survey in surveys:
-        response_data_all[str(survey.survey_id)] = survey.title
+        format_date_update = get_formate_date(survey.updated_at)
+        response_data_all[str(survey.survey_id)] = {
+            'title': survey.title, 'update': format_date_update
+        }
 
     print(response_data_all)
     return response_data_all
@@ -440,7 +453,7 @@ def login_view(request):
             request.user.log_activity(request)
 
             tracer_l.tracer_charge(
-                'ADMIN', request.user.username, register.__name__, f"user has been login in")
+                'ADMIN', request.user.username, login_view.__name__, f"user has been login in")
 
             return redirect('/create')
         else:

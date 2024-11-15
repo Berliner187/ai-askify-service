@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -46,18 +46,20 @@
     
                 <div id="surveys-container">
                     <h3>Предыдущие тесты</h3>
-                    {% for survey_id, survey_title in surveys_data.items %}
+                    {% for survey_id, survey_data in surveys_data.items %}
                         <label>
                             <a href="/result/{{ survey_id }}">
-                                <div class="survey-block">{{ survey_title }}</div>
+                                <div class="survey-block">{{ survey_data.title }}</div>
+                                <div class="survey-block small-text">{{ survey_data.update }}</div>
                             </a>
-                            <div class="button-medium button-red">
-                                <a href="{% url 'drop-survey' survey_id=survey_id %}">
-                                    <div>
-                                        <img src="{% static 'img/icon-delete.png' %}" alt="">
-                                        <p>Удалить</p>
-                                    </div>
-                                </a> 
+                            <div class="buttons-container">
+                                <div class="button-medium ">
+                                    <a href="{% url 'drop-survey' survey_id=survey_id %}">
+                                        <div>
+                                            <img src="{% static 'img/icon-delete.png' %}" alt="">
+                                        </div>
+                                    </a> 
+                                </div>
                             </div>
                         </label><br>
                     {% endfor %}

@@ -11,7 +11,7 @@ from datetime import timedelta, datetime
 import json
 import uuid
 
-from .utils import *
+from .converter_pdf import *
 
 
 class Survey(models.Model):
@@ -159,7 +159,7 @@ class Subscription(models.Model):
 
 class Payment(models.Model):
     subscription = models.ForeignKey(Subscription, on_delete=models.CASCADE)
-    payment_id = models.CharField(max_length=100, unique=True, default=generate_payment_id)
+    payment_id = models.CharField(max_length=100, unique=True)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     created_at = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=20, choices=[
