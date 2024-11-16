@@ -1,24 +1,32 @@
+{% load static %}
+<head>
+    <link rel="stylesheet" href="{% static 'css/nav.css' %}">
+</head>
+
 <header class="header">
-    {% load static %}
+
     <div class="logo-header">
         <a href="{% url 'create' %}">
             <img src="{% static 'img/logo-header.png' %}" alt="">
         </a>
     </div>
 
-    <nav class="navigation">
+    <div class="burger" id="burger">
+        <div></div>
+        <div></div>
+        <div></div>
+    </div>
+    
+    <nav id="nav">
         <ul>
-            <li><a href="#">Начало</a></li>
-            <li><a href="#">Преимущества</a></li>
-            <li><a href="#">Функции</a></li>
-            <li><a href="#">ЧаВо</a></li>
+            <li><a href="{% url 'payment' %}">Купить премиум 💎</a></li>
+            <li><a href="/profile/{{ username }}">Профиль</a></li>
+            <li><a href="{% url 'history' %}">История</a></li>
+            <hr>
+            <li><a href="{% url 'logout' %}">Выйти</a></li>
         </ul>
     </nav>
-
-    <div class="button-medium">
-        <p><a href="/profile/{{ username }}">{{ username }}</a></p>
-    </div>
-
+        
     <div class="auth-buttons" data-authenticated="{% if user.is_authenticated %}true{% else %}false{% endif %}">
         <div class="button-medium">
             <a href="{% url 'login' %}">
@@ -48,5 +56,7 @@
             }
         });
     </script>
+
+    <script src="{% static 'js/nav.js' %}"></script>
 
 </header>

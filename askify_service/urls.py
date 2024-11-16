@@ -22,12 +22,9 @@ urlpatterns = [
     path('api/auth/vk/', vk_auth, name='vk_auth'),
     path('callback/', vk_callback, name='vk_callback'),
 
-    path('success_payment/', success_payment, name='success_payment_view'),
-    path('payment/success/', payment_success, name='payment_success'),
-    path('payment/success/<str:payment_id>/', success_payment, name='success_payment_detail'),
     path('get_ip/', get_ip, name='get_ip'),
-    path('payment/', payment_success, name='payment'),
-    path('api/payment/confirm/', confirm_payment, name='confirm_payment'),
+    path('payment/', success_payment, name='payment'),
+    path('api/payment/initiate', PaymentInitiateView.as_view(), name='payment_initiate'),
 
     path('upload/', FileUploadView.as_view(), name='file_upload'),
 

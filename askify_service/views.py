@@ -569,8 +569,7 @@ def profile_view(request, username):
         'date_last_login': date_last_login,
         'statistics': statistics,
         'tokens': {
-            'surveys': total_tokens_for_surveys, 'feedback': total_tokens_for_feedback,
-            'total_tokens': total_tokens
+            'surveys': total_tokens_for_surveys, 'feedback': total_tokens_for_feedback, 'total_tokens': total_tokens
         },
         'subscription': subscription
     }
@@ -787,36 +786,107 @@ def subscription_list(request):
     return render(request, 'subscription.html', {'subscriptions': subscriptions})
 
 
-def success_payment(request, payment_id):
-    print("GET запрос на success_payment с payment_id:", payment_id)
-    payment = get_object_or_404(Payment, payment_id=payment_id)
-    return render(request, 'payment.html', {'payment': payment})
+@login_required
+def success_payment(request):
+    # payment = get_object_or_404(Payment, payment_id=payment_id)
+    context = {
+        'username': request.user.username
+    }
+    return render(request, 'payments/payment.html', context)
 
 
-def payment_success(request):
-    if request.method == 'POST':
-        print('прилет payment_success')
+def create_token(data_order):
+    # Сортируем параметры по ключам
+    sorted_data = sorted(data_order, key=lambda x: list(x.keys())[0])
+    concatenated = ''.join([list(item.values())[0] for item in sorted_data])
+    return hashlib.sha256(concatenated.encode('utf-8')).hexdigest()
+
+
+class PaymentInitiateView(View):
+    def post(self, request):
         data = json.loads(request.body)
-        payment_id = data.get('payment_id')
-        amount = data.get('amount')
-        status = data.get('status')
+        # Извлечение данных из запроса
+        terminal_key = data['terminalKey']
+        amount = int(data['amount']) * 100
+        description = data['description']
+        email = data['email']
+        phone = data['phone']
+        receipt = data['receipt']
 
-        if not payment_id or not amount or not status:
-            return HttpResponseBadRequest("Missing required fields")
+        order_id = generate_payment_id()
 
-        staff_id = get_staff_id(request)
-        subscription = get_object_or_404(Subscription, staff_id=staff_id)
+        data_token = [
+            {"TerminalKey": "1731153311116DEMO"},
+            {"Amount": "19200"},
+            {"OrderId": order_id},
+            {"Description": "Стандартный план"},
+            {"Password": "4Z6GdFlLmPZwRbT4"}
+        ]
 
-        payment = Payment.objects.create(
-            subscription=subscription,
-            payment_id=payment_id,
-            amount=amount,
-            status=status
-        )
+        request_body = {
+            "TerminalKey": "1731153311116DEMO",
+            "Amount": 19200,
+            "OrderId": order_id,
+            "Description": "Стандартный план",
+            "Token": create_token(data_token),
+            "DATA": {
+                "Phone": "+71234567890",
+                "Email": "a@test.com"
+            },
+            "Receipt": {
+                "Email": "a@test.ru",
+                "Phone": "+79031234567",
+                "Taxation": "osn",
+                "Items": [
+                    {
+                        "Name": "Наименование товара 1",
+                        "Price": 10000,
+                        "Quantity": 1,
+                        "Amount": 10000,
+                        "Tax": "vat10",
+                        "Ean13": "303130323930303030630333435"
+                    },
+                    {
+                        "Name": "Наименование товара 2",
+                        "Price": 3500,
+                        "Quantity": 2,
+                        "Amount": 7000,
+                        "Tax": "vat20"
+                    },
+                    {
+                        "Name": "Наименование товара 3",
+                        "Price": 550,
+                        "Quantity": 4,
+                        "Amount": 2200,
+                        "Tax": "vat10"
+                    }
+                ]
+            }
+        }
 
-        return JsonResponse({'status': 'success', 'payment_id': payment.payment_id})
+        headers = {"Content-Type": "application/json"}
+        response = requests.post("https://securepay.tinkoff.ru/v2/Init/", json=request_body, headers=headers)
+        response_data = response.json()
 
-    return render(request, 'payments/payment.html')
+        print(response_data)
+
+        print()
+        for key, value in response_data.items():
+            print(key, value)
+        print()
+
+        if response_data.get('Success'):
+            return JsonResponse({
+                'Success': True,
+                'PaymentURL': response_data['PaymentURL'],
+                'Message': 'Платеж успешно инициирован.'
+            })
+        else:
+            return JsonResponse({
+                'Success': False,
+                'ErrorCode': response_data.get('ErrorCode'),
+                'Message': response_data.get('Message')
+            }, status=400)
 
 
 def get_ip(request):

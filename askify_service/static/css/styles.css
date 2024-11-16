@@ -448,6 +448,7 @@ textarea, #survey-container {
     padding: 10px 10px;
     max-width: 2000px;
     margin: 0 auto;
+    align-items: center;
 }
 
 .logo-header {

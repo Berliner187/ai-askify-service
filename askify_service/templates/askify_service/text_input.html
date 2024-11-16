@@ -105,39 +105,8 @@
             text.style.height = (text.scrollHeight) + 'px';
         </script>
 
-        <script>
-            function getColor(averageScore) {
-                averageScore = Math.max(0, Math.min(40000, {{ tokens }}));
-    
-                let red, green, blue = 0;
-
-                if (averageScore <= 20000) {
-                    red = 255;
-                    green = Math.round(255 * (averageScore / 20000));
-                    blue = Math.round(100 * (averageScore / 20000));
-                } else if (averageScore > 20000 && averageScore < 30000) {
-                    red = 255;
-                    green = 255;
-                    blue = 0;
-                } else if (averageScore >= 30000 && averageScore < 40000) {
-                    red = Math.round(255 * (1 - (averageScore - 30000) / 10000));
-                    green = 255;
-                    blue = Math.round(100 * (1 - (averageScore - 30000) / 10000));
-                } else {
-                    red = 0;
-                    green = Math.round(255 * (1 - (averageScore - 40000) / 10000));
-                    blue = 255;
-                }
-
-                return `rgba(${red}, ${green}, ${blue}, 0.15)`;
-            }
-            
-            const averageScore = {{ limit_tokens }};
-            const color = getColor(averageScore);
-            
-            const scoreElement = document.getElementById('#tokens-color');
-            scoreElement.style.backgroundColor = color;
-        </script>
     </div>
+    <script src="{% static 'js/nav.js' %}"></script>
+
 </body>
 </html>

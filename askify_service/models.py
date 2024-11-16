@@ -215,6 +215,31 @@ class FeedbackFromAI(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
 
+def get_token_limit(plan_name):
+    token_limits = {
+        'бесплатный': 40_000,
+        'стандартный': 200_000,
+        'премиум': 500_000,
+    }
+    return token_limits.get(plan_name.lower(), 0)
+
+
+def is_user_subscribed_and_has_tokens(user_id):
+    try:
+        subscription = Subscription.objects.get(staff_id=user_id, status='active')
+        if subscription.end_date < datetime.now():
+            return False
+
+        tokens_used = TokensUsed.get_tokens_usage(user_id)
+        token_limit = get_token_limit(subscription.plan_name)
+
+        total_used = tokens_used['tokens_survey_used'] + tokens_used['tokens_feedback_used']
+        return total_used < token_limit
+
+    except Subscription.DoesNotExist:
+        return False
+
+
 class TokensUsed(models.Model):
     id = models.IntegerField(primary_key=True)
     id_staff = models.UUIDField(blank=False, null=False)
@@ -239,3 +264,10 @@ class TokensUsed(models.Model):
             'tokens_survey_used': tokens['total_survey_tokens'] or 0,
             'tokens_feedback_used': tokens['total_feedback_tokens'] or 0,
         }
+
+    def has_available_tokens(self, plan_name):
+        tokens_used = self.get_tokens_usage(self.id_staff)
+        token_limit = get_token_limit(plan_name)
+
+        total_used = tokens_used['tokens_survey_used'] + tokens_used['tokens_feedback_used']
+        return total_used < token_limit

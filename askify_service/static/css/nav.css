@@ -1,0 +1,73 @@
+.burger {
+    cursor: pointer;
+    width: 25px;
+    height: 18px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition-duration: .25s;
+}
+
+nav ul li:active, .burger:active {
+    transform: scale(0.9);
+}
+
+.burger div {
+    background-color: #cecdd9;
+    height: 3px;
+    width: 100%;
+    border-radius: 15px;
+    transition: all 0.3s ease;
+}
+
+nav {
+    display: none;
+    transition: .25s;
+}
+
+nav.active {
+    display: block;
+    position: absolute;
+    top: 50px;
+    right: 200px;
+    min-width: 100px;
+    width: max-content;
+    max-width: 300px;
+    padding: 1em;
+    border-radius: 15px;
+    background-color: #151417;
+    margin-top: 10px;
+    z-index: 1000;
+    user-select: none;
+}
+
+nav ul {
+    display: flex;
+    flex-direction: column;
+    list-style-type: none;
+    margin: 0;
+}
+
+nav ul li {
+    padding: 10px 20px 10px 20px;
+    background-color: #201e24;
+    border-radius: 10px;
+    transition-duration: .25s;
+}
+
+nav ul li a {
+    width: max-content;
+    text-decoration: none;
+    font-size: 1em;
+    transition: color 0.2s;
+}
+
+nav ul li a:hover {
+    opacity: .75;
+}
+
+@media (max-width: 768px) {
+    nav.active {
+        right: 12px;
+    }
+}
