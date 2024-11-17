@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Оплата</title>
+    {% load static %}
+    <link rel="shortcut icon" href="{% static 'img/favicon.ico' %}" type="image/png">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'css/footer.css' %}">
+    <script src="https://securepay.tinkoff.ru/html/payForm/js/tinkoff_v2.js"></script>
+    <style>
+        .payform-tbank {
+            display: flex;
+            margin: 2px auto;
+            flex-direction: column;
+            max-width: 250px;
+        }
+        .payform-tbank-row {
+            margin: 2px;
+            border-radius: 4px;
+            flex: 1;
+            transition: 0.3s;
+            border: 1px solid #DFE3F3;
+            padding: 15px;
+            outline: none;
+            background-color: #DFE3F3;
+            font-size: 15px;
+        }
+        .payform-tbank-row:focus {
+            background-color: #FFFFFF;
+            border: 1px solid #616871;
+        }
+        .payform-tbank-btn {
+            background-color: #FBC520;
+            border: 1px solid #FBC520;
+            color: #3C2C0B;
+        }
+        .payform-tbank-btn:hover {
+            background-color: #FAB619;
+            border: 1px solid #FAB619;
+        }
+    </style>
+</head>
+<body>
+    {% include 'header.html' %}
+
+    <form class="payform-tbank" name="payform-tbank" id="payform-tbank">
+        {% csrf_token %}
+        <input class="payform-tbank-row" type="hidden" name="terminalkey" value="1731153311116DEMO">
+        <input class="payform-tbank-row" type="hidden" name="frame" value="false">
+        <input class="payform-tbank-row" type="hidden" name="language" value="ru">
+        <input class="payform-tbank-row" type="hidden" name="receipt" value="">
+        <input class="payform-tbank-row" type="text" placeholder="Сумма заказа" name="amount" value="275" required>
+        <input class="payform-tbank-row" type="hidden" placeholder="Номер заказа" name="order" value="123456">
+        <input class="payform-tbank-row" type="text" placeholder="Описание заказа" name="description" value="Тестовый заказ">
+        <input class="payform-tbank-row" type="text" placeholder="ФИО плательщика" name="name" value="Иван Иванов">
+        <input class="payform-tbank-row" type="email" placeholder="E-mail" name="email" value="test@mail.com">
+        <input class="payform-tbank-row" type="tel" placeholder="Контактный телефон" name="phone" value="+79001234567">
+        <input class="payform-tbank-row payform-tbank-btn" type="submit" value="Оплатить">
+    </form>
+
+    {% include 'footer.html' %}
+
+    <script type="text/javascript">
+        const TPF = document.getElementById("payform-tbank");
+
+        TPF.addEventListener("submit", function (e) {
+            e.preventDefault();
+            const {description, amount, email, phone} = TPF;
+
+            if (!email.value && !phone.value) {
+                return alert("Поле E-mail или Phone не должно быть пустым");
+            }
+
+            const requestData = {
+                terminalKey: TPF.terminalkey.value,
+                amount: amount.value,
+                orderId: TPF.order.value,
+                description: description.value,
+                email: email.value,
+                phone: phone.value,
+                receipt: JSON.stringify({
+                    "EmailCompany": "mail@mail.com",
+                    "Taxation": "patent",
+                    "FfdVersion": "1.2",
+                    "Items": [
+                        {
+                            "Name": description.value || "Оплата",
+                            "Price": amount.value + '00',
+                            "Quantity": 1.00,
+                            "Amount": amount.value + '00',
+                            "PaymentMethod": "full_prepayment",
+                            "PaymentObject": "service",
+                            "Tax": "none",
+                            "MeasurementUnit": "pc"
+                        }
+                    ]
+                })
+            };
+
+            // Получаем CSRF-токен из скрытого поля
+            const csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]').value;
+
+            fetch('/api/payment/initiate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify(requestData)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok.');
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Success:', data);
+                if (data.Success) {
+                    window.location.href = data.PaymentURL;
+                } else {
+                    alert(`Ошибка: ${data.Message}`);
+                }
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                alert('Произошла ошибка при инициации платежа.');
+            });
+        });
+    </script>
+    
+</body>
+</html>

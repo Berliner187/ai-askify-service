@@ -15,21 +15,27 @@
     border-radius: 15px;
     transition: all 0.3s ease;
 }
+.line:nth-child(2) {
+    top: 8px;
+}
+.line:nth-child(3) {
+    top: 16px;
+}
 
 .burger.active .line:nth-child(1) {
     transform: rotate(45deg);
-    position: absolute; /* Позиционируем линию */
-    top: 8px; /* Позиция верхней линии */
+    position: absolute;
+    top: 8px;
 }
 
 .burger.active .line:nth-child(2) {
-    opacity: 0; /* Скрываем среднюю линию */
+    opacity: 0;
 }
 
 .burger.active .line:nth-child(3) {
     transform: rotate(-45deg);
-    position: absolute; /* Позиционируем линию */
-    top: 8px; /* Позиция нижней линии */
+    position: absolute;
+    top: 8px;
 }
 
 nav {
@@ -41,6 +47,7 @@ nav.active {
     display: block;
     position: absolute;
     top: 100%;
+    margin-top: 10px;
     right: 0;
     min-width: 100px;
     width: max-content;
@@ -91,6 +98,6 @@ nav ul li a:hover {
 
 @media (max-width: 768px) {
     nav.active {
-        right: 12px;
+        right: 0;
     }
 }

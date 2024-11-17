@@ -1,20 +1,16 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Профиль пользователя • {{ user.username }}</title>
+    <title>Профиль {{ user.username }} • Летучка</title>
     <meta name="description" content="Профиль пользователя {{ user.username }}">
     <meta name="keywords" content="профиль, пользователь, {{ user.username }}">
     <link rel="preconnect" href="">
     <link rel="dns-prefetch" href="">
     <meta name="theme-color" content="#18171a">
     {% load static %}
-    <link rel="shortcut icon" href="{% static 'img/logo.png' %}" type="image/png">
-    <link rel="stylesheet" href="{% static 'css/second-loader.css' %}">
-    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
-    <link rel="stylesheet" href="{% static 'css/adaptive.css' %}">
-    <link rel="stylesheet" href="{% static 'css/footer.css' %}">
+    {% include 'components/linker.html' %}
 </head>
 <body>
     <script src="{% static 'js/second-loader.js' %}"></script>

@@ -174,8 +174,8 @@ def init_subscription():
     return plan_name, end_date, status, billing_cycle, discount
 
 
-def generate_payment_id(length=32):
-    characters = string.ascii_letters + string.digits
+def generate_payment_id(length=16):
+    characters = string.ascii_uppercase + string.digits
     return ''.join(random.choice(characters) for _ in range(length))
 
 

@@ -1,16 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     {% load static %}
-    <link rel="shortcut icon" href="{% static 'img/logo.png' %}" type="image/png">
-    <link rel="stylesheet" href="{% static 'css/second-loader.css' %}">
-    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
-    <link rel="stylesheet" href="{% static 'css/adaptive.css' %}">
+    <title>{{ title }} • Летучка</title>
+    {% include 'components/linker.html' %}
     <link rel="stylesheet" href="{% static 'css/results.css' %}">
-    <link rel="stylesheet" href="{% static 'css/footer.css' %}">
-    <title>Результаты теста</title>
 </head>
 <body>
     <script src="{% static 'js/second-loader.js' %}"></script>
@@ -144,6 +140,8 @@
             </div>
             {% endif %}
         </div>
+
+        {% include 'footer.html' %}
         
     </div>
 
@@ -173,8 +171,6 @@
             }, 1000);
         });
     </script>
-
-    {% include 'footer.html' %}
 
     <script>
         function getColor(averageScore) {
