@@ -10,22 +10,26 @@
             <img src="{% static 'img/logo-header.png' %}" alt="">
         </a>
     </div>
-
-    <div class="burger" id="burger">
-        <div></div>
-        <div></div>
-        <div></div>
+    
+    <div class="menu-container" style="position: relative;">
+        <div class="burger" id="burger">
+            <div class="line"></div>
+            <div class="line"></div>
+            <div class="line"></div>
+        </div>
+    
+        <nav id="nav">
+            <ul>
+                <li><a href="{% url 'payment' %}">Купить премиум 💎</a></li>
+                <li><a href="/profile/{{ username }}">Профиль</a></li>
+                <li><a href="{% url 'create' %}">Создать</a></li>
+                <li><a href="{% url 'history' %}">История</a></li>
+                <hr>
+                <li><a href="{% url 'logout' %}">Выйти</a></li>
+            </ul>
+        </nav>
     </div>
     
-    <nav id="nav">
-        <ul>
-            <li><a href="{% url 'payment' %}">Купить премиум 💎</a></li>
-            <li><a href="/profile/{{ username }}">Профиль</a></li>
-            <li><a href="{% url 'history' %}">История</a></li>
-            <hr>
-            <li><a href="{% url 'logout' %}">Выйти</a></li>
-        </ul>
-    </nav>
         
     <div class="auth-buttons" data-authenticated="{% if user.is_authenticated %}true{% else %}false{% endif %}">
         <div class="button-medium">

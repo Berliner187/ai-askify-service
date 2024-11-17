@@ -222,7 +222,7 @@ textarea, #survey-container {
     width: 80%;
     min-width: 320px;
     max-width: 1200px;
-    margin-top: 100px;
+    margin-top: 60px;
     padding: 20px;
     box-shadow: 8px 8px 20px rgba(36, 36, 36, .1);
     border-radius: 30px;
@@ -445,9 +445,10 @@ textarea, #survey-container {
 .header {
     display: flex;
     justify-content: space-between;
-    padding: 10px 10px;
+    padding: 10px 20px;
     max-width: 2000px;
     margin: 0 auto;
+    margin-top: 10px;
     align-items: center;
 }
 
