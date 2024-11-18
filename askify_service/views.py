@@ -208,7 +208,8 @@ class FileUploadView(View):
             return JsonResponse({'error': 'File too large. Max size is 5 MB.'}, status=400)
 
         data = self.read_file_data(uploaded_file)
-        time.sleep(900)
+        if DEBUG:
+            time.sleep(900)
 
         # manage_generate_surveys_text = ManageGenerationSurveys(request, data)
         # generated_text, tokens_used = manage_generate_surveys_text.generate_survey_for_user()
