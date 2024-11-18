@@ -81,7 +81,6 @@ a {
     border: none;
 }
 .btn:hover, button {
-    background-color: rgba(77, 68, 215, 0);
     cursor: pointer;
     opacity: .75;
 }
@@ -90,8 +89,14 @@ a {
     width: 72px;
     border-radius: 15px;
 }
+
 .input-area button {
     border: 2px solid #616DF0;
+    transition: .25s;
+}
+
+button:active {
+    transform: scale(0.9);
 }
 
 .submit-container {
@@ -166,8 +171,8 @@ a {
     transition-duration: .3s;
     border-radius: 8px;
 }
-.question label:hover {
-    background-color: #28272F;
+.question label:hover, .btn:hover, button {
+    background-color: rgb(24, 23, 26, .5);
 }
 .question .button-accent {
     border-radius: 12px;
@@ -229,34 +234,37 @@ textarea, #survey-container {
     position: relative;
     overflow: hidden;
     transition: opacity .3s ease-in-out;
+    background-image: url('../img/bg-gradient.png');
+    background-position: 0 top;
+    background-repeat: no-repeat;
 }
 
 .container::before, .preview-content::before,
 .container::after, .preview-content::after {
-    content: '';
+    /* content: '';
     position: absolute;
-    border-radius: 50%;
+    border-radius: 50%; */
     opacity: 0;
-    pointer-events: none; 
-    transition: opacity 2s ease;
+    pointer-events: none;
+    transition: opacity 5s ease-in-out;
 }
 
 .container::before {
-    width: 400px;
+    /* width: 400px;
     height: 400px;
     background: rgba(119, 12, 249, 0.945);
     top: -50px;
     left: -50px;
-    filter: blur(12em);
+    filter: blur(12em); */
 }
 
 .container::after {
-    width: 500px;
+    /* width: 500px;
     height: 500px; 
     background: #26BAE7;
     bottom: -100px;
     right: -100px;
-    filter: blur(20em);
+    filter: blur(20em); */
 }
 
 .container.show::before,
@@ -274,7 +282,7 @@ textarea, #survey-container {
 }
 .container div img:hover,
 .button-medium:hover {
-    opacity: .33;
+    opacity: .5;
 }
 
 .head-button {
@@ -402,7 +410,7 @@ textarea, #survey-container {
     font-family: "Unbounded Medium";
     display: inline-block;
     flex-wrap: nowrap;
-    background-color: #28272F;
+    background-color: rgba(40, 39, 47, .75);
     width: fit-content;
     transition: .25s;
     border-radius: 8px;

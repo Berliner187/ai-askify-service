@@ -1,0 +1,130 @@
+.payform-tbank {
+    width: 100%;
+}
+
+.payment-container {
+    max-width: 800px;
+}
+
+.subscription-selector {
+    margin-bottom: 30px;
+}
+
+.subscription-options {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.subscription-option {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 90%;
+    border-radius: 16px;
+    padding: 12px;
+    margin: 10px auto;
+    transition: transform 0.3s;
+    cursor: pointer;
+    transition: .25s;
+    border: 2px solid rgba(90, 102, 235, 0);
+}
+
+.subscription-option div {
+    padding: 0 10px;
+}
+
+.subscription-option p {
+    margin: 5px 0;
+}
+
+.subscription-option.active {
+    border: 2px solid #5A66EB;
+}
+
+.subscription-option h3 {
+    margin: 0;
+    color: #BAB8C1;
+}
+
+.price {
+    font-size: 1.2em;
+    margin: 10px 0;
+}
+
+.description {
+    font-size: 0.9em;
+    color: rgb(119, 116, 135);
+    margin-bottom: 15px;
+}
+
+.select-button {
+    background-color: #5A66EB;
+    border: none;
+    border-radius: 12px;
+    padding: 10px 15px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.select-button:hover {
+    background-color: #0056b3;
+}
+
+.promo-block {
+    margin: 0 auto;
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
+.promo-input {
+    font-family: 'Unbounded Regular';
+    width: 100%;
+    padding: 20px 10px;
+    background-color: #28272F;
+    color: #d5d3db;
+    border: none;
+    border-radius: 12px;
+}
+
+.agreement {
+    margin: 30px 0;
+    border: 2px solid #3a393d;
+    border-radius: 16px;
+    padding: 30px 10px;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    user-select: none;
+}
+
+.agreement-checkbox {
+    margin-right: 8px;
+    width: 16px;
+    height: 16px;
+    border-radius: 12px;
+    accent-color: #5A66EB;
+}
+.agreement-checkbox:hover {
+    background-color: #5A66EB;
+}
+
+.agreement a {
+    text-decoration: underline;
+}
+
+.payment-button {
+    font-family: 'Unbounded Medium';
+    background-color: #d5d3db;
+    width: 100%;
+    color: #28272F;
+    border: none;
+    border-radius: 12px;
+    padding: 16px 12px;
+    cursor: pointer;
+}
+
+.payment-button:hover {
+    opacity: .75;
+}

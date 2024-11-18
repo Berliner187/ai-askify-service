@@ -28,34 +28,42 @@
 
 <body>
     <script src="{% static 'js/second-loader.js' %}"></script>
-    <!-- <script src="{% static 'js/load-effect.js' %}"></script> -->
 
     {% include 'components/loader.html' %}
 
     <div id="page-container" class="fade" style="display: none;">
         {% include 'header.html' %}
 
+        <div class="loader-container" id="loading-container">
+            <div class="line-loader"></div>
+            <div class="line-loader"></div>
+            <div class="line-loader"></div>
+            <div class="line-loader"></div>
+            <div class="line-loader"></div>
+            <div class="line-loader"></div>
+        </div>
+
         <div class="container upload-container" id="upload-container">
             <div class="drop-area" id="drop-area">
                 <label class="upload-button" id="upload-button">
-                    <p>Загрузите файл</p>
-                    <img src="{% static 'img/icon-add-file.png' %}" alt="Иконка загрузки файла" class="upload-icon">
+                    <div id="content-upload-info">
+                        <p>Загрузите файл</p>
+                        <img src="{% static 'img/icon-add-file.png' %}" alt="Иконка загрузки файла" class="upload-icon">
+                        <p class="small-text">Перетащите PDF-файл сюда</p>
+                    </div>
                     <div class="checkmark" style="display: none;">
-                        <img src="{% static 'img/animation.gif' %}" alt="">
+                        <script src="https://cdn.lordicon.com/lordicon.js"></script>
+                        <lord-icon
+                            src="https://cdn.lordicon.com/smwmetfi.json"
+                            trigger="loop"
+                            delay="100"
+                            colors="primary:#d4d1fa"
+                            style="width:100px;height:100px">
+                        </lord-icon>
                     </div>
                 </label>
                 <input type="file" id="file-upload" accept=".doc,.pdf" style="display: none;">
-                <p class="small-text">Перетащите PDF-файл сюда</p>
             </div>
-        </div>
-
-        <div class="loader-container" id="loading-container">
-            <div class="line"></div>
-            <div class="line"></div>
-            <div class="line"></div>
-            <div class="line"></div>
-            <div class="line"></div>
-            <div class="line"></div>
         </div>
         
         <div class="container" id="block-generate">

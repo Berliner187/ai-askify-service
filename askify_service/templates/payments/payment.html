@@ -6,63 +6,138 @@
     <title>Оплата</title>
     {% load static %}
     <link rel="shortcut icon" href="{% static 'img/favicon.ico' %}" type="image/png">
-    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
-    <link rel="stylesheet" href="{% static 'css/footer.css' %}">
+    {% include 'components/linker.html' %}
+    <link rel="stylesheet" href="{% static 'css/change-plan.css' %}">
     <script src="https://securepay.tinkoff.ru/html/payForm/js/tinkoff_v2.js"></script>
-    <style>
-        .payform-tbank {
-            display: flex;
-            margin: 2px auto;
-            flex-direction: column;
-            max-width: 250px;
-        }
-        .payform-tbank-row {
-            margin: 2px;
-            border-radius: 4px;
-            flex: 1;
-            transition: 0.3s;
-            border: 1px solid #DFE3F3;
-            padding: 15px;
-            outline: none;
-            background-color: #DFE3F3;
-            font-size: 15px;
-        }
-        .payform-tbank-row:focus {
-            background-color: #FFFFFF;
-            border: 1px solid #616871;
-        }
-        .payform-tbank-btn {
-            background-color: #FBC520;
-            border: 1px solid #FBC520;
-            color: #3C2C0B;
-        }
-        .payform-tbank-btn:hover {
-            background-color: #FAB619;
-            border: 1px solid #FAB619;
-        }
-    </style>
 </head>
 <body>
-    {% include 'header.html' %}
+    <script src="{% static 'js/second-loader.js' %}"></script>
+    {% include 'components/loader.html' %}
 
-    <form class="payform-tbank" name="payform-tbank" id="payform-tbank">
-        {% csrf_token %}
-        <input class="payform-tbank-row" type="hidden" name="terminalkey" value="1731153311116DEMO">
-        <input class="payform-tbank-row" type="hidden" name="frame" value="false">
-        <input class="payform-tbank-row" type="hidden" name="language" value="ru">
-        <input class="payform-tbank-row" type="hidden" name="receipt" value="">
-        <input class="payform-tbank-row" type="text" placeholder="Сумма заказа" name="amount" value="275" required>
-        <input class="payform-tbank-row" type="hidden" placeholder="Номер заказа" name="order" value="123456">
-        <input class="payform-tbank-row" type="text" placeholder="Описание заказа" name="description" value="Тестовый заказ">
-        <input class="payform-tbank-row" type="text" placeholder="ФИО плательщика" name="name" value="Иван Иванов">
-        <input class="payform-tbank-row" type="email" placeholder="E-mail" name="email" value="test@mail.com">
-        <input class="payform-tbank-row" type="tel" placeholder="Контактный телефон" name="phone" value="+79001234567">
-        <input class="payform-tbank-row payform-tbank-btn" type="submit" value="Оплатить">
-    </form>
+    <div id="page-container" class="fade" style="display: none;">
+        {% include 'header.html' %}
+        
+        <div class="container payment-container">
+            <h2 class="product-title">Вы подключаете</h2>
+            <p><strong class="selected_plan_text"></strong></p>
 
-    {% include 'footer.html' %}
+            <div class="subscription-selector">
+        
+                <div class="subscription-options">
+                    <div class="subscription-option" data-plan="standard">
+                        <div>
+                            <p><strong>Стандартный план</strong></p>
+                            <p class="description">Создание тестов</p>
+                            <p class="description">Скачивание тестов в PDF</p>
+                            <p class="description">50 тестов в сутки</p>
+                            <p class="description">Доступ на 30 дней</p>
+                        </div>
+                        <h3 class="price">220₽</h3>
+                    </div>
+        
+                    <div class="subscription-option active" data-plan="premium">
+                        <div>
+                            <p><strong>Премиум план</strong></p>
+                            <p class="description">Все функции стандартного плана</p>
+                            <p class="description">Загрузка своих материалов</p>
+                            <p class="description">Обратная связь от ИИ</p>
+                            <p class="description">90 тестов в сутки</p>
+                            <p class="description">Доступ на 30 дней</p>
+                        </div>
+                        <h3 class="price">590₽</h3>
+                    </div>
+        
+                    <div class="subscription-option" data-plan="tokens">
+                        <div>
+                            <p><strong>Пакет токенов</strong></p>
+                            <p class="description">100 тыс токенов</p>
+                            <p class="description">Скачивание тестов в PDF</p>
+                            <p class="description">~50 тестов</p>
+                            <p class="description">Без ограничений по времени</p>
+                        </div>
+                        <h3 class="price">480₽</h3>
+                    </div>
+                </div>
+        
+            </div>
+
+            <div class="promo-block">
+                <input type="text" id="promo-code" class="promo-input" placeholder="Промокод">
+            </div>
+
+            <p class="total-cost">Стоимость - <span id="cost"></span> руб</p>
+            <p class="next-payment">Следующий платеж - <strong>17.12.2024</strong></p>
+
+            <div class="agreement">
+                <input type="checkbox" id="agreement" class="agreement-checkbox">
+                <label for="agreement">Согласен с <a href="/docs/user-agreement">пользовательским соглашением</a> и <a href="/docs/privacy-policy">политикой обработки персональных данных</a>.</label>
+            </div>
+
+            <form class="payform-tbank" name="payform-tbank" id="payform-tbank">
+                {% csrf_token %}
+                <input class="payform-tbank-row" type="hidden" name="terminalkey" value="1731153311116DEMO">
+                <input class="payform-tbank-row" type="hidden" name="frame" value="false">
+                <input class="payform-tbank-row" type="hidden" name="language" value="ru">
+                <input class="payform-tbank-row" type="hidden" name="receipt" value="">
+                <input class="payform-tbank-row" type="hidden" placeholder="Сумма заказа" name="amount">
+                <input class="payform-tbank-row" type="hidden" placeholder="Номер заказа" name="order" value="123456">
+                <input class="payform-tbank-row" type="hidden" placeholder="Описание заказа" name="description" value="Тестовый заказ">
+                <input class="payform-tbank-row" type="hidden" placeholder="ФИО плательщика" name="name" value="Иван Иванов">
+                <input class="payform-tbank-row" type="hidden" placeholder="E-mail" name="email" value="test@mail.com">
+                <input class="payform-tbank-row" type="hidden" placeholder="Контактный телефон" name="phone" value="+79001234567">
+                <input class="payform-tbank-row payment-button" type="submit" value="Перейти к оплате">
+            </form>
+        </div>
+        
+        {% include 'footer.html' %}
+    </div>
 
     <script type="text/javascript">
+        const subscriptionOptions = document.querySelectorAll('.subscription-option');
+        const amountInput = document.querySelector('input[name="amount"]');
+        const descriptionInput = document.querySelector('input[name="description"]');
+        const selectedPlanText = document.querySelectorAll('.selected_plan_text');
+        const priceElements = document.querySelectorAll('.price');
+
+        console.log(selectedPlanText[0].textContent);
+        
+        subscriptionOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                subscriptionOptions.forEach(opt => opt.classList.remove('active'));
+                
+                option.classList.add('active');
+
+                const selectedPlan = option.getAttribute('data-plan');
+                let price, description;
+
+                switch (selectedPlan) {
+                    case 'standard':
+                        price = 220;
+                        description = 'Стандартный план';
+                        sub_description = 'Доступ на 30 дней за ' + price + ' руб';
+                        break;
+                    case 'premium':
+                        price = 590;
+                        sub_description = 'Доступ на 30 дней за ' + price + ' руб';
+                        description = 'Премиум план';
+                        break;
+                    case 'tokens':
+                        price = 480;
+                        sub_description = 'Неограниченный доступ за ' + price + ' руб';
+                        description = 'Пакет токенов';
+                        break;
+                }
+
+                amountInput.value = price;
+                console.log(sub_description);
+                descriptionInput.value = description;
+                for (i=0; selectedPlanText.length; i++) {
+                    selectedPlanText[i].textContent = sub_description;
+                    console.log(selectedPlanText[i].textContent);
+                }
+            });
+        });
+
         const TPF = document.getElementById("payform-tbank");
 
         TPF.addEventListener("submit", function (e) {
@@ -99,7 +174,6 @@
                 })
             };
 
-            // Получаем CSRF-токен из скрытого поля
             const csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]').value;
 
             fetch('/api/payment/initiate', {

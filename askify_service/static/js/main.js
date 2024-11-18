@@ -7,6 +7,7 @@ async function submitText() {
     const text = document.getElementById('user-text').value;
     const blockGenerate = document.getElementById('block-generate');
     const loadingIndicator = document.getElementById('loading-container');
+    const uploadContainer = document.getElementById('upload-container');
 
     if (validatorText(text)) {
         console.log('Text validation failed');
@@ -16,6 +17,7 @@ async function submitText() {
     loadingIndicator.style.display = 'block';
     blockGenerate.style.opacity = 0;
     dropArea.style.opacity = 0;
+    uploadContainer.style.opacity = 0;
 
     try {
         console.log('Sending text:', text);
@@ -48,6 +50,7 @@ async function submitText() {
         loadingIndicator.style.display = 'none';
         blockGenerate.style.opacity = 1;
         dropArea.style.opacity = 1;
+        uploadContainer.style.opacity = 1;
     }
 }
 
@@ -98,6 +101,8 @@ async function handleFiles(files) {
         uploadButton.style.display = 'inline-block';
         uploadButton.classList.add('loading');
         checkmark.style.display = 'block';
+        const contentUploadInfo = document.getElementById('content-upload-info');
+        contentUploadInfo.style.opacity = 0;
 
         const formData = new FormData();
         formData.append('file', file);

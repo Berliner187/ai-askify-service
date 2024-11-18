@@ -208,8 +208,8 @@ class FileUploadView(View):
             return JsonResponse({'error': 'File too large. Max size is 5 MB.'}, status=400)
 
         data = self.read_file_data(uploaded_file)
+        time.sleep(900)
 
-        # Если текст предоставлен, передаем его в метод генерации
         # manage_generate_surveys_text = ManageGenerationSurveys(request, data)
         # generated_text, tokens_used = manage_generate_surveys_text.generate_survey_for_user()
         print("ТЕСТ ГЕНЕРИРУЕТСЯ")
@@ -237,7 +237,7 @@ class FileUploadView(View):
         return JsonResponse({"Success": True})
 
     def read_file_data(self, uploaded_file):
-        data = []
+        full_text = ""
 
         if uploaded_file.content_type == 'application/pdf':
             reader = PyPDF2.PdfReader(uploaded_file)
@@ -245,12 +245,13 @@ class FileUploadView(View):
             for page in reader.pages:
                 text = page.extract_text()
                 if text:
-                    data.append(text.strip())
+                    full_text += text.strip()
         else:
-            data.append("Файл не является PDF")
+            return ["Файл не является PDF"]
 
-        print(data)
-        return data
+        truncated_text = full_text[:128000]
+
+        return [truncated_text]
 
 
 @login_required
@@ -807,7 +808,7 @@ class PaymentInitiateView(View):
         data = json.loads(request.body)
         # Извлечение данных из запроса
         terminal_key = data['terminalKey']
-        amount = int(data['amount']) * 100
+        # amount = data['amount']
         description = data['description']
         email = data['email']
         phone = data['phone']
@@ -815,19 +816,31 @@ class PaymentInitiateView(View):
 
         order_id = generate_payment_id()
 
+        items = [
+            {
+                "Name": "Премиум план",
+                "Price": 59000,
+                "Quantity": 1,
+                "Amount": 59000,
+                "Tax": "none"
+            },
+        ]
+
+        total_amount = sum(item['Amount'] for item in items)
+
         data_token = [
             {"TerminalKey": "1731153311116DEMO"},
-            {"Amount": "19200"},
+            {"Amount": str(total_amount)},
             {"OrderId": order_id},
-            {"Description": "Стандартный план"},
+            {"Description": "Премиум план"},
             {"Password": "4Z6GdFlLmPZwRbT4"}
         ]
 
         request_body = {
             "TerminalKey": "1731153311116DEMO",
-            "Amount": 19200,
+            "Amount": total_amount,
             "OrderId": order_id,
-            "Description": "Стандартный план",
+            "Description": "Премиум план",
             "Token": create_token(data_token),
             "DATA": {
                 "Phone": "+71234567890",
@@ -837,30 +850,7 @@ class PaymentInitiateView(View):
                 "Email": "a@test.ru",
                 "Phone": "+79031234567",
                 "Taxation": "osn",
-                "Items": [
-                    {
-                        "Name": "Наименование товара 1",
-                        "Price": 10000,
-                        "Quantity": 1,
-                        "Amount": 10000,
-                        "Tax": "vat10",
-                        "Ean13": "303130323930303030630333435"
-                    },
-                    {
-                        "Name": "Наименование товара 2",
-                        "Price": 3500,
-                        "Quantity": 2,
-                        "Amount": 7000,
-                        "Tax": "vat20"
-                    },
-                    {
-                        "Name": "Наименование товара 3",
-                        "Price": 550,
-                        "Quantity": 4,
-                        "Amount": 2200,
-                        "Tax": "vat10"
-                    }
-                ]
+                "Items": items
             }
         }
 
