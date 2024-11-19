@@ -270,6 +270,9 @@ p {
     font-size: 16px;
     color: #d6d5df;
 }
+.plan a {
+    text-decoration: none;
+}
 .for-who {
     font-size: 12px;
     padding: 8px 16px 8px 16px;
@@ -307,19 +310,24 @@ p {
     margin-right: 5px;
 }
 
+.select-plan a, .select-plan {
+    color: #e8e7f1;
+}
 .select-plan {
     padding: 10px 24px 10px 24px;
     background-color: #5A66EB;
-    color: #e8e7f1;
     border: none;
     border-radius: 16px;
     cursor: pointer;
-    transition: background-color 0.3s;
+    transition: opacity 0.3s;
     margin-top: 40px;
     font-size: 16px;
 }
 .select-plan:hover {
-    background-color: #4a5cbf;
+    opacity: .75;
+}
+.select-plan:active {
+    transform: scale(.96);
 }
 
 .select-plan-accent {

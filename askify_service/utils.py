@@ -7,6 +7,8 @@ import locale
 import os
 import re
 import time
+import hashlib
+
 from django.http import JsonResponse
 
 import openai
@@ -17,6 +19,10 @@ from .tracer import *
 
 
 tracer_l = TracerManager(TRACER_FILE)
+
+
+TERMINAL_KEY = '1731153311116DEMO'
+TERMINAL_PASSWORD = '4Z6GdFlLmPZwRbT4'
 
 
 class ManageConfidentFields:
@@ -309,6 +315,55 @@ class GenerationModelsControl:
         feedback_text, tokens_used = self.get_generated_feedback_0003(text_from_user)
         print("Feedback's response:", feedback_text)
         return feedback_text, tokens_used
+
+
+class PaymentManager:
+    def __init__(self):
+        pass
+
+    def _post_requests_to_bank(self, request_url, data_json: dict):
+        """
+            Базовый метод запроса к банку
+        """
+        headers = {"Content-Type": "application/json"}
+        start_time = time.time()
+        response_api = requests.post(request_url, json=data_json, headers=headers)
+        elapsed_time = time.time() - start_time
+        try:
+            response = response_api.json()
+            if response['Success']:
+                return {'success': True, 'response': response, 'elapsed_time': elapsed_time}
+            return {
+                'success': False, 'response': response, 'code': response_api.status_code,
+                'text': response_api.text, 'elapsed_time': elapsed_time
+            }
+        except Exception as fail:
+            return {'success': False, 'response': response_api, 'error': fail}
+
+    def generate_token_for_new_payment(self):
+        """ Генерация токена для инициализации заказа """
+        pass
+
+    def _generate_token_for_check_order(self, parameters: list):
+        """
+            Генерация токена для проверки заказа.
+            Передается в таком порядке: {OrderId}{Password}{TerminalKey}.
+            Прим.: osidvoidsvnb = ["OrderId", "Password", "TerminalKey"]
+        """
+        concatenated = ''.join([item for item in parameters])
+        return hashlib.sha256(concatenated.encode('utf-8')).hexdigest()
+
+    def check_order(self, parameters: list):
+        """ Проверка платежа """
+        request_url = "https://securepay.tinkoff.ru/v2/CheckOrder"
+
+        post_request = {
+            "TerminalKey": TERMINAL_KEY,
+            "OrderId": "SZS9M83W5R435DCV",
+            "Token": self._generate_token_for_check_order(parameters)
+        }
+
+        return self._post_requests_to_bank(request_url, post_request)
 
 
 def get_year_now():

@@ -791,14 +791,20 @@ def subscription_list(request):
 @login_required
 def success_payment(request):
     # payment = get_object_or_404(Payment, payment_id=payment_id)
+    user_data = get_object_or_404(AuthUser, id_staff=get_staff_id(request))
+    payment_manager = PaymentManager()
     context = {
-        'username': request.user.username
+        'username': get_username(request),
+        'email': user_data.email,
+        'order_id': generate_payment_id(),
+        'phone': 999,
+        'fullname': 'ФИО',
+        'order_status': payment_manager.check_order(['SZS9M83W5R435DCV', '4Z6GdFlLmPZwRbT4', '1731153311116DEMO'])
     }
     return render(request, 'payments/payment.html', context)
 
 
 def create_token(data_order):
-    # Сортируем параметры по ключам
     sorted_data = sorted(data_order, key=lambda x: list(x.keys())[0])
     concatenated = ''.join([list(item.values())[0] for item in sorted_data])
     return hashlib.sha256(concatenated.encode('utf-8')).hexdigest()
@@ -809,20 +815,24 @@ class PaymentInitiateView(View):
         data = json.loads(request.body)
         # Извлечение данных из запроса
         terminal_key = data['terminalKey']
-        # amount = data['amount']
+        amount = data['amount']
         description = data['description']
+        order_id = data['orderId']
         email = data['email']
         phone = data['phone']
         receipt = data['receipt']
+        print('приход', order_id)
+        print(email)
+        print(phone)
 
-        order_id = generate_payment_id()
+        # order_id = generate_payment_id()
 
         items = [
             {
                 "Name": "Премиум план",
-                "Price": 59000,
+                "Price": int(amount) * 100,
                 "Quantity": 1,
-                "Amount": 59000,
+                "Amount": int(amount) * 100,
                 "Tax": "none"
             },
         ]
@@ -837,19 +847,21 @@ class PaymentInitiateView(View):
             {"Password": "4Z6GdFlLmPZwRbT4"}
         ]
 
+        created_token = create_token(data_token)
+        print(created_token)
         request_body = {
             "TerminalKey": "1731153311116DEMO",
             "Amount": total_amount,
             "OrderId": order_id,
             "Description": "Премиум план",
-            "Token": create_token(data_token),
+            "Token": created_token,
             "DATA": {
-                "Phone": "+71234567890",
-                "Email": "a@test.com"
+                "Phone": phone,
+                "Email": email
             },
             "Receipt": {
-                "Email": "a@test.ru",
-                "Phone": "+79031234567",
+                "Email": email,
+                "Phone": phone,
                 "Taxation": "osn",
                 "Items": items
             }
@@ -867,6 +879,15 @@ class PaymentInitiateView(View):
         print()
 
         if response_data.get('Success'):
+
+            url = "https://securepay.tinkoff.ru/v2/GetState"
+            headers = {"Content-Type": "application/json"}
+            response_api = requests.post(url, json=request_body, headers=headers)
+            try:
+                print(response_api.json())
+            except Exception as fail:
+                print(response_api)
+
             return JsonResponse({
                 'Success': True,
                 'PaymentURL': response_data['PaymentURL'],

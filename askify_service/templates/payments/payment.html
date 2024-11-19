@@ -18,7 +18,7 @@
         {% include 'header.html' %}
         
         <div class="container payment-container">
-            <h2 class="product-title">Вы подключаете</h2>
+            <h2 class="product-title">Выбор плана</h2>
             <p><strong class="selected_plan_text"></strong></p>
 
             <div class="subscription-selector">
@@ -65,8 +65,8 @@
                 <input type="text" id="promo-code" class="promo-input" placeholder="Промокод">
             </div>
 
-            <p class="total-cost">Стоимость - <span id="cost"></span> руб</p>
-            <p class="next-payment">Следующий платеж - <strong>17.12.2024</strong></p>
+            <p class="total-cost">Стоимость - <span id="price_total"></span> руб</p>
+            <!-- <p class="next-payment">Следующий платеж - <strong>17.12.2024</strong></p> -->
 
             <div class="agreement">
                 <input type="checkbox" id="agreement" class="agreement-checkbox">
@@ -80,10 +80,10 @@
                 <input class="payform-tbank-row" type="hidden" name="language" value="ru">
                 <input class="payform-tbank-row" type="hidden" name="receipt" value="">
                 <input class="payform-tbank-row" type="hidden" placeholder="Сумма заказа" name="amount">
-                <input class="payform-tbank-row" type="hidden" placeholder="Номер заказа" name="order" value="123456">
+                <input class="payform-tbank-row" type="hidden" placeholder="Номер заказа" name="order" value="{{order_id}}">
                 <input class="payform-tbank-row" type="hidden" placeholder="Описание заказа" name="description" value="Тестовый заказ">
-                <input class="payform-tbank-row" type="hidden" placeholder="ФИО плательщика" name="name" value="Иван Иванов">
-                <input class="payform-tbank-row" type="hidden" placeholder="E-mail" name="email" value="test@mail.com">
+                <input class="payform-tbank-row" type="hidden" placeholder="ФИО плательщика" name="name" value="{{fullname}}">
+                <input class="payform-tbank-row" type="hidden" placeholder="E-mail" name="email" value="{{email}}">
                 <input class="payform-tbank-row" type="hidden" placeholder="Контактный телефон" name="phone" value="+79001234567">
                 <input class="payform-tbank-row payment-button" type="submit" value="Перейти к оплате">
             </form>
@@ -92,52 +92,8 @@
         {% include 'footer.html' %}
     </div>
 
+    <script src="{% static 'js/plan-selector.js' %}"></script>
     <script type="text/javascript">
-        const subscriptionOptions = document.querySelectorAll('.subscription-option');
-        const amountInput = document.querySelector('input[name="amount"]');
-        const descriptionInput = document.querySelector('input[name="description"]');
-        const selectedPlanText = document.querySelectorAll('.selected_plan_text');
-        const priceElements = document.querySelectorAll('.price');
-
-        console.log(selectedPlanText[0].textContent);
-        
-        subscriptionOptions.forEach(option => {
-            option.addEventListener('click', () => {
-                subscriptionOptions.forEach(opt => opt.classList.remove('active'));
-                
-                option.classList.add('active');
-
-                const selectedPlan = option.getAttribute('data-plan');
-                let price, description;
-
-                switch (selectedPlan) {
-                    case 'standard':
-                        price = 220;
-                        description = 'Стандартный план';
-                        sub_description = 'Доступ на 30 дней за ' + price + ' руб';
-                        break;
-                    case 'premium':
-                        price = 590;
-                        sub_description = 'Доступ на 30 дней за ' + price + ' руб';
-                        description = 'Премиум план';
-                        break;
-                    case 'tokens':
-                        price = 480;
-                        sub_description = 'Неограниченный доступ за ' + price + ' руб';
-                        description = 'Пакет токенов';
-                        break;
-                }
-
-                amountInput.value = price;
-                console.log(sub_description);
-                descriptionInput.value = description;
-                for (i=0; selectedPlanText.length; i++) {
-                    selectedPlanText[i].textContent = sub_description;
-                    console.log(selectedPlanText[i].textContent);
-                }
-            });
-        });
-
         const TPF = document.getElementById("payform-tbank");
 
         TPF.addEventListener("submit", function (e) {
@@ -203,6 +159,25 @@
                 alert('Произошла ошибка при инициации платежа.');
             });
         });
+    </script>
+
+    <script>
+        const checkbox = document.getElementById('agreement');
+        const submitButton = document.querySelector('.payment-button');
+
+        function updateButtonState() {
+            if (checkbox.checked) {
+                submitButton.disabled = false;
+                submitButton.classList.remove('disabled');
+            } else {
+                submitButton.disabled = true;
+                submitButton.classList.add('disabled');
+            }
+        }
+
+        checkbox.addEventListener('change', updateButtonState);
+        updateButtonState();
+
     </script>
     
 </body>
