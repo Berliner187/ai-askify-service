@@ -208,8 +208,6 @@ class FileUploadView(View):
             return JsonResponse({'error': 'File too large. Max size is 5 MB.'}, status=400)
 
         data = self.read_file_data(uploaded_file)
-        if DEBUG:
-            time.sleep(900)
 
         # manage_generate_surveys_text = ManageGenerationSurveys(request, data)
         # generated_text, tokens_used = manage_generate_surveys_text.generate_survey_for_user()
@@ -827,6 +825,8 @@ class PaymentInitiateView(View):
 
         # order_id = generate_payment_id()
 
+        payment_manager = PaymentManager()
+
         items = [
             {
                 "Name": "Премиум план",
@@ -880,13 +880,9 @@ class PaymentInitiateView(View):
 
         if response_data.get('Success'):
 
-            url = "https://securepay.tinkoff.ru/v2/GetState"
-            headers = {"Content-Type": "application/json"}
-            response_api = requests.post(url, json=request_body, headers=headers)
-            try:
-                print(response_api.json())
-            except Exception as fail:
-                print(response_api)
+            data_for_check_order = [order_id, TERMINAL_PASSWORD, TERMINAL_KEY]
+            check_order_status = payment_manager.check_order(data_for_check_order)
+            print(check_order_status)
 
             return JsonResponse({
                 'Success': True,

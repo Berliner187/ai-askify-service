@@ -21,10 +21,6 @@ from .tracer import *
 tracer_l = TracerManager(TRACER_FILE)
 
 
-TERMINAL_KEY = '1731153311116DEMO'
-TERMINAL_PASSWORD = '4Z6GdFlLmPZwRbT4'
-
-
 class ManageConfidentFields:
     def __init__(self, filename):
         self.filename = filename
@@ -40,6 +36,11 @@ class ManageConfidentFields:
     def get_confident_key(self, keyname):
         _config = self.__read_confident_file()
         return _config[keyname]
+
+
+manage_conf = ManageConfidentFields("config.json")
+TERMINAL_KEY = manage_conf.get_confident_key("bank_terminal_key")
+TERMINAL_PASSWORD = manage_conf.get_confident_key("bank_terminal_password")
 
 
 class ManageGenerationSurveys:
@@ -344,11 +345,14 @@ class PaymentManager:
         """ Генерация токена для инициализации заказа """
         pass
 
+    def create_payment(self):
+        return
+
     def _generate_token_for_check_order(self, parameters: list):
         """
             Генерация токена для проверки заказа.
             Передается в таком порядке: {OrderId}{Password}{TerminalKey}.
-            Прим.: osidvoidsvnb = ["OrderId", "Password", "TerminalKey"]
+            Прим.: order_data = ["OrderId", "Password", "TerminalKey"]
         """
         concatenated = ''.join([item for item in parameters])
         return hashlib.sha256(concatenated.encode('utf-8')).hexdigest()
@@ -359,7 +363,7 @@ class PaymentManager:
 
         post_request = {
             "TerminalKey": TERMINAL_KEY,
-            "OrderId": "SZS9M83W5R435DCV",
+            "OrderId": parameters[0],
             "Token": self._generate_token_for_check_order(parameters)
         }
 
