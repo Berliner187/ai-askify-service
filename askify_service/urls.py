@@ -23,7 +23,7 @@ urlpatterns = [
     path('callback/', vk_callback, name='vk_callback'),
 
     path('get_ip/', get_ip, name='get_ip'),
-    path('payment/', success_payment, name='payment'),
+    path('payment/', create_payment, name='payment'),
     path('api/payment/initiate', PaymentInitiateView.as_view(), name='payment_initiate'),
 
     path('upload/', FileUploadView.as_view(), name='file_upload'),

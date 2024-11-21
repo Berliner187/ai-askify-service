@@ -47,7 +47,7 @@
             <div class="drop-area" id="drop-area">
                 <label class="upload-button" id="upload-button">
                     <div id="content-upload-info">
-                        <p>Загрузите файл</p>
+                        <h3>Загрузите файл</h3>
                         <img src="{% static 'img/icon-add-file.png' %}" alt="Иконка загрузки файла" class="upload-icon">
                         <p class="small-text">Перетащите PDF-файл сюда</p>
                     </div>
@@ -67,7 +67,7 @@
         </div>
         
         <div class="container" id="block-generate">
-            <h2>Или введите тему</h2>
+            <h3>Или введите тему</h3>
             <form id="text-form" method="post" onsubmit="event.preventDefault(); submitText();">
                 {% csrf_token %}
                 <div class="input-area">

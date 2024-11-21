@@ -82,8 +82,8 @@ class ManageGenerationSurveys:
         if self.check_forbidden_words():
             return 420
 
-        self.log_info("start the generated: {}".format(self.text_from_user[:16]))
-        print("start the generated: {}".format(self.text_from_user[:16]))
+        self.log_info("start the generated: {}".format(self.text_from_user[:32]))
+        print("start the generated: {}".format(self.text_from_user[:32]))
 
         for attempt in range(self.max_retries):
             try:
@@ -172,7 +172,7 @@ def get_username(request):
     return request.user.username if request.user.is_authenticated else None
 
 
-def init_subscription():
+def init_free_subscription():
     plan_name = 'free'
     end_date = datetime.now() + timedelta(days=7)
     status = 'active'

@@ -134,7 +134,7 @@ class UserActivity(models.Model):
 
 
 class Subscription(models.Model):
-    staff_id = models.UUIDField()
+    staff_id = models.UUIDField(default=uuid.uuid4, unique=True)
     plan_name = models.CharField(max_length=100)
     start_date = models.DateTimeField(auto_now_add=True)
     end_date = models.DateTimeField()
@@ -144,7 +144,7 @@ class Subscription(models.Model):
         ('canceled', 'Canceled'),
     ])
     billing_cycle = models.CharField(max_length=20, choices=[
-        ('weakly', 'Weakly'),
+        ('weekly', 'Weekly'),
         ('monthly', 'Monthly'),
         ('yearly', 'Yearly'),
     ])
@@ -153,13 +153,54 @@ class Subscription(models.Model):
     def remaining_time(self):
         return self.end_date - datetime.now()
 
+    def get_human_plan(self):
+        plan_mapping = {
+            'free_plan': 'Стартовый на 7 дней',
+            'standard_plan': 'Стандартный план на 30 дней',
+            'premium_plan': 'Премиум план на 30 дней',
+            'tokens_plan': 'Пакет токенов, без временных ограничений',
+        }
+        return plan_mapping.get(self.plan_name, self.plan_name)
+
     def __str__(self):
         return f'Subscription {self.plan_name} for {self.staff_id}'
+
+
+class AvailableSubscription(models.Model):
+    PLAN_TYPES = [
+        ('free_plan', 'Free – 7 days'),
+        ('standard_plan', 'Standard Plan – 30 days'),
+        ('premium_plan', 'Premium Plan – 30 days'),
+        ('tokens_plan', 'Tokens Package'),
+    ]
+
+    plan_name = models.CharField(max_length=100, unique=True)
+    plan_type = models.CharField(max_length=20, choices=PLAN_TYPES)
+    amount = models.FloatField()
+    expiration_date = models.DateTimeField()
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        if self.plan_type == 'free_plan':
+            self.amount = 0
+            self.expiration_date = timezone.now() + timedelta(days=7)
+        elif self.plan_type == 'tokens_plan':
+            self.amount = 480
+            self.expiration_date = timezone.now() + timedelta(days=60*30)
+        elif self.plan_type in ['standard_plan', 'premium_plan']:
+            self.amount = 220 if self.plan_type == 'standard_plan' else 590
+            self.expiration_date = timezone.now() + timedelta(days=30)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f'Available Subscription: {self.plan_name} - {self.amount} (Expires on: {self.expiration_date})'
 
 
 class Payment(models.Model):
     subscription = models.ForeignKey(Subscription, on_delete=models.CASCADE)
     payment_id = models.CharField(max_length=100, unique=True)
+    order_id = models.CharField(max_length=100, unique=True)
+    token = models.CharField(max_length=100, unique=True)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     created_at = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=20, choices=[
@@ -170,32 +211,6 @@ class Payment(models.Model):
 
     def __str__(self):
         return f'Payment {self.payment_id} for {self.subscription.plan_name} - {self.amount}'
-
-
-class AvailableSubscription(models.Model):
-    PLAN_TYPES = [
-        ('free', 'Free – 7 days'),
-        ('standard', 'Standard – 30 days'),
-        ('plus', 'Plus – 90 days'),
-    ]
-
-    plan_name = models.CharField(max_length=100, unique=True)
-    amount = models.FloatField()
-    plan_type = models.CharField(max_length=20, choices=PLAN_TYPES)
-    expiration_date = models.DateTimeField()
-    updated_at = models.DateTimeField(auto_now=True)
-
-    def save(self, *args, **kwargs):
-        if self.plan_type == 'free':
-            self.expiration_date = timezone.now() + datetime.timedelta(days=7)
-        elif self.plan_type == 'standard':
-            self.expiration_date = timezone.now() + datetime.timedelta(days=30)
-        elif self.plan_type == 'plus':
-            self.expiration_date = timezone.now() + datetime.timedelta(days=30)
-        super().save(*args, **kwargs)
-
-    def __str__(self):
-        return f'Available Subscription: {self.plan_name} - {self.amount} (Expires on: {self.expiration_date})'
 
 
 class BlockedUsers(models.Model):

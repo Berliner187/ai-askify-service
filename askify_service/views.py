@@ -97,7 +97,6 @@ def drop_survey(request, survey_id):
     return redirect('history')
 
 
-@method_decorator(csrf_exempt, name='dispatch')
 @method_decorator(login_required, name='dispatch')
 @method_decorator(check_blocked, name='dispatch')
 class ManageSurveysView(View):
@@ -162,19 +161,19 @@ class ManageSurveysView(View):
 
             except json.JSONDecodeError as json_decode:
                 tracer_l.tracer_charge(
-                    'ERROR', request.user.username, ManageSurveysView.generate_survey.__name__,
+                    'ERROR', request.user.username, ManageSurveysView.post.__name__,
                     "Invalid JSON in request body", f"{json_decode}",
                     f"status: 400")
                 return JsonResponse({'error': 'Invalid JSON in request body'}, status=400)
             except Exception as e:
                 tracer_l.tracer_charge(
-                    'CRITICAL', request.user.username, ManageSurveysView.generate_survey.__name__,
+                    'CRITICAL', request.user.username, ManageSurveysView.post.__name__,
                     "FATAL Exception", f"{e}",
                     f"status: 500")
                 return JsonResponse({'error': str(e)}, status=500)
 
         tracer_l.tracer_charge(
-            'CRITICAL', request.user.username, ManageSurveysView.generate_survey.__name__,
+            'CRITICAL', request.user.username, ManageSurveysView.post.__name__,
             "Invalid request method", "status: 400")
         return JsonResponse({'error': 'Invalid request method'}, status=400)
 
@@ -250,7 +249,7 @@ class FileUploadView(View):
 
         truncated_text = full_text[:128000]
 
-        return [truncated_text]
+        return truncated_text
 
 
 @login_required
@@ -378,7 +377,7 @@ def result_view(request, survey_id):
         feedback_obj = FeedbackFromAI.objects.get(survey_id=survey_id)
         feedback_text = markdown.markdown(feedback_obj.feedback_data)
     except Exception as fail:
-        feedback_text = None
+        feedback_text = 'Не удалось загрузить обратную связь от ИИ :('
 
     json_response = {
         'title': survey.title,
@@ -417,7 +416,7 @@ def register(request):
             tracer_l.tracer_charge(
                 'ADMIN', user.username, register.__name__, f"NEW USER")
 
-            plan_name, end_date, status, billing_cycle, discount = init_subscription()
+            plan_name, end_date, status, billing_cycle, discount = init_free_subscription()
             subscription = Subscription.objects.create(
                 staff_id=user.id_staff,
                 plan_name=plan_name,
@@ -556,11 +555,9 @@ def profile_view(request, username):
     _total_tokens = tokens_usage['tokens_survey_used'] + tokens_usage['tokens_feedback_used']
     total_tokens = get_format_number(_total_tokens)
 
-    try:
-        subscription = get_object_or_404(Subscription, staff_id=staff_id)
-        subscription.end_date = get_formate_date(subscription.end_date)
-    except Subscription.DoesNotExist:
-        subscription = 'Free 0₽'
+    subscription = get_object_or_404(Subscription, staff_id=staff_id)
+    subscription.end_date = get_formate_date(subscription.end_date)
+    human_readable_plan = subscription.get_human_plan()
 
     user_data = {
         'username': username,
@@ -569,9 +566,15 @@ def profile_view(request, username):
         'date_last_login': date_last_login,
         'statistics': statistics,
         'tokens': {
-            'surveys': total_tokens_for_surveys, 'feedback': total_tokens_for_feedback, 'total_tokens': total_tokens
+            'surveys': total_tokens_for_surveys,
+            'feedback': total_tokens_for_feedback,
+            'total_tokens': total_tokens,
+            'limit_tokens': get_format_number(50_000)
         },
-        'subscription': subscription
+        'subscription': {
+            'plan_name': human_readable_plan,
+            'plan_end_date': subscription.end_date
+        }
     }
 
     return render(request, 'profile.html', user_data)
@@ -787,19 +790,43 @@ def subscription_list(request):
 
 
 @login_required
-def success_payment(request):
-    # payment = get_object_or_404(Payment, payment_id=payment_id)
+def create_payment(request):
     user_data = get_object_or_404(AuthUser, id_staff=get_staff_id(request))
     payment_manager = PaymentManager()
+    order_id = generate_payment_id()
+
     context = {
         'username': get_username(request),
         'email': user_data.email,
-        'order_id': generate_payment_id(),
+        'order_id': order_id,
         'phone': 999,
         'fullname': 'ФИО',
-        'order_status': payment_manager.check_order(['SZS9M83W5R435DCV', '4Z6GdFlLmPZwRbT4', '1731153311116DEMO'])
+        'order_status': payment_manager.check_order(['SZS9M83W5R435DCV', TERMINAL_PASSWORD, TERMINAL_KEY])
     }
     return render(request, 'payments/payment.html', context)
+
+
+@login_required
+def success_payment(request):
+    # payment = Payment.objects.create(
+    #     payment_id=response_data.get('PaymentId'),
+    #     order_id=order_id,
+    #     token=created_token,
+    #     amount='',
+    #     status='pending'
+    # )
+
+    subscription = Subscription.objects.create(
+        staff_id=get_staff_id(request),
+        plan_name=description,
+        end_date=datetime.now() + timezone.timedelta(days=30),
+        status='active',
+        billing_cycle='monthly',
+        discount=0.00
+    )
+    subscription.save()
+
+    return render(request, 'payments/payment.html')
 
 
 def create_token(data_order):
@@ -815,15 +842,24 @@ class PaymentInitiateView(View):
         terminal_key = data['terminalKey']
         amount = data['amount']
         description = data['description']
-        order_id = data['orderId']
+        # order_id = data['orderId']
         email = data['email']
         phone = data['phone']
         receipt = data['receipt']
-        print('приход', order_id)
-        print(email)
         print(phone)
+        print("amount", amount)
 
-        # order_id = generate_payment_id()
+        plan_prices = {
+            'Стандартный план': 220,
+            'Премиум план': 590,
+            'Пакет токенов': 480
+        }
+
+        if int(amount) != plan_prices.get(description):
+            return JsonResponse({'Success': False, 'Message': 'Неверная сумма.'}, status=400)
+
+        order_id = generate_payment_id()
+        print('приход', order_id)
 
         payment_manager = PaymentManager()
 
@@ -880,9 +916,9 @@ class PaymentInitiateView(View):
 
         if response_data.get('Success'):
 
-            data_for_check_order = [order_id, TERMINAL_PASSWORD, TERMINAL_KEY]
-            check_order_status = payment_manager.check_order(data_for_check_order)
-            print(check_order_status)
+            # data_for_check_order = [order_id, TERMINAL_PASSWORD, TERMINAL_KEY]
+            # check_order_status = payment_manager.check_order(data_for_check_order)
+            # print(check_order_status)
 
             return JsonResponse({
                 'Success': True,
