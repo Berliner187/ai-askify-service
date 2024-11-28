@@ -1,8 +1,13 @@
 from django.http import HttpResponseForbidden
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 
 from askify_service.models import BlockedUsers
-from askify_service.utils import get_client_ip
+from askify_service.utils import get_client_ip, get_staff_id
+from asgiref.sync import sync_to_async
+
+from functools import wraps
+from askify_service.models import Subscription, Payment
+from django.utils import timezone
 
 
 class BlockIPMiddleware:
@@ -47,4 +52,22 @@ def check_blocked(view_func):
 
         return view_func(request, *args, **kwargs)
 
+    return _wrapped_view
+
+
+def subscription_required(view_func):
+    @wraps(view_func)
+    def _wrapped_view(request, *args, **kwargs):
+        staff_id = get_staff_id(request)
+
+        try:
+            subscription = Subscription.objects.get(staff_id=staff_id, status='active', end_date__gt=timezone.now())
+            payment_exists = Payment.objects.filter(subscription=subscription, staff_id=staff_id, status='completed').exists()
+            print(subscription)
+            if not subscription:
+                return redirect('payment')
+        except Subscription.DoesNotExist:
+            return redirect('payment')
+
+        return view_func(request, *args, **kwargs)
     return _wrapped_view

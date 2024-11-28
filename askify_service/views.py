@@ -6,6 +6,7 @@ from django.contrib.auth import login, authenticate
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from asgiref.sync import sync_to_async
 from django.utils import timezone
 from django.views import View
 from django.db.models.signals import post_save
@@ -16,8 +17,9 @@ from django.utils.decorators import method_decorator
 from .utils import *
 from .models import *
 from .forms import *
+from .constants import *
 from askify_app.settings import DEBUG, BASE_DIR
-from askify_app.middleware import check_blocked
+from askify_app.middleware import check_blocked, subscription_required
 from .tracer import *
 
 import openai
@@ -27,6 +29,8 @@ import aiofiles
 import PyPDF2
 
 from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor
+import asyncio
 import time
 import hashlib
 import uuid
@@ -46,15 +50,17 @@ def index(request):
 
 
 @login_required
+@subscription_required
 def page_create_survey(request):
     tokens = TokensUsed.objects.filter(id_staff=get_staff_id(request))
 
     used_tokens = sum(token.tokens_survey_used for token in tokens)
-    limit_tokens = 40_000
+    limit_tokens = 50_000
 
     tracer_l.tracer_charge(
         'INFO', request.user.username, page_create_survey.__name__, "load page")
     context = {
+        "page_title": "Главная",
         'tokens': limit_tokens - used_tokens,
         'tokens_f': get_format_number(limit_tokens - used_tokens),
         'limit_tokens': limit_tokens,
@@ -69,11 +75,13 @@ def page_history_surveys(request):
     try:
         surveys_data = get_all_surveys(request)
         context = {
+            'page_title': 'Предыдущие тесты',
             'surveys_data': surveys_data,
             'username': get_username(request)
         }
     except Exception as fatal:
         context = {
+            'page_title': 'Предыдущие тесты',
             'username': get_username(request)
         }
         tracer_l.tracer_charge(
@@ -99,6 +107,7 @@ def drop_survey(request, survey_id):
 
 @method_decorator(login_required, name='dispatch')
 @method_decorator(check_blocked, name='dispatch')
+@method_decorator(subscription_required, name='dispatch')
 class ManageSurveysView(View):
     def post(self, request):
         if request.method == 'POST':
@@ -116,7 +125,8 @@ class ManageSurveysView(View):
 
                     cleaned_generated_text = generated_text
                     tracer_l.tracer_charge(
-                        'INFO', request.user.username, ManageSurveysView.post.__name__, f"success json.loads: {cleaned_generated_text.get('title')}")
+                        'INFO', request.user.username, ManageSurveysView.post.__name__,
+                        f"success json.loads: {cleaned_generated_text.get('title')}")
                 except TypeError as error:
                     tracer_l.tracer_charge(
                         'ERROR', request.user.username, ManageSurveysView.post.__name__,
@@ -124,11 +134,13 @@ class ManageSurveysView(View):
                     return JsonResponse({'error': 'К сожалению, не удалось выполнить запрос'}, status=400)
                 except json.JSONDecodeError as json_error:
                     tracer_l.tracer_charge(
-                        'ERROR', request.user.username, ManageSurveysView.post.__name__, "text is not valid JSON", str(json_error), "status: 400")
+                        'ERROR', request.user.username, ManageSurveysView.post.__name__,
+                        "text is not valid JSON", str(json_error), "status: 400")
                     return JsonResponse({'error': generated_text}, status=400)
                 except Exception as fail:
                     tracer_l.tracer_charge(
-                        'CRITICAL', request.user.username, ManageSurveysView.post.__name__, f"{fail}", "status: 400")
+                        'CRITICAL', request.user.username, ManageSurveysView.post.__name__,
+                        f"{fail}", "status: 400")
                     return JsonResponse({'error': 'Generated text is not valid JSON'}, status=400)
 
                 try:
@@ -154,7 +166,8 @@ class ManageSurveysView(View):
                     return JsonResponse({'survey': cleaned_generated_text, 'survey_id': new_survey_id}, status=200)
                 except Exception as fail:
                     tracer_l.tracer_charge(
-                        'ERROR', request.user.username, ManageSurveysView.post.__name__, "error in save to DB", f"{fail}")
+                        'ERROR', request.user.username, ManageSurveysView.post.__name__,
+                        "error in save to DB", f"{fail}")
 
                 if DEBUG:
                     print(cleaned_generated_text)
@@ -198,6 +211,8 @@ def get_all_surveys(request):
 
 
 class FileUploadView(View):
+    # @login_required
+    # @subscription_required
     def post(self, request):
         if 'file' not in request.FILES:
             return JsonResponse({'error': 'No file provided'}, status=400)
@@ -207,6 +222,8 @@ class FileUploadView(View):
             return JsonResponse({'error': 'File too large. Max size is 5 MB.'}, status=400)
 
         data = self.read_file_data(uploaded_file)
+        if data == -1:
+            return JsonResponse({'error': 'Файл не является PDF'})
 
         # manage_generate_surveys_text = ManageGenerationSurveys(request, data)
         # generated_text, tokens_used = manage_generate_surveys_text.generate_survey_for_user()
@@ -245,25 +262,31 @@ class FileUploadView(View):
                 if text:
                     full_text += text.strip()
         else:
-            return ["Файл не является PDF"]
+            return -1
 
-        truncated_text = full_text[:128000]
+        truncated_text = full_text[:2**14]
 
         return truncated_text
 
 
+def fetch_feedback(user_answers_list, total_count, user_answers):
+    generation_models_control = GenerationModelsControl()
+    return generation_models_control.get_feedback_001(
+        f"Список вопросов и моих ответов: {user_answers_list}.\n"
+        f"Набрано балов: {total_count} из {len(user_answers)}"
+    )
+
+
 @login_required
+@sync_to_async(thread_sensitive=False)
+@subscription_required
 def take_survey(request, survey_id):
     if DEBUG:
-        print("take_survey: work")
-
-    request.user.log_activity(request)
+        print("\n-------------\ntake_survey: work\n--------------")
 
     survey_id = uuid.UUID(survey_id)
     survey = get_object_or_404(Survey, survey_id=survey_id)
     questions = json.loads(survey.questions)
-
-    # random.shuffle(questions)
 
     if request.method == 'POST':
         if DEBUG:
@@ -271,19 +294,15 @@ def take_survey(request, survey_id):
             print("Данные POST:", request.POST)
 
         user_answers = [request.POST.get(f'answers_{i + 1}') for i in range(len(questions))]
-
         question_ids = [f'question_{i + 1}' for i in range(len(user_answers))]
         user_answers_dict = {question_ids[i]: user_answers[i] for i in range(len(user_answers))}
 
-        if DEBUG:
-            print("Ответы пользователя:", user_answers)
         if None in user_answers:
             context = {
                 'survey': survey, 'questions': questions, 'error': 'Пожалуйста, ответьте на все вопросы.',
                 'username': get_username(request)
             }
-            return render(
-                request, 'survey.html', context)
+            return render(request, 'survey.html', context)
 
         survey_obj = UserAnswers.objects.filter(survey_id=survey_id)
 
@@ -291,14 +310,14 @@ def take_survey(request, survey_id):
             survey_obj.delete()
 
         user_answers_list = []
-
         correct_count = 0
         total_count = 0
+
         for index_q, question in enumerate(questions):
             selected_answer = user_answers[index_q]
             is_correct = selected_answer == question['correct_answer']
             if is_correct:
-                correct_count = 1
+                correct_count += 1
                 total_count += 1
 
             user_answers_json = json.dumps(user_answers_dict)
@@ -321,41 +340,40 @@ def take_survey(request, survey_id):
             )
 
             if DEBUG:
-                print(f"\n\nВопрос: {question['question']}\nПравильный ответ: {question['correct_answer']}\nОтвет пользователя: {selected_answer}")
+                print(
+                    f"\n\nВопрос: {question['question']}\nПравильный ответ: {question['correct_answer']}\nОтвет пользователя: {selected_answer}")
 
-        try:
-            feedback_obj = FeedbackFromAI.objects.filter(survey_id=survey_id)
-            if feedback_obj.exists():
-                feedback_obj.delete()
+        # try:
+        feedback_obj = FeedbackFromAI.objects.filter(survey_id=survey_id)
+        if feedback_obj.exists():
+            feedback_obj.delete()
 
-            print(">>>>> ЗАГРУЗКА FEEDBACK <<<<<")
-            generation_models_control = GenerationModelsControl()
-            ai_feedback, tokens_used = generation_models_control.get_feedback_001(
-                f"Список вопросов и моих ответов: {user_answers_list}.\n"
-                f"Набрано балов: {total_count} из {len(user_answers)}"
-            )
+        print(">>>>> ЗАГРУЗКА FEEDBACK <<<<<")
+        generation_models_control = GenerationModelsControl()
+        ai_feedback, tokens_used = generation_models_control.get_feedback_001(
+            f"Список вопросов и моих ответов: {user_answers_list}.\n"
+            f"Набрано балов: {total_count} из {len(user_answers)}"
+        )
 
-            FeedbackFromAI.objects.create(
-                survey_id=survey_id,
-                id_staff=get_staff_id(request),
-                feedback_data=ai_feedback
-            )
+        FeedbackFromAI.objects.create(
+            survey_id=survey_id,
+            id_staff=get_staff_id(request),
+            feedback_data=ai_feedback
+        )
 
-            _tokens_used = TokensUsed(
-                id_staff=get_staff_id(request),
-                tokens_feedback_used=tokens_used
-            )
-            _tokens_used.save()
-        except Exception as fail:
-            tracer_l.tracer_charge(
-                'CRITICAL', request.user.username, take_survey.__name__,
-                "Invalid FEEDBACK", f"{fail}")
+        # except Exception as fail:
+        #     tracer_l.tracer_charge(
+        #         'CRITICAL', request.user.username, take_survey.__name__,
+        #         "Invalid FEEDBACK", f"{fail}")
 
         json_response = {'score': correct_count, 'total': user_answers, 'survey_id': survey_id}
         return render(request, 'result.html', json_response)
 
     context = {
-        'survey': survey, 'questions': questions, 'survey_title': survey.title,
+        'page_title': f'Прохождение теста – {survey.title}',
+        'survey': survey,
+        'questions': questions,
+        'survey_title': survey.title,
         'username': request.user.username if request.user.is_authenticated else None
     }
     return render(request, 'survey.html', context)
@@ -377,9 +395,10 @@ def result_view(request, survey_id):
         feedback_obj = FeedbackFromAI.objects.get(survey_id=survey_id)
         feedback_text = markdown.markdown(feedback_obj.feedback_data)
     except Exception as fail:
-        feedback_text = 'Не удалось загрузить обратную связь от ИИ :('
+        feedback_text = 'Не удалось получить обратную связь от ИИ :('
 
     json_response = {
+        'page_title': f'Результаты прохождения теста – {survey.title}',
         'title': survey.title,
         'score': score,
         'total': len(user_answers),
@@ -390,14 +409,15 @@ def result_view(request, survey_id):
         'username': request.user.username if request.user.is_authenticated else None,
         'feedback_text': feedback_text
     }
-    print("result_view", score, len(user_answers))
+    # print("result_view", score, len(user_answers))
 
     return render(request, 'result.html', json_response)
 
 
+@login_required
+@subscription_required
 def download_survey_pdf(request, survey_id):
     try:
-        request.user.log_activity(request)
         survey = get_object_or_404(Survey, survey_id=uuid.UUID(survey_id))
         tracer_l.tracer_charge(
             'INFO', request.user.username, download_survey_pdf.__name__, "View survey in PDF")
@@ -449,7 +469,6 @@ def login_view(request):
         if user is not None:
             login(request, user)
             request.session['user_id'] = user.id
-            request.user.log_activity(request)
 
             tracer_l.tracer_charge(
                 'ADMIN', request.user.username, login_view.__name__, f"user has been login in")
@@ -494,7 +513,6 @@ def vk_auth(request):
             if user is not None:
                 login(request, user)
                 request.session['user_id'] = user.id
-                request.user.log_activity(request)
 
             tracer_l.tracer_charge(
                 'ERROR', request.user.username, vk_auth.__name__, f"success")
@@ -514,7 +532,7 @@ def vk_callback(request):
     if code:
         token_url = 'https://id.vk.com/oauth2/access_token'
         params = {
-            'client_id': '7b09de637b09de637b09de6325782ab3af77b097b09de631c385ca246d43f689073405f',  # Замените на ваш client_id
+            'client_id': '7b09de637b09de637b09de6325782ab3af77b097b09de631c385ca246d43f689073405f',
             'client_secret': 'our2AXXhor7xIUA82DpH',
             'code': code,
             'redirect_uri': '/create/',
@@ -538,6 +556,7 @@ def vk_callback(request):
     return JsonResponse({'status': 'error', 'message': 'Authorization failed'}, status=400)
 
 
+@login_required
 def profile_view(request, username):
     staff_id = get_staff_id(request)
     user = get_object_or_404(AuthUser, id_staff=staff_id)
@@ -560,6 +579,7 @@ def profile_view(request, username):
     human_readable_plan = subscription.get_human_plan()
 
     user_data = {
+        'page_title': f'Профиль {username}',
         'username': username,
         'email': user.email,
         'date_join': date_join,
@@ -697,98 +717,6 @@ def unblock_by_staff_id(request, id_staff):
     return redirect('login')
 
 
-def create_subscription(request):
-    if request.method == 'POST':
-        staff_id = get_staff_id(request)
-        plan_name = request.POST.get('plan_name')
-        end_date = datetime.now() + timedelta(days=30)
-        status = 'active'
-        billing_cycle = request.POST.get('billing_cycle')
-        discount = request.POST.get('discount', 0.00)
-
-        # free_subscription = AvailableSubscription.objects.create(
-        #     plan_name='Free Plan', amount=0.0, plan_type='free')
-        # standard_subscription = AvailableSubscription.objects.create(
-        #     plan_name='Standard Plan', amount=190, plan_type='standard')
-        # plus_subscription = AvailableSubscription.objects.create(
-        #     plan_name='Plus Plan', amount=590, plan_type='plus')
-        #
-        # print(f'Free Subscription Expires on: {free_subscription.expiration_date}')
-        # print(f'Standard Subscription Expires on: {standard_subscription.expiration_date}')
-        # print(f'Plus Subscription Expires on: {plus_subscription.expiration_date}')
-
-        subscription = Subscription(
-            staff_id=staff_id,
-            plan_name=plan_name,
-            end_date=end_date,
-            status=status,
-            billing_cycle=billing_cycle,
-            discount=discount
-        )
-        subscription.save()
-        return redirect('success_page')
-
-    return render(request, 'subscription.html')
-
-
-@login_required
-def subscription_list(request):
-    subscriptions = AvailableSubscription.objects.all()
-    staff_id = get_staff_id(request)
-
-    if request.method == 'POST':
-        plan_name = request.POST.get('plan_name')
-        print(plan_name)
-        selected_subscription = get_object_or_404(AvailableSubscription, plan_name=plan_name)
-        end_date = datetime.now() + timedelta(days=30)
-        status = 'active'
-        billing_cycle = 'monthly'
-        discount = 0.00
-        amount = selected_subscription.amount
-
-        # free_subscription = AvailableSubscription.objects.create(
-        #     plan_name='free', amount=0.00, plan_type='free')
-        # standard_subscription = AvailableSubscription.objects.create(
-        #     plan_name='standard', amount=190.00, plan_type='standard')
-        # plus_subscription = AvailableSubscription.objects.create(
-        #     plan_name='plus', amount=590.00, plan_type='plus')
-        #
-        # print(f'Free Subscription Expires on: {free_subscription.expiration_date}')
-        # print(f'Standard Subscription Expires on: {standard_subscription.expiration_date}')
-        # print(f'Plus Subscription Expires on: {plus_subscription.expiration_date}')
-
-        try:
-            subscription = get_object_or_404(Subscription, staff_id=staff_id)
-            subscription.plan_name = plan_name
-            subscription.end_date = end_date
-            subscription.status = status
-            subscription.billing_cycle = billing_cycle
-            subscription.discount = discount
-            subscription.save()
-            print("Обновлена")
-        except Subscription.DoesNotExist:
-            subscription = Subscription.objects.create(
-                staff_id=staff_id,
-                plan_name=plan_name,
-                end_date=end_date,
-                status=status,
-                billing_cycle=billing_cycle,
-                discount=discount
-            )
-            print("Новая подписка")
-
-        payment = Payment.objects.create(
-            subscription=subscription,
-            payment_id=generate_payment_id(),
-            amount=amount,
-            status='completed' if amount > 0 else 'free'
-        )
-
-        return redirect('success_payment', payment_id=payment.payment_id)
-
-    return render(request, 'subscription.html', {'subscriptions': subscriptions})
-
-
 @login_required
 def create_payment(request):
     user_data = get_object_or_404(AuthUser, id_staff=get_staff_id(request))
@@ -796,6 +724,7 @@ def create_payment(request):
     order_id = generate_payment_id()
 
     context = {
+        'page_title': 'Выбор тарифного плана',
         'username': get_username(request),
         'email': user_data.email,
         'order_id': order_id,
@@ -803,6 +732,7 @@ def create_payment(request):
         'fullname': 'ФИО',
         'order_status': payment_manager.check_order(['SZS9M83W5R435DCV', TERMINAL_PASSWORD, TERMINAL_KEY])
     }
+
     return render(request, 'payments/payment.html', context)
 
 
@@ -815,24 +745,20 @@ def success_payment(request):
     #     amount='',
     #     status='pending'
     # )
+    print(type(get_staff_id(request)), get_staff_id(request))
 
-    subscription = Subscription.objects.create(
-        staff_id=get_staff_id(request),
-        plan_name=description,
-        end_date=datetime.now() + timezone.timedelta(days=30),
-        status='active',
-        billing_cycle='monthly',
-        discount=0.00
-    )
-    subscription.save()
+    # if get_staff_id(request) == staff_id:
+    # payment = get_object_or_404(Payment, staff_id=uuid.UUID(staff_id))
+    # payment_manager = PaymentManager()
 
-    return render(request, 'payments/payment.html')
+    # for pay in payment:
+    #     print(pay)
+    #
+    # data_for_check_order = [payment.order_id, TERMINAL_PASSWORD, TERMINAL_KEY]
+    # check_order_status = payment_manager.check_order(data_for_check_order)
+    # print(check_order_status)
 
-
-def create_token(data_order):
-    sorted_data = sorted(data_order, key=lambda x: list(x.keys())[0])
-    concatenated = ''.join([list(item.values())[0] for item in sorted_data])
-    return hashlib.sha256(concatenated.encode('utf-8')).hexdigest()
+    return render(request, 'payments/pay_status.html')
 
 
 class PaymentInitiateView(View):
@@ -861,8 +787,6 @@ class PaymentInitiateView(View):
         order_id = generate_payment_id()
         print('приход', order_id)
 
-        payment_manager = PaymentManager()
-
         items = [
             {
                 "Name": "Премиум план",
@@ -876,20 +800,20 @@ class PaymentInitiateView(View):
         total_amount = sum(item['Amount'] for item in items)
 
         data_token = [
-            {"TerminalKey": "1731153311116DEMO"},
+            {"TerminalKey": TERMINAL_KEY},
             {"Amount": str(total_amount)},
             {"OrderId": order_id},
-            {"Description": "Премиум план"},
-            {"Password": "4Z6GdFlLmPZwRbT4"}
+            {"Description": description},
+            {"Password": TERMINAL_PASSWORD}
         ]
 
-        created_token = create_token(data_token)
+        created_token = PaymentManager().generate_token_for_new_payment(data_token)
         print(created_token)
         request_body = {
             "TerminalKey": "1731153311116DEMO",
             "Amount": total_amount,
             "OrderId": order_id,
-            "Description": "Премиум план",
+            "Description": description,
             "Token": created_token,
             "DATA": {
                 "Phone": phone,
@@ -907,8 +831,6 @@ class PaymentInitiateView(View):
         response = requests.post("https://securepay.tinkoff.ru/v2/Init/", json=request_body, headers=headers)
         response_data = response.json()
 
-        print(response_data)
-
         print()
         for key, value in response_data.items():
             print(key, value)
@@ -916,9 +838,31 @@ class PaymentInitiateView(View):
 
         if response_data.get('Success'):
 
-            # data_for_check_order = [order_id, TERMINAL_PASSWORD, TERMINAL_KEY]
-            # check_order_status = payment_manager.check_order(data_for_check_order)
-            # print(check_order_status)
+            subscription_obj = Subscription.objects.filter(staff_id=get_staff_id(request))
+            if subscription_obj.exists():
+                subscription_obj.delete()
+
+            # Инициализация тарифного плана
+            subscription = Subscription.objects.create(
+                staff_id=get_staff_id(request),
+                plan_name=description,
+                end_date=datetime.now() + timedelta(days=30),
+                status='inactive',
+                billing_cycle='monthly' if plan_prices.get(description) else 'yearly',
+                discount=0.00
+            )
+            subscription.save()
+
+            # Инициализация оплаты
+            new_payment = Payment.objects.create(
+                staff_id=get_staff_id(request),
+                payment_id=response_data.get('PaymentId'),
+                subscription=subscription,
+                order_id=order_id,
+                amount=int(amount) * 100,
+                status='pending'
+            )
+            new_payment.save()
 
             return JsonResponse({
                 'Success': True,
@@ -933,9 +877,94 @@ class PaymentInitiateView(View):
             }, status=400)
 
 
+class PaymentSuccessView(View):
+    def get(self, request):
+        success = request.GET.get('Success')
+        error_code = request.GET.get('ErrorCode')
+        payment_id = request.GET.get('PaymentId')
+        amount = request.GET.get('Amount')
+
+        if success == 'true' and error_code == '0':
+            try:
+                payment = Payment.objects.get(payment_id=payment_id)
+                subscription = Subscription.objects.get(staff_id=get_staff_id(request))
+
+                payment_manager = PaymentManager()
+                payment_parameters = [payment.order_id, TERMINAL_PASSWORD, TERMINAL_KEY]
+                payment_status = payment_manager.check_order(payment_parameters)['response']['Payments'][0]['Status']
+
+                if DEBUG:
+                    if subscription.status == 'active' and payment.status == 'completed':
+                        return redirect('create')
+
+                description_payment = PAYMENT_STATUSES.get(payment_status, 'Статус не найден')
+
+                error_payment_data = {
+                    "payment_status": "Неудача",
+                    "text_status": description_payment,
+                    "plan_name": subscription.plan_name,
+                    "plan_end_date": subscription.end_date,
+                    "payment_id": payment.payment_id, 'order_id': payment.order_id, 'amount': payment.amount
+                }
+
+                if int(payment.amount) != int(amount):
+                    return render(request, 'payments/pay_status.html', error_payment_data)
+                elif payment_status == 'DEADLINE_EXPIRED':
+                    print("Срок действия платежа истек.")
+                    return render(request, 'payments/pay_status.html', error_payment_data)
+                elif payment_status == 'CONFIRMED':
+                    text_payment_status = 'Успешный платеж.'
+                    print(text_payment_status)
+
+                    payment.status = 'completed'
+                    payment.save()
+
+                    subscription.start_date = datetime.now()
+                    subscription.status = 'active'
+                    subscription.save()
+
+                    formatted_amount = f"{payment.amount / 100:,.2f}".replace(',', ' ').replace('.', ',') + " руб"
+
+                    payment_details = [
+                        {"label": "Сумма", "value": formatted_amount},
+                        {"label": "ID платежа", "value": payment.payment_id},
+                        {"label": "ID заказа", "value": payment.order_id},
+                        {"label": "Заканчивается", "value": subscription.end_date},
+                    ]
+
+                    payment_data = {
+                        "page_title": "Успешная оплата",
+                        "payment_status": "Успешно",
+                        "text_status": "Спасибо за покупку!",
+                        "plan_name": subscription.get_human_plan(),
+                        "payment_details": payment_details,
+                        "username": get_username(request)
+                    }
+
+                    return render(request, 'payments/pay_status.html', payment_data)
+                else:
+                    print("Статус платежа: ", payment_status)
+                    return render(request, 'payments/pay_status.html', error_payment_data)
+            except Payment.DoesNotExist:
+                error_payment_data = {
+                    "page_title": "Ошибка оплаты",
+                    "payment_status": "Неудача",
+                    "text_status": "Платеж не существует",
+                }
+                return render(request, 'payments/pay_status.html', error_payment_data)
+        else:
+            subscription = Subscription.objects.get(staff_id=get_staff_id(request))
+
+            payment_data = {
+                "payment_status": "Не удалось", "page_title": "Ошибка при оплате",
+                "text_status": "К сожалению, не удалось активировать план :(",
+                "plan_name": subscription.get_human_plan(),
+            }
+            return render(request, 'payments/pay_status.html', payment_data)
+
+
 def get_ip(request):
     ip = get_client_ip(request)
-    print(os.path.join(BASE_DIR, 'documents'))
     return JsonResponse({'ip': ip})
 
 
@@ -957,17 +986,3 @@ def document_view(request, slug):
     }
 
     return render(request, 'document.html', content)
-
-
-def confirm_payment(request):
-    if request.method == 'POST':
-        data = json.loads(request.body)
-        order_id = data.get('orderId')
-        amount = data.get('amount')
-        email = data.get('email')
-
-        # Здесь добавь логику для обработки платежа
-        # Например, сохранить информацию в базе данных
-
-        return JsonResponse({'status': 'success', 'message': 'Payment confirmed'})
-    return JsonResponse({'status': 'error', 'message': 'Invalid request'}, status=400)

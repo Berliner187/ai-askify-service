@@ -172,10 +172,10 @@ button:active {
     border-radius: 8px;
 }
 .question label:hover, .btn:hover, button {
-    background-color: rgb(24, 23, 26, .5);
+    background-color: rgb(24, 23, 26, .75);
 }
 .question .button-accent {
-    border-radius: 12px;
+    color: #b5bfff;
 }
 
 .question label p {
@@ -183,7 +183,7 @@ button:active {
     padding: 8px 16px 8px 16px;
     border-radius: 8px;
 }
-.question input[type="radio"]:checked + p {
+.question label input[type="radio"]:checked + p {
     background-color: #616DF0;
 }
 
@@ -234,6 +234,9 @@ textarea, #survey-container {
     position: relative;
     overflow: hidden;
     transition: opacity .3s ease-in-out;
+}
+
+.background {
     background-image: url('../img/bg-gradient.png');
     background-position: 0 top;
     background-repeat: no-repeat;
@@ -363,6 +366,14 @@ textarea, #survey-container {
 }
 
 
+.preview-content, .result-section,
+.result-full, .feedback-container {
+    background-image: url('../img/bg-gradient.png');
+    background-position: 0 top;
+    background-repeat: no-repeat;
+}
+
+
 .preview-content {
     background-color: #6a61f0;
 }
@@ -406,9 +417,21 @@ textarea, #survey-container {
     justify-content: space-between;
 }
 
-.button-medium {
+.next-button, .button-medium {
     font-family: "Unbounded Medium";
-    display: inline-block;
+}
+
+.next-button {
+    font-size: 1em;
+    margin: 0 8px;
+    background-color: rgba(40, 39, 47, 0);
+}
+.next-button p {
+    color: #e8e7f1;
+}
+
+.button-medium {
+    display: flex;
     flex-wrap: nowrap;
     background-color: rgba(40, 39, 47, .75);
     width: fit-content;
@@ -416,6 +439,7 @@ textarea, #survey-container {
     border-radius: 8px;
     padding:  0px 10px 0px 10px;
     justify-content: space-between;
+    align-items: center;
 }
 .button-medium:active {
     transform: scale(0.9);

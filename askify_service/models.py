@@ -134,7 +134,7 @@ class UserActivity(models.Model):
 
 
 class Subscription(models.Model):
-    staff_id = models.UUIDField(default=uuid.uuid4, unique=True)
+    staff_id = models.UUIDField(blank=False, null=False, unique=True)
     plan_name = models.CharField(max_length=100)
     start_date = models.DateTimeField(auto_now_add=True)
     end_date = models.DateTimeField()
@@ -198,9 +198,9 @@ class AvailableSubscription(models.Model):
 
 class Payment(models.Model):
     subscription = models.ForeignKey(Subscription, on_delete=models.CASCADE)
+    staff_id = models.UUIDField(null=False, blank=False)
     payment_id = models.CharField(max_length=100, unique=True)
     order_id = models.CharField(max_length=100, unique=True)
-    token = models.CharField(max_length=100, unique=True)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     created_at = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=20, choices=[

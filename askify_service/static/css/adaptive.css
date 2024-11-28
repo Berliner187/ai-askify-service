@@ -82,4 +82,8 @@
     textarea, #survey-container {
         width: 100%;
     }
+
+    .payment-data {
+        width: 100px;
+    }
 }

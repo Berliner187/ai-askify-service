@@ -1,0 +1,40 @@
+.payment-container {
+    text-align: center;
+}
+.payment-container .icon-status {
+    width: 96px;
+}
+
+.payment-status-success {
+    background-image:
+        url('../img/bg-payment-success.png'), 
+        url('../img/bg-bottom-accent.png');
+    background-position: top center, bottom center;
+    background-repeat: no-repeat, no-repeat;
+    background-size: cover;
+}
+
+.payment-data {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    width: 100%;
+    margin: 0 auto;
+    max-width: 500px;
+}
+.payment-data p {
+    margin-bottom: 8px;
+}
+
+.payment-status-success {
+    background-repeat: no-repeat;
+}
+
+.payment-status-failed {
+    background-image:
+        url('../img/bg-gradient-failed.png'), 
+        url('../img/bg-bottom-accent.png');
+    background-position: top center, bottom center;
+    background-repeat: no-repeat, no-repeat;
+    background-size: cover;
+}

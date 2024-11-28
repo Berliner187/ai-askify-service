@@ -59,6 +59,10 @@ nav.active {
     user-select: none;
 }
 
+nav.active a {
+    color: #cecdd9;
+}
+
 nav ul {
     display: flex;
     flex-direction: column;

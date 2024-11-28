@@ -1,6 +1,7 @@
 from django.urls import path
-from .views import *
+from asgiref.sync import sync_to_async
 
+from .views import *
 
 urlpatterns = [
     path('', index, name='home'),
@@ -16,7 +17,6 @@ urlpatterns = [
     path('logout/', logout_view, name='logout'),
     path('stats2975/', admin_stats, name='stats2975'),
     path('profile/<str:username>/', profile_view, name='profile'),
-    path('subscriptions/', subscription_list, name='subscription_list'),
     path('docs/<slug:slug>/', document_view, name='document_view'),
 
     path('api/auth/vk/', vk_auth, name='vk_auth'),
@@ -25,6 +25,8 @@ urlpatterns = [
     path('get_ip/', get_ip, name='get_ip'),
     path('payment/', create_payment, name='payment'),
     path('api/payment/initiate', PaymentInitiateView.as_view(), name='payment_initiate'),
+    path('payment/success/', PaymentSuccessView.as_view(), name='payment_success'),
+    path('payment/fail/', success_payment, name='payment_fail'),
 
     path('upload/', FileUploadView.as_view(), name='file_upload'),
 

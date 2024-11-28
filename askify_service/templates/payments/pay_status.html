@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    {% include 'components/meta_tags.html' %}
+    {% load static %}
+    {% include 'components/linker.html' %}
+    <link rel="stylesheet" href="{% static 'css/payment.css' %}">
+</head>
+<body>
+    <script src="{% static 'js/second-loader.js' %}"></script>
+    {% include 'components/loader.html' %}
+
+    <div id="page-container" class="fade" style="display: none;">
+
+        {% include 'header.html' %}
+        <div class="container payment-container payment-status-{% if payment_status == 'Успешно' %}success{% else %}failed{% endif %}">
+            <img class="icon-status" src="{% if payment_status == 'Успешно' %}{% static 'img/icon-done.png' %}{% else %}{% static 'img/icon-fail.png' %}{% endif %}" alt="">
+            <h2>{{ payment_status }}</h2>
+            <p>{{ text_status }}</p>
+
+            <br>
+
+            <h3>{{ plan_name }}</h3>
+            
+            {% for detail in payment_details %}
+            <div class="payment-data">
+                <p>{{ detail.label }}</p>
+                <p>{{ detail.value }}</p>
+            </div>
+            {% endfor %}
+
+            <br>
+
+            {% if payment_status == 'Успешно' %}
+                <div class="button-medium button-accent">
+                    <a href="{% url 'create' %}">
+                        <div>
+                            <p>Начать использовать</p>
+                            <img src="{% static 'img/icon-forward.png' %}" alt="">
+                        </div>
+                    </a>
+                </div>
+            {% else %}
+                <div class="button-medium button-accent">
+                    <a href="{% url 'payment' %}">
+                        <div>
+                            <p>Повторить попытку</p>
+                            <img src="{% static 'img/icon-retry.png' %}" alt="">
+                        </div>
+                    </a>
+                </div>
+            {% endif %}
+            
+        </div>
+
+        {% include 'footer.html' %}
+
+    </div>
+</body>
+</html>

@@ -1,9 +1,7 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Оплата</title>
+    {% include 'components/meta_tags.html' %}
     {% load static %}
     <link rel="shortcut icon" href="{% static 'img/favicon.ico' %}" type="image/png">
     {% include 'components/linker.html' %}
@@ -67,6 +65,7 @@
 
             <p class="total-cost">Стоимость - <span id="price_total"></span> руб</p>
             <!-- <p class="next-payment">Следующий платеж - <strong>17.12.2024</strong></p> -->
+            <p><strong>! ТЕСТОВЫЕ ПЛАТЕЖИ !</p>
 
             <div class="agreement">
                 <input type="checkbox" id="agreement" class="agreement-checkbox">

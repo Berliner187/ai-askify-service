@@ -1,14 +1,9 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Профиль {{ user.username }} • Летучка</title>
+    {% include 'components/meta_tags.html' %}
     <meta name="description" content="Профиль пользователя {{ user.username }}">
     <meta name="keywords" content="профиль, пользователь, {{ user.username }}">
-    <link rel="preconnect" href="">
-    <link rel="dns-prefetch" href="">
-    <meta name="theme-color" content="#18171a">
     {% load static %}
     {% include 'components/linker.html' %}
 </head>

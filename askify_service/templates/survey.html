@@ -1,9 +1,7 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ survey_title }} • Летучка</title>
+    {% include 'components/meta_tags.html' %}
     {% load static %}
     <link rel="stylesheet" href="{% static 'css/nav.css' %}">
     {% include 'components/linker.html' %}
@@ -38,18 +36,19 @@
                                 </a> 
                             </div>
 
-                            <button type="button" class="next-button button-medium">
-                                <div>
-                                    <p>Дальше</p>
-                                    <img src="{% static 'img/icon-forward.png' %}" alt="">
-                                </div>
-                            </button>
+                            <div class="button-medium button-accent">
+                                <button type="button" class="next-button">
+                                    <div>
+                                        <p>Дальше</p>
+                                    </div>
+                                </button>
+                            </div>
                             
                         </div>
                     </div>
                 {% endfor %}
                 <div class="submit-container">
-                    <button type="submit" id="submit-button" disabled style="display: none">Посмотреть результат</button>
+                    <button type="submit" id="submit-button" disabled style="display: none">Нажмите, чтобы увидеть результат</button>
                     <div id="loading-indicator" style="display: none;">Загрузка...</div>
                 </div>
             </div>

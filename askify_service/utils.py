@@ -13,6 +13,8 @@ from django.http import JsonResponse
 
 import openai
 import requests
+import httpx
+import asyncio
 
 
 from .tracer import *
@@ -57,7 +59,6 @@ class ManageGenerationSurveys:
         return self.data
 
     def load_forbidden_words(self):
-        print('ошибка')
         base_dir = os.path.dirname(os.path.abspath(__file__))
         forbidden_words_file_path = os.path.join(base_dir, '../askify_app', "forbidden_words.txt")
         with open(forbidden_words_file_path) as forbidden_words_file:
@@ -112,6 +113,7 @@ class ManageGenerationSurveys:
                 self.log_error("json.JSONDecodeError", str(fail))
                 return JsonResponse({'error': 'Ошибка декодирования JSON'}, status=479)
         else:
+            print(json_match)
             self.log_warning("JSON not found")
             return JsonResponse({'error': f"{generated_text}"}, status=429)
 
@@ -123,6 +125,7 @@ class ManageGenerationSurveys:
         )
 
     def _handle_exception(self, fail, attempt):
+        print(fail, attempt)
         if fail.response.status_code == 429:
             self.log_error("Code 429", str(fail))
             if attempt < self.max_retries - 1:
@@ -258,6 +261,11 @@ class GenerationModelsControl:
 
         return self.__generate_completion(completion)
 
+    def get_feedback_001(self, text_from_user):
+        feedback_text, tokens_used = self.get_generated_feedback_0003(text_from_user)
+        print("Feedback's response:", feedback_text)
+        return feedback_text, tokens_used
+
     @staticmethod
     def __generate_completion(completion):
         generated_text = completion.choices[0].message.content
@@ -288,14 +296,14 @@ class GenerationModelsControl:
     def get_generated_survey_0003(self, text_from_user):
         client = openai.OpenAI(
             base_url="https://openrouter.ai/api/v1",
-            api_key=self.__get_confidential_key('openrouter')
+            api_key=self.__get_confidential_key("openrouter")
         )
 
         completion = client.chat.completions.create(
-            model="meta-llama/llama-3.2-90b-vision-instruct:free",
+            model="google/gemini-flash-1.5-8b-exp",
             messages=[
                 {
-                    "role": "system",
+                    "role": "user",
                     "content": [
                         {
                             "type": "text",
@@ -312,10 +320,32 @@ class GenerationModelsControl:
 
         return self.__generate_completion(completion)
 
-    def get_feedback_001(self, text_from_user):
-        feedback_text, tokens_used = self.get_generated_feedback_0003(text_from_user)
-        print("Feedback's response:", feedback_text)
-        return feedback_text, tokens_used
+    # async def get_generated_survey_0003(self, text_from_user):
+    #     async with httpx.AsyncClient() as client:
+    #         response = await client.post(
+    #             "https://openrouter.ai/api/v1/chat/completions",
+    #             json={
+    #                 "model": "meta-llama/llama-3.2-90b-vision-instruct:free",
+    #                 "messages": [
+    #                     {
+    #                         "role": "system",
+    #                         "content": [
+    #                             {
+    #                                 "type": "text",
+    #                                 "text": f"{self.__get_confidential_key('system_prompt')}"
+    #                             },
+    #                             {
+    #                                 "type": "text",
+    #                                 "text": f"{text_from_user} {self.__get_confidential_key('user_prompt')}"
+    #                             }
+    #                         ]
+    #                     }
+    #                 ]
+    #             },
+    #             headers={"Authorization": f"Bearer {self.__get_confidential_key('openrouter')}"}
+    #         )
+    #         completion = response.json()
+    #         return self.__generate_completion(completion)
 
 
 class PaymentManager:
@@ -341,9 +371,12 @@ class PaymentManager:
         except Exception as fail:
             return {'success': False, 'response': response_api, 'error': fail}
 
-    def generate_token_for_new_payment(self):
+    @staticmethod
+    def generate_token_for_new_payment(data_order):
         """ Генерация токена для инициализации заказа """
-        pass
+        sorted_data = sorted(data_order, key=lambda x: list(x.keys())[0])
+        concatenated = ''.join([list(item.values())[0] for item in sorted_data])
+        return hashlib.sha256(concatenated.encode('utf-8')).hexdigest()
 
     def create_payment(self):
         return
