@@ -119,14 +119,14 @@ async function handleFiles(files) {
                     'X-CSRFToken': csrftoken
                 }
             });
-        
+
             if (response.ok) {
                 console.log('Файл успешно загружен');
                 window.location.href = `/history/`;
             } else {
                 console.error('Ошибка при загрузке файла:', response.statusText);
                 alert('Не удалось загрузить файл: ' + response.statusText);
-            }        
+            }
         } catch (error) {
             console.error('Ошибка:', error);
             alert('Произошла ошибка при отправке запроса: ' + error.message);

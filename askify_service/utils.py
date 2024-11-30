@@ -16,8 +16,8 @@ import requests
 import httpx
 import asyncio
 
-
 from .tracer import *
+from .constants import *
 
 
 tracer_l = TracerManager(TRACER_FILE)
@@ -52,7 +52,7 @@ class ManageGenerationSurveys:
         self.text_from_user = self.get_text_from_request()
         self.forbidden_words = self.load_forbidden_words()
         self.generation_models_control = GenerationModelsControl()
-        self.max_retries = 3
+        self.max_retries = 5
 
     def get_text_from_request(self):
         print(self.data)
@@ -87,15 +87,28 @@ class ManageGenerationSurveys:
         print("start the generated: {}".format(self.text_from_user[:32]))
 
         for attempt in range(self.max_retries):
-            try:
-                generated_text, tokens_used = self.generation_models_control.get_generated_survey_0003(self.text_from_user)
+            # try:
+            print("attempt", attempt)
+            ai_response = self.generation_models_control.get_generated_survey_0003(self.text_from_user)
+            if ai_response.get('success'):
+                generated_text, tokens_used = ai_response.get('generated_text'), ai_response.get('tokens_used')
+                print(generated_text, tokens_used)
                 return self.process_generated_text(generated_text), tokens_used
+            else:
+                self.log_error('eror in ai_response at generate_survey', ai_response)
+                return None, None
 
-            except Exception as fail:
-                print(fail, attempt)
-                response = self._handle_exception(fail, attempt)
-                if response:
-                    return response
+            # except Exception as fail:
+            #     print(fail, attempt)
+            #     self.log_error("Code 429", str(fail))
+            #     if attempt < self.max_retries - 1:
+            #         return JsonResponse(
+            #             {'error': f"Сервер перегружен. Пожалуйста, повторите попытку позже."},
+            #             status=429
+            #         )
+            #     else:
+            #         self.log_error(429, "AI: Server Overloaded")
+            #         return JsonResponse({'error': 'Сервер перегружен, попробуйте позже.'}, status=429)
 
     def log_info(self, message):
         tracer_l.tracer_charge(
@@ -123,24 +136,6 @@ class ManageGenerationSurveys:
             'ERROR', self.request.user.username, self.generate_survey_for_user.__name__,
             error_type, message
         )
-
-    def _handle_exception(self, fail, attempt):
-        print(fail, attempt)
-        if fail.response.status_code == 429:
-            self.log_error("Code 429", str(fail))
-            if attempt < self.max_retries - 1:
-                wait_time = 60
-                time.sleep(wait_time)
-                return JsonResponse(
-                    {'error': f"Сервер перегружен. Пожалуйста, повторите попытку через {wait_time} секунд."},
-                    status=429
-                )
-            else:
-                self.log_error(429, "AI: Server Overloaded")
-                return JsonResponse({'error': 'Сервер перегружен, попробуйте позже.'}, status=429)
-        else:
-            self.log_error("Code XXX", f"unknown critical error: {fail}")
-            raise
 
 
 class AccessControlUser:
@@ -240,39 +235,69 @@ class GenerationModelsControl:
             api_key=self.__get_confidential_key('openrouter')
         )
 
-        completion = client.chat.completions.create(
-            model="meta-llama/llama-3.2-90b-vision-instruct:free",
-            messages=[
-                {
-                    "role": "system",
-                    "content": [
+        for model in MODEL_NAMES:
+            try:
+                completion = client.chat.completions.create(
+                    model=model,
+                    messages=[
                         {
-                            "type": "text",
-                            "text": f"{self.__get_confidential_key('pre_feedback_prompt')}"
-                        },
-                        {
-                            "type": "text",
-                            "text": f"{text_from_user}{self.__get_confidential_key('post_feedback_prompt')}"
+                            "role": "system",
+                            "content": [
+                                {
+                                    "type": "text",
+                                    "text": f"{self.__get_confidential_key('pre_feedback_prompt')}"
+                                },
+                                {
+                                    "type": "text",
+                                    "text": f"{text_from_user}{self.__get_confidential_key('post_feedback_prompt')}"
+                                }
+                            ]
                         }
                     ]
-                }
-            ]
-        )
-
-        return self.__generate_completion(completion)
+                )
+                return self.__generate_completion(completion)
+            except Exception as fail:
+                tracer_l.tracer_charge('WARNING', '', 'get_generated_feedback_0003',
+                                       f'FAILED to load model: {model}', fail)
+        return None
 
     def get_feedback_001(self, text_from_user):
-        feedback_text, tokens_used = self.get_generated_feedback_0003(text_from_user)
-        print("Feedback's response:", feedback_text)
-        return feedback_text, tokens_used
+        ai_response = self.get_generated_feedback_0003(text_from_user)
+
+        if ai_response.get('success'):
+            print("Feedback's response:", ai_response)
+            return ai_response
+        else:
+            return {'success': False, 'feedback_text': None, 'tokens_used': None}
 
     @staticmethod
-    def __generate_completion(completion):
-        generated_text = completion.choices[0].message.content
-        cleaned_generated_text = generated_text.replace("json", "").replace("`", "")
-        tokens_used = completion.usage.total_tokens
-        print(cleaned_generated_text, tokens_used)
-        return cleaned_generated_text, tokens_used
+    def __generate_completion(completion) -> dict:
+        print(completion)
+        try:
+            generated_text = completion.choices[0].message.content
+            print("\n\ngenerated_text", generated_text)
+            cleaned_generated_text = generated_text.replace("json", "").replace("`", "")
+            tokens_used = completion.usage.total_tokens
+            print("\n\ncleaned_generated_text", cleaned_generated_text, tokens_used)
+            return {
+                'success': True, 'generated_text': cleaned_generated_text, 'tokens_used': tokens_used
+            }
+
+        except Exception as fail:
+            print(fail)
+            if hasattr(completion, 'error') and completion.error is not None:
+                error_info = completion.error
+                code = error_info['code']
+                raw_metadata = error_info['metadata']['raw']
+
+                metadata = json.loads(raw_metadata)
+                message = metadata['error']['message']
+
+                print(f"Code: {code}, Message: {message}")
+                return {'success': False, 'code': code, 'message': message}
+            else:
+                print("Не удалось получить информацию об ошибке.")
+                return {'success': False, 'code': 429, 'message': fail}
 
     def get_generated_survey_0001(self, text_from_user):
         client = openai.OpenAI(
@@ -296,29 +321,35 @@ class GenerationModelsControl:
     def get_generated_survey_0003(self, text_from_user):
         client = openai.OpenAI(
             base_url="https://openrouter.ai/api/v1",
-            api_key=self.__get_confidential_key("openrouter")
+            api_key=self.__get_confidential_key('openrouter')
         )
 
-        completion = client.chat.completions.create(
-            model="google/gemini-flash-1.5-8b-exp",
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
+        for model in MODEL_NAMES:
+            try:
+                completion = client.chat.completions.create(
+                    model=model,
+                    messages=[
                         {
-                            "type": "text",
-                            "text": f"{self.__get_confidential_key('system_prompt')}"
-                        },
-                        {
-                            "type": "text",
-                            "text": f"{text_from_user} {self.__get_confidential_key('user_prompt')}"
+                            "role": "user",
+                            "content": [
+                                {
+                                    "type": "text",
+                                    "text": f"{self.__get_confidential_key('system_prompt')}"
+                                },
+                                {
+                                    "type": "text",
+                                    "text": f"{text_from_user} {self.__get_confidential_key('user_prompt')}"
+                                }
+                            ]
                         }
                     ]
-                }
-            ]
-        )
+                )
+                return self.__generate_completion(completion)
+            except Exception as fail:
+                tracer_l.tracer_charge('WARNING', '', 'get_generated_feedback_0003',
+                                       f'FAILED to load model: {model}', fail)
 
-        return self.__generate_completion(completion)
+        return None
 
     # async def get_generated_survey_0003(self, text_from_user):
     #     async with httpx.AsyncClient() as client:

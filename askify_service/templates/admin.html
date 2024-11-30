@@ -109,63 +109,34 @@
                 <p><strong>Подписок –</strong> {{ subscriptions }}</p>
                 <hr>
                 
-                <div class="activity-container">
-                    <p><strong>Активность –</strong> {{ count_activities }}</p>
-                    {% for activity in user_activities %}
-                        <div class="activity-item">
-                            <ul class="activity-details">
-                                <li>Username: {{ activity.usernames }}</li>
-                                <li>IP Address: {{ activity.ip_address }}</li>
-                                <li>Дата: {{ activity.created_at }}</li>
-                                <li>Статус: {{ activity.is_blocked|yesno:"Заблокирован,Не заблокирован" }}</li>
-                            </ul>
-                            <div class="button-group">
-                                {% if activity.is_blocked %}
-                                    <div class="button-medium">
-                                        <a href="{% url 'unblock_ip' activity.ip_address %}">
-                                            <div class="button-content">
-                                                <img src="{% static 'img/icon-lock.png' %}" alt="">
-                                                <p>Разблокировать по IP</p>
-                                            </div>
-                                        </a>
-                                    </div>
-                                    <div class="button-medium">
-                                        <a href="{% url 'unblock_ip' activity.ip_address %}">
-                                            <div class="button-content">
-                                                <img src="{% static 'img/icon-lock.png' %}" alt="">
-                                                <p>Разблокировать по ID</p>
-                                            </div>
-                                        </a>
-                                    </div>
-                                {% else %}
-                                    <div class="button-medium">
-                                        <a href="{% url 'block_ip' activity.ip_address %}">
-                                            <div class="button-content">
-                                                <img src="{% static 'img/icon-unlock.png' %}" alt="">
-                                                <p>Заблокировать по IP</p>
-                                            </div>
-                                        </a>
-                                    </div>
-                                    <div class="button-medium">
-                                        <a href="{% url 'block_by_staff_id' activity.id_staff %}">
-                                            <div class="button-content">
-                                                <img src="{% static 'img/icon-unlock.png' %}" alt="">
-                                                <p>Заблокировать по ID</p>
-                                            </div>
-                                        </a>
-                                    </div>
-                                {% endif %}
-                                
-                            </div>
-                        </div>
-                    {% empty %}
-                        <p>Нет активности за выбранный период.</p>
-                    {% endfor %}
-                </div>
+                <table class="subscription-table">
+                    <thead>
+                        <tr class="table-header">
+                            <th class="table-header-cell">Никнейм</th>
+                            <th class="table-header-cell">Название плана</th>
+                            <th class="table-header-cell">Статус подписки</th>
+                            <th class="table-header-cell">Статус платежа</th>
+                            <th class="table-header-cell">Сумма</th>
+                            <th class="table-header-cell">Дата</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in data %}
+                        <tr class="table-row">
+                            <td class="table-cell" data-label="Имя">{{ item.name }}</td>
+                            <td class="table-cell" data-label="Название плана">{{ item.plan_name }}</td>
+                            <td class="table-cell" data-label="Статус подписки">{% if item.status == 'active' %}Успешно ✅{% else %}Неактивна ❌{% endif %}</td>
+                            <td class="table-cell" data-label="Статус платежа">{% if item.payment_status == 'completed' %}Успешно ✅{% else %}Тщетно ❌{% endif %}</td>
+                            <td class="table-cell" data-label="Сумма">{{ item.amount }}</td>
+                            <td class="table-cell" data-label="Дата">{{ item.date }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
 
             </div>
     
-            <div class="head-button">
+            <div class="container-buttons">
                 <div class="button-medium">
                     <a href="{% url 'profile' username %}">
                         <div>

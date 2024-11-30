@@ -120,8 +120,10 @@ class ManageSurveysView(View):
                     manage_generate_surveys_text = ManageGenerationSurveys(request, text_from_user)
                     generated_text, tokens_used = manage_generate_surveys_text.generate_survey_for_user()
                     print(generated_text, tokens_used)
-
                     print(f"\n\nGEN TEST: {generated_text}")
+
+                    if (generated_text is None) and (tokens_used is None):
+                        return JsonResponse({'error': 'Произошла ошибка :(\nПожалуйста, попробуйте позже'}, status=429)
 
                     cleaned_generated_text = generated_text
                     tracer_l.tracer_charge(
@@ -227,10 +229,12 @@ class FileUploadView(View):
 
         # manage_generate_surveys_text = ManageGenerationSurveys(request, data)
         # generated_text, tokens_used = manage_generate_surveys_text.generate_survey_for_user()
-        print("ТЕСТ ГЕНЕРИРУЕТСЯ")
+        print("\n--- ТЕСТ ГЕНЕРИРУЕТСЯ ---")
         try:
             manage_generate_surveys_text = ManageGenerationSurveys(request, data)
             generated_text, tokens_used = manage_generate_surveys_text.generate_survey_for_user()
+            if (generated_text is None) and (tokens_used is None):
+                return JsonResponse({'error': 'Произошла ошибка при создании теста'}, status=429)
         except TypeError:
             return JsonResponse({'error': 'К сожалению, не удалось выполнить запрос'}, status=400)
 
@@ -265,42 +269,25 @@ class FileUploadView(View):
             return -1
 
         truncated_text = full_text[:2**14]
-
         return truncated_text
 
 
-def fetch_feedback(user_answers_list, total_count, user_answers):
-    generation_models_control = GenerationModelsControl()
-    return generation_models_control.get_feedback_001(
-        f"Список вопросов и моих ответов: {user_answers_list}.\n"
-        f"Набрано балов: {total_count} из {len(user_answers)}"
-    )
-
-
-@login_required
-@sync_to_async(thread_sensitive=False)
-@subscription_required
-def take_survey(request, survey_id):
-    if DEBUG:
-        print("\n-------------\ntake_survey: work\n--------------")
-
-    survey_id = uuid.UUID(survey_id)
-    survey = get_object_or_404(Survey, survey_id=survey_id)
-    questions = json.loads(survey.questions)
-
-    if request.method == 'POST':
-        if DEBUG:
-            print("Метод POST")
-            print("Данные POST:", request.POST)
+@method_decorator(login_required, name='dispatch')
+@method_decorator(subscription_required, name='dispatch')
+class TakeSurvey(View):
+    def post(self, request, survey_id):
+        survey_id = uuid.UUID(survey_id)
+        survey = get_object_or_404(Survey, survey_id=survey_id)
+        questions = json.loads(survey.questions)
 
         user_answers = [request.POST.get(f'answers_{i + 1}') for i in range(len(questions))]
-        question_ids = [f'question_{i + 1}' for i in range(len(user_answers))]
-        user_answers_dict = {question_ids[i]: user_answers[i] for i in range(len(user_answers))}
 
         if None in user_answers:
             context = {
-                'survey': survey, 'questions': questions, 'error': 'Пожалуйста, ответьте на все вопросы.',
-                'username': get_username(request)
+                'survey': survey,
+                'questions': questions,
+                'error': 'Пожалуйста, ответьте на все вопросы.',
+                'username': request.user.username if request.user.is_authenticated else None
             }
             return render(request, 'survey.html', context)
 
@@ -309,16 +296,14 @@ def take_survey(request, survey_id):
         if survey_obj.exists():
             survey_obj.delete()
 
+        user_answers_dict = {f'question_{i + 1}': user_answers[i] for i in range(len(user_answers))}
         user_answers_list = []
         correct_count = 0
-        total_count = 0
 
         for index_q, question in enumerate(questions):
             selected_answer = user_answers[index_q]
             is_correct = selected_answer == question['correct_answer']
-            if is_correct:
-                correct_count += 1
-                total_count += 1
+            correct_count += 1 if is_correct else 0
 
             user_answers_json = json.dumps(user_answers_dict)
 
@@ -339,44 +324,39 @@ def take_survey(request, survey_id):
                 f"Ответ пользователя: {selected_answer}"
             )
 
-            if DEBUG:
-                print(
-                    f"\n\nВопрос: {question['question']}\nПравильный ответ: {question['correct_answer']}\nОтвет пользователя: {selected_answer}")
-
-        # try:
         feedback_obj = FeedbackFromAI.objects.filter(survey_id=survey_id)
         if feedback_obj.exists():
             feedback_obj.delete()
 
-        print(">>>>> ЗАГРУЗКА FEEDBACK <<<<<")
         generation_models_control = GenerationModelsControl()
-        ai_feedback, tokens_used = generation_models_control.get_feedback_001(
+        ai_feedback = generation_models_control.get_feedback_001(
             f"Список вопросов и моих ответов: {user_answers_list}.\n"
-            f"Набрано балов: {total_count} из {len(user_answers)}"
+            f"Набрано балов: {correct_count} из {len(user_answers)}"
         )
 
-        FeedbackFromAI.objects.create(
-            survey_id=survey_id,
-            id_staff=get_staff_id(request),
-            feedback_data=ai_feedback
-        )
-
-        # except Exception as fail:
-        #     tracer_l.tracer_charge(
-        #         'CRITICAL', request.user.username, take_survey.__name__,
-        #         "Invalid FEEDBACK", f"{fail}")
+        if ai_feedback.get('success'):
+            FeedbackFromAI.objects.create(
+                survey_id=survey_id,
+                id_staff=get_staff_id(request),
+                feedback_data=ai_feedback.get('generated_text')
+            )
 
         json_response = {'score': correct_count, 'total': user_answers, 'survey_id': survey_id}
         return render(request, 'result.html', json_response)
 
-    context = {
-        'page_title': f'Прохождение теста – {survey.title}',
-        'survey': survey,
-        'questions': questions,
-        'survey_title': survey.title,
-        'username': request.user.username if request.user.is_authenticated else None
-    }
-    return render(request, 'survey.html', context)
+    def get(self, request, survey_id):
+        survey_id = uuid.UUID(survey_id)
+        survey = get_object_or_404(Survey, survey_id=survey_id)
+        questions = json.loads(survey.questions)
+
+        context = {
+            'page_title': f'Прохождение теста – {survey.title}',
+            'survey': survey,
+            'questions': questions,
+            'survey_title': survey.title,
+            'username': request.user.username if request.user.is_authenticated else None
+        }
+        return render(request, 'survey.html', context)
 
 
 @login_required
@@ -393,7 +373,8 @@ def result_view(request, survey_id):
 
     try:
         feedback_obj = FeedbackFromAI.objects.get(survey_id=survey_id)
-        feedback_text = markdown.markdown(feedback_obj.feedback_data)
+        feedback_text = re.sub(r'[^a-zA-Zа-яА-Я0-9.,!?;:\s]', '', feedback_obj.feedback_data)
+        feedback_text = markdown.markdown(feedback_text)
     except Exception as fail:
         feedback_text = 'Не удалось получить обратную связь от ИИ :('
 
@@ -611,6 +592,8 @@ def admin_stats(request):
         start_date = request.GET.get('start_date')
         end_date = request.GET.get('end_date')
 
+        selected_subscription = Subscription.objects.all()
+
         if start_date and end_date:
             start_date = timezone.datetime.strptime(start_date, '%Y-%m-%d')
             end_date = timezone.datetime.strptime(end_date, '%Y-%m-%d') + timezone.timedelta(days=1)
@@ -649,18 +632,35 @@ def admin_stats(request):
             user_activities = UserActivity.objects.none()
             user_activities_count = 0
 
+        payment_data = []
+        for subscription in selected_subscription:
+            user = AuthUser.objects.get(id_staff=subscription.staff_id)
+            payments = Payment.objects.filter(subscription=subscription)
+
+            for payment in payments:
+                payment_data.append({
+                    'name': user.username,
+                    'plan_name': subscription.plan_name,
+                    'status': subscription.status,
+                    'payment_status': payment.status,
+                    'amount': f'{get_format_number(payment.amount / 100)} руб',
+                    'date': get_formate_date(subscription.start_date),
+                })
+
         usernames = AuthUser.objects.values_list('username', flat=True)
 
         context = {
+            'username': request.user.username,
             'selected_users': selected_users,
+            'usernames': usernames,
             'total_users': all_users,
             'total_surveys': total_surveys,
             'total_answers': total_answers,
-            'usernames': usernames,
-            'username': request.user.username,
             'subscriptions': subscriptions,
             'user_activities': user_activities,
-            'count_activities': user_activities_count
+            'count_activities': user_activities_count,
+            'selected_subscription': selected_subscription,
+            'data': payment_data
         }
 
         return render(request, 'admin.html', context)
@@ -730,7 +730,6 @@ def create_payment(request):
         'order_id': order_id,
         'phone': 999,
         'fullname': 'ФИО',
-        'order_status': payment_manager.check_order(['SZS9M83W5R435DCV', TERMINAL_PASSWORD, TERMINAL_KEY])
     }
 
     return render(request, 'payments/payment.html', context)
@@ -776,6 +775,7 @@ class PaymentInitiateView(View):
         print("amount", amount)
 
         plan_prices = {
+            'Начальный план': 0,
             'Стандартный план': 220,
             'Премиум план': 590,
             'Пакет токенов': 480
@@ -842,6 +842,7 @@ class PaymentInitiateView(View):
             if subscription_obj.exists():
                 subscription_obj.delete()
 
+            # TODO: Сделать как транзакцию
             # Инициализация тарифного плана
             subscription = Subscription.objects.create(
                 staff_id=get_staff_id(request),
@@ -852,7 +853,6 @@ class PaymentInitiateView(View):
                 discount=0.00
             )
             subscription.save()
-
             # Инициализация оплаты
             new_payment = Payment.objects.create(
                 staff_id=get_staff_id(request),
@@ -893,9 +893,9 @@ class PaymentSuccessView(View):
                 payment_parameters = [payment.order_id, TERMINAL_PASSWORD, TERMINAL_KEY]
                 payment_status = payment_manager.check_order(payment_parameters)['response']['Payments'][0]['Status']
 
-                if DEBUG:
-                    if subscription.status == 'active' and payment.status == 'completed':
-                        return redirect('create')
+                # if DEBUG:
+                #     if subscription.status == 'active' and payment.status == 'completed':
+                #         return redirect('create')
 
                 description_payment = PAYMENT_STATUSES.get(payment_status, 'Статус не найден')
 
@@ -940,6 +940,9 @@ class PaymentSuccessView(View):
                         "payment_details": payment_details,
                         "username": get_username(request)
                     }
+
+                    payment_summary = "\n".join(payment_data.values())
+                    # tracer_l.send_message_to_telegram(payment_summary)
 
                     return render(request, 'payments/pay_status.html', payment_data)
                 else:

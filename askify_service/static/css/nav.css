@@ -46,6 +46,7 @@ nav {
 nav.active {
     display: block;
     position: absolute;
+    text-align: center;
     top: 100%;
     margin-top: 10px;
     right: 0;

@@ -73,21 +73,23 @@
                         <img src="{% static 'img/icon-send-m.png' %}" alt="">
                     </button>
                 </div>
-                <div class="button-medium">
-                    <a href="{% url 'history' %}">
-                        <div>
-                            <img src="{% static 'img/icon-history.png' %}" alt="">
-                            <p>История</p>
-                        </div>
-                    </a>
-                </div>
-                <div class="button-medium" id="#tokens-color">
-                    <a href="{% url 'history' %}">
-                        <div>
-                            <img src="{% static 'img/icon-tokens.png' %}" alt="">
-                            <p>Доступно <span>{{ tokens_f }}</span> токенов</p>
-                        </div>
-                    </a>
+                <div class="head-button">
+                    <div class="button-medium">
+                        <a href="{% url 'history' %}">
+                            <div>
+                                <img src="{% static 'img/icon-history.png' %}" alt="">
+                                <p>История</p>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="button-medium" id="#tokens-color">
+                        <a href="{% url 'history' %}">
+                            <div>
+                                <img src="{% static 'img/icon-tokens.png' %}" alt="">
+                                <p>Доступно <span>{{ tokens_f }}</span> токенов</p>
+                            </div>
+                        </a>
+                    </div>
                 </div>
             </form>
         </div>

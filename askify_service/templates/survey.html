@@ -15,7 +15,7 @@
 
         <form id="survey-form" method="post">
             {% csrf_token %}
-            <div class="container" id="question-container">
+            <div class="container question-container" id="question-container">
                 {% for question in questions %}
                     <div class="question" style="display: none;">
                         <h3>Вопрос {{ forloop.counter }}: {{ question.question }}</h3>
@@ -27,6 +27,13 @@
                         {% endfor %}
                         <div class="head-button">
 
+                            <div class="button-medium">
+                                <a href="{% url 'result' survey_id=survey.survey_id %}">
+                                    <div>
+                                        <img src="{% static 'img/icon-back-m2.png' %}" alt="">
+                                    </div>
+                                </a> 
+                            </div>
                             <div class="button-medium">
                                 <a href="{% url 'survey' survey_id=survey.survey_id %}">
                                     <div>

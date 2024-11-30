@@ -61,10 +61,11 @@ def subscription_required(view_func):
         staff_id = get_staff_id(request)
 
         try:
-            subscription = Subscription.objects.get(staff_id=staff_id, status='active', end_date__gt=timezone.now())
-            payment_exists = Payment.objects.filter(subscription=subscription, staff_id=staff_id, status='completed').exists()
-            print(subscription)
-            if not subscription:
+            subscription = Subscription.objects.get(staff_id=staff_id)
+            print(subscription.status)
+            if subscription.end_date < timezone.now():
+                subscription.status = 'inactive'
+                subscription.save()
                 return redirect('payment')
         except Subscription.DoesNotExist:
             return redirect('payment')

@@ -22,7 +22,7 @@ body {
     color: #e8e7f1;
     margin: 0;
     padding: 0;
-    transition-duration: .5s;
+    transition-duration: .25s;
 }
 
 h1 {
@@ -134,15 +134,15 @@ button:active {
     }
     25% {
         border-color: #b5bfff;
-        border-width: 12px;
+        border-width: 16px;
     }
     50% {
         border-color: #7A8FFF;
-        border-width: 24px;
+        border-width: 8px;
     }
     75% {
-        border-color: #5A66EB;
-        border-width: 12px;
+        border-color: #b5bfff;
+        border-width: 16px;
     }
     100% {
         border-color: #5A66EB;
@@ -172,7 +172,7 @@ button:active {
     border-radius: 8px;
 }
 .question label:hover, .btn:hover, button {
-    background-color: rgb(24, 23, 26, .75);
+    background-color: rgba(40, 39, 47, .75);
 }
 .question .button-accent {
     color: #b5bfff;
@@ -183,7 +183,7 @@ button:active {
     padding: 8px 16px 8px 16px;
     border-radius: 8px;
 }
-.question label input[type="radio"]:checked + p {
+.question input[type="radio"]:checked + p {
     background-color: #616DF0;
 }
 
@@ -252,28 +252,15 @@ textarea, #survey-container {
     transition: opacity 5s ease-in-out;
 }
 
-.container::before {
-    /* width: 400px;
-    height: 400px;
-    background: rgba(119, 12, 249, 0.945);
-    top: -50px;
-    left: -50px;
-    filter: blur(12em); */
-}
-
-.container::after {
-    /* width: 500px;
-    height: 500px; 
-    background: #26BAE7;
-    bottom: -100px;
-    right: -100px;
-    filter: blur(20em); */
-}
-
 .container.show::before,
 .container.show::after {
     opacity: 0.5;
 }
+
+.question-container {
+
+}
+
 
 .input-area {
     display: flex;
@@ -417,23 +404,10 @@ textarea, #survey-container {
     justify-content: space-between;
 }
 
-.next-button, .button-medium {
-    font-family: "Unbounded Medium";
-}
-
-.next-button {
-    font-size: 1em;
-    margin: 0 8px;
-    background-color: rgba(40, 39, 47, 0);
-}
-.next-button p {
-    color: #e8e7f1;
-}
-
 .button-medium {
     display: flex;
     flex-wrap: nowrap;
-    background-color: rgba(40, 39, 47, .75);
+    background-color: rgba(40, 39, 47, .5);
     width: fit-content;
     transition: .25s;
     border-radius: 8px;
@@ -471,6 +445,20 @@ textarea, #survey-container {
 .button-red {
     background-color: rgba(231, 76, 117, 0.4);
     backdrop-filter: blur(12px);
+}
+
+.next-button, .button-medium {
+    font-family: "Unbounded Medium";
+}
+
+.next-button {
+    font-size: 1em;
+    margin: 0 8px;
+    background-color: rgba(40, 39, 47, 0);
+    color: #e8e7f1;
+}
+.next-button p {
+    color: #e8e7f1;
 }
 
 

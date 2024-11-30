@@ -31,7 +31,8 @@
 
             <br>
 
-            {% if payment_status == 'Успешно' %}
+            <div class="container-buttons">
+                {% if payment_status == 'Успешно' %}
                 <div class="button-medium button-accent">
                     <a href="{% url 'create' %}">
                         <div>
@@ -50,6 +51,8 @@
                     </a>
                 </div>
             {% endif %}
+            </div>
+            
             
         </div>
 

@@ -14,7 +14,6 @@ from pathlib import Path
 
 from askify_service.utils import *
 
-from celery.schedules import crontab
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -113,13 +112,6 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
-
-CELERY_BEAT_SCHEDULE = {
-    'check-subscriptions-every-hour': {
-        'task': 'your_app_name.tasks.check_subscriptions',
-        'schedule': crontab(minute=0, hour='*'),
-    },
-}
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
