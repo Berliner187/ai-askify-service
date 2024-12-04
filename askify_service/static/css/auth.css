@@ -116,7 +116,7 @@ input:hover, button:hover {
     font-size: 16px;
 }
 
-input, button, .registration-form p {
+input, button, .registration-form p, #referral-link a {
     font-family: 'Unbounded Medium';
     border-radius: 12px;
     font-size: 14px;
@@ -125,7 +125,7 @@ input, button, .registration-form p {
     transition: all 0.25s ease;
 }
 
-input, .registration-form p input {
+input, .registration-form p input, .tg-auth {
     background-color: #1A1A1A;
     color: #DEDEDE;
     border: 2px solid transparent;
@@ -172,13 +172,71 @@ button:hover {
     border-radius: 12px;
     padding: 0 20px;
     margin: 0;
-    margin: 16px;
+    margin: 16px 0 ;
     color: #e8e7f1;
     background-color: #18171a;
 }
 
+
+.tgme_widget_login.large button.tgme_widget_login_button {
+    margin: 0 auto;
+    justify-content: center;
+    align-items: center;
+}
+
+.tg-auth {
+    padding: 8px 30px;
+}
+.tg-auth div {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.tg-auth img {
+    width: 36px;
+}
+.tg-auth a {
+    text-decoration: none;
+}
+
+#referral-link a {
+    display: flex;
+    margin: 20px 40px;
+    padding: 10px 30px;
+    background-color: #18171a;
+    text-align: center;
+    align-items: center;
+    color: #e8e7f1;
+    justify-content: center;
+}
+
+.enter-phone-container {
+    width: 90%;
+    min-width: 200px;
+    max-width: 500px;
+    margin: 0 auto;
+    margin-top: 20%;
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    background-color: rgba(44, 41, 53, 0.3);
+    border-radius: 24px;
+    backdrop-filter: blur(12px);
+}
+
+.enter-phone-container input,
+.enter-phone-container button {
+    margin: 10px;
+}
+
+.enter-phone-form {
+    display: flex;
+    flex-direction: column;
+}
+
+
 .step-block p {
-    padding: 0 20px;
+    padding: 0 10px;
 }
 
 .step-block .nummer {

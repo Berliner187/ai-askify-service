@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Летучка • Вход</title>
     {% load static %}
-    <link rel="shortcut icon" href="{% static 'img/logo.png' %}" type="image/png">
+    <link rel="shortcut icon" href="{% static 'img/favicon.ico' %}" type="image/ico">
     <link rel="stylesheet" href="{% static 'css/second-loader.css' %}">
     <link rel="stylesheet" href="{% static 'css/loader.css' %}">
     <link rel="stylesheet" href="{% static 'css/auth.css' %}">
@@ -29,77 +29,22 @@
 
             <section class="content-container">
                 <h2>Вход</h2>
-
-                <div>
-                    <div>
-                        <script src="https://unpkg.com/@vkid/sdk@<3.0.0/dist-sdk/umd/index.js"></script>
-                        <script type="text/javascript">
-                          if ('VKIDSDK' in window) {
-                            const VKID = window.VKIDSDK;
-                      
-                            VKID.Config.init({
-                              app: 52653516,
-                              redirectUrl: 'https://letychka.ru/create/',
-                              responseMode: VKID.ConfigResponseMode.Callback,
-                              source: VKID.ConfigSource.LOWCODE,
-                            });
-                      
-                            const oneTap = new VKID.OneTap();
-                      
-                            oneTap.render({
-                              container: document.currentScript.parentElement,
-                              showAlternativeLogin: true,
-                              styles: {
-                                borderRadius: 20
-                              }
-                            })
-                            .on(VKID.WidgetEvents.ERROR, vkidOnError)
-                            .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, function (payload) {
-                              const code = payload.code;
-                              const deviceId = payload.device_id;
-                      
-                              VKID.Auth.exchangeCode(code, deviceId)
-                                .then(vkidOnSuccess)
-                                .catch(vkidOnError);
-                            });
-                          
-                            function vkidOnSuccess(data) {
-                                console.log("vkidOnSuccess", data);
-                            
-                                const userData = {
-                                    vk_id: data.user.id,
-                                    name: data.user.first_name + ' ' + data.user.last_name, // Имя пользователя
-                                    phone: data.user.phone || null,
-                                    email: data.user.email || null,
-                                };
-                            
-                                // Отправка данных на бэк
-                                fetch('/api/auth/vk/', {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                    },
-                                    body: JSON.stringify(userData),
-                                })
-                                .then(response => response.json())
-                                .then(result => {
-                                    console.log(result);
-                                    if (result.status === 'success') {
-                                        alert('Данные успешно сохранены!');
-                                    } else {
-                                        alert('Ошибка при сохранении данных.');
-                                    }
-                                })
-                                .catch(error => console.error('Ошибка:', error));
-                            }
-                          
-                            function vkidOnError(error) {
-                                console.log(error)
-                            }
-                          }
-                        </script>
+                
+                <!-- <div class="step-block tg-auth"> -->
+                    <!-- <a href="{% url 'auth_telegram' %}">
+                      <div>
+                          <img src="{% static 'img/tg-logo.webp' %}" alt="">
+                          <p>Войти с Telegram</p>
                       </div>
-                  </div>
+                    </a> -->
+                <!-- </div> -->
+                 <div class="container">
+                    <script async src="https://telegram.org/js/telegram-widget.js?22" data-telegram-login="LetychkaRobot" data-size="large" data-userpic="false" data-radius="16" data-auth-url="https://letychka.ru/auth/telegram" data-request-access="write"></script>
+                 </div>
+
+                <div class="already-exist">
+                  <p>или</p>
+                </div>
 
                 <form id="loginForm" method="post">
                     {% csrf_token %}

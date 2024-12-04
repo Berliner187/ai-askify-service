@@ -79,7 +79,6 @@ class ManageGenerationSurveys:
         )
 
     def generate_survey_for_user(self):
-        print('на месте')
         if self.check_forbidden_words():
             return 420
 
@@ -95,9 +94,7 @@ class ManageGenerationSurveys:
                 print(generated_text, tokens_used)
                 return self.process_generated_text(generated_text), tokens_used
             else:
-                self.log_error('eror in ai_response at generate_survey', ai_response)
-                return None, None
-
+                self.log_error('error in ai_response at generate_survey', ai_response)
             # except Exception as fail:
             #     print(fail, attempt)
             #     self.log_error("Code 429", str(fail))
@@ -171,7 +168,7 @@ def get_username(request):
 
 
 def init_free_subscription():
-    plan_name = 'free'
+    plan_name = 'Стартовый план'
     end_date = datetime.now() + timedelta(days=7)
     status = 'active'
     billing_cycle = 'weakly'

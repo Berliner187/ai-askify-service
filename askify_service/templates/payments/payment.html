@@ -82,8 +82,10 @@
                 <input class="payform-tbank-row" type="hidden" placeholder="Номер заказа" name="order" value="{{order_id}}">
                 <input class="payform-tbank-row" type="hidden" placeholder="Описание заказа" name="description" value="Тестовый заказ">
                 <input class="payform-tbank-row" type="hidden" placeholder="ФИО плательщика" name="name" value="{{fullname}}">
-                <input class="payform-tbank-row" type="hidden" placeholder="E-mail" name="email" value="{{email}}">
-                <input class="payform-tbank-row" type="hidden" placeholder="Контактный телефон" name="phone" value="+79001234567">
+                <div class="contact-container">
+                    <input class="payform-tbank-row contact" placeholder="E-mail" name="email" value="{{email}}">
+                    <input class="payform-tbank-row contact" placeholder="Контактный телефон" name="phone" value="{{phone}}">
+                </div>
                 <input class="payform-tbank-row payment-button" type="submit" value="Перейти к оплате">
             </form>
         </div>

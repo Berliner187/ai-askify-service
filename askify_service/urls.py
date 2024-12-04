@@ -1,5 +1,4 @@
 from django.urls import path
-from asgiref.sync import sync_to_async
 
 from .views import *
 
@@ -26,14 +25,17 @@ urlpatterns = [
     path('payment/', create_payment, name='payment'),
     path('api/payment/initiate', PaymentInitiateView.as_view(), name='payment_initiate'),
     path('payment/success/', PaymentSuccessView.as_view(), name='payment_success'),
-    path('payment/fail/', success_payment, name='payment_fail'),
+    path('payment/fail/', PaymentSuccessView.as_view(), name='payment_fail'),
 
     path('upload/', FileUploadView.as_view(), name='file_upload'),
 
-    # path('unblock-ip/<str:ip_address>/', unblock_ip, name='unblock_ip'),
+    path('api/v1/signal-secure/', confirm_user, name='api_v1_signal_secure'),
+    path('auth/tg/', phone_number_view, name='auth_telegram'),
+    path('verify-code/', verify_code_view, name='verify_code'),
+    path('auth/telegram/', TelegramAuthView.as_view(), name='telegram_auth'),
+
     path('block-user/<str:id_staff>/', block_by_staff_id, name='block_by_staff_id'),
     path('unblock-user/<str:id_staff>/', unblock_by_staff_id, name='unblock_by_staff_id'),
-
     path('block-ip/<str:ip_address>/', block_by_ip, name='block_ip'),
     path('unblock-ip/<str:ip_address>/', unblock_by_ip, name='unblock_ip')
 ]

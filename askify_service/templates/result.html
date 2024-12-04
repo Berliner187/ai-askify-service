@@ -95,10 +95,34 @@
 
         <div>
             {% if total > 0 %}
-            <div class="container result-full feedback-container">
-                <h2>Рекомендации</h2>
-                {{ feedback_text|safe }}
-            </div>
+
+                {% if subscription == 0 %}
+
+                    <div class="container subscription-offer">
+                        <h2>🎁 Получите больше с Премиумом!</h2>
+                        <p>Премиум открывает доступ к индивидуальным рекоммендациям от ИИ.<br>
+                            Получайте обратную связь от ИИ, чтобы быть в курсе своего текущего уровня знаний.<br><br>
+                            <strong>Не упустите шанс улучшить свой опыт!</strong><br>
+                        </p>
+                        <div class="container-buttons">
+                            <div class="button-medium button-accent">
+                                <a href="{% url 'payment' %}">
+                                    <div>
+                                        <p>Оформить доступ</p>
+                                    </div>
+                                </a> 
+                            </div>
+                        </div>
+                    </div>
+
+                {% else %}
+
+                    <div class="container result-full feedback-container">
+                        <h2>Рекомендации</h2>
+                        {{ feedback_text|safe }}
+                    </div>
+
+                {% endif %}
             
             <div class="container result-full">
                 <h2>Результаты теста</h2>

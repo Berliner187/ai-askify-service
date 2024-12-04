@@ -86,4 +86,13 @@
     .payment-data {
         width: 100px;
     }
+
+    .contact {
+        margin: 16px 0;
+        width: 100%;
+    }
+
+    .contact-container {
+        flex-direction: column;
+    }
 }

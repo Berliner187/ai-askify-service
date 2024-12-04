@@ -1,5 +1,6 @@
 .payform-tbank {
     width: 100%;
+    margin: 0 auto;
 }
 
 .payment-container {
@@ -77,7 +78,7 @@
     justify-content: center;
     width: 100%;
 }
-.promo-input {
+.promo-input, .contact {
     font-family: 'Unbounded Regular';
     width: 100%;
     padding: 20px 10px;
@@ -103,7 +104,7 @@
     margin-right: 8px;
     width: 16px;
     height: 16px;
-    border-radius: 12px;
+    border-radius: 24px;
     accent-color: #5A66EB;
 }
 .agreement-checkbox:hover {
@@ -132,3 +133,18 @@
 .payment-button:hover {
     opacity: .75;
 }
+
+.contact-container {
+    display: flex;
+    padding: 10px;
+    justify-content: space-between;
+}
+
+.contact {
+    width: 44%;
+    margin: 8px auto;
+    background-color: #3a393d;
+    color: #d5d3db;
+    border: none;
+    padding: 16px;
+} 

@@ -100,6 +100,7 @@ class AuthUser(AbstractUser):
         blank=True,
     )
 
+    confirmed_user = models.BooleanField(default=False, null=False, blank=False)
     vk_id = models.CharField(max_length=255, unique=True, null=True, blank=True)
     name = models.CharField(max_length=255, unique=False, null=True, blank=True)
     phone = models.CharField(max_length=20, null=True, blank=True)

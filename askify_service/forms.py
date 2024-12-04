@@ -22,3 +22,21 @@ class CustomUserCreationForm(UserCreationForm):
 
         if 'id_usable_password' in self.fields:
             del self.fields['id_usable_password']
+
+
+class PhoneNumberForm(forms.Form):
+    phone_number = forms.CharField(required=True)
+
+    def clean_phone_number(self):
+        phone_number = self.cleaned_data['phone_number']
+
+        cleaned_number = ''.join(filter(str.isdigit, phone_number))
+
+        if cleaned_number.startswith('8'):
+            cleaned_number = '7' + cleaned_number[1:]
+
+        return cleaned_number
+
+
+class VerificationCodeForm(forms.Form):
+    verification_code = forms.CharField(max_length=6, label='Введите код')

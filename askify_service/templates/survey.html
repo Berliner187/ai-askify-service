@@ -56,14 +56,33 @@
                 {% endfor %}
                 <div class="submit-container">
                     <button type="submit" id="submit-button" disabled style="display: none">Нажмите, чтобы увидеть результат</button>
-                    <div id="loading-indicator" style="display: none;">Загрузка...</div>
+                    <div id="loading-indicator" class="loading-circle" style="display: none;">
+                        <svg viewBox="0 0 100 100" class="wave-loader">
+                            <path class="wave" d="M 10,50 Q 20,30 30,50 T 50,50 T 70,50 T 90,50" />
+                        </svg>
+                    </div>
                 </div>
+                
+                <!-- <div class="submit-container">
+                    <button type="submit" id="submit-button" disabled style="display: none">Нажмите, чтобы увидеть результат</button>
+                    <div id="loading-indicator" style="display: none;">Загрузка...</div>
+                </div> -->
             </div>
         </form>
     </div>
     <script src="{% static 'js/second-loader.js' %}"></script>
 
     {% include 'footer.html' %}
+
+    <script>
+        function showLoading() {
+            document.getElementById('loading-indicator').style.display = 'block';
+        }
+        
+        function hideLoading() {
+            document.getElementById('loading-indicator').style.display = 'none';
+        }
+    </script>
 
     <script>
         let currentQuestion = 0;

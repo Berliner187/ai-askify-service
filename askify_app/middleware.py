@@ -62,8 +62,7 @@ def subscription_required(view_func):
 
         try:
             subscription = Subscription.objects.get(staff_id=staff_id)
-            print(subscription.status)
-            if subscription.end_date < timezone.now():
+            if subscription.end_date < timezone.now() or subscription.status != 'active':
                 subscription.status = 'inactive'
                 subscription.save()
                 return redirect('payment')

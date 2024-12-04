@@ -127,6 +127,53 @@ button:active {
     transform: scale(0.9);
 }
 
+.submit-container {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.loading-circle {
+    width: 100px;
+    height: 100px;
+}
+
+.wave-loader {
+    width: 100%;
+    height: 100%;
+    animation: rotate 2s linear infinite;
+}
+
+.wave {
+    fill: none;
+    stroke: rgba(166, 59, 238, 0.8);
+    stroke-width: 15;
+    stroke-linecap: round;
+    animation: wave 1.5s ease-in-out infinite;
+}
+
+@keyframes rotate {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes wave {
+    0% {
+        stroke-dasharray: 10, 10;
+        stroke-dashoffset: 0;
+    }
+    50% {
+        stroke-dasharray: 20, 10;
+        stroke-dashoffset: -10;
+    }
+    100% {
+        stroke-dasharray: 10, 10;
+        stroke-dashoffset: 0;
+    }
+}
+
+
 @keyframes borderWave {
     0% {
         border-color: #5A66EB;
@@ -259,6 +306,45 @@ textarea, #survey-container {
 
 .question-container {
 
+}
+
+
+.subscription-offer {
+    padding: 20px;
+    margin-top: 20px;
+    transition: transform 0.3s ease;
+    background: url('../img/bg-subs.png');
+    background-position: 0 top;
+    background-repeat: no-repeat;
+    text-align: center;
+}
+
+.subscription-offer h2 {
+    color: #d5d3db;
+    margin-bottom: 10px;
+}
+
+.subscription-offer p {
+    color: #BAB8C1;
+    margin-bottom: 15px;
+}
+
+.subscribe-button {
+    display: inline-block;
+    padding: 15px 25px;
+    background-color: #FF6F61;
+    color: #fff;
+    border-radius: 5px;
+    text-decoration: none;
+    transition: background-color 0.3s ease;
+}
+
+.subscribe-button:hover {
+    background-color: #FF4F3D;
+}
+
+.subscription-offer:hover {
+    transform: translateY(-5px);
 }
 
 

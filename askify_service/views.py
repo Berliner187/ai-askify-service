@@ -60,7 +60,7 @@ def page_create_survey(request):
     tracer_l.tracer_charge(
         'INFO', request.user.username, page_create_survey.__name__, "load page")
     context = {
-        "page_title": "Главная",
+        "page_title": "Создать тест",
         'tokens': limit_tokens - used_tokens,
         'tokens_f': get_format_number(limit_tokens - used_tokens),
         'limit_tokens': limit_tokens,
@@ -129,12 +129,7 @@ class ManageSurveysView(View):
                     tracer_l.tracer_charge(
                         'INFO', request.user.username, ManageSurveysView.post.__name__,
                         f"success json.loads: {cleaned_generated_text.get('title')}")
-                except TypeError as error:
-                    tracer_l.tracer_charge(
-                        'ERROR', request.user.username, ManageSurveysView.post.__name__,
-                        "text is not valid JSON", str(error), "status: 400")
-                    return JsonResponse({'error': 'К сожалению, не удалось выполнить запрос'}, status=400)
-                except json.JSONDecodeError as json_error:
+                except json.JSONDecodeError or TypeError as json_error:
                     tracer_l.tracer_charge(
                         'ERROR', request.user.username, ManageSurveysView.post.__name__,
                         "text is not valid JSON", str(json_error), "status: 400")
@@ -208,7 +203,6 @@ def get_all_surveys(request):
             'title': survey.title, 'update': format_date_update
         }
 
-    print(response_data_all)
     return response_data_all
 
 
@@ -341,7 +335,14 @@ class TakeSurvey(View):
                 feedback_data=ai_feedback.get('generated_text')
             )
 
-        json_response = {'score': correct_count, 'total': user_answers, 'survey_id': survey_id}
+            _tokens_used = TokensUsed(
+                id_staff=get_staff_id(request),
+                tokens_feedback_used=ai_feedback.get('tokens_used')
+            )
+
+        json_response = {
+            'score': correct_count, 'total': user_answers, 'survey_id': survey_id
+        }
         return render(request, 'result.html', json_response)
 
     def get(self, request, survey_id):
@@ -354,7 +355,7 @@ class TakeSurvey(View):
             'survey': survey,
             'questions': questions,
             'survey_title': survey.title,
-            'username': request.user.username if request.user.is_authenticated else None
+            'username': request.user.username if request.user.is_authenticated else None,
         }
         return render(request, 'survey.html', context)
 
@@ -378,6 +379,8 @@ def result_view(request, survey_id):
     except Exception as fail:
         feedback_text = 'Не удалось получить обратную связь от ИИ :('
 
+    subscription_manager = Subscription.objects.filter(staff_id=get_staff_id(request)).first()
+
     json_response = {
         'page_title': f'Результаты прохождения теста – {survey.title}',
         'title': survey.title,
@@ -388,7 +391,8 @@ def result_view(request, survey_id):
         'selected_answers': selected_answers,
         'selected_answers_list': selected_answers_list,
         'username': request.user.username if request.user.is_authenticated else None,
-        'feedback_text': feedback_text
+        'feedback_text': feedback_text,
+        'subscription': 1 if subscription_manager.status == 'active' else 0
     }
     # print("result_view", score, len(user_answers))
 
@@ -450,6 +454,7 @@ def login_view(request):
         if user is not None:
             login(request, user)
             request.session['user_id'] = user.id
+            print(request.session.get('user_id'))
 
             tracer_l.tracer_charge(
                 'ADMIN', request.user.username, login_view.__name__, f"user has been login in")
@@ -606,66 +611,89 @@ def admin_stats(request):
             user_activities = UserActivity.objects.filter(created_at__range=(start_date, end_date)).values('id_staff', 'ip_address', 'created_at')
             user_activities_count = UserActivity.objects.filter(created_at__range=(start_date, end_date)).count()
 
-            blocked_users = BlockedUsers.objects.values_list('id_staff', 'ip_address')
+            # blocked_users = BlockedUsers.objects.values_list('id_staff', 'ip_address')
 
-            blocked_users_set = set(blocked_users)
+            # blocked_users_set = set(blocked_users)
 
-            for user_record in user_activities:
-                if user_record['id_staff'] is not None:
-                    user_record['id_staff'] = AuthUser.objects.get(id_staff=user_record['id_staff']).id_staff
+            # for user_record in user_activities:
+            #     if user_record['id_staff'] is not None:
+            #         user_record['id_staff'] = AuthUser.objects.get(id_staff=user_record['id_staff']).id_staff
+            #
+            #         user_record['is_blocked'] = (
+            #             (user_record['id_staff'], None) in blocked_users_set or
+            #             (None, user_record['ip_address']) in blocked_users_set
+            #         )
+            #
+            #         print(f"Checking: {(user_record['id_staff'], user_record['ip_address'])} in {blocked_users_set}")
+            #         print(f"Is blocked: {user_record['is_blocked']}")
+            #
+            #         user_record['username'] = AuthUser.objects.get(id_staff=staff_id)
+            #     else:
+            #         user_record['is_blocked'] = False
 
-                    user_record['is_blocked'] = (
-                        (user_record['id_staff'], None) in blocked_users_set or
-                        (None, user_record['ip_address']) in blocked_users_set
-                    )
-
-                    print(f"Checking: {(user_record['id_staff'], user_record['ip_address'])} in {blocked_users_set}")
-                    print(f"Is blocked: {user_record['is_blocked']}")
-
-                    user_record['username'] = AuthUser.objects.get(id_staff=staff_id)
-                else:
-                    user_record['is_blocked'] = False
-
-            print(user_activities)
+            # print(user_activities)
         else:
             selected_users = total_surveys = subscriptions = total_answers = 0
             user_activities = UserActivity.objects.none()
             user_activities_count = 0
 
-        payment_data = []
-        for subscription in selected_subscription:
-            user = AuthUser.objects.get(id_staff=subscription.staff_id)
-            payments = Payment.objects.filter(subscription=subscription)
+        try:
+            payment_data = []
+            for subscription in selected_subscription:
+                try:
+                    user = AuthUser.objects.get(id_staff=subscription.staff_id)
+                except Exception:
+                    pass
 
-            for payment in payments:
-                payment_data.append({
-                    'name': user.username,
-                    'plan_name': subscription.plan_name,
-                    'status': subscription.status,
-                    'payment_status': payment.status,
-                    'amount': f'{get_format_number(payment.amount / 100)} руб',
-                    'date': get_formate_date(subscription.start_date),
-                })
+                payments = Payment.objects.filter(subscription=subscription)
 
-        usernames = AuthUser.objects.values_list('username', flat=True)
+                for payment in payments:
+                    payment_data.append({
+                        'name': user.username,
+                        'plan_name': subscription.plan_name,
+                        'status': subscription.status,
+                        'payment_status': payment.status,
+                        'amount': f'{get_format_number(payment.amount / 100)} руб',
+                        'date': get_formate_date(subscription.start_date),
+                    })
 
-        context = {
-            'username': request.user.username,
-            'selected_users': selected_users,
-            'usernames': usernames,
-            'total_users': all_users,
-            'total_surveys': total_surveys,
-            'total_answers': total_answers,
-            'subscriptions': subscriptions,
-            'user_activities': user_activities,
-            'count_activities': user_activities_count,
-            'selected_subscription': selected_subscription,
-            'data': payment_data
-        }
+            # usernames = AuthUser.objects.values_list('username', flat=True)
 
-        return render(request, 'admin.html', context)
+            context = {
+                'username': request.user.username,
+                'selected_users': selected_users,
+                # 'usernames': usernames,
+                'total_users': all_users,
+                'total_surveys': total_surveys,
+                'total_answers': total_answers,
+                'subscriptions': subscriptions,
+                'user_activities': user_activities,
+                'count_activities': user_activities_count,
+                'selected_subscription': selected_subscription,
+                'data': payment_data
+            }
+
+            return render(request, 'admin.html', context)
+        except Exception as fail:
+            tracer_l.tracer_charge(
+                'ERROR', get_username(request), 'error in admin_stats', fail)
+
+            context = {
+                'username': request.user.username,
+                'selected_users': selected_users,
+                'total_users': all_users,
+                'total_surveys': total_surveys,
+                'total_answers': total_answers,
+                'subscriptions': subscriptions,
+                'user_activities': user_activities,
+                'count_activities': user_activities_count,
+                'selected_subscription': selected_subscription,
+            }
+
+            return render(request, 'admin.html', context)
+
     else:
-        return redirect(f'profile/{request.user.username}')
+        return redirect(f'/profile/{request.user.username}')
 
 
 def block_by_staff_id(request, id_staff):
@@ -720,44 +748,19 @@ def unblock_by_staff_id(request, id_staff):
 @login_required
 def create_payment(request):
     user_data = get_object_or_404(AuthUser, id_staff=get_staff_id(request))
-    payment_manager = PaymentManager()
+
     order_id = generate_payment_id()
 
     context = {
         'page_title': 'Выбор тарифного плана',
         'username': get_username(request),
-        'email': user_data.email,
+        'email': '' if user_data.email is None else user_data.email,
+        'phone': '' if user_data.phone is None else user_data.phone,
         'order_id': order_id,
-        'phone': 999,
-        'fullname': 'ФИО',
+        'fullname': user_data.username,
     }
 
     return render(request, 'payments/payment.html', context)
-
-
-@login_required
-def success_payment(request):
-    # payment = Payment.objects.create(
-    #     payment_id=response_data.get('PaymentId'),
-    #     order_id=order_id,
-    #     token=created_token,
-    #     amount='',
-    #     status='pending'
-    # )
-    print(type(get_staff_id(request)), get_staff_id(request))
-
-    # if get_staff_id(request) == staff_id:
-    # payment = get_object_or_404(Payment, staff_id=uuid.UUID(staff_id))
-    # payment_manager = PaymentManager()
-
-    # for pay in payment:
-    #     print(pay)
-    #
-    # data_for_check_order = [payment.order_id, TERMINAL_PASSWORD, TERMINAL_KEY]
-    # check_order_status = payment_manager.check_order(data_for_check_order)
-    # print(check_order_status)
-
-    return render(request, 'payments/pay_status.html')
 
 
 class PaymentInitiateView(View):
@@ -771,7 +774,8 @@ class PaymentInitiateView(View):
         email = data['email']
         phone = data['phone']
         receipt = data['receipt']
-        print(phone)
+
+        print(phone, email)
         print("amount", amount)
 
         plan_prices = {
@@ -877,6 +881,14 @@ class PaymentInitiateView(View):
             }, status=400)
 
 
+def get_payment_data(status, description, plan_name, end_date, payment_id, order_id, amount):
+    _payment_data = {
+        "payment_status": status, "text_status": description, "plan_name": plan_name,
+        "plan_end_date": end_date, "payment_id": payment_id, 'order_id': order_id, 'amount': amount
+    }
+    return _payment_data
+
+
 class PaymentSuccessView(View):
     def get(self, request):
         success = request.GET.get('Success')
@@ -893,25 +905,23 @@ class PaymentSuccessView(View):
                 payment_parameters = [payment.order_id, TERMINAL_PASSWORD, TERMINAL_KEY]
                 payment_status = payment_manager.check_order(payment_parameters)['response']['Payments'][0]['Status']
 
-                # if DEBUG:
-                #     if subscription.status == 'active' and payment.status == 'completed':
-                #         return redirect('create')
+                # if subscription.status == 'active' and payment.status == 'completed':
+                #     return redirect('create')
 
                 description_payment = PAYMENT_STATUSES.get(payment_status, 'Статус не найден')
 
-                error_payment_data = {
-                    "payment_status": "Неудача",
-                    "text_status": description_payment,
-                    "plan_name": subscription.plan_name,
-                    "plan_end_date": subscription.end_date,
-                    "payment_id": payment.payment_id, 'order_id': payment.order_id, 'amount': payment.amount
-                }
+                error_payment_data = get_payment_data(
+                    "Неудача", description_payment, subscription.plan_name, subscription.end_date,
+                    payment.payment_id, payment.order_id, payment.amount
+                )
 
                 if int(payment.amount) != int(amount):
                     return render(request, 'payments/pay_status.html', error_payment_data)
+
                 elif payment_status == 'DEADLINE_EXPIRED':
                     print("Срок действия платежа истек.")
                     return render(request, 'payments/pay_status.html', error_payment_data)
+
                 elif payment_status == 'CONFIRMED':
                     text_payment_status = 'Успешный платеж.'
                     print(text_payment_status)
@@ -933,7 +943,7 @@ class PaymentSuccessView(View):
                     ]
 
                     payment_data = {
-                        "page_title": "Успешная оплата",
+                        "page_title": "Успешный платеж",
                         "payment_status": "Успешно",
                         "text_status": "Спасибо за покупку!",
                         "plan_name": subscription.get_human_plan(),
@@ -941,7 +951,7 @@ class PaymentSuccessView(View):
                         "username": get_username(request)
                     }
 
-                    payment_summary = "\n".join(payment_data.values())
+                    # payment_summary = "\n".join(payment_data.values())
                     # tracer_l.send_message_to_telegram(payment_summary)
 
                     return render(request, 'payments/pay_status.html', payment_data)
@@ -969,6 +979,231 @@ class PaymentSuccessView(View):
 def get_ip(request):
     ip = get_client_ip(request)
     return JsonResponse({'ip': ip})
+
+
+class ManageTelegramMessages:
+    def send_message(self, user_id, message):
+        bot_token = TELEGRAM_BOT_TOKEN
+        url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+
+        payload = {
+            'chat_id': user_id,
+            'text': message
+        }
+
+        requests.post(url, json=payload)
+
+    def send_code_to_user(self, telegram_user_id, code):
+        message = f"Никому не говорите код: {code}"
+        self.send_message(telegram_user_id, message)
+
+    def send_message_about_start(self):
+        bot_token = TELEGRAM_BOT_TOKEN
+        message = f"SERVER APP will be RELOADED {CONFIRM_SYMBOL}"
+        url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+
+        payload = {
+            'chat_id': TELEGRAM_CHAT_ID,
+            'text': message
+        }
+
+        requests.post(url, json=payload)
+
+
+def hash_data(data):
+    data_string = json.dumps(data, sort_keys=True).encode()
+    return hashlib.sha256(data_string).hexdigest()
+
+
+user_verify_code = {}
+
+
+@csrf_exempt
+def confirm_user(request):
+    if request.method == 'POST':
+        body = json.loads(request.body)
+        data = body.get('data')
+        data_hash = body.get('data_hash')
+
+        if hash_data(data) != data_hash:
+            return JsonResponse({'status': 'error', 'message': 'Data integrity check failed'}, status=402)
+
+        telegram_user_id = data.get('telegram_user_id')
+        phone_number = data.get('phone_number')
+        username = data.get('username')
+        first_name = data.get('first_name')
+        last_name = data.get('last_name')
+
+        user, created = AuthUser.objects.update_or_create(
+            id=telegram_user_id,
+            phone=phone_number,
+            defaults={
+                'confirmed_user': True,
+                'username': username,
+                'first_name': first_name,
+                'last_name': last_name,
+            }
+        )
+
+        plan_name, end_date, status, billing_cycle, discount = init_free_subscription()
+        subscription = Subscription.objects.create(
+            staff_id=user.id_staff,
+            plan_name=plan_name,
+            end_date=end_date,
+            status=status,
+            billing_cycle=billing_cycle,
+            discount=0.00
+        )
+        subscription.save()
+
+        login(request, user)
+        request.session['user_id'] = user.id
+
+        return JsonResponse({'status': 'success', 'user_id': user.id})
+
+    return JsonResponse({'status': 'error'}, status=400)
+
+
+@csrf_exempt
+def phone_number_view(request):
+    if request.method == 'POST':
+        form = PhoneNumberForm(request.POST)
+        print(form.is_valid())
+
+        if form.is_valid():
+            phone_number = form.cleaned_data['phone_number']
+            print(phone_number)
+
+            # Здесь номер уже очищен и отформатирован в PhoneNumberForm
+            user = AuthUser.objects.filter(phone=phone_number).first()
+
+            if user and (user.confirmed_user is True):
+                code = random.randint(1000, 9999)
+                user_verify_code[user.phone] = code
+
+                telegram_message_manager = ManageTelegramMessages()
+                telegram_message_manager.send_code_to_user(user.id, code)
+
+                request.session['phone_number'] = phone_number
+                return JsonResponse({'status': 'success', 'message': 'Код отправлен'})
+            else:
+                if not user:
+                    new_user = AuthUser.objects.create(
+                        username=generate_payment_id(),
+                        phone=phone_number
+                    )
+                    new_user.save()
+                    referral_code = generate_referral_code(new_user.id)
+                else:
+                    referral_code = generate_referral_code(user.id)
+
+                referral_link = f"https://t.me/LetychkaRobot?start={referral_code}"
+
+                return JsonResponse({
+                    'status': 'success',
+                    'message': 'Пользователь создан',
+                    'referral_link': referral_link,
+                    'referral_code': referral_code
+                })
+
+    else:
+        form = PhoneNumberForm()
+
+    return render(request, 'phone_number_form.html', {'form': form, 'code_form': False})
+
+
+def generate_referral_code(user_id):
+    # Генерация уникального реферального кода
+    return f"LE{user_id}{random.randint(100000, 999999)}"
+
+
+@csrf_exempt
+def verify_code_view(request):
+    if request.method == 'POST':
+        verification_code = request.POST.get('verification_code')
+        phone_number = request.session.get('phone_number')
+
+        user = get_object_or_404(AuthUser, phone=phone_number)
+
+        print(request.user.is_authenticated)
+        if request.user.is_authenticated:
+            print(f"Пользователь {request.user.username} успешно залогинен.")
+
+        if user:
+            if user_verify_code.get(user.phone) == int(verification_code):
+                login(request, user)
+                request.session['user_id'] = user.id
+                print(request.session.get('user_id'))
+
+                return redirect('create')
+                # return JsonResponse({'status': 'success', 'redirect_url': '/create'})
+
+            else:
+                return JsonResponse({'status': 'error', 'message': 'Неверный код'})
+        else:
+            return JsonResponse({'status': 'error', 'message': 'Пользователь не найден'})
+
+    return JsonResponse({'status': 'error', 'message': 'Неверный запрос'})
+
+
+class TelegramAuthView(View):
+    def get(self, request):
+        auth_data = request.GET
+
+        try:
+            auth_date = auth_data['auth_date']
+            first_name = auth_data['first_name']
+            last_name = auth_data.get('last_name', '')
+            telegram_id = auth_data['id']
+            username = auth_data.get('username', None)
+            hash_received = auth_data['hash']
+
+            tracer_l.tracer_charge(
+                'ERROR', get_username(request),
+                'error in tg auth',
+                f"{type(telegram_id)} {telegram_id}")
+
+            if int(time.time()) - int(auth_date) > 600:
+                return JsonResponse({'status': 'error', 'message': 'Data is outdated'}, status=400)
+
+            # if not self.verify_telegram_hash(auth_data, TELEGRAM_BOT_TOKEN):
+            #     return JsonResponse({'status': 'error', 'message': 'Invalid data'}, status=400)
+
+            existing_user = AuthUser.objects.filter(id=telegram_id).first()
+
+            if existing_user:
+                auth_user = existing_user
+            else:
+                auth_user = AuthUser.objects.create(
+                    id=telegram_id,
+                    username=telegram_id if username is None else username,
+                    first_name=first_name,
+                    last_name=last_name
+                )
+                auth_user.save()
+
+                plan_name, end_date, status, billing_cycle, discount = init_free_subscription()
+                subscription = Subscription.objects.create(
+                    staff_id=auth_user.id_staff,
+                    plan_name=plan_name,
+                    end_date=end_date,
+                    status=status,
+                    billing_cycle=billing_cycle,
+                    discount=0.00
+                )
+                subscription.save()
+
+            login(request, auth_user)
+            request.session['user_id'] = auth_user.id
+
+            telegram_message_manager = ManageTelegramMessages()
+            telegram_message_manager.send_message(
+                telegram_id, f'Успешный вход с IP: {get_client_ip(request)}')
+
+            return redirect('create')
+        except Exception as fail:
+            tracer_l.tracer_charge('ERROR', get_username(request), 'error in tg auth', fail)
+            return JsonResponse({'status': 'error', 'message': 'Internal server error'}, status=500)
 
 
 def document_view(request, slug):
