@@ -17,18 +17,18 @@ subscriptionOptions.forEach(option => {
         switch (selectedPlan) {
             case 'standard':
                 price = 220;
-                description = 'Стандартный план';
+                description = 'Стандартный';
                 sub_description = 'Доступ на 30 дней за ' + price + ' руб';
                 break;
             case 'premium':
                 price = 590;
                 sub_description = 'Доступ на 30 дней за ' + price + ' руб';
-                description = 'Премиум план';
+                description = 'Премиум';
                 break;
             case 'tokens':
                 price = 480;
                 sub_description = 'Неограниченный доступ за ' + price + ' руб';
-                description = 'Пакет токенов';
+                description = 'Ультра';
                 break;
         }
 

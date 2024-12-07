@@ -251,10 +251,17 @@ class GenerationModelsControl:
                         }
                     ]
                 )
+
+                if hasattr(completion, 'error') and completion.error is not None:
+                    error_message = completion.error.get('message', 'Unknown error')
+                    raise Exception(f"Error from API: {error_message}")
+
                 return self.__generate_completion(completion)
+
             except Exception as fail:
                 tracer_l.tracer_charge('WARNING', '', 'get_generated_feedback_0003',
-                                       f'FAILED to load model: {model}', fail)
+                                       f'FAILED to load model: {model}. Error: {str(fail)}', fail)
+
         return None
 
     def get_feedback_001(self, text_from_user):
@@ -270,30 +277,49 @@ class GenerationModelsControl:
     def __generate_completion(completion) -> dict:
         print(completion)
         try:
-            generated_text = completion.choices[0].message.content
-            print("\n\ngenerated_text", generated_text)
-            cleaned_generated_text = generated_text.replace("json", "").replace("`", "")
-            tokens_used = completion.usage.total_tokens
-            print("\n\ncleaned_generated_text", cleaned_generated_text, tokens_used)
-            return {
-                'success': True, 'generated_text': cleaned_generated_text, 'tokens_used': tokens_used
-            }
+            if completion.choices:
+                generated_text = completion.choices[0].message.content
+                print("\n\ngenerated_text", generated_text)
+                cleaned_generated_text = generated_text.replace("json", "").replace("`", "")
+                tokens_used = completion.usage.total_tokens
+                print("\n\ncleaned_generated_text", cleaned_generated_text, tokens_used)
+                return {
+                    'success': True, 'generated_text': cleaned_generated_text, 'tokens_used': tokens_used
+                }
+            else:
+                error_message = "No choices available in the completion response."
+                tracer_l.tracer_charge(
+                    "WARNING", '', "__generate_completion",
+                    "error generate", error_message
+                )
+                raise ValueError(error_message)
 
         except Exception as fail:
             print(fail)
             if hasattr(completion, 'error') and completion.error is not None:
                 error_info = completion.error
-                code = error_info['code']
-                raw_metadata = error_info['metadata']['raw']
+                code = error_info.get('code', 'Unknown error code')
+                raw_metadata = error_info.get('metadata', {}).get('raw', '')
 
-                metadata = json.loads(raw_metadata)
-                message = metadata['error']['message']
+                tracer_l.tracer_charge(
+                    "ERROR", '', "__generate_completion",
+                    f"error generate: {completion}", f"{fail}"
+                )
+
+                if raw_metadata:
+                    try:
+                        metadata = json.loads(raw_metadata)
+                        message = metadata.get('error', {}).get('message', 'No error message provided')
+                    except json.JSONDecodeError:
+                        message = 'Failed to decode error message from raw metadata'
+                else:
+                    message = 'No raw metadata available'
 
                 print(f"Code: {code}, Message: {message}")
                 return {'success': False, 'code': code, 'message': message}
             else:
                 print("Не удалось получить информацию об ошибке.")
-                return {'success': False, 'code': 429, 'message': fail}
+                return {'success': False, 'code': 429, 'message': str(fail)}
 
     def get_generated_survey_0001(self, text_from_user):
         client = openai.OpenAI(

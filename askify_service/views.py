@@ -69,8 +69,6 @@ def page_create_survey(request):
     subscription_check = SubscriptionCheck()
     subscription_level = subscription_check.get_subscription_level(subscription_db.plan_name)
 
-    print(subscription_db.plan_name, subscription_level)
-
     tracer_l.tracer_charge(
         'INFO', request.user.username, page_create_survey.__name__, "load page")
     context = {
@@ -810,10 +808,10 @@ class PaymentInitiateView(View):
         print("amount", amount)
 
         plan_prices = {
-            'Начальный план': 0,
-            'Стандартный план': 220,
-            'Премиум план': 590,
-            'Пакет токенов': 480
+            'Начальный': 0,
+            'Стандартный': 220,
+            'Премиум': 590,
+            'Пакет': 480
         }
 
         if int(amount) != plan_prices.get(description):
@@ -978,6 +976,32 @@ class PaymentSuccessView(View):
                         "payment_details": payment_details,
                         "username": get_username(request)
                     }
+
+                    payment_details_text = "\n".join(
+                        [f"<b>{detail['label']}:</b> {detail['value']}" for detail in payment_details])
+
+                    message = (
+                        f"{CONFIRM_SYMBOL} Успешный платеж\n\n"
+                        f"<b>Статус платежа:</b> {payment_data['payment_status']}\n"
+                        f"<b>Дата:</b> {get_formate_date(datetime.now())}\n\n"
+                        f"<b>План:</b> {payment_data['plan_name']}\n\n"
+                        f"<b>Детали платежа:</b>\n"
+                        f"{payment_details_text}\n"
+                        f"<b>Пользователь:</b> {payment_data['username']}"
+                    )
+
+                    try:
+                        auth_user = AuthUser.objects.get(id_staff=get_staff_id(request))
+                        additional_auth_user = AuthAdditionalUser.objects.get(user=auth_user)
+
+                        telegram_message_manager = ManageTelegramMessages()
+                        telegram_message_manager.send_message(additional_auth_user.id_telegram, message)
+
+                    except Exception as fail:
+                        tracer_l.tracer_charge(
+                            'WARNING', f"{get_username(request)}",
+                            PaymentSuccessView.__name__,
+                            f'Fail while send info about payment to Telegram', fail)
 
                     # payment_summary = "\n".join(payment_data.values())
                     # tracer_l.send_message_to_telegram(payment_summary)
@@ -1260,13 +1284,6 @@ class TelegramAuthView(View):
 
             tracer_l.tracer_charge(
                 'ADMIN', username, login_view.__name__, f"user has been login in")
-
-            telegram_message_manager = ManageTelegramMessages()
-            telegram_message_manager.send_message(
-                telegram_id,
-                f'{CONFIRM_SYMBOL} Успешный вход в аккаунт {username}\n\n'
-                f'<b>IP</b>: {get_client_ip(request)}\n'
-                f'<b>Браузер: -</b>')
 
             return redirect('create')
         except Exception as fail:
