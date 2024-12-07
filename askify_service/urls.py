@@ -34,6 +34,8 @@ urlpatterns = [
     path('verify-code/', verify_code_view, name='verify_code'),
     path('auth/telegram/', TelegramAuthView.as_view(), name='telegram_auth'),
 
+    path('api/ghost_disconnect/', terminate_session, name='ghost_disconnect'),
+
     path('block-user/<str:id_staff>/', block_by_staff_id, name='block_by_staff_id'),
     path('unblock-user/<str:id_staff>/', unblock_by_staff_id, name='unblock_by_staff_id'),
     path('block-ip/<str:ip_address>/', block_by_ip, name='block_ip'),

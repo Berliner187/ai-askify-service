@@ -40,37 +40,63 @@
             <div class="line-loader"></div>
         </div>
 
-        <div class="container upload-container" id="upload-container">
-            <div class="drop-area" id="drop-area">
-                <label class="upload-button" id="upload-button">
-                    <div id="content-upload-info">
-                        <h3>Загрузите файл</h3>
-                        <img src="{% static 'img/icon-add-file.png' %}" alt="Иконка загрузки файла" class="upload-icon">
-                        <p class="small-text">Перетащите PDF-файл сюда</p>
+        {% if subscription_level < 2 %}
+        
+            <div class="container subscription-offer">
+                <h2>🎁 Повысьте качество тестов!</h2>
+
+                <div class="offer-block">
+                    <p>С премиум-планом вы сможете загружать свои материалы в формате PDF и создавать уникальные задания.<br><br>
+                        <strong>Создавайте тесты, которые выделяются!</strong><br>
+                    </p>
+                </div>
+                
+                <div class="container-buttons">
+                    <div class="button-medium button-accent">
+                        <a href="{% url 'payment' %}">
+                            <div>
+                                <p>Оформить доступ</p>
+                            </div>
+                        </a>
                     </div>
-                    <div class="checkmark" style="display: none;">
-                        <script src="https://cdn.lordicon.com/lordicon.js"></script>
-                        <lord-icon
-                            src="https://cdn.lordicon.com/smwmetfi.json"
-                            trigger="loop"
-                            delay="100"
-                            colors="primary:#d4d1fa"
-                            style="width:100px;height:100px">
-                        </lord-icon>
-                    </div>
-                </label>
-                <input type="file" id="file-upload" accept=".doc,.pdf" style="display: none;">
+                </div>
             </div>
-        </div>
+
+        {% else %}
+
+            <div class="container upload-container" id="upload-container">
+                <div class="drop-area" id="drop-area">
+                    <label class="upload-button" id="upload-button">
+                        <div id="content-upload-info">
+                            <h3>Загрузите файл</h3>
+                            <img src="{% static 'img/icon-add-file.png' %}" alt="Иконка загрузки файла" class="upload-icon">
+                            <p class="small-text">Перетащите PDF-файл сюда</p>
+                        </div>
+                        <div class="checkmark" style="display: none;">
+                            <script src="https://cdn.lordicon.com/lordicon.js"></script>
+                            <lord-icon
+                                src="https://cdn.lordicon.com/smwmetfi.json"
+                                trigger="loop"
+                                delay="100"
+                                colors="primary:#d4d1fa"
+                                style="width:100px;height:100px">
+                            </lord-icon>
+                        </div>
+                    </label>
+                    <input type="file" id="file-upload" accept=".doc,.pdf" style="display: none;">
+                </div>
+            </div>
+
+        {% endif %}
         
         <div class="container" id="block-generate">
-            <h3>Или введите тему</h3>
+            <h3>Или введите тему для генерации теста</h3>
             <form id="text-form" method="post" onsubmit="event.preventDefault(); submitText();">
                 {% csrf_token %}
                 <div class="input-area">
-                    <textarea id="user-text" rows="4" cols="60" placeholder="Или введите тему для генерации теста здесь"></textarea><br>
+                    <textarea id="user-text" rows="4" cols="60" placeholder="Введите тему или загоните материалы сюда для генерации теста"></textarea><br>
                     <button type="button" onclick="submitText()">
-                        <img src="{% static 'img/icon-send-m.png' %}" alt="">
+                        <img src="{% static 'img/icon-send-m.png' %}" alt="Letychka Logo Generate">
                     </button>
                 </div>
                 <div class="head-button">
@@ -95,22 +121,10 @@
         </div>
         
         {% include 'footer.html' %}
-
-        <script src="{% static 'js/main.js' %}"></script>
-
-        <script>
-            const text = document.getElementById('user-text');
-
-            text.addEventListener('input', function() {
-                console.log("ok");
-                this.style.height = 'auto';
-                this.style.height = (this.scrollHeight) + 'px';
-            });
-
-            text.style.height = (text.scrollHeight) + 'px';
-        </script>
-
     </div>
+
+    <script src="{% static 'js/main.js' %}"></script>
+    <script src="{% static 'js/auto-scroll.js' %}"></script>
     <script src="{% static 'js/nav.js' %}"></script>
 
 </body>

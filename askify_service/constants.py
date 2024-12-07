@@ -28,3 +28,11 @@ MODEL_NAMES = [
     "qwen/qwen-2-7b-instruct:free",
     "openchat/openchat-7b:free"
 ]
+
+SUBSCRIPTION_TIERS = {
+    0: "Стартовый",
+    1: "Стандартный",
+    2: "Премиум",
+    4: "Ультра",
+    5: "Enterprise"
+}

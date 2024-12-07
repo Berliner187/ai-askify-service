@@ -85,16 +85,15 @@ class ManageGenerationSurveys:
         self.log_info("start the generated: {}".format(self.text_from_user[:32]))
         print("start the generated: {}".format(self.text_from_user[:32]))
 
-        for attempt in range(self.max_retries):
+        # for attempt in range(self.max_retries):
             # try:
-            print("attempt", attempt)
-            ai_response = self.generation_models_control.get_generated_survey_0003(self.text_from_user)
-            if ai_response.get('success'):
-                generated_text, tokens_used = ai_response.get('generated_text'), ai_response.get('tokens_used')
-                print(generated_text, tokens_used)
-                return self.process_generated_text(generated_text), tokens_used
-            else:
-                self.log_error('error in ai_response at generate_survey', ai_response)
+        ai_response = self.generation_models_control.get_generated_survey_0003(self.text_from_user)
+        if ai_response.get('success'):
+            generated_text, tokens_used = ai_response.get('generated_text'), ai_response.get('tokens_used')
+            print(generated_text, tokens_used)
+            return self.process_generated_text(generated_text), tokens_used
+        else:
+            self.log_error('error in ai_response at generate_survey', ai_response)
             # except Exception as fail:
             #     print(fail, attempt)
             #     self.log_error("Code 429", str(fail))
@@ -429,6 +428,24 @@ class PaymentManager:
         }
 
         return self._post_requests_to_bank(request_url, post_request)
+
+
+class SubscriptionCheck:
+    """
+        Проверка уровня доступа в подписке.
+    """
+    def __init__(self, level=0):
+        self.level = level
+        self.plans = SUBSCRIPTION_TIERS
+
+    def get_subscription_name(self):
+        return self.plans.get(self.level, "Стартовый план")
+
+    def get_subscription_level(self, subscription_name):
+        for number, name in self.plans.items():
+            if name == subscription_name:
+                return number
+        return 0
 
 
 def get_year_now():

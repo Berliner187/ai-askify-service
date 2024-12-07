@@ -125,6 +125,13 @@ class AuthUser(AbstractUser):
             pass
 
 
+class AuthAdditionalUser(models.Model):
+    user = models.OneToOneField(AuthUser, on_delete=models.CASCADE, related_name='additional_info')
+    id_telegram = models.IntegerField(null=True, blank=True)
+    id_vk = models.IntegerField(null=True, blank=True)
+    id_yandex = models.IntegerField(null=True, blank=True)
+
+
 class UserActivity(models.Model):
     id_staff = models.UUIDField(null=True, blank=True)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
@@ -233,9 +240,10 @@ class FeedbackFromAI(models.Model):
 
 def get_token_limit(plan_name):
     token_limits = {
-        'бесплатный': 40_000,
-        'стандартный': 200_000,
-        'премиум': 500_000,
+        'стартовый': 50_000,
+        'стандартный': 400_000,
+        'премиум': 750_000,
+        'ультра': 1_500_000,
     }
     return token_limits.get(plan_name.lower(), 0)
 
@@ -266,12 +274,12 @@ class TokensUsed(models.Model):
     def save(self, *args, **kwargs):
         if not self.id:
             last_id = TokensUsed.objects.order_by('id').last()
-            self.id = (last_id.id + 1) if last_id else 100000
+            self.id = (last_id.id + 1) if last_id else 100_000
         super().save(*args, **kwargs)
 
     @classmethod
     def get_tokens_usage(cls, staff_id):
-        """Метод для получения использованных токенов для конкретного сотрудника."""
+        """Метод для получения использованных токенов для конкретного пользователя."""
         tokens = cls.objects.filter(id_staff=staff_id).aggregate(
             total_survey_tokens=Sum('tokens_survey_used'),
             total_feedback_tokens=Sum('tokens_feedback_used')

@@ -96,8 +96,7 @@
         <div>
             {% if total > 0 %}
 
-                {% if subscription == 0 %}
-
+                {% if subscription_level < 2 and subscription_level != 0 %}
                     <div class="container subscription-offer">
                         <h2>🎁 Получите больше с Премиумом!</h2>
                         <p>Премиум открывает доступ к индивидуальным рекоммендациям от ИИ.<br>
@@ -110,18 +109,15 @@
                                     <div>
                                         <p>Оформить доступ</p>
                                     </div>
-                                </a> 
+                                </a>
                             </div>
                         </div>
                     </div>
-
                 {% else %}
-
                     <div class="container result-full feedback-container">
                         <h2>Рекомендации</h2>
                         {{ feedback_text|safe }}
                     </div>
-
                 {% endif %}
             
             <div class="container result-full">

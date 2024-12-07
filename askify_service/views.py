@@ -37,6 +37,7 @@ import uuid
 import random
 import os
 import re
+import hmac
 
 
 tracer_l = TracerManager(TRACER_FILE)
@@ -46,16 +47,29 @@ def index(request):
     context = {
         'username': request.user.username if request.user.is_authenticated else 0
     }
+
+    tracer_l.tracer_charge(
+        'INFO', f"{get_client_ip(request)}", "PROMO PAGE", "load page")
+
     return render(request, 'askify_service/index.html', context)
 
 
 @login_required
 @subscription_required
 def page_create_survey(request):
-    tokens = TokensUsed.objects.filter(id_staff=get_staff_id(request))
+    current_id_staff = get_staff_id(request)
+
+    tokens = TokensUsed.objects.filter(id_staff=current_id_staff)
 
     used_tokens = sum(token.tokens_survey_used for token in tokens)
     limit_tokens = 50_000
+
+    subscription_db = Subscription.objects.get(staff_id=current_id_staff)
+
+    subscription_check = SubscriptionCheck()
+    subscription_level = subscription_check.get_subscription_level(subscription_db.plan_name)
+
+    print(subscription_db.plan_name, subscription_level)
 
     tracer_l.tracer_charge(
         'INFO', request.user.username, page_create_survey.__name__, "load page")
@@ -64,7 +78,8 @@ def page_create_survey(request):
         'tokens': limit_tokens - used_tokens,
         'tokens_f': get_format_number(limit_tokens - used_tokens),
         'limit_tokens': limit_tokens,
-        'username': get_username(request)
+        'username': get_username(request),
+        'subscription_level': subscription_level
     }
 
     return render(request, 'askify_service/text_input.html', context)
@@ -138,7 +153,7 @@ class ManageSurveysView(View):
                     tracer_l.tracer_charge(
                         'CRITICAL', request.user.username, ManageSurveysView.post.__name__,
                         f"{fail}", "status: 400")
-                    return JsonResponse({'error': 'Generated text is not valid JSON'}, status=400)
+                    return JsonResponse({'error': 'Опаньки :(\n\nК сожалению, не удалось составить тест'}, status=400)
 
                 try:
                     print(f"\n\n---- ТОКЕНОВ ИСПОЛЬЗОВАНО: {tokens_used}\n\n")
@@ -268,6 +283,7 @@ class FileUploadView(View):
 
 @method_decorator(login_required, name='dispatch')
 @method_decorator(subscription_required, name='dispatch')
+# @method_decorator(sync_to_async, name='dispatch')
 class TakeSurvey(View):
     def post(self, request, survey_id):
         survey_id = uuid.UUID(survey_id)
@@ -340,10 +356,10 @@ class TakeSurvey(View):
                 tokens_feedback_used=ai_feedback.get('tokens_used')
             )
 
-        json_response = {
+        context = {
             'score': correct_count, 'total': user_answers, 'survey_id': survey_id
         }
-        return render(request, 'result.html', json_response)
+        return render(request, 'result.html', context)
 
     def get(self, request, survey_id):
         survey_id = uuid.UUID(survey_id)
@@ -361,6 +377,7 @@ class TakeSurvey(View):
 
 
 @login_required
+@subscription_required
 def result_view(request, survey_id):
     print("result_view", survey_id)
 
@@ -373,13 +390,24 @@ def result_view(request, survey_id):
     selected_answers_list = list(user_answers.values_list('selected_answer', flat=True))
 
     try:
-        feedback_obj = FeedbackFromAI.objects.get(survey_id=survey_id)
-        feedback_text = re.sub(r'[^a-zA-Zа-яА-Я0-9.,!?;:\s]', '', feedback_obj.feedback_data)
-        feedback_text = markdown.markdown(feedback_text)
+        feedback_obj = FeedbackFromAI.objects.filter(survey_id=survey_id).first()
+
+        if feedback_obj is not None:
+            feedback_text = re.sub(r'[^a-zA-Zа-яА-Я0-9.,!?;:\s]', '', feedback_obj.feedback_data)
+            feedback_text = markdown.markdown(feedback_text)
+        else:
+            feedback_text = 'Не удалось получить обратную связь от ИИ :('
+
     except Exception as fail:
         feedback_text = 'Не удалось получить обратную связь от ИИ :('
+        tracer_l.tracer_charge(
+            "INFO", f"{get_username(request)}", result_view.__name__,
+            "WARNING: Fail in get AI feedback", fail)
 
-    subscription_manager = Subscription.objects.filter(staff_id=get_staff_id(request)).first()
+    subscription_db = Subscription.objects.get(staff_id=get_staff_id(request))
+
+    subscription_check = SubscriptionCheck()
+    subscription_level = subscription_check.get_subscription_level(subscription_db.plan_name)
 
     json_response = {
         'page_title': f'Результаты прохождения теста – {survey.title}',
@@ -392,7 +420,7 @@ def result_view(request, survey_id):
         'selected_answers_list': selected_answers_list,
         'username': request.user.username if request.user.is_authenticated else None,
         'feedback_text': feedback_text,
-        'subscription': 1 if subscription_manager.status == 'active' else 0
+        'subscription_level': subscription_level
     }
     # print("result_view", score, len(user_answers))
 
@@ -764,6 +792,9 @@ def create_payment(request):
 
 
 class PaymentInitiateView(View):
+    """
+        Вьюшка инициализации платежа.
+    """
     def post(self, request):
         data = json.loads(request.body)
         # Извлечение данных из запроса
@@ -923,9 +954,6 @@ class PaymentSuccessView(View):
                     return render(request, 'payments/pay_status.html', error_payment_data)
 
                 elif payment_status == 'CONFIRMED':
-                    text_payment_status = 'Успешный платеж.'
-                    print(text_payment_status)
-
                     payment.status = 'completed'
                     payment.save()
 
@@ -939,7 +967,7 @@ class PaymentSuccessView(View):
                         {"label": "Сумма", "value": formatted_amount},
                         {"label": "ID платежа", "value": payment.payment_id},
                         {"label": "ID заказа", "value": payment.order_id},
-                        {"label": "Заканчивается", "value": subscription.end_date},
+                        {"label": "Заканчивается", "value": get_formate_date(subscription.end_date)},
                     ]
 
                     payment_data = {
@@ -982,16 +1010,40 @@ def get_ip(request):
 
 
 class ManageTelegramMessages:
-    def send_message(self, user_id, message):
+    def __base_send_message(self, payload=None):
         bot_token = TELEGRAM_BOT_TOKEN
         url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
 
+        requests.post(url, json=payload)
+
+    def send_message(self, user_id, message):
         payload = {
             'chat_id': user_id,
-            'text': message
+            'text': message,
+            'parse_mode': 'HTML'
         }
 
-        requests.post(url, json=payload)
+        self.__base_send_message(payload)
+
+    def send_message_success_login(self, user_id, message):
+        keyboard = {
+            "inline_keyboard": [
+                [
+                    {
+                        "text": "Закрыть сессию",
+                        "callback_data": "close_session"
+                    }
+                ]
+            ]
+        }
+
+        payload = {
+            'chat_id': user_id,
+            'text': message,
+            'reply_markup': json.dumps(keyboard)
+        }
+
+        self.__base_send_message(payload)
 
     def send_code_to_user(self, telegram_user_id, code):
         message = f"Никому не говорите код: {code}"
@@ -1034,14 +1086,23 @@ def confirm_user(request):
         first_name = data.get('first_name')
         last_name = data.get('last_name')
 
+        additional_auth = AuthAdditionalUser.objects.filter(id_telegram=telegram_user_id).first()
+
+        if additional_auth:
+            pass
+        else:
+            new_auth_telegram = AuthAdditionalUser.objects.create(
+                id_telegram=int(telegram_user_id)
+            )
+            new_auth_telegram.save()
+
         user, created = AuthUser.objects.update_or_create(
-            id=telegram_user_id,
-            phone=phone_number,
+            username=username,
             defaults={
                 'confirmed_user': True,
-                'username': username,
                 'first_name': first_name,
                 'last_name': last_name,
+                'phone': phone_number
             }
         )
 
@@ -1074,7 +1135,6 @@ def phone_number_view(request):
             phone_number = form.cleaned_data['phone_number']
             print(phone_number)
 
-            # Здесь номер уже очищен и отформатирован в PhoneNumberForm
             user = AuthUser.objects.filter(phone=phone_number).first()
 
             if user and (user.confirmed_user is True):
@@ -1151,10 +1211,10 @@ class TelegramAuthView(View):
         auth_data = request.GET
 
         try:
-            auth_date = auth_data['auth_date']
+            auth_date = auth_data.get('auth_date', '')
             first_name = auth_data['first_name']
             last_name = auth_data.get('last_name', '')
-            telegram_id = auth_data['id']
+            telegram_id = int(auth_data['id'])
             username = auth_data.get('username', None)
             hash_received = auth_data['hash']
 
@@ -1164,23 +1224,25 @@ class TelegramAuthView(View):
                 f"{type(telegram_id)} {telegram_id}")
 
             if int(time.time()) - int(auth_date) > 600:
-                return JsonResponse({'status': 'error', 'message': 'Data is outdated'}, status=400)
+                return JsonResponse({'status': 'error', 'message': 'Данные не актуальны'}, status=400)
 
-            # if not self.verify_telegram_hash(auth_data, TELEGRAM_BOT_TOKEN):
-            #     return JsonResponse({'status': 'error', 'message': 'Invalid data'}, status=400)
-
-            existing_user = AuthUser.objects.filter(id=telegram_id).first()
+            existing_user = AuthAdditionalUser.objects.filter(id_telegram=telegram_id).first()
 
             if existing_user:
-                auth_user = existing_user
+                auth_user = existing_user.user
             else:
                 auth_user = AuthUser.objects.create(
-                    id=telegram_id,
                     username=telegram_id if username is None else username,
                     first_name=first_name,
                     last_name=last_name
                 )
                 auth_user.save()
+
+                telegram_auth = AuthAdditionalUser.objects.create(
+                    user=auth_user,
+                    id_telegram=telegram_id
+                )
+                telegram_auth.save()
 
                 plan_name, end_date, status, billing_cycle, discount = init_free_subscription()
                 subscription = Subscription.objects.create(
@@ -1196,13 +1258,19 @@ class TelegramAuthView(View):
             login(request, auth_user)
             request.session['user_id'] = auth_user.id
 
+            tracer_l.tracer_charge(
+                'ADMIN', username, login_view.__name__, f"user has been login in")
+
             telegram_message_manager = ManageTelegramMessages()
             telegram_message_manager.send_message(
-                telegram_id, f'Успешный вход с IP: {get_client_ip(request)}')
+                telegram_id,
+                f'{CONFIRM_SYMBOL} Успешный вход в аккаунт {username}\n\n'
+                f'<b>IP</b>: {get_client_ip(request)}\n'
+                f'<b>Браузер: -</b>')
 
             return redirect('create')
         except Exception as fail:
-            tracer_l.tracer_charge('ERROR', get_username(request), 'error in tg auth', fail)
+            tracer_l.tracer_charge('ERROR', f"{get_client_ip(request)}", 'error in tg auth', fail)
             return JsonResponse({'status': 'error', 'message': 'Internal server error'}, status=500)
 
 
@@ -1224,3 +1292,30 @@ def document_view(request, slug):
     }
 
     return render(request, 'document.html', content)
+
+
+@csrf_exempt
+def terminate_session(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        user_id = int(data.get('user_id'))
+        received_hash = data.get('hash')
+
+        message = json.dumps({'user_id': user_id, 'hash': received_hash}).encode()
+
+        manage_confident_fields = ManageConfidentFields("config.json")
+        ghost_connection = manage_confident_fields.get_confident_key("ghost_connection")
+        expected_hash = hmac.new(ghost_connection.encode(), message, hashlib.sha256).hexdigest()
+
+        if not hmac.compare_digest(received_hash, expected_hash):
+            return JsonResponse({'status': 'error', 'message': 'Invalid hash.'}, status=403)
+
+        selected_user = AuthUser.objects.filter(id=user_id).first()
+
+        if selected_user:
+            logout(request)
+            return JsonResponse({'success': True, 'message': 'Session closed successfully.'})
+
+        return JsonResponse({'success': False, 'message': 'Fail in  close session.'})
+
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method.'}, status=400)
