@@ -22,22 +22,37 @@ class ConverterPDF:
         pdfmetrics.registerFont(TTFont('Manrope Bold', font_path_bold))
         pdfmetrics.registerFont(TTFont('Unbounded Medium', font_signature))
 
-        p.setFont('Manrope Bold', 16)
-        p.drawString(80, 750, f"{title}")
-
-        p.setFont('Manrope Medium', 11)
-
         y = 700
+        max_width = 400
+
+        p.setFont('Manrope Bold', 16)
+        # p.drawString(60, 750, f"{title}")
+        text_object = p.beginText(60, y+50)
+
+        for line in title.splitlines():
+            words = line.split(' ')
+            current_line = ''
+            for word in words:
+                print(p.stringWidth(current_line + word + ' ', 'Manrope Bold', 16))
+                if p.stringWidth(current_line + word + ' ', 'Manrope Bold', 16) < max_width:
+                    current_line += word + ' '
+                else:
+                    text_object.textLine(current_line)
+                    current_line = word + ' '
+                    y -= 15
+            print(current_line)
+            text_object.textLine(current_line)
+
+        p.drawText(text_object)
+        p.setFont('Manrope Medium', 11)
 
         for question in questions:
             question_text = question['question']
             options = question['options']
 
-            text_object = p.beginText(80, y)
+            text_object = p.beginText(60, y)
             text_object.setFont('Manrope Medium', 11)
-            text_object.setTextOrigin(80, y)
-
-            max_width = 400
+            text_object.setTextOrigin(60, y)
 
             for line in question_text.splitlines():
                 words = line.split(' ')
@@ -56,7 +71,7 @@ class ConverterPDF:
 
             count = 1
             for option in options:
-                p.drawString(100, y, f"{count}) {option}")
+                p.drawString(60, y, f"{count}) {option}")
                 y -= 15
                 count += 1
 

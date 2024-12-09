@@ -45,7 +45,7 @@ async function submitText() {
         }
     } catch (error) {
         console.error('Ошибка:', error);
-        alert('Произошла ошибка при отправке запроса: ' + error.message);
+        alert('Опаньки :( Проверьте подписку в своем профиле');
     } finally {
         loadingIndicator.style.display = 'none';
         blockGenerate.style.opacity = 1;

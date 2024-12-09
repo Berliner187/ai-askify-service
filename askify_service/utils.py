@@ -267,7 +267,7 @@ class GenerationModelsControl:
     def get_feedback_001(self, text_from_user):
         ai_response = self.get_generated_feedback_0003(text_from_user)
 
-        if ai_response.get('success'):
+        if ai_response.get('success') is True:
             print("Feedback's response:", ai_response)
             return ai_response
         else:

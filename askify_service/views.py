@@ -55,7 +55,7 @@ def index(request):
 
 
 @login_required
-@subscription_required
+# @subscription_required
 def page_create_survey(request):
     current_id_staff = get_staff_id(request)
 
@@ -71,6 +71,7 @@ def page_create_survey(request):
 
     tracer_l.tracer_charge(
         'INFO', request.user.username, page_create_survey.__name__, "load page")
+
     context = {
         "page_title": "Создать тест",
         'tokens': limit_tokens - used_tokens,
@@ -280,7 +281,7 @@ class FileUploadView(View):
 
 
 @method_decorator(login_required, name='dispatch')
-@method_decorator(subscription_required, name='dispatch')
+# @method_decorator(subscription_required, name='dispatch')
 # @method_decorator(sync_to_async, name='dispatch')
 class TakeSurvey(View):
     def post(self, request, survey_id):
@@ -332,30 +333,41 @@ class TakeSurvey(View):
                 f"Ответ пользователя: {selected_answer}"
             )
 
-        feedback_obj = FeedbackFromAI.objects.filter(survey_id=survey_id)
-        if feedback_obj.exists():
-            feedback_obj.delete()
+        subscription = Subscription.objects.get(staff_id=get_staff_id(request))
 
-        generation_models_control = GenerationModelsControl()
-        ai_feedback = generation_models_control.get_feedback_001(
-            f"Список вопросов и моих ответов: {user_answers_list}.\n"
-            f"Набрано балов: {correct_count} из {len(user_answers)}"
-        )
+        subscription_check = SubscriptionCheck()
+        subs_level = subscription_check.get_subscription_level(subscription.plan_name)
 
-        if ai_feedback.get('success'):
-            FeedbackFromAI.objects.create(
-                survey_id=survey_id,
-                id_staff=get_staff_id(request),
-                feedback_data=ai_feedback.get('generated_text')
+        if subscription.status == 'active' and (subs_level == 0 or subs_level > 1):
+            feedback_obj = FeedbackFromAI.objects.filter(survey_id=survey_id)
+            if feedback_obj.exists():
+                feedback_obj.delete()
+
+            generation_models_control = GenerationModelsControl()
+            ai_feedback = generation_models_control.get_feedback_001(
+                f"Список вопросов и моих ответов: {user_answers_list}.\n"
+                f"Набрано балов: {correct_count} из {len(user_answers)}"
             )
 
-            _tokens_used = TokensUsed(
-                id_staff=get_staff_id(request),
-                tokens_feedback_used=ai_feedback.get('tokens_used')
-            )
+            if ai_feedback.get('success'):
+                FeedbackFromAI.objects.create(
+                    survey_id=survey_id,
+                    id_staff=get_staff_id(request),
+                    feedback_data=ai_feedback.get('generated_text')
+                )
+
+                _tokens_used = TokensUsed(
+                    id_staff=get_staff_id(request),
+                    tokens_feedback_used=ai_feedback.get('tokens_used')
+                )
+
+        subscription_db = Subscription.objects.get(staff_id=get_staff_id(request))
+        subscription_check = SubscriptionCheck()
+        subscription_level = subscription_check.get_subscription_level(subscription_db.plan_name)
 
         context = {
-            'score': correct_count, 'total': user_answers, 'survey_id': survey_id
+            'score': correct_count, 'total': user_answers, 'survey_id': survey_id,
+            'subscription_level': subscription_level
         }
         return render(request, 'result.html', context)
 
@@ -375,7 +387,7 @@ class TakeSurvey(View):
 
 
 @login_required
-@subscription_required
+# @subscription_required
 def result_view(request, survey_id):
     print("result_view", survey_id)
 
@@ -428,14 +440,14 @@ def result_view(request, survey_id):
 @login_required
 @subscription_required
 def download_survey_pdf(request, survey_id):
-    try:
-        survey = get_object_or_404(Survey, survey_id=uuid.UUID(survey_id))
-        tracer_l.tracer_charge(
-            'INFO', request.user.username, download_survey_pdf.__name__, "View survey in PDF")
-        return survey.generate_pdf()
-    except Exception as fatal:
-        tracer_l.tracer_charge(
-            'CRITICAL', request.user.username, download_survey_pdf.__name__, "FATAL with View survey in PDF", fatal)
+    # try:
+    survey = get_object_or_404(Survey, survey_id=uuid.UUID(survey_id))
+    tracer_l.tracer_charge(
+        'INFO', request.user.username, download_survey_pdf.__name__, "View survey in PDF")
+    return survey.generate_pdf()
+    # except Exception as fatal:
+    #     tracer_l.tracer_charge(
+    #         'CRITICAL', request.user.username, download_survey_pdf.__name__, "FATAL with View survey in PDF", fatal)
 
 
 def register(request):
@@ -841,7 +853,7 @@ class PaymentInitiateView(View):
         ]
 
         created_token = PaymentManager().generate_token_for_new_payment(data_token)
-        print(created_token)
+
         request_body = {
             "TerminalKey": "1731153311116DEMO",
             "Amount": total_amount,
@@ -934,8 +946,8 @@ class PaymentSuccessView(View):
                 payment_parameters = [payment.order_id, TERMINAL_PASSWORD, TERMINAL_KEY]
                 payment_status = payment_manager.check_order(payment_parameters)['response']['Payments'][0]['Status']
 
-                # if subscription.status == 'active' and payment.status == 'completed':
-                #     return redirect('create')
+                if subscription.status == 'active' and payment.status == 'completed':
+                    return redirect('create')
 
                 description_payment = PAYMENT_STATUSES.get(payment_status, 'Статус не найден')
 
@@ -1003,9 +1015,6 @@ class PaymentSuccessView(View):
                             PaymentSuccessView.__name__,
                             f'Fail while send info about payment to Telegram', fail)
 
-                    # payment_summary = "\n".join(payment_data.values())
-                    # tracer_l.send_message_to_telegram(payment_summary)
-
                     return render(request, 'payments/pay_status.html', payment_data)
                 else:
                     print("Статус платежа: ", payment_status)
@@ -1028,6 +1037,7 @@ class PaymentSuccessView(View):
             return render(request, 'payments/pay_status.html', payment_data)
 
 
+@login_required
 def get_ip(request):
     ip = get_client_ip(request)
     return JsonResponse({'ip': ip})

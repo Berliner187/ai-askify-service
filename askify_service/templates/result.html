@@ -59,14 +59,30 @@
                             </a> 
                         </div>
 
-                        <div class="button-medium">
-                            <a href="{% url 'download-survey_pdf' survey_id=survey_id %}">
-                                <div>
-                                    <img src="{% static 'img/icon-file.png' %}" alt="">
-                                    <p>Скачать в PDF</p>
-                                </div>
-                            </a> 
-                        </div>
+                        {% if subscription_level > 0 %}
+
+                            <div class="button-medium">
+                                <a href="{% url 'download-survey_pdf' survey_id=survey_id %}">
+                                    <div>
+                                        <p>Скачать в PDF</p>
+                                        <img src="{% static 'img/icon-file.png' %}" alt="Icon download in PDF">
+                                    </div>
+                                </a> 
+                            </div>
+
+                        {% else %}
+
+                            <div class="button-medium">
+                                <a href="{% url 'payment' %}">
+                                    <div>
+                                        <p>Скачать в PDF</p>
+                                        <img src="{% static 'img/icon-locked.png' %}" alt="Icon download in PDF">
+                                    </div>
+                                </a> 
+                            </div>
+
+                        {% endif %}
+
                     </div>
                 {% else %}
                 <div class="container-buttons">
@@ -78,14 +94,29 @@
                         </a> 
                     </div>
 
-                    <div class="button-medium">
-                        <a href="{% url 'download-survey_pdf' survey_id=survey_id %}">
-                            <div>
-                                <p>Скачать в PDF</p>
-                                <img src="{% static 'img/icon-file.png' %}" alt="Icon download in PDF">
-                            </div>
-                        </a> 
-                    </div>
+                    {% if subscription_level > 0 %}
+
+                        <div class="button-medium">
+                            <a href="{% url 'download-survey_pdf' survey_id=survey_id %}">
+                                <div>
+                                    <p>Скачать в PDF</p>
+                                    <img src="{% static 'img/icon-file.png' %}" alt="Icon download in PDF">
+                                </div>
+                            </a> 
+                        </div>
+
+                    {% else %}
+
+                        <div class="button-medium">
+                            <a href="{% url 'payment' %}">
+                                <div>
+                                    <p>Скачать в PDF</p>
+                                    <img src="{% static 'img/icon-locked.png' %}" alt="Icon download in PDF">
+                                </div>
+                            </a> 
+                        </div>
+
+                    {% endif %}
                 </div>
                 {% endif %}
                 

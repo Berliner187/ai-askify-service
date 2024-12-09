@@ -20,11 +20,11 @@ PAYMENT_STATUSES = {
 }
 
 MODEL_NAMES = [
-    "meta-llama/llama-3.2-90b-vision-instruct:free",
     "meta-llama/llama-3.1-405b-instruct:free",
+    "meta-llama/llama-3.2-90b-vision-instruct:free",
     "meta-llama/llama-3.1-70b-instruct:free",
-    "google/gemini-flash-1.5-8b-exp",
     "liquid/lfm-40b:free",
+    "google/gemini-flash-1.5-8b-exp",
     "qwen/qwen-2-7b-instruct:free",
     "openchat/openchat-7b:free"
 ]
