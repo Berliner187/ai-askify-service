@@ -995,7 +995,6 @@ class PaymentSuccessView(View):
                     message = (
                         f"{CONFIRM_SYMBOL} Успешный платеж\n\n"
                         f"<b>Статус платежа:</b> {payment_data['payment_status']}\n"
-                        f"<b>Дата:</b> {get_formate_date(datetime.now())}\n\n"
                         f"<b>План:</b> {payment_data['plan_name']}\n\n"
                         f"<b>Детали платежа:</b>\n"
                         f"{payment_details_text}\n"
