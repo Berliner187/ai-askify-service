@@ -248,11 +248,7 @@ button:active {
     color: #d5d3db;
 }
 
-textarea {
-    resize: none;
-    overflow: hidden;
-    font-family: 'Namu Pro';
-}
+
 textarea, #survey-container {
     width: 90%;
     background-color: #141414;
@@ -264,6 +260,13 @@ textarea, #survey-container {
     border-radius: 15px;
     font-size: 16px;
     box-sizing: border-box;
+}
+
+textarea {
+    resize: none;
+    overflow: hidden;
+    font-family: 'Namu Pro';
+    min-height: 200px;
 }
 
 .container, .preview-content {

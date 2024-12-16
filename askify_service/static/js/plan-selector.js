@@ -26,8 +26,8 @@ subscriptionOptions.forEach(option => {
                 description = 'Премиум';
                 break;
             case 'tokens':
-                price = 480;
-                sub_description = 'Неограниченный доступ за ' + price + ' руб';
+                price = 990;
+                sub_description = 'Доступ на 30 дней за ' + price + ' руб';
                 description = 'Ультра';
                 break;
         }

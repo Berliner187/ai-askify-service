@@ -94,7 +94,14 @@
             <form id="text-form" method="post" onsubmit="event.preventDefault(); submitText();">
                 {% csrf_token %}
                 <div class="input-area">
-                    <textarea id="user-text" rows="4" cols="60" placeholder="Введите тему или загоните материалы сюда для генерации теста"></textarea><br>
+                    <textarea id="user-text" rows="4" cols="60" placeholder="Введите здесь свои учебные материалы, заметки или содержание статьи.
+
+Например:
+
+- Теорема Пифагора гласит, что в прямоугольном треугольнике квадрат длины гипотенузы
+равен сумме квадратов длины двух других сторон.
+
+Это можно записать как: a? + b? = c?, где c представляет длину гипотенузы..."></textarea><br>
                     <button type="button" onclick="submitText()">
                         <img src="{% static 'img/icon-send-m.png' %}" alt="Letychka Logo Generate">
                     </button>

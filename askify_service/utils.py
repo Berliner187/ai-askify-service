@@ -90,7 +90,7 @@ class ManageGenerationSurveys:
         ai_response = self.generation_models_control.get_generated_survey_0003(self.text_from_user)
         if ai_response.get('success'):
             generated_text, tokens_used = ai_response.get('generated_text'), ai_response.get('tokens_used')
-            print(generated_text, tokens_used)
+            print("generate_survey_for_user", generated_text, tokens_used)
             return self.process_generated_text(generated_text), tokens_used
         else:
             self.log_error('error in ai_response at generate_survey', ai_response)

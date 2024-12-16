@@ -296,7 +296,7 @@ class TakeSurvey(View):
                 'survey': survey,
                 'questions': questions,
                 'error': 'Пожалуйста, ответьте на все вопросы.',
-                'username': request.user.username if request.user.is_authenticated else None
+                'username': get_username(request)
             }
             return render(request, 'survey.html', context)
 
@@ -823,7 +823,7 @@ class PaymentInitiateView(View):
             'Начальный': 0,
             'Стандартный': 220,
             'Премиум': 590,
-            'Пакет': 480
+            'Ультра': 990
         }
 
         if int(amount) != plan_prices.get(description):
@@ -989,19 +989,19 @@ class PaymentSuccessView(View):
                         "username": get_username(request)
                     }
 
-                    payment_details_text = "\n".join(
-                        [f"<b>{detail['label']}:</b> {detail['value']}" for detail in payment_details])
-
-                    message = (
-                        f"{CONFIRM_SYMBOL} Успешный платеж\n\n"
-                        f"<b>Статус платежа:</b> {payment_data['payment_status']}\n"
-                        f"<b>План:</b> {payment_data['plan_name']}\n\n"
-                        f"<b>Детали платежа:</b>\n"
-                        f"{payment_details_text}\n"
-                        f"<b>Пользователь:</b> {payment_data['username']}"
-                    )
-
                     try:
+                        payment_details_text = "\n".join(
+                            [f"<b>{detail['label']}:</b> {detail['value']}" for detail in payment_details])
+
+                        message = (
+                            f"{CONFIRM_SYMBOL} Успешный платеж\n\n"
+                            f"<b>Статус платежа:</b> {payment_data['payment_status']}\n"
+                            f"<b>План:</b> {payment_data['plan_name']}\n\n"
+                            f"<b>Детали платежа:</b>\n"
+                            f"{payment_details_text}\n"
+                            f"<b>Пользователь:</b> {payment_data['username']}"
+                        )
+
                         auth_user = AuthUser.objects.get(id_staff=get_staff_id(request))
                         additional_auth_user = AuthAdditionalUser.objects.get(user=auth_user)
 

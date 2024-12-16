@@ -25,21 +25,23 @@
                     <div class="subscription-option" data-plan="standard">
                         <div>
                             <p><strong>Стандартный план</strong></p>
-                            <p class="description">Создание тестов</p>
-                            <p class="description">Скачивание тестов в PDF</p>
-                            <p class="description">50 тестов в сутки</p>
+                            <p class="description">⮑ Генерация тестов по запросу</p>
+                            <p class="description">⮑ Скачивание тестов в PDF</p>
+                            <p class="description">⮑ Доступ с 1-го устройства</p>
+                            <p class="description">⮑ 50 тестов в сутки</p>
                             <p class="description">Доступ на 30 дней</p>
                         </div>
                         <h3 class="price">220₽</h3>
                     </div>
         
-                    <div class="subscription-option active" data-plan="premium">
+                    <div class="subscription-option" data-plan="premium">
                         <div>
                             <p><strong>Премиум план</strong></p>
-                            <p class="description">Все функции стандартного плана</p>
-                            <p class="description">Загрузка своих материалов</p>
-                            <p class="description">Обратная связь от ИИ</p>
-                            <p class="description">90 тестов в сутки</p>
+                            <p class="description">⮑ Все функции Стандартного плана</p>
+                            <p class="description">⮑ Загрузка своих материалов в формате файлов</p>
+                            <p class="description">⮑ Расширенная обратная связь от ИИ</p>
+                            <p class="description">⮑ Доступ с 2-х устройств</p>
+                            <p class="description">⮑ 150 тестов в сутки</p>
                             <p class="description">Доступ на 30 дней</p>
                         </div>
                         <h3 class="price">590₽</h3>
@@ -47,13 +49,13 @@
         
                     <div class="subscription-option" data-plan="tokens">
                         <div>
-                            <p><strong>Пакет токенов</strong></p>
-                            <p class="description">100 тыс токенов</p>
-                            <p class="description">Скачивание тестов в PDF</p>
-                            <p class="description">~50 тестов</p>
-                            <p class="description">Без ограничений по времени</p>
+                            <p><strong>Ультра</strong></p>
+                            <p class="description">⮑ Все функции Премиум плана</p>
+                            <p class="description">⮑ Доступ с 3-х устройств</p>
+                            <p class="description">⮑ Без ограничений на генерацию тестов</p>
+                            <p class="description">Доступ на 30 дней</p>
                         </div>
-                        <h3 class="price">480₽</h3>
+                        <h3 class="price">990₽</h3>
                     </div>
                 </div>
         
@@ -157,12 +159,13 @@
             })
             .catch((error) => {
                 console.error('Error:', error);
-                alert('Произошла ошибка при инициации платежа.');
+                alert('Выберите тарифный план');
             });
         });
     </script>
 
     <script>
+        // Проверка принятия условий для доступа к кнопке оплаты
         const checkbox = document.getElementById('agreement');
         const submitButton = document.querySelector('.payment-button');
 
@@ -178,8 +181,7 @@
 
         checkbox.addEventListener('change', updateButtonState);
         updateButtonState();
-
     </script>
-    
+
 </body>
 </html>

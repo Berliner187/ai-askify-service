@@ -166,7 +166,7 @@ class Subscription(models.Model):
             'free_plan': 'Стартовый на 7 дней',
             'standard_plan': 'Стандартный план на 30 дней',
             'premium_plan': 'Премиум план на 30 дней',
-            'tokens_plan': 'Пакет токенов, без временных ограничений',
+            'ultra_plan': 'Ультра план на 30 дней',
         }
         return plan_mapping.get(self.plan_name, self.plan_name)
 
@@ -192,8 +192,8 @@ class AvailableSubscription(models.Model):
         if self.plan_type == 'free_plan':
             self.amount = 0
             self.expiration_date = timezone.now() + timedelta(days=7)
-        elif self.plan_type == 'tokens_plan':
-            self.amount = 480
+        elif self.plan_type == 'ultra_plan':
+            self.amount = 990
             self.expiration_date = timezone.now() + timedelta(days=60*30)
         elif self.plan_type in ['standard_plan', 'premium_plan']:
             self.amount = 220 if self.plan_type == 'standard_plan' else 590

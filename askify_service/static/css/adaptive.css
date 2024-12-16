@@ -83,6 +83,10 @@
         width: 100%;
     }
 
+    textarea {
+        min-height: 300px;
+    }
+
     .payment-data {
         width: 100px;
     }
