@@ -314,12 +314,17 @@ textarea {
 
 .subscription-offer {
     padding: 20px;
-    margin-top: 20px;
+    margin-top: 50px;
     transition: transform 0.3s ease;
     background: url('../img/bg-subs.png');
     background-position: 0 top;
     background-repeat: no-repeat;
     text-align: center;
+    transition-duration: .25s;
+}
+
+.subscription-offer img {
+    width: 48px;
 }
 
 .subscription-offer h2 {

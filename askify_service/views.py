@@ -18,9 +18,10 @@ from .utils import *
 from .models import *
 from .forms import *
 from .constants import *
+from .tracer import *
+
 from askify_app.settings import DEBUG, BASE_DIR
 from askify_app.middleware import check_blocked, subscription_required
-from .tracer import *
 
 import openai
 import markdown
@@ -29,7 +30,6 @@ import aiofiles
 import PyPDF2
 
 from datetime import datetime
-from concurrent.futures import ThreadPoolExecutor
 import asyncio
 import time
 import hashlib
@@ -808,7 +808,6 @@ class PaymentInitiateView(View):
     def post(self, request):
         data = json.loads(request.body)
         # Извлечение данных из запроса
-        terminal_key = data['terminalKey']
         amount = data['amount']
         description = data['description']
         # order_id = data['orderId']
@@ -1239,24 +1238,39 @@ def verify_code_view(request):
     return JsonResponse({'status': 'error', 'message': 'Неверный запрос'})
 
 
+def check_telegram_hash(auth_data):
+    string_to_check = '\n'.join([
+        f"{key}={value}" for key, value in sorted(auth_data.items()) if key != 'hash'
+    ])
+
+    secret = TELEGRAM_BOT_TOKEN.encode('UTF-8')
+    hash_check = hmac.new(secret, string_to_check.encode('UTF-8'), hashlib.sha256).hexdigest()
+
+    return hash_check
+
+
 class TelegramAuthView(View):
     def get(self, request):
+        print("TelegramAuthView called")
         auth_data = request.GET
 
         try:
-            auth_date = auth_data.get('auth_date', '')
-            first_name = auth_data['first_name']
+            auth_date = auth_data.get('auth_date', 999)
+            first_name = auth_data.get('first_name', '')
             last_name = auth_data.get('last_name', '')
-            telegram_id = int(auth_data['id'])
+            telegram_id = int(auth_data.get('id', 0))
             username = auth_data.get('username', None)
-            hash_received = auth_data['hash']
+
+            if not check_telegram_hash(auth_data):
+                print("Invalid hash")
+                return JsonResponse({'status': 'Error', 'message': 'Invalid auth data'}, status=400)
 
             tracer_l.tracer_charge(
-                'ERROR', get_username(request),
-                'error in tg auth',
+                'INFO', get_username(request),
+                'try tg auth',
                 f"{type(telegram_id)} {telegram_id}")
 
-            if int(time.time()) - int(auth_date) > 600:
+            if (int(time.time()) - int(auth_date) > 600) or (telegram_id == 0):
                 return JsonResponse({'status': 'error', 'message': 'Данные не актуальны'}, status=400)
 
             existing_user = AuthAdditionalUser.objects.filter(id_telegram=telegram_id).first()

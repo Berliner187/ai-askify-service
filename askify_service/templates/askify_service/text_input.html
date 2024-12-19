@@ -42,20 +42,18 @@
 
         {% if subscription_level < 2 %}
         
-            <div class="container subscription-offer">
-                <h2>🎁 Повысьте качество тестов!</h2>
+            <div class="container subscription-offer locked-upload">
 
                 <div class="offer-block">
-                    <p>С премиум-планом вы сможете загружать свои материалы в формате PDF и создавать уникальные задания.<br><br>
-                        <strong>Создавайте тесты, которые выделяются!</strong><br>
-                    </p>
+                    <p>Загружайте свои файлы с учебными материалами с планом Премиум</p>
+                    <img src="{% static 'img/icon-locked.png' %}" alt="Иконка загрузки файла" class="upload-icon">
                 </div>
                 
                 <div class="container-buttons">
                     <div class="button-medium button-accent">
                         <a href="{% url 'payment' %}">
                             <div>
-                                <p>Оформить доступ</p>
+                                <p>Приобрести</p>
                             </div>
                         </a>
                     </div>

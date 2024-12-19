@@ -40,6 +40,7 @@
                 <!-- </div> -->
                  <div class="container">
                     <script async src="https://telegram.org/js/telegram-widget.js?22" data-telegram-login="LetychkaRobot" data-size="large" data-userpic="false" data-radius="16" data-auth-url="https://letychka.ru/auth/telegram" data-request-access="write"></script>
+                    <!-- <script src="https://yastatic.net/s3/passport-sdk/autofill/v1/sdk-suggest-with-polyfills-latest.js"></script> -->
                  </div>
 
                 <div class="already-exist">
@@ -59,89 +60,12 @@
                 <div class="already-exist">
                     <p><a href="{% url 'register' %}">Забыли пароль?</a></p>
                 </div>
-                <div>
-                    <script src="https://unpkg.com/@vkid/sdk@<3.0.0/dist-sdk/umd/index.js"></script>
-                    <script type="text/javascript">
-                      if ('VKIDSDK' in window) {
-                        const VKID = window.VKIDSDK;
-                  
-                        VKID.Config.init({
-                          app: 52653516,
-                          redirectUrl: 'https://letychka.ru/payment/success/',
-                          responseMode: VKID.ConfigResponseMode.Callback,
-                          source: VKID.ConfigSource.LOWCODE,
-                        });
-                  
-                        const oAuth = new VKID.OAuthList();
-                  
-                        oAuth.render({
-                          container: document.currentScript.parentElement,
-                          scheme: 'dark',
-                          oauthList: [
-                            'vkid'
-                          ]
-                        })
-                        .on(VKID.WidgetEvents.ERROR, vkidOnError)
-                        .on(VKID.OAuthListInternalEvents.LOGIN_SUCCESS, function (payload) {
-                          const code = payload.code;
-                          const deviceId = payload.device_id;
-                  
-                          VKID.Auth.exchangeCode(code, deviceId)
-                            .then(vkidOnSuccess)
-                            .catch(vkidOnError);
-                        });
-                      
-                        function vkidOnSuccess(data) {
-                          // Обработка полученного результата
-                        }
-                      
-                        function vkidOnError(error) {
-                          // Обработка ошибки
-                        }
-                      }
-                    </script>
-                  </div>
             </section>
 
         </div>
 
         {% include 'footer.html' %}
         <script src="{% static 'js/validation.js' %}"></script>
-
-        <script>
-            const clientId = '7b09de637b09de637b09de6325782ab3af77b097b09de631c385ca246d43f689073405f'; // Замените на ваш client_id
-            const redirectUri = '/create/'; // Замените на ваш redirect_uri
-            const scopes = 'vkid.personal_info'; // Укажите необходимые права доступа
-    
-            function generateCodeVerifier() {
-                const array = new Uint32Array(28);
-                window.crypto.getRandomValues(array);
-                return Array.from(array, dec => ('0' + dec.toString(16)).slice(-2)).join('');
-            }
-    
-            function base64UrlEncode(str) {
-                return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-            }
-    
-            async function generateCodeChallenge(codeVerifier) {
-                const encoder = new TextEncoder();
-                const data = encoder.encode(codeVerifier);
-                const hash = await window.crypto.subtle.digest('SHA-256', data);
-                return base64UrlEncode(String.fromCharCode(...new Uint8Array(hash)));
-            }
-    
-            async function generateCodeChallenge() {
-                const codeVerifier = generateCodeVerifier();
-                const codeChallenge = await generateCodeChallenge(codeVerifier);
-                const state = 'random_state_string'; // Замените на вашу строку состояния
-    
-                sessionStorage.setItem('code_verifier', codeVerifier);
-    
-                const authUrl = `https://id.vk.com/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${scopes}&state=${state}&code_challenge=${codeChallenge}&code_challenge_method=s256`;
-    
-                window.location.href = authUrl;
-            };
-        </script>
 
     </body>
 </html>

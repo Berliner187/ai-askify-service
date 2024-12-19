@@ -76,12 +76,12 @@
 
             <form class="payform-tbank" name="payform-tbank" id="payform-tbank">
                 {% csrf_token %}
-                <input class="payform-tbank-row" type="hidden" name="terminalkey" value="1731153311116DEMO">
+                <!-- <input class="payform-tbank-row" type="hidden" name="terminalkey" value="1731153311116DEMO"> -->
                 <input class="payform-tbank-row" type="hidden" name="frame" value="false">
                 <input class="payform-tbank-row" type="hidden" name="language" value="ru">
                 <input class="payform-tbank-row" type="hidden" name="receipt" value="">
                 <input class="payform-tbank-row" type="hidden" placeholder="Сумма заказа" name="amount">
-                <input class="payform-tbank-row" type="hidden" placeholder="Номер заказа" name="order" value="{{order_id}}">
+                <input class="payform-tbank-row"  placeholder="Номер заказа" name="order" value="{{order_id}}">
                 <input class="payform-tbank-row" type="hidden" placeholder="Описание заказа" name="description" value="Тестовый заказ">
                 <input class="payform-tbank-row" type="hidden" placeholder="ФИО плательщика" name="name" value="{{fullname}}">
                 <div class="contact-container">
@@ -108,7 +108,7 @@
             }
 
             const requestData = {
-                terminalKey: TPF.terminalkey.value,
+                //terminalKey: TPF.terminalkey.value,
                 amount: amount.value,
                 orderId: TPF.order.value,
                 description: description.value,

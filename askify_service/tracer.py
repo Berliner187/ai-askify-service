@@ -3,13 +3,37 @@ import os
 from datetime import datetime
 from typing import List, Dict
 
-from decouple import config
+# from decouple import config
+
+import json
 
 import requests
 
 
-TELEGRAM_BOT_TOKEN = config('TELEGRAM_BOT_TOKEN')
-TELEGRAM_CHAT_ID = config('TELEGRAM_CHAT_ID')
+# TELEGRAM_BOT_TOKEN = config('TELEGRAM_BOT_TOKEN')
+# TELEGRAM_CHAT_ID = config('TELEGRAM_CHAT_ID')
+
+# TODO: Требуется оптимизация
+class ManageConfidentFields:
+    def __init__(self, filename):
+        self.filename = filename
+
+    def __read_confident_file(self):
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+
+        config_path = os.path.join(base_dir, '../askify_app', self.filename)
+
+        with open(config_path) as config_file:
+            return json.load(config_file)
+
+    def get_confident_key(self, keyname):
+        _config = self.__read_confident_file()
+        return _config[keyname]
+
+
+manage_conf = ManageConfidentFields("config.json")
+TELEGRAM_BOT_TOKEN = manage_conf.get_confident_key("telegram_token")
+TELEGRAM_CHAT_ID = manage_conf.get_confident_key("telegram_chat_id")
 
 CONFIRM_SYMBOL = "✅"
 GREEN_SYMBOL = "🟢"

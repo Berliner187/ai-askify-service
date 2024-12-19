@@ -71,8 +71,6 @@
 }
 
 .drop-area {
-    border: 2px dashed #4b4652;
-    border-radius: 30px;
     padding: 10px 30px;
     display: flex;
     flex-direction: column;
@@ -82,6 +80,11 @@
     transition: background-color 0.3s;
     position: relative;
     margin-top: 20px;
+}
+
+.locked-upload, .drop-area {
+    border: 2px dashed #4b4652;
+    border-radius: 30px;
 }
 
 .drop-area.hover {

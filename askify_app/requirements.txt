@@ -6,3 +6,4 @@ django-cors-headers
 aiofiles
 PyPDF2
 celery
+reportlab
