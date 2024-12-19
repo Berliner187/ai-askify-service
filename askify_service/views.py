@@ -810,7 +810,7 @@ class PaymentInitiateView(View):
         # Извлечение данных из запроса
         amount = data['amount']
         description = data['description']
-        # order_id = data['orderId']
+        order_id = data['orderId']
         email = data['email']
         phone = data['phone']
         receipt = data['receipt']
@@ -893,7 +893,7 @@ class PaymentInitiateView(View):
                 plan_name=description,
                 end_date=datetime.now() + timedelta(days=30),
                 status='inactive',
-                billing_cycle='monthly' if plan_prices.get(description) else 'yearly',
+                billing_cycle='monthly',
                 discount=0.00
             )
             subscription.save()

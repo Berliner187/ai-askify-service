@@ -25,20 +25,35 @@ subscriptionOptions.forEach(option => {
                 sub_description = 'Доступ на 30 дней за ' + price + ' руб';
                 description = 'Премиум';
                 break;
-            case 'tokens':
+            case 'ultra':
                 price = 990;
                 sub_description = 'Доступ на 30 дней за ' + price + ' руб';
                 description = 'Ультра';
                 break;
         }
 
-        price_total.textContent = price;
         amountInput.value = price;
-        console.log(sub_description);
+        description_order.value = description;
         descriptionInput.value = description;
         for (i=0; selectedPlanText.length; i++) {
-            selectedPlanText[i].textContent = sub_description;
-            console.log(selectedPlanText[i].value);
+            selectedPlanText[i].textContent = description;
         }
     });
 });
+
+// Проверка принятия условий для доступа к кнопке оплаты
+const checkbox = document.getElementById('agreement');
+const submitButton = document.querySelector('.payment-button');
+
+function updateButtonState() {
+    if (checkbox.checked) {
+        submitButton.disabled = false;
+        submitButton.classList.remove('disabled');
+    } else {
+        submitButton.disabled = true;
+        submitButton.classList.add('disabled');
+    }
+}
+
+checkbox.addEventListener('change', updateButtonState);
+updateButtonState();

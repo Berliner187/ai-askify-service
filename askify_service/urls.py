@@ -23,7 +23,7 @@ urlpatterns = [
 
     path('get_ip/', get_ip, name='get_ip'),
     path('payment/', create_payment, name='payment'),
-    path('api/payment/initiate', PaymentInitiateView.as_view(), name='payment_initiate'),
+    path('api/payment/initiate/', PaymentInitiateView.as_view(), name='payment_initiate'),
     path('payment/success/', PaymentSuccessView.as_view(), name='payment_success'),
     path('payment/fail/', PaymentSuccessView.as_view(), name='payment_fail'),
 

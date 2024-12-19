@@ -17,7 +17,6 @@
         
         <div class="container payment-container">
             <h2 class="product-title">Выбор плана</h2>
-            <p><strong class="selected_plan_text"></strong></p>
 
             <div class="subscription-selector">
         
@@ -47,7 +46,7 @@
                         <h3 class="price">590₽</h3>
                     </div>
         
-                    <div class="subscription-option" data-plan="tokens">
+                    <div class="subscription-option" data-plan="ultra">
                         <div>
                             <p><strong>Ультра</strong></p>
                             <p class="description">⮑ Все функции Премиум плана</p>
@@ -65,8 +64,8 @@
                 <input type="text" id="promo-code" class="promo-input" placeholder="Промокод">
             </div>
 
-            <p class="total-cost">Стоимость - <span id="price_total"></span> руб</p>
-            <!-- <p class="next-payment">Следующий платеж - <strong>17.12.2024</strong></p> -->
+            <p><strong class="selected_plan_text">План не выбран</strong></p>
+
             <p><strong>! ТЕСТОВЫЕ ПЛАТЕЖИ !</p>
 
             <div class="agreement">
@@ -76,14 +75,12 @@
 
             <form class="payform-tbank" name="payform-tbank" id="payform-tbank">
                 {% csrf_token %}
-                <!-- <input class="payform-tbank-row" type="hidden" name="terminalkey" value="1731153311116DEMO"> -->
                 <input class="payform-tbank-row" type="hidden" name="frame" value="false">
                 <input class="payform-tbank-row" type="hidden" name="language" value="ru">
                 <input class="payform-tbank-row" type="hidden" name="receipt" value="">
-                <input class="payform-tbank-row" type="hidden" placeholder="Сумма заказа" name="amount">
-                <input class="payform-tbank-row"  placeholder="Номер заказа" name="order" value="{{order_id}}">
-                <input class="payform-tbank-row" type="hidden" placeholder="Описание заказа" name="description" value="Тестовый заказ">
-                <input class="payform-tbank-row" type="hidden" placeholder="ФИО плательщика" name="name" value="{{fullname}}">
+                <input class="payform-tbank-row" type="hidden" placeholder="Сумма заказа" name="amount" id="amount_price">
+                <input class="payform-tbank-row" type="hidden" placeholder="Номер заказа" name="order" value="{{order_id}}">
+                <input class="payform-tbank-row" type="hidden" placeholder="Описание заказа" id="description_order" name="description" value="">
                 <div class="contact-container">
                     <input class="payform-tbank-row contact" placeholder="E-mail" name="email" value="{{email}}">
                     <input class="payform-tbank-row contact" placeholder="Контактный телефон" name="phone" value="{{phone}}">
@@ -96,6 +93,8 @@
     </div>
 
     <script src="{% static 'js/plan-selector.js' %}"></script>
+    <!-- <script src="{% static 'js/tbank-payment.js' %}"></script> -->
+
     <script type="text/javascript">
         const TPF = document.getElementById("payform-tbank");
 
@@ -108,14 +107,13 @@
             }
 
             const requestData = {
-                //terminalKey: TPF.terminalkey.value,
                 amount: amount.value,
                 orderId: TPF.order.value,
                 description: description.value,
                 email: email.value,
                 phone: phone.value,
                 receipt: JSON.stringify({
-                    "EmailCompany": "mail@mail.com",
+                    "EmailCompany": "support@letychka.ru",
                     "Taxation": "patent",
                     "FfdVersion": "1.2",
                     "Items": [
@@ -135,7 +133,7 @@
 
             const csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]').value;
 
-            fetch('/api/payment/initiate', {
+            fetch('/api/payment/initiate/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -159,29 +157,9 @@
             })
             .catch((error) => {
                 console.error('Error:', error);
-                alert('Выберите тарифный план');
+                alert('Невозможно создать платеж :()');
             });
         });
     </script>
-
-    <script>
-        // Проверка принятия условий для доступа к кнопке оплаты
-        const checkbox = document.getElementById('agreement');
-        const submitButton = document.querySelector('.payment-button');
-
-        function updateButtonState() {
-            if (checkbox.checked) {
-                submitButton.disabled = false;
-                submitButton.classList.remove('disabled');
-            } else {
-                submitButton.disabled = true;
-                submitButton.classList.add('disabled');
-            }
-        }
-
-        checkbox.addEventListener('change', updateButtonState);
-        updateButtonState();
-    </script>
-
 </body>
 </html>
