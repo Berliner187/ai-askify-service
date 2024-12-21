@@ -352,7 +352,7 @@ class GenerationModelsControl:
                 print("\n\ngenerated_text", generated_text)
                 cleaned_generated_text = generated_text.replace("json", "").replace("`", "")
                 tokens_used = completion.usage.total_tokens
-                print("\n\ncleaned_generated_text", cleaned_generated_text, tokens_used)
+                print("\n\ncleaned_generated_text", cleaned_generated_text, '\ntokens used', tokens_used)
                 return {
                     'success': True, 'generated_text': cleaned_generated_text, 'tokens_used': tokens_used
                 }

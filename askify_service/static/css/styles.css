@@ -96,7 +96,7 @@ a {
 }
 
 button:active {
-    transform: scale(0.9);
+    transform: scale(0.92);
 }
 
 .submit-container {
@@ -124,7 +124,7 @@ button:active {
 }
 
 .submit-container button:active {
-    transform: scale(0.9);
+    transform: scale(0.92);
 }
 
 .submit-container {
@@ -515,7 +515,7 @@ textarea {
     align-items: center;
 }
 .button-medium:active {
-    transform: scale(0.9);
+    transform: scale(0.92);
 }
 .button-medium div {
     display: flex;
@@ -607,7 +607,7 @@ textarea {
 }
 
 .navigation a:hover, .accent-color-text, .profile-info strong {
-    color: #616DF0;
+    color: #7A8FFF;
 }
 .small-text {
     font-size: 10px;
@@ -734,7 +734,7 @@ hr {
 }
 
 .error-message.show {
-    top: 20px; /* Конечная позиция */
+    top: 20px;
 }
 
 @keyframes shake {

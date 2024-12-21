@@ -18,22 +18,25 @@
             <h2>Профиль <span class="accent-color-text">{{ username }}</span></h2>
 
             <div class="profile-info">
-                <p>Email: <strong>{{ email }}</strong></p>
-                <p>Пароль: <strong>*********</strong></p>
+                <p>{{ email }}</p>
+                <p>{{ phone }}</p>
+                <p>{{ password }}</p>
 
                 <ul>
                     <li class="small-text">Последняя авторизация: {{ date_last_login }}</li>
                     <li class="small-text">Дата регистрации: {{ date_join }}</li>
                 </ul>
 
-                <div class="button-medium">
-                    <a href="{% url 'profile' username %}">
-                        <div>
-                            <p>Сбросить пароль</p>
-                            <img src="{% static 'img/icon-retry.png' %}" alt="">
-                        </div>
-                    </a>
-                </div>
+                {% if password != '' %}
+                    <div class="button-medium">
+                        <a href="{% url 'profile' username %}">
+                            <div>
+                                <p>Сбросить пароль</p>
+                                <img src="{% static 'img/icon-retry.png' %}" alt="">
+                            </div>
+                        </a>
+                    </div>
+                {% endif %}
             </div>
 
             <hr>
@@ -54,6 +57,23 @@
                     <li>План <strong>{{subscription.plan_name}}</strong></li>
                     <li>Заканчивается <strong>{{subscription.plan_end_date}}</strong></li>
                 </ul>
+                {% if subscription.days_until_end is not none and subscription.days_until_end < 3 %}
+                    <div class="button-medium button-accent">
+                        <a href="{% url 'payment' %}">
+                            <div>
+                                <p>Продлить {{subscription.plan_name}} 💎</p>
+                            </div>
+                        </a>
+                    </div>
+                {% elif subscription.level < 2 %}
+                    <div class="button-medium">
+                        <a href="{% url 'payment' %}">
+                            <div>
+                                <p>Купить премиум 💎</p>
+                            </div>
+                        </a>
+                    </div>
+                {% endif %}
             </div>
 
             <hr>

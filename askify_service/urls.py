@@ -23,18 +23,18 @@ urlpatterns = [
 
     path('get_ip/', get_ip, name='get_ip'),
     path('payment/', create_payment, name='payment'),
-    path('api/payment/initiate/', PaymentInitiateView.as_view(), name='payment_initiate'),
     path('payment/success/', PaymentSuccessView.as_view(), name='payment_success'),
     path('payment/fail/', PaymentSuccessView.as_view(), name='payment_fail'),
 
     path('upload/', FileUploadView.as_view(), name='file_upload'),
 
-    path('api/v1/signal-secure/', confirm_user, name='api_v1_signal_secure'),
     path('auth/tg/', phone_number_view, name='auth_telegram'),
     path('verify-code/', verify_code_view, name='verify_code'),
     path('auth/telegram/', TelegramAuthView.as_view(), name='telegram_auth'),
 
+    path('api/payment/initiate/', PaymentInitiateView.as_view(), name='payment_initiate'),
     path('api/ghost_disconnect/', terminate_session, name='ghost_disconnect'),
+    path('api/v1/signal-secure/', confirm_user, name='api_v1_signal_secure'),
 
     path('block-user/<str:id_staff>/', block_by_staff_id, name='block_by_staff_id'),
     path('unblock-user/<str:id_staff>/', unblock_by_staff_id, name='unblock_by_staff_id'),

@@ -68,10 +68,7 @@ def page_create_survey(request):
     used_tokens = sum(token.tokens_survey_used for token in tokens)
     limit_tokens = 50_000
 
-    subscription_db = Subscription.objects.get(staff_id=current_id_staff)
-
-    subscription_check = SubscriptionCheck()
-    subscription_level = subscription_check.get_subscription_level(subscription_db.plan_name)
+    subscription_level = get_subscription_level(request)
 
     tracer_l.tracer_charge(
         'INFO', request.user.username, page_create_survey.__name__, "load page")
@@ -336,7 +333,7 @@ class TakeSurvey(View):
 
             user_answers_json = json.dumps(user_answers_dict)
 
-            UserAnswers.objects.get_or_create(
+            UserAnswers.objects.update_or_create(
                 survey_id=survey_id,
                 selected_answer=selected_answer,
                 defaults={
@@ -359,10 +356,6 @@ class TakeSurvey(View):
         subs_level = subscription_check.get_subscription_level(subscription.plan_name)
 
         if subscription.status == 'active' and (subs_level == 0 or subs_level > 1):
-            feedback_obj = FeedbackFromAI.objects.filter(survey_id=survey_id)
-            if feedback_obj.exists():
-                feedback_obj.delete()
-
             generation_models_control = GenerationModelsControl()
             ai_feedback = generation_models_control.get_feedback_001(
                 f"Список вопросов и моих ответов: {user_answers_list}.\n"
@@ -370,24 +363,24 @@ class TakeSurvey(View):
             )
 
             if ai_feedback.get('success'):
+                feedback_obj = FeedbackFromAI.objects.filter(survey_id=survey_id)
+                if feedback_obj.exists():
+                    feedback_obj.delete()
+
                 FeedbackFromAI.objects.create(
                     survey_id=survey_id,
                     id_staff=get_staff_id(request),
                     feedback_data=ai_feedback.get('generated_text')
                 )
 
-                _tokens_used = TokensUsed(
+                TokensUsed.objects.create(
                     id_staff=get_staff_id(request),
                     tokens_feedback_used=ai_feedback.get('tokens_used')
                 )
 
-        subscription_db = Subscription.objects.get(staff_id=get_staff_id(request))
-        subscription_check = SubscriptionCheck()
-        subscription_level = subscription_check.get_subscription_level(subscription_db.plan_name)
-
         context = {
             'score': correct_count, 'total': user_answers, 'survey_id': survey_id,
-            'subscription_level': subscription_level
+            'subscription_level': get_subscription_level(request)
         }
         return render(request, 'result.html', context)
 
@@ -435,7 +428,6 @@ def result_view(request, survey_id):
             "WARNING: Fail in get AI feedback", fail)
 
     subscription_db = Subscription.objects.get(staff_id=get_staff_id(request))
-
     subscription_check = SubscriptionCheck()
     subscription_level = subscription_check.get_subscription_level(subscription_db.plan_name)
 
@@ -619,13 +611,24 @@ def profile_view(request, username):
     total_tokens = get_format_number(_total_tokens)
 
     subscription = get_object_or_404(Subscription, staff_id=staff_id)
-    subscription.end_date = get_formate_date(subscription.end_date)
+    subscription_end_date = get_formate_date(subscription.end_date)
     human_readable_plan = subscription.get_human_plan()
+
+    if isinstance(subscription.end_date, str):
+        subscription.end_date = datetime.strptime(subscription.end_date,
+                                                  '%Y.%m.%d')
+
+    days_until_end = (subscription.end_date - timezone.now()).days
+    print('days_until_end', days_until_end)
+
+    subscription_level = get_subscription_level(request)
 
     user_data = {
         'page_title': f'Профиль {username}',
         'username': username,
-        'email': user.email,
+        'email': 'E-mail: ' + user.email if user.email is not None else '',
+        'password': 'Пароль: *********' if user.password is not None else '',
+        'phone': 'Телефон: ' if user.phone is not None else '',
         'date_join': date_join,
         'date_last_login': date_last_login,
         'statistics': statistics,
@@ -637,11 +640,19 @@ def profile_view(request, username):
         },
         'subscription': {
             'plan_name': human_readable_plan,
-            'plan_end_date': subscription.end_date
+            'plan_end_date': subscription_end_date,
+            'level': subscription_level,
+            'days_until_end': days_until_end
         }
     }
 
     return render(request, 'profile.html', user_data)
+
+
+def get_subscription_level(request):
+    subscription_db = Subscription.objects.get(staff_id=get_staff_id(request))
+    subscription_check = SubscriptionCheck()
+    return subscription_check.get_subscription_level(subscription_db.plan_name)
 
 
 @login_required

@@ -177,13 +177,23 @@
                 <div class="result-summary">
                     <p>Вы ответили правильно на <span class="result-score">{{ score }}</span> из <span class="result-total">{{ total }}</span> вопросов.</p>
                 </div>
-                <div class="button-medium button-red">
-                    <a href="{% url 'drop-survey' survey_id=survey_id %}">
-                        <div>
-                            <img src="{% static 'img/icon-delete.png' %}" alt="">
-                            <p>Удалить тест</p>
-                        </div>
-                    </a> 
+                <div class="head-button">
+                    <div class="button-medium">
+                        <a href="{% url 'download-survey_pdf' survey_id=survey_id %}">
+                            <div>
+                                <p>Скачать в PDF</p>
+                                <img src="{% static 'img/icon-file.png' %}" alt="Icon download in PDF">
+                            </div>
+                        </a> 
+                    </div>
+                    <div class="button-medium button-red">
+                        <a href="{% url 'drop-survey' survey_id=survey_id %}">
+                            <div>
+                                <img src="{% static 'img/icon-delete.png' %}" alt="">
+                                <p>Удалить тест</p>
+                            </div>
+                        </a> 
+                    </div>
                 </div>
             </div>
             {% endif %}
