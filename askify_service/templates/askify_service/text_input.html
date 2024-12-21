@@ -81,7 +81,7 @@
                             </lord-icon>
                         </div>
                     </label>
-                    <input type="file" id="file-upload" accept=".doc,.pdf" style="display: none;">
+                    <input type="file" id="file-upload" accept=".pdf" style="display: none;">
                 </div>
             </div>
 
@@ -104,6 +104,13 @@
                         <img src="{% static 'img/icon-send-m.png' %}" alt="Letychka Logo Generate">
                     </button>
                 </div>
+
+                <div class="slider-container">
+                    <div id="char-count">0 / 16384 символов</div>
+                    <p id="question-slider-text" style="display: none;">Сгенерировать <span id="slider-value">1</span> вопросов в тесте</p>
+                    <input type="range" id="question-slider" class="custom-slider" min="1" max="10" value="5" style="display: none;">
+                </div>
+
                 <div class="head-button">
                     <div class="button-medium">
                         <a href="{% url 'history' %}">

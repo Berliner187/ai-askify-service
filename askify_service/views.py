@@ -13,6 +13,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.http import JsonResponse, HttpResponseBadRequest
 from django.utils.decorators import method_decorator
+# from asgiref.sync import database_sync_to_async
 
 from .utils import *
 from .models import *
@@ -38,6 +39,9 @@ import random
 import os
 import re
 import hmac
+
+
+os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
 
 
 tracer_l = TracerManager(TRACER_FILE)
@@ -123,40 +127,50 @@ def drop_survey(request, survey_id):
 @method_decorator(check_blocked, name='dispatch')
 @method_decorator(subscription_required, name='dispatch')
 class ManageSurveysView(View):
-    def post(self, request):
+    async def post(self, request):
         if request.method == 'POST':
             try:
-                text_from_user = json.loads(request.body)
-                text_from_user = text_from_user['text']
+                request_from_user = json.loads(request.body)
+                question_count = request_from_user['questions']
+                text_from_user = request_from_user['text']
+
+                print(question_count, text_from_user)
+
+                if question_count.isdigit():
+                    if int(question_count) > 10 or int(question_count) < 0:
+                        return JsonResponse({'error': 'Недоступное кол-во вопросов :('}, status=400)
 
                 try:
                     print(f"\n\nGEN STAAAART")
-                    manage_generate_surveys_text = ManageGenerationSurveys(request, text_from_user)
-                    generated_text, tokens_used = manage_generate_surveys_text.generate_survey_for_user()
-                    print(generated_text, tokens_used)
-                    print(f"\n\nGEN TEST: {generated_text}")
+                    manage_generate_surveys_text = ManageGenerationSurveys(request, text_from_user, question_count)
+                    generated_text = await manage_generate_surveys_text.github_gpt()
 
-                    if (generated_text is None) and (tokens_used is None):
+                    if generated_text.get('success'):
+                        tokens_used = generated_text.get('tokens_used')
+                        cleaned_generated_text = generated_text.get('generated_text')
+                        print(f"\n\nGEN TEST: {generated_text}")
+                    else:
                         return JsonResponse({'error': 'Произошла ошибка :(\nПожалуйста, попробуйте позже'}, status=429)
 
-                    cleaned_generated_text = generated_text
-                    tracer_l.tracer_charge(
-                        'INFO', request.user.username, ManageSurveysView.post.__name__,
-                        f"success json.loads: {cleaned_generated_text.get('title')}")
-                except json.JSONDecodeError or TypeError as json_error:
-                    tracer_l.tracer_charge(
-                        'ERROR', request.user.username, ManageSurveysView.post.__name__,
-                        "text is not valid JSON", str(json_error), "status: 400")
-                    return JsonResponse({'error': generated_text}, status=400)
+                    # cleaned_generated_text = generated_text
+                    # tracer_l.tracer_charge(
+                    #     'INFO', request.user.username, ManageSurveysView.post.__name__,
+                    #     f"success json.loads: {cleaned_generated_text.get('title')}")
+                # except (json.JSONDecodeError, TypeError) as json_error:
+                    # tracer_l.tracer_charge(
+                    #     'ERROR', request.user.username, ManageSurveysView.post.__name__,
+                    #     "text is not valid JSON", str(json_error), "status: 400")
+                    # return JsonResponse({'error': str(json_error)}, status=400)
                 except Exception as fail:
-                    tracer_l.tracer_charge(
-                        'CRITICAL', request.user.username, ManageSurveysView.post.__name__,
-                        f"{fail}", "status: 400")
+                    # tracer_l.tracer_charge(
+                    #     'CRITICAL', request.user.username, ManageSurveysView.post.__name__,
+                    #     f"{fail}", "status: 400")
                     return JsonResponse({'error': 'Опаньки :(\n\nК сожалению, не удалось составить тест'}, status=400)
 
                 try:
                     print(f"\n\n---- ТОКЕНОВ ИСПОЛЬЗОВАНО: {tokens_used}\n\n")
                     new_survey_id = uuid.uuid4()
+
                     survey = Survey(
                         survey_id=new_survey_id,
                         title=cleaned_generated_text['title'],
@@ -174,31 +188,31 @@ class ManageSurveysView(View):
                     tracer_l.tracer_charge(
                         'DB', request.user.username, ManageSurveysView.post.__name__, "success save to DB")
 
-                    return JsonResponse({'survey': cleaned_generated_text, 'survey_id': new_survey_id}, status=200)
+                    return JsonResponse({'survey': cleaned_generated_text, 'survey_id': f"{new_survey_id}"}, status=200)
                 except Exception as fail:
+                    user = await sync_to_async(str)(request.user.username)
                     tracer_l.tracer_charge(
-                        'ERROR', request.user.username, ManageSurveysView.post.__name__,
+                        'ERROR', user, ManageSurveysView.post.__name__,
                         "error in save to DB", f"{fail}")
+                    return JsonResponse(
+                        {'error': 'Ошибочка :(\n\nПожалуйста, попробуйте позже'}, status=400)
 
-                if DEBUG:
-                    print(cleaned_generated_text)
-
-            except json.JSONDecodeError as json_decode:
-                tracer_l.tracer_charge(
-                    'ERROR', request.user.username, ManageSurveysView.post.__name__,
-                    "Invalid JSON in request body", f"{json_decode}",
-                    f"status: 400")
-                return JsonResponse({'error': 'Invalid JSON in request body'}, status=400)
+            # except json.JSONDecodeError as json_decode:
+            #     # tracer_l.tracer_charge(
+            #     #     'ERROR', request.user.username, ManageSurveysView.post.__name__,
+            #     #     "Invalid JSON in request body", f"{json_decode}",
+            #     #     f"status: 400")
+            #     return JsonResponse({'error': 'Invalid JSON in request body'}, status=400)
             except Exception as e:
-                tracer_l.tracer_charge(
-                    'CRITICAL', request.user.username, ManageSurveysView.post.__name__,
-                    "FATAL Exception", f"{e}",
-                    f"status: 500")
+                # tracer_l.tracer_charge(
+                #     'CRITICAL', request.user.username, ManageSurveysView.post.__name__,
+                #     "FATAL Exception", f"{e}",
+                #     f"status: 500")
                 return JsonResponse({'error': str(e)}, status=500)
 
-        tracer_l.tracer_charge(
-            'CRITICAL', request.user.username, ManageSurveysView.post.__name__,
-            "Invalid request method", "status: 400")
+        # tracer_l.tracer_charge(
+        #     'CRITICAL', request.user.username, ManageSurveysView.post.__name__,
+        #     "Invalid request method", "status: 400")
         return JsonResponse({'error': 'Invalid request method'}, status=400)
 
 
@@ -223,7 +237,7 @@ def get_all_surveys(request):
 class FileUploadView(View):
     # @login_required
     # @subscription_required
-    def post(self, request):
+    async def post(self, request):
         if 'file' not in request.FILES:
             return JsonResponse({'error': 'No file provided'}, status=400)
 
@@ -235,13 +249,15 @@ class FileUploadView(View):
         if data == -1:
             return JsonResponse({'error': 'Файл не является PDF'})
 
-        # manage_generate_surveys_text = ManageGenerationSurveys(request, data)
-        # generated_text, tokens_used = manage_generate_surveys_text.generate_survey_for_user()
         print("\n--- ТЕСТ ГЕНЕРИРУЕТСЯ ---")
         try:
-            manage_generate_surveys_text = ManageGenerationSurveys(request, data)
-            generated_text, tokens_used = manage_generate_surveys_text.generate_survey_for_user()
-            if (generated_text is None) and (tokens_used is None):
+            manage_generate_surveys_text = ManageGenerationSurveys(request, data, '5')
+            generated_text = await manage_generate_surveys_text.github_gpt()
+
+            if generated_text.get('success'):
+                tokens_used = generated_text.get('tokens_used')
+                cleaned_generated_text = generated_text.get('generated_text')
+            else:
                 return JsonResponse({'error': 'Произошла ошибка при создании теста'}, status=429)
         except TypeError:
             return JsonResponse({'error': 'К сожалению, не удалось выполнить запрос'}, status=400)
@@ -249,10 +265,10 @@ class FileUploadView(View):
         new_survey_id = uuid.uuid4()
         survey = Survey(
             survey_id=new_survey_id,
-            title=generated_text['title'],
+            title=cleaned_generated_text['title'],
             id_staff=get_staff_id(request)
         )
-        survey.save_questions(generated_text['questions'])
+        survey.save_questions(cleaned_generated_text['questions'])
         survey.save()
 
         _tokens_used = TokensUsed(
@@ -261,10 +277,14 @@ class FileUploadView(View):
         )
         _tokens_used.save()
 
-        return JsonResponse({"Success": True})
+        return JsonResponse({'success': True, 'message': 'Success create survey', 'survey_id': f"{new_survey_id}"})
 
     def read_file_data(self, uploaded_file):
         full_text = ""
+        print(uploaded_file, os.path.splitext(str(uploaded_file))[1])
+
+        if os.path.splitext(str(uploaded_file))[1] != '.pdf':
+            return -1
 
         if uploaded_file.content_type == 'application/pdf':
             reader = PyPDF2.PdfReader(uploaded_file)

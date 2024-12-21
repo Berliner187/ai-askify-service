@@ -40,6 +40,4 @@ urlpatterns = [
     path('unblock-user/<str:id_staff>/', unblock_by_staff_id, name='unblock_by_staff_id'),
     path('block-ip/<str:ip_address>/', block_by_ip, name='block_ip'),
     path('unblock-ip/<str:ip_address>/', unblock_by_ip, name='unblock_ip'),
-
-    # path('test_view/', GitHubGPTView.as_view(), name='test_view')
 ]

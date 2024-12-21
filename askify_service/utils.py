@@ -46,13 +46,14 @@ TERMINAL_PASSWORD = manage_conf.get_confident_key("bank_terminal_password")
 
 
 class ManageGenerationSurveys:
-    def __init__(self, request, data):
+    def __init__(self, request, data, q_count):
         self.request = request
         self.data = data
         self.text_from_user = self.get_text_from_request()
         self.forbidden_words = self.load_forbidden_words()
         self.generation_models_control = GenerationModelsControl()
         self.max_retries = 5
+        self.count_questions = q_count
 
     def get_text_from_request(self):
         print(self.data)
@@ -132,6 +133,75 @@ class ManageGenerationSurveys:
             'ERROR', self.request.user.username, self.generate_survey_for_user.__name__,
             error_type, message
         )
+
+    @staticmethod
+    def __get_confidential_key(key_name):
+        manage_confident_fields = ManageConfidentFields("config.json")
+        return manage_confident_fields.get_confident_key(key_name)
+
+    async def github_gpt(self) -> dict:
+        client = openai.OpenAI(
+            base_url="https://models.inference.ai.azure.com",
+            api_key=self.__get_confidential_key('github_gpt'),
+        )
+        # try:
+        completion = await asyncio.to_thread(
+            client.chat.completions.create,
+            messages=[
+                {
+                    "role": "system",
+                    "content": f"{self.__get_confidential_key('system_prompt')}" + self.count_questions,
+                },
+                {
+                    "role": "user",
+                    "content": f"{self.text_from_user}{self.__get_confidential_key('user_prompt')}",
+                }
+            ],
+            model="gpt-4o",
+            temperature=.3,
+            max_tokens=2048,
+            top_p=1
+        )
+
+        # try:
+        generated_text = completion.choices[0].message.content
+        print("\n\ngenerated_text", generated_text)
+        cleaned_generated_text = generated_text.replace("json", "").replace("`", "")
+        tokens_used = completion.usage.total_tokens
+
+        print("\n\ncleaned_generated_text", cleaned_generated_text)
+        return {
+            'success': True, 'generated_text': json.loads(cleaned_generated_text), 'tokens_used': tokens_used
+        }
+        #
+        #     except Exception as fail:
+        #         print(fail)
+        #         if hasattr(completion, 'error') and completion.error is not None:
+        #             error_info = completion.error
+        #             code = error_info.get('code', 'Unknown error code')
+        #             raw_metadata = error_info.get('metadata', {}).get('raw', '')
+        #
+        #             tracer_l.tracer_charge(
+        #                 "ERROR", '', "__generate_completion",
+        #                 f"error generate: {completion}", f"{fail}"
+        #             )
+        #
+        #             if raw_metadata:
+        #                 try:
+        #                     metadata = json.loads(raw_metadata)
+        #                     message = metadata.get('error', {}).get('message', 'No error message provided')
+        #                 except json.JSONDecodeError:
+        #                     message = 'Failed to decode error message from raw metadata'
+        #             else:
+        #                 message = 'No raw metadata available'
+        #
+        #             print(f"Code: {code}, Message: {message}")
+        #             return {'success': False, 'code': code, 'message': message}
+        #         else:
+        #             print("Не удалось получить информацию об ошибке.")
+        #             return {'success': False, 'code': 429, 'message': str(fail)}
+        # except Exception as fail:
+        #     return {'success': False, 'code': 500, 'message': str(fail)}
 
 
 class AccessControlUser:

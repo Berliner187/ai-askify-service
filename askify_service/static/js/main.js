@@ -5,6 +5,7 @@ async function submitText() {
                     ? document.querySelector('[name=csrfmiddlewaretoken]').value
                     : document.querySelector('meta[name="csrf-token"]').getAttribute('content');
     const text = document.getElementById('user-text').value;
+    const questionCount = slider.value;
     const blockGenerate = document.getElementById('block-generate');
     const loadingIndicator = document.getElementById('loading-container');
     const uploadContainer = document.getElementById('upload-container');
@@ -29,16 +30,19 @@ async function submitText() {
                 'Content-Type': 'application/json',
                 'X-CSRFToken': csrftoken
             },
-            body: JSON.stringify({ text }),
+            body: JSON.stringify({ text: text, questions: questionCount }),
         });
 
         console.log('Response status:', response.status);
         const result = await response.json();
 
         if (response.ok) {
-            console.log("Response -", 200);
-            window.location.href = `/history/`;
-            console.log(result);
+            console.log('Тест успешно сгенерирован');
+
+            const surveyId = result.survey_id;
+            console.log('Survey ID:', surveyId);
+
+            window.location.href = `/result/` + surveyId;
         } else {
             console.error('Error:', result);
             alert(result.error || 'Не удалось выполнить запрос');
@@ -121,8 +125,15 @@ async function handleFiles(files) {
             });
 
             if (response.ok) {
-                console.log('Файл успешно загружен');
-                window.location.href = `/history/`;
+                console.log('Тест успешно сгенерирован');
+
+                const data = await response.json();
+                console.log(data);
+
+                const surveyId = data.survey_id;
+                console.log('Survey ID:', surveyId);
+
+                window.location.href = `/result/` + surveyId;
             } else {
                 console.error('Ошибка при загрузке файла:', response.statusText);
                 alert('Не удалось загрузить файл: ' + response.statusText);
