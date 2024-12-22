@@ -9,11 +9,21 @@ from django.contrib import messages
 from asgiref.sync import sync_to_async
 from django.utils import timezone
 from django.views import View
+from django.template.loader import render_to_string
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.http import JsonResponse, HttpResponseBadRequest
 from django.utils.decorators import method_decorator
 # from asgiref.sync import database_sync_to_async
+from django.core import signing
+from datetime import timedelta
+from django.urls import reverse
+from django.core.mail import send_mail
+from django.urls import reverse
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
+from django.contrib.auth import get_user_model
+
 
 from .utils import *
 from .models import *
@@ -466,10 +476,18 @@ def register(request):
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
+            email = form.cleaned_data.get('email')
+
+            if not is_allowed_email(email):
+                print('OK')
+                return JsonResponse({'message': 'Отказано в регистрации'}, status=403)
+
             user = form.save()
 
             tracer_l.tracer_charge(
                 'ADMIN', user.username, register.__name__, f"NEW USER")
+
+            # send_verification_email(user)
 
             plan_name, end_date, status, billing_cycle, discount = init_free_subscription()
             subscription = Subscription.objects.create(
@@ -483,14 +501,16 @@ def register(request):
             subscription.save()
 
             login(request, user)
-            return redirect('/create')
+            return JsonResponse({'redirect': '/create'})
         else:
-            error_messages = form.errors
+            errors = {field: errors for field, errors in form.errors.items()}
+            print(errors)
+            return JsonResponse({'errors': errors}, status=400)
+
     else:
         form = CustomUserCreationForm()
-        error_messages = None
-    print(error_messages)
-    return render(request, 'register.html', {'form': form, 'error_messages': error_messages})
+
+    return render(request, 'register.html', {'form': form})
 
 
 def login_view(request):
@@ -621,7 +641,8 @@ def profile_view(request, username):
     days_until_end = (subscription.end_date - timezone.now()).days
     print('days_until_end', days_until_end)
 
-    subscription_level = get_subscription_level(request)
+    user = request.user
+    token = signing.dumps(user.pk, salt='email-verification')
 
     user_data = {
         'page_title': f'Профиль {username}',
@@ -641,9 +662,10 @@ def profile_view(request, username):
         'subscription': {
             'plan_name': human_readable_plan,
             'plan_end_date': subscription_end_date,
-            'level': subscription_level,
             'days_until_end': days_until_end
-        }
+        },
+        'subscription_level': get_subscription_level(request),
+        'token': token
     }
 
     return render(request, 'profile.html', user_data)
@@ -1390,3 +1412,46 @@ def terminate_session(request):
         return JsonResponse({'success': False, 'message': 'Fail in  close session.'})
 
     return JsonResponse({'status': 'error', 'message': 'Invalid request method.'}, status=400)
+
+
+def send_verification_email(user):
+    token = signing.dumps(user.pk, salt='email-verification')
+    verification_link = reverse('verify_email', kwargs={'token': token})
+    full_link = f'http://letychka.ru{verification_link}'
+
+    html_message = f"""
+    <html>
+        <body>
+            <h2>Подтверждение почты</h2>
+            <p>Привет! Пожалуйста, подтверди свою почту, перейдя по ссылке ниже:</p>
+            <a href="{full_link}" style="display: inline-block; padding: 10px 20px; background-color: #007AFF; color: white; text-decoration: none; border-radius: 5px;">
+                Подтвердить почту
+            </a>
+            <p>Если вы не создавали аккаунт, просто проигнорируйте это письмо.</p>
+        </body>
+    </html>
+    """
+
+    send_mail(
+        'Подтверждение почты',
+        'Это письмо в формате HTML. Пожалуйста, включите поддержку HTML.',
+        'support@letychka.ru',
+        [user.email],
+        html_message=html_message,
+        fail_silently=False,
+    )
+
+
+def verify_email(request, token):
+    User = get_user_model()
+
+    try:
+        user_id = signing.loads(token, salt='email-verification', max_age=3600)
+        user = get_object_or_404(User, pk=user_id)
+    except signing.BadSignature:
+        return redirect('error_page')
+
+    user.confirmed_user = True
+    user.save()
+
+    return redirect('create')

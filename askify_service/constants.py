@@ -36,3 +36,21 @@ SUBSCRIPTION_TIERS = {
     4: "Ультра",
     5: "Enterprise"
 }
+
+ALLOWED_DOMAINS = [
+    'gmail.com',
+    'yandex.ru',
+    'ya.ru',
+    'yandex.com',
+    'mail.ru',
+    'inbox.ru',
+    'rambler.ru',
+    'outlook.com',
+    'icloud.com',
+    'list.ru',
+    'bk.ru',
+    'inbox.ru',
+    'rambler.ru',
+    'hotmail.ru',
+    'tut.by'
+]

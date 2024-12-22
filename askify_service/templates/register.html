@@ -10,81 +10,54 @@
     <link rel="stylesheet" href="{% static 'css/loader.css' %}">
     <link rel="stylesheet" href="{% static 'css/auth.css' %}">
     <link rel="stylesheet" href="{% static 'css/footer.css' %}">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body>
 <body>
     <script src="{% static 'js/second-loader.js' %}"></script>
     {% include 'components/loader.html' %}
 
-    {% if error_messages %}
-        <div id="alertContainer" class="alert" role="alert">
-            {{ form.errors.as_ul }}
-        </div>
-    {% endif %}
-    
+    <div id="alertContainer" class="alert" role="alert"></div>
+
     <div id="page-container" class="container fade" style="display: none;">
 
         <div class="container">
-
             {% include 'components/auth-block.html' %}
-
+        
             <section class="content-container">
                 <h2>Регистрация</h2>
-                <form id="loginForm" method="post" class="registration-form">
+                <form id="registration-form" method="post" class="registration-form">
                     {% csrf_token %}
                     <p>
                         <label for="username">Никнейм</label>
                         <input type="text" id="username" maxlength="32" name="username" required>
-                        <!-- <input type="text" id="id_username"  autofocus name="username" placeholder="Например: navivavi" required> -->
+                        <div id="usernameError" class="error-message" style="display: none;"></div>
                     </p>
-                    <div id="usernameError" class="error-message" style="display: none;"></div>
-            
                     <p>
                         <label for="id_email">Email адрес</label>
-                        <input type="email" name="email" maxlength="254" id="id_email">
+                        <input type="email" name="email" maxlength="254" id="id_email" required>
+                        <div id="emailError" class="error-message" style="display: none;"></div>
                     </p>
-                    <div id="emailError" class="error-message" style="display: none;"></div>
-            
                     <p>
                         <label for="id_password1">Пароль</label>
                         <input type="password" name="password1" autocomplete="new-password" id="id_password1" required>
                     </p>
-            
                     <p>
                         <label for="id_password2">Подтверждение пароля</label>
                         <input type="password" name="password2" autocomplete="new-password" id="id_password2" required>
+                        <div id="confirmPasswordError" class="error-message" style="display: none;"></div>
                     </p>
-                    <div id="confirmPasswordError" class="error-message" style="display: none;"></div>
-            
-                    <p class="usable_password">
-                        <div id="id_usable_password" class="radiolist inline">
-                            <div>
-                                <label for="id_usable_password_0">
-                                    <input type="radio" name="usable_password" value="true" id="id_usable_password_0" checked>
-                                    Включено
-                                </label>
-                            </div>
-                            <div>
-                                <label for="id_usable_password_1">
-                                    <input type="radio" name="usable_password" value="false" id="id_usable_password_1">
-                                    Отключено
-                                </label>
-                            </div>
-                        </div>
-                        <span class="helptext" id="id_usable_password_helptext">Пользователь сможет аутентифицироваться с помощью пароля или нет. Если отключено, он все равно сможет аутентифицироваться с помощью других методов, таких как SSO или LDAP.</span>
-                    </p>
-            
                     <button type="submit">Зарегистрироваться</button>
                     <div class="already-exist">
                         <p>Есть аккаунт? <a href="{% url 'login' %}">Войти</a></p>
                     </div>
                 </form>
             </section>
-
         </div>
-
+        
         {% include 'footer.html' %}
         <script src="{% static 'js/validation.js' %}"></script>
+        <script src="{% static 'js/reg.js' %}"></script>
 
     </body>
 </html>

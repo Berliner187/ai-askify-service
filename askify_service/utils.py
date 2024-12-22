@@ -555,3 +555,8 @@ def get_client_ip(request):
     else:
         ip = request.META.get('REMOTE_ADDR')
     return ip
+
+
+def is_allowed_email(email):
+    domain = email.split('@')[-1]
+    return domain in ALLOWED_DOMAINS
