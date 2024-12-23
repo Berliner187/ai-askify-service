@@ -240,9 +240,9 @@ class FeedbackFromAI(models.Model):
 
 def get_token_limit(plan_name):
     token_limits = {
-        'стартовый': 50_000,
-        'стандартный': 400_000,
-        'премиум': 750_000,
+        'стартовый': 10_000,
+        'стандартный': 50_000,
+        'премиум': 500_000,
         'ультра': 1_500_000,
     }
     return token_limits.get(plan_name.lower(), 0)
@@ -278,8 +278,11 @@ class TokensUsed(models.Model):
         super().save(*args, **kwargs)
 
     @classmethod
-    def get_tokens_usage(cls, staff_id):
-        """Метод для получения использованных токенов для конкретного пользователя."""
+    def get_tokens_usage(cls, staff_id, date=None):
+        """Метод для получения использованных токенов для конкретного пользователя за определенную дату."""
+        if date is None:
+            date = timezone.now().date()
+
         tokens = cls.objects.filter(id_staff=staff_id).aggregate(
             total_survey_tokens=Sum('tokens_survey_used'),
             total_feedback_tokens=Sum('tokens_feedback_used')
@@ -295,3 +298,9 @@ class TokensUsed(models.Model):
 
         total_used = tokens_used['tokens_survey_used'] + tokens_used['tokens_feedback_used']
         return total_used < token_limit
+
+    def add_tokens(self, survey_tokens=0, feedback_tokens=0):
+        """Метод для добавления использованных токенов."""
+        self.tokens_survey_used += survey_tokens
+        self.tokens_feedback_used += feedback_tokens
+        self.save()

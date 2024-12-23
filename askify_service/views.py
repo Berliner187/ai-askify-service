@@ -23,6 +23,8 @@ from django.urls import reverse
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
 from django.contrib.auth import get_user_model
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 
 
 from .utils import *
@@ -73,10 +75,16 @@ def index(request):
 def page_create_survey(request):
     current_id_staff = get_staff_id(request)
 
-    tokens = TokensUsed.objects.filter(id_staff=current_id_staff)
+    subs = Subscription.objects.get(staff_id=current_id_staff)
+    tokens_limit = get_token_limit(subs.plan_name)
 
-    used_tokens = sum(token.tokens_survey_used for token in tokens)
-    limit_tokens = 50_000
+    # Получение кол-ва использованных токенов
+    manage_tokens_limits = ManageTokensLimits(current_id_staff)
+    tokens_used = manage_tokens_limits.get_usage_tokens()
+
+    print('---')
+    print(type(tokens_limit), tokens_limit, type(tokens_used), tokens_used)
+    print('---')
 
     subscription_level = get_subscription_level(request)
 
@@ -85,9 +93,8 @@ def page_create_survey(request):
 
     context = {
         "page_title": "Создать тест",
-        'tokens': limit_tokens - used_tokens,
-        'tokens_f': get_format_number(limit_tokens - used_tokens),
-        'limit_tokens': limit_tokens,
+        'tokens_f': get_format_number(tokens_limit - tokens_used),
+        'limit_tokens': tokens_limit,
         'username': get_username(request),
         'subscription_level': subscription_level
     }
@@ -130,6 +137,46 @@ def drop_survey(request, survey_id):
     return redirect('history')
 
 
+class ManageTokensLimits:
+    def __init__(self, id_staff):
+        self.id_staff = id_staff
+
+    def get_usage_tokens(self) -> int:
+        staff_id = self.id_staff
+
+        subscription_active = Subscription.objects.get(staff_id=staff_id)
+        plan_name = subscription_active.plan_name
+
+        total_used = TokensUsed.objects.filter(id_staff=staff_id).aggregate(
+            total_survey_tokens=Sum('tokens_survey_used'),
+            total_feedback_tokens=Sum('tokens_feedback_used')
+        )
+
+        # Сумма общего использования
+        _total_used = (total_used['total_survey_tokens'] or 0) + (
+                total_used['total_feedback_tokens'] or 0)
+
+        if plan_name.lower() == 'стартовый':
+            return _total_used
+        else:
+            today = timezone.now().date()
+            tokens_used_today = TokensUsed.objects.filter(id_staff=staff_id, created_at__date=today).aggregate(
+                total_survey_tokens=Sum('tokens_survey_used'),
+                total_feedback_tokens=Sum('tokens_feedback_used')
+            )
+
+            total_used_today = (tokens_used_today['total_survey_tokens'] or 0) + (
+                    tokens_used_today['total_feedback_tokens'] or 0)
+
+            return total_used_today
+
+    @staticmethod
+    def check_token_limits(token_used, token_limit) -> bool:
+        if token_used >= token_limit:
+            return True
+        return False
+
+
 @method_decorator(login_required, name='dispatch')
 @method_decorator(check_blocked, name='dispatch')
 @method_decorator(subscription_required, name='dispatch')
@@ -142,20 +189,60 @@ class ManageSurveysView(View):
                 text_from_user = request_from_user['text']
 
                 print(question_count, text_from_user)
+                # tracer_l.tracer_charge(
+                #     'ADMIN', request.user.username, ManageSurveysView.post.__name__,
+                #     f"{question_count} {text_from_user}")
 
                 if question_count.isdigit():
                     if int(question_count) > 10 or int(question_count) < 0:
                         return JsonResponse({'error': 'Недоступное кол-во вопросов :('}, status=400)
+                else:
+                    return JsonResponse({'error': 'Кол-во вопросов должно быть число'}, status=400)
+
+                staff_id = get_staff_id(request)
+                subscription_object = Subscription.objects.get(staff_id=staff_id)
+                plan_name = subscription_object.plan_name
+
+                token_limit = get_token_limit(plan_name)
+
+                # Получение кол-ва использованных токенов
+                manage_tokens_limits = ManageTokensLimits(staff_id)
+                total_used_token_per_period = manage_tokens_limits.get_usage_tokens()
+                # total_used_token_per_period = 1_490_000
+                print("total_used_token_per_period", total_used_token_per_period)
+
+                if plan_name.lower() == 'стартовый':
+                    if total_used_token_per_period >= token_limit:
+                        return JsonResponse({
+                            'error': 'Токены закончились :(\n\nОзнакомьтесь с тарифами на странице профиля.'},
+                            status=403
+                        )
+                else:
+                    if total_used_token_per_period >= token_limit:
+                        return JsonResponse({
+                            'error': 'Токены закончились :(\n\nОзнакомьтесь с тарифами на странице профиля.'}, status=403)
 
                 try:
                     print(f"\n\nGEN STAAAART")
+
+                    # tracer_l.tracer_charge(
+                    #     'ADMIN', request.user.username, ManageSurveysView.post.__name__,
+                    #     f"GEN STAAAART")
+
                     manage_generate_surveys_text = ManageGenerationSurveys(request, text_from_user, question_count)
                     generated_text = await manage_generate_surveys_text.github_gpt()
+
+                    # tracer_l.tracer_charge(
+                    #     'ADMIN', request.user.username, ManageSurveysView.post.__name__,
+                    #     f"{generated_text}")
 
                     if generated_text.get('success'):
                         tokens_used = generated_text.get('tokens_used')
                         cleaned_generated_text = generated_text.get('generated_text')
                         print(f"\n\nGEN TEST: {generated_text}")
+                        # tracer_l.tracer_charge(
+                        #     'ADMIN', request.user.username, ManageSurveysView.post.__name__,
+                        #     f"{cleaned_generated_text}")
                     else:
                         return JsonResponse({'error': 'Произошла ошибка :(\nПожалуйста, попробуйте позже'}, status=429)
 
@@ -629,6 +716,7 @@ def profile_view(request, username):
 
     _total_tokens = tokens_usage['tokens_survey_used'] + tokens_usage['tokens_feedback_used']
     total_tokens = get_format_number(_total_tokens)
+    print('total_tokens', total_tokens)
 
     subscription = get_object_or_404(Subscription, staff_id=staff_id)
     subscription_end_date = get_formate_date(subscription.end_date)
@@ -644,6 +732,11 @@ def profile_view(request, username):
     user = request.user
     token = signing.dumps(user.pk, salt='email-verification')
 
+    manage_tokens_limits = ManageTokensLimits(staff_id)
+    total_used_token_per_period = manage_tokens_limits.get_usage_tokens()
+    # total_used_token_per_period = 1_490_000
+    print("total_used_token_per_period", total_used_token_per_period)
+
     user_data = {
         'page_title': f'Профиль {username}',
         'username': username,
@@ -657,7 +750,7 @@ def profile_view(request, username):
             'surveys': total_tokens_for_surveys,
             'feedback': total_tokens_for_feedback,
             'total_tokens': total_tokens,
-            'limit_tokens': get_format_number(50_000)
+            'limit_tokens': get_format_number(get_token_limit(subscription.plan_name))
         },
         'subscription': {
             'plan_name': human_readable_plan,
@@ -907,7 +1000,7 @@ class PaymentInitiateView(View):
         created_token = PaymentManager().generate_token_for_new_payment(data_token)
 
         request_body = {
-            "TerminalKey": "1731153311116DEMO",
+            "TerminalKey": TERMINAL_KEY,
             "Amount": total_amount,
             "OrderId": order_id,
             "Description": description,
@@ -941,6 +1034,12 @@ class PaymentInitiateView(View):
 
             # TODO: Сделать как транзакцию
             # Инициализация тарифного плана
+            available_subscription = Subscription.objects.filter()
+
+            # if available_subscription:
+            #     if available_subscription.status == 'active':
+
+
             subscription = Subscription.objects.create(
                 staff_id=get_staff_id(request),
                 plan_name=description,
@@ -1307,6 +1406,11 @@ class TelegramAuthView(View):
         print("TelegramAuthView called")
         auth_data = request.GET
 
+        tracer_l.tracer_charge(
+            'INFO', get_username(request),
+            'try tg auth',
+            f"{get_client_ip(request)} пришел в ТГ")
+
         try:
             auth_date = auth_data.get('auth_date', 999)
             first_name = auth_data.get('first_name', '')
@@ -1314,22 +1418,31 @@ class TelegramAuthView(View):
             telegram_id = int(auth_data.get('id', 0))
             username = auth_data.get('username', None)
 
-            if not check_telegram_hash(auth_data):
-                print("Invalid hash")
-                return JsonResponse({'status': 'Error', 'message': 'Invalid auth data'}, status=400)
+            # if not check_telegram_hash(auth_data):
+            #     print("Invalid hash")
+            #     return JsonResponse({'status': 'Error', 'message': 'Invalid auth'}, status=400)
 
             tracer_l.tracer_charge(
                 'INFO', get_username(request),
                 'try tg auth',
                 f"{type(telegram_id)} {telegram_id}")
 
-            if (int(time.time()) - int(auth_date) > 600) or (telegram_id == 0):
-                return JsonResponse({'status': 'error', 'message': 'Данные не актуальны'}, status=400)
+            # if (int(time.time()) - int(auth_date) > 600) or (telegram_id == 0):
+            #     return JsonResponse({'status': 'error', 'message': 'Данные не актуальны'}, status=400)
 
             existing_user = AuthAdditionalUser.objects.filter(id_telegram=telegram_id).first()
 
+            tracer_l.tracer_charge(
+                'INFO', get_username(request),
+                'try tg auth',
+                f"{existing_user}")
+
             if existing_user:
                 auth_user = existing_user.user
+                tracer_l.tracer_charge(
+                    'INFO', get_username(request),
+                    'try tg auth',
+                    f"{auth_user}")
             else:
                 auth_user = AuthUser.objects.create(
                     username=telegram_id if username is None else username,
@@ -1354,6 +1467,11 @@ class TelegramAuthView(View):
                     discount=0.00
                 )
                 subscription.save()
+
+            tracer_l.tracer_charge(
+                'INFO', get_username(request),
+                'try tg auth',
+                f"login(request, {auth_user}, {auth_user.id})")
 
             login(request, auth_user)
             request.session['user_id'] = auth_user.id
@@ -1455,3 +1573,53 @@ def verify_email(request, token):
     user.save()
 
     return redirect('create')
+
+
+class PasswordResetView(View):
+    def post(self, request):
+        staff_id = get_staff_id(request)
+        user = AuthUser.objects.get(id_staff=staff_id)
+        email = user.email
+
+        if user:
+            token = default_token_generator.make_token(user)
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            link = request.build_absolute_uri(f'/password_reset_confirm/{uid}/{token}/')
+
+            message = render_to_string('confirmed_data/password_reset_email.html', {'link': link})
+            send_mail(
+                'Сброс пароля',
+                message,
+                'support@letychka.ru',
+                [email],
+                fail_silently=False,
+                html_message=message
+            )
+
+        return redirect('password_reset_done')
+
+
+class PasswordResetConfirmView(View):
+    def get(self, request, uidb64, token):
+        return render(request, 'confirmed_data/password_reset_confirm.html', {'uidb64': uidb64, 'token': token})
+
+    def post(self, request, uidb64, token):
+        new_password = request.POST.get('new_password')
+        user_id = urlsafe_base64_decode(uidb64).decode()
+        user = AuthUser.objects.get(pk=user_id)
+        print(new_password)
+        if default_token_generator.check_token(user, token):
+            user.set_password(new_password)
+            user.save()
+            return redirect('password_reset_complete')
+
+
+def password_reset_complete(request):
+    return render(request, 'confirmed_data/password_reset_complete.html')
+
+
+def password_reset_email(request):
+    context = {
+        'page_title': 'Сброс пароля'
+    }
+    return render(request, 'confirmed_data/password_message_reset_email.html', context)

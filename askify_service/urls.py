@@ -42,4 +42,9 @@ urlpatterns = [
     path('unblock-ip/<str:ip_address>/', unblock_by_ip, name='unblock_ip'),
 
     path('verify-email/<str:token>/', verify_email, name='verify_email'),
+
+    path('password_reset/', PasswordResetView.as_view(), name='password_reset'),
+    path('password_reset_confirm/<uidb64>/<token>/', PasswordResetConfirmView.as_view(), name='password_reset_confirm'),
+    path('password_reset_done/', password_reset_email, name='password_reset_done'),
+    path('password_reset_complete/', password_reset_complete, name='password_reset_complete'),
 ]
