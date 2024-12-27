@@ -116,6 +116,10 @@ input:hover, button:hover {
     font-size: 16px;
 }
 
+#referral-link {
+    text-align: center;
+}
+
 input, button, .registration-form p, #referral-link a {
     font-family: 'Unbounded Medium';
     border-radius: 12px;
@@ -125,7 +129,7 @@ input, button, .registration-form p, #referral-link a {
     transition: all 0.25s ease;
 }
 
-input, .registration-form p input, .tg-auth {
+input, .registration-form p input {
     background-color: #1A1A1A;
     color: #DEDEDE;
     border: 2px solid transparent;
@@ -185,7 +189,10 @@ button:hover {
 }
 
 .tg-auth {
-    padding: 8px 30px;
+    background-color: #24A1DE;
+    display: flex;
+    justify-content: center;
+    border-radius: 24px;
 }
 .tg-auth div {
     display: flex;
@@ -203,11 +210,15 @@ button:hover {
     display: flex;
     margin: 20px 40px;
     padding: 10px 30px;
-    background-color: #18171a;
+    background-color: #24A1DE;
     text-align: center;
     align-items: center;
     color: #e8e7f1;
     justify-content: center;
+    text-decoration: none;
+}
+#referral-link a:hover {
+    text-decoration: underline;
 }
 
 .enter-phone-container {

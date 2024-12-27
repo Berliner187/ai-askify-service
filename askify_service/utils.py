@@ -237,7 +237,7 @@ def get_username(request):
 
 
 def init_free_subscription():
-    plan_name = 'Стартовый план'
+    plan_name = 'Стартовый'
     end_date = datetime.now() + timedelta(days=7)
     status = 'active'
     billing_cycle = 'weakly'

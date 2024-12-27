@@ -49,18 +49,6 @@
         </div>
     </div> -->
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const navigation = document.querySelector('.navigation');
-            const authButtons = document.querySelector('.auth-buttons');
-            const isAuthenticated = authButtons.getAttribute('data-authenticated') === 'true';
-    
-            if (isAuthenticated) {
-                authButtons.style.display = 'none';
-                navigation.style.display = 'none';
-            }
-        });
-    </script>
 
     <script src="{% static 'js/nav.js' %}"></script>
 

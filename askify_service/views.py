@@ -33,8 +33,10 @@ from .forms import *
 from .constants import *
 from .tracer import *
 
+
 from askify_app.settings import DEBUG, BASE_DIR
 from askify_app.middleware import check_blocked, subscription_required
+
 
 import openai
 import markdown
@@ -42,7 +44,9 @@ import requests
 import aiofiles
 import PyPDF2
 
+
 from datetime import datetime
+import base64
 import asyncio
 import time
 import hashlib
@@ -189,9 +193,9 @@ class ManageSurveysView(View):
                 text_from_user = request_from_user['text']
 
                 print(question_count, text_from_user)
-                # tracer_l.tracer_charge(
-                #     'ADMIN', request.user.username, ManageSurveysView.post.__name__,
-                #     f"{question_count} {text_from_user}")
+                tracer_l.tracer_charge(
+                    'INFO', request.user.username, ManageSurveysView.post.__name__,
+                    f"{question_count} {text_from_user}")
 
                 if question_count.isdigit():
                     if int(question_count) > 10 or int(question_count) < 0:
@@ -286,7 +290,7 @@ class ManageSurveysView(View):
                 except Exception as fail:
                     user = await sync_to_async(str)(request.user.username)
                     tracer_l.tracer_charge(
-                        'ERROR', user, ManageSurveysView.post.__name__,
+                        'INFO', user, ManageSurveysView.post.__name__,
                         "error in save to DB", f"{fail}")
                     return JsonResponse(
                         {'error': 'Ошибочка :(\n\nПожалуйста, попробуйте позже'}, status=400)
@@ -741,8 +745,8 @@ def profile_view(request, username):
         'page_title': f'Профиль {username}',
         'username': username,
         'email': 'E-mail: ' + user.email if user.email is not None else '',
-        'password': 'Пароль: *********' if user.password is not None else '',
-        'phone': 'Телефон: ' if user.phone is not None else '',
+        'password': f'Пароль: *********' if user.password != '' else '',
+        'phone': 'Телефон: ' + user.phone if user.phone is not None else '',
         'date_join': date_join,
         'date_last_login': date_last_login,
         'statistics': statistics,
@@ -1027,29 +1031,41 @@ class PaymentInitiateView(View):
         print()
 
         if response_data.get('Success'):
-
-            subscription_obj = Subscription.objects.filter(staff_id=get_staff_id(request))
-            if subscription_obj.exists():
-                subscription_obj.delete()
-
             # TODO: Сделать как транзакцию
             # Инициализация тарифного плана
-            available_subscription = Subscription.objects.filter()
+            subscription_obj = Subscription.objects.filter(staff_id=get_staff_id(request)).first()
 
-            # if available_subscription:
-            #     if available_subscription.status == 'active':
+            if subscription_obj and subscription_obj.status == 'active':
+                remaining_days = (subscription_obj.end_date - timezone.now()).days
 
+                if remaining_days > 30:
+                    return JsonResponse({
+                        'message': 'У вас уже есть активный план\n\n'
+                                   'Напишите на почту support@letychka.ru, если хотите оформить другой план'})
 
-            subscription = Subscription.objects.create(
-                staff_id=get_staff_id(request),
-                plan_name=description,
-                end_date=datetime.now() + timedelta(days=30),
-                status='inactive',
-                billing_cycle='monthly',
-                discount=0.00
-            )
-            subscription.save()
-            # Инициализация оплаты
+                if remaining_days < 30 and subscription_obj.plan_name != 'Стартовый план':
+                    subscription_obj.end_date += timedelta(days=30)
+                    subscription_obj.save()
+                    subscription = subscription_obj
+                else:
+                    subscription = Subscription.objects.create(
+                        staff_id=get_staff_id(request),
+                        plan_name=description,
+                        end_date=datetime.now() + timedelta(days=30),
+                        status='inactive',
+                        billing_cycle='monthly',
+                        discount=0.00
+                    )
+            else:
+                subscription = Subscription.objects.create(
+                    staff_id=get_staff_id(request),
+                    plan_name=description,
+                    end_date=datetime.now() + timedelta(days=30),
+                    status='inactive',
+                    billing_cycle='monthly',
+                    discount=0.00
+                )
+
             new_payment = Payment.objects.create(
                 staff_id=get_staff_id(request),
                 payment_id=response_data.get('PaymentId'),
@@ -1257,7 +1273,11 @@ user_verify_code = {}
 @csrf_exempt
 def confirm_user(request):
     if request.method == 'POST':
-        body = json.loads(request.body)
+        try:
+            body = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({'status': 'error', 'message': 'Invalid JSON'}, status=400)
+
         data = body.get('data')
         data_hash = body.get('data_hash')
 
@@ -1265,41 +1285,63 @@ def confirm_user(request):
             return JsonResponse({'status': 'error', 'message': 'Data integrity check failed'}, status=402)
 
         telegram_user_id = data.get('telegram_user_id')
-        phone_number = data.get('phone_number')
+        phone_number = str(data.get('phone_number'))
         username = data.get('username')
         first_name = data.get('first_name')
-        last_name = data.get('last_name')
+        last_name = data.get('last_name') or ''  # Устанавливаем пустую строку, если None
 
-        additional_auth = AuthAdditionalUser.objects.filter(id_telegram=telegram_user_id).first()
+        # Логируем входящие данные
+        tracer_l.tracer_charge(
+            'ADMIN', get_client_ip(request),
+            'confirm_user',
+            f"Received data: {data}, phone_number: {phone_number}")
 
-        if additional_auth:
-            pass
-        else:
-            new_auth_telegram = AuthAdditionalUser.objects.create(
-                id_telegram=int(telegram_user_id)
-            )
-            new_auth_telegram.save()
+        # Проверяем, есть ли дополнительная аутентификация
+        additional_auth = AuthAdditionalUser.objects.filter(id_telegram=int(telegram_user_id)).first()
 
+        # Обновляем или создаем пользователя
         user, created = AuthUser.objects.update_or_create(
-            username=username,
+            phone=phone_number,
             defaults={
                 'confirmed_user': True,
                 'first_name': first_name,
                 'last_name': last_name,
-                'phone': phone_number
+                'username': username if username is not None else telegram_user_id,
+                'email': None  # Установите значение по умолчанию, если email не передан
             }
         )
 
-        plan_name, end_date, status, billing_cycle, discount = init_free_subscription()
-        subscription = Subscription.objects.create(
-            staff_id=user.id_staff,
-            plan_name=plan_name,
-            end_date=end_date,
-            status=status,
-            billing_cycle=billing_cycle,
-            discount=0.00
-        )
-        subscription.save()
+        # Логируем результат обновления или создания пользователя
+        tracer_l.tracer_charge(
+            'ADMIN', get_client_ip(request),
+            'confirm_user',
+            f"User updated: {user.id}, Created: {created}, First Name: {user.first_name}, Last Name: {user.last_name}")
+
+        # Если дополнительная аутентификация не найдена, создаем её
+        if not additional_auth:
+            new_auth_telegram = AuthAdditionalUser.objects.create(
+                user=user,
+                id_telegram=int(telegram_user_id),
+            )
+            new_auth_telegram.save()
+
+            # Логируем создание дополнительной аутентификации
+            tracer_l.tracer_charge(
+                'ADMIN', get_client_ip(request),
+                'confirm_user',
+                f"Created additional auth for user: {user.id}")
+
+            # Инициализация подписки
+            plan_name, end_date, status, billing_cycle, discount = init_free_subscription()
+            subscription = Subscription.objects.create(
+                staff_id=user.id_staff,
+                plan_name=plan_name,
+                end_date=end_date,
+                status=status,
+                billing_cycle=billing_cycle,
+                discount=0.00
+            )
+            subscription.save()
 
         login(request, user)
         request.session['user_id'] = user.id
@@ -1317,37 +1359,32 @@ def phone_number_view(request):
 
         if form.is_valid():
             phone_number = form.cleaned_data['phone_number']
-            print(phone_number)
 
             user = AuthUser.objects.filter(phone=phone_number).first()
 
-            if user and (user.confirmed_user is True):
-                code = random.randint(1000, 9999)
+            new_auth_telegram = AuthAdditionalUser.objects.filter(user=user).first()
+
+            if new_auth_telegram and (user.confirmed_user is True):
+                code = random.randint(10000, 99999)
                 user_verify_code[user.phone] = code
 
                 telegram_message_manager = ManageTelegramMessages()
-                telegram_message_manager.send_code_to_user(user.id, code)
+                telegram_message_manager.send_code_to_user(new_auth_telegram.id_telegram, code)
+
+                tracer_l.tracer_charge(
+                    'ADMIN', get_client_ip(request),
+                    'phone_number_view',
+                    f"phone_number_view: {user.phone} {user.id}, {code}")
 
                 request.session['phone_number'] = phone_number
                 return JsonResponse({'status': 'success', 'message': 'Код отправлен'})
             else:
-                if not user:
-                    new_user = AuthUser.objects.create(
-                        username=generate_payment_id(),
-                        phone=phone_number
-                    )
-                    new_user.save()
-                    referral_code = generate_referral_code(new_user.id)
-                else:
-                    referral_code = generate_referral_code(user.id)
-
-                referral_link = f"https://t.me/LetychkaRobot?start={referral_code}"
+                referral_link = f"https://t.me/LetychkaRobot?start=login"
 
                 return JsonResponse({
                     'status': 'success',
-                    'message': 'Пользователь создан',
+                    'message': 'phone init',
                     'referral_link': referral_link,
-                    'referral_code': referral_code
                 })
 
     else:
@@ -1367,17 +1404,27 @@ def verify_code_view(request):
         verification_code = request.POST.get('verification_code')
         phone_number = request.session.get('phone_number')
 
-        user = get_object_or_404(AuthUser, phone=phone_number)
+        tracer_l.tracer_charge(
+            'ADMIN', get_client_ip(request),
+            'verify_code_view',
+            f"1 verify_code_view: {phone_number}")
 
-        print(request.user.is_authenticated)
-        if request.user.is_authenticated:
-            print(f"Пользователь {request.user.username} успешно залогинен.")
+        user = AuthUser.objects.filter(phone=phone_number).first()
+
+        tracer_l.tracer_charge(
+            'ADMIN', get_client_ip(request),
+            'phone_number_view',
+            f"2 verify_code_view: {user.id} {user.username}")
 
         if user:
             if user_verify_code.get(user.phone) == int(verification_code):
+                tracer_l.tracer_charge(
+                    'ADMIN', get_client_ip(request),
+                    'phone_number_view',
+                    f"3 verify_code_view: {user.id} {user.username}")
+
                 login(request, user)
                 request.session['user_id'] = user.id
-                print(request.session.get('user_id'))
 
                 return redirect('create')
                 # return JsonResponse({'status': 'success', 'redirect_url': '/create'})
@@ -1385,8 +1432,17 @@ def verify_code_view(request):
             else:
                 return JsonResponse({'status': 'error', 'message': 'Неверный код'})
         else:
+            tracer_l.tracer_charge(
+                'ADMIN', get_client_ip(request),
+                'phone_number_view',
+                f"2 verify_code_view: Пользователь не найден")
+
             return JsonResponse({'status': 'error', 'message': 'Пользователь не найден'})
 
+    tracer_l.tracer_charge(
+        'ADMIN', get_client_ip(request),
+        'phone_number_view',
+        f"2 verify_code_view: {get_username(request)} Неверный запрос")
     return JsonResponse({'status': 'error', 'message': 'Неверный запрос'})
 
 
@@ -1402,33 +1458,33 @@ def check_telegram_hash(auth_data):
 
 
 class TelegramAuthView(View):
-    def get(self, request):
+    def post(self, request):
         print("TelegramAuthView called")
-        auth_data = request.GET
+        auth_data = request.POST
 
         tracer_l.tracer_charge(
-            'INFO', get_username(request),
+            'INFO', get_client_ip(request),
             'try tg auth',
-            f"{get_client_ip(request)} пришел в ТГ")
+            f"request.POST: пришел в ТГ")
 
         try:
             auth_date = auth_data.get('auth_date', 999)
             first_name = auth_data.get('first_name', '')
             last_name = auth_data.get('last_name', '')
-            telegram_id = int(auth_data.get('id', 0))
+            telegram_id = auth_data.get('id', 0)
             username = auth_data.get('username', None)
-
-            # if not check_telegram_hash(auth_data):
-            #     print("Invalid hash")
-            #     return JsonResponse({'status': 'Error', 'message': 'Invalid auth'}, status=400)
 
             tracer_l.tracer_charge(
                 'INFO', get_username(request),
                 'try tg auth',
-                f"{type(telegram_id)} {telegram_id}")
+                f"{type(telegram_id)} {telegram_id}, auth_data: {auth_data}")
 
-            # if (int(time.time()) - int(auth_date) > 600) or (telegram_id == 0):
-            #     return JsonResponse({'status': 'error', 'message': 'Данные не актуальны'}, status=400)
+            if not check_telegram_hash(auth_data):
+                print("Invalid hash")
+                return JsonResponse({'status': 'Error', 'message': 'Invalid auth'}, status=400)
+
+            if (int(time.time()) - int(auth_date) > 600) or (telegram_id == 0):
+                return JsonResponse({'status': 'error', 'message': 'Invalid data'}, status=400)
 
             existing_user = AuthAdditionalUser.objects.filter(id_telegram=telegram_id).first()
 
@@ -1444,8 +1500,100 @@ class TelegramAuthView(View):
                     'try tg auth',
                     f"{auth_user}")
             else:
+                tracer_l.tracer_charge(
+                    'INFO', get_username(request),
+                    'try tg auth',
+                    f"not exist{existing_user}")
+
                 auth_user = AuthUser.objects.create(
-                    username=telegram_id if username is None else username,
+                    username=str(telegram_id) if username is None else username,
+                    first_name=first_name,
+                    last_name=last_name
+                )
+                auth_user.save()
+
+                telegram_auth = AuthAdditionalUser.objects.create(
+                    user=auth_user,
+                    id_telegram=telegram_id
+                )
+                telegram_auth.save()
+
+                plan_name, end_date, status, billing_cycle, discount = init_free_subscription()
+                subscription = Subscription.objects.create(
+                    staff_id=auth_user.id_staff,
+                    plan_name=plan_name,
+                    end_date=end_date,
+                    status=status,
+                    billing_cycle=billing_cycle,
+                    discount=0.00
+                )
+                subscription.save()
+
+            tracer_l.tracer_charge(
+                'INFO', get_username(request),
+                'try tg auth',
+                f"login(request, {auth_user}, {auth_user.id})")
+
+            login(request, auth_user)
+            request.session['user_id'] = auth_user.id
+
+            tracer_l.tracer_charge(
+                'ADMIN', username, 'TelegramAuthView', f"user has been login in")
+
+            return redirect('create')
+        except Exception as fail:
+            tracer_l.tracer_charge('ERROR', f"{get_client_ip(request)}", 'error in tg auth', fail)
+            return JsonResponse({'status': 'error', 'message': 'Internal server error'}, status=500)
+
+    def get(self, request):
+        print("TelegramAuthView called")
+        auth_data = request.GET
+
+        tracer_l.tracer_charge(
+            'INFO', get_client_ip(request),
+            'try tg auth',
+            f"request.GET: пришел в ТГ")
+
+        try:
+            auth_date = auth_data.get('auth_date', 999)
+            first_name = auth_data.get('first_name', '')
+            last_name = auth_data.get('last_name', '')
+            telegram_id = auth_data.get('id', 0)
+            username = auth_data.get('username', None)
+
+            tracer_l.tracer_charge(
+                'INFO', get_username(request),
+                'try tg auth',
+                f"{type(telegram_id)} {telegram_id}, auth_data: {auth_data}")
+
+            if not check_telegram_hash(auth_data):
+                print("Invalid hash")
+                return JsonResponse({'status': 'Error', 'message': 'Invalid auth'}, status=400)
+
+            if (int(time.time()) - int(auth_date) > 600) or (telegram_id == 0):
+                return JsonResponse({'status': 'error', 'message': 'Invalid data'}, status=400)
+
+            existing_user = AuthAdditionalUser.objects.filter(id_telegram=telegram_id).first()
+
+            tracer_l.tracer_charge(
+                'INFO', get_username(request),
+                'try tg auth',
+                f"{existing_user}")
+
+            if existing_user:
+                auth_user = existing_user.user
+                tracer_l.tracer_charge(
+                    'INFO', get_username(request),
+                    'try tg auth',
+                    f"{auth_user}")
+            else:
+                tracer_l.tracer_charge(
+                    'INFO', get_username(request),
+                    'try tg auth',
+                    f"not exist{existing_user}")
+
+                auth_user = AuthUser.objects.create(
+                    username=str(telegram_id) if username is None else username,
                     first_name=first_name,
                     last_name=last_name
                 )

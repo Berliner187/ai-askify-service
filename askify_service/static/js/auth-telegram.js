@@ -16,7 +16,7 @@ async function submitForm(event) {
         if (result.status === 'success') {
             if (result.referral_link) {
                 document.getElementById('referral-link').innerHTML = 
-                    `Перейдите по ссылке ниже для регистрации <a href="${result.referral_link}" target="_blank">${result.referral_code}</a>`;
+                    `Подтвердите номер телефона в боте <a href="${result.referral_link}" target="_blank">НАЖМИ СЮДА</a>`;
             } else {
                 document.getElementById('code-input').style.display = 'block';
                 document.getElementById('phone-input').style.display = 'none';

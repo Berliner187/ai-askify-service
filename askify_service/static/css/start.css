@@ -77,9 +77,6 @@ p {
 .auth, .auth a {
     transition: .25s;
 }
-.auth:active {
-    transform: scale(0.9);
-}
 .auth {
     display: flex;
     align-items: center;
@@ -143,6 +140,8 @@ p {
 
 .preview-block {
     margin: 0 auto;
+    width: 90%;
+    max-width: 1100px;
     position: relative;
     text-align: center;
 }
@@ -160,6 +159,7 @@ p {
     position: relative;
     z-index: 2;
     text-align: center;
+    user-select: none;
 }
 
 .main-title {
@@ -193,8 +193,8 @@ p {
     box-shadow: 0 2px 32px rgba(90, 102, 235, .5);
 }
 .cta-button:active {
-    transform: scale(0.9);
-    font-size: 20px;
+    transform: scale(0.92);
+    /* font-size: 20px; */
 }
 
 .cta-button a {
@@ -305,6 +305,50 @@ p {
     text-align: left;
 }
 
+.auth-buttons {
+    display: flex;
+    justify-content: space-between;
+}
+
+.auth-buttons .btn {
+    transition: background-color 0.3s;
+}
+
+.button-medium {
+    display: flex;
+    flex-wrap: nowrap;
+    background-color: rgba(40, 39, 47, .5);
+    width: fit-content;
+    transition: .25s;
+    border-radius: 8px;
+    padding:  0px 10px 0px 10px;
+    margin-left: 10px;
+    justify-content: space-between;
+    align-items: center;
+}
+.button-medium:active {
+    transform: scale(0.92);
+}
+.button-medium div {
+    display: flex;
+    align-items: center;
+}
+.button-medium div p {
+    text-decoration: none;
+    color: #d5d3db;
+    font-size: .8em;
+    padding-left: 4px;
+    padding-right: 4px;
+}
+.button-medium div a {
+    text-decoration: none;
+}
+
+.button-accent {
+    background-color: #616DF0;
+    color: #d5d3db;
+}
+
 .amount {
     font-size: 36px;
     margin-right: 5px;
@@ -327,11 +371,10 @@ p {
     opacity: .75;
 }
 .select-plan:active {
-    transform: scale(.96);
+    transform: scale(.92);
 }
 
 .select-plan-accent {
-    background-color: #EFEEF4;
     color: #5A66EB;
 }
 
@@ -371,6 +414,9 @@ p {
     }
 
     .cta-button {
+        margin-top: 20px;
+        width: 90%;
+        max-width: 250px;
         padding: 10px 20px;
         font-size: 16px;
     }
@@ -396,7 +442,8 @@ p {
     }
 
     .sub-title {
-        font-size: 0.4em;
+        margin: 30px 0;
+        font-size: 16px;
     }
 
     .cta-button {
@@ -424,6 +471,6 @@ p {
         font-size: 14px;
     }
     .blocks li {
-        font-size: 12px;
+        font-size: 14px;
     }
 }

@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Летучка: Создание Тестов на Основе ИИ</title>
-    <meta name="description" content="Создавайте опросы и тесты легко и быстро, загружая текстовые данные. Используйте мощь нейросетей для анализа и генерации вопросов.">
-    <meta name="keywords" content="создание тестов ИИ, генерация опросов, персонализированные тесты, автоматизированные опросы, ИИ для образования, опросы для студентов, анализ тестов, быстрое создание опросов, инструменты тестирования, обратная связь по тестам, тесты для преподавателей, нейросети в образовании, онлайн-тестирование, умные тесты, создание опросов для HR">
+    <title>Летучка: Создать тест за пару кликов с нейросетью</title>
+    <meta name="description" content="Летучка — ваш помощник в подготовке к экзаменам. Создавайте тесты и квизы на основе учебных материалов с помощью ИИ. Быстро, удобно и эффективно!">
+    <meta name="keywords" content="создать тест, тест по теме текста, генерация тестов, создать тест онлайн, создать тест онлайн с результатами, подготовка к экзаменам, как сделать тест, обратная связь от нейросети">
     <meta name="author" content="Летучка/Letychka by Kozak Developer">
-    <meta property="og:title" content="Создавайте опросы за считанные секунды">
-    <meta property="og:description" content="Создавайте персонализированные опросы на основе ваших учебных материалов с помощью ИИ. Получайте обратную связь и отслеживайте прогресс.">
+    <meta property="og:title" content="Летучка: Создавайте тесты и квизы с ИИ за считанные секунды">
+    <meta property="og:description" content="Используйте ИИ для создания персонализированных тестов на основе ваших учебных материалов. Быстрая подготовка к экзаменам и мгновенная обратная связь!">
     <meta property="og:image" content="https://cdn.dribbble.com/userupload/17460222/file/original-7dfe570b184fb8730551cd0bc365c60f.png?resize=1504x1007">
     <meta property="og:url" content="https://letychka.ru">
     <meta property="og:type" content="website">
@@ -63,7 +63,22 @@
                 {% if username != 0 %}
                     <a href="/profile/{{ username }}">{{ username }}</a>
                 {% else %}
-                    <a href="{% url 'login' %}">Войти</a>
+                    <div class="auth-buttons">
+                        <div class="button-medium">
+                            <a href="{% url 'login' %}">
+                                <div>
+                                    <p>Вход</p>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="button-medium button-accent reg-button">
+                            <a href="{% url 'register' %}">
+                                <div>
+                                    <p>Регистрация</p>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
                 {% endif %}
                 <!-- <div class="burger" onclick="toggleMenu()">☰</div> -->
             </div>
@@ -80,10 +95,10 @@
             
             <div class="preview-block">
                 <img src="{% static 'img/first-view.png' %}" alt="Фон сетка" class="background-image">
-                <h1 class="main-title">Создавайте опросы<br>за считанные секунды</h1>
-                <p class="sub-title">Составляйте опросы на основе<br>вашего учебного материала</p>
+                <h1 class="main-title">Создавайте тесты<br>за считанные секунды</h1>
+                <p class="sub-title">Составляйте тесты на основе<br> учебного материала</p>
                 <div class="cta-button">
-                    <a href="{% url 'create' %}">Начать сейчас</a>
+                    <a href="{% url 'create' %}">НАЧАТЬ БЕСПЛАТНО</a>
                 </div>
             </div>
 
@@ -177,8 +192,9 @@
                     </div>
                     <ul>
                         <li>Доступ к основным функциям</li>
-                        <li>Персонализированные тесты</li>
+                        <li>Генерация тестов по запросу</li>
                         <li>Обратная связь от ИИ</li>
+                        <li>Доступ на 7 дней</li>
                     </ul>
                     <button class="select-plan">
                         <a href="/payment/">ОФОРМИТЬ ДОСТУП</a></button>
@@ -188,15 +204,18 @@
                     <div class="for-who for-who-accent">
                         <p>ПОПУЛЯРНЫЙ</p>
                     </div>
-                    <h3>Базовый</h3>
+                    <h3>Стандартный</h3>
                     <div class="price">
-                        <span class="amount">190</span>
+                        <span class="amount">220</span>
                         <span class="currency">₽</span>
                     </div>
                     <ul>
-                        <li>Доступ к основным функциям</li>
-                        <li>Персонализированные тесты</li>
-                        <li>Обратная связь от ИИ</li>
+                        <li>Все функции Начального плана</li>
+                        <li>Генерация тестов по запросу</li>
+                        <li>Скачивание тестов в PDF</li>
+                        <li>Доступ с 2-х устройств</li>
+                        <li>50 000 токенов в сутки</li>
+                        <li>Доступ на 30 дней</li>
                     </ul>
                     
                     <button class="select-plan select-plan-accent">
@@ -215,12 +234,34 @@
                     </div>
                     <ul>
                         <li>Все функции Стандартного плана</li>
-                        <li>Приоритетная поддержка</li>
-                        <li>Доступ к эксклюзивным материалам</li>
+                        <li>Загрузка своих материалов в формате файлов</li>
+                        <li>Расширенная обратная связь от ИИ</li>
+                        <li>500 000 токенов в сутки</li>
+                        <li>Доступ на 30 дней</li>
                     </ul>
                     <button class="select-plan">
-                        <a href="/payment/"></a>ОФОРМИТЬ ДОСТУП</button>
+                        <a href="/payment/">ОФОРМИТЬ ДОСТУП</a></button>
                 </div>
+
+                <div class="plan">
+                    <div class="for-who">
+                        <p>ПОЛНЫЙ ДОСТУП</p>
+                    </div>
+                    <h3>Ультра</h3>
+                    <div class="price">
+                        <span class="amount">990</span>
+                        <span class="currency">₽</span>
+                    </div>
+                    <ul>
+                        <li>Все функции Премиум плана</li>
+                        <li>Доступ с 3-х устройств</li>
+                        <li>Без ограничений на токены</li>
+                        <li>Доступ на 30 дней</li>
+                    </ul>
+                    <button class="select-plan">
+                        <a href="/payment/">ОФОРМИТЬ ДОСТУП</a></button>
+                </div>
+
             </div>
         </section>
         

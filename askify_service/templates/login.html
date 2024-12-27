@@ -10,7 +10,6 @@
     <link rel="stylesheet" href="{% static 'css/loader.css' %}">
     <link rel="stylesheet" href="{% static 'css/auth.css' %}">
     <link rel="stylesheet" href="{% static 'css/footer.css' %}">
-    <script src="https://unpkg.com/@vkid/sdk@<3.0.0/dist-sdk/umd/index.js"></script>
 </head>
 <body>
     <script src="{% static 'js/second-loader.js' %}"></script>
@@ -29,23 +28,22 @@
 
             <section class="content-container">
                 <h2>Вход</h2>
-                
-                <!-- <div class="step-block tg-auth"> -->
-                    <!-- <a href="{% url 'auth_telegram' %}">
+
+                <div class="step-block tg-auth">
+                    <a href="{% url 'auth_telegram' %}">
                       <div>
                           <img src="{% static 'img/tg-logo.webp' %}" alt="">
                           <p>Войти с Telegram</p>
                       </div>
-                    </a> -->
-                <!-- </div> -->
+                    </a>
+                </div>
                  <!-- <div class="container">
-                    <script async src="https://telegram.org/js/telegram-widget.js?22" data-telegram-login="LetychkaRobot" data-size="large" data-userpic="false" data-radius="16" data-auth-url="https://letychka.ru:443/auth/telegram/" data-request-access="write"></script>
-                    <script src="https://yastatic.net/s3/passport-sdk/autofill/v1/sdk-suggest-with-polyfills-latest.js"></script>
-                 </div>
+                    <script async src="https://telegram.org/js/telegram-widget.js?22" data-telegram-login="LetychkaRobot" data-size="large" data-userpic="false" data-radius="16" data-auth-url="https://letychka.ru/auth/telegram/" data-request-access="write"></script>
+                 </div> -->
 
                 <div class="already-exist">
                   <p>или</p>
-                </div> -->
+                </div>
 
                 <form id="loginForm" method="post">
                     {% csrf_token %}
@@ -57,9 +55,9 @@
                 <div class="already-exist">
                     <p>Нет аккаунта? <a href="{% url 'register' %}">Зарегистрироваться</a></p>
                 </div>
-                <div class="already-exist">
+                <!-- <div class="already-exist">
                     <p><a href="{% url 'register' %}">Забыли пароль?</a></p>
-                </div>
+                </div> -->
             </section>
 
         </div>

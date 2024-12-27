@@ -695,21 +695,6 @@ hr {
     width: 100%;
 }
 
-.auth-buttons {
-    flex: 1;
-    text-align: right; 
-}
-
-.auth-buttons .btn {
-    text-decoration: none;
-    color: white;
-    background-color: #4A90E2;
-    padding: 10px 15px;
-    border-radius: 5px;
-    margin-left: 10px;
-    transition: background-color 0.3s;
-}
-
 
 /* Страница профиля */
 .profile ul, .profile p {

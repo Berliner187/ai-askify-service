@@ -17,8 +17,8 @@ async function submitText() {
 
     loadingIndicator.style.display = 'block';
     blockGenerate.style.opacity = 0;
-    dropArea.style.opacity = 0;
-    uploadContainer.style.opacity = 0;
+    // dropArea.style.opacity = 0;
+    // uploadContainer.style.opacity = 0;
 
     try {
         console.log('Sending text:', text);
@@ -54,7 +54,7 @@ async function submitText() {
         loadingIndicator.style.display = 'none';
         blockGenerate.style.opacity = 1;
         dropArea.style.opacity = 1;
-        uploadContainer.style.opacity = 1;
+        // uploadContainer.style.opacity = 1;
     }
 }
 
