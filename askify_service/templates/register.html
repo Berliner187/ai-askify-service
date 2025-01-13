@@ -26,6 +26,20 @@
         
             <section class="content-container">
                 <h2>Регистрация</h2>
+
+                <div >
+                    <a href="{% url 'auth_telegram' %}" class="step-block tg-auth">
+                      <div>
+                          <img src="{% static 'img/tg-logo.webp' %}" alt="">
+                          <p>Войти с Telegram</p>
+                      </div>
+                    </a>
+                </div>
+                
+                <div class="already-exist">
+                  <p>или</p>
+                </div>
+
                 <form id="registration-form" method="post" class="registration-form">
                     {% csrf_token %}
                     <p>

@@ -19,16 +19,25 @@
         </div>
     
         <nav id="nav">
-            <ul>
-                {% if subscription_level < 1 %}
-                    <li><a href="{% url 'payment' %}">Купить премиум 💎</a></li>
-                {% endif %}
-                <li><a href="/profile/{{ username }}">Перейти в профиль</a></li>
-                <li><a href="{% url 'history' %}">История тестов</a></li>
-                <li><a href="{% url 'create' %}">Создать тест</a></li>
-                <hr>
-                <li><a href="{% url 'logout' %}">Выйти</a></li>
-            </ul>
+            {% if username %}
+                <ul>
+                    {% if subscription_level < 1 %}
+                        <li><a href="{% url 'payment' %}">Купить премиум 💎</a></li>
+                    {% endif %}
+                    <li><a href="/profile/{{ username }}">Перейти в профиль</a></li>
+                    <li><a href="{% url 'history' %}">История тестов</a></li>
+                    <li><a href="{% url 'create' %}">Создать тест</a></li>
+                    <hr>
+                    <li><a href="{% url 'logout' %}">Выйти</a></li>
+                </ul>
+            {% else %}
+                <ul>
+                    <li><a href="/docs/privacy-policy">Политика конфиденциальности</a></li>
+                    <li><a href="/docs/user-agreement">Пользовательское соглашение</a></li>
+                    <hr>
+                    <li><a href="/">На главную</a></li>
+                </ul>
+            {% endif %}
         </nav>
     </div>
     

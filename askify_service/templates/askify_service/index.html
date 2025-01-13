@@ -9,7 +9,7 @@
     <meta name="author" content="Летучка/Letychka by Kozak Developer">
     <meta property="og:title" content="Летучка: Создавайте тесты и квизы с ИИ за считанные секунды">
     <meta property="og:description" content="Используйте ИИ для создания персонализированных тестов на основе ваших учебных материалов. Быстрая подготовка к экзаменам и мгновенная обратная связь!">
-    <meta property="og:image" content="https://cdn.dribbble.com/userupload/17460222/file/original-7dfe570b184fb8730551cd0bc365c60f.png?resize=1504x1007">
+    <meta property="og:image" content="https://letychka.ru/static/img/letychka-banner.png">
     <meta property="og:url" content="https://letychka.ru">
     <meta property="og:type" content="website">
     <meta property="og:title" content="Летучка: Создавайте тесты с ИИ за считанные секунды">
@@ -42,6 +42,22 @@
     </script>
     <noscript><div><img src="https://mc.yandex.ru/watch/98823704" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
     <!-- /Yandex.Metrika counter -->
+
+    <script type="application/ld+json">
+        {
+          "@context": "https://schema.org",
+          "@type": "Service",
+          "serviceType": "Создание тестов",
+          "provider": {
+            "@type": "Organization",
+            "name": "Летучка",
+            "url": "https://letychka.ru",
+            "logo": "https://letychka.ru/static/img/favicon.ico"
+          },
+          "description": "Летучка — сервис для создания тестов и квизов на основе учебных материалов с помощью ИИ."
+        }
+    </script>
+    
 </head>
 <body>
     <script src="{% static 'js/second-loader.js' %}"></script>
@@ -57,7 +73,7 @@
             <nav class="nav">
                 <a href="#start">Начало</a>
                 <a href="#advantages">Преимущества</a>
-                <a href="#faq">ЧаВо</a>
+                <a href="#plans">Тарифы</a>
             </nav>
             <div class="auth">
                 {% if username != 0 %}
@@ -154,7 +170,7 @@
             </div>
         </section>
 
-        <section class="advantages">
+        <section class="advantages" id="advantages">
             <div class="content">
                 <h2>Преимущества</h2>
                 <p>Вот ряд преимуществ, благодаря которым опыт в использовании будет лучшим</p>
@@ -175,7 +191,7 @@
             </div>
         </section>
 
-        <section class="pricing-plans">
+        <section class="pricing-plans" id="plans">
             <div class="content">
                 <h2>Тарифные планы</h2>
                 <p>Выберите план, который подходит именно вам.</p>
@@ -197,7 +213,7 @@
                         <li>Доступ на 7 дней</li>
                     </ul>
                     <button class="select-plan">
-                        <a href="/payment/">ОФОРМИТЬ ДОСТУП</a></button>
+                        <a href="/create/">НАЧАТЬ БЕСПЛАТНО</a></button>
                 </div>
 
                 <div class="plan plan-accent">

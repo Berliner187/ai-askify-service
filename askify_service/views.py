@@ -1288,7 +1288,7 @@ def confirm_user(request):
         phone_number = str(data.get('phone_number'))
         username = data.get('username')
         first_name = data.get('first_name')
-        last_name = data.get('last_name') or ''  # Устанавливаем пустую строку, если None
+        last_name = data.get('last_name') or ''
 
         # Логируем входящие данные
         tracer_l.tracer_charge(
@@ -1374,7 +1374,7 @@ def phone_number_view(request):
                 tracer_l.tracer_charge(
                     'ADMIN', get_client_ip(request),
                     'phone_number_view',
-                    f"phone_number_view: {user.phone} {user.id}, {code}")
+                    f"phone_number_view: {user.id}, {code}")
 
                 request.session['phone_number'] = phone_number
                 return JsonResponse({'status': 'success', 'message': 'Код отправлен'})
@@ -1403,11 +1403,6 @@ def verify_code_view(request):
     if request.method == 'POST':
         verification_code = request.POST.get('verification_code')
         phone_number = request.session.get('phone_number')
-
-        tracer_l.tracer_charge(
-            'ADMIN', get_client_ip(request),
-            'verify_code_view',
-            f"1 verify_code_view: {phone_number}")
 
         user = AuthUser.objects.filter(phone=phone_number).first()
 

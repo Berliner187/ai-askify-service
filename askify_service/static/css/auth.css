@@ -179,6 +179,13 @@ button:hover {
     margin: 16px 0 ;
     color: #e8e7f1;
     background-color: #18171a;
+    text-decoration: none;
+    transition-duration: .25s;
+}
+
+.step-block:hover {
+    color: #18171a;
+    background-color: #e8e7f1;
 }
 
 
@@ -226,10 +233,10 @@ button:hover {
     min-width: 200px;
     max-width: 500px;
     margin: 0 auto;
-    margin-top: 20%;
+    margin-top: 15%;
     display: flex;
     flex-direction: column;
-    padding: 10px;
+    padding: 16px;
     background-color: rgba(44, 41, 53, 0.3);
     border-radius: 24px;
     backdrop-filter: blur(12px);
@@ -260,12 +267,7 @@ button:hover {
     height:max-content;
     border-radius: 50%;
 }
-.step-block p {
-    color: #e8e7f1;
-}
-.step-block .accent {
-    color: #18171a;
-}
+
 
 .white, .dark {
     background-color: #DEDEDE;
@@ -305,6 +307,12 @@ button:hover {
 .alert.show {
     opacity: 1;
     transform: translateY(0);
+}
+
+.subs {
+    font-family: 'Namu Pro';
+    color: #939393;
+    text-align: center;
 }
 
 

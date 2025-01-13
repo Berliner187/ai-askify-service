@@ -9,14 +9,14 @@ async function submitForm(event) {
             method: 'POST',
             body: formData
         });
-
+    
         const result = await response.json();
         console.log(result);
-
+    
         if (result.status === 'success') {
             if (result.referral_link) {
                 document.getElementById('referral-link').innerHTML = 
-                    `Подтвердите номер телефона в боте <a href="${result.referral_link}" target="_blank">НАЖМИ СЮДА</a>`;
+                    `Подтвердите номер телефона в боте <a href="${result.referral_link}" target="_blank" id="referral-button">НАЖМИ СЮДА</a>`;
             } else {
                 document.getElementById('code-input').style.display = 'block';
                 document.getElementById('phone-input').style.display = 'none';
@@ -28,4 +28,13 @@ async function submitForm(event) {
         console.error('Ошибка:', error);
         alert('Произошла ошибка при отправке данных.');
     }
+    
+    document.addEventListener('click', function(event) {
+        if (event.target.id === 'referral-button') {
+            setTimeout(() => {
+                location.reload();
+            }, 100);
+        }
+    });
+    
 }
