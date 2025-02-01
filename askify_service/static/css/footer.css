@@ -50,6 +50,16 @@ li {
     text-decoration: underline;
 }
 
+.additional-content {
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-evenly;
+    flex-wrap: wrap;
+    width: 50%;
+    min-width: 100px;
+    max-width: 600px;
+}
+
 
 @media (max-width: 768px) {
     .small-text {

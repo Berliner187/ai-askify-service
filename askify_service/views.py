@@ -112,11 +112,18 @@ def page_create_survey(request):
 def page_history_surveys(request):
     try:
         surveys_data = get_all_surveys(request)
+
+        survey_paginator = PaginatorManager(surveys_data, per_page=5)
+        surveys_page = survey_paginator.get_page(1)
+
         context = {
             'page_title': 'Предыдущие тесты',
-            'surveys_data': surveys_data,
-            'username': get_username(request)
+            'surveys_data': dict(surveys_page.object_list),
+            'username': get_username(request),
+            'paginator': survey_paginator.get_paginator(),
         }
+        print(surveys_page)
+
     except Exception as fatal:
         context = {
             'page_title': 'Предыдущие тесты',
@@ -125,6 +132,33 @@ def page_history_surveys(request):
         tracer_l.tracer_charge(
             'ERROR', request.user.username, page_history_surveys.__name__, f"{fatal}")
     return render(request, 'askify_service/history.html', context)
+
+
+@login_required
+def load_more_surveys(request):
+    if request.method == "GET" and request.headers.get('x-requested-with') == 'XMLHttpRequest':
+
+        page_number = request.GET.get('page', 2)
+        surveys_data = get_all_surveys(request)
+
+        survey_paginator = PaginatorManager(surveys_data, per_page=5)
+        surveys_page = survey_paginator.get_page(page_number)
+
+        surveys_list = [
+            {
+                'survey_id': survey_id,
+                'title': survey_data['title'],
+                'update': survey_data['update'],
+            }
+            for survey_id, survey_data in surveys_page
+        ]
+
+        return JsonResponse({
+            'surveys': surveys_list,
+            'has_next': surveys_page.has_next(),
+            'next_page': surveys_page.next_page_number() if surveys_page.has_next() else None,
+        })
+    return JsonResponse({'error': 'Invalid request'}, status=400)
 
 
 @login_required
@@ -158,7 +192,6 @@ class ManageTokensLimits:
             total_feedback_tokens=Sum('tokens_feedback_used')
         )
 
-        # Сумма общего использования
         _total_used = (total_used['total_survey_tokens'] or 0) + (
                 total_used['total_feedback_tokens'] or 0)
 
@@ -322,7 +355,7 @@ def get_all_surveys(request):
     if staff_id is None:
         return {}
 
-    surveys = Survey.objects.filter(id_staff=staff_id)
+    surveys = Survey.objects.filter(id_staff=staff_id).order_by('-updated_at')
     response_data_all = {}
 
     for survey in surveys:
@@ -1292,16 +1325,13 @@ def confirm_user(request):
         first_name = data.get('first_name')
         last_name = data.get('last_name') or ''
 
-        # Логируем входящие данные
         tracer_l.tracer_charge(
             'ADMIN', get_client_ip(request),
             'confirm_user',
             f"Success auth: hash is OK")
 
-        # Проверяем, есть ли дополнительная аутентификация
         additional_auth = AuthAdditionalUser.objects.filter(id_telegram=int(telegram_user_id)).first()
 
-        # Обновляем или создаем пользователя
         user, created = AuthUser.objects.update_or_create(
             phone=phone_number,
             defaults={
@@ -1309,17 +1339,10 @@ def confirm_user(request):
                 'first_name': first_name,
                 'last_name': last_name,
                 'username': username if username is not None else telegram_user_id,
-                'email': None  # Установите значение по умолчанию, если email не передан
+                'email': None
             }
         )
 
-        # Логируем результат обновления или создания пользователя
-        tracer_l.tracer_charge(
-            'ADMIN', get_client_ip(request),
-            'confirm_user',
-            f"User updated: {user.id}, Created: {created}, First Name: {user.first_name}, Last Name: {user.last_name}")
-
-        # Если дополнительная аутентификация не найдена, создаем её
         if not additional_auth:
             new_auth_telegram = AuthAdditionalUser.objects.create(
                 user=user,
@@ -1327,13 +1350,11 @@ def confirm_user(request):
             )
             new_auth_telegram.save()
 
-            # Логируем создание дополнительной аутентификации
             tracer_l.tracer_charge(
                 'ADMIN', get_client_ip(request),
                 'confirm_user',
                 f"Created additional auth for user: {user.id}")
 
-            # Инициализация подписки
             plan_name, end_date, status, billing_cycle, discount = init_free_subscription()
             subscription = Subscription.objects.create(
                 staff_id=user.id_staff,
@@ -1395,11 +1416,6 @@ def phone_number_view(request):
     return render(request, 'phone_number_form.html', {'form': form, 'code_form': False})
 
 
-def generate_referral_code(user_id):
-    # Генерация уникального реферального кода
-    return f"LE{user_id}{random.randint(100000, 999999)}"
-
-
 @csrf_exempt
 def verify_code_view(request):
     if request.method == 'POST':
@@ -1429,11 +1445,6 @@ def verify_code_view(request):
             else:
                 return JsonResponse({'status': 'error', 'message': 'Неверный код'})
         else:
-            tracer_l.tracer_charge(
-                'ADMIN', get_client_ip(request),
-                'phone_number_view',
-                f"2 verify_code_view: Пользователь не найден")
-
             return JsonResponse({'status': 'error', 'message': 'Пользователь не найден'})
 
     tracer_l.tracer_charge(

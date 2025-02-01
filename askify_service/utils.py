@@ -544,6 +544,46 @@ class SubscriptionCheck:
         return 0
 
 
+from django.core.paginator import Paginator
+
+
+def paginator_manager(list_data, page: int, elements_count=10):
+    paginator = Paginator(list_data, elements_count)
+    return paginator.get_page(page)
+
+
+class PaginatorManager:
+    def __init__(self, surveys_data, per_page=10):
+        self.surveys_data = surveys_data
+        self.per_page = per_page
+        self.paginator = Paginator(list(surveys_data.items()), per_page)
+
+    def get_page(self, page_number):
+        """Получить данные для указанной страницы."""
+        return self.paginator.get_page(page_number)
+
+    def has_next(self, page_number):
+        """Проверить, есть ли следующая страница."""
+        return self.paginator.has_next_page(page_number)
+
+    def next_page_number(self, page_number):
+        """Получить номер следующей страницы, если она существует."""
+        if self.has_next(page_number):
+            return self.paginator.next_page_number(page_number)
+        return None
+
+    def get_paginator(self):
+        return self.paginator
+
+    def total_pages(self):
+        """Получить общее количество страниц."""
+        return self.paginator.num_pages
+
+    def total_items(self):
+        """Получить общее количество элементов."""
+        return self.paginator.count
+
+
 def get_year_now():
     return datetime.now().strftime("%Y")
 

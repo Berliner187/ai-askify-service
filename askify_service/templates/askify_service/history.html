@@ -1,32 +1,34 @@
 <!DOCTYPE html>
 <html lang="ru">
-    <head>
-        {% include 'components/meta_tags.html' %}
-        {% load static %}
-        {% include 'components/linker.html' %}
-    </head>
-    <body>
-        <script src="{% static 'js/second-loader.js' %}"></script>
-        {% include 'components/loader.html' %}
+<head>
+    {% include 'components/meta_tags.html' %}
+    {% load static %}
+    {% include 'components/linker.html' %}
+</head>
+<body>
+    <script src="{% static 'js/second-loader.js' %}"></script>
+    {% include 'components/loader.html' %}
 
-        <div id="page-container" class="fade" style="display: none;">
-            {% include 'header.html' %}
-            
-            <div class="container question" id="saved-survey-container">
-                <div class="head-button">
-                    <h2>История</h2>
-                    <div class="button-medium">
-                        <a href="{% url 'create' %}">
-                            <div>
-                                <p>Создать новый</p>
-                                <img src="{% static 'img/icon-new.png' %}" alt="">
-                            </div>
-                        </a>
-                    </div>
+    <div id="page-container" class="fade" style="display: none;">
+        {% include 'header.html' %}
+        
+        <div class="container question" id="saved-survey-container">
+            <div class="head-button">
+                <h2>История</h2>
+                <div class="button-medium">
+                    <a href="{% url 'create' %}">
+                        <div>
+                            <p>Создать новый</p>
+                            <img src="{% static 'img/icon-new.png' %}" alt="">
+                        </div>
+                    </a>
                 </div>
-    
-                <div id="surveys-container">
-                    <h3>Предыдущие тесты</h3>
+            </div>
+
+            <div id="surveys-container">
+                <h3>Предыдущие тесты</h3>
+                <div id="surveys-list">
+                    
                     {% for survey_id, survey_data in surveys_data.items %}
                         <label>
                             <a href="/result/{{ survey_id }}">
@@ -46,12 +48,73 @@
                     {% endfor %}
                 </div>
                 
+                <div class="center-button" id="load-more-button">
+                    <button class="laod-more-btn" id="load-more" data-page="2">Загрузить еще</button>
+                </div>
+                
             </div>
-    
-            {% include 'footer.html' %}
         </div>
-        
+
+        {% include 'footer-s.html' %}
+    </div>
+    
+    <script>
+        document.getElementById('load-more').addEventListener('click', function() {
+            var button = this;
+            var page = parseInt(button.getAttribute('data-page')) + 1;
+
+            fetch(`/load-more-surveys/?page=${page}`, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.surveys.length > 0) {
+                    data.surveys.forEach(survey => {
+                        const surveyBlock = document.createElement('label');
+                        console.log(survey.survey_id);
+
+                        surveyBlock.innerHTML = `
+                        <a href="/result/${survey.survey_id}">
+                            <div class="survey-block">${survey.title}</div>
+                            <div class="survey-block small-text">${survey.update}</div>
+                        </a>
+                        <div class="buttons-container">
+                            <div class="button-medium">
+                                <a href="/drop-survey/${survey.survey_id}">
+                                    <div>
+                                        <img src="{% static 'img/icon-delete.png' %}" alt="">
+                                    </div>
+                                </a>
+                            </div>
+                        </div>`;
+
+                        const spacer = document.createElement('br');
+                        
+                        document.getElementById('surveys-list').appendChild(surveyBlock);
+                        document.getElementById('surveys-list').appendChild(spacer);
+                    });
+                    button.setAttribute('data-page', page);
+                    if (!data.has_next) {
+                        document.getElementById('load-more-button').style.display = 'none';
+                    }
+                } else {
+                    button.style.display = 'none';
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        });
+    </script>
+    </body>
     </body>
 
-    <!-- <script src="{% static 'js/main.js' %}"></script> -->
+</body>
+
 </html>

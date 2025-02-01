@@ -8,8 +8,11 @@ urlpatterns = [
     path('api-create-survey/', ManageSurveysView.as_view(), name='api-create-survey'),
     path('survey/<str:survey_id>/', TakeSurvey.as_view(), name='survey'),
     path('result/<str:survey_id>/', result_view, name='result'),
+
     path('drop-survey/<str:survey_id>/', drop_survey, name='drop-survey'),
     path('history/', page_history_surveys, name='history'),
+    path('load-more-surveys/', load_more_surveys, name='load-more-surveys'),
+
     path('survey/<str:survey_id>/download/', download_survey_pdf, name='download-survey_pdf'),
     path('register/', register, name='register'),
     path('login/', login_view, name='login'),
