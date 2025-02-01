@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Войти при помощи Telegram</title>
+    <title>Войти при помощи Telegram: Летучка</title>
     {% load static %}
     {% include 'components/linker.html' %}
     <script src="{% static 'js/auth-telegram.js' %}"></script>
@@ -16,9 +16,17 @@
 
 <style>
     body {
-        background-image: url('{% static "img/bg-sphere.png" %}');
-        background-position: 0 bottom;
+        background-image: url('{% static "img/bg-sphere.webp" %}');
+        background-position: top;
         background-repeat: no-repeat;
+        background-size: 100%;
+    }
+
+    @media (max-width: 768px) { 
+        body {
+            background-image: url('{% static "img/bg-sphere-mobile.webp" %}');
+            background-size: contain;
+        }
     }
 </style>
 
@@ -26,15 +34,18 @@
     <script src="{% static 'js/second-loader.js' %}"></script>
     {% include 'components/loader.html' %}
 
-        {% include 'header.html' %}
         <div id="page-container" class="fade" style="display: none;">
+            {% include 'header.html' %}
 
         <div class="container-background">
             <div class="enter-phone-container">
                 <form class="enter-phone-form" id="phone-input" method="post" onsubmit="submitForm(event);">
                     {% csrf_token %}
                     <h2>Введите номер телефона</h2>
-                    <p class="subs">Введите свой номер телефона для быстрой и безопасной авторизации. Это позволит легко входить в систему в будущем, не запоминая пароли.</p>
+
+                    <div class="already-exist">
+                        <p class="subs">Введите свой номер телефона для быстрой и безопасной авторизации. Это позволит легко входить в систему в будущем, не запоминая пароли.</p>
+                    </div>
 
                     <input type="text" name="phone_number" placeholder="+7 999 888 77 66" required  oninput="formatPhoneNumber(this)">
                     <button type="submit">Отправить</button>
@@ -52,7 +63,7 @@
                 <div class="already-exist">
                     <p><a href="{% url 'login' %}">Войти при помощи логина</a></p>
                     <hr>
-                    <p class="subs">Мы заботимся о Вашей конфиденциальности ваших данных :)</p>
+                    <p class="subs">Мы заботимся о Вашей конфиденциальности ваших данных</p>
                     <a href="/docs/privacy-policy">Политика конфиденциальности</a>
                 </div>
 

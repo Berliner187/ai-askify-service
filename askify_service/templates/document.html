@@ -4,6 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ title }}</title>
+
+    <meta name="description" content="Создайте персонализированные тесты за считанные секунды при помощи нейросети. Загружайте учебные материалы и получайте мгновенные квизы для эффективной подготовки к экзаменам.">
+    <meta name="keywords" content="создание тестов, генерация тестов, тесты с ИИ, персонализированные квизы, подготовка к экзаменам, учебные материалы, онлайн тесты, автоматизация обучения, интерактивные тесты, образовательные технологии">
+    <meta name="author" content="Летучка/Letychka by Kozak Developer">
+    
+    <meta property="og:title" content="Создание тестов с ИИ - Летучка">
+    <meta property="og:description" content="Используйте ИИ для создания тестов на основе ваших учебных материалов. Быстро, удобно и эффективно!">
+    <meta property="og:image" content="https://letychka.ru/static/img/letychka-banner.png">
+    <meta property="og:url" content="https://letychka.ru/create">
+    <meta property="og:type" content="website">
+
     {% load static %}
     <link rel="shortcut icon" href="{% static 'img/favicon.ico' %}" type="image/ico">
     <link rel="stylesheet" href="{% static 'css/adaptive.css' %}">
@@ -12,7 +23,7 @@
     <link rel="stylesheet" href="{% static 'css/footer.css' %}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Commissioner:wght@100..900&family=Mulish:ital,wght@0,200..1000;1,200..1000&family=PT+Serif+Caption:ital@0;1&family=Unbounded:wght@200..900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,300..900;1,300..900&family=Unbounded:wght@200..900&display=swap" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@200..900&display=swap" rel="stylesheet">
@@ -41,6 +52,7 @@
     </header>
 
     <main>
+        <div>{{ view_count }}</div>
         <div>{{ content|safe }}</div>
     </main>
 

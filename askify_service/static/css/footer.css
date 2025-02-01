@@ -45,6 +45,11 @@ li {
     padding: 1px;
 }
 
+.footer-bottom a {
+    color: #777777;
+    text-decoration: underline;
+}
+
 
 @media (max-width: 768px) {
     .small-text {

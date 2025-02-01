@@ -14,7 +14,7 @@
     <link rel="dns-prefetch" href="">
     <meta name="csrf-token" content="{{ csrf_token }}">
     {% load static %}
-    <link rel="shortcut icon" href="{% static 'img/favicon.ico' %}" type="image/ico">
+    <link rel="shortcut icon" href="{% static 'img/logo.png' %}" type="image/png">
     
     {% include 'components/linker.html' %}
     <link rel="stylesheet" href="{% static 'css/upload-styles.css' %}">
@@ -120,7 +120,7 @@
                         </a>
                     </div>
                     <div class="button-medium" id="#tokens-color">
-                        <a href="{% url 'history' %}">
+                        <a href="{% url 'profile' username %}">
                             <div>
                                 <img src="{% static 'img/icon-tokens.png' %}" alt="">
                                 <p>Доступно <span>{{ tokens_f }}</span> токенов</p>

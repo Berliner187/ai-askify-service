@@ -16,7 +16,9 @@ urlpatterns = [
     path('logout/', logout_view, name='logout'),
     path('stats2975/', admin_stats, name='stats2975'),
     path('profile/<str:username>/', profile_view, name='profile'),
+
     path('docs/<slug:slug>/', document_view, name='document_view'),
+    path('media/<slug:slug>/', blog_view, name='media_view'),
 
     path('api/auth/vk/', vk_auth, name='vk_auth'),
     path('callback/', vk_callback, name='vk_callback'),
@@ -28,7 +30,7 @@ urlpatterns = [
 
     path('upload/', FileUploadView.as_view(), name='file_upload'),
 
-    path('auth/tg/', phone_number_view, name='auth_telegram'),
+    path('login/telegram/', phone_number_view, name='auth_telegram'),
     path('verify-code/', verify_code_view, name='verify_code'),
     path('auth/telegram/', TelegramAuthView.as_view(), name='telegram_auth'),
 

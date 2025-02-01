@@ -221,6 +221,19 @@ class Payment(models.Model):
         return f'Payment {self.payment_id} for {self.subscription.plan_name} - {self.amount}'
 
 
+class TransactionTracker(models.Model):
+    staff_id = models.UUIDField(null=False, blank=False, unique=False)
+    payment_id = models.CharField(max_length=100, unique=False)
+    order_id = models.CharField(max_length=100, unique=False)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    description = models.TextField(blank=True)
+    date = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return (f"{self.staff_id}: {self.amount} on {self.date.strftime('%Y-%m-%d %H:%M:%S')}\n\n"
+                f"{self.payment_id} {self.order_id}")
+
+
 class BlockedUsers(models.Model):
     id_staff = models.UUIDField(null=True, blank=True, unique=True)
     ip_address = models.GenericIPAddressField(unique=True)
@@ -240,12 +253,74 @@ class FeedbackFromAI(models.Model):
 
 def get_token_limit(plan_name):
     token_limits = {
-        'стартовый': 10_000,
+        'стартовый': 25_000,
         'стандартный': 50_000,
         'премиум': 500_000,
         'ультра': 1_500_000,
     }
     return token_limits.get(plan_name.lower(), 0)
+
+
+def slugify_title(title):
+    translit_mapping = {
+        'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo',
+        'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm',
+        'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u',
+        'ф': 'f', 'х': 'kh', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'shch', 'ъ': '',
+        'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya', ' ': '-',
+        '-': '-',  # Сохраняем дефисы
+        ':': '',  # Убираем двоеточие
+        '–': '-',  # Заменяем длинный дефис на обычный
+    }
+
+    title = str(title)
+
+    slug = ''.join(translit_mapping.get(char, char) for char in title.lower())
+
+    slug = slug.replace('--', '-')
+    slug = slug.strip('-')
+
+    return slug
+
+import hashlib
+
+class BlogPost(models.Model):
+    title = models.CharField(max_length=200)
+    slug = models.SlugField(unique=True, blank=True)
+    view_count = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    unique_ips = models.TextField(default='')
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify_title(self.title)
+        super().save(*args, **kwargs)
+
+    def hash_ip(self, ip):
+        return hashlib.sha256(ip.encode()).hexdigest()
+
+    def is_unique_view(self, ip):
+        hashed_ip = self.hash_ip(ip)
+        if hashed_ip in self.unique_ips.split(','):
+            return False
+        return True
+
+    def add_unique_view(self, ip):
+        if self.is_unique_view(ip):
+            self.view_count += 1
+            self.unique_ips += self.hash_ip(ip) + ','
+            self.save()
+
+    def __str__(self):
+        return self.title
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify_title(self.title)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.title
 
 
 def is_user_subscribed_and_has_tokens(user_id):

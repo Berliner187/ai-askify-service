@@ -95,9 +95,11 @@ def page_create_survey(request):
     tracer_l.tracer_charge(
         'INFO', request.user.username, page_create_survey.__name__, "load page")
 
+    diff_limit = tokens_limit - tokens_used
+
     context = {
         "page_title": "Создать тест",
-        'tokens_f': get_format_number(tokens_limit - tokens_used),
+        'tokens_f': get_format_number(diff_limit) if diff_limit > 0 else 0,
         'limit_tokens': tokens_limit,
         'username': get_username(request),
         'subscription_level': subscription_level
@@ -551,7 +553,6 @@ def result_view(request, survey_id):
 
 
 @login_required
-@subscription_required
 def download_survey_pdf(request, survey_id):
     # try:
     survey = get_object_or_404(Survey, survey_id=uuid.UUID(survey_id))
@@ -1031,41 +1032,22 @@ class PaymentInitiateView(View):
         print()
 
         if response_data.get('Success'):
+            subscription_obj = Subscription.objects.filter(staff_id=get_staff_id(request))
+            if subscription_obj.exists():
+                subscription_obj.delete()
+
             # TODO: Сделать как транзакцию
             # Инициализация тарифного плана
-            subscription_obj = Subscription.objects.filter(staff_id=get_staff_id(request)).first()
-
-            if subscription_obj and subscription_obj.status == 'active':
-                remaining_days = (subscription_obj.end_date - timezone.now()).days
-
-                if remaining_days > 30:
-                    return JsonResponse({
-                        'message': 'У вас уже есть активный план\n\n'
-                                   'Напишите на почту support@letychka.ru, если хотите оформить другой план'})
-
-                if remaining_days < 30 and subscription_obj.plan_name != 'Стартовый план':
-                    subscription_obj.end_date += timedelta(days=30)
-                    subscription_obj.save()
-                    subscription = subscription_obj
-                else:
-                    subscription = Subscription.objects.create(
-                        staff_id=get_staff_id(request),
-                        plan_name=description,
-                        end_date=datetime.now() + timedelta(days=30),
-                        status='inactive',
-                        billing_cycle='monthly',
-                        discount=0.00
-                    )
-            else:
-                subscription = Subscription.objects.create(
-                    staff_id=get_staff_id(request),
-                    plan_name=description,
-                    end_date=datetime.now() + timedelta(days=30),
-                    status='inactive',
-                    billing_cycle='monthly',
-                    discount=0.00
-                )
-
+            subscription = Subscription.objects.create(
+                staff_id=get_staff_id(request),
+                plan_name=description,
+                end_date=datetime.now() + timedelta(days=30),
+                status='inactive',
+                billing_cycle='monthly',
+                discount=0.00
+            )
+            subscription.save()
+            # Инициализация оплаты
             new_payment = Payment.objects.create(
                 staff_id=get_staff_id(request),
                 payment_id=response_data.get('PaymentId'),
@@ -1075,6 +1057,16 @@ class PaymentInitiateView(View):
                 status='pending'
             )
             new_payment.save()
+
+            # Запись в транзакции
+            new_trans = TransactionTracker.objects.create(
+                staff_id=get_staff_id(request),
+                payment_id=response_data.get('PaymentId'),
+                description=description,
+                order_id=order_id,
+                amount=int(amount) * 100,
+            )
+            new_trans.save()
 
             return JsonResponse({
                 'Success': True,
@@ -1155,6 +1147,16 @@ class PaymentSuccessView(View):
                         "payment_details": payment_details,
                         "username": get_username(request)
                     }
+
+                    # Запись в транзакции
+                    new_transaction = TransactionTracker.objects.create(
+                        staff_id=get_staff_id(request),
+                        payment_id=payment.payment_id,
+                        description=f'{payment.amount}, {subscription.get_human_plan()}, completed: {payment_status}',
+                        order_id=payment.order_id,
+                        amount=int(amount),
+                    )
+                    new_transaction.save()
 
                     try:
                         payment_details_text = "\n".join(
@@ -1246,7 +1248,7 @@ class ManageTelegramMessages:
         self.__base_send_message(payload)
 
     def send_code_to_user(self, telegram_user_id, code):
-        message = f"Никому не говорите код: {code}"
+        message = f"Код для авторизации: <pre><code>{code}</code></pre>\n\n<i>Нажмите, чтобы скопировать</i>"
         self.send_message(telegram_user_id, message)
 
     def send_message_about_start(self):
@@ -1294,7 +1296,7 @@ def confirm_user(request):
         tracer_l.tracer_charge(
             'ADMIN', get_client_ip(request),
             'confirm_user',
-            f"Received data: {data}, phone_number: {phone_number}")
+            f"Success auth: hash is OK")
 
         # Проверяем, есть ли дополнительная аутентификация
         additional_auth = AuthAdditionalUser.objects.filter(id_telegram=int(telegram_user_id)).first()
@@ -1646,6 +1648,69 @@ def document_view(request, slug):
     }
 
     return render(request, 'document.html', content)
+
+from django.utils.text import slugify
+
+def slugify_title(title):
+    translit_mapping = {
+        'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo',
+        'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm',
+        'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u',
+        'ф': 'f', 'х': 'kh', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'shch', 'ъ': '',
+        'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya', ' ': '-',
+        '-': '-',  # Сохраняем дефисы
+        ':': '',  # Убираем двоеточие
+        '–': '-',  # Заменяем длинный дефис на обычный
+    }
+
+    slug = ''.join(translit_mapping.get(char, char) for char in title.lower())
+
+    slug = slug.replace('--', '-')
+    slug = slug.strip('-')
+
+    return slug
+
+
+def get_view_count_text(count):
+    if 11 <= count % 100 <= 14:
+        return f"{count} просмотров"
+    elif count % 10 == 1:
+        return f"{count} просмотр"
+    elif count % 10 in [2, 3, 4]:
+        return f"{count} просмотра"
+    else:
+        return f"{count} просмотров"
+
+
+def blog_view(request, slug):
+    post = get_object_or_404(BlogPost, slug=slug)
+
+    ip = request.META.get('REMOTE_ADDR')
+
+    post.add_unique_view(ip)
+
+    file_path = os.path.join(BASE_DIR, 'blog', f'{slug}.md')
+
+    if not os.path.exists(file_path):
+        return render(request, '404.html', status=404)
+
+    with open(file_path, 'r', encoding='utf-8') as file:
+        content = file.read()
+
+    title = content.splitlines()[0].lstrip('# ').strip()
+    content_html = markdown.markdown(content)
+
+    view_count_text = get_view_count_text(post.view_count)
+
+    context = {
+        'title': title,
+        'content': content_html,
+        'year': get_year_now(),
+        'view_count': f"{view_count_text} • {get_formate_date(post.created_at)}",
+        'article_url': f"media/{slug}"
+    }
+
+    return render(request, 'blog.html', context)
 
 
 @csrf_exempt
