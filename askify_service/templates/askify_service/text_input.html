@@ -19,26 +19,36 @@
     {% include 'components/linker.html' %}
     <link rel="stylesheet" href="{% static 'css/upload-styles.css' %}">
     
-    <!-- Yandex.Metrika counter --> <script type="text/javascript" > (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)}; m[i].l=1*new Date(); for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }} k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)}) (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym"); ym(98829160, "init", { clickmap:true, trackLinks:true, accurateTrackBounce:true }); </script> <noscript><div><img src="https://mc.yandex.ru/watch/98829160" style="position:absolute; left:-9999px;" alt="" /></div></noscript> <!-- /Yandex.Metrika counter -->
+    <!-- Yandex.Metrika counter -->
+     <script type="text/javascript" > (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)}; m[i].l=1*new Date(); for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }} k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)}) (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym"); ym(98829160, "init", { clickmap:true, trackLinks:true, accurateTrackBounce:true }); </script> <noscript><div><img src="https://mc.yandex.ru/watch/98829160" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
 </head>
+
+<style>
+    footer {
+        margin-top: 0;
+    }
+</style>
 
 <body>
     <script src="{% static 'js/second-loader.js' %}"></script>
 
     {% include 'components/loader.html' %}
+    
+    <div id="overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 999;">
+        <div class="loader-container" style="display: flex; justify-content: center; align-items: center; height: 100%;">
+            <!-- <div class="line-loader"></div>
+            <div class="line-loader"></div>
+            <div class="line-loader"></div>
+            <div class="line-loader"></div>
+            <div class="line-loader"></div>
+            <div class="line-loader"></div> -->
 
+            <span class="loader"></span>
+        </div>
+    </div>
+    
     <div id="page-container" class="fade" style="display: none;">
         {% include 'header.html' %}
-
-        <div class="loader-container" id="loading-container">
-            <div class="line-loader"></div>
-            <div class="line-loader"></div>
-            <div class="line-loader"></div>
-            <div class="line-loader"></div>
-            <div class="line-loader"></div>
-            <div class="line-loader"></div>
-        </div>
-
         {% if subscription_level < 2 %}
         
             <div class="container subscription-offer locked-upload">
@@ -65,7 +75,7 @@
                 <div class="drop-area" id="drop-area">
                     <label class="upload-button" id="upload-button">
                         <div id="content-upload-info">
-                            <h3>Загрузите файл</h3>
+                            <h3>Загрузить файл</h3>
                             <img src="{% static 'img/icon-add-file.png' %}" alt="Иконка загрузки файла" class="upload-icon">
                             <p class="small-text">Перетащите PDF-файл сюда</p>
                         </div>
@@ -85,16 +95,39 @@
             </div>
 
         {% endif %}
+
+        <div class="container" id="example-container">
+            <h3>Примеры</h3>
+            <div class="topic-container">
+                <div class="topic" data-text="Расцвет древнерусского государства при Ярославе Мудром 📚">
+                    <div class="emoji">📚</div>
+                    <h4 class="topic-title">История</h4>
+                    <p class="topic-example">Расцвет древнерусского государства при Ярославе Мудром</p>
+                </div>
+                <div class="topic" data-text="Русская философия в эпоху Просвещения 📜">
+                    <div class="emoji">📜</div>
+                    <h4 class="topic-title">Философия</h4>
+                    <p class="topic-example">Русская философия в эпоху Просвещения</p>
+                </div>
+                <div class="topic" data-text="Николай Гоголь как предшественник русской литературы 20 века 🖋️">
+                    <div class="emoji">🖋️</div>
+                    <h4 class="topic-title">Литература</h4>
+                    <p class="topic-example">Николай Гоголь как предшественник русской литературы 20 века</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="container" id="faq-container">
+            {{ faq_html|safe }}
+        </div>
         
         <div class="container" id="block-generate">
-            <h3>Или введите тему для генерации теста</h3>
             <form id="text-form" method="post" onsubmit="event.preventDefault(); submitText();">
                 {% csrf_token %}
                 <div class="input-area">
                     <textarea id="user-text" rows="4" cols="60" placeholder="Введите здесь свои учебные материалы, заметки или содержание статьи.
 
 Например:
-
 - Теорема Пифагора гласит, что в прямоугольном треугольнике квадрат длины гипотенузы
 равен сумме квадратов длины двух других сторон.
 
@@ -106,7 +139,7 @@
 
                 <div class="slider-container">
                     <div id="char-count">0 / 16384 символов</div>
-                    <p id="question-slider-text" style="display: none;">Сгенерировать <span id="slider-value">1</span> вопросов в тесте</p>
+                    <p id="question-slider-text"><span id="slider-value">1</span> вопросов в тесте</p>
                     <input type="range" id="question-slider" class="custom-slider" min="1" max="10" value="5" style="display: none;">
                 </div>
 
@@ -123,20 +156,34 @@
                         <a href="{% url 'profile' username %}">
                             <div>
                                 <img src="{% static 'img/icon-tokens.png' %}" alt="">
-                                <p>Доступно <span>{{ tokens_f }}</span> токенов</p>
+                                <p><span>{{ tokens_f }}</span> токенов</p>
                             </div>
                         </a>
                     </div>
                 </div>
             </form>
         </div>
+
+        <script>
+            document.querySelectorAll('.faq-question').forEach(item => {
+                item.addEventListener('click', () => {
+                    const answer = item.nextElementSibling;
+            
+                    if (answer.style.display === "block") {
+                        answer.style.display = "none";
+                    } else {
+                        answer.style.display = "block";
+                    }
+                });
+            });
+        </script>
         
         {% include 'footer-s.html' %}
     </div>
 
     <script src="{% static 'js/main.js' %}"></script>
     <script src="{% static 'js/auto-scroll.js' %}"></script>
-    <script src="{% static 'js/nav.js' %}"></script>
+    <!-- <script src="{% static 'js/nav.js' %}"></script> -->
 
 </body>
 </html>

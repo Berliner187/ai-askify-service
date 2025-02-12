@@ -19,20 +19,34 @@
 
     .input-area, textarea {
         display: flex;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
         justify-content: center;
         max-width: 1200px;
         min-height: 120px;
     }
     .input-area button {
-        width: 100%;
-        border: 2px solid #616DF0;
-        margin: 10px 0 10px 0;
+        width: 48px;
+        border: 1px solid #616DF0;
+        margin: 0 0 0 10px;
     }
     .input-area button img {
-        width: 64px;
+        width: 32px;
         border: none;
         border-radius: 15px;
+    }
+
+    /* .container, .preview-content, .history-container,
+    #saved-survey-container {
+        margin-top: 20px;
+    } */
+
+
+    #char-count {
+        margin-left: 70%;
+    }
+
+    .upload-container {
+        margin-top: 80px;
     }
     
     #saved-survey-container div {
@@ -83,10 +97,6 @@
         width: 100%;
     }
 
-    textarea {
-        min-height: 300px;
-    }
-
     .payment-data {
         width: 100px;
     }
@@ -100,11 +110,16 @@
         flex-direction: column;
     }
 
+    .modal-content {
+        min-width: 160px;
+        max-width: 260px;
+    }
+
     /* Кастомный слайдер-ползунок кол-ва вопросов */
     .custom-slider {
         width: 80%;
         height: 8px;
-        margin: 10px 50px;
+        margin: 10px 20px;
     }
 
     #question-slider-text {

@@ -597,6 +597,17 @@ def get_client_ip(request):
     return ip
 
 
+def get_view_count_text(count):
+    if 11 <= count % 100 <= 14:
+        return f"{count} просмотров"
+    elif count % 10 == 1:
+        return f"{count} просмотр"
+    elif count % 10 in [2, 3, 4]:
+        return f"{count} просмотра"
+    else:
+        return f"{count} просмотров"
+
+
 def is_allowed_email(email):
     domain = email.split('@')[-1]
     return domain in ALLOWED_DOMAINS

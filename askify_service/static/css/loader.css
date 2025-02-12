@@ -65,3 +65,69 @@
       transform: rotate(180deg);
     }
   }
+
+  /* loader v2 */
+
+  .loader {
+    animation: rotate 1s infinite;
+    height: 100px;
+    width: 100px;
+}
+
+.loader:before,
+.loader:after {
+    border-radius: 50%;
+    content: "";
+    display: block;
+    height: 40px;
+    width: 40px;
+}
+
+.loader:before {
+    animation: ball1 1s infinite;
+    background-color: #AFE839;
+    box-shadow: 60px 0 0 #6a61f0;
+    margin-bottom: 20px;
+}
+
+.loader:after {
+    animation: ball2 1s infinite;
+    background-color: #6a61f0;
+    box-shadow: 60px 0 0 #AFE839;
+}
+
+@keyframes rotate {
+    0% { transform: rotate(0deg) scale(0.8) }
+    50% { transform: rotate(360deg) scale(1.2) }
+    100% { transform: rotate(720deg) scale(0.8) }
+}
+
+@keyframes ball1 {
+    0% {
+        box-shadow: 60px 0 0 #6a61f0;
+    }
+    50% {
+        box-shadow: 0 0 0 #6a61f0;
+        margin-bottom: 0;
+        transform: translate(30px, 30px);
+    }
+    100% {
+        box-shadow: 60px 0 0 #6a61f0;
+        margin-bottom: 20px;
+    }
+}
+
+@keyframes ball2 {
+    0% {
+        box-shadow: 60px 0 0 #fff;
+    }
+    50% {
+        box-shadow: 0 0 0 #fff;
+        margin-top: -40px;
+        transform: translate(30px, 30px);
+    }
+    100% {
+        box-shadow: 60px 0 0 #AFE839;
+        margin-top: 0;
+    }
+}

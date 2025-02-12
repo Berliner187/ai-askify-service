@@ -64,24 +64,39 @@ class UserAnswers(models.Model):
         user_surveys = Survey.objects.filter(id_staff=id_staff)
         user_answers = cls.objects.filter(id_staff=id_staff)
 
+        total_tests = user_surveys.count()
+        passed_tests = 0
         total_scored_points = 0
 
-        total_points = 0
-        for answer in user_answers:
-            total_scored_points += answer.scored_points
-            total_points += answer.total_points
+        unique_survey_ids = user_answers.values_list('survey_id', flat=True).distinct()
+        best_result = None
 
-        total_tests = user_surveys.count()
-        # average_score = user_answers.aggregate(Avg('scored_points'))['scored_points__avg'] or 0
-        # passed_tests =
-        try:
-            average_score = round(total_scored_points / total_tests, 2)
-        except ZeroDivisionError:
-            average_score = 0
+        for survey in user_surveys:
+            if survey.survey_id in unique_survey_ids:
+                answers_for_survey = user_answers.filter(survey_id=survey.survey_id)
+
+                # Считаем набранные и общие баллы
+                scored_points = sum(answer.scored_points for answer in answers_for_survey)
+                total_points = sum(answer.scored_points for answer in answers_for_survey)
+
+                if total_points > 0:
+                    if scored_points > 0:
+                        passed_tests += 1
+                    # Проверяем лучший результат
+                    if best_result is None or (scored_points / total_points) > (
+                            best_result['scored_points'] / best_result['total_points']):
+                        best_result = {
+                            'title': survey.title,
+                            'scored_points': scored_points,
+                            'total_points': total_points,
+                        }
+
+        best_result_str = f"{best_result['title']} – набрано {best_result['scored_points']} из {best_result['total_points']}" if best_result else "Нет пройденных тестов."
 
         return {
             'total_tests': total_tests,
-            'average_score': average_score,
+            'passed_tests': passed_tests,
+            'best_result': best_result_str,
         }
 
 

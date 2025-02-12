@@ -57,7 +57,8 @@
                 <h3>Статистика</h3>
                 <ul>
                     <li>Создано тестов: <span class="accent-color-text">{{ statistics.total_tests }}</span></li>
-                    <li>Средний балл: <span id="accent-color">{{ statistics.average_score }} / 5</span></li>
+                    <li>Пройдено: <span id="accent-color">{{ statistics.passed_tests }}</span></li>
+                    <li>Лучший: <span id="accent-color">{{ statistics.best_result }}</span></li>
                 </ul>
             </div>
 
@@ -66,14 +67,13 @@
             <div class="profile-info">
                 <h3>Активный план</h3>
                 <ul>
-                    <li>План <strong>{{subscription.plan_name}}</strong></li>
-                    <li>Заканчивается <strong>{{subscription.plan_end_date}}</strong></li>
+                    <li>План <strong>{{subscription.plan_name}}</strong>, и он {{ subscription.plan_end_date }}</li>
                 </ul>
                 {% if subscription.days_until_end is not none and subscription.days_until_end < 3 %}
                     <div class="button-medium button-accent">
                         <a href="{% url 'payment' %}">
                             <div>
-                                <p>Продлить {{subscription.plan_name}} 💎</p>
+                                <p>Продлить 💎</p>
                             </div>
                         </a>
                     </div>
@@ -95,32 +95,62 @@
                 <ul>
                     <li>Для тестов <span class="accent-color-text">{{tokens.surveys}}</span></li>
                     <li>Для фидбэка <span class="accent-color-text">{{tokens.feedback}}</span></li>
-                    <li>Всего использовано <span class="accent-color-text">{{tokens.total_tokens}} / {{tokens.limit_tokens}}</span></li>
+                    <li>Всего использовано <span class="accent-color-text">{{tokens.total_tokens}}</span></li>
                 </ul>
             </div>
 
             <div class="head-button">
                 <div class="button-medium">
-                    <a href="{% url 'profile' username %}">
+                    <a href="{% url 'payment' %}">
                         <div>
-                            <p>Редактировать профиль</p>
-                            <img src="{% static 'img/icon-edit.png' %}" alt="">
+                            <p>Тарифы</p>
+                            <img src="{% static 'img/icon-tokens.png' %}" alt="">
                         </div>
                     </a>
                 </div>
-                <div class="button-medium button-red">
-                    <a href="{% url 'logout' %}">
-                        <div>
-                            <p>Выйти из профиля</p>
-                            <img src="{% static 'img/icon-logout.png' %}" alt="">
-                        </div>
-                    </a>
+
+                <div class="button-medium button-red" id="logout-button">
+                    <div>
+                        <p>Выйти</p>
+                        <img src="{% static 'img/icon-logout.png' %}" alt="">
+                    </div>
                 </div>
+
             </div>
         </div>
 
         {% include 'footer-s.html' %}
     </div>
+
+    <div id="modal-exit" class="modal">
+        <div class="modal-content">
+            <h3>Вы уверены?</h3>
+            <p>После подтверждения вы будете перенаправлены на страницу авторизации</p>
+            <div class="buttons-container">
+                <button id="cancel-logout" class="button-accent">Отмена</button>
+                <button id="confirm-logout"  class="button-red">Выйти</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function modalWindow(elementId) {
+            document.getElementById('logout-button').addEventListener('click', function() {
+                document.getElementById(elementId).style.display = 'flex';
+            });
+            
+            document.getElementById('cancel-logout').addEventListener('click', function() {
+                document.getElementById(elementId).style.display = 'none';
+            });
+            
+            document.getElementById('confirm-logout').addEventListener('click', function() {
+                window.location.href = "{% url 'logout' %}";
+            });
+        }
+
+        modalWindow('modal-exit-menu');
+        modalWindow('modal-exit');
+    </script>
     
     <script>
         function getColor(averageScore) {

@@ -3,6 +3,6 @@ from django.urls import path, include
 
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path('scammer1337/', admin.site.urls),
     path('', include('askify_service.urls')),
 ]

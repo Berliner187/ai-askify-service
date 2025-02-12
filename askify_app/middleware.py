@@ -68,6 +68,10 @@ def subscription_required(view_func):
                 subscription.status = 'inactive'
                 subscription.save()
                 return redirect('payment')
+
+            if subscription.status == 'inactive':
+                return redirect('payment')
+
         except Subscription.DoesNotExist:
             return redirect('payment')
 

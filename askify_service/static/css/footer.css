@@ -38,7 +38,6 @@ li {
     margin-top: 20px;
     flex: 1 1 100%;
     color: #777777;
-    font-size: 14px;
 }
 .footer-bottom p {
     margin: 0;
@@ -60,6 +59,9 @@ li {
     max-width: 600px;
 }
 
+.footer-bottom p, .additional-content a {
+    font-size: 10px;
+}
 
 @media (max-width: 768px) {
     .small-text {

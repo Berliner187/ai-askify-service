@@ -77,8 +77,8 @@ class ConverterPDF:
 
             y -= 10
 
-        p.setFont('Unbounded Medium', 7)
-        p.drawString(80, 40, f"Created by Летучка, {get_year_now()}")
+        # p.setFont('Unbounded Medium', 7)
+        # p.drawString(80, 40, f"Created by Летучка, {get_year_now()}")
 
         p.showPage()
         p.save()

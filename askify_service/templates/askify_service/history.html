@@ -79,7 +79,6 @@
                 if (data.surveys.length > 0) {
                     data.surveys.forEach(survey => {
                         const surveyBlock = document.createElement('label');
-                        console.log(survey.survey_id);
 
                         surveyBlock.innerHTML = `
                         <a href="/result/${survey.survey_id}">

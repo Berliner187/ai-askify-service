@@ -1,24 +1,20 @@
 const dropArea = document.getElementById('drop-area');
 
+const overlay = document.getElementById('overlay');
+
 async function submitText() {
     const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]') 
                     ? document.querySelector('[name=csrfmiddlewaretoken]').value
                     : document.querySelector('meta[name="csrf-token"]').getAttribute('content');
     const text = document.getElementById('user-text').value;
     const questionCount = slider.value;
-    const blockGenerate = document.getElementById('block-generate');
-    const loadingIndicator = document.getElementById('loading-container');
-    const uploadContainer = document.getElementById('upload-container');
 
     if (validatorText(text)) {
         console.log('Text validation failed');
         return;
     }
 
-    loadingIndicator.style.display = 'block';
-    blockGenerate.style.opacity = 0;
-    // dropArea.style.opacity = 0;
-    // uploadContainer.style.opacity = 0;
+    overlay.style.display = 'block'; // Показываем оверлей
 
     try {
         console.log('Sending text:', text);
@@ -38,10 +34,8 @@ async function submitText() {
 
         if (response.ok) {
             console.log('Тест успешно сгенерирован');
-
             const surveyId = result.survey_id;
             console.log('Survey ID:', surveyId);
-
             window.location.href = `/result/` + surveyId;
         } else {
             console.error('Error:', result);
@@ -51,12 +45,10 @@ async function submitText() {
         console.error('Ошибка:', error);
         alert('Опаньки :( Проверьте подписку в своем профиле');
     } finally {
-        loadingIndicator.style.display = 'none';
-        blockGenerate.style.opacity = 1;
-        dropArea.style.opacity = 1;
-        // uploadContainer.style.opacity = 1;
+        overlay.style.display = 'none'; // Скрываем оверлей
     }
 }
+
 
 const uploadButton = document.querySelector('.upload-button');
 const checkmark = uploadButton.querySelector('.checkmark');

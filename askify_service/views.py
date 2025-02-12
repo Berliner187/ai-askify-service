@@ -97,12 +97,18 @@ def page_create_survey(request):
 
     diff_limit = tokens_limit - tokens_used
 
+    faq_file_path = os.path.join(BASE_DIR, 'docs', f'faq-s.md')
+    with open(faq_file_path, 'r', encoding='utf-8') as f:
+        faq_content = f.read()
+        faq_html = markdown.markdown(faq_content)
+
     context = {
         "page_title": "Создать тест",
         'tokens_f': get_format_number(diff_limit) if diff_limit > 0 else 0,
         'limit_tokens': tokens_limit,
         'username': get_username(request),
-        'subscription_level': subscription_level
+        'subscription_level': subscription_level,
+        'faq_html': faq_html
     }
 
     return render(request, 'askify_service/text_input.html', context)
@@ -262,6 +268,7 @@ class ManageSurveysView(View):
                             'error': 'Токены закончились :(\n\nОзнакомьтесь с тарифами на странице профиля.'}, status=403)
 
                 try:
+                    # time.sleep(9999)
                     print(f"\n\nGEN STAAAART")
 
                     # tracer_l.tracer_charge(
@@ -434,7 +441,7 @@ class FileUploadView(View):
 
 
 @method_decorator(login_required, name='dispatch')
-# @method_decorator(subscription_required, name='dispatch')
+@method_decorator(subscription_required, name='dispatch')
 # @method_decorator(sync_to_async, name='dispatch')
 class TakeSurvey(View):
     def post(self, request, survey_id):
@@ -651,8 +658,9 @@ def login_view(request):
             request.session['user_id'] = user.id
             print(request.session.get('user_id'))
 
-            tracer_l.tracer_charge(
-                'ADMIN', request.user.username, login_view.__name__, f"user has been login in")
+            if not DEBUG:
+                tracer_l.tracer_charge(
+                    'ADMIN', request.user.username, login_view.__name__, f"user has been login in")
 
             return redirect('/create')
         else:
@@ -667,74 +675,108 @@ def logout_view(request):
     request.session.flush()
     return redirect('login')
 
+import vk_api
+
+VK_CLIENT_ID = 52653516
+VK_CLIENT_SECRET = "Qh6Z7Nax0GeXpIzxOJ6S"
+VK_REDIRECT_URI = "https://letychka.ru/create/"
+
 
 def vk_auth(request):
-    tracer_l.tracer_charge(
-        'ERROR', request.user.username, vk_auth.__name__, "start")
-    if request.method == 'POST':
-        tracer_l.tracer_charge(
-            'ERROR', request.user.username, vk_auth.__name__, "post")
+    vk_session = vk_api.VkApi(app_id=VK_CLIENT_ID, client_secret=VK_CLIENT_SECRET)
+    auth_url = vk_session.get_auth_url()
+    return redirect(auth_url)
 
+
+def vk_auth_callback(request):
+    if request.method == 'GET':
         try:
-            data = json.loads(request.body)
-            vk_id = data.get('vk_id')
-            name = data.get('name')
-            phone = data.get('phone')
-            email = data.get('email')
-
-            user_profile, created = AuthUser.objects.update_or_create(
-                vk_id=vk_id,
-                defaults={
-                    'name': name,
-                    'phone': phone,
-                    'email': email,
-                }
-            )
-            user = authenticate(request, username=vk_id)
-            if user is not None:
-                login(request, user)
-                request.session['user_id'] = user.id
+            code = request.GET.get('code')
+            device_id = request.GET.get('device_id')
 
             tracer_l.tracer_charge(
-                'ERROR', request.user.username, vk_auth.__name__, f"success")
-            return JsonResponse({'status': 'success', 'created': created})
-        except Exception as fail:
+                'ADMIN', request.user.username, vk_auth_callback.__name__, f"Code: {code}, Device ID: {device_id}")
+
+            if not code or not device_id:
+                return JsonResponse({'success': False, 'error': 'Invalid data'})
+
+            url = 'https://api.vk.com/oauth/access_token'
+            params = {
+                'client_id': VK_CLIENT_ID,
+                'client_secret': VK_CLIENT_SECRET,
+                'redirect_uri': VK_REDIRECT_URI,
+                'code': code,
+            }
+
+            response = requests.post(url, params=params)
+
             tracer_l.tracer_charge(
-                'ERROR', request.user.username, vk_auth.__name__, f"ERROR {fail}")
-    return JsonResponse({'status': 'error'}, status=400)
+                'ADMIN', request.user.username, vk_auth_callback.__name__, f"{response} {response.text }")
 
+            response_data = response.json()
 
-def vk_callback(request):
-    code = request.GET.get('code')
-    state = request.GET.get('state')
-    device_id = request.GET.get('device_id')
-    code_verifier = request.session.get('code_verifier')
+            if 'access_token' not in response_data:
+                return JsonResponse({'success': False, 'error': 'Failed to get access token'})
 
-    if code:
-        token_url = 'https://id.vk.com/oauth2/access_token'
-        params = {
-            'client_id': '7b09de637b09de637b09de6325782ab3af77b097b09de631c385ca246d43f689073405f',
-            'client_secret': 'our2AXXhor7xIUA82DpH',
-            'code': code,
-            'redirect_uri': '/create/',
-            'grant_type': 'authorization_code',
-            'code_verifier': code_verifier,
-            'device_id': device_id,
-        }
+            tracer_l.tracer_charge(
+                'ADMIN', request.user.username, vk_auth_callback.__name__, f"access_token in response_data: {response_data}")
 
-        response = requests.post(token_url, data=params)
-        tokens = response.json()
+            access_token = response_data['access_token']
+            user_id = response_data['user_id']
 
-        if 'access_token' in tokens:
-            access_token = tokens['access_token']
-            refresh_token = tokens.get('refresh_token')
-            id_token = tokens.get('id_token')
+            tracer_l.tracer_charge(
+                'ADMIN', request.user.username, vk_auth_callback.__name__, f"access_token: {access_token}")
 
-            print()
+            # Получаем данные пользователя
+            vk_session = vk_api.VkApi(token=access_token)
+            user_info = vk_session.method('users.get', {'user_ids': user_id, 'fields': 'photo_200'})
 
-            return JsonResponse({'status': 'success', 'access_token': access_token})
+            tracer_l.tracer_charge(
+                'ADMIN', request.user.username, vk_auth_callback.__name__, f"User Info: {user_info}")
 
-    return JsonResponse({'status': 'error', 'message': 'Authorization failed'}, status=400)
+            if user_info:
+                first_name = user_info[0]['first_name']
+                last_name = user_info[0]['last_name']
+
+                tracer_l.tracer_charge(
+                    'ADMIN', request.user.username, vk_auth_callback.__name__,
+                    f"Creating user: {first_name} {last_name}")
+
+                # Создаем пользователя
+                auth_user = AuthUser.objects.create(
+                    username=str(uuid.uuid4()),
+                    first_name=first_name,
+                    last_name=last_name
+                )
+                auth_user.save()
+
+                # Создаем дополнительную информацию о пользователе
+                add_user = AuthAdditionalUser.objects.create(
+                    user=auth_user,
+                    id_vk=user_id
+                )
+                add_user.save()
+
+                # Логиним пользователя
+                login(request, auth_user)
+                request.session['user_id'] = auth_user.id
+
+                # Перенаправляем на страницу создания теста
+                return redirect('create')
+            else:
+                tracer_l.tracer_charge(
+                    'ADMIN', request.user.username, vk_auth_callback.__name__, "Failed to get user info")
+                return JsonResponse({'success': False, 'error': 'Failed to get user info'})
+
+        except Exception as e:
+            tracer_l.tracer_charge(
+                'ADMIN', request.user.username, vk_auth_callback.__name__, f"Error: {e}")
+            return JsonResponse({'success': False, 'error': str(e)})
+
+    tracer_l.tracer_charge(
+        'ADMIN', request.user.username, vk_auth_callback.__name__, "Invalid request method")
+
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})
 
 
 @login_required
@@ -761,8 +803,7 @@ def profile_view(request, username):
     human_readable_plan = subscription.get_human_plan()
 
     if isinstance(subscription.end_date, str):
-        subscription.end_date = datetime.strptime(subscription.end_date,
-                                                  '%Y.%m.%d')
+        subscription.end_date = datetime.strptime(subscription.end_date, '%Y.%m.%d')
 
     days_until_end = (subscription.end_date - timezone.now()).days
     print('days_until_end', days_until_end)
@@ -792,7 +833,7 @@ def profile_view(request, username):
         },
         'subscription': {
             'plan_name': human_readable_plan,
-            'plan_end_date': subscription_end_date,
+            'plan_end_date': f"заканчивается {subscription_end_date}" if days_until_end > 0 else "истёк :(",
             'days_until_end': days_until_end
         },
         'subscription_level': get_subscription_level(request),
@@ -878,8 +919,6 @@ def admin_stats(request):
                         'amount': f'{get_format_number(payment.amount / 100)} руб',
                         'date': get_formate_date(subscription.start_date),
                     })
-
-            # usernames = AuthUser.objects.values_list('username', flat=True)
 
             context = {
                 'username': request.user.username,
@@ -1378,13 +1417,11 @@ def confirm_user(request):
 def phone_number_view(request):
     if request.method == 'POST':
         form = PhoneNumberForm(request.POST)
-        print(form.is_valid())
 
         if form.is_valid():
             phone_number = form.cleaned_data['phone_number']
 
             user = AuthUser.objects.filter(phone=phone_number).first()
-
             new_auth_telegram = AuthAdditionalUser.objects.filter(user=user).first()
 
             if new_auth_telegram and (user.confirmed_user is True):
@@ -1424,11 +1461,6 @@ def verify_code_view(request):
 
         user = AuthUser.objects.filter(phone=phone_number).first()
 
-        tracer_l.tracer_charge(
-            'ADMIN', get_client_ip(request),
-            'phone_number_view',
-            f"2 verify_code_view: {user.id} {user.username}")
-
         if user:
             if user_verify_code.get(user.phone) == int(verification_code):
                 tracer_l.tracer_charge(
@@ -1440,7 +1472,6 @@ def verify_code_view(request):
                 request.session['user_id'] = user.id
 
                 return redirect('create')
-                # return JsonResponse({'status': 'success', 'redirect_url': '/create'})
 
             else:
                 return JsonResponse({'status': 'error', 'message': 'Неверный код'})
@@ -1659,38 +1690,6 @@ def document_view(request, slug):
     }
 
     return render(request, 'document.html', content)
-
-from django.utils.text import slugify
-
-def slugify_title(title):
-    translit_mapping = {
-        'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo',
-        'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm',
-        'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u',
-        'ф': 'f', 'х': 'kh', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'shch', 'ъ': '',
-        'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya', ' ': '-',
-        '-': '-',  # Сохраняем дефисы
-        ':': '',  # Убираем двоеточие
-        '–': '-',  # Заменяем длинный дефис на обычный
-    }
-
-    slug = ''.join(translit_mapping.get(char, char) for char in title.lower())
-
-    slug = slug.replace('--', '-')
-    slug = slug.strip('-')
-
-    return slug
-
-
-def get_view_count_text(count):
-    if 11 <= count % 100 <= 14:
-        return f"{count} просмотров"
-    elif count % 10 == 1:
-        return f"{count} просмотр"
-    elif count % 10 in [2, 3, 4]:
-        return f"{count} просмотра"
-    else:
-        return f"{count} просмотров"
 
 
 def blog_view(request, slug):

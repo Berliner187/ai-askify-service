@@ -41,6 +41,62 @@
                     <script async src="https://telegram.org/js/telegram-widget.js?22" data-telegram-login="LetychkaRobot" data-size="large" data-userpic="false" data-radius="16" data-auth-url="https://letychka.ru/auth/telegram/" data-request-access="write"></script>
                  </div> -->
 
+                 <!-- <div>
+                    <script src="https://unpkg.com/@vkid/sdk@<3.0.0/dist-sdk/umd/index.js"></script>
+                    <script type="text/javascript">
+                        if ('VKIDSDK' in window) {
+                            const VKID = window.VKIDSDK;
+                
+                            VKID.Config.init({
+                                app: 52653516,
+                                redirectUrl: 'https://letychka.ru/vk-auth-callback/',
+                                responseMode: VKID.ConfigResponseMode.Callback,
+                                source: VKID.ConfigSource.LOWCODE,
+                            });
+                
+                            const oneTap = new VKID.OneTap();
+                
+                            oneTap.render({
+                                container: document.currentScript.parentElement,
+                                showAlternativeLogin: true
+                            })
+                            .on(VKID.WidgetEvents.ERROR, vkidOnError)
+                            .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, function (payload) {
+                                const code = payload.code;
+                                const deviceId = payload.device_id;
+                
+                                // Отправляем данные на сервер
+                                fetch('/vk-auth-callback/', {
+                                    method: 'GET',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'X-CSRFToken': '{{ csrf_token }}'  // CSRF токен для защиты
+                                    },
+                                    body: JSON.stringify({ code: code, device_id: deviceId })
+                                })
+                                .then(response => response.json())
+                                .then(data => {
+                                    if (data.success) {
+                                        window.location.href = '/create/';  // или куда тебе нужно
+                                    } else {
+                                        vkidOnError(data.error);
+                                    }
+                                })
+                                .catch(error => vkidOnError(error));
+                            });
+                
+                            function vkidOnSuccess(data) {
+                                // Обработка полученного результата (если нужно)
+                            }
+                
+                            function vkidOnError(error) {
+                                // Обработка ошибки
+                                console.error('VK ID Error:', error);
+                            }
+                        }
+                    </script>
+                </div> -->
+
                 <div class="already-exist">
                   <p>или</p>
                 </div>
