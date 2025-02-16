@@ -33,7 +33,8 @@ class Survey(models.Model):
 
     def generate_pdf(self):
         response = HttpResponse(content_type='application/pdf')
-        response['Content-Disposition'] = f'attachment; filename="{self.title}.pdf"'
+        safe_title = "".join(c for c in self.title if c.isalnum() or c in (" ", "_")).rstrip()
+        response['Content-Disposition'] = f'attachment; filename="{safe_title}.pdf"'
 
         converter_pdf = ConverterPDF()
         response = converter_pdf.get_survey_in_pdf(response, self.title, self.get_questions())
@@ -394,3 +395,11 @@ class TokensUsed(models.Model):
         self.tokens_survey_used += survey_tokens
         self.tokens_feedback_used += feedback_tokens
         self.save()
+
+
+class AuthToken(models.Model):
+    token = models.CharField(max_length=255, unique=True)
+    expires_at = models.DateTimeField()
+
+    def is_valid(self):
+        return timezone.now() < self.expires_at

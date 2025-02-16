@@ -1360,14 +1360,14 @@ def confirm_user(request):
 
         telegram_user_id = data.get('telegram_user_id')
         phone_number = str(data.get('phone_number'))
-        username = data.get('username')
+        username = data.get('username') or ''
         first_name = data.get('first_name')
         last_name = data.get('last_name') or ''
 
         tracer_l.tracer_charge(
             'ADMIN', get_client_ip(request),
             'confirm_user',
-            f"Success auth: hash is OK")
+            f"Success auth: hash is OK for {first_name} {username}")
 
         additional_auth = AuthAdditionalUser.objects.filter(id_telegram=int(telegram_user_id)).first()
 

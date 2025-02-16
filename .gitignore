@@ -8,3 +8,9 @@ logger.csv
 logger.csv
 /docs
 /backup
+askify_app/settings.py
+askify_service/templates/payments/tbank-payment.js
+askify_service/tester-2.py
+askify_service/tester-3.py
+askify_service/tester-4.py
+askify_service/tester.py

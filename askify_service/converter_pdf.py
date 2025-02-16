@@ -25,34 +25,39 @@ class ConverterPDF:
         y = 700
         max_width = 400
 
-        p.setFont('Manrope Bold', 16)
-        # p.drawString(60, 750, f"{title}")
-        text_object = p.beginText(60, y+50)
+        def check_new_page():
+            nonlocal y
+            if y < 50:
+                p.showPage()
+                p.setFont('Manrope Medium', 11)
+                y = 700
+
+        p.setFont('Manrope Bold', 14)
+        text_object = p.beginText(60, y+40)
+        p.setFont('Manrope Medium', 11)
 
         for line in title.splitlines():
             words = line.split(' ')
             current_line = ''
             for word in words:
-                print(p.stringWidth(current_line + word + ' ', 'Manrope Bold', 16))
                 if p.stringWidth(current_line + word + ' ', 'Manrope Bold', 16) < max_width:
                     current_line += word + ' '
                 else:
                     text_object.textLine(current_line)
                     current_line = word + ' '
                     y -= 15
-            print(current_line)
+                    check_new_page()
             text_object.textLine(current_line)
 
         p.drawText(text_object)
-        p.setFont('Manrope Medium', 11)
+        y -= 20
 
         for question in questions:
             question_text = question['question']
             options = question['options']
 
             text_object = p.beginText(60, y)
-            text_object.setFont('Manrope Medium', 11)
-            text_object.setTextOrigin(60, y)
+            text_object.setFont('Manrope Medium', 12)
 
             for line in question_text.splitlines():
                 words = line.split(' ')
@@ -64,6 +69,7 @@ class ConverterPDF:
                         text_object.textLine(current_line)
                         current_line = word + ' '
                         y -= 15
+                        check_new_page()
                 text_object.textLine(current_line)
 
             p.drawText(text_object)
@@ -74,12 +80,11 @@ class ConverterPDF:
                 p.drawString(60, y, f"{count}) {option}")
                 y -= 15
                 count += 1
+                check_new_page()
 
             y -= 10
-
-        # p.setFont('Unbounded Medium', 7)
-        # p.drawString(80, 40, f"Created by Летучка, {get_year_now()}")
 
         p.showPage()
         p.save()
         return response
+
