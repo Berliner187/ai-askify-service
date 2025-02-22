@@ -1,3 +1,5 @@
+import json
+
 from django.contrib.auth.models import User
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -32,6 +34,7 @@ from .models import *
 from .forms import *
 from .constants import *
 from .tracer import *
+from .quant import Quant
 
 
 from askify_app.settings import DEBUG, BASE_DIR
@@ -43,6 +46,7 @@ import markdown
 import requests
 import aiofiles
 import PyPDF2
+from Crypto.PublicKey import ECC
 
 
 from datetime import datetime
@@ -61,6 +65,7 @@ os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
 
 
 tracer_l = TracerManager(TRACER_FILE)
+crypto_b = Quant()
 
 
 def index(request):
@@ -1202,7 +1207,7 @@ class PaymentSuccessView(View):
                     subscription.status = 'active'
                     subscription.save()
 
-                    formatted_amount = f"{payment.amount / 100:,.2f}".replace(',', ' ').replace('.', ',') + " руб"
+                    formatted_amount = f"{payment.amount / 100:,.2f}".replace(',', ' ').replace('.', ',') + " RUB"
 
                     payment_details = [
                         {"label": "Сумма", "value": formatted_amount},
@@ -1224,7 +1229,7 @@ class PaymentSuccessView(View):
                     new_transaction = TransactionTracker.objects.create(
                         staff_id=get_staff_id(request),
                         payment_id=payment.payment_id,
-                        description=f'{payment.amount}, {subscription.get_human_plan()}, completed: {payment_status}',
+                        description=f'{formatted_amount}, {subscription.get_human_plan()}, completed: {payment_status}',
                         order_id=payment.order_id,
                         amount=int(amount),
                     )
@@ -1239,19 +1244,20 @@ class PaymentSuccessView(View):
                             f"<b>Статус платежа:</b> {payment_data['payment_status']}\n"
                             f"<b>План:</b> {payment_data['plan_name']}\n\n"
                             f"<b>Детали платежа:</b>\n"
-                            f"{payment_details_text}\n"
-                            f"<b>Пользователь:</b> {payment_data['username']}"
+                            f"{payment_details_text}\n\n"
+                            f"<b>ID пользователя:</b> {get_staff_id(request)}"
                         )
 
                         auth_user = AuthUser.objects.get(id_staff=get_staff_id(request))
                         additional_auth_user = AuthAdditionalUser.objects.get(user=auth_user)
 
                         telegram_message_manager = ManageTelegramMessages()
+                        telegram_message_manager.send_message(TELEGRAM_CHAT_ID, message)
                         telegram_message_manager.send_message(additional_auth_user.id_telegram, message)
 
                     except Exception as fail:
                         tracer_l.tracer_charge(
-                            'WARNING', f"{get_username(request)}",
+                            'INFO', f"{get_username(request)}",
                             PaymentSuccessView.__name__,
                             f'Fail while send info about payment to Telegram', fail)
 
@@ -1323,22 +1329,58 @@ class ManageTelegramMessages:
         message = f"Код для авторизации: <pre><code>{code}</code></pre>\n\n<i>Нажмите, чтобы скопировать</i>"
         self.send_message(telegram_user_id, message)
 
-    def send_message_about_start(self):
-        bot_token = TELEGRAM_BOT_TOKEN
-        message = f"SERVER APP will be RELOADED {CONFIRM_SYMBOL}"
-        url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-
-        payload = {
-            'chat_id': TELEGRAM_CHAT_ID,
-            'text': message
-        }
-
-        requests.post(url, json=payload)
-
 
 def hash_data(data):
     data_string = json.dumps(data, sort_keys=True).encode()
     return hashlib.sha256(data_string).hexdigest()
+
+
+class TelegramAuthManagement:
+    @staticmethod
+    def auth_user(telegram_auth_data: dict):
+        telegram_user_id = telegram_auth_data.get('telegram_user_id')
+        phone_number = telegram_auth_data.get('phone_number')
+        first_name = telegram_auth_data.get('first_name')
+        last_name = telegram_auth_data.get('last_name')
+        username = telegram_auth_data.get('username')
+
+        additional_auth = AuthAdditionalUser.objects.filter(id_telegram=int(telegram_user_id)).first()
+
+        user, created = AuthUser.objects.update_or_create(
+            phone=phone_number,
+            defaults={
+                'confirmed_user': True,
+                'first_name': first_name,
+                'last_name': last_name,
+                'username': username if username is not None else telegram_user_id,
+                'email': None
+            }
+        )
+
+        if not additional_auth:
+            new_auth_telegram = AuthAdditionalUser.objects.create(
+                user=user,
+                id_telegram=int(telegram_user_id),
+            )
+            new_auth_telegram.save()
+
+            tracer_l.tracer_charge(
+                'ADMIN', f"telegram_id {telegram_user_id}",
+                'confirm_user',
+                f"Created additional auth for user: {telegram_user_id}")
+
+            plan_name, end_date, status, billing_cycle, discount = init_free_subscription()
+            subscription = Subscription.objects.create(
+                staff_id=user.id_staff,
+                plan_name=plan_name,
+                end_date=end_date,
+                status=status,
+                billing_cycle=billing_cycle,
+                discount=0.00
+            )
+            subscription.save()
+
+        return user
 
 
 user_verify_code = {}
@@ -1346,6 +1388,7 @@ user_verify_code = {}
 
 @csrf_exempt
 def confirm_user(request):
+    """ Прием данных с сервера V1, дешифровка и создание аккаунта для нового пользователя """
     if request.method == 'POST':
         try:
             body = json.loads(request.body)
@@ -1369,41 +1412,84 @@ def confirm_user(request):
             'confirm_user',
             f"Success auth: hash is OK for {first_name} {username}")
 
-        additional_auth = AuthAdditionalUser.objects.filter(id_telegram=int(telegram_user_id)).first()
+        telegram_auth_data = {
+            'telegram_user_id': telegram_user_id,
+            'phone_number': phone_number,
+            'username': username,
+            'first_name': first_name,
+            'last_name': last_name,
+        }
+        user = TelegramAuthManagement.auth_user(telegram_auth_data)
 
-        user, created = AuthUser.objects.update_or_create(
-            phone=phone_number,
-            defaults={
-                'confirmed_user': True,
-                'first_name': first_name,
-                'last_name': last_name,
-                'username': username if username is not None else telegram_user_id,
-                'email': None
-            }
-        )
+        login(request, user)
+        request.session['user_id'] = user.id
 
-        if not additional_auth:
-            new_auth_telegram = AuthAdditionalUser.objects.create(
-                user=user,
-                id_telegram=int(telegram_user_id),
-            )
-            new_auth_telegram.save()
+        return JsonResponse({'status': 'success', 'user_id': user.id})
 
-            tracer_l.tracer_charge(
-                'ADMIN', get_client_ip(request),
-                'confirm_user',
-                f"Created additional auth for user: {user.id}")
+    return JsonResponse({'status': 'error', 'message': 'Invalid response'}, status=400)
 
-            plan_name, end_date, status, billing_cycle, discount = init_free_subscription()
-            subscription = Subscription.objects.create(
-                staff_id=user.id_staff,
-                plan_name=plan_name,
-                end_date=end_date,
-                status=status,
-                billing_cycle=billing_cycle,
-                discount=0.00
-            )
-            subscription.save()
+
+client_public_keys = {}
+
+
+@csrf_exempt
+def confirm_user_v2(request):
+    """ Прием данных с сервера V2, дешифровка и создание аккаунта для нового пользователя """
+    if request.method == 'POST':
+        try:
+            body = json.loads(request.body)
+        except json.JSONDecodeError as fatal:
+            return JsonResponse({'status': 'error', 'message': f'Invalid JSON: {fatal}'}, status=400)
+
+        required_fields = ['nonce', 'ciphertext', 'tag', 'data_hash', 'telegram_user_id']
+        for field in required_fields:
+            if field not in body:
+                return JsonResponse({'status': 'error', 'message': f'Missing field: {field}'}, status=400)
+
+        try:
+            nonce = bytes.fromhex(body.get("nonce"))
+            ciphertext = bytes.fromhex(body.get("ciphertext"))
+            tag = bytes.fromhex(body.get("tag"))
+            data_hash = body.get("data_hash")
+            telegram_user_id = body.get("telegram_user_id")
+        except ValueError as e:
+            return JsonResponse({'status': 'error', 'message': 'Invalid hex format'}, status=400)
+
+        client_key_data = client_public_keys.get(telegram_user_id)
+        if not client_key_data:
+            return JsonResponse({'status': 'error', 'message': 'Client public key not found'}, status=400)
+
+        client_public_key_pem = client_key_data['public_key']
+
+        try:
+            client_public_key = ECC.import_key(client_public_key_pem)
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': 'Invalid client public key'}, status=400)
+
+        crypto_b.derive_shared_key(client_public_key)
+
+        try:
+            decrypted_data = crypto_b.decrypt_data(nonce, ciphertext, tag)
+        except ValueError as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
+        if hash_data(decrypted_data) != data_hash:
+            return JsonResponse({'status': 'error', 'message': 'Data integrity check failed'}, status=402)
+
+        telegram_user_id = decrypted_data.get('telegram_user_id')
+        phone_number = str(decrypted_data.get('phone_number'))
+        username = decrypted_data.get('username') or ''
+        first_name = decrypted_data.get('first_name')
+        last_name = decrypted_data.get('last_name') or ''
+
+        telegram_auth_data = {
+            'telegram_user_id': telegram_user_id,
+            'phone_number': phone_number,
+            'username': username,
+            'first_name': first_name,
+            'last_name': last_name,
+        }
+        user = TelegramAuthManagement.auth_user(telegram_auth_data)
 
         login(request, user)
         request.session['user_id'] = user.id
@@ -1411,6 +1497,69 @@ def confirm_user(request):
         return JsonResponse({'status': 'success', 'user_id': user.id})
 
     return JsonResponse({'status': 'error'}, status=400)
+
+
+def cleanup_old_keys():
+    """ Удаляет нелегитимные ключи (TTL ключей в системе). """
+    current_time = time.time()
+    for telegram_user_id in list(client_public_keys.keys()):
+        if current_time - client_public_keys[telegram_user_id]['timestamp'] > 300:
+            del client_public_keys[telegram_user_id]
+
+
+@csrf_exempt
+def exchange_keys(request):
+    """ Обмен ключами с сервером """
+    if request.method != 'POST':
+        return JsonResponse({"error": "Method not allowed"}, status=405)
+
+    try:
+        body = json.loads(request.body)
+    except json.JSONDecodeError as e:
+
+        tracer_l.tracer_charge(
+            'ERROR', get_client_ip(request),
+            'exchange_keys',
+            f"Invalid JSON: {e}")
+
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+    try:
+        public_key_a_pem = body["public_key"]
+        telegram_user_id = body["telegram_user_id"]
+    except KeyError as e:
+        print(f"Missing field: {e}")
+
+        tracer_l.tracer_charge(
+            'ERROR', get_client_ip(request),
+            'exchange_keys',
+            f"Missing field: {e}")
+
+        return JsonResponse({"error": f"Missing field: {e}"}, status=400)
+
+    try:
+        public_key_a = ECC.import_key(public_key_a_pem)
+    except Exception as e:
+
+        tracer_l.tracer_charge(
+            'ERROR', get_client_ip(request),
+            'exchange_keys',
+            f"Invalid public key: {e}")
+
+        return JsonResponse({"error": f"Invalid public key"}, status=400)
+
+    client_public_keys[telegram_user_id] = {
+        'public_key': public_key_a_pem,
+        'timestamp': time.time()
+    }
+
+    cleanup_old_keys()
+    crypto_b.generate_keys_with_secret()
+
+    return JsonResponse({
+        "public_key": crypto_b.public_key.export_key(format='PEM'),
+        "status": "Keys generated successfully"
+    })
 
 
 @csrf_exempt

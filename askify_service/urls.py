@@ -39,7 +39,10 @@ urlpatterns = [
 
     path('api/payment/initiate/', PaymentInitiateView.as_view(), name='payment_initiate'),
     path('api/ghost_disconnect/', terminate_session, name='ghost_disconnect'),
+
     path('api/v1/signal-secure/', confirm_user, name='api_v1_signal_secure'),
+    path('api/v2/signal-secure/', confirm_user_v2, name='api_v2_signal_secure'),
+    path('api/v2/signal-secure/exchange_keys/', exchange_keys, name='api_v2_exchange_keys'),
 
     path('block-user/<str:id_staff>/', block_by_staff_id, name='block_by_staff_id'),
     path('unblock-user/<str:id_staff>/', unblock_by_staff_id, name='unblock_by_staff_id'),

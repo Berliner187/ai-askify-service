@@ -123,7 +123,7 @@ input:hover, button:hover {
 input, button, .registration-form p, #referral-link a {
     font-family: 'Unbounded Medium';
     border-radius: 12px;
-    font-size: 14px;
+    font-size: 12px;
     padding: 12px 16px;
     border: none;
     transition: all 0.25s ease;
@@ -252,6 +252,7 @@ button:hover {
 .enter-phone-form {
     display: flex;
     flex-direction: column;
+    justify-content: space-between;
 }
 
 
@@ -343,11 +344,11 @@ button:hover {
     }
 
     h1 {
-        font-size: 28px;
+        font-size: 24px;
     }
 
     h2 {
-        font-size: 20px;
+        font-size: 16px;
     }
 
     .text-overlay p {

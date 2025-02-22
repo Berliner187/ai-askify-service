@@ -56,7 +56,7 @@
                         <form method="post" action="{% url 'verify_code' %}" onsubmit="verifyCode(event);">
                             {% csrf_token %}
                             <input type="text" name="verification_code" placeholder="Код" required>
-                        <button type="submit">Подтвердить</button>
+                        <button type="submit">Отправить</button>
                     </form>
                 </div>
 
