@@ -44,6 +44,8 @@ urlpatterns = [
     path('api/v2/signal-secure/', confirm_user_v2, name='api_v2_signal_secure'),
     path('api/v2/signal-secure/exchange_keys/', exchange_keys, name='api_v2_exchange_keys'),
 
+    path('api/v2/one_click_auth/<str:token>/<str:token_hash>/', one_click_auth_view, name='one_click_auth'),
+
     path('block-user/<str:id_staff>/', block_by_staff_id, name='block_by_staff_id'),
     path('unblock-user/<str:id_staff>/', unblock_by_staff_id, name='unblock_by_staff_id'),
     path('block-ip/<str:ip_address>/', block_by_ip, name='block_ip'),

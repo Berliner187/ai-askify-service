@@ -1382,6 +1382,121 @@ class TelegramAuthManagement:
 
         return user
 
+    @staticmethod
+    def one_click_auth(telegram_user_id: int, first_name: str, last_name: str, username: str):
+        """
+            Авторизация пользователя по telegram_user_id.
+            Если пользователь уже есть в системе, привязывает telegram_user_id к его аккаунту.
+            Если пользователя нет, создаёт новую запись.
+        """
+        additional_auth = AuthAdditionalUser.objects.filter(id_telegram=int(telegram_user_id)).first()
+
+        if additional_auth:
+            user = additional_auth.user
+            tracer_l.tracer_charge(
+                'ADMIN', f"telegram_id {telegram_user_id}",
+                'one_click_auth',
+                f"User already linked: {telegram_user_id}")
+            return user
+
+        user = AuthUser.objects.filter(phone__isnull=False).first()
+
+        if user:
+            # Если пользователь найден, идет привязка telegram_id к существующему аккаунту
+            new_auth_telegram = AuthAdditionalUser.objects.create(
+                user=user,
+                id_telegram=int(telegram_user_id),
+            )
+            new_auth_telegram.save()
+
+            tracer_l.tracer_charge(
+                'ADMIN', f"telegram_id {telegram_user_id}",
+                'one_click_auth',
+                f"Linked existing user: {telegram_user_id} to phone: {user.phone}")
+        else:
+            # Если пользователь не найден, идет создание нового
+            user = AuthUser.objects.create(
+                first_name=first_name,
+                last_name=last_name,
+                username=username if username is not None else str(telegram_user_id),
+                email=None
+            )
+            user.save()
+
+            new_auth_telegram = AuthAdditionalUser.objects.create(
+                user=user,
+                id_telegram=int(telegram_user_id),
+            )
+            new_auth_telegram.save()
+
+            tracer_l.tracer_charge(
+                'ADMIN', f"telegram_id {telegram_user_id}",
+                'one_click_auth',
+                f"Created new user: {telegram_user_id}")
+
+            plan_name, end_date, status, billing_cycle, discount = init_free_subscription()
+            subscription = Subscription.objects.create(
+                staff_id=user.id_staff,
+                plan_name=plan_name,
+                end_date=end_date,
+                status=status,
+                billing_cycle=billing_cycle,
+                discount=0.00
+            )
+            subscription.save()
+
+        return user
+
+
+@csrf_exempt
+def one_click_auth_view(request, token: str, token_hash: str):
+    """
+        Обработка одноразовой ссылки для авторизации через Telegram.
+    """
+    if request.user.is_authenticated:
+        return redirect('create')
+
+    try:
+        expected_hash = hashlib.sha256(token.encode()).hexdigest()
+        if expected_hash != token_hash:
+            return JsonResponse({"status": "error", "message": "Invalid token hash"}, status=400)
+
+        parts = token.split(':')
+        if len(parts) != 3:
+            return JsonResponse({"status": "error", "message": "Invalid token format"}, status=400)
+
+        telegram_user_id, timestamp, _ = parts
+        telegram_user_id = int(telegram_user_id)
+        timestamp = int(timestamp)
+
+        current_time = int(time.time())
+        if current_time - timestamp > 300:
+            return JsonResponse({"status": "error", "message": "Link expired"}, status=400)
+
+        user = TelegramAuthManagement.one_click_auth(
+            telegram_user_id=telegram_user_id,
+            first_name="",
+            last_name="",
+            username=f"{telegram_user_id}"
+        )
+
+        tracer_l.tracer_charge(
+            'ADMIN', f"telegram_id {telegram_user_id}",
+            'one_click_auth_view',
+            f"User authorized via one-click link: {telegram_user_id}")
+
+        login(request, user)
+        request.session['user_id'] = user.id
+
+        return redirect('create')
+
+    except Exception as fail:
+        tracer_l.tracer_charge(
+            'ERROR', 'one_click_auth_view',
+            'one_click_auth_view',
+            f"Error: {fail}")
+        return JsonResponse({"status": "error", "message": f"Error: {fail}"}, status=500)
+
 
 user_verify_code = {}
 
