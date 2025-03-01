@@ -889,6 +889,52 @@ hr {
     to { opacity: 1; }
 }
 
+
+/* МЕНЮ ВНИЗУ */
+.fixed-bottom-menu {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin: 20px auto;
+    border-radius: 16px;
+    justify-content: space-around;
+    background-color: #27293d;
+    /* border: 1px solid #5A66EB; */
+    color: #BAB8C1;
+    padding: 8px;
+    z-index: 1000;
+    max-width: 500px;
+    transition: .25s;
+    /* box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.5); */
+}
+
+.bottom-menu-item {
+    text-align: center;
+    color: #BAB8C1;
+    text-decoration: none;
+    flex: 1;
+    transition-duration: .25s;
+    border-radius: 12px;
+    padding: 8px 0;
+}
+
+.bottom-menu-item:hover {
+    background-color: #6a61f0;
+}
+
+.menu-icon {
+    width: 24px;
+    height: 24px;
+    margin-bottom: 5px;
+}
+
+.menu-label {
+    font-size: 10px;
+    display: block;
+}
+
 .error-message {
     background-color: #e74c75;
     color: #d5d3db;

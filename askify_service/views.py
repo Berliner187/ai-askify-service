@@ -859,6 +859,31 @@ def admin_stats(request):
     staff_id = get_staff_id(request)
     user = get_object_or_404(AuthUser, id_staff=staff_id)
 
+    if request.method == 'POST':
+        if 'ip_address' in request.POST:
+            try:
+                ip_to_block = request.POST.get('ip_address')
+                if ip_to_block and (ip_to_block not in BlockedUsers.objects.all()):
+                    new_block = BlockedUsers.objects.create(ip_address=ip_to_block)
+                    new_block.save()
+                    return JsonResponse({'status': True, 'message': f"[  BAN  ] --- [ OK ]"})
+            except Exception as fail:
+                return JsonResponse({'status': False, 'message': f"{fail}"})
+
+        if 'username' in request.POST:
+            username_to_promote = request.POST.get('username')
+            try:
+                user_to_promote = AuthUser.objects.get(username=username_to_promote)
+
+                if user_to_promote.is_superuser:
+                    return JsonResponse({'status': True, 'message': f"[  SUPERUSER  ] --- [ ALREADY ]"})
+
+                user_to_promote.is_superuser = True
+                user_to_promote.save()
+                return JsonResponse({'status': True, 'message': f"[  SUPERUSER  ] --- [ OK ]"})
+            except Exception as fail:
+                return JsonResponse({'status': False, 'message': f"{fail}"})
+
     all_users = AuthUser.objects.all().count()
 
     if user.is_superuser:
@@ -879,27 +904,6 @@ def admin_stats(request):
             user_activities = UserActivity.objects.filter(created_at__range=(start_date, end_date)).values('id_staff', 'ip_address', 'created_at')
             user_activities_count = UserActivity.objects.filter(created_at__range=(start_date, end_date)).count()
 
-            # blocked_users = BlockedUsers.objects.values_list('id_staff', 'ip_address')
-
-            # blocked_users_set = set(blocked_users)
-
-            # for user_record in user_activities:
-            #     if user_record['id_staff'] is not None:
-            #         user_record['id_staff'] = AuthUser.objects.get(id_staff=user_record['id_staff']).id_staff
-            #
-            #         user_record['is_blocked'] = (
-            #             (user_record['id_staff'], None) in blocked_users_set or
-            #             (None, user_record['ip_address']) in blocked_users_set
-            #         )
-            #
-            #         print(f"Checking: {(user_record['id_staff'], user_record['ip_address'])} in {blocked_users_set}")
-            #         print(f"Is blocked: {user_record['is_blocked']}")
-            #
-            #         user_record['username'] = AuthUser.objects.get(id_staff=staff_id)
-            #     else:
-            #         user_record['is_blocked'] = False
-
-            # print(user_activities)
         else:
             selected_users = total_surveys = subscriptions = total_answers = 0
             user_activities = UserActivity.objects.none()

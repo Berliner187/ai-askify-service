@@ -9,6 +9,10 @@
         font-size: 20px;
     }
 
+    .fixed-bottom-menu {
+        display: flex;
+    }
+
     .reg-button {
         display: none;
     }

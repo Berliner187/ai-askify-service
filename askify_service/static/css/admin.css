@@ -74,6 +74,36 @@ tr.table-row:hover {
     background-color: #333;
 }
 
+#ip-user-form {
+    display: flex;
+    padding: 24px;
+    justify-content: space-around;
+}
+
+#ip-user-form p {
+    padding: 24px;
+}
+
+#ip-user-form input {
+    background-color: #272736;
+    border-radius: 16px;
+    border: none;
+    padding: 8px 24px;
+    margin: 16px;
+    color: aliceblue;
+}
+
+#ip-user-form div {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+#ip-user-form button {
+    font-family: 'Namu Pro';
+    padding: 8px 16px;
+}
+
 @media (max-width: 600px) {
     table.subscription-table, thead, tbody, th, td, tr {
         display: block;

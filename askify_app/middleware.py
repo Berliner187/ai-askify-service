@@ -5,6 +5,10 @@ from askify_service.models import BlockedUsers
 from askify_service.utils import get_client_ip, get_staff_id
 from asgiref.sync import sync_to_async
 
+import time
+from django.core.cache import cache
+from django.http import JsonResponse
+
 from functools import wraps
 from askify_service.models import Subscription, Payment
 from django.utils import timezone
@@ -21,6 +25,7 @@ class BlockIPMiddleware:
 
     def __call__(self, request):
         ip = get_client_ip(request)
+        self.limit(request, ip)
 
         current_path = request.path
 
@@ -36,6 +41,34 @@ class BlockIPMiddleware:
             }
             return render(request, 'error.html', context)
             # return HttpResponseForbidden("Отказано.")
+        return self.get_response(request)
+
+    def limit(self, request, ip):
+        cache_key = f"rate_limit_{ip}"
+
+        current_time = time.time()
+        request_data = cache.get(cache_key, (0, current_time))
+
+        request_count, first_request_time = request_data
+
+        if current_time - first_request_time > 60:
+            request_count = 0
+            first_request_time = current_time
+
+        request_count += 1
+
+        if request_count > 64:
+            try:
+                BlockedUsers.objects.get_or_create(
+                    ip_address=ip,
+                    reason='Too many requests'
+                )
+            except Exception:
+                pass
+
+            return JsonResponse({'error': 'Too many requests'}, status=429)
+
+        cache.set(cache_key, (request_count, first_request_time), timeout=60)
         return self.get_response(request)
 
 

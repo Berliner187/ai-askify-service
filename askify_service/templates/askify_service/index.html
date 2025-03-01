@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Создать тест с помощью ИИ: Летучка</title>
+    <title>СОЗДАТЬ ТЕСТ С ПОМОЩЬЮ НЕЙРОСЕТИ: ЛЕТУЧКА</title>
     <meta name="description" content="Онлайн сервис на русском языке на основе искусственного интеллекта для создания квизов и тестов. ИИ для создания контрольной работы. Используйте нейросеть для создания квизов и тестов.">
     <meta name="keywords" content="создать тест, тест по теме текста, генерация тестов, создать тест онлайн, летучка, создать тест онлайн с результатами, подготовка к экзаменам, сделать свой тест">
     
-    <meta property="og:title" content="Создать тест с помощью нейросети: Летучка">
+    <meta property="og:title" content="СОЗДАТЬ ТЕСТ С ПОМОЩЬЮ НЕЙРОСЕТИ: ЛЕТУЧКА">
     <meta property="og:description" content="Мощная нейросеть для автоматизации генерации учебных тестов и квизов. Попробуйте создать тест онлайн с результатами бесплатно. ИИ для создания контрольной работы.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://letychka.ru">
@@ -82,20 +82,20 @@
                     <a href="/profile/{{ username }}">{{ username }}</a>
                 {% else %}
                     <div class="auth-buttons">
-                        <div class="button-medium">
+                        <div class="button-medium button-accent">
                             <a href="{% url 'login' %}">
                                 <div>
-                                    <p>Вход</p>
+                                    <p>Войти</p>
                                 </div>
                             </a>
                         </div>
-                        <div class="button-medium button-accent reg-button">
+                        <!-- <div class="button-medium button-accent reg-button">
                             <a href="{% url 'register' %}">
                                 <div>
                                     <p>Регистрация</p>
                                 </div>
                             </a>
-                        </div>
+                        </div> -->
                     </div>
                 {% endif %}
                 <!-- <div class="burger" onclick="toggleMenu()">☰</div> -->
@@ -114,7 +114,7 @@
             <div class="preview-block">
                 <img src="{% static 'img/first-view.png' %}" alt="Фон сетка" class="background-image">
                 <h1 class="main-title">Создавайте тесты<br>за считанные секунды</h1>
-                <p class="sub-title">Составляйте тесты на основе<br> учебного материала</p>
+                <p class="sub-title">Генерируйте учебные тесты<br> скачивайте, и проходите прямо на платформе</p>
                 <a href="{% url 'create' %}" class="cta-button">НАЧАТЬ БЕСПЛАТНО</a>
             </div>
 
