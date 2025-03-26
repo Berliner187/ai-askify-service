@@ -14,3 +14,4 @@ askify_service/tester-2.py
 askify_service/tester-3.py
 askify_service/tester-4.py
 askify_service/tester.py
+/askify_service/migrations

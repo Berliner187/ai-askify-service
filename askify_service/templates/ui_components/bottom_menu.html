@@ -1,6 +1,10 @@
 {% load static %}
 
 <div class="fixed-bottom-menu">
+    <a href="{% url 'create' %}" class="bottom-menu-item">
+        <img src="{% static 'img/icon-new.png' %}" alt="Создать тест" class="menu-icon">
+        <span class="menu-label">Создать тест</span>
+    </a>
     <a href="{% url 'profile' username %}" class="bottom-menu-item">
         <img src="{% static 'img/icon-profile.png' %}" alt="Профиль" class="menu-icon">
         <span class="menu-label">Профиль</span>
@@ -8,9 +12,5 @@
     <a href="{% url 'history' %}" class="bottom-menu-item">
         <img src="{% static 'img/icon-history.png' %}" alt="История" class="menu-icon">
         <span class="menu-label">История</span>
-    </a>
-    <a href="{% url 'create' %}" class="bottom-menu-item">
-        <img src="{% static 'img/icon-new.png' %}" alt="Создать тест" class="menu-icon">
-        <span class="menu-label">Создать тест</span>
     </a>
 </div>

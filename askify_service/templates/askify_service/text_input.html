@@ -7,11 +7,6 @@
     <meta name="author" content="Летучка/Letychka by Kozak Developer">
     <meta property="og:title" content="Создание тестов с ИИ - Летучка">
     <meta property="og:description" content="Используйте ИИ для создания тестов на основе ваших учебных материалов. Быстро, удобно и эффективно!">
-    <meta property="og:image" content="https://letychka.ru/static/img/letychka-banner.png">
-    <meta property="og:url" content="https://letychka.ru/create">
-    <meta property="og:type" content="website">
-    <link rel="preconnect" href="">
-    <link rel="dns-prefetch" href="">
     <meta name="csrf-token" content="{{ csrf_token }}">
     {% load static %}
     <link rel="shortcut icon" href="{% static 'img/logo.png' %}" type="image/png">
@@ -97,32 +92,56 @@
         {% endif %}
 
         <div class="container" id="example-container">
-            <h3>Примеры тестов для оценки сотрудников</h3>
+            <h3>Примеры:</h3>
             <div class="topic-container">
-                <div class="topic" data-text="Оценка навыков командной работы и коммуникации 🤝">
-                    <div class="emoji">🤝</div>
-                    <h4 class="topic-title">Командная работа</h4>
-                    <p class="topic-example">Оценка навыков командной работы и коммуникации</p>
+                <!-- Сопромат -->
+                <div class="topic" 
+                     data-text="Расчет балки на изгиб: эпюры Q и M, метод сечения | Сопромат для 2 курса">
+                    <div class="emoji">🏗️</div>
+                    <h4 class="topic-title">Сопромат</h4>
+                    <p class="topic-example">Типы задач: 
+                        <span class="hint">построение эпюр, расчет напряжений</span>
+                    </p>
                 </div>
-                <div class="topic" data-text="Проверка знаний о продукте и его функциях 📦">
-                    <div class="emoji">📦</div>
-                    <h4 class="topic-title">Знания о продукте</h4>
-                    <p class="topic-example">Проверка знаний о продукте и его функциях</p>
-                </div>
-                <div class="topic" data-text="Анализ навыков решения проблем и критического мышления 🧠">
-                    <div class="emoji">🧠</div>
-                    <h4 class="topic-title">Критическое мышление</h4>
-                    <p class="topic-example">Анализ навыков решения проблем и критического мышления</p>
-                </div>
-                <div class="topic" data-text="Оценка уровня технических навыков сотрудников 💻">
+        
+                <!-- Программирование (C++) -->
+                <div class="topic" 
+                     data-text="ООП на C++: инкапсуляция, наследование, полиморфизм | Лабораторные работы 1 семестр">
                     <div class="emoji">💻</div>
-                    <h4 class="topic-title">Технические навыки</h4>
-                    <p class="topic-example">Оценка уровня технических навыков сотрудников</p>
+                    <h4 class="topic-title">C++ & ООП</h4>
+                    <p class="topic-example">Пример задания: 
+                        <span class="hint">«Реализуйте класс Matrix»</span>
+                    </p>
                 </div>
-                <div class="topic" data-text="Проверка знаний о корпоративной культуре и ценностях 🏢">
-                    <div class="emoji">🏢</div>
-                    <h4 class="topic-title">Корпоративная культура</h4>
-                    <p class="topic-example">Проверка знаний о корпоративной культуре и ценностях</p>
+        
+                <!-- Электротехника -->
+                <div class="topic" 
+                     data-text="Расчет цепей постоянного тока: законы Кирхгофа, метод узловых потенциалов | Электротехника для 3 курса">
+                    <div class="emoji">⚡</div>
+                    <h4 class="topic-title">Электротехника</h4>
+                    <p class="topic-example">Фокус: 
+                        <span class="hint">цепи, трансформаторы, мощность</span>
+                    </p>
+                </div>
+        
+                <!-- Термех -->
+                <div class="topic" 
+                     data-text="Кинематика точки: ускорение, скорость, траектория | Теоретическая механика, раздел кинематики">
+                    <div class="emoji">📐</div>
+                    <h4 class="topic-title">Теормех</h4>
+                    <p class="topic-example">Задачи: 
+                        <span class="hint">расчет движения тела по окружности</span>
+                    </p>
+                </div>
+        
+                <!-- Химия для технарей -->
+                <div class="topic" 
+                     data-text="Коррозия металлов: электрохимические процессы, методы защиты | Химия для машиностроителей">
+                    <div class="emoji">🧪</div>
+                    <h4 class="topic-title">Техническая химия</h4>
+                    <p class="topic-example">Кейсы: 
+                        <span class="hint">расчет скорости коррозии</span>
+                    </p>
                 </div>
             </div>
         </div>
@@ -150,7 +169,7 @@
                 <div class="slider-container">
                     <div id="char-count">0 / 16384 символов</div>
                     <p id="question-slider-text"><span id="slider-value">1</span> вопросов в тесте</p>
-                    <input type="range" id="question-slider" class="custom-slider" min="1" max="10" value="5" style="display: none;">
+                    <input type="range" id="question-slider" class="custom-slider" min="1" max="20" value="5" style="display: none;">
                 </div>
 
                 <div class="head-button">

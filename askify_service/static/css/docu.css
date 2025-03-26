@@ -3,37 +3,78 @@
     margin: 0;
     padding: 0;
     font-family: 'Rubik', sans-serif;
+    line-height: 1.6;
 }
 
 body {
-    background-color: #18171a;
-    color: #cecdd9;
+    background: linear-gradient(160deg, #18171a 20%, #1a1923 100%);
+    color: #f0f0f5;
+    min-height: 100vh;
 }
 
 h1 {
-    line-height: 1;
-    margin: 1em 0;
+    font-size: 2.8rem;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    margin: 1.5rem 0;
+    background: linear-gradient(15deg, #fff 0%, #b7b6c0 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
 h2, h3 {
-    margin: 0.6em 0;
+    margin: 1.2rem 0;
+    font-weight: 500;
+    position: relative;
+    padding-left: 1.2rem;
+}
+
+h2::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.35em;
+    width: 6px;
+    height: 1.2em;
+    background: #7A8FFF;
+    border-radius: 3px;
 }
 
 p img {
-    margin: 0 auto;
+    display: block;
+    margin: 2rem auto;
     width: 100%;
     max-width: 900px;
-    min-width: 100px;
-    padding: 0;
+    border: 1px solid #2d2b35;
     border-radius: 24px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    transition: transform 0.3s ease;
 }
 
-p a {
+p img:hover {
+    transform: translateY(-3px);
+}
+
+a {
     color: #7A8FFF;
+    text-decoration: none;
+    position: relative;
+    transition: color 0.3s ease;
 }
 
-p, li {
-    line-height: 1.8;
+a::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: currentColor;
+    transition: width 0.3s ease;
+}
+
+a:hover::after {
+    width: 100%;
 }
 
 header {
@@ -51,64 +92,83 @@ header {
     margin-top: 20px;
 }
 
-a {
-    color: #cecdd9;
-    text-decoration: underline;
-}
-
-main li {
-    border-radius: 8px;
-    padding: 12px;
-    margin: 10px 0;
-    transition: background-color 0.3s, transform 0.3s; /* Плавные переходы */
-}
-
-header h1 {
-    font-size: 1.5em;
-    font-weight: 400;
-    letter-spacing: 1px;
-}
-
 header img {
     width: 180px;
 }
 
+hr {
+    margin: 32px 0;
+}
+
 main {
     max-width: 800px;
-    margin: 2em auto;
-    padding: 1em;
-    border-radius: 5px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+    margin: 3rem auto;
+    padding: 0 1.5rem;
 }
 
-main p {
-    color: #b7b6c0;
-    margin-bottom: 20px;
+main li {
+    background: rgba(45, 43, 53, 0.4);
+    padding: 1.2rem;
+    margin: 1rem 0;
+    border-left: 4px solid #7A8FFF;
+    border-radius: 8px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-footer a, footer h3, footer p {
-    font-family: 'Unbounded';
+main li:hover {
+    background: rgba(45, 43, 53, 0.6);
+    transform: translateX(8px);
 }
 
-@media (min-width: 900px) {
-    nav {
-        display: block;
-        position: static;
-        background-color: transparent;
-        width: auto;
-        padding: 0;
-        box-shadow: none;
+blockquote {
+    background: linear-gradient(90deg, #2d2b35 0%, rgba(45,43,53,0) 100%);
+    padding: 1.5rem;
+    border-radius: 12px;
+    margin: 2rem 0;
+    font-style: italic;
+}
+
+@media (max-width: 768px) {
+    h1 {
+        font-size: 2rem;
     }
     
-    nav ul {
-        display: flex;
+    header {
+        padding: 1rem;
+        margin: 0.5rem;
+        border-radius: 16px;
     }
     
-    nav ul li {
-        margin: 4px 1em;
+    main {
+        padding: 0 1rem;
     }
-    
-    .burger {
-        display: none;
-    }
+}
+
+/* Специфичные стили для элементов интерфейса */
+[href*="Создать"] {
+    display: inline-block;
+    background: #7A8FFF;
+    color: #151417 !important;
+    padding: 0.8rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 500;
+    text-decoration: none !important;
+    transition: all 0.3s ease;
+}
+
+[href*="Создать"]:hover {
+    background: #6677cc;
+    box-shadow: 0 4px 16px rgba(122, 143, 255, 0.3);
+}
+
+/* Анимация счетчика просмотров */
+main > div:first-child {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    background: rgba(45,43,53,0.8);
+    padding: 0.5rem 1rem;
+    border-radius: 999px;
+    font-size: 0.9em;
+    backdrop-filter: blur(4px);
 }

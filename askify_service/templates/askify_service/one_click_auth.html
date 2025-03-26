@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Авторизация</title>
+</head>
+<body>
+    <div id="message"></div>
+
+    <script>
+        const token = "{{ token }}";
+        const tokenHash = "{{ token_hash }}";
+
+        async function oneClickAuth(token, tokenHash) {
+            const response = await fetch(`/one-click-auth/${token}/${tokenHash}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                }
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                window.location.href = '/create';  // Замените на нужный URL после авторизации
+            } else {
+                document.getElementById('message').innerText = data.message;  // Отображаем сообщение на странице
+            }
+        }
+
+        // Функция для получения CSRF токена
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    // Проверяем, начинается ли cookie с нужного имени
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // Запускаем авторизацию при загрузке страницы
+        if (token && tokenHash) {
+            oneClickAuth(token, tokenHash);
+        } else {
+            document.getElementById('message').innerText = "Токен или хэш не предоставлены.";
+        }
+    </script>
+</body>
+</html>

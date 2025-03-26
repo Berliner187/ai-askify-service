@@ -10,6 +10,7 @@ from django.db.models import Sum
 from datetime import timedelta, datetime
 import json
 import uuid
+import hashlib
 
 from .converter_pdf import *
 
@@ -120,25 +121,15 @@ class AuthUser(AbstractUser):
     vk_id = models.CharField(max_length=255, unique=True, null=True, blank=True)
     name = models.CharField(max_length=255, unique=False, null=True, blank=True)
     phone = models.CharField(max_length=20, null=True, blank=True)
-    email = models.EmailField(null=True, blank=True)
+    email = models.EmailField(unique=True, null=True, blank=True)
 
     def __str__(self):
         return self.username
 
-    def log_activity(self, request):
-        language_code = get_language() if hasattr(request, 'LANGUAGE_CODE') else None
-
-        try:
-            UserActivity.objects.create(
-                id_staff=self.id_staff,
-                ip_address=request.META.get('REMOTE_ADDR'),
-                user_agent=request.META.get('HTTP_USER_AGENT'),
-                referer=request.META.get('HTTP_REFERER'),
-                language_code=language_code,
-                created_at=timezone.now()
-            )
-        except Exception as fail:
-            pass
+    def save(self, *args, **kwargs):
+        if not self.username:
+            self.username = self.email.split('@')[0]
+        super().save(*args, **kwargs)
 
 
 class AuthAdditionalUser(models.Model):
@@ -298,7 +289,6 @@ def slugify_title(title):
 
     return slug
 
-import hashlib
 
 class BlogPost(models.Model):
     title = models.CharField(max_length=200)
@@ -326,14 +316,6 @@ class BlogPost(models.Model):
             self.view_count += 1
             self.unique_ips += self.hash_ip(ip) + ','
             self.save()
-
-    def __str__(self):
-        return self.title
-
-    def save(self, *args, **kwargs):
-        if not self.slug:
-            self.slug = slugify_title(self.title)
-        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.title

@@ -1,4 +1,24 @@
+@font-face {
+    font-family: 'Unbounded Medium';
+    src: url(../fonts/Unbounded-Medium.ttf);
+}
+@font-face {
+    font-family: 'Unbounded Regular';
+    src: url(../fonts/Unbounded-Regular.ttf);
+}
+@font-face {
+    font-family: 'Unbounded Bold';
+    src: url(../fonts/Unbounded-Bold.ttf);
+}
+
+@font-face {
+    font-family: 'Namu Pro';
+    src: url(../fonts/NAMU-Pro.woff2);
+}
+
+
 footer {
+    font-family: 'Namu Pro';
     background-color: #1B1A20;
     border-top-left-radius: 16px;
     border-top-right-radius: 16px;
@@ -9,9 +29,15 @@ footer {
 footer a {
     color: #A190F8;
     text-decoration: none;
+    transition: .3s;
+}
+
+footer a:hover {
+    text-decoration: underline;
 }
 
 footer h3 {
+    font-family: 'Unbounded Bold';
     margin-bottom: 0;
     margin-top: 20px;
 }

@@ -19,6 +19,10 @@ urlpatterns = [
     path('logout/', logout_view, name='logout'),
     path('stats2975/', admin_stats, name='stats2975'),
     path('profile/<str:username>/', profile_view, name='profile'),
+    path('db_viewer/', db_viewer, name='db_viewer'),
+    path('db-search/', db_search, name='db-search'),
+
+    path('blocked_view/', blocked_view, name='blocked_view'),
 
     path('docs/<slug:slug>/', document_view, name='document_view'),
     path('media/<slug:slug>/', blog_view, name='media_view'),

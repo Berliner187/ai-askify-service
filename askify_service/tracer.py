@@ -98,7 +98,7 @@ class TracerManager:
                 f"Username: {user_name}\n\n{additional_info}")
         elif log_level == 'ADMIN':
             self.send_message_to_telegram(
-                f"ℹ️ {message_text}\n\n---\n{function}\n\nUsername: {user_name}")
+                f"🟡 USER: {user_name}\n\n{message_text}\n\n---\n{function}")
 
         self.__create_file_if_not_exists()
         with open(self.log_file, mode='a', newline='', encoding='utf-8') as file:

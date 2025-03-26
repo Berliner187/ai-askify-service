@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>LETYCHKA SECURITY</title>
+    {% load static %}
+    <style>
+        :root {
+            --blood-red: #ff0022;
+            --neon-pulse: 0 0 30px rgba(255, 0, 34, 0.7);
+        }
+        
+        @font-face {
+            font-family: 'Unbounded Bold';
+            src: url("{% static 'fonts/Unbounded-Medium.ttf' %}");
+        }
+
+        body {
+            font-family: 'Unbounded Bold', sans-serif;
+            margin: 0;
+            height: 100vh;
+            background: var(--blood-red);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .error-code {
+            font-size: 35vw;
+            color: rgba(255, 255, 255, 0.15);
+            text-shadow: var(--neon-pulse);
+            line-height: 0.8;
+            margin-top: -15vh;
+            user-select: none;
+            animation: glitch 1s infinite;
+        }
+
+        .message {
+            color: white;
+            text-align: center;
+            font-size: 2.5em;
+            margin: 2vh 0;
+            text-shadow: 0 0 15px rgba(0,0,0,0.3);
+            letter-spacing: 2px;
+        }
+
+        .fire-btn {
+            background: black;
+            color: var(--blood-red);
+            padding: 1.5rem 4rem;
+            border: 3px solid var(--blood-red);
+            border-radius: 12px;
+            font-size: 1.8em;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            box-shadow: var(--neon-pulse);
+            position: relative;
+            z-index: 2;
+        }
+
+        .fire-btn:hover {
+            background: var(--blood-red);
+            color: black;
+            box-shadow: 0 0 50px var(--blood-red);
+            transform: scale(1.05);
+        }
+
+        @keyframes glitch {
+            0% { text-shadow: 0 0 30px rgba(255,0,34,0.7); }
+            50% { text-shadow: -5px 5px 40px rgba(255,0,34,0.8), 5px -5px 40px rgba(0,255,255,0.3); }
+            100% { text-shadow: 0 0 30px rgba(255,0,34,0.7); }
+        }
+
+        /* Для мобилок */
+        @media (max-width: 768px) {
+            .error-code { font-size: 50vw; }
+            .message { font-size: 1.8em; }
+            .fire-btn { padding: 1rem 2rem; font-size: 1.2em; }
+        }
+    </style>
+</head>
+<body>
+    <div class="error-code">403</div>
+    <div class="message">UNAUTHORIZED ACCESS DETECTED</div>
+    <a href="https://letychka.ru" class="fire-btn">
+        BACK TO SAFETY
+    </a>
+
+    <!-- Эффект мерцания -->
+    <script>
+        setInterval(() => {
+            document.body.style.background = `hsl(${Math.random() * 10}, 100%, 40%)`;
+            setTimeout(() => {
+                document.body.style.background = var(--blood-red);
+            }, 50);
+        }, 2000);
+    </script>
+</body>
+</html>

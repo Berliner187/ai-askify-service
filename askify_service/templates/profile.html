@@ -90,6 +90,20 @@
 
             <hr>
 
+            {% if user.is_superuser %}
+                <div class="admin-only-hint">
+                    <small>Видно только тебе, повелитель</small>
+                </div>
+                
+                <div class="button-medium button-accent" style="margin: 20px 0; background: #ff4757;">
+                    <a href="{% url 'db_viewer' %}">
+                        <div>
+                            <p>Админ-панель 👑</p>
+                        </div>
+                    </a>
+                </div>
+            {% endif %}
+
             <div class="profile-info">
                 <h3>Токены</h3>
                 <ul>
@@ -118,6 +132,7 @@
 
             </div>
         </div>
+        {% include 'ui_components/bottom_menu.html' %}
 
         {% include 'footer-s.html' %}
     </div>

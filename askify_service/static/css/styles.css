@@ -531,11 +531,14 @@ textarea {
     display: flex;
     flex-wrap: nowrap;
     background-color: rgba(40, 39, 47, .5);
+    border: 1px solid rgba(255, 255, 255, 0.1); /* Тонкая граница */
     width: fit-content;
     transition: .25s;
     border-radius: 8px;
-    padding:  0px 10px 0px 10px;
+    padding: 0 10px 0 10px;
+    margin: 0 8px;
     justify-content: space-between;
+    transition: background-color 0.3s ease;
     align-items: center;
 }
 .button-medium:active {
@@ -654,7 +657,8 @@ textarea {
 }
 
 
-/* Кастомный слайдер-ползунок кол-ва вопросов */
+
+/* Слайдер-ползунок кол-ва вопросов */
 .custom-slider {
     -webkit-appearance: none;
     width: 90%;
@@ -787,6 +791,8 @@ hr {
     margin: 16px 0;
 }
 
+
+/* Контейнер с примерами */
 .topic {
     border: 2px solid rgb(75, 70, 82, .25);
     border-radius: 32px;
@@ -816,27 +822,27 @@ hr {
 }
 
 .topic-title {
-    font-size: 16px; /* Размер шрифта для подзаголовка */
-    margin: 5px 0; /* Отступы для подзаголовка */
+    font-size: 16px;
+    margin: 5px 0;
 }
 
 .topic-example {
-    font-size: 12px; /* Размер шрифта для примера темы */
-    color: #555; /* Цвет текста для примера */
+    font-size: 12px;
+    color: #555;
 }
 
-/* Адаптивные стили для мобильных устройств */
 @media (max-width: 768px) {
     .topic {
-        flex: 1 1 calc(50% - 10px); /* 2 блока в линию на планшетах */
+        flex: 1 1 calc(50% - 10px);
     }
 }
 
 @media (max-width: 480px) {
     .topic {
-        flex: 1 1 100%; /* 1 блок в линию на мобильных устройствах */
+        flex: 1 1 100%;
     }
 }
+
 
 /* Страница профиля */
 .profile ul, .profile p {
@@ -897,15 +903,17 @@ hr {
     bottom: 0;
     left: 0;
     right: 0;
-    margin: 20px auto;
+    margin: 20px 30px;
     border-radius: 16px;
     justify-content: space-around;
-    background-color: #27293d;
+    background-color: rgba(39, 41, 61, .25);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(16px);
     /* border: 1px solid #5A66EB; */
     color: #BAB8C1;
     padding: 8px;
     z-index: 1000;
-    max-width: 500px;
+    max-width: 768px;
     transition: .25s;
     /* box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.5); */
 }

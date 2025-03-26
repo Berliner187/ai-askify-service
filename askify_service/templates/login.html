@@ -8,9 +8,11 @@
     <link rel="shortcut icon" href="{% static 'img/favicon.ico' %}" type="image/ico">
     <link rel="stylesheet" href="{% static 'css/second-loader.css' %}">
     <link rel="stylesheet" href="{% static 'css/loader.css' %}">
-    <link rel="stylesheet" href="{% static 'css/auth.css' %}">
+    <link rel="stylesheet" href="{% static 'css/auth.css' %}?v=1.0">
     <link rel="stylesheet" href="{% static 'css/footer.css' %}">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
+
 <body>
     <script src="{% static 'js/second-loader.js' %}"></script>
     {% include 'components/loader.html' %}
@@ -20,108 +22,40 @@
             {{ message }}
         </div>
     {% endfor %}
-    
+
     <div id="page-container" class="fade" style="display: none;">
         <div class="container">
-            
-            {% include 'components/auth-block.html' %}
-
             <section class="content-container">
                 <h2>Вход</h2>
 
-                <!-- <div class="step-block tg-auth"> -->
-                    <a href="{% url 'auth_telegram' %}" class="step-block tg-auth">
-                      <div>
-                          <img src="{% static 'img/tg-logo.webp' %}" alt="">
-                          <p>Войти с Telegram</p>
-                      </div>
-                    </a>
-                <!-- </div> -->
-                 <!-- <div class="container">
-                    <script async src="https://telegram.org/js/telegram-widget.js?22" data-telegram-login="LetychkaRobot" data-size="large" data-userpic="false" data-radius="16" data-auth-url="https://letychka.ru/auth/telegram/" data-request-access="write"></script>
-                 </div> -->
+                <a href="{% url 'auth_telegram' %}" class="tg-auth-btn">
+                    <img src="{% static 'img/tg-logo.webp' %}" alt="Telegram Logo">
+                    <span>Войти через Telegram</span>
+                </a>
 
-                 <!-- <div>
-                    <script src="https://unpkg.com/@vkid/sdk@<3.0.0/dist-sdk/umd/index.js"></script>
-                    <script type="text/javascript">
-                        if ('VKIDSDK' in window) {
-                            const VKID = window.VKIDSDK;
-                
-                            VKID.Config.init({
-                                app: 52653516,
-                                redirectUrl: 'https://letychka.ru/vk-auth-callback/',
-                                responseMode: VKID.ConfigResponseMode.Callback,
-                                source: VKID.ConfigSource.LOWCODE,
-                            });
-                
-                            const oneTap = new VKID.OneTap();
-                
-                            oneTap.render({
-                                container: document.currentScript.parentElement,
-                                showAlternativeLogin: true
-                            })
-                            .on(VKID.WidgetEvents.ERROR, vkidOnError)
-                            .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, function (payload) {
-                                const code = payload.code;
-                                const deviceId = payload.device_id;
-                
-                                // Отправляем данные на сервер
-                                fetch('/vk-auth-callback/', {
-                                    method: 'GET',
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                        'X-CSRFToken': '{{ csrf_token }}'  // CSRF токен для защиты
-                                    },
-                                    body: JSON.stringify({ code: code, device_id: deviceId })
-                                })
-                                .then(response => response.json())
-                                .then(data => {
-                                    if (data.success) {
-                                        window.location.href = '/create/';  // или куда тебе нужно
-                                    } else {
-                                        vkidOnError(data.error);
-                                    }
-                                })
-                                .catch(error => vkidOnError(error));
-                            });
-                
-                            function vkidOnSuccess(data) {
-                                // Обработка полученного результата (если нужно)
-                            }
-                
-                            function vkidOnError(error) {
-                                // Обработка ошибки
-                                console.error('VK ID Error:', error);
-                            }
-                        }
-                    </script>
-                </div> -->
-
-                <div class="already-exist">
-                  <p>или</p>
+                <div class="or-divider">
+                    <span>или</span>
                 </div>
 
-                <form id="loginForm" method="post">
+                <form id="loginForm" method="post" class="form-group">
                     {% csrf_token %}
-                    <input type="text" id="username" name="username" placeholder="Никнейм" required>
-                    <div id="usernameError" class="error-message" style="display: none;"></div>
+                    <input type="email" id="email" name="email" placeholder="Email" required>
+                    <div id="emailError" class="error-message" style="display: none;"></div>
                     <input type="password" name="password" placeholder="Пароль" required>
                     <button type="submit">Войти</button>
                 </form>
+
                 <div class="already-exist">
-                    <!-- <p>Нет аккаунта? <a href="{% url 'register' %}">Зарегистрироваться</a></p> -->
-                    <p class="subs">Мы заботимся о Вашей конфиденциальности ваших данных</p>
+                    <p>Нет аккаунта? <a href="{% url 'register' %}">Зарегистрироваться</a></p>
+                    <div class="or-divider"></div>
+                    <p class="subs">Мы заботимся о вашей конфиденциальности</p>
                     <a href="/docs/privacy-policy">Политика конфиденциальности</a>
                 </div>
-                <!-- <div class="already-exist">
-                    <p><a href="{% url 'register' %}">Забыли пароль?</a></p>
-                </div> -->
             </section>
-
         </div>
 
         {% include 'footer.html' %}
-        <script src="{% static 'js/validation.js' %}"></script>
-
-    </body>
+        <script src="{% static 'js/login.js' %}"></script>
+    </div>
+</body>
 </html>

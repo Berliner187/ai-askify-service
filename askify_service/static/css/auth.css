@@ -16,359 +16,237 @@
     src: url(../fonts/NAMU-Pro.woff2);
 }
 
-body {
-    font-family: 'Unbounded Regular';
-    background-color: #18171a;
-    color: #e8e7f1;
+
+* {
+    box-sizing: border-box;
     margin: 0;
     padding: 0;
-    transition-duration: .25s;
 }
 
-h1 {
-    font-family: 'Unbounded Bold';
-    font-size: 36px;
+body {
+    font-family: 'Unbounded Medium', sans-serif;
+    color: #E8E7F1;
     margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    background-color: #18171A;
+    background-image: url('../img/bg-subs.png');
+    background-position: 0 top;
+    background-size: 100%;
 }
 
-h2 {
-    font-family: 'Unbounded Medium';
-    font-size: 30px;
-    text-align: center;
+.registration-form {
+    font-family: 'Namu Pro';
 }
 
 .container {
     display: flex;
-    flex-direction: row;
     justify-content: center;
     align-items: center;
-    margin: 28px auto;
-}
-
-.image-block {
-    position: relative;
-    width: 60%;
-    max-width: 1000px;
-}
-
-.bg-img {
-    width: 100%;
-    height: auto;
-}
-
-.text-overlay {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    text-align: center;
-    color: #e8e7f1;
-    padding: 10px;
-    border-radius: 5px;
-}
-
-.text-overlay p {
-    font-size: 16px;
-    color: #8A8A8A;
-}
-
-.logo {
-    width: 128px;
-    margin-bottom: 10px;
+    min-height: 80vh;
+    padding: 20px;
 }
 
 .content-container {
-    margin: 0 auto;
-    display: flex;
-    flex-direction: column;
-    min-width: 200px;
-    width: 30%;
-    max-width: 600px;
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(20px);
+    border-radius: 24px;
+    padding: 40px;
+    max-width: 400px;
+    width: 100%;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 30px;
+    margin: 0 15px;
 }
 
-.id_usable_password, #id_usable_password,
-#id_usable_password_helptext {
+h2 {
+    font-size: 28px;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 32px;
+    color: #E8E7F1;
+    letter-spacing: -0.5px;
+}
+
+.tg-auth-btn {
+    font-family: 'Unbounded Regular';
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #24A1DE, #1D8CBB);
+    color: #E8E7F1;
+    padding: 14px 28px;
+    border-radius: 12px;
+    text-decoration: none;
+    font-size: 16px;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    gap: 10px;
+    width: 100%;
+    margin-bottom: 24px;
+}
+
+.tg-auth-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(36, 161, 222, 0.4);
+}
+
+.tg-auth-btn img {
+    width: 24px;
+    height: 24px;
+}
+
+.or-divider {
+    display: flex;
+    align-items: center;
+    margin: 24px 0;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 14px;
+}
+
+.or-divider::before, .or-divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.or-divider span {
+    padding: 0 12px;
+}
+
+.form-group input {
+    font-family: 'Namu Pro';
+    width: 100%;
+    padding: 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.05);
+    color: #E8E7F1;
+    font-size: 14px;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    margin-bottom: 16px;
+}
+
+.form-group input:focus {
+    border-color: #616DF0;
+    outline: none;
+    box-shadow: 0 0 12px rgba(97, 109, 240, 0.4);
+}
+
+button[type="submit"] {
+    font-family: 'Unbounded Regular';
+    width: 100%;
+    padding: 14px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #616DF0, #79EF66);
+    border: none;
+    color: #E8E7F1;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+button[type="submit"]:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(97, 109, 240, 0.4);
+}
+
+.already-exist {
+    font-family: 'Namu Pro';
+    text-align: center;
+    margin-top: 24px;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.already-exist a {
+    color: #79EF66;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+.already-exist a:hover {
+    color: #616DF0;
+}
+
+
+.errorlist {
+    list-style: none;
+    padding: 0;
+    margin: 10px 0;
+    color: #FF4D4D;
+}
+
+.errorlist li {
+    margin: 5px 0;
+}
+
+.error-message {
+    color: #ff0000;
+    font-size: 14px; 
+    margin-top: 5px;
+    display: none; 
+}
+
+.alert {
+    background: rgba(255, 77, 77, 0.1);
+    border: 1px solid #FF4D4D;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 16px;
+    color: #FF4D4D;
     display: none;
 }
 
-.content-container form, .registration-form {
-    display: flex;
-    flex-direction: column; 
-    gap: 16px;
-    padding: 30px 0 30px 0;
-    min-width: 200px;
-    max-width: 600px;
-}
-
-input, button {
-    border-radius: 12px;
-    font-size: 16px;
-    padding: 12px 16px;
-}
-
-input:hover, button:hover {
-    opacity: .75;
-    cursor: pointer;
-}
-
-.registration-form {
-    color: #939393;
-    font-size: 16px;
-}
-
-#referral-link {
-    text-align: center;
-}
-
-input, button, .registration-form p, #referral-link a {
-    font-family: 'Unbounded Medium';
-    border-radius: 12px;
-    font-size: 12px;
-    padding: 12px 16px;
-    border: none;
-    transition: all 0.25s ease;
-}
-
-input, .registration-form p input {
-    background-color: #1A1A1A;
-    color: #DEDEDE;
-    border: 2px solid transparent;
-    box-shadow: 0 0 5px rgba(255, 255, 255, 0.1);
-}
-
-input:focus, .registration-form input {
-    outline: none;
-    border: 2px solid #DEDEDE;
-    box-shadow: 0 0 10px rgba(222, 222, 222, 0.5);
-}
-
-button, .registration-form button {
-    background-color: #DEDEDE;
-    color: #1A1A1A;
-    border: 2px solid transparent;
-    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
-}
-
-button:hover, .registration-form button:hover {
-    background-color: #1A1A1A;
-    color: #DEDEDE;
-    border: 2px solid #DEDEDE;
-    box-shadow: 0 0 10px rgba(222, 222, 222, 0.5);
-}
-
-
-input:hover {
-    cursor: auto;
-}
-button:hover {
-    cursor: pointer;
-}
-
-
-.image-block .steps-container {
-
-}
-
-.step-block {
-    display: flex;
-    justify-content: left;
-    align-items: center;
-    border-radius: 12px;
-    padding: 0 20px;
-    margin: 0;
-    margin: 16px 0 ;
-    color: #e8e7f1;
-    background-color: #18171a;
-    text-decoration: none;
-    transition-duration: .25s;
-}
-
-.step-block:hover {
-    color: #18171a;
-    background-color: #e8e7f1;
-}
-
-
-.tgme_widget_login.large button.tgme_widget_login_button {
-    margin: 0 auto;
-    justify-content: center;
-    align-items: center;
-}
-
-.tg-auth {
-    background-color: #24A1DE;
-    display: flex;
-    justify-content: center;
-    border-radius: 24px;
-}
-.tg-auth div {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-.tg-auth img {
-    width: 36px;
-}
-.tg-auth a {
-    text-decoration: none;
-    color: #e8e7f1;
-}
-
-#referral-link a {
-    display: flex;
-    margin: 20px 40px;
-    padding: 10px 30px;
-    background-color: #24A1DE;
-    text-align: center;
-    align-items: center;
-    color: #e8e7f1;
-    justify-content: center;
-    text-decoration: none;
-}
-#referral-link a:hover {
-    text-decoration: underline;
-}
-
-.enter-phone-container {
-    width: 80%;
-    min-width: 200px;
-    max-width: 500px;
-    margin: 0 auto;
-    margin-top: 25%;
-    display: flex;
-    flex-direction: column;
-    padding: 24px;
-    background-color: rgba(44, 41, 53, 0.5);
-    border-radius: 24px;
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-}
-
-.enter-phone-container input,
-.enter-phone-container button {
-    margin: 10px;
-}
-
-.enter-phone-form {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-}
-
-
-.step-block p {
-    padding: 0 10px;
-}
-
-.step-block .nummer {
-    color: #e8e7f1;
-    background-color: #18171a;
-    padding: 10px;
-    width: 20px;
-    height: 20px;
-    margin: 0;
-    height:max-content;
-    border-radius: 50%;
-}
-
-
-.white, .dark {
-    background-color: #DEDEDE;
-    color: #18171a;
-}
-
-
-.registration-form p {
-    display: flex;
-    flex-direction: column;
-    margin: 5px;
-}
-
-
 .error-message {
-    color: #d9534f;
-    font-size: 0.8em;
-    margin-top: 5px;
-}
-
-
-.alert {
-    position: fixed;
-    top: 20px;
-    left: 40%;
-    background-color: #d9534f;
-    color: white;
-    padding: 15px;
-    border-radius: 12px;
-    box-shadow: 0 2px 10px rgba(23, 22, 25, 0.25);
-    opacity: 0;
-    transform: translateY(-20px);
-    transition: opacity 0.5s ease, transform 0.5s ease;
-    z-index: 1050;
-}
-
-.alert.show {
-    opacity: 1;
-    transform: translateY(0);
-}
-
-.subs {
-    font-family: 'Namu Pro';
-    color: #939393;
-    text-align: center;
-}
-
-
-.already-exist {
+    color: #FF4D4D;
     font-size: 12px;
-    text-align: center;
-}
-.already-exist a {
-    color: #DEDEDE;
-    padding: 10px;
+    margin-top: 4px;
 }
 
-
-@media (max-width: 768px) {
-    .image-block {
-        width: 100%;
-        margin: 24px 12px; 
-    }
-
-    .text-overlay {
-        padding: 5px;
-    }
-
-    .logo {
-        width: 100px; 
-    }
-
-    h1 {
-        font-size: 24px;
-    }
-
-    h2 {
-        font-size: 16px;
-    }
-
-    .text-overlay p {
-        font-size: 10px;
-    }
-
-    input:hover, button:hover {
-        cursor: pointer;
-    }
-
+/* Для мобилок */
+@media (max-width: 480px) {
     .container {
-        flex-direction: column;
-        margin: 0 auto;
-    }
-
-    .footer-bottom p {
-        font-size: 12px;
+        padding: 10px;
     }
 
     .content-container {
-        width: 80%;
+        padding: 24px;
+        border-radius: 16px;
     }
+
+    h2 {
+        font-size: 24px;
+        margin-bottom: 24px;
+    }
+
+    .tg-auth-btn {
+        padding: 12px 20px;
+        font-size: 14px;
+    }
+
+    .form-group input {
+        padding: 12px;
+    }
+
+    button[type="submit"] {
+        padding: 12px;
+        font-size: 14px;
+    }
+}
+
+.tg-auth-btn {
+    width: 100%;
+    max-width: 320px;
+    margin: 0 auto 24px;
+}
+
+.form-group input {
+    width: 100%;
+    max-width: 100%;
 }

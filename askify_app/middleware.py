@@ -4,7 +4,9 @@ from django.shortcuts import render, redirect
 from askify_service.models import BlockedUsers
 from askify_service.utils import get_client_ip, get_staff_id
 from asgiref.sync import sync_to_async
+from askify_app.settings import DEBUG
 
+from datetime import datetime
 import time
 from django.core.cache import cache
 from django.http import JsonResponse
@@ -12,6 +14,11 @@ from django.http import JsonResponse
 from functools import wraps
 from askify_service.models import Subscription, Payment
 from django.utils import timezone
+
+from askify_service.tracer import TracerManager, TRACER_FILE
+
+
+tracer_l = TracerManager(TRACER_FILE)
 
 
 class BlockIPMiddleware:
@@ -25,22 +32,30 @@ class BlockIPMiddleware:
 
     def __call__(self, request):
         ip = get_client_ip(request)
-        self.limit(request, ip)
+        # self.limit(request, ip)
 
-        current_path = request.path
+        # current_path = request.path
+        #
+        # if ip in BlockedUsers.objects.values_list('ip_address', flat=True):
+        #     if (current_path in self.ALLOWED_URLS) or ('profile' in current_path):
+        #         return self.get_response(request)
+        #     context = {
+        #         'error_code': "403 Forbidden",
+        #         'error_message': "Forbidden/Доступ запрещён",
+        #         'username': request.user.username if request.user.username else None
+        #     }
+        #     return render(request, 'error.html', context)
+        #
+        if not DEBUG:
+            host = request.META.get('HTTP_HOST', '')
+            referer = request.META.get('HTTP_REFERER', '')
 
-        if ip in BlockedUsers.objects.values_list('ip_address', flat=True):
+            allowed_hosts = ['letychka.ru', 'www.letychka.ru']
+            allowed_referers = ['https://letychka.ru', 'https://www.letychka.ru']
 
-            if (current_path in self.ALLOWED_URLS) or ('profile' in current_path):
-                return self.get_response(request)
-
-            context = {
-                'error_code': "403 Forbidden",
-                'error_message': "Forbidden/Доступ запрещён",
-                'username': request.user.username if request.user.username else None
-            }
-            return render(request, 'error.html', context)
-            # return HttpResponseForbidden("Отказано.")
+            if host not in allowed_hosts and not any(referer.startswith(ref) for ref in allowed_referers):
+                return HttpResponseForbidden('Zugriff verweigert. Nur letychka.ru ist erlaubt.')
+        #
         return self.get_response(request)
 
     def limit(self, request, ip):
@@ -107,6 +122,54 @@ def subscription_required(view_func):
 
         except Subscription.DoesNotExist:
             return redirect('payment')
+
+        return view_func(request, *args, **kwargs)
+    return _wrapped_view
+
+
+def check_legal_process(view_func):
+    @wraps(view_func)
+    def _wrapped_view(request, *args, **kwargs):
+        """ Проброс легальности запроса """
+        allowed_hosts = ['letychka.ru', 'www.letychka.ru', 'localhost:8000']
+        host = request.META.get('HTTP_HOST', 'Unknown')
+        print(host)
+        if host not in allowed_hosts:
+            ip = request.META.get('REMOTE_ADDR')
+            user_agent = request.META.get('HTTP_USER_AGENT', 'Unknown')
+            referer = request.META.get('HTTP_REFERER', 'Direct')
+            host = request.META.get('HTTP_HOST', 'Unknown')
+            url = request.get_full_path()
+            method = request.method
+            timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            cookies = request.COOKIES
+
+            log_message = (
+                f"IP: {ip}\n"
+                f"User-Agent: {user_agent}\n"
+                f"Referer: {referer}\n"
+                f"Host: {host}\n"
+                f"URL: {url}\n"
+                f"Method: {method}\n"
+                f"Timestamp: {timestamp}\n"
+                f"Cookies: {cookies}"
+            )
+            print(log_message)
+
+            if not DEBUG:
+                tracer_l.tracer_charge(
+                    'ADMIN', f"{get_client_ip(request)}",
+                    "PROMO PAGE", f"NOT ALLOWED HOST: Zugriff verweigert\n\n{log_message}"
+                )
+
+            # return HttpResponseForbidden('Zugriff verweigert. Nur letychka.ru ist erlaubt.')
+            return redirect('blocked_view')
+
+        blocked_ips = BlockedUsers.objects.values_list('ip_address', flat=True)
+        client_ip = get_client_ip(request)
+        if client_ip in blocked_ips:
+            # return HttpResponseForbidden('Zugriff verweigert. Ihre IP ist blockiert.')
+            return redirect('blocked_view')
 
         return view_func(request, *args, **kwargs)
     return _wrapped_view

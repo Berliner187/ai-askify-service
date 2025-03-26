@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌀 HyperDB Vision Pro</title>
+
+    {% load static %}
+    <link rel="shortcut icon" href="{% static 'img/favicon.ico' %}" type="image/ico">
+</head>
+
+
+<style>
+    :root {
+        --space-void: #0b0a15;
+        --stardust: #1a1a2f;
+        --nebula-border: #2d2b55;
+        --pulsar: #6c5ce7;
+        --quantum-foam: #a8a5e6;
+        --nova: #ff7675;
+        --dark-matter: rgba(255, 255, 255, 0.05);
+        --event-horizon: 20px;
+        --temporal-shift: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    @font-face {
+        font-family: 'Quantum';
+        src: url('https://fonts.gstatic.com/s/russoone/v14/Z9XUDmZRWg6M1LvRYsHOy8mJrrg.woff2') format('woff2');
+    }
+
+    body {
+        background: var(--space-void);
+        color: var(--quantum-foam);
+        font-family: 'Segoe UI', system-ui;
+        line-height: 1.6;
+        margin: 0;
+        padding: 2rem;
+    }
+
+    .cosmic-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 2rem;
+        background: var(--stardust);
+        border-radius: var(--event-horizon);
+        box-shadow: 0 0 50px rgba(108, 92, 231, 0.1);
+    }
+
+    h1 {
+        font-family: 'Quantum', sans-serif;
+        font-size: 3rem;
+        background: linear-gradient(45deg, #6c5ce7, #ff7675);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 2rem;
+        text-align: center;
+        letter-spacing: 2px;
+    }
+
+    .quantum-selector {
+        position: relative;
+        width: 100%;
+        margin: 2rem 0;
+    }
+
+    .quantum-selector select {
+        width: 100%;
+        padding: 1.2rem;
+        background: var(--dark-matter);
+        border: 2px solid var(--nebula-border);
+        border-radius: 12px;
+        color: var(--quantum-foam);
+        font-size: 1.1rem;
+        appearance: none;
+        transition: var(--temporal-shift);
+    }
+
+    .quantum-selector:after {
+        content: "▼";
+        position: absolute;
+        right: 1.5rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--pulsar);
+        pointer-events: none;
+    }
+
+    .singularity-table {
+        --quantum-cell-padding: 0.8rem 1rem;
+        --max-cell-width: 320px;
+    }
+
+    .singularity-table td {
+        padding: var(--quantum-cell-padding);
+        max-width: var(--max-cell-width);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        position: relative;
+        cursor: help;
+        transition: all 0.2s quantum-ease;
+    }
+
+    .singularity-table td:hover {
+        white-space: normal;
+        overflow: visible;
+        z-index: 1000;
+        background: var(--stardust);
+        box-shadow: 0 0 15px rgba(0,0,0,0.3);
+        border-radius: 20px;
+    }
+
+    .singularity-table td:hover::after {
+        content: attr(data-fulltext);
+        position: absolute;
+        top: calc(100% + 5px);
+        left: 0;
+        background: var(--space-void);
+        border: 1px solid var(--pulsar);
+        padding: 0.8rem;
+        border-radius: 6px;
+        white-space: normal;
+        width: auto;
+        min-width: 200px;
+        max-width: 400px;
+        z-index: 9999;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+        backdrop-filter: blur(8px);
+    }
+
+    /* Для мобильной адаптации */
+    @media (max-width: 768px) {
+        .singularity-table {
+            --max-cell-width: 200px;
+            --quantum-cell-padding: 0.6rem;
+        }
+        
+        .singularity-table td:hover::after {
+            left: 50%;
+            transform: translateX(-50%);
+            max-width: 90vw;
+        }
+    }
+
+    .quantum-search {
+        position: relative;
+        margin: 2rem 0;
+    }
+
+    .quantum-search input {
+        width: 90%;
+        padding: 1.2rem 1.2rem 1.2rem 4rem;
+        border: 2px solid var(--nebula-border);
+        border-radius: 12px;
+        background: var(--dark-matter) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%236c5ce7" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>') no-repeat 1.5rem center;
+        background-size: 24px;
+        color: var(--quantum-foam);
+        font-size: 1.1rem;
+        transition: var(--temporal-shift);
+    }
+
+    .quantum-search input:focus {
+        border-color: var(--pulsar);
+        box-shadow: 0 0 20px rgba(108, 92, 231, 0.3);
+        outline: none;
+    }
+
+    .search-resonance {
+        margin-top: 2rem;
+        display: grid;
+        gap: 1rem;
+    }
+
+    .quantum-entanglement {
+        background: var(--dark-matter);
+        padding: 12px;
+        border-radius: 12px;
+        border-left: 4px solid var(--pulsar);
+        transition: var(--temporal-shift);
+        cursor: pointer;
+    }
+
+    .quantum-entanglement:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 30px rgba(108, 92, 231, 0.2);
+    }
+
+    .entanglement-source {
+        font-size: 0.9em;
+        color: var(--pulsar);
+        margin-top: 0.5rem;
+    }
+
+    pre {
+        background: var(--space-void);
+        padding: 1rem;
+        border-radius: 8px;
+        overflow-x: auto;
+        font-family: 'Fira Code', monospace;
+    }
+
+    .button-container a {
+        padding: 12px 32px;
+        background-color: #6c5ce7;
+        color: aliceblue;
+        border-radius: 16px;
+        text-decoration: none;
+        transition-duration: .3s;
+    }
+    .button-container a:hover {
+        background: aliceblue;
+        color: #1a1a2f;
+    }
+
+    .json-key { color: var(--nova); }
+    .json-string { color: #a5d6ff; }
+    .json-number { color: #79c0ff; }
+    .json-boolean { color: #ff7b72; }
+
+    @media (max-width: 768px) {
+        .cosmic-container {
+            padding: 1rem;
+        }
+        
+        .singularity-table {
+            display: block;
+            overflow-x: auto;
+        }
+    }
+</style>
+
+<body>
+    <div class="cosmic-container">
+
+        <div class="button-container">
+            <a href="/stats2975">К аналитике</a>
+        </div>
+        
+        <h1>DATABASE VISOR</h1>
+        
+        <div class="quantum-selector">
+            <select onchange="window.location = '?model=' + this.value">
+                {% for key, value in models %}
+                    <option value="{{ key }}" {% if key == model_key %}selected{% endif %}>
+                        {{ value.0 }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="quantum-search">
+            <input type="text" id="search" placeholder="Quantum search across all realities...">
+        </div>
+
+        <div id="search-results" class="search-resonance"></div>
+
+        <table class="singularity-table">
+            <thead>
+                <tr>
+                    {% for field in fields %}
+                        <th>{{ field }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% load filters %}
+                {% for item in items %}
+                    <tr>
+                        {% for field in fields %}
+                            <td>
+                                {% with value=item|get_attribute:field %}
+                                    {% if value is None %}
+                                        <span class="null-value">-</span>
+                                    {% elif value|is_dict %}
+                                        <pre>{{ value|pretty_json }}</pre>
+                                    {% else %}
+                                        {{ value|truncatechars:100 }}
+                                    {% endif %}
+                                {% endwith %}
+                            </td>
+                        {% endfor %}
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="{{ fields|length }}">🌌 Data singularity detected</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+    // Квантовая подсветка данных
+    document.querySelectorAll('pre').forEach(pre => {
+        const json = pre.textContent;
+        const highlighted = json
+            .replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?)/g, 
+                '<span class="json-key">$1</span>')
+            .replace(/(:\s*)("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*")/g, 
+                '$1<span class="json-string">$2</span>')
+            .replace(/(-?\d+\.?\d*)/g, 
+                '<span class="json-number">$1</span>')
+            .replace(/(true|false)/g, 
+                '<span class="json-boolean">$1</span>');
+        
+        pre.innerHTML = highlighted;
+    });
+
+    // Квантовый поиск
+    document.getElementById('search').addEventListener('input', async (e) => {
+        const query = e.target.value.trim();
+        const resultsContainer = document.getElementById('search-results');
+        
+        if (query.length < 3) {
+            resultsContainer.innerHTML = '';
+            return;
+        }
+
+        try {
+            const response = await fetch(`/db-search/?q=${encodeURIComponent(query)}`);
+            const data = await response.json();
+            
+            resultsContainer.innerHTML = data.map(result => `
+                <div class="quantum-entanglement">
+                    <div class="reality-shard">
+                        <span class="quantum-signature">${result.model}</span>
+                        <span class="quantum-state">${result.field}</span>
+                        <div class="wave-function">${result.value}</div>
+                    </div>
+                    <div class="entanglement-source">📡 Entangled with: ${result.source}</div>
+                </div>
+            `).join('');
+        } catch (error) {
+            resultsContainer.innerHTML = `<div class="quantum-error">⚠️ Quantum interference detected: ${error.message}</div>`;
+        }
+    });
+    </script>
+</body>
+</html>

@@ -27,6 +27,9 @@ from django.utils.encoding import force_bytes
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.http import HttpResponseForbidden
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.db.models import Q
 
 
 from .utils import *
@@ -38,7 +41,7 @@ from .quant import Quant
 
 
 from askify_app.settings import DEBUG, BASE_DIR
-from askify_app.middleware import check_blocked, subscription_required
+from askify_app.middleware import check_blocked, subscription_required, check_legal_process
 
 
 import openai
@@ -47,9 +50,10 @@ import requests
 import aiofiles
 import PyPDF2
 from Crypto.PublicKey import ECC
+import vk_api
 
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import base64
 import asyncio
 import time
@@ -68,9 +72,13 @@ tracer_l = TracerManager(TRACER_FILE)
 crypto_b = Quant()
 
 
+@check_legal_process
 def index(request):
+    start_date = "01.01.2025"
+
     context = {
-        'username': request.user.username if request.user.is_authenticated else 0
+        'username': request.user.username if request.user.is_authenticated else 0,
+        'total_users': calculate_total_users(start_date, 1200),
     }
 
     tracer_l.tracer_charge(
@@ -79,15 +87,14 @@ def index(request):
     return render(request, 'askify_service/index.html', context)
 
 
-@login_required
 # @subscription_required
+@login_required
 def page_create_survey(request):
     current_id_staff = get_staff_id(request)
 
     subs = Subscription.objects.get(staff_id=current_id_staff)
     tokens_limit = get_token_limit(subs.plan_name)
 
-    # Получение кол-ва использованных токенов
     manage_tokens_limits = ManageTokensLimits(current_id_staff)
     tokens_used = manage_tokens_limits.get_usage_tokens()
 
@@ -244,7 +251,7 @@ class ManageSurveysView(View):
                     f"{question_count} {text_from_user}")
 
                 if question_count.isdigit():
-                    if int(question_count) > 10 or int(question_count) < 0:
+                    if int(question_count) > 20 or int(question_count) < 0:
                         return JsonResponse({'error': 'Недоступное кол-во вопросов :('}, status=400)
                 else:
                     return JsonResponse({'error': 'Кол-во вопросов должно быть число'}, status=400)
@@ -609,22 +616,34 @@ def download_survey_pdf(request, survey_id):
     #         'CRITICAL', request.user.username, download_survey_pdf.__name__, "FATAL with View survey in PDF", fatal)
 
 
+from django.db import transaction, IntegrityError
+from django.utils import timezone
+from django.core.exceptions import ValidationError
+
+def generate_username(email):
+    from django.utils.text import slugify
+    import random
+
+    base_username = email.split('@')[0]
+    base_username = slugify(base_username).replace('-', '_')
+
+    if not AuthUser.objects.filter(username=base_username).exists():
+        return base_username
+
+    return f"{base_username}_{random.randint(1000, 9999)}"
+
+
+@check_legal_process
 def register(request):
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
+        print(form.is_valid(), form.cleaned_data.get('email'))
+
         if form.is_valid():
-            email = form.cleaned_data.get('email')
-
-            if not is_allowed_email(email):
-                print('OK')
-                return JsonResponse({'message': 'Отказано в регистрации'}, status=403)
-
             user = form.save()
 
             tracer_l.tracer_charge(
                 'ADMIN', user.username, register.__name__, f"NEW USER")
-
-            # send_verification_email(user)
 
             plan_name, end_date, status, billing_cycle, discount = init_free_subscription()
             subscription = Subscription.objects.create(
@@ -650,14 +669,20 @@ def register(request):
     return render(request, 'register.html', {'form': form})
 
 
+@check_legal_process
 def login_view(request):
     if request.user.is_authenticated:
         return redirect('/create')
 
     if request.method == 'POST':
-        username = request.POST['username']
-        password = request.POST['password']
+        email = request.POST.get('email')
+        password = request.POST.get('password')
+
+        username = email.split('@')[0]
+
         user = authenticate(request, username=username, password=password)
+        user_auth = AuthUser.objects.filter(email=email).first()
+
         if user is not None:
             login(request, user)
             request.session['user_id'] = user.id
@@ -665,12 +690,12 @@ def login_view(request):
 
             if not DEBUG:
                 tracer_l.tracer_charge(
-                    'ADMIN', request.user.username, login_view.__name__, f"user has been login in")
+                    'ADMIN', request.user.username, login_view.__name__, f"LOGGED IN")
 
             return redirect('/create')
         else:
-            print('Неверное имя пользователя или пароль')
-            messages.error(request, 'Неверное имя пользователя или пароль')
+            print('Неверный email или пароль')
+            return JsonResponse({'errors': {'email': ['Неверный email или пароль']}}, status=400)
 
     return render(request, 'login.html')
 
@@ -680,7 +705,10 @@ def logout_view(request):
     request.session.flush()
     return redirect('login')
 
-import vk_api
+
+def blocked_view(request):
+    return render(request, 'askify_service/blocked.html')
+
 
 VK_CLIENT_ID = 52653516
 VK_CLIENT_SECRET = "Qh6Z7Nax0GeXpIzxOJ6S"
@@ -966,6 +994,82 @@ def admin_stats(request):
         return redirect(f'/profile/{request.user.username}')
 
 
+MODEL_MAP = {
+    'Survey': ('📝 Опросы', Survey),
+    'UserAnswers': ('📤 Ответы', UserAnswers),
+    'AuthUser': ('👥 Пользователи', AuthUser),
+    'Subscription': ('💰 Подписки', Subscription),
+    'Payment': ('💳 Платежи', Payment),
+    'BlockedUsers': ('🚫 Блокировки', BlockedUsers),
+    'BlogPost': ('📰 Статьи', BlogPost),
+    'TokensUsed': ('🪙 Токены', TokensUsed),
+}
+
+
+@login_required
+def db_viewer(request):
+    if not request.user.is_superuser:
+        return HttpResponseForbidden("Ты не админ, дружок")
+
+    model_key = request.GET.get('model', 'AuthUser')
+    model_data = MODEL_MAP.get(model_key)
+
+    if not model_data:
+        return HttpResponse("Модель не найдена", status=404)
+
+    model_class = model_data[1]
+    items = model_class.objects.all().order_by('-pk')
+
+    context = {
+        'model_name': model_data[0],
+        'model_key': model_key,
+        'items': items,
+        'fields': [f.name for f in model_class._meta.fields],
+        'models': MODEL_MAP.items(),
+    }
+    return render(request, 'askify_service/db_viewer.html', context)
+
+
+def db_search(request):
+    query = request.GET.get('q', '').strip()
+    if len(query) < 3:
+        return JsonResponse([])
+
+    models_to_search = [
+        (Survey, ['survey_id', 'title', 'id_staff']),
+        (AuthUser, ['username', 'email', 'id_staff']),
+        (UserAnswers, ['survey_id', 'id_staff']),
+        (Subscription, ['staff_id', 'plan_name']),
+    ]
+
+    results = []
+    for model, fields in models_to_search:
+        q_objects = Q()
+        for field in fields:
+            q_objects |= Q(**{f'{field}__icontains': query})
+
+        for item in model.objects.filter(q_objects)[:10]:
+            results.append({
+                'model': model.__name__,
+                'field': ', '.join(fields),
+                'value': str(item),
+                'source': get_related_info(item)
+            })
+
+    return JsonResponse(results, safe=False)
+
+
+def get_related_info(item):
+    """ Получение связанных данных """
+    if hasattr(item, 'id_staff'):
+        try:
+            user = AuthUser.objects.get(id_staff=item.id_staff)
+            return f"{user.first_name} {user.last_name} ({user.email})"
+        except AuthUser.DoesNotExist:
+            return "Неизвестный пользователь"
+    return "Нет связанных данных"
+
+
 def block_by_staff_id(request, id_staff):
     maybe_admin = get_object_or_404(AuthUser, username=request.user.username)
 
@@ -1082,6 +1186,11 @@ class PaymentInitiateView(View):
             {"Description": description},
             {"Password": TERMINAL_PASSWORD}
         ]
+
+        tracer_l.tracer_charge(
+            'ADMIN', f"{get_username(request)}",
+            'PaymentInitiateView',
+            f"WANT TO BUY!!!")
 
         created_token = PaymentManager().generate_token_for_new_payment(data_token)
 
@@ -1334,11 +1443,6 @@ class ManageTelegramMessages:
         self.send_message(telegram_user_id, message)
 
 
-def hash_data(data):
-    data_string = json.dumps(data, sort_keys=True).encode()
-    return hashlib.sha256(data_string).hexdigest()
-
-
 class TelegramAuthManagement:
     @staticmethod
     def auth_user(telegram_auth_data: dict):
@@ -1357,7 +1461,6 @@ class TelegramAuthManagement:
                 'first_name': first_name,
                 'last_name': last_name,
                 'username': username if username is not None else telegram_user_id,
-                'email': None
             }
         )
 
@@ -1403,35 +1506,45 @@ class TelegramAuthManagement:
                 f"User already linked: {telegram_user_id}")
             return user
 
-        user = AuthUser.objects.filter(phone__isnull=False).first()
+        user = AuthUser.objects.filter(username=username).first()
 
         if user:
-            # Если пользователь найден, идет привязка telegram_id к существующему аккаунту
-            new_auth_telegram = AuthAdditionalUser.objects.create(
+            new_auth_telegram, created = AuthAdditionalUser.objects.get_or_create(
                 user=user,
-                id_telegram=int(telegram_user_id),
+                defaults={
+                    'id_telegram': int(telegram_user_id),
+                }
             )
-            new_auth_telegram.save()
+            if not created:
+                tracer_l.tracer_charge(
+                    'ADMIN', f"telegram_id {telegram_user_id}",
+                    'one_click_auth',
+                    f"AuthAdditionalUser already exists for user: {user.id}")
 
             tracer_l.tracer_charge(
                 'ADMIN', f"telegram_id {telegram_user_id}",
                 'one_click_auth',
                 f"Linked existing user: {telegram_user_id} to phone: {user.phone}")
         else:
-            # Если пользователь не найден, идет создание нового
-            user = AuthUser.objects.create(
-                first_name=first_name,
-                last_name=last_name,
-                username=username if username is not None else str(telegram_user_id),
-                email=None
+            user, created = AuthUser.objects.get_or_create(
+                username=username,
+                defaults={
+                    'first_name': first_name,
+                    'last_name': last_name,
+                }
             )
-            user.save()
 
-            new_auth_telegram = AuthAdditionalUser.objects.create(
+            new_auth_telegram, created = AuthAdditionalUser.objects.get_or_create(
                 user=user,
-                id_telegram=int(telegram_user_id),
+                defaults={
+                    'id_telegram': int(telegram_user_id),
+                }
             )
-            new_auth_telegram.save()
+            if not created:
+                tracer_l.tracer_charge(
+                    'ADMIN', f"telegram_id {telegram_user_id}",
+                    'one_click_auth',
+                    f"AuthAdditionalUser already exists for new user: {user.id}")
 
             tracer_l.tracer_charge(
                 'ADMIN', f"telegram_id {telegram_user_id}",
@@ -1439,13 +1552,15 @@ class TelegramAuthManagement:
                 f"Created new user: {telegram_user_id}")
 
             plan_name, end_date, status, billing_cycle, discount = init_free_subscription()
-            subscription = Subscription.objects.create(
+            subscription, created = Subscription.objects.get_or_create(
                 staff_id=user.id_staff,
-                plan_name=plan_name,
-                end_date=end_date,
-                status=status,
-                billing_cycle=billing_cycle,
-                discount=0.00
+                defaults={
+                    'plan_name': plan_name,
+                    'end_date': end_date,
+                    'status': status,
+                    'billing_cycle': billing_cycle,
+                    'discount': 0.00
+                }
             )
             subscription.save()
 
@@ -1940,6 +2055,7 @@ class TelegramAuthView(View):
             return JsonResponse({'status': 'error', 'message': 'Internal server error'}, status=500)
 
 
+@check_legal_process
 def document_view(request, slug):
     file_path = os.path.join(BASE_DIR, 'docs', f'{slug}.md')
     print(file_path)
@@ -1960,6 +2076,7 @@ def document_view(request, slug):
     return render(request, 'document.html', content)
 
 
+@check_legal_process
 def blog_view(request, slug):
     post = get_object_or_404(BlogPost, slug=slug)
 

@@ -15,11 +15,11 @@ function getCookie(name) {
 
 const csrftoken = getCookie('csrftoken');
 
-
-$('#registration-form').on('submit', function(event) {
+$('#loginForm').on('submit', function(event) {
     event.preventDefault();
 
-    $('#alertContainer').html('').hide();
+    $('#emailError').hide().text('');
+    $('#passwordError').hide().text('');
 
     $.ajax({
         type: 'POST',
@@ -32,26 +32,19 @@ $('#registration-form').on('submit', function(event) {
             if (response.redirect) {
                 window.location.href = response.redirect;
             } else {
-                $('#alertContainer').html('Регистрация прошла успешно.').show();
+                window.location.href = '/create';
             }
         },
         error: function(xhr) {
-            console.log(xhr.responseText);
-
             if (xhr.status === 400) {
                 const errors = xhr.responseJSON.errors;
                 if (errors) {
-                    let errorHtml = '<ul class="errorlist">';
-                    for (const field in errors) {
-                        const $field = $(`#${field}Error`);
-                        if ($field.length) {
-                            $field.text(errors[field].join(', ')).show();
-                        } else {
-                            errorHtml += `<li>${field}: ${errors[field].join(', ')}</li>`;
-                        }
+                    if (errors.email) {
+                        $('#emailError').text(errors.email.join(', ')).show();
                     }
-                    errorHtml += '</ul>';
-                    $('#alertContainer').html(errorHtml).show();
+                    if (errors.password) {
+                        $('#passwordError').text(errors.password.join(', ')).show();
+                    }
                 } else {
                     $('#alertContainer').html('Неизвестная ошибка.').show();
                 }
@@ -61,4 +54,3 @@ $('#registration-form').on('submit', function(event) {
         }
     });
 });
-

@@ -10,25 +10,150 @@
     <link rel="shortcut icon" href="{% static 'img/logo.png' %}" type="image/png">
     <link rel="stylesheet" href="{% static 'css/second-loader.css' %}">
     <link rel="stylesheet" href="{% static 'css/loader.css' %}">
-    <link rel="stylesheet" href="{% static 'css/auth.css' %}">
     <link rel="stylesheet" href="{% static 'css/footer.css' %}">
-</head>
-
-<style>
-    body {
-        background-image: url('{% static "img/bg-sphere.webp" %}');
-        background-position: top;
-        background-repeat: no-repeat;
-        background-size: 100%;
-    }
-
-    @media (max-width: 768px) { 
+    <style>
         body {
-            background-image: url('{% static "img/bg-sphere-mobile.webp" %}');
-            background-size: contain;
+            background-image: url('{% static "img/bg-sphere.webp" %}');
+            background-position: top;
+            background-repeat: no-repeat;
+            background-size: 100%;
+            font-family: 'Namu Pro', sans-serif;
+            background-color: #18171a;
+            color: #e8e7f1;
+            margin: 0;
+            padding: 0;
+            transition-duration: 0.25s;
         }
-    }
-</style>
+
+        .container-background {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .enter-phone-container {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(16px);
+            border-radius: 24px;
+            padding: 32px;
+            max-width: 400px;
+            width: 100%;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+        }
+
+        h2, h3 {
+            font-family: 'Unbounded Bold', sans-serif;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .enter-phone-form, #code-input {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .enter-phone-form input, #code-input input {
+            width: 94%;
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.05);
+            color: #e8e7f1;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .enter-phone-form input:focus, #code-input input:focus {
+            border-color: #616DF0;
+            outline: none;
+            box-shadow: 0 0 8px rgba(97, 109, 240, 0.5);
+        }
+
+        .enter-phone-form button, #code-input button {
+            width: 100%;
+            padding: 12px;
+            border-radius: 12px;
+            background: var(--gradient);
+            border: 2px solid #616DF0;
+            color: #e8e7f1;
+            font-family: 'Unbounded Bold', sans-serif;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .enter-phone-form button:hover, #code-input button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(97, 109, 240, 0.5);
+        }
+
+        .already-exist {
+            text-align: center;
+            margin-top: 16px;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .already-exist a {
+            color: #616DF0;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .already-exist a:hover {
+            color: #79EF66;
+        }
+
+        hr {
+            border-color: rgba(255, 255, 255, 0.1);
+            margin: 16px 0;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                background-image: url('{% static "img/bg-sphere-mobile.webp" %}');
+                background-size: contain;
+            }
+
+            .enter-phone-container {
+                padding: 24px;
+            }
+
+            h2, h3 {
+                font-size: 20px;
+            }
+
+            .enter-phone-form input, #code-input input {
+                width: 92%;
+            }
+
+            .enter-phone-form button, #code-input button {
+                font-size: 12px;
+            }
+
+            .already-exist {
+                font-size: 12px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            h2, h3 {
+                font-size: 18px;
+            }
+
+            .enter-phone-container {
+                padding: 16px;
+            }
+
+            .enter-phone-form button, #code-input button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
 
 <body>
     <script src="{% static 'js/second-loader.js' %}"></script>
@@ -79,7 +204,6 @@
     </div>
 
     <script src="{% static 'js/phone-validation.js' %}"></script>
-
 </body>
 
 </html>
