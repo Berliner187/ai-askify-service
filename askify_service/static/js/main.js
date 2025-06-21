@@ -3,146 +3,130 @@ const dropArea = document.getElementById('drop-area');
 const overlay = document.getElementById('overlay');
 
 async function submitText() {
-    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]') 
-                    ? document.querySelector('[name=csrfmiddlewaretoken]').value
-                    : document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-    const text = document.getElementById('user-text').value;
-    const questionCount = slider.value;
+    const text = document.getElementById('user-text').value.trim();
+    const questionCount = document.getElementById('question-slider').value;
+    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
-    if (validatorText(text)) {
+    if (!selectedFile && validatorText(text)) {
         console.log('Text validation failed');
         return;
     }
 
-    overlay.style.display = 'block'; // Показываем оверлей
+    document.getElementById('overlay').style.display = 'block';
 
     try {
-        console.log('Sending text:', text);
-        console.log('Object to send:', { text });
+        if (selectedFile) {
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            formData.append('question_count', questionCount);
 
-        const response = await fetch('/api-create-survey/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrftoken
-            },
-            body: JSON.stringify({ text: text, questions: questionCount }),
-        });
-
-        console.log('Response status:', response.status);
-        const result = await response.json();
-
-        if (response.ok) {
-            console.log('Тест успешно сгенерирован');
-            const surveyId = result.survey_id;
-            console.log('Survey ID:', surveyId);
-            window.location.href = `/result/` + surveyId;
-        } else {
-            console.error('Error:', result);
-            alert(result.error || 'Не удалось выполнить запрос');
-        }
-    } catch (error) {
-        console.error('Ошибка:', error);
-        alert('Опаньки :( Проверьте подписку в своем профиле');
-    } finally {
-        overlay.style.display = 'none'; // Скрываем оверлей
-    }
-}
-
-
-const uploadButton = document.querySelector('.upload-button');
-const checkmark = uploadButton.querySelector('.checkmark');
-const fileInput = document.getElementById('file-upload');
-
-['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-    dropArea.addEventListener(eventName, preventDefaults, false);
-    document.body.addEventListener(eventName, preventDefaults, false);
-});
-
-['dragenter', 'dragover'].forEach(eventName => {
-    dropArea.addEventListener(eventName, () => dropArea.classList.add('hover'), false);
-});
-
-['dragleave', 'drop'].forEach(eventName => {
-    dropArea.addEventListener(eventName, () => dropArea.classList.remove('hover'), false);
-});
-
-dropArea.addEventListener('drop', handleDrop, false);
-dropArea.addEventListener('click', () => fileInput.click());
-
-function preventDefaults(e) {
-    e.preventDefault();
-    e.stopPropagation();
-}
-
-function handleDrop(e) {
-    const dt = e.dataTransfer;
-    const files = dt.files;
-    handleFiles(files);
-}
-
-fileInput.addEventListener('change', function(event) {
-    const file = fileInput.files[0];
-    if (file) {
-        handleFiles([file]);
-    } else {
-        alert('Пожалуйста, выберите файл для загрузки.');
-    }
-});
-
-
-async function handleFiles(files) {
-    const file = files[0];
-    if (file) {
-        uploadButton.style.display = 'inline-block';
-        uploadButton.classList.add('loading');
-        checkmark.style.display = 'block';
-        const contentUploadInfo = document.getElementById('content-upload-info');
-        contentUploadInfo.style.opacity = 0;
-
-        const formData = new FormData();
-        formData.append('file', file);
-
-        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]') 
-        ? document.querySelector('[name=csrfmiddlewaretoken]').value
-        : document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-
-        try {
             const response = await fetch('/upload/', {
                 method: 'POST',
-                body: formData,
-                headers: {
-                    'X-CSRFToken': csrftoken
-                }
+                headers: { 'X-CSRFToken': csrftoken },
+                body: formData
             });
 
-            if (response.ok) {
-                console.log('Тест успешно сгенерирован');
-
-                const data = await response.json();
-                console.log(data);
-
-                const surveyId = data.survey_id;
+            const result = await response.json();
+            if (result.success) {
+                const surveyId = result.survey_id;
                 console.log('Survey ID:', surveyId);
 
                 window.location.href = `/result/` + surveyId;
             } else {
-                console.error('Ошибка при загрузке файла:', response.statusText);
-                alert('Не удалось загрузить файл: ' + response.statusText);
+                showToast(result.error || 'Ошибка загрузки файла');
             }
-        } catch (error) {
-            console.error('Ошибка:', error);
-            alert('Произошла ошибка при отправке запроса: ' + error.message);
-        } finally {
-            setTimeout(() => {
-                uploadButton.classList.remove('loading');
-                uploadButton.classList.remove('loading');
-                checkmark.style.display = 'none';
-            }, 2000);
+        } else {
+            const response = await fetch('/api-create-survey/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify({ text, questions: questionCount })
+            });
+
+            const result = await response.json();
+            if (response.ok) {
+                window.location.href = `/result/${result.survey_id}`;
+            } else {
+                showToast(result.error || 'Не удалось создать тест');
+            }
         }
-    } else {
-        alert('Пожалуйста, выберите файл для загрузки.');
+    } catch (err) {
+        console.error(err);
+        showToast('Произошла ошибка');
+    } finally {
+        document.getElementById('overlay').style.display = 'none';
     }
+}
+
+
+let uploadedFile = null;
+let selectedFile = null;
+
+
+function handleFiles(files) {
+    const file = files[0];
+    if (!file) return;
+
+    function showSliderBlock(slider, sliderText, count = 5) {
+        slider.style.display = 'block';
+        sliderText.style.display = 'none';
+        slider.parentElement.classList.add('show');
+        slider.value = count;
+        updateQuestionText(slider.value);
+    }
+
+    document.getElementById('remove-file-button').style.display = 'flex';
+    document.querySelector('#attached-file-name strong').textContent = file.name;
+
+    // Показ слайдера и текста
+    const fileSlider = document.getElementById('question-slider');
+    const charCount = document.getElementById('char-count');
+    showSliderBlock(fileSlider, charCount);
+
+    selectedFile = file;
+    document.getElementById('file-preview-container').style.display = 'block';
+    document.querySelector('#attached-file-name strong').textContent = file.name;
+
+    document.getElementById('question-slider').style.display = 'flex';
+
+    updateFilePreview(selectedFile);
+    window.letychkaUploadedFile = file;
+}
+
+
+function formatBytes(bytes, decimals = 2) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+}
+
+function updateFilePreview(file) {
+    const previewContainer = document.getElementById('file-preview-container');
+    const fileNameEl = previewContainer.querySelector('.file-name strong');
+    const fileSizeEl = previewContainer.querySelector('.file-size strong');
+
+    fileNameEl.textContent = file.name;
+    fileSizeEl.textContent = formatBytes(file.size);
+
+    previewContainer.style.display = 'flex';
+}
+
+
+
+function removeUploadedFile() {
+    selectedFile = null;
+    window.letychkaUploadedFile = null;
+    document.getElementById('hidden-file-input').value = '';
+    document.getElementById('file-preview-container').style.display = 'none';
+    document.getElementById('char-count').style.display = 'none';
+    document.getElementById('question-slider-text').style.display = 'none';
+    document.getElementById('remove-file-button').style.display = 'none';
+    document.getElementById('question-slider').style.display = 'none';
 }
 
 
@@ -180,31 +164,15 @@ async function submitTextWithFile(data) {
             console.log(result);
         } else {
             console.error('Error:', result);
-            alert(result.error || 'Не удалось выполнить запрос');
+            showToast(result.error || 'Не удалось выполнить запрос');
         }
     } catch (error) {
         console.error('Ошибка:', error);
-        alert('Произошла ошибка при отправке запроса: ' + error.message);
+        showToast('Произошла ошибка при отправке запроса: ' + error.message);
     } finally {
         loadingIndicator.style.display = 'none';
         blockGenerate.style.opacity = 1;
     }
-}
-
-
-function showError(message) {
-    const errorMessage = document.createElement('div');
-    errorMessage.className = 'error-message';
-    errorMessage.innerText = message;
-
-    document.body.appendChild(errorMessage);
-
-    errorMessage.style.display = 'block';
-
-    setTimeout(() => {
-        errorMessage.style.display = 'none';
-        document.body.removeChild(errorMessage);
-    }, 5000);
 }
 
 
@@ -215,24 +183,37 @@ function validatorText(text_request) {
 
     if (text_request === '') {
         errors.push('Запрос не может быть пустым!');
-    }
-    else if (text_request.length < 10) {
+    } else if (text_request.length < 10) {
         errors.push('Очень короткий запрос :(');
-    }
-    else if (text_request.length > 150000) {
+    } else if (text_request.length > 150000) {
         errors.push('Очень длинный запрос :(');
-    }
-    else if (containsHTMLTags(text_request)) {
+    } else if (containsHTMLTags(text_request)) {
         errors.push('Запрос не должен содержать HTML-теги!');
     }
 
     if (errors.length > 0) {
-        alert(errors.join('\n'));
+        showToast(errors[0]);
         return true;
     }
 
     return false;
 }
+
+
+function showToast(message, duration = 3000) {
+    const toast = document.getElementById('toast');
+    const messageEl = document.getElementById('toast-message');
+
+    messageEl.textContent = message;
+    toast.classList.remove('hidden');
+    toast.classList.add('show');
+
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.classList.add('hidden'), 1000);
+    }, duration);
+}
+
 
 function containsHTMLTags(text) {
     const regex = /<\/?[^>]+(>|$)/;

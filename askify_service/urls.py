@@ -6,6 +6,7 @@ urlpatterns = [
     path('', index, name='home'),
     path('create/', page_create_survey, name='create'),
     path('api-create-survey/', ManageSurveysView.as_view(), name='api-create-survey'),
+    path('api-non-auth/create-survey/', GenerationSurveysView.as_view(), name='api-create-survey'),
     path('survey/<str:survey_id>/', TakeSurvey.as_view(), name='survey'),
     path('result/<str:survey_id>/', result_view, name='result'),
 
@@ -18,6 +19,7 @@ urlpatterns = [
     path('login/', login_view, name='login'),
     path('logout/', logout_view, name='logout'),
     path('stats2975/', admin_stats, name='stats2975'),
+    path('admin/activate-key/', activate_api_key, name='activate_api_key'),
     path('profile/<str:username>/', profile_view, name='profile'),
     path('db_viewer/', db_viewer, name='db_viewer'),
     path('db-search/', db_search, name='db-search'),
@@ -31,10 +33,12 @@ urlpatterns = [
     path('vk-auth-callback/', vk_auth_callback, name='vk_auth_callback'),
 
     path('get_ip/', get_ip, name='get_ip'),
+
     path('payment/', create_payment, name='payment'),
     path('payment/success/', PaymentSuccessView.as_view(), name='payment_success'),
     path('payment/fail/', PaymentSuccessView.as_view(), name='payment_fail'),
 
+    path('api/get-demo-tests/', get_demo_tests),
     path('upload/', FileUploadView.as_view(), name='file_upload'),
 
     path('login/telegram/', phone_number_view, name='auth_telegram'),

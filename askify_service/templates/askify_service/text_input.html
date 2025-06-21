@@ -24,20 +24,17 @@
     }
 </style>
 
-<body>
+<body class="bg-create">
+    <div id="toast" class="toast hidden">
+        <span id="toast-message">Сообщение</span>
+    </div>
+
     <script src="{% static 'js/second-loader.js' %}"></script>
 
     {% include 'components/loader.html' %}
     
     <div id="overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 999;">
         <div class="loader-container" style="display: flex; justify-content: center; align-items: center; height: 100%;">
-            <!-- <div class="line-loader"></div>
-            <div class="line-loader"></div>
-            <div class="line-loader"></div>
-            <div class="line-loader"></div>
-            <div class="line-loader"></div>
-            <div class="line-loader"></div> -->
-
             <span class="loader"></span>
         </div>
     </div>
@@ -66,86 +63,121 @@
 
         {% else %}
 
-            <div class="container upload-container" id="upload-container">
-                <div class="drop-area" id="drop-area">
-                    <label class="upload-button" id="upload-button">
-                        <div id="content-upload-info">
-                            <h3>Загрузить файл</h3>
-                            <img src="{% static 'img/icon-add-file.png' %}" alt="Иконка загрузки файла" class="upload-icon">
-                            <p class="small-text">Перетащите PDF-файл сюда</p>
-                        </div>
-                        <div class="checkmark" style="display: none;">
-                            <script src="https://cdn.lordicon.com/lordicon.js"></script>
-                            <lord-icon
-                                src="https://cdn.lordicon.com/smwmetfi.json"
-                                trigger="loop"
-                                delay="100"
-                                colors="primary:#d4d1fa"
-                                style="width:100px;height:100px">
-                            </lord-icon>
-                        </div>
-                    </label>
-                    <input type="file" id="file-upload" accept=".pdf" style="display: none;">
-                </div>
-            </div>
-
         {% endif %}
 
-        <div class="container" id="example-container">
-            <h3>Примеры:</h3>
-            <div class="topic-container">
-                <!-- Сопромат -->
-                <div class="topic" 
-                     data-text="Расчет балки на изгиб: эпюры Q и M, метод сечения | Сопромат для 2 курса">
-                    <div class="emoji">🏗️</div>
-                    <h4 class="topic-title">Сопромат</h4>
-                    <p class="topic-example">Типы задач: 
-                        <span class="hint">построение эпюр, расчет напряжений</span>
-                    </p>
+        <div class="container glass-metrics-container">
+            <div class="metrics-scroll-box">
+                <div class="metric-ios active">
+                    <span class="metric-title">Создано тестов</span>
+                    <span class="metric-badge"><strong>{{ total_tests }}</strong></span>
                 </div>
-        
-                <!-- Программирование (C++) -->
-                <div class="topic" 
-                     data-text="ООП на C++: инкапсуляция, наследование, полиморфизм | Лабораторные работы 1 семестр">
-                    <div class="emoji">💻</div>
-                    <h4 class="topic-title">C++ & ООП</h4>
-                    <p class="topic-example">Пример задания: 
-                        <span class="hint">«Реализуйте класс Matrix»</span>
-                    </p>
+                <div class="metric-ios">
+                    <span class="metric-title">Успешно пройдено</span>
+                    <span class="metric-badge"><strong>{{ passed_tests }}</strong></span>
                 </div>
-        
-                <!-- Электротехника -->
-                <div class="topic" 
-                     data-text="Расчет цепей постоянного тока: законы Кирхгофа, метод узловых потенциалов | Электротехника для 3 курса">
-                    <div class="emoji">⚡</div>
-                    <h4 class="topic-title">Электротехника</h4>
-                    <p class="topic-example">Фокус: 
-                        <span class="hint">цепи, трансформаторы, мощность</span>
-                    </p>
+                <div class="metric-ios">
+                    <span class="metric-title">Лучший результат</span>
+                    <span class="metric-badge">{{ best_result }}</span>
                 </div>
-        
-                <!-- Термех -->
-                <div class="topic" 
-                     data-text="Кинематика точки: ускорение, скорость, траектория | Теоретическая механика, раздел кинематики">
-                    <div class="emoji">📐</div>
-                    <h4 class="topic-title">Теормех</h4>
-                    <p class="topic-example">Задачи: 
-                        <span class="hint">расчет движения тела по окружности</span>
-                    </p>
+                <div class="metric-ios">
+                    <span class="metric-title">Фидбэка от ИИ</span>
+                    <span class="metric-badge"><strong>{{ feedback_count }}</strong> отзывов</span>
                 </div>
-        
-                <!-- Химия для технарей -->
-                <div class="topic" 
-                     data-text="Коррозия металлов: электрохимические процессы, методы защиты | Химия для машиностроителей">
-                    <div class="emoji">🧪</div>
-                    <h4 class="topic-title">Техническая химия</h4>
-                    <p class="topic-example">Кейсы: 
-                        <span class="hint">расчет скорости коррозии</span>
-                    </p>
+                <div class="metric-ios">
+                    <span class="metric-title">Создано пользователями сегодня</span>
+                    <span class="metric-badge"><strong>{{ today_uploads }}</strong></span>
+                </div>
+                <div class="metric-ios">
+                    <span class="metric-title">Часто используется</span>
+                    <span class="metric-badge">{{ model_used|default:"–" }}</span>
+                </div>
+                <div class="metric-ios">
+                    <span class="metric-title">Средний балл</span>
+                    <span class="metric-badge">{{ avg_score|default:"–" }} / 100</span>
+                </div>
+                <div class="metric-ios">
+                    <span class="metric-title">Всего вопросов создано</span>
+                    <span class="metric-badge"><strong>{{ total_questions }}</strong></span>
+                </div>
+                <div class="metric-ios">
+                    <span class="metric-title">Вопросов в среднем</span>
+                    <span class="metric-badge">{{ avg_questions }} на тест</span>
+                </div>
+                <div class="metric-ios">
+                    <span class="metric-title">Ответов за всё время</span>
+                    <span class="metric-badge"><strong>{{ total_answers }}</strong> раз</span>
+                </div>
+                <div class="metric-ios">
+                    <span class="metric-title">Средне верно</span>
+                    <span class="metric-badge">{{ avg_correct_answers|default:"–" }}</span>
+                </div>
+                <div class="metric-ios">
+                    <span class="metric-title">Моделей опробовано</span>
+                    <span class="metric-badge"><strong>{{ unique_models_count }}</strong></span>
+                </div>
+                <div class="metric-ios">
+                    <span class="metric-title">Тестов в этом месяце</span>
+                    <span class="metric-badge"><strong>{{ tests_this_month }}</strong></span>
+                </div>
+                <div class="metric-ios">
+                    <span class="metric-title">Фидбэка от ИИ за неделю</span>
+                    <span class="metric-badge"><strong>{{ feedback_last_week }}</strong></span>
+                </div>
+                <div class="metric-ios">
+                    <span class="metric-title">Столько раз ИИ оценивал</span>
+                    <span class="metric-badge">{{ percent_with_feedback }}</span>
+                </div>
+                <div class="metric-ios">
+                    <span class="metric-title">Решённых тестов</span>
+                    <span class="metric-badge"><strong>{{ tests_created_and_passed }}</strong></span>
                 </div>
             </div>
         </div>
-        
+
+        <div class="container" id="file-preview-container" style="display: none;">
+            <div id="attached-file-name">
+                ✅ Прикреплен файл: <strong></strong>
+            </div>
+            <div class="file-preview">
+                <div class="file-icon">
+                    <img src="{% static 'img/icon-file3d.png' %}" alt="File Icon">
+                </div>
+                <div class="file-info">
+                    <div class="file-name"><strong id="preview-file-name"></strong></div>
+                    <div class="file-size"><strong id="preview-file-size"></strong></div>
+                    <div class="button-medium" id="remove-file-button" style="display: none;" onclick="removeUploadedFile()">
+                        <div>
+                            <img src="{% static 'img/icon-delete.png' %}" alt="Удалить файл">
+                            <p>Открепить</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="container features-container">
+            <div class="feature-block">
+                <img src="{% static 'img/icon-create.png' %}" alt="Генерация" class="feature-icon">
+                <h3>Контент → Тест</h3>
+                <p>PDF, Word или простой текст — Летучка создаст тест за считанные секунды</p>
+            </div>
+            <div class="feature-block">
+                <img src="{% static 'img/icon-analys.png' %}" alt="Анализ" class="feature-icon">
+                <h3>Умная аналитика</h3>
+                <p>Получай детальный разбор ошибок и персональные рекомендации</p>
+            </div>
+            <div class="feature-block">
+                <img src="{% static 'img/icon-share.png' %}" alt="Поделиться" class="feature-icon">
+                <h3>Быстрый обмен</h3>
+                <p>Делись ссылкой на тест в PDF с коллегами — легко скачать и распечатать</p>
+            </div>
+            <!-- <div class="feature-block">
+                <img src="{% static 'img/icon-analys.png' %}" alt="Анализ" class="feature-icon">
+                <h3>Кроссплатформенность</h3>
+                <p>Запускай тесты на компьютере, телефоне или планшете – все адаптивно на любом экране</p>
+            </div> -->
+        </div>
+                
         <div class="container" id="faq-container">
             {{ faq_html|safe }}
         </div>
@@ -167,19 +199,30 @@
                 </div>
 
                 <div class="slider-container">
-                    <div id="char-count">0 / 16384 символов</div>
-                    <p id="question-slider-text"><span id="slider-value">1</span> вопросов в тесте</p>
-                    <input type="range" id="question-slider" class="custom-slider" min="1" max="20" value="5" style="display: none;">
+                    <div id="char-count">0 / 16384</div>
+                    <p id="question-slider-text"><span id="slider-value">1</span> вопросов</p>
+                    <input type="range" id="question-slider" class="custom-slider" min="1" max="12" value="5" style="display: none;">
                 </div>
 
                 <div class="head-button">
-                    <div class="button-medium">
-                        <a href="{% url 'history' %}">
+                    <div class="head-button">
+                        <div class="button-medium">
+                            <a href="{% url 'history' %}">
+                                <div>
+                                    <img src="{% static 'img/icon-history.png' %}" alt="">
+                                </div>
+                            </a>
+                        </div>
+                        {% if subscription_level > 1 %}
+                        <div class="button-medium" onclick="document.getElementById('hidden-file-input').click();">
                             <div>
-                                <img src="{% static 'img/icon-history.png' %}" alt="">
-                                <p>История</p>
+                                <img src="{% static 'img/icon-upload-file.png' %}" alt="">
+                                <p>Прикрепить</p>
                             </div>
-                        </a>
+                        </div>
+                        <input type="file" id="hidden-file-input" accept=".pdf, .doc, .docx, .txt" style="display: none;" onchange="handleFiles(this.files)">
+                        {% endif %}
+
                     </div>
                     <div class="button-medium" id="#tokens-color">
                         <a href="{% url 'profile' username %}">
@@ -212,7 +255,19 @@
 
     <script src="{% static 'js/main.js' %}"></script>
     <script src="{% static 'js/auto-scroll.js' %}"></script>
-    <!-- <script src="{% static 'js/nav.js' %}"></script> -->
+
+    <script>
+        let current = 0;
+        const metrics = document.querySelectorAll('.metric-ios');
+
+        function cycleMetrics() {
+            metrics[current].classList.remove('active');
+            current = (current + 1) % metrics.length;
+            metrics[current].classList.add('active');
+        }
+
+        setInterval(cycleMetrics, 5000);
+    </script>
 
 </body>
 </html>

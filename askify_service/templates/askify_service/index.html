@@ -7,10 +7,10 @@
     <title>Создать тест из документа онлайн | ИИ генератор тестов за 60 сек | Летучка</title>
 
     <meta name="description" content="Летучка создает тесты с ИИ за 60 секунд. Загрузите PDF, лекцию или методичку → получите тест с автопроверкой и аналитикой. Для преподавателей, HR-ов и студентов. Создайте свой первый тест бесплатно в 2 клика.">
-    <meta name="keywords" content="генератор тестов с ИИ, создать тест из статьи, конструктор тестов с проверкой ответов, ИИ для создания тестов бесплатно, онлайн конструктор тестов с проверкой, корпоративные тесты для HR, летучка тесты, создать тест с ответами ИИ">
+    <meta name="keywords" content="генератор тестов с ИИ, создать тест из статьи, создать тест по тексту онлайн, ИИ для создания тестов бесплатно, составить тест по тексту онлайн, создать тест онлайн, летучка создать тест, создать тест с ответами ИИ">
 
     <meta property="og:title" content="ИИ для создания тестов: преподаватели и HR экономят 3 часа в день | Летучка">
-    <meta property="og:description" content="Превращайте документы в тесты за минуту. Автоматическая проверка, аналитика слабых мест, экспорт в PDF. Бесплатный старт.">
+    <meta property="og:description" content="Попробуйте создать тест по тексту онлайн. Автоматическая проверка, аналитика слабых мест, экспорт в PDF. Бесплатный старт.">
 
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://letychka.ru">
@@ -27,31 +27,43 @@
     {% load static %}
     <link rel="apple-touch-icon" sizes="180x180" href="{% static 'img/apple-touch-icon.png' %}">
     <link rel="shortcut icon" href="{% static 'img/favicon.ico' %}" type="image/ico">
-    <link rel="stylesheet" href="{% static 'css/start.css' %}?v=2.5">
+    <link rel="stylesheet" href="{% static 'css/themes-carusel.css' %}?v=1.2">
+    <link rel="stylesheet" href="{% static 'css/start.css' %}?v=3.2">
     <link rel="stylesheet" href="{% static 'css/second-loader.css' %}">
     <link rel="stylesheet" href="{% static 'css/footer.css' %}">
 
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
-
     <!-- Yandex.Metrika counter -->
     <script type="text/javascript" >
-        (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
-        m[i].l=1*new Date();
-        for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
-        k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
-        (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
-    
-        ym(98823704, "init", {
-            clickmap:true,
-            trackLinks:true,
-            accurateTrackBounce:true,
-            webvisor:true
-        });
+        setTimeout(function() {
+            (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+            m[i].l=1*new Date();
+            for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+            k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+            (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+        
+            ym(98823704, "init", {
+                clickmap:true,
+                trackLinks:true,
+                accurateTrackBounce:true,
+                webvisor:true
+            });
+        }, 3000);
     </script>
     <noscript><div><img src="https://mc.yandex.ru/watch/98823704" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
     <!-- /Yandex.Metrika counter -->
+
+     <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-7D8EC81SBV"></script>
+    <script>
+        setTimeout(function() {
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+
+            gtag('config', 'G-7D8EC81SBV');
+        }, 3000);
+    </script>
+     <!-- /Google tag -->
 
     <script type="application/ld+json">
         {
@@ -91,8 +103,8 @@
         <nav class="nav">
             <div class="nav-links">
                 <a href="#how-it-works" class="nav-link">Начать</a>
-                <a href="#features" class="nav-link">Преимущества</a>
-                <a href="#success-cases" class="nav-link">Кейсы</a>
+                <a href="#gif-section" class="nav-link">Как работает</a>
+                <a href="#features" class="nav-link">Фичи</a>
                 <a href="/media/main" class="nav-link">Блог</a>
                 <a href="/login" class="nav-link login-button">Войти</a>
             </div>
@@ -113,24 +125,129 @@
             <p class="hero-subtitle">
                 Загрузи методичку, лекцию или конспект &rarr; ИИ&nbsp;создаст тест с&nbsp;вопросами.<br>Пройди сразу или скачай PDF.
             </p>
-            <a href="/create" class="cta-button cta-button-accent">Создать тест бесплатно →</a>
+            <a href="#create-now" class="cta-button cta-button-accent">Создать тест бесплатно →</a>
         </div>
         <div class="hero-image">
             <img src="{% static 'blog_img/letychka-banner-1703.png' %}" alt="Летучка — создание тестов" class="hero-img">
         </div>
     </section>
 
+    <!-- Секция генерации тестов -->
+    <section class="generator-section" id="create-now">
+        <div class="gen-container glassy-box">
+
+            <div class="gen-header">
+                <div class="theme-suggestions">
+                    <div class="theme-carousel">
+                        <div class="theme-item active" data-theme="literature">
+                            Попробуй создать тест <span class="typing-animation"></span>
+                        </div>
+                        <div class="theme-item" data-theme="science">
+                            Сгенерируй тест из конспекта <span class="typing-animation"></span>
+                        </div>
+                        <div class="theme-item" data-theme="history">
+                            Напиши тему — получи тест. Попробуй <span class="typing-animation"></span>
+                        </div>
+                        <div class="theme-item" data-theme="technology">
+                            Попробуй создать тест <span class="typing-animation"></span>
+                        </div>
+                        <div class="theme-item" data-theme="art">
+                            Создай тест <span class="typing-animation"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <p class="gen-subtitle">Загрузи материалы → Скачай сгенерированный тест</p>
+                <p class="gen-hint">Скопируй и отправь ссылку в чат, email или соцсети — получатели смогут скачать созданный тест</p>
+            </div>
+
+            <div class="gen-controls">
+                <div class="text-input-wrapper">
+                    <textarea 
+                        id="text-input" 
+                        class="neon-textarea" 
+                        placeholder="Введите здесь свои учебные материалы, заметки, тему или содержание статьи..."
+                        maxlength="5000"
+                    ></textarea>
+                    <div class="text-counter">
+                        <span id="char-count">0</span> / 5000
+                    </div>
+                </div>
+                
+                <div class="controls-row">
+                    <div class="slider-block">
+                        <label for="question-count" class="slider-label">
+                            Количество вопросов: <span id="question-count">3</span>
+                        </label>
+                        <input 
+                            type="range" 
+                            id="question-slider" 
+                            class="custom-slider"
+                            min="1" 
+                            max="5" 
+                            value="3"
+                        >
+                    </div>
+
+                    <button 
+                        id="generate-btn" 
+                        class="cta-button pulse-glow"
+                        data-loading-text="Генерируем..."
+                    >
+                        СОЗДАТЬ ТЕСТ 🚀
+                    </button>
+                </div>
+            </div>
+            
+            <div id="result-container" class="result-container">
+                <p>Созданные тесты</p>
+                <div class="test-grid" id="test-grid"></div>
+                <br>
+                <!-- <div class="reg-block" style="background: #1A1A1A; border-radius: 24px; padding: 20px; border: 2px solid #6b4caf; margin: 15px 0;">
+                    <div style="margin-bottom: 15px;">
+                        <h3 >🔥 Зарегистрируйся и выжми из платформы всё</h3>
+                        <ul>
+                            <li><strong>1. Генерируй тесты за считанные секунды</strong> — не теряй ни минуты перед дедлайном</li>
+                            <li><strong>2. Все данные в облаке</strong> — доступ с телефона в метро или ночью перед экзаменом</li>
+                            <li><strong>3. Получай разбор полётов от ИИ</strong> — узнай, где ты валенок, а где гений</li>
+                          </ul>
+                    </div>
+                    <a href="/register" 
+                       style="display: block; 
+                              background: linear-gradient(45deg, #4c53af, #7a45a0);
+                              color: white; 
+                              padding: 12px 24px; 
+                              border-radius: 16px; 
+                              text-align: center; 
+                              text-decoration: none; 
+                              font-weight: 700;
+                              transition: transform 0.2s;
+                              box-shadow: 0 4px 15px rgba(99, 76, 175, 0.3);">
+                        Воспользоваться преимуществами 🚀
+                    </a>
+                    <p style="color: #888; font-size: 0.8em; margin-top: 10px; margin-bottom: 0;">Никакого спама. Только тесты и твои 90+ баллов</p>
+                </div> -->
+            </div>
+
+        </div>
+    </section>
+
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <script src="{% static 'js/demo.js' %}"></script>
+
     <!-- Гифка-секция -->
-    <section class="gif-section">
+    <section class="gif-section" id="gif-section">
         <div class="gif-content">
             <h2 class="section-title">
                 <span class="gradient-text">Как это работает</span>
             </h2>
             <div class="gif-placeholder">
                 <video autoplay loop muted playsinline>
-                    <source src="{% static 'blog_img/0313-text.mp4' %}" type="video/mp4">
-                    Your browser does not support the video tag.
-                  </video>
+                    <source preload="none" src="{% static 'blog_img/0313-text.mp4' %}" type="video/mp4">
+                </video>
             </div>
             <div class="steps-info">
                 <p>От загрузки конспекта до готового теста —<br>быстрее, чем <span class="highlight">приготовить дошик</span></p>
@@ -162,69 +279,71 @@
 
     <!-- Секция "Как начать" -->
     <section class="how-it-works" id="how-it-works">
-        <div class="container">
-            <h2 class="section-title">
-                <span class="gradient-text">Как начать?</span>
-            </h2>
-            <div class="steps-grid">
-                <div class="step-card">
-                    <h3 class="step-title">Создаёшь тест</h3>
-                    <p class="step-text">
-                        Загружаешь файл, текст из конспекта, заметки или выдержку из статьи. Выбираешь кол-во вопросов и генерируешь тест.
-                    </p>
-                </div>
-                <div class="step-card">
-                    <h3 class="step-title">Проходишь тест</h3>
-                    <p class="step-text">
-                        Отвечаешь на каждый вопрос, затем переходишь к результатам и анализируешь свои варианты ответов.
-                    </p>
-                </div>
-                <div class="step-card">
-                    <h3 class="step-title">Получаешь фидбэк</h3>
-                    <p class="step-text">
-                        Получай детальный фидбэк по каждому вопросу, с указанием на свои сильные и слабые стороны.
-                    </p>
-                </div>
-            </div>
-        </div>
+        <h2 class="section-title">
+            <span class="gradient-text">Зубришь по старинке?</span>
+        </h2>
+        <section class="comparison">
+            <table>
+                <tr>
+                    <th></th>
+                    <th>Обычная подготовка</th>
+                    <th>С Летучкой</th>
+                </tr>
+                <tr>
+                    <td data-label="">Создание теста</td>
+                    <td data-label="Обычная подготовка"><strong class="red">2+ часа</strong> вручную</td>
+                    <td data-label="С Летучкой"><strong>До 30 секунд</strong> автогенерации</td>
+                </tr>
+                <tr>
+                    <td data-label="">Поиск ошибок</td>
+                    <td data-label="Обычная подготовка">Перечитываешь всё 3 раза</td>
+                    <td data-label="С Летучкой">Детальный фидбэк от нейросети</td>
+                </tr>
+                <tr>
+                    <td data-label="">Эффективность</td>
+                    <td data-label="Обычная подготовка">Лишь <strong class="red">30% инфы</strong> запоминается</td>
+                    <td data-label="С Летучкой"><strong>В 2,5 раза</strong> лучше запоминается</td>
+                </tr>
+                </table>
+        </section>
         <div class="center-button">
-            <a href="/create" class="cta-button">Создать тест в 2 клика →</a>
+            <a href="/login" class="cta-button">Создать тест в 2 клика →</a>
         </div>
     </section>
 
-    <!-- Секция "Почему Летучка" -->
+    <!-- Секция Преимуществ -->
     <section class="features" id="features">
         <div class="features-intro">
             <h2 class="section-title">
                 <span class="gradient-text">Часами составляешь тесты?</span>
             </h2>
             <p class="section-subtitle">
-                Не учись усерднее, учись эффективнее.
+                Не учись усерднее – учись эффективнее
             </p>
         </div>
         <div class="features-grid">
             <!-- Фича 1 -->
             <div class="feature-card">
-                <div class="feature-icon">🤯</div>
-                <h3 class="feature-title">Я не знаю, что учить!</h3>
+                <div class="feature-icon">🧠</div>
+                <h3 class="feature-title">Умный отбор тем</h3>
                 <p class="feature-text">
-                    Загрузи всё подряд &rarr; ИИ&nbsp;сам выцепит термины, формулы, даты. Тест будет по&nbsp;тому, что реально важно. <br>Кейс: из&nbsp;30&nbsp;страниц конспекта выжмет 10&nbsp;ключевых вопросов.
+                    Просто загрузи материал&nbsp;&mdash; ИИ&nbsp;сам выжмет важное: формулы, даты, термины. Без воды. Из&nbsp;30&nbsp;страниц &nbsp;&mdash; выжимка 10&nbsp;ключевых вопросов
                 </p>
             </div>
             <!-- Фича 2 -->
             <div class="feature-card">
-                <div class="feature-icon">😩</div>
-                <h3 class="feature-title">А вдруг я туплю?</h3>
+                <div class="feature-icon">🖨️</div>
+                <h3 class="feature-title">Печатай и проходи</h3>
                 <p class="feature-text">
-                    После каждого теста получишь разбор: где налажал, почему ошибся, как исправить. <br>Средний рост баллов у студентов: +37% за 2 недели.
+                    Нужен тест на&nbsp;бумаге? Генерируй и&nbsp;сразу скачивай готовый PDF. Или пройди сразу на платформе, получив фидбэк от нейросети
                 </p>
             </div>
             <!-- Фича 3 -->
             <div class="feature-card">
-                <div class="feature-icon">👻</div>
-                <h3 class="feature-title">Мне лень этим заниматься</h3>
+                <div class="feature-icon">🔍</div>
+                <h3 class="feature-title">Разбор после теста</h3>
                 <p class="feature-text">
-                    От&nbsp;загрузки файла до&nbsp;готового теста&nbsp;&mdash; 10&nbsp;секунд. За&nbsp;это время ты&nbsp;даже кофе не&nbsp;успеешь налить.&nbsp;<br>92% пользователей создают тест в&nbsp;первые 5&nbsp;минут после регистрации.
+                    После прохождения&nbsp;&mdash; подробный разбор ошибок. Покажем, что было не&nbsp;так и&nbsp;как понять тему. Помогло улучшить результат у&nbsp;4&nbsp;из&nbsp;5&nbsp;студентов
                 </p>
             </div>
         </div>
@@ -245,7 +364,7 @@
                         Раньше ты тратил 2 часа на создание теста.<br>Теперь — 10 секунд. Серьёзно.
                     </p>
                     <div class="center-button">
-                        <a href="/create" class="cta-button">Создать в 2 клика →</a>
+                        <a href="/login" class="cta-button">Создать в 2 клика →</a>
                     </div>
                 </div>
             </div>
@@ -254,70 +373,47 @@
     
     <section class="trusted-by" id="trusted-by">
         <h2 class="section-title">
-            <span class="gradient-text">Это не просто цифры — <br>это твои будущие соседи по успеху</span>
+            <span class="gradient-text">В Летучке уже</span>
         </h2>
         <div class="steps-grid">
-            <!-- Карточка 1: Акцент на массовость и скорость -->
             <div class="step-card">
-                <h3 class="step-title">{{ total_users|default:0 }} тестов</h3>
-                <div class="step-subtitle">за последние 30 дней</div>
+                <h3 class="step-title">≥{{ total_users|default:0 }} тестов</h3>
+                <div class="step-subtitle">только по медицине за 30 дней</div>
                 <p class="step-text">
-                    Это как 533 теста в день. <br>
-                    <span class="hint">92% юзеров создали тест быстрее, чем успели дочитать этот текст.</span>
+                    Каждый день создается 30+ тестов:<br>
+                    - По фармакологии и диагностике<br>
+                    - Для подготовки к аккредитации<br>
+                    - По уходу за пациентами<br><br>
+                    <span class="hint">+50 удобству создания</span>
                 </p>
             </div>
-    
-            <!-- Карточка 2: Боль + решение для клиентов -->
+
             <div class="step-card">
-                <h3 class="step-title">1,200 человек</h3>
-                <div class="step-subtitle">уже не пашут как проклятые</div>
+                <h3 class="step-title">≥857 преподавателей</h3>
+                <div class="step-subtitle">уже экономят 10 часов в неделю</div>
                 <p class="step-text">
-                    Включая:<br>
-                    - 237 студентов, которые сдали сессию без нервного срыва<br>
-                    - 89 айтишников, освоивших новые технологии в 2 раза быстрее<br>
+                    Летучка помогает:<br>
+                    - Создавать задания для разных УМК<br>
+                    - Готовить контрольно-измерительные материалы<br>
+                    - Анализировать пробелы в знаниях учеников<br><br>
+                    <span class="hint">+20 эффективности уроков</span>
                 </p>
             </div>
-    
-            <!-- Карточка 3: Учителя с конкретикой -->
+
             <div class="step-card">
-                <h3 class="step-title">257 учителей</h3>
-                <div class="step-subtitle">спят на 2 часа больше</div>
+                <h3 class="step-title">3,483 инженерных теста</h3>
+                <div class="step-subtitle">по техническим дисциплинам</div>
                 <p class="step-text">
-                    Потому что:<br>
-                    - Генерируют тесты за считанные секунды, вместо ручного труда<br>
-                    - Автоматически проверяют ответы<br>
+                    Создано за последний месяц:<br>
+                    - Тесты по охране труда и СМК<br>
+                    - Контроль знаний по спецтехнологиям<br>
+                    - Аттестация по военным системам<br><br>
+                    <span class="hint">+30 к автоматизации</span>
                 </p>
             </div>
         </div>
     </section>
-    
-    <!-- Секция с картинкой и текстом -->
-    <section class="image-text-section">
-        <div class="container">
-            <div class="image-text-content">
-                <div class="image-text-image">
-                    <img src="{% static 'blog_img/blog-01-006-re.png' %}" alt="Контент" class="image-text-img">
-                </div>
-                <div class="image-text-text">
-                    <h2 class="section-title">
-                        <span class="gradient-text">СОЛИДНОСТИ РАДИ!</span><br>
-                    </h2>
-                    <p class="section-subtitle">
-                        Создание каждого теста вручную — это <strong>2 часа</strong> жизни, которые ты никогда не вернёшь.<br> 
-                        <span class="hint">
-                            <span id="counter">0</span> тестов уже создано
-                        </span>
-                    </p>
-                    
-                    <div class="center-button">
-                        <a href="/create" class="cta-button">
-                            ЗАКАНЧИВАЙ С&nbsp;ЭТИМ СЕЙЧАС ЖЕ &rarr;
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
+
     
     <!-- Секция "Кейсы успеха" -->
     <section class="success-cases" id="success-cases">
@@ -329,52 +425,63 @@
                 Реальные истории пользователей, которые достигли своих целей с Летучкой.
             </p>
             <div class="cases-grid">
-                <!-- Кейс 1 -->
+                <!-- Медицинский сектор -->
                 <div class="case-card">
                     <div class="case-content">
-                        <h3>Ольга, студентка</h3>
+                        <h3>Подготовка к аккредитации врачей</h3>
                         <p>
-                            "С помощью Летучки я смогла подготовиться к экзаменам за 2 недели! Платформа подсказала, на чем сосредоточиться, и я сдала на отлично."
+                            87% пользователей медицинского профиля с помощью сгенерированных тестов успешно сдали аккредитацию с первого раза. 
+                            Средний балл повысился на 24% по сравнению с традиционной подготовкой.
                         </p>
                         <div class="case-stats">
-                            <span>+40% к результатам</span>
-                            <span>14 дней подготовки</span>
+                            <span>300+ тестов создано</span>
+                            <span>Экономия 150+ часов</span>
                         </div>
                     </div>
                 </div>
-                <!-- Кейс 2 -->
+                
+                <!-- Образовательные учреждения -->
                 <div class="case-card">
                     <div class="case-content">
-                        <h3>Алексей, разработчик</h3>
+                        <h3>Школьное образование (биология)</h3>
                         <p>
-                            "Я использовал Летучку для изучения нового фреймворка. Благодаря персонализированным тестам я освоил его в 2 раза быстрее."
+                            В 5 школах Московской области учителя создают тесты за 3-5 минут вместо 45-60 минут. 
+                            Средняя успеваемость по предмету повысилась на 1.2 балла за учебный год.
                         </p>
                         <div class="case-stats">
-                            <span>2x скорость обучения</span>
-                            <span>3 недели</span>
+                            <span>1200+ тестов в полугодие</span>
+                            <span>Для 500+ учеников</span>
                         </div>
                     </div>
                 </div>
-                <!-- Кейс 3 -->
+                
+                <!-- Техническая специализация -->
                 <div class="case-card">
                     <div class="case-content">
-                        <h3>Марина, учитель</h3>
+                        <h3>Техника безопасности на производстве</h3>
                         <p>
-                            "Летучка помогла мне создать тесты для учеников. Теперь они учатся с удовольствием, а я экономлю время при создании."
+                            На машиностроительном заводе автоматизировали проверку знаний по охране труда. 
+                            Время тестирования 50 сотрудников сократилось с 3 рабочих дней до 1 часа.
                         </p>
                         <div class="case-stats">
-                            <span>-50% времени на проверку</span>
-                            <span>100+ учеников</span>
+                            <span>100% прохождение аттестации</span>
+                            <span>0 бумажных носителей</span>
                         </div>
                     </div>
                 </div>
+            </div>
+            <div class="legal-note">
+                <p>* Статистика основана на обезличенных данных пользователей. Индивидуальные результаты могут отличаться.</p>
             </div>
             <!-- Кнопка CTA -->
             <div class="cases-cta">
-                <a href="#" class="cta-button">Начать сейчас</a>
+                <a href="/register" class="cta-button">
+                    <strong>НАЧАТЬ УЧИТЬСЯ →</strong>
+                </a>
             </div>
         </div>
     </section>
+
     
     <!-- Тарифы -->
     <section class="pricing" id="pricing">
@@ -383,59 +490,94 @@
                 <span class="gradient-text">Тарифы</span>
             </h2>
             <p class="section-subtitle">
-                Для начала нужен План.
+                Для начала нужен план.
             </p>
         </div>
 
-        <div class="pricing-grid free">
-            <div class="pricing-card">
-                <div class="popular-badge">Для тех, кто любит халяву</div>
-                <h3 class="plan-title">Стартовый</h3>
-                <div class="plan-price">0 ₽</div>
-                <ul class="plan-features">
-                    <li>10 бесплатных тестов → хватит, чтобы понять, как это работает</li>
-                    <li>Скачивание в PDF <span class="hint">(но с водяными знаками)</span></li>
-                    <li>Обратная связь от нейросети</li>
-                </ul>
-                <a href="/create" class="cta-button">Попробовать →</a>
-                <br><br>
-                <div class="plan-note">Пока не передумали</div>
-            </div>
-            
-            <div class="pricing-card popular">
-                <div class="popular-badge">Чтобы не париться</div>
-                <h3 class="plan-title">Стандартный</h3>
-                <div class="plan-price">220 ₽</div>
-                <ul class="plan-features">
-                    <li>50 тестов/день → хватит за день до сессии</li>
-                    <li>Чистый PDF без водяных</li>
-                    <li>Подробный фидбэк с указанием на пробелы в знаниях</li>
-                </ul>
-                <a href="/payment" class="cta-button">Купить сейчас →</a>
-                <br><br>
-                <div class="plan-note">По цене шаурмы</div>
+        <div class="pricing-grid">
+            <!-- Free Plan -->
+            <div class="pricing-card glass">
+            <div class="badge ghost">Чтобы начать</div>
+            <h3 class="plan-title">Старт</h3>
+            <div class="plan-price">0 ₽</div>
+            <ul class="plan-features">
+                <li>10 бесплатных тестов</li>
+                <li>PDF с водяными знаками</li>
+                <li>Лёгкий старт для пробы</li>
+            </ul>
+            <a href="/login" class="cta-button ghost">Попробовать</a>
             </div>
 
-            <div class="pricing-card">
-                <div class="popular-badge">Тестов хватит на свой ЕГЭ</div>
-                <h3 class="plan-title">Премиум</h3>
-                <div class="plan-price">590 ₽</div>
-                <ul class="plan-features">
-                    <li>Не ограничивай себя → 500 тестов/день</li>
-                    <li>В это поле надо написать типа юзер сможет себе целый экзамен делать хоть каждый день</li>
-                    <li>Загрузка файлов со своими материалами в Летучку</li>
-                </ul>
-                <a href="/payment" class="cta-button">Купить сейчас →</a>
-                <br><br>
-                <div class="plan-note">Скажешь "спасибо" после первой пятёрки</div>
+            <!-- Standard Plan -->
+            <div class="pricing-card glass popular">
+            <div class="badge">Рекомендуем</div>
+            <h3 class="plan-title">Стандарт</h3>
+            <div class="plan-price">420 ₽ / мес</div>
+            <ul class="plan-features">
+                <li>50 тестов в день</li>
+                <li>Чистый PDF</li>
+                <li>Обратная связь от ИИ</li>
+            </ul>
+            <a href="/payment" class="cta-button primary">Купить</a>
+            </div>
+
+            <!-- Premium Plan -->
+            <div class="pricing-card glass">
+            <div class="badge ghost">Полный пакет</div>
+            <h3 class="plan-title">Премиум</h3>
+            <div class="plan-price">590 ₽ / мес</div>
+            <ul class="plan-features">
+                <li>150 тестов в день</li>
+                <li>Загружайте pdf, doc, docx с материалами</li>
+                <li>Улучшенная обратная связь от ИИ</li>
+            </ul>
+            <a href="/payment" class="cta-button primary">Купить</a>
             </div>
         </div>
 
+        <!-- Годовые планы -->
+        <div class="pricing-grid yearly">
+            <div class="pricing-card glass">
+            <div class="badge accent">–37%</div>
+            <h3 class="plan-title">Стандарт / Год</h3>
+            <div class="plan-price">220 ₽ / мес</div>
+            <p class="plan-subtext"><s>5 040</s> → 2 640 ₽ / год</p>
+            <ul class="plan-features">
+                <li>50 тестов в день</li>
+                <li>PDF без водяных знаков</li>
+                <li>AI-анализ пробелов</li>
+            </ul>
+            <a href="/payment" class="cta-button primary">Купить</a>
+            </div>
+
+            <div class="pricing-card glass">
+            <div class="badge accent">–32%</div>
+            <h3 class="plan-title">Премиум / Год</h3>
+            <div class="plan-price">400 ₽ / мес</div>
+            <p class="plan-subtext"><s>7 080</s> → 4 800 ₽ / год</p>
+            <ul class="plan-features">
+                <li>150 тестов в день</li>
+                <li>Собственные материалы</li>
+                <li>Максимум гибкости</li>
+            </ul>
+            <a href="/payment" class="cta-button primary">Купить</a>
+            </div>
+        </div>
     </section>
+
 
     <a href="https://webmaster.yandex.ru/siteinfo/?site=https://letychka.ru"><img width="88" height="31" alt="" border="0" border-radius="8" src="https://yandex.ru/cycounter?https://letychka.ru&theme=light&lang=ru"/></a>
 
     {% include 'footer.html' %}
+
+    <div id="glass-alert" class="glass-alert" aria-live="polite" hidden>
+        <div class="glass-alert__container">
+          <div class="glass-alert__content">
+            <p class="glass-alert__message"></p>
+            <button class="glass-alert__close" aria-label="Закрыть уведомление">×</button>
+          </div>
+        </div>
+    </div>
 
     <div class="popup-overlay" id="popupOverlay">
         <div class="popup-container">
@@ -450,17 +592,10 @@
             </div>
         </div>
     </div>
+
+    <script src="{% static 'js/start.js' %}" defer></script>
+    <script src="{% static 'js/generate-demo.js' %}" defer></script>
     
-    <div class="ltk-popup-overlay">
-        <div class="ltk-popup-content">
-            <h3>Реальные кейсы Летучки 🚀</h3>
-            <p>Мы собрали для тебя лучшие советы, кейсы и инструкции в нашем блоге. Узнай, как учиться быстрее и эффективнее!</p>
-            <a href="https://letychka.ru/media/main/" class="ltk-popup-button">Перейти в блог →</a>
-            <button class="ltk-popup-close">Закрыть</button>
-        </div>
-    </div>
-    
-    <script src="{% static 'js/start.js' %}"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const target = document.querySelector('.image-text-section');

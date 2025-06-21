@@ -2,6 +2,7 @@ import json
 import datetime
 import random
 import string
+import uuid
 from datetime import timedelta
 import locale
 import os
@@ -139,40 +140,42 @@ class ManageGenerationSurveys:
         manage_confident_fields = ManageConfidentFields("config.json")
         return manage_confident_fields.get_confident_key(key_name)
 
-    async def github_gpt(self) -> dict:
+    async def github_gpt(self, api_key) -> dict:
         client = openai.OpenAI(
             base_url="https://models.inference.ai.azure.com",
-            api_key=self.__get_confidential_key('github_gpt'),
+            api_key=api_key.key,
         )
-        # try:
-        completion = await asyncio.to_thread(
-            client.chat.completions.create,
-            messages=[
-                {
-                    "role": "system",
-                    "content": f"{self.__get_confidential_key('system_prompt')}" + self.count_questions,
-                },
-                {
-                    "role": "user",
-                    "content": f"{self.text_from_user}{self.__get_confidential_key('user_prompt')}",
-                }
-            ],
-            model="gpt-4o",
-            temperature=.3,
-            max_tokens=2048,
-            top_p=1
-        )
+        try:
+            completion = await asyncio.to_thread(
+                client.chat.completions.create,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": f"{self.__get_confidential_key('system_prompt')}" + self.count_questions,
+                    },
+                    {
+                        "role": "user",
+                        "content": f"{self.text_from_user}{self.__get_confidential_key('user_prompt')}",
+                    }
+                ],
+                model="gpt-4o",
+                temperature=.3,
+                max_tokens=2048,
+                top_p=1
+            )
+            print(completion)
 
-        # try:
-        generated_text = completion.choices[0].message.content
-        print("\n\ngenerated_text", generated_text)
-        cleaned_generated_text = generated_text.replace("json", "").replace("`", "")
-        tokens_used = completion.usage.total_tokens
+            # try:
+            generated_text = completion.choices[0].message.content
+            print("\n\ngenerated_text", generated_text)
+            cleaned_generated_text = generated_text.replace("json", "").replace("`", "")
+            tokens_used = completion.usage.total_tokens
 
-        print("\n\ncleaned_generated_text", cleaned_generated_text)
-        return {
-            'success': True, 'generated_text': json.loads(cleaned_generated_text), 'tokens_used': tokens_used
-        }
+            print("\n\ncleaned_generated_text", cleaned_generated_text)
+            return {
+                'success': True, 'generated_text': json.loads(cleaned_generated_text), 'tokens_used': tokens_used,
+                'model_used': 'gpt-4o'
+            }
         #
         #     except Exception as fail:
         #         print(fail)
@@ -200,8 +203,8 @@ class ManageGenerationSurveys:
         #         else:
         #             print("Не удалось получить информацию об ошибке.")
         #             return {'success': False, 'code': 429, 'message': str(fail)}
-        # except Exception as fail:
-        #     return {'success': False, 'code': 500, 'message': str(fail)}
+        except Exception as fail:
+            return {'success': False, 'code': 500, 'message': str(fail)}
 
 
 class AccessControlUser:
@@ -296,14 +299,20 @@ class GenerationModelsControl:
         return response.json()
 
     def get_generated_feedback_0003(self, text_from_user):
-        client = openai.OpenAI(
-            base_url="https://openrouter.ai/api/v1",
-            api_key=self.__get_confidential_key('openrouter')
-        )
-
+        from .api_keys import get_active_key
         for model in MODEL_NAMES:
             try:
+                client = openai.OpenAI(
+                    base_url="https://openrouter.ai/api/v1",
+                    api_key=get_active_key('FEEDBACK'),
+                )
+
                 completion = client.chat.completions.create(
+                    extra_headers={
+                        "HTTP-Referer": "https://letychka.ru/",
+                        "X-Title": "LETYCHKA"
+                    },
+                    extra_body={},
                     model=model,
                     messages=[
                         {
@@ -326,11 +335,11 @@ class GenerationModelsControl:
                     error_message = completion.error.get('message', 'Unknown error')
                     raise Exception(f"Error from API: {error_message}")
 
-                return self.__generate_completion(completion)
+                return self.__generate_completion(completion, model)
 
             except Exception as fail:
                 tracer_l.tracer_charge('WARNING', '', 'get_generated_feedback_0003',
-                                       f'FAILED to load model: {model}. Error: {str(fail)}', fail)
+                                       f'FAILED to load model. Error: {str(fail)}', fail)
 
         return None
 
@@ -344,7 +353,7 @@ class GenerationModelsControl:
             return {'success': False, 'feedback_text': None, 'tokens_used': None}
 
     @staticmethod
-    def __generate_completion(completion) -> dict:
+    def __generate_completion(completion, model) -> dict:
         print(completion)
         try:
             if completion.choices:
@@ -354,7 +363,8 @@ class GenerationModelsControl:
                 tokens_used = completion.usage.total_tokens
                 print("\n\ncleaned_generated_text", cleaned_generated_text, '\ntokens used', tokens_used)
                 return {
-                    'success': True, 'generated_text': cleaned_generated_text, 'tokens_used': tokens_used
+                    'success': True, 'generated_text': cleaned_generated_text, 'tokens_used': tokens_used,
+                    'model_used': model
                 }
             else:
                 error_message = "No choices available in the completion response."
@@ -436,9 +446,9 @@ class GenerationModelsControl:
                         }
                     ]
                 )
-                return self.__generate_completion(completion)
+                return self.__generate_completion(completion, model)
             except Exception as fail:
-                tracer_l.tracer_charge('WARNING', '', 'get_generated_feedback_0003',
+                tracer_l.tracer_charge('WARNING', '', 'get_generated_survey_0003',
                                        f'FAILED to load model: {model}', fail)
 
         return None
@@ -535,7 +545,7 @@ class SubscriptionCheck:
         self.plans = SUBSCRIPTION_TIERS
 
     def get_subscription_name(self):
-        return self.plans.get(self.level, "Стартовый план")
+        return self.plans.get(self.level, "Стартовый")
 
     def get_subscription_level(self, subscription_name):
         for number, name in self.plans.items():
@@ -631,3 +641,18 @@ def calculate_total_users(start_date_str: str, initial_users: int = 0) -> int:
 def hash_data(data):
     data_string = json.dumps(data, sort_keys=True).encode()
     return hashlib.sha256(data_string).hexdigest()
+
+
+def format_model_name(raw_model: str) -> str:
+    if not raw_model:
+        return ''
+    raw_model = raw_model.split(":")[0]
+    company, model = raw_model.split("/")
+
+    model_cleaned = model.replace("-", " ").replace("_", " ")
+    formatted_name = f"{company} {model_cleaned}".title()
+
+    if company.lower() == "meta-llama" or "meta" in company.lower():
+        formatted_name += " (принадлежит компании Meta, признанной экстремистской в РФ)"
+
+    return formatted_name

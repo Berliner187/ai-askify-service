@@ -20,13 +20,13 @@ PAYMENT_STATUSES = {
 }
 
 MODEL_NAMES = [
-    "meta-llama/llama-3.1-405b-instruct:free",
-    "meta-llama/llama-3.2-90b-vision-instruct:free",
-    "meta-llama/llama-3.1-70b-instruct:free",
-    "liquid/lfm-40b:free",
-    "google/gemini-flash-1.5-8b-exp",
-    "qwen/qwen-2-7b-instruct:free",
-    "openchat/openchat-7b:free"
+    "google/gemini-2.0-flash-exp:free",
+    "google/gemma-3-27b-it:free",
+    "deepseek/deepseek-chat-v3-0324:free",
+    "deepseek/deepseek-chat:free",
+    "qwen/qwq-32b:free",
+    "meta-llama/llama-4-maverick:free",
+    "deepseek/deepseek-v3-base:free"
 ]
 
 SUBSCRIPTION_TIERS = {
@@ -34,7 +34,9 @@ SUBSCRIPTION_TIERS = {
     1: "Стандартный",
     2: "Премиум",
     4: "Ультра",
-    5: "Enterprise"
+    5: "Enterprise",
+    6: "Стандартный Год",
+    7: "Премиум Год"
 }
 
 ALLOWED_DOMAINS = [

@@ -18,10 +18,10 @@ const showPopup = () => {
   
   popupTimer = setTimeout(() => {
     popup.classList.remove('active');
-  }, 7000);
+  }, 22000);
 };
 
-setTimeout(showPopup, 25000);
+setTimeout(showPopup, 80000);
 
 
 // Закрытие попапа при клике на крестик или вне зоны попапа
@@ -67,23 +67,4 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             });
         }
     });
-});
-
-
-// Попап внизу
-document.addEventListener('DOMContentLoaded', function() {
-    const ltkPopup = document.querySelector('.ltk-popup-overlay');
-    const ltkCloseButton = document.querySelector('.ltk-popup-close');
-
-    ltkCloseButton.addEventListener('click', function() {
-        ltkPopup.style.display = 'none';
-    });
-
-    setTimeout(() => {
-        ltkPopup.style.display = 'block';
-
-        setTimeout(() => {
-            ltkPopup.style.display = 'none';
-        }, 5000);
-    }, 12000);
 });

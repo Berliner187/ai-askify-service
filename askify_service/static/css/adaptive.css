@@ -18,7 +18,8 @@
     }
 
     .button-medium {
-        font-size: 14px;
+        font-size: 12px;
+        margin: 2px 8px;
     }
 
     .input-area, textarea {

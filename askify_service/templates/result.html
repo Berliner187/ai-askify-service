@@ -63,7 +63,7 @@
                             <a href="{% url 'download-survey_pdf' survey_id=survey_id %}">
                                 <div>
                                     <p>Скачать в PDF</p>
-                                    <img src="{% static 'img/icon-file.png' %}" alt="Icon download in PDF">
+                                    <img src="{% static 'img/icon-download.png' %}" alt="Icon download in PDF">
                                 </div>
                             </a> 
                         </div>
@@ -83,7 +83,7 @@
                         <a href="{% url 'download-survey_pdf' survey_id=survey_id %}">
                             <div>
                                 <p>Скачать в PDF</p>
-                                <img src="{% static 'img/icon-file.png' %}" alt="Icon download in PDF">
+                                <img src="{% static 'img/icon-download.png' %}" alt="Icon download in PDF">
                             </div>
                         </a> 
                     </div>
@@ -98,7 +98,7 @@
         <div>
             {% if total > 0 %}
 
-                {% if subscription_level < 2 and subscription_level != 0 %}
+                {% if subscription_level < 1 %}
                     <div class="container subscription-offer">
                         <h2>🎁 Получите больше с Премиумом!</h2>
                         <p>Премиум открывает доступ к индивидуальным рекоммендациям от ИИ.<br>
@@ -119,6 +119,8 @@
                     <div class="container result-full feedback-container">
                         <h2>Рекомендации</h2>
                         {{ feedback_text|safe }}
+                        <hr>
+                        <p class="hint">Сгенерировано при помощи {{ model_name }}</p>
                     </div>
                 {% endif %}
             

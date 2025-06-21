@@ -4,7 +4,6 @@ from django.contrib.auth.models import AbstractUser, Group, Permission
 from django.db.models import Avg, Count, Max, Min
 from django.contrib.auth.models import User
 from django.utils import timezone
-from django.utils.translation import get_language
 from django.db.models import Sum
 
 from datetime import timedelta, datetime
@@ -22,6 +21,7 @@ class Survey(models.Model):
     questions = models.TextField()
     updated_at = models.DateTimeField(auto_now=True)
     id_staff = models.UUIDField()
+    model_name = models.CharField(max_length=255, blank=True, null=True)
 
     def get_questions(self):
         return json.loads(self.questions)
@@ -32,13 +32,14 @@ class Survey(models.Model):
     def save_questions(self, questions):
         self.questions = json.dumps(questions)
 
-    def generate_pdf(self):
+    def generate_pdf(self, subscription_level):
+        print(subscription_level)
         response = HttpResponse(content_type='application/pdf')
         safe_title = "".join(c for c in self.title if c.isalnum() or c in (" ", "_")).rstrip()
         response['Content-Disposition'] = f'attachment; filename="{safe_title}.pdf"'
 
         converter_pdf = ConverterPDF()
-        response = converter_pdf.get_survey_in_pdf(response, self.title, self.get_questions())
+        response = converter_pdf.get_survey_in_pdf(response, self.title, self.get_questions(), subscription_level)
 
         return response
 
@@ -93,7 +94,7 @@ class UserAnswers(models.Model):
                             'total_points': total_points,
                         }
 
-        best_result_str = f"{best_result['title']} – набрано {best_result['scored_points']} из {best_result['total_points']}" if best_result else "Нет пройденных тестов."
+        best_result_str = f"{best_result['title']} – {best_result['scored_points']} из {best_result['total_points']}" if best_result else "Нет пройденных тестов."
 
         return {
             'total_tests': total_tests,
@@ -105,6 +106,7 @@ class UserAnswers(models.Model):
 class AuthUser(AbstractUser):
     id_arrival = models.CharField(max_length=100, blank=True, null=True)
     id_staff = models.UUIDField(default=uuid.uuid4, blank=False, null=False)
+    hash_user_id = models.CharField(max_length=100, blank=False, null=True)
 
     groups = models.ManyToManyField(
         Group,
@@ -173,6 +175,8 @@ class Subscription(models.Model):
             'free_plan': 'Стартовый на 7 дней',
             'standard_plan': 'Стандартный план на 30 дней',
             'premium_plan': 'Премиум план на 30 дней',
+            'standard_plan_year': 'Стандартный план на 365 дней',
+            'premium_plan_year': 'Премиум план на 365 дней',
             'ultra_plan': 'Ультра план на 30 дней',
         }
         return plan_mapping.get(self.plan_name, self.plan_name)
@@ -203,8 +207,11 @@ class AvailableSubscription(models.Model):
             self.amount = 990
             self.expiration_date = timezone.now() + timedelta(days=30)
         elif self.plan_type in ['standard_plan', 'premium_plan']:
-            self.amount = 220 if self.plan_type == 'standard_plan' else 590
+            self.amount = 420 if self.plan_type == 'standard_plan' else 590
             self.expiration_date = timezone.now() + timedelta(days=30)
+        elif self.plan_type in ['standard_plan_year', 'premium_plan_year']:
+            self.amount = 2640 if self.plan_type == 'standard_plan_year' else 4800
+            self.expiration_date = timezone.now() + timedelta(days=365)
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -256,6 +263,7 @@ class FeedbackFromAI(models.Model):
     id_staff = models.UUIDField(blank=False)
     feedback_data = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
+    model_name = models.CharField(max_length=255, blank=True, null=True)
 
 
 def get_token_limit(plan_name):
@@ -263,7 +271,7 @@ def get_token_limit(plan_name):
         'стартовый': 25_000,
         'стандартный': 50_000,
         'премиум': 500_000,
-        'ультра': 1_500_000,
+        'ультра': 2_500_000,
     }
     return token_limits.get(plan_name.lower(), 0)
 
@@ -379,9 +387,31 @@ class TokensUsed(models.Model):
         self.save()
 
 
-class AuthToken(models.Model):
-    token = models.CharField(max_length=255, unique=True)
-    expires_at = models.DateTimeField()
+class APIKey(models.Model):
+    name = models.CharField(max_length=100)
+    provider = models.CharField(max_length=50)
+    purpose = models.CharField(max_length=20)
+    key = models.TextField()
+    is_active = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(blank=True, null=True)
 
-    def is_valid(self):
-        return timezone.now() < self.expires_at
+    def __str__(self):
+        return f"{self.name} ({self.provider})"
+
+    class Meta:
+        db_table = 'api_keys'
+
+
+class APIKeyUsage(models.Model):
+    api_key = models.ForeignKey(APIKey, on_delete=models.CASCADE, related_name='usages')
+    timestamp = models.DateTimeField(default=timezone.now)
+    success = models.BooleanField(default=True)
+    endpoint = models.CharField(max_length=255, blank=True, null=True)
+    response_time_ms = models.IntegerField(null=True, blank=True)
+
+    def __str__(self):
+        return f"Usage of {self.api_key.name} at {self.timestamp}"
+
+    class Meta:
+        db_table = 'api_key_usage'

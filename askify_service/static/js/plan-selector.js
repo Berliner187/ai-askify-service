@@ -16,7 +16,7 @@ subscriptionOptions.forEach(option => {
 
         switch (selectedPlan) {
             case 'standard':
-                price = 220;
+                price = 420;
                 description = 'Стандартный';
                 sub_description = 'Доступ на 30 дней за ' + price + ' руб';
                 break;
@@ -24,6 +24,16 @@ subscriptionOptions.forEach(option => {
                 price = 590;
                 sub_description = 'Доступ на 30 дней за ' + price + ' руб';
                 description = 'Премиум';
+                break;
+            case 'standard-year':
+                price = 2640;
+                description = 'Стандартный Год';
+                sub_description = 'Доступ на 365 дней за ' + price + ' руб';
+                break;
+            case 'premium-year':
+                price = 4800;
+                sub_description = 'Доступ на 365 дней за ' + price + ' руб';
+                description = 'Премиум Год';
                 break;
             case 'ultra':
                 price = 990;

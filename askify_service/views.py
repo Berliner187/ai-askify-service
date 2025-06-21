@@ -30,6 +30,9 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.http import HttpResponseForbidden
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db.models import Q
+from django.db import transaction, IntegrityError
+from django.utils import timezone
+from django.core.exceptions import ValidationError
 
 
 from .utils import *
@@ -51,6 +54,11 @@ import aiofiles
 import PyPDF2
 from Crypto.PublicKey import ECC
 import vk_api
+import chardet
+import docx
+import PyPDF2
+from tempfile import NamedTemporaryFile
+import textract
 
 
 from datetime import datetime, timedelta
@@ -114,13 +122,97 @@ def page_create_survey(request):
         faq_content = f.read()
         faq_html = markdown.markdown(faq_content)
 
+    from datetime import date
+
+    user_surveys = Survey.objects.filter(id_staff=current_id_staff)
+    user_answers = UserAnswers.objects.filter(id_staff=current_id_staff)
+    feedbacks = FeedbackFromAI.objects.filter(id_staff=current_id_staff)
+
+    total_tests = Survey.objects.filter(id_staff=current_id_staff).count()
+    passed_tests = UserAnswers.calculate_user_statistics(current_id_staff)['passed_tests']
+    best_result = UserAnswers.calculate_user_statistics(current_id_staff)['best_result']
+    feedback_count = FeedbackFromAI.objects.filter(id_staff=current_id_staff).count()
+    today_uploads = Survey.objects.filter(updated_at__date=date.today()).count()
+
+    model_most_used = FeedbackFromAI.objects.filter(id_staff=current_id_staff).values('model_name') \
+        .annotate(c=Count('model_name')).order_by('-c').first()
+    model_used = model_most_used['model_name'] if model_most_used else "–"
+
+    # 8, 9 — вопросы во всех тестах
+    total_questions = 0
+    for survey in user_surveys:
+        try:
+            questions = json.loads(survey.questions)
+            total_questions += len(questions)
+        except Exception:
+            continue
+    avg_questions = (total_questions / total_tests) if total_tests else None
+
+    # 11
+    total_answers = user_answers.count() or None
+
+    # 12
+    try:
+        correct_sum = user_answers.aggregate(total_correct=Avg('scored_points'))['total_correct']
+        avg_correct_answers = correct_sum or None
+    except Exception:
+        avg_correct_answers = None
+
+    # 14
+    unique_models_count = feedbacks.values('model_name').distinct().count() or 0
+
+    # 15
+    start_month = date.today().replace(day=1)
+    tests_this_month = user_surveys.filter(updated_at__gte=start_month).count() or 0
+
+    # 16
+    week_ago = date.today() - timedelta(days=7)
+    feedback_last_week = feedbacks.filter(created_at__gte=week_ago).count() or 0
+
+    # 18
+    tests_with_feedback = feedbacks.values_list('survey_id', flat=True).distinct().count() or 0
+    percent_with_feedback = (tests_with_feedback / total_tests * 100) if total_tests else 0
+
+    # 19
+    avg_tokens_used = feedbacks.aggregate(Avg('tokens_used')).get('tokens_used__avg', 0) if hasattr(feedbacks.model,
+                                                                                                       'tokens_used') else 0
+
+    # 20
+    tests_created_and_passed = 0
+    try:
+        for survey in user_surveys:
+            if user_answers.filter(survey_id=survey.survey_id).exists():
+                tests_created_and_passed += 1
+    except Exception:
+        tests_created_and_passed = 0
+
+    # 7
+    # avg_score = user_answers.aggregate(Avg('scored_points')).get('scored_points__avg', None) * tests_created_and_passed
+    # print(avg_score)
     context = {
         "page_title": "Создать тест",
         'tokens_f': get_format_number(diff_limit) if diff_limit > 0 else 0,
         'limit_tokens': tokens_limit,
         'username': get_username(request),
         'subscription_level': subscription_level,
-        'faq_html': faq_html
+        'faq_html': faq_html,
+        "total_tests": total_tests,
+        "passed_tests": passed_tests,
+        "best_result": best_result,
+        "feedback_count": feedback_count,
+        "today_uploads": today_uploads,
+        "model_used": model_used,
+        # "avg_score": f"{avg_score:.1f}" if avg_score else '',
+        "total_questions": total_questions or '',
+        "avg_questions": f"{avg_questions:.1f}" if avg_questions else '',
+        "total_answers": total_answers or '',
+        "avg_correct_answers": f"{avg_correct_answers:.1f}" if avg_correct_answers else '',
+        "unique_models_count": unique_models_count or '',
+        "tests_this_month": tests_this_month or '',
+        "feedback_last_week": feedback_last_week or '',
+        "percent_with_feedback": f"{percent_with_feedback:.1f}%" if percent_with_feedback else '',
+        "avg_tokens_used": f"{avg_tokens_used:.1f}" if avg_tokens_used else '',
+        "tests_created_and_passed": tests_created_and_passed or '',
     }
 
     return render(request, 'askify_service/text_input.html', context)
@@ -181,18 +273,23 @@ def load_more_surveys(request):
 
 @login_required
 def drop_survey(request, survey_id):
-    survey_obj = Survey.objects.get(survey_id=uuid.UUID(survey_id))
-    survey_obj.delete()
-    try:
-        survey_user_answers = get_object_or_404(UserAnswers, survey_id=uuid.UUID(survey_id))
-        survey_user_answers.delete()
-        tracer_l.tracer_charge(
-            'INFO', request.user.username, drop_survey.__name__, "Delete Survey")
-    except Exception as pass_fail:
-        print("Не найдено записей", pass_fail)
-        tracer_l.tracer_charge(
-            'INFO', request.user.username, drop_survey.__name__, "Delete UserAnswers", pass_fail)
-    return redirect('history')
+    survey_obj = Survey.objects.filter(survey_id=uuid.UUID(survey_id)).first()
+
+    if survey_obj and (survey_obj.id_staff == get_staff_id(request)):
+        survey_obj.delete()
+
+        try:
+            survey_user_answers = get_object_or_404(UserAnswers, survey_id=uuid.UUID(survey_id))
+            survey_user_answers.delete()
+            tracer_l.tracer_charge(
+                'INFO', request.user.username, drop_survey.__name__, "Delete Survey")
+        except Exception as pass_fail:
+            tracer_l.tracer_charge(
+                'INFO', request.user.username, drop_survey.__name__, "Delete UserAnswers", pass_fail)
+        return redirect('history')
+
+    else:
+        return JsonResponse({'error': 'No.'})
 
 
 class ManageTokensLimits:
@@ -234,120 +331,147 @@ class ManageTokensLimits:
         return False
 
 
-@method_decorator(login_required, name='dispatch')
+@sync_to_async
+def get_active_api_key(purpose: str):
+    print('SUUUUUUUUI', APIKey.objects.filter(purpose=purpose, is_active=True).first().key)
+    return APIKey.objects.filter(purpose=purpose, is_active=True).first()
+
+
+@sync_to_async
+def create_api_key_usage(api_key_id, staff_id, purpose):
+    APIKeyUsage.objects.create(
+        api_key_id=api_key_id,
+        staff_id=staff_id,
+        purpose=purpose
+    )
+
+
+# @method_decorator(login_required, name='dispatch')
+@method_decorator(csrf_exempt, name='dispatch')
 @method_decorator(check_blocked, name='dispatch')
-@method_decorator(subscription_required, name='dispatch')
+# @method_decorator(subscription_required, name='dispatch')
 class ManageSurveysView(View):
     async def post(self, request):
         if request.method == 'POST':
-            try:
-                request_from_user = json.loads(request.body)
-                question_count = request_from_user['questions']
-                text_from_user = request_from_user['text']
+            # try:
+            print("ВЛЕТЕЛ")
 
-                print(question_count, text_from_user)
-                tracer_l.tracer_charge(
-                    'INFO', request.user.username, ManageSurveysView.post.__name__,
-                    f"{question_count} {text_from_user}")
+            request_from_user = json.loads(request.body)
+            question_count = request_from_user['questions']
+            text_from_user = request_from_user['text']
 
-                if question_count.isdigit():
-                    if int(question_count) > 20 or int(question_count) < 0:
-                        return JsonResponse({'error': 'Недоступное кол-во вопросов :('}, status=400)
-                else:
-                    return JsonResponse({'error': 'Кол-во вопросов должно быть число'}, status=400)
+            print(question_count, text_from_user)
+            tracer_l.tracer_charge(
+                'INFO', request.user.username, ManageSurveysView.post.__name__,
+                f"{question_count} {text_from_user}")
 
-                staff_id = get_staff_id(request)
-                subscription_object = Subscription.objects.get(staff_id=staff_id)
-                plan_name = subscription_object.plan_name
+            if question_count.isdigit():
+                if int(question_count) > 20 or int(question_count) < 0:
+                    return JsonResponse({'error': 'Недоступное кол-во вопросов :('}, status=400)
+            else:
+                return JsonResponse({'error': 'Кол-во вопросов должно быть число'}, status=400)
 
-                token_limit = get_token_limit(plan_name)
+            staff_id = get_staff_id(request)
+            subscription_object = Subscription.objects.get(staff_id=staff_id)
+            plan_name = subscription_object.plan_name
 
-                # Получение кол-ва использованных токенов
-                manage_tokens_limits = ManageTokensLimits(staff_id)
-                total_used_token_per_period = manage_tokens_limits.get_usage_tokens()
-                # total_used_token_per_period = 1_490_000
-                print("total_used_token_per_period", total_used_token_per_period)
+            token_limit = get_token_limit(plan_name)
 
-                if plan_name.lower() == 'стартовый':
-                    if total_used_token_per_period >= token_limit:
-                        return JsonResponse({
-                            'error': 'Токены закончились :(\n\nОзнакомьтесь с тарифами на странице профиля.'},
-                            status=403
-                        )
-                else:
-                    if total_used_token_per_period >= token_limit:
-                        return JsonResponse({
-                            'error': 'Токены закончились :(\n\nОзнакомьтесь с тарифами на странице профиля.'}, status=403)
+            # Получение кол-ва использованных токенов
+            manage_tokens_limits = ManageTokensLimits(staff_id)
+            total_used_token_per_period = manage_tokens_limits.get_usage_tokens()
+            # total_used_token_per_period = 1_490_000
+            print("total_used_token_per_period", total_used_token_per_period)
 
-                try:
-                    # time.sleep(9999)
-                    print(f"\n\nGEN STAAAART")
-
-                    # tracer_l.tracer_charge(
-                    #     'ADMIN', request.user.username, ManageSurveysView.post.__name__,
-                    #     f"GEN STAAAART")
-
-                    manage_generate_surveys_text = ManageGenerationSurveys(request, text_from_user, question_count)
-                    generated_text = await manage_generate_surveys_text.github_gpt()
-
-                    # tracer_l.tracer_charge(
-                    #     'ADMIN', request.user.username, ManageSurveysView.post.__name__,
-                    #     f"{generated_text}")
-
-                    if generated_text.get('success'):
-                        tokens_used = generated_text.get('tokens_used')
-                        cleaned_generated_text = generated_text.get('generated_text')
-                        print(f"\n\nGEN TEST: {generated_text}")
-                        # tracer_l.tracer_charge(
-                        #     'ADMIN', request.user.username, ManageSurveysView.post.__name__,
-                        #     f"{cleaned_generated_text}")
-                    else:
-                        return JsonResponse({'error': 'Произошла ошибка :(\nПожалуйста, попробуйте позже'}, status=429)
-
-                    # cleaned_generated_text = generated_text
-                    # tracer_l.tracer_charge(
-                    #     'INFO', request.user.username, ManageSurveysView.post.__name__,
-                    #     f"success json.loads: {cleaned_generated_text.get('title')}")
-                # except (json.JSONDecodeError, TypeError) as json_error:
-                    # tracer_l.tracer_charge(
-                    #     'ERROR', request.user.username, ManageSurveysView.post.__name__,
-                    #     "text is not valid JSON", str(json_error), "status: 400")
-                    # return JsonResponse({'error': str(json_error)}, status=400)
-                except Exception as fail:
-                    # tracer_l.tracer_charge(
-                    #     'CRITICAL', request.user.username, ManageSurveysView.post.__name__,
-                    #     f"{fail}", "status: 400")
-                    return JsonResponse({'error': 'Опаньки :(\n\nК сожалению, не удалось составить тест'}, status=400)
-
-                try:
-                    print(f"\n\n---- ТОКЕНОВ ИСПОЛЬЗОВАНО: {tokens_used}\n\n")
-                    new_survey_id = uuid.uuid4()
-
-                    survey = Survey(
-                        survey_id=new_survey_id,
-                        title=cleaned_generated_text['title'],
-                        id_staff=get_staff_id(request)
+            if plan_name.lower() == 'стартовый':
+                if total_used_token_per_period >= token_limit:
+                    return JsonResponse({
+                        'error': 'Токены закончились :(\n\nОзнакомьтесь с тарифами на странице профиля.'},
+                        status=403
                     )
-                    survey.save_questions(cleaned_generated_text['questions'])
-                    survey.save()
+            else:
+                if total_used_token_per_period >= token_limit:
+                    return JsonResponse({
+                        'error': 'Токены закончились :(\n\nОзнакомьтесь с тарифами на странице профиля.'}, status=403)
 
-                    _tokens_used = TokensUsed(
-                        id_staff=get_staff_id(request),
-                        tokens_survey_used=tokens_used
-                    )
-                    _tokens_used.save()
+            # try:
+            # time.sleep(9999)
+            print(f"\n\nGEN STAAAART")
 
-                    tracer_l.tracer_charge(
-                        'DB', request.user.username, ManageSurveysView.post.__name__, "success save to DB")
+            # tracer_l.tracer_charge(
+            #     'ADMIN', request.user.username, ManageSurveysView.post.__name__,
+            #     f"GEN STAAAART")
 
-                    return JsonResponse({'survey': cleaned_generated_text, 'survey_id': f"{new_survey_id}"}, status=200)
-                except Exception as fail:
-                    user = await sync_to_async(str)(request.user.username)
-                    tracer_l.tracer_charge(
-                        'INFO', user, ManageSurveysView.post.__name__,
-                        "error in save to DB", f"{fail}")
-                    return JsonResponse(
-                        {'error': 'Ошибочка :(\n\nПожалуйста, попробуйте позже'}, status=400)
+            manage_generate_surveys_text = ManageGenerationSurveys(request, text_from_user, question_count)
+            generated_text = await manage_generate_surveys_text.github_gpt(await get_active_api_key('SURVEY'))
+
+            # tracer_l.tracer_charge(
+            #     'ADMIN', request.user.username, ManageSurveysView.post.__name__,
+            #     f"{generated_text}")
+
+            if generated_text.get('success'):
+                tokens_used = generated_text.get('tokens_used')
+                cleaned_generated_text = generated_text.get('generated_text')
+
+                print(f"\n\nGEN TEST: {generated_text}")
+                # tracer_l.tracer_charge(
+                #     'ADMIN', request.user.username, ManageSurveysView.post.__name__,
+                #     f"{cleaned_generated_text}")
+            else:
+                return JsonResponse({'error': 'Произошла ошибка :(\nПожалуйста, попробуйте позже'}, status=429)
+
+            # cleaned_generated_text = generated_text
+            # tracer_l.tracer_charge(
+            #     'INFO', request.user.username, ManageSurveysView.post.__name__,
+            #     f"success json.loads: {cleaned_generated_text.get('title')}")
+        # except (json.JSONDecodeError, TypeError) as json_error:
+            # tracer_l.tracer_charge(
+            #     'ERROR', request.user.username, ManageSurveysView.post.__name__,
+            #     "text is not valid JSON", str(json_error), "status: 400")
+            # return JsonResponse({'error': str(json_error)}, status=400)
+            # except Exception as fail:
+            #     # tracer_l.tracer_charge(
+            #     #     'CRITICAL', request.user.username, ManageSurveysView.post.__name__,
+            #     #     f"{fail}", "status: 400")
+            #     return JsonResponse({'error': 'Опаньки :(\n\nК сожалению, не удалось составить тест'}, status=400)
+
+            # try:
+            print(f"\n\n---- ТОКЕНОВ ИСПОЛЬЗОВАНО: {tokens_used}\n\n")
+            new_survey_id = uuid.uuid4()
+
+            survey = Survey(
+                survey_id=new_survey_id,
+                title=cleaned_generated_text['title'],
+                id_staff=get_staff_id(request),
+                model_name=generated_text.get('model_used', '')
+            )
+            survey.save_questions(cleaned_generated_text['questions'])
+            survey.save()
+
+            _tokens_used = TokensUsed(
+                id_staff=get_staff_id(request),
+                tokens_survey_used=tokens_used,
+
+            )
+            _tokens_used.save()
+
+            api_key_manage = await get_active_api_key('SURVEY')
+            APIKeyUsage.objects.create(
+                api_key=api_key_manage,
+                success=True,
+            )
+
+            tracer_l.tracer_charge(
+                'DB', request.user.username, ManageSurveysView.post.__name__, "success save to DB")
+
+            return JsonResponse({'survey': cleaned_generated_text, 'survey_id': f"{new_survey_id}"}, status=200)
+            # except Exception as fail:
+            #     user = await sync_to_async(str)(request.user.username)
+            #     tracer_l.tracer_charge(
+            #         'INFO', user, ManageSurveysView.post.__name__,
+            #         "error in save to DB", f"{fail}")
+            #     return JsonResponse(
+            #         {'error': 'Ошибочка :(\n\nПожалуйста, попробуйте позже'}, status=400)
 
             # except json.JSONDecodeError as json_decode:
             #     # tracer_l.tracer_charge(
@@ -355,17 +479,150 @@ class ManageSurveysView(View):
             #     #     "Invalid JSON in request body", f"{json_decode}",
             #     #     f"status: 400")
             #     return JsonResponse({'error': 'Invalid JSON in request body'}, status=400)
-            except Exception as e:
-                # tracer_l.tracer_charge(
-                #     'CRITICAL', request.user.username, ManageSurveysView.post.__name__,
-                #     "FATAL Exception", f"{e}",
-                #     f"status: 500")
-                return JsonResponse({'error': str(e)}, status=500)
+            # except Exception as e:
+            #     # tracer_l.tracer_charge(
+            #     #     'CRITICAL', request.user.username, ManageSurveysView.post.__name__,
+            #     #     "FATAL Exception", f"{e}",
+            #     #     f"status: 500")
+            #     return JsonResponse({'error': str(e)}, status=500)
 
         # tracer_l.tracer_charge(
         #     'CRITICAL', request.user.username, ManageSurveysView.post.__name__,
         #     "Invalid request method", "status: 400")
         return JsonResponse({'error': 'Invalid request method'}, status=400)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class GenerationSurveysView(View):
+    async def post(self, request):
+        try:
+            print("ВЛЕТЕЛ В ASYNC POST")
+            body = await sync_to_async(request.body.decode)('utf-8')
+            request_from_user = json.loads(body)
+            question_count = str(request_from_user['questions'])
+            text_from_user = request_from_user['text']
+            if not (0 < int(question_count) <= 5):
+                return JsonResponse({'error': 'Допустимо от 1 до 5 вопросов'}, status=400)
+            client_ip = get_client_ip(request)
+            hashed_ip = hash_data(client_ip)
+
+            existing_survey = Survey.objects.filter(title=text_from_user).first()
+            if existing_survey:
+                return JsonResponse({
+                    'survey_id': str(existing_survey.survey_id),
+                    'redirect_url': f'/result/{existing_survey.survey_id}/'
+                }, status=200)
+
+            # Сначала пытаемся найти пользователя
+            try:
+                auth_user = await sync_to_async(AuthUser.objects.get)(hash_user_id=client_ip)
+            except AuthUser.DoesNotExist:
+                # Если не нашли - создаем с уникальным username
+                auth_user = await sync_to_async(AuthUser.objects.create)(
+                    username=f"{hashed_ip}_{uuid.uuid4().hex[:6]}",
+                    hash_user_id=client_ip
+                )
+
+            staff_id = auth_user.id_staff
+
+            try:
+                subscription_object = await sync_to_async(Subscription.objects.filter)(staff_id=staff_id)
+                plan_name = subscription_object.plan_name
+                token_limit = get_token_limit(plan_name)
+            except:
+                pass
+            print('47387384')
+
+            surveys_count = Survey.objects.filter(id_staff=staff_id).count()
+            print(surveys_count)
+            if surveys_count > 1:
+                return JsonResponse({'error': 'Лимит исчерпан :(\n\nХочешь ещё? Зарегистрируйся, и дадим 10 тестов в подарок.'})
+
+            manage_generate_surveys_text = ManageGenerationSurveys(request, text_from_user, question_count)
+            if DEBUG:
+                generated_text = {
+                    'success': True, 'generated_text': {
+                        "title": "Тест по процессорам Intel",
+                        "questions": [
+                            {
+                                "question": "Как называется технология Intel, которая позволяет процессору автоматически увеличивать тактовую частоту при необходимости?",
+                                "options": ["Hyper-Threading", "Turbo Boost", "Intel Optane", "Quick Sync", "Turbo Boost"],
+                                "correct_answer": "Turbo Boost"
+                            },
+                            {
+                                "question": "Какая архитектура процессоров Intel была представлена в 2021 году и сочетает производительные и энергоэффективные ядра?",
+                                "options": ["Rocket Lake", "Alder Lake", "Ice Lake", "Tiger Lake", "Alder Lake"],
+                                "correct_answer": "Alder Lake"
+                            }
+                        ]
+                    }, 'tokens_used': 200,
+                }
+            else:
+                generated_text = await manage_generate_surveys_text.github_gpt(await get_active_api_key('SURVEY'))
+
+            if not generated_text.get('success'):
+                return JsonResponse({'error': 'Произошла ошибка генерации'}, status=500)
+
+            new_survey_id = uuid.uuid4()
+            survey = Survey(
+                survey_id=new_survey_id,
+                title=generated_text['generated_text']['title'],
+                id_staff=staff_id
+            )
+
+            await sync_to_async(survey.save_questions)(generated_text['generated_text']['questions'])
+            await sync_to_async(survey.save)()
+
+            _tokens_used = TokensUsed(
+                id_staff=staff_id,
+                tokens_survey_used=generated_text['tokens_used']
+            )
+            await sync_to_async(_tokens_used.save)()
+
+            api_key_manage = APIKey.objects.filter(purpose='SURVEY', is_active=True).first()
+            APIKeyUsage.objects.create(
+                api_key=api_key_manage,
+                success=True,
+            )
+
+            return JsonResponse({
+                'survey': generated_text['generated_text'],
+                'survey_id': str(new_survey_id),
+                'redirect_url': f'/result/{new_survey_id}/'
+            }, status=200)
+
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Невалидный JSON'}, status=400)
+        except Exception as e:
+            print(f"FATAL ERROR: {str(e)}")
+            return JsonResponse({'error': 'Внутренняя ошибка сервера'}, status=500)
+
+
+def get_demo_tests(request):
+    client_ip = get_client_ip(request)
+
+    user = AuthUser.objects.filter(hash_user_id=client_ip).first()
+
+    if user:
+        print(client_ip, user.id_staff)
+        surveys = Survey.objects.filter(id_staff=user.id_staff)
+        print(surveys)
+
+        tests = []
+        for survey in surveys:
+            tests.append({
+                'title': survey.title,
+                'url_link': f'/survey/{survey.survey_id}/download/'
+            })
+        print(tests)
+
+        return JsonResponse({'tests': tests})
+
+    return JsonResponse({'tests': {}})
+
+
+from django.db.models import F, ExpressionWrapper, DurationField
+from django.db.models.functions import Abs
 
 
 @login_required
@@ -377,10 +634,31 @@ def get_all_surveys(request):
     surveys = Survey.objects.filter(id_staff=staff_id).order_by('-updated_at')
     response_data_all = {}
 
+    tokens_entries = TokensUsed.objects.filter(id_staff=staff_id)
+
     for survey in surveys:
         format_date_update = get_formate_date(survey.updated_at)
+
+        time_margin = timedelta(seconds=5)
+        nearby_tokens = (
+            tokens_entries
+            .filter(created_at__range=(survey.updated_at - time_margin, survey.updated_at + time_margin))
+            .annotate(
+                time_diff=ExpressionWrapper(
+                    Abs(F('created_at') - survey.updated_at),
+                    output_field=DurationField()
+                )
+            )
+            .order_by('time_diff')
+            .first()
+        )
+
+        tokens_used = nearby_tokens.tokens_survey_used if nearby_tokens else None
+
         response_data_all[str(survey.survey_id)] = {
-            'title': survey.title, 'update': format_date_update
+            'title': survey.title,
+            'update': format_date_update,
+            'tokens': tokens_used
         }
 
     return response_data_all
@@ -390,6 +668,8 @@ class FileUploadView(View):
     # @login_required
     # @subscription_required
     async def post(self, request):
+        question_count = request.POST.get('question_count')
+
         if 'file' not in request.FILES:
             return JsonResponse({'error': 'No file provided'}, status=400)
 
@@ -399,12 +679,20 @@ class FileUploadView(View):
 
         data = self.read_file_data(uploaded_file)
         if data == -1:
-            return JsonResponse({'error': 'Файл не является PDF'})
+            return JsonResponse({'error': 'Файл не является допустимым документом'})
 
+        # import tiktoken
+        #
+        # def count_tokens(text: str, model="gpt-4o") -> int:
+        #     encoding = tiktoken.encoding_for_model(model)
+        #     return len(encoding.encode(text))
+        #
+        # print(count_tokens(data))
+        print(data)
         print("\n--- ТЕСТ ГЕНЕРИРУЕТСЯ ---")
         try:
-            manage_generate_surveys_text = ManageGenerationSurveys(request, data, '5')
-            generated_text = await manage_generate_surveys_text.github_gpt()
+            manage_generate_surveys_text = ManageGenerationSurveys(request, data, f'{question_count}')
+            generated_text = await manage_generate_surveys_text.github_gpt(await get_active_api_key('SURVEY'))
 
             if generated_text.get('success'):
                 tokens_used = generated_text.get('tokens_used')
@@ -429,31 +717,73 @@ class FileUploadView(View):
         )
         _tokens_used.save()
 
+        api_key_manage = APIKey.objects.filter(purpose='SURVEY', is_active=True).first()
+        APIKeyUsage.objects.create(
+            api_key=api_key_manage,
+            success=True,
+        )
+
         return JsonResponse({'success': True, 'message': 'Success create survey', 'survey_id': f"{new_survey_id}"})
 
     def read_file_data(self, uploaded_file):
         full_text = ""
-        print(uploaded_file, os.path.splitext(str(uploaded_file))[1])
+        ext = os.path.splitext(str(uploaded_file.name))[1].lower()
 
-        if os.path.splitext(str(uploaded_file))[1] != '.pdf':
-            return -1
+        if ext == '.pdf':
+            try:
+                reader = PyPDF2.PdfReader(uploaded_file)
+                for page in reader.pages:
+                    if text := page.extract_text():
+                        full_text += text.strip() + "\n"
+                return full_text[:2 ** 12]
+            except Exception as e:
+                print(f"Error reading PDF: {e}")
+                return -1
 
-        if uploaded_file.content_type == 'application/pdf':
-            reader = PyPDF2.PdfReader(uploaded_file)
+        elif ext == '.txt':
+            try:
+                uploaded_file.seek(0)
+                encoding = chardet.detect_encoding(uploaded_file)
+                return uploaded_file.read().decode(encoding)[:2 ** 14]
+            except Exception as e:
+                print(f"Error reading TXT: {e}")
+                return -1
 
-            for page in reader.pages:
-                text = page.extract_text()
-                if text:
-                    full_text += text.strip()
-        else:
-            return -1
+        elif ext in ['.doc', '.docx']:
+            try:
+                with NamedTemporaryFile(delete=True, suffix=ext) as tmp:
+                    tmp.write(uploaded_file.read())
+                    tmp.seek(0)
+                    return self.extract_text_from_word(tmp.name)[:2 ** 14]
+            except Exception as e:
+                print(f"Error reading Word document: {e}")
+                return -1
 
-        truncated_text = full_text[:2**14]
-        return truncated_text
+        return -1
+
+    def detect_encoding(file_obj):
+        """ Определение кодировки текстовых файлов """
+        sample = file_obj.read(1024)
+        file_obj.seek(0)
+        result = chardet.detect(sample)
+        return result['encoding'] or 'utf-8'
+
+    def extract_text_from_word(self, file_path):
+        """ Извлечение текста из Word документов """
+        try:
+            if file_path.endswith('.docx'):
+                doc = docx.Document(file_path)
+                return "\n".join([para.text for para in doc.paragraphs])
+
+            elif file_path.endswith('.doc'):
+                return textract.process(file_path).decode('utf-8', 'ignore')
+        except Exception as e:
+            print(f"Word extraction error: {e}")
+            return ""
 
 
 @method_decorator(login_required, name='dispatch')
-@method_decorator(subscription_required, name='dispatch')
+# @method_decorator(subscription_required, name='dispatch')
 # @method_decorator(sync_to_async, name='dispatch')
 class TakeSurvey(View):
     def post(self, request, survey_id):
@@ -510,7 +840,7 @@ class TakeSurvey(View):
         subscription_check = SubscriptionCheck()
         subs_level = subscription_check.get_subscription_level(subscription.plan_name)
 
-        if subscription.status == 'active' and (subs_level == 0 or subs_level > 1):
+        if (subscription.status == 'active') and (subs_level > 0):
             generation_models_control = GenerationModelsControl()
             ai_feedback = generation_models_control.get_feedback_001(
                 f"Список вопросов и моих ответов: {user_answers_list}.\n"
@@ -525,7 +855,8 @@ class TakeSurvey(View):
                 FeedbackFromAI.objects.create(
                     survey_id=survey_id,
                     id_staff=get_staff_id(request),
-                    feedback_data=ai_feedback.get('generated_text')
+                    feedback_data=ai_feedback.get('generated_text'),
+                    model_name=ai_feedback.get('model_used', '')
                 )
 
                 TokensUsed.objects.create(
@@ -533,9 +864,16 @@ class TakeSurvey(View):
                     tokens_feedback_used=ai_feedback.get('tokens_used')
                 )
 
+                api_key_manage = APIKey.objects.filter(purpose='FEEDBACK', is_active=True).first()
+                APIKeyUsage.objects.create(
+                    api_key=api_key_manage,
+                    success=True
+                )
+
         context = {
             'score': correct_count, 'total': user_answers, 'survey_id': survey_id,
-            'subscription_level': get_subscription_level(request)
+            'subscription_level': get_subscription_level(request),
+            'username': get_username(request)
         }
         return render(request, 'result.html', context)
 
@@ -557,8 +895,6 @@ class TakeSurvey(View):
 @login_required
 # @subscription_required
 def result_view(request, survey_id):
-    print("result_view", survey_id)
-
     survey = Survey.objects.get(survey_id=survey_id)
     user_answers = UserAnswers.objects.filter(survey_id=survey_id)
     score = sum(answer.scored_points for answer in user_answers)
@@ -566,6 +902,7 @@ def result_view(request, survey_id):
     questions = survey.get_questions()
     selected_answers = {answer.selected_answer for answer in user_answers}
     selected_answers_list = list(user_answers.values_list('selected_answer', flat=True))
+    model_name = ''
 
     try:
         feedback_obj = FeedbackFromAI.objects.filter(survey_id=survey_id).first()
@@ -573,6 +910,7 @@ def result_view(request, survey_id):
         if feedback_obj is not None:
             feedback_text = re.sub(r'[^a-zA-Zа-яА-Я0-9.,!?;:\s]', '', feedback_obj.feedback_data)
             feedback_text = markdown.markdown(feedback_text)
+            model_name = feedback_obj.model_name
         else:
             feedback_text = 'Не удалось получить обратную связь от ИИ :('
 
@@ -597,28 +935,32 @@ def result_view(request, survey_id):
         'selected_answers_list': selected_answers_list,
         'username': request.user.username if request.user.is_authenticated else None,
         'feedback_text': feedback_text,
-        'subscription_level': subscription_level
+        'subscription_level': subscription_level,
+        'model_name': format_model_name(model_name)
     }
-    # print("result_view", score, len(user_answers))
 
     return render(request, 'result.html', json_response)
 
 
-@login_required
+# @login_required
 def download_survey_pdf(request, survey_id):
     # try:
     survey = get_object_or_404(Survey, survey_id=uuid.UUID(survey_id))
     tracer_l.tracer_charge(
         'INFO', request.user.username, download_survey_pdf.__name__, "View survey in PDF")
-    return survey.generate_pdf()
+
+    try:
+        subscription_db = Subscription.objects.get(staff_id=get_staff_id(request))
+        subscription_check = SubscriptionCheck()
+        subscription_level = subscription_check.get_subscription_level(subscription_db.plan_name)
+    except Exception:
+        subscription_level = 0
+
+    return survey.generate_pdf(subscription_level)
     # except Exception as fatal:
     #     tracer_l.tracer_charge(
     #         'CRITICAL', request.user.username, download_survey_pdf.__name__, "FATAL with View survey in PDF", fatal)
 
-
-from django.db import transaction, IntegrityError
-from django.utils import timezone
-from django.core.exceptions import ValidationError
 
 def generate_username(email):
     from django.utils.text import slugify
@@ -638,6 +980,9 @@ def register(request):
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         print(form.is_valid(), form.cleaned_data.get('email'))
+
+        if not is_allowed_email(form.cleaned_data.get('email')):
+            return JsonResponse({"error": "Not allowed hostname"})
 
         if form.is_valid():
             user = form.save()
@@ -912,6 +1257,21 @@ def admin_stats(request):
             except Exception as fail:
                 return JsonResponse({'status': False, 'message': f"{fail}"})
 
+        if 'new_api_key_value' in request.POST:
+            APIKey.objects.create(
+                name=request.POST.get('new_api_key_name'),
+                key=request.POST.get('new_api_key_value'),
+                provider=request.POST.get('new_api_key_provider'),
+                purpose=request.POST.get('new_api_key_purpose'),
+                expires_at=request.POST.get('new_api_key_expires') or None
+            )
+            return redirect('stats2975')
+
+        if 'activate_api_key_id' in request.POST:
+            APIKey.objects.all().update(is_active=False)
+            APIKey.objects.filter(id=request.POST['activate_api_key_id']).update(is_active=True)
+            return JsonResponse({'status': True, 'message': 'Ключ активирован'})
+
     all_users = AuthUser.objects.all().count()
 
     if user.is_superuser:
@@ -937,61 +1297,93 @@ def admin_stats(request):
             user_activities = UserActivity.objects.none()
             user_activities_count = 0
 
-        try:
-            payment_data = []
-            for subscription in selected_subscription:
-                try:
-                    user = AuthUser.objects.get(id_staff=subscription.staff_id)
-                except Exception:
-                    pass
+        payment_data = []
+        for subscription in selected_subscription:
+            try:
+                user = AuthUser.objects.get(id_staff=subscription.staff_id)
+            except Exception:
+                pass
 
-                payments = Payment.objects.filter(subscription=subscription)
+            payments = Payment.objects.filter(subscription=subscription)
 
-                for payment in payments:
-                    payment_data.append({
-                        'name': user.username,
-                        'plan_name': subscription.plan_name,
-                        'status': subscription.status,
-                        'payment_status': payment.status,
-                        'amount': f'{get_format_number(payment.amount / 100)} руб',
-                        'date': get_formate_date(subscription.start_date),
-                    })
+            for payment in payments:
+                payment_data.append({
+                    'name': user.username,
+                    'plan_name': subscription.plan_name,
+                    'status': subscription.status,
+                    'payment_status': payment.status,
+                    'amount': f'{get_format_number(payment.amount / 100)} руб',
+                    'date': get_formate_date(subscription.start_date),
+                })
 
-            context = {
-                'username': request.user.username,
-                'selected_users': selected_users,
-                # 'usernames': usernames,
-                'total_users': all_users,
-                'total_surveys': total_surveys,
-                'total_answers': total_answers,
-                'subscriptions': subscriptions,
-                'user_activities': user_activities,
-                'count_activities': user_activities_count,
-                'selected_subscription': selected_subscription,
-                'data': payment_data
-            }
+        context = {
+            'username': request.user.username,
+            'selected_users': selected_users,
+            'total_users': all_users,
+            'total_surveys': total_surveys,
+            'total_answers': total_answers,
+            'subscriptions': subscriptions,
+            'user_activities': user_activities,
+            'count_activities': user_activities_count,
+            'selected_subscription': selected_subscription,
+            'data': payment_data,
+        }
 
-            return render(request, 'admin.html', context)
-        except Exception as fail:
-            tracer_l.tracer_charge(
-                'ERROR', get_username(request), 'error in admin_stats', fail)
+        api_keys = APIKey.objects.all().order_by('-created_at')
 
-            context = {
-                'username': request.user.username,
-                'selected_users': selected_users,
-                'total_users': all_users,
-                'total_surveys': total_surveys,
-                'total_answers': total_answers,
-                'subscriptions': subscriptions,
-                'user_activities': user_activities,
-                'count_activities': user_activities_count,
-                'selected_subscription': selected_subscription,
-            }
+        start_of_day = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
 
-            return render(request, 'admin.html', context)
+        def calculate_usage_percent(api_key):
+            usage_count = APIKeyUsage.objects.filter(api_key=api_key, timestamp__gte=start_of_day).count()
+            max_requests_per_day = 50
+            _percent = int((usage_count / max_requests_per_day) * 100)
+            return min(_percent, 100), usage_count
 
+        active_keys = {
+            'FEEDBACK': APIKey.objects.filter(purpose='FEEDBACK', is_active=True).first(),
+            'SURVEY': APIKey.objects.filter(purpose='SURVEY', is_active=True).first()
+        }
+
+        from collections import defaultdict
+        keys_by_purpose = defaultdict(list)
+
+        for key in api_keys:
+            percent, today_count = calculate_usage_percent(key)
+            key.usage_percent = percent
+            key.today_usage_count = today_count
+            key.is_active = (active_keys.get(key.purpose) and active_keys[key.purpose].id == key.id)
+            keys_by_purpose[key.purpose].append(key)
+
+        context.update({
+            "keys_by_purpose": dict(keys_by_purpose),
+            "active_keys": active_keys,
+        })
+
+        return render(request, 'admin.html', context)
     else:
         return redirect(f'/profile/{request.user.username}')
+
+
+@login_required
+def activate_api_key(request):
+    try:
+        key_id = request.POST.get('activate_api_key_id')
+        if not key_id:
+            return JsonResponse({'status': False, 'message': 'Не указан ID ключа'})
+
+        key = APIKey.objects.get(id=key_id)
+
+        APIKey.objects.filter(purpose=key.purpose).update(is_active=False)
+
+        key.is_active = True
+        key.save()
+
+        return JsonResponse({'status': True, 'message': f'Ключ {key.name} активирован для типа {key.purpose}'})
+
+    except APIKey.DoesNotExist:
+        return JsonResponse({'status': False, 'message': 'Ключ не найден'})
+    except Exception as e:
+        return JsonResponse({'status': False, 'message': str(e)})
 
 
 MODEL_MAP = {
@@ -1125,6 +1517,11 @@ def create_payment(request):
 
     order_id = generate_payment_id()
 
+    tracer_l.tracer_charge(
+        'ADMIN', f"{get_username(request)}",
+        'PaymentInitiateView',
+        f"VIEW PAYMENT\n\n")
+
     context = {
         'page_title': 'Выбор тарифного плана',
         'username': get_username(request),
@@ -1156,9 +1553,11 @@ class PaymentInitiateView(View):
 
         plan_prices = {
             'Начальный': 0,
-            'Стандартный': 220,
+            'Стандартный': 420,
             'Премиум': 590,
-            'Ультра': 990
+            'Ультра': 990,
+            'Стандартный Год': 2640,
+            'Премиум Год': 4800
         }
 
         if int(amount) != plan_prices.get(description):
@@ -1169,7 +1568,7 @@ class PaymentInitiateView(View):
 
         items = [
             {
-                "Name": "Премиум план",
+                "Name": plan_prices.get(description),
                 "Price": int(amount) * 100,
                 "Quantity": 1,
                 "Amount": int(amount) * 100,
@@ -1190,7 +1589,8 @@ class PaymentInitiateView(View):
         tracer_l.tracer_charge(
             'ADMIN', f"{get_username(request)}",
             'PaymentInitiateView',
-            f"WANT TO BUY!!!")
+            f"WANT TO BUY!!!\n\nAmount: {amount}\n"
+            f"About: {description}\nEmail: {email}\nPhone: {phone}")
 
         created_token = PaymentManager().generate_token_for_new_payment(data_token)
 
@@ -1286,8 +1686,18 @@ class PaymentSuccessView(View):
         payment_id = request.GET.get('PaymentId')
         amount = request.GET.get('Amount')
 
+        tracer_l.tracer_charge(
+            'ADMIN', f"{get_username(request)}",
+            'PaymentSuccess',
+            f"PAYMENT INIT\n\n💰CHECK: {success} {error_code}")
+
         if success == 'true' and error_code == '0':
             try:
+                tracer_l.tracer_charge(
+                    'ADMIN', f"{get_username(request)}",
+                    'PaymentSuccess',
+                    f"TRUE 0\n\n💰CHECK: {payment_id} {amount}")
+
                 payment = Payment.objects.get(payment_id=payment_id)
                 subscription = Subscription.objects.get(staff_id=get_staff_id(request))
 
@@ -1304,6 +1714,11 @@ class PaymentSuccessView(View):
                     "Неудача", description_payment, subscription.plan_name, subscription.end_date,
                     payment.payment_id, payment.order_id, payment.amount
                 )
+
+                tracer_l.tracer_charge(
+                    'ADMIN', f"{get_username(request)}",
+                    'PaymentSuccess',
+                    f"💰CHECK: {payment_status} {description_payment}")
 
                 if int(payment.amount) != int(amount):
                     return render(request, 'payments/pay_status.html', error_payment_data)
@@ -1348,6 +1763,38 @@ class PaymentSuccessView(View):
                     )
                     new_transaction.save()
 
+                    tracer_l.tracer_charge(
+                        'ADMIN', f"{get_username(request)}",
+                        'PaymentSuccess',
+                        f"💰SUCCESS BUY!\n\n{payment_data}")
+
+                    try:
+                        message = render_to_string('payments/payment_success_email.html', {
+                            'plan_name': subscription.get_human_plan(),
+                            'amount': f"{payment.amount / 100:,.2f}".replace(',', ' ').replace('.', ','),
+                            'payment_id': payment.payment_id,
+                            'order_id': payment.order_id,
+                            'end_date': get_formate_date(subscription.end_date),
+                            'next_url': 'https://letychka.ru/create/'
+                        })
+
+                        user_data = AuthUser.objects.filter(id_staff=get_staff_id(request)).first()
+
+                        if user_data.email:
+                            send_mail(
+                                '✅ Успешная оплата — тариф активирован',
+                                message,
+                                'support@letychka.ru',
+                                [user_data.email],
+                                fail_silently=False,
+                                html_message=message
+                            )
+                    except Exception as fail:
+                        tracer_l.tracer_charge(
+                            'ADMIN', f"{get_username(request)}",
+                            'PaymentSuccess',
+                            f"Error to send check to email: {fail}")
+
                     try:
                         payment_details_text = "\n".join(
                             [f"<b>{detail['label']}:</b> {detail['value']}" for detail in payment_details])
@@ -1370,7 +1817,7 @@ class PaymentSuccessView(View):
 
                     except Exception as fail:
                         tracer_l.tracer_charge(
-                            'INFO', f"{get_username(request)}",
+                            'ERROR', f"{get_username(request)}",
                             PaymentSuccessView.__name__,
                             f'Fail while send info about payment to Telegram', fail)
 
@@ -1384,13 +1831,17 @@ class PaymentSuccessView(View):
                     "payment_status": "Неудача",
                     "text_status": "Платеж не существует",
                 }
+                tracer_l.tracer_charge(
+                    'ERROR', f"{get_username(request)}",
+                    PaymentSuccessView.__name__,
+                    f'Payment Fail', error_payment_data)
                 return render(request, 'payments/pay_status.html', error_payment_data)
         else:
             subscription = Subscription.objects.get(staff_id=get_staff_id(request))
 
             payment_data = {
                 "payment_status": "Не удалось", "page_title": "Ошибка при оплате",
-                "text_status": "К сожалению, не удалось активировать план :(",
+                "text_status": "Не удалось активировать план, попробуйте позже :(",
                 "plan_name": subscription.get_human_plan(),
             }
             return render(request, 'payments/pay_status.html', payment_data)

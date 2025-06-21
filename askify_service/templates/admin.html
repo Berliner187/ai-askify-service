@@ -13,99 +13,7 @@
     <title>2975</title>
 </head>
 <style>
-    .survey-block {
-        background-color: #2A2A2E;
-        padding: 20px;
-        border-radius: 10px;
-        margin-bottom: 20px;
-    }
-    .survey-block p {
-        margin: 10px 0;
-        color: #d5d3db;
-    }
-    .head-button {
-        margin-top: 20px;
-    }
-    #date-filter-form {
-        display: flex;
-        flex-direction: row;
-        flex-wrap: wrap;
-        margin-bottom: 20px;
-        background-color: #2A2A2E;
-        padding: 20px;
-        border-radius: 10px;
-    }
-    #date-filter-form div {
-        margin: 0 auto;
-        width: max-content;
-    }
 
-    #date-filter-form label {
-        margin-bottom: 5px;
-        color: #d5d3db;
-        font-weight: bold;
-    }
-
-    #date-filter-form input[type="date"] {
-        padding: 10px;
-        margin: 0;
-        border: 1px solid #616DF0;
-        border-radius: 5px;
-        margin-bottom: 15px;
-        background-color: #3A3A3E;
-        color: #d5d3db;
-    }
-
-    #date-filter-form input[type="date"]:focus {
-        outline: none;
-        border-color: #616DF0;
-    }
-
-    #date-filter-form .button-medium {
-        background-color: #616DF0;
-        color: #fff;
-        padding: 10px 15px;
-        border: none;
-        border-radius: 5px;
-        cursor: pointer;
-        transition: background-color 0.3s;
-    }
-
-    #date-filter-form .button-medium:hover {
-        background-color: #4E54D4;
-    }
-
-    .modal {
-        display: flex;
-        position: fixed;
-        z-index: 1;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        overflow: auto;
-        background-color: rgba(0, 0, 0, 0.5);
-    }
-    .modal-content {
-        background-color: #3A3A3E;
-        margin: auto;
-        padding: 20px;
-        width: 80%;
-        max-width: 400px;
-        border-radius: 10px;
-    }
-    .close {
-        color: #fff;
-        float: right;
-        font-size: 28px;
-        font-weight: bold;
-    }
-    .close:hover,
-    .close:focus {
-        color: black;
-        text-decoration: none;
-        cursor: pointer;
-    }
 </style>
 <body>
     <script src="{% static 'js/second-loader.js' %}"></script>
@@ -114,85 +22,208 @@
     <div id="page-container" class="fade" style="display: block;">
         {% include 'header.html' %}
     
-        <div class="container question" id="stats-container">
-            <h2>Админ панель</h2>
+        <div class="glass-container" id="stats-container">
+    <h2 class="glass-title">Админ панель</h2>
     
-            <form method="get" id="date-filter-form">
-                <div>
-                    <label for="start_date">Начальная дата:</label>
-                    <input type="date" name="start_date" id="start_date" required>
-                </div>
-                
-                <div>
-                    <label for="end_date">Конечная дата:</label>
-                    <input type="date" name="end_date" id="end_date" required>
-                </div>
-                
-                <div>
-                    <button type="submit" class="button-medium">Фильтровать</button>
-                </div>
-            </form>
-
-            <form method="post" id="ip-user-form">
-                {% csrf_token %}
-                <div>
-                    <label for="ip_address">IP адрес для блокировки:</label>
-                    <input type="text" name="ip_address" id="ip_address">
-                    <button type="submit" class="button-medium">Заблокировать IP</button>
-                </div>
-                <div>
-                    <label for="username">Username для суперпользователя:</label>
-                    <input type="text" name="username" id="username">
-                    <button type="submit" class="button-medium">Сделать суперпользователем</button>
-                </div>
-            </form>
-    
-            <div>
-                <p><strong>Новых пользователей –</strong> {{ selected_users }}</p>
-                <p><strong>Созданных тестов –</strong> {{ total_surveys }}</p>
-                <p><strong>Ответов на тесты –</strong> {{ total_answers }}</p>
-                <hr>
-                <p><strong>Подписок –</strong> {{ subscriptions }}</p>
-                <hr>
-                
-                <table class="subscription-table">
-                    <thead>
-                        <tr class="table-header">
-                            <th class="table-header-cell">Никнейм</th>
-                            <th class="table-header-cell">Название плана</th>
-                            <th class="table-header-cell">Статус подписки</th>
-                            <th class="table-header-cell">Статус платежа</th>
-                            <th class="table-header-cell">Сумма</th>
-                            <th class="table-header-cell">Дата</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for item in data %}
-                        <tr class="table-row">
-                            <td class="table-cell" data-label="Имя">{{ item.name }}</td>
-                            <td class="table-cell" data-label="Название плана">{{ item.plan_name }}</td>
-                            <td class="table-cell" data-label="Статус подписки">{% if item.status == 'active' %}Успешно ✅{% else %}Неактивна ❌{% endif %}</td>
-                            <td class="table-cell" data-label="Статус платежа">{% if item.payment_status == 'completed' %}Успешно ✅{% else %}Тщетно ❌{% endif %}</td>
-                            <td class="table-cell" data-label="Сумма">{{ item.amount }}</td>
-                            <td class="table-cell" data-label="Дата">{{ item.date }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-
+    <!-- Date Filter Card -->
+    <div class="glass-card">
+        <h3 class="card-title">Фильтр по дате</h3>
+        <form method="get" id="date-filter-form" class="glass-form">
+            <div class="form-group">
+                <label for="start_date" class="glass-label">Начальная дата</label>
+                <input type="date" name="start_date" id="start_date" class="glass-input" required>
             </div>
-    
-            <div class="container-buttons">
-                <div class="button-medium">
-                    <a href="{% url 'profile' username %}">
-                        <div>
-                            <img src="{% static 'img/icon-back.png' %}" alt="">
-                            <p>Вернуться в профиль</p>
-                        </div>
-                    </a>
-                </div>
+            
+            <div class="form-group">
+                <label for="end_date" class="glass-label">Конечная дата</label>
+                <input type="date" name="end_date" id="end_date" class="glass-input" required>
+            </div>
+            
+            <button type="submit" class="glass-button">Применить фильтр</button>
+        </form>
+    </div>
+
+    <!-- Statistics Card -->
+    <div class="glass-card">
+        <h3 class="card-title">Статистика</h3>
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="stat-value">{{ selected_users }}</div>
+                <div class="stat-label">Новых пользователей</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">{{ total_surveys }}</div>
+                <div class="stat-label">Созданных тестов</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">{{ total_answers }}</div>
+                <div class="stat-label">Ответов на тесты</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">{{ subscriptions }}</div>
+                <div class="stat-label">Подписок</div>
             </div>
         </div>
+    </div>
+    
+    <!-- API Keys Management -->
+    <div class="glass-card">
+        <h3 class="card-title">Управление API ключами</h3>
+
+        {% for purpose, keys in keys_by_purpose.items %}
+        <div class="api-purpose-group">
+            <h4 class="glass-heading">{{ purpose|capfirst }}</h4>
+
+            <div class="api-keys-grid">
+                {% for key in keys %}
+                <div class="api-key-card {% if key.is_active %}active{% endif %}">
+                    <div class="key-header">
+                        <span class="key-name">{{ key.name }}</span>
+                        <span class="key-provider">{{ key.provider }}</span>
+                    </div>
+
+                    <div class="key-details">
+                        <div class="key-expiry">
+                            <span>До {{ key.expires_at|date:'d.m.Y'|default:"∞" }}</span>
+                        </div>
+
+                        <div class="key-usage">
+                            <div class="usage-bar">
+                                <div class="usage-fill" style="width: {{ key.usage_percent }}%"></div>
+                            </div>
+                            <span class="usage-percent {% if key.usage_percent >= 100 %}high-usage{% endif %}">
+                                {{ key.usage_percent }}%
+                            </span>
+                        </div>
+
+                        <div class="usage-today">
+                            <strong>{{ key.today_usage_count }} запросов сегодня</strong>
+                        </div>
+                    </div>
+
+                    <form method="post" action="{% url 'activate_api_key' %}" class="key-action">
+                        {% csrf_token %}
+                        <input type="hidden" name="activate_api_key_id" value="{{ key.id }}">
+                        {% if not key.is_active %}
+                        <button type="submit" class="glass-button-sm">Активировать</button>
+                        {% else %}
+                        <div class="active-badge">
+                            <span>Активен</span>
+                        </div>
+                        {% endif %}
+                    </form>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+
+        <div class="add-key-form">
+            <h4 class="form-subtitle">Добавить новый ключ</h4>
+            <form id="api-key-form" method="post" class="glass-form">
+                {% csrf_token %}
+                <div class="form-row">
+                    <input type="text" name="new_api_key_name" class="glass-input" placeholder="Название ключа" required>
+                    <input type="text" name="new_api_key_value" class="glass-input" placeholder="Значение ключа" required>
+                    <select name="new_api_key_provider" class="glass-input" required>
+                        <option value="">Выберите провайдера</option>
+                        <option value="openrouter">OpenRouter</option>
+                        <option value="azure">Azure</option>
+                        <option value="gemini">Gemini</option>
+                    </select>
+                    <select name="new_api_key_purpose" class="glass-input" required>
+                        <option value="">Выберите назначение</option>
+                        <option value="FEEDBACK">FEEDBACK</option>
+                        <option value="SURVEY">SURVEY</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <input type="date" name="new_api_key_expires" class="glass-input" placeholder="Заканчивается">
+                    <button type="submit" class="glass-button">Добавить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Subscriptions Table -->
+    <div class="glass-card">
+        <h3 class="card-title">Подписки пользователей</h3>
+        <div class="table-container">
+            <table class="glass-table">
+                <thead>
+                    <tr>
+                        <th>Никнейм</th>
+                        <th>План</th>
+                        <th>Статус</th>
+                        <th>Платеж</th>
+                        <th>Сумма</th>
+                        <th>Дата</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in data %}
+                    <tr>
+                        <td>{{ item.name }}</td>
+                        <td>{{ item.plan_name }}</td>
+                        <td>
+                            <span class="status-badge {% if item.status == 'active' %}success{% else %}error{% endif %}">
+                                {% if item.status == 'active' %}Активна{% else %}Неактивна{% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="status-badge {% if item.payment_status == 'completed' %}success{% else %}error{% endif %}">
+                                {% if item.payment_status == 'completed' %}Успешно{% else %}Ошибка{% endif %}
+                            </span>
+                        </td>
+                        <td>{{ item.amount }}</td>
+                        <td>{{ item.date }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Admin Actions Card -->
+    <div class="glass-card">
+        <h3 class="card-title">Администрирование</h3>
+        <form method="post" id="ip-user-form" class="glass-form">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="ip_address" class="glass-label">Блокировка IP</label>
+                <div class="input-group">
+                    <input type="text" name="ip_address" id="ip_address" class="glass-input" placeholder="Введите IP адрес">
+                    <button type="submit" class="glass-button-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM4 12C4 7.58 7.58 4 12 4C13.85 4 15.55 4.63 16.9 5.69L5.69 16.9C4.63 15.55 4 13.85 4 12ZM12 20C10.15 20 8.45 19.37 7.1 18.31L18.31 7.1C19.37 8.45 20 10.15 20 12C20 16.42 16.42 20 12 20Z" fill="currentColor"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="username" class="glass-label">Назначение прав</label>
+                <div class="input-group">
+                    <input type="text" name="username" id="username" class="glass-input" placeholder="Введите username">
+                    <button type="submit" class="glass-button-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 1L3 5V11C3 16.55 6.84 21.74 12 23C17.16 21.74 21 16.55 21 11V5L12 1ZM12 11.99H19C18.47 16.11 15.72 19.78 12 20.93V12H5V6.3L12 3.19V11.99Z" fill="currentColor"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Back Button -->
+    <div class="action-footer">
+        <a href="{% url 'profile' username %}" class="glass-button back-button">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M20 11H7.83L13.42 5.41L12 4L4 12L12 20L13.41 18.59L7.83 13H20V11Z" fill="currentColor"/>
+            </svg>
+            <span>Вернуться в профиль</span>
+        </a>
+    </div>
+</div>
     </div>
 
     <!-- Модальное окно -->
@@ -243,6 +274,85 @@
                 showModal('[  ERROR  ]:', error);
             });
         }
+    </script>
+
+    <script>
+        function activateKey(id) {
+            const formData = new FormData();
+            formData.append('activate_api_key_id', id);
+
+            fetch("", {
+                method: "POST",
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: formData
+            }).then(res => res.json()).then(data => {
+                if (data.status) location.reload();
+                else alert(data.message);
+            });
+        }
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+        // Обработка форм активации ключей
+        document.querySelectorAll('.key-action').forEach(form => {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(this);
+                const submitButton = this.querySelector('button[type="submit"]');
+                
+                if (submitButton) {
+                    submitButton.disabled = true;
+                    submitButton.textContent = 'Активируем...';
+                }
+                
+                fetch(this.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status) {
+                        showToast('success', data.message);
+                        // Перезагружаем страницу для обновления состояния
+                        setTimeout(() => location.reload(), 1000);
+                    } else {
+                        showToast('error', data.message);
+                        if (submitButton) {
+                            submitButton.disabled = false;
+                            submitButton.textContent = 'Активировать';
+                        }
+                    }
+                })
+                .catch(error => {
+                    showToast('error', 'Ошибка сети');
+                    if (submitButton) {
+                        submitButton.disabled = false;
+                        submitButton.textContent = 'Активировать';
+                    }
+                });
+            });
+        });
+        
+        function showToast(type, message) {
+            // Реализация toast-уведомлений
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+    });
     </script>
     
     <script src="{% static 'js/second-loader.js' %}"></script>
