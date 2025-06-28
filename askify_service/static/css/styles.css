@@ -279,7 +279,7 @@ button:active {
     background: rgba(30, 29, 36, 0.3);
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
     border-radius: 24px;
-    padding: 16px;
+    padding: 12px;
     transition: all 0.3s ease-in-out;
 }
 
@@ -307,7 +307,7 @@ textarea {
     resize: none;
     overflow: auto;
     transition: all 0.2s ease-in-out;
-    min-height: 120px;
+    min-height: 80px;
 }
 
 textarea:focus {
@@ -475,7 +475,7 @@ textarea:focus {
     padding: 20px;
     margin-top: 50px;
     transition: transform 0.3s ease;
-    background: url('../img/bg-subs.png');
+    background: url('../img/bg-subs.webp');
     background-position: 0 top;
     background-repeat: no-repeat;
     text-align: center;

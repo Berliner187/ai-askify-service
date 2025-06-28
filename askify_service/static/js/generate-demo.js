@@ -98,13 +98,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.error) {
                 throw new Error(data.error)
             }
-
-            const protocol = window.location.protocol;
-            const host = window.location.host;
             
             if (data.survey_id) {
                 loadTests();
-                window.location.href = `/survey/${data.survey_id}/download`;
+                const url = `/survey/${data.survey_id}/download`;
+                window.open(url, '_blank');
+                // window.location.href = `/survey/${data.survey_id}/download`;
             } else {
                 throw new Error('Неверный формат ответ')
             }

@@ -16,3 +16,7 @@ askify_service/tester-4.py
 askify_service/tester.py
 /askify_service/migrations
 *.pyc
+*.md
+blog/.DS_Store
+/askify_service/static/blog_img
+askify_service/static/css/.DS_Store

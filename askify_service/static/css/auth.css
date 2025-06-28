@@ -30,7 +30,7 @@ body {
     padding: 0;
     overflow-x: hidden;
     background-color: #18171A;
-    background-image: url('../img/bg-subs.png');
+    background-image: url('../img/bg-subs.webp');
     background-position: 0 top;
     background-size: 100%;
 }
@@ -48,7 +48,7 @@ body {
 }
 
 .content-container {
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(100, 100, 100, 0.05);
     backdrop-filter: blur(20px);
     border-radius: 24px;
     padding: 40px;

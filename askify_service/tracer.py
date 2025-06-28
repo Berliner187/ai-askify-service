@@ -67,6 +67,10 @@ class TracerManager:
 
     @staticmethod
     def send_message_to_telegram(message):
+        from askify_app.settings import DEBUG
+        if DEBUG:
+            return
+        
         url = f'https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage'
         payload = {
             'chat_id': TELEGRAM_CHAT_ID,
@@ -86,13 +90,16 @@ class TracerManager:
 
     def tracer_charge(self, log_level: str, user_name: str, function, message_text, error_details='', additional_info=''):
         if log_level == 'WARNING':
+            print(message_text, error_details)
             self.send_message_to_telegram(
                 f"{WARNING_SYMBOL} WARNING\n\n{message_text}\n\n---\n{function}\n\n---{error_details}\n\n"
                 f"Username: {user_name}\n\n{additional_info}")
         elif log_level == 'ERROR':
+            print(message_text, function)
             self.send_message_to_telegram(
                 f"{STOP_SYMBOL} ERROR\n\n{message_text}\n\n---\n{function}")
         elif log_level == 'CRITICAL':
+            print(message_text)
             self.send_message_to_telegram(
                 f"{CRITICAL_SYMBOL} CRITICAL\n\n{message_text}\n\n---\n{function}\n\n---{error_details}\n\n"
                 f"Username: {user_name}\n\n{additional_info}")

@@ -18,10 +18,10 @@ const showPopup = () => {
   
   popupTimer = setTimeout(() => {
     popup.classList.remove('active');
-  }, 22000);
+  }, 30000);
 };
 
-setTimeout(showPopup, 80000);
+setTimeout(showPopup, 40000);
 
 
 // Закрытие попапа при клике на крестик или вне зоны попапа
@@ -41,15 +41,6 @@ document.querySelectorAll('a[href*="#pricing"]').forEach(link => {
     link.addEventListener('click', () => {
         document.querySelector('.popup-overlay').classList.remove('active');
     });
-});
-
-window.addEventListener('load', function () {
-    const preloader = document.querySelector('.preloader');
-    preloader.classList.add('fade-out');
-
-    setTimeout(() => {
-        preloader.remove();
-    }, 300);
 });
 
 

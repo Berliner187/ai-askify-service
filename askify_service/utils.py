@@ -12,7 +12,7 @@ import hashlib
 
 from django.http import JsonResponse
 
-import openai
+from openai import OpenAI
 import requests
 import httpx
 import asyncio
@@ -141,7 +141,7 @@ class ManageGenerationSurveys:
         return manage_confident_fields.get_confident_key(key_name)
 
     async def github_gpt(self, api_key) -> dict:
-        client = openai.OpenAI(
+        client = OpenAI(
             base_url="https://models.inference.ai.azure.com",
             api_key=api_key.key,
         )
@@ -302,7 +302,7 @@ class GenerationModelsControl:
         from .api_keys import get_active_key
         for model in MODEL_NAMES:
             try:
-                client = openai.OpenAI(
+                client = OpenAI(
                     base_url="https://openrouter.ai/api/v1",
                     api_key=get_active_key('FEEDBACK'),
                 )
@@ -341,7 +341,45 @@ class GenerationModelsControl:
                 tracer_l.tracer_charge('WARNING', '', 'get_generated_feedback_0003',
                                        f'FAILED to load model. Error: {str(fail)}', fail)
 
+                try:
+                    reserve = self.get_feedback_together(text_from_user)
+                    return reserve
+                except Exception as fail:
+                    return {'success': False, 'message': fail}
+
         return None
+
+    def get_feedback_together(self, text_from_user):
+        from together import Together
+
+        client = Together(api_key="b5083586c3c267c832108ede0d7aee9b1de69a167094baf06eea3e398865d2bd")
+
+        model = 'deepseek-ai/DeepSeek-R1-Distill-Llama-70B-free'
+
+        response = client.chat.completions.create(
+            model=model,
+            messages=[
+                {
+                    "role": "system",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": f"{self.__get_confidential_key('pre_feedback_prompt')}"
+                        },
+                        {
+                            "type": "text",
+                            "text": f"{text_from_user}{self.__get_confidential_key('post_feedback_prompt')}"
+                        }
+                    ]
+                }
+            ]
+        )
+        print(response.choices[0].message.content)
+        tokens_used = response.usage.total_tokens
+        return {
+            'success': True, 'generated_text': response.choices[0].message.content, 'tokens_used': tokens_used,
+            'model_used': model
+        }
 
     def get_feedback_001(self, text_from_user):
         ai_response = self.get_generated_feedback_0003(text_from_user)
@@ -402,7 +440,7 @@ class GenerationModelsControl:
                 return {'success': False, 'code': 429, 'message': str(fail)}
 
     def get_generated_survey_0001(self, text_from_user):
-        client = openai.OpenAI(
+        client = OpenAI(
             api_key=self.__get_confidential_key("api_openai"),
             base_url="https://glhf.chat/api/openai/v1",
         )
@@ -648,6 +686,7 @@ def format_model_name(raw_model: str) -> str:
         return ''
     raw_model = raw_model.split(":")[0]
     company, model = raw_model.split("/")
+    model = model.replace('free', '')
 
     model_cleaned = model.replace("-", " ").replace("_", " ")
     formatted_name = f"{company} {model_cleaned}".title()

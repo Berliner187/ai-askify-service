@@ -4,21 +4,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Создать тест из документа онлайн | ИИ генератор тестов за 60 сек | Летучка</title>
+    <title>Создать тест по тексту онлайн | Создать тест по документу онлайн - бесплатно с результатами | Летучка</title>
 
-    <meta name="description" content="Летучка создает тесты с ИИ за 60 секунд. Загрузите PDF, лекцию или методичку → получите тест с автопроверкой и аналитикой. Для преподавателей, HR-ов и студентов. Создайте свой первый тест бесплатно в 2 клика.">
-    <meta name="keywords" content="генератор тестов с ИИ, создать тест из статьи, создать тест по тексту онлайн, ИИ для создания тестов бесплатно, составить тест по тексту онлайн, создать тест онлайн, летучка создать тест, создать тест с ответами ИИ">
+    <meta name="description" content="Создать тест с ИИ за считанные секунды. Загрузите PDF, WORD, DOC, лекцию или методичку → получите тест с автопроверкой и аналитикой. Для преподавателей, медиков и студентов. Создайте свой первый тест бесплатно в 2 клика.">
+    <meta name="keywords" content="создать тест, создать тест по тексту онлайн, ИИ для создания тестов бесплатно, составить тест по тексту онлайн, создать тест онлайн, летучка создать тест, по тексту онлайн, бесплатно, с результатами">
 
-    <meta property="og:title" content="ИИ для создания тестов: преподаватели и HR экономят 3 часа в день | Летучка">
+    <meta property="og:title" content="ИИ для создания тестов: медицинские специалисты и преподаватели экономят 3 часа в день | Летучка">
     <meta property="og:description" content="Попробуйте создать тест по тексту онлайн. Автоматическая проверка, аналитика слабых мест, экспорт в PDF. Бесплатный старт.">
 
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://letychka.ru">
-    <meta property="og:image" content="https://letychka.ru/static/img/letychka-banner.png">
+    <meta property="og:image" content="https://letychka.ru/static/img/letychka-banner-1703.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
-    <meta name="twitter:card" content="https://letychka.ru/static/img/letychka-banner.png"/>
-    <meta name="twitter:image" content="https://letychka.ru/static/img/letychka-banner.png"/>
+    <meta name="twitter:card" content="https://letychka.ru/static/img/letychka-banner-1703.png"/>
+    <meta name="twitter:image" content="https://letychka.ru/static/img/letychka-banner-1703.png"/>
     <meta property="og:site_name" content="Летучка – создание тестов с помощью ИИ">
     <meta name="theme-color" content="#0F0818">
     <link rel="canonical" href="https://letychka.ru" />
@@ -28,7 +28,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="{% static 'img/apple-touch-icon.png' %}">
     <link rel="shortcut icon" href="{% static 'img/favicon.ico' %}" type="image/ico">
     <link rel="stylesheet" href="{% static 'css/themes-carusel.css' %}?v=1.2">
-    <link rel="stylesheet" href="{% static 'css/start.css' %}?v=3.2">
+    <link rel="stylesheet" href="{% static 'css/start.css' %}?v=3.12">
     <link rel="stylesheet" href="{% static 'css/second-loader.css' %}">
     <link rel="stylesheet" href="{% static 'css/footer.css' %}">
 
@@ -83,20 +83,15 @@
                 "url": "https://letychka.ru/",
                 "logo": "https://letychka.ru/static/img/favicon.ico"
               },
-            "description": "Letuchka is a service for creating tests and quizzes based on educational materials using AI."
+            "description": "Letychka is a service for creating tests and quizzes based on educational materials using AI."
         }
     </script>
-    
+
 </head>
 
 <body>
-    <!-- Прелоадер -->
-    <div class="preloader">
-        <div class="spinner"></div>
-    </div>
-    
     <!-- Хедер -->
-    <header class="header">
+    <header class="header" id="critical-header">
         <div class="logo">
             <img src="{% static 'img/logo-header.png' %}" alt="Логотип Летучка" class="logo-img">
         </div>
@@ -117,7 +112,7 @@
     </header>
 
     <!-- Главная секция -->
-    <section class="hero">
+    <section class="hero" id="critical-hero">
         <div class="hero-content">
             <h1 class="hero-title">
                 <span class="gradient-text">Создавай тесты</span><br>за считанные секунды
@@ -128,7 +123,7 @@
             <a href="#create-now" class="cta-button cta-button-accent">Создать тест бесплатно →</a>
         </div>
         <div class="hero-image">
-            <img src="{% static 'blog_img/letychka-banner-1703.png' %}" alt="Летучка — создание тестов" class="hero-img">
+            <img src="{% static 'blog_img/letychka-banner-1703.webp' %}" alt="Летучка — создание тестов" class="hero-img">
         </div>
     </section>
 
@@ -139,7 +134,7 @@
             <div class="gen-header">
                 <div class="theme-suggestions">
                     <div class="theme-carousel">
-                        <div class="theme-item active" data-theme="literature">
+                        <div class="theme-item active" data-theme="medicine">
                             Попробуй создать тест <span class="typing-animation"></span>
                         </div>
                         <div class="theme-item" data-theme="science">
@@ -148,10 +143,10 @@
                         <div class="theme-item" data-theme="history">
                             Напиши тему — получи тест. Попробуй <span class="typing-animation"></span>
                         </div>
-                        <div class="theme-item" data-theme="technology">
+                        <div class="theme-item" data-theme="it">
                             Попробуй создать тест <span class="typing-animation"></span>
                         </div>
-                        <div class="theme-item" data-theme="art">
+                        <div class="theme-item" data-theme="culture">
                             Создай тест <span class="typing-animation"></span>
                         </div>
                     </div>
@@ -166,12 +161,18 @@
                     <textarea 
                         id="text-input" 
                         class="neon-textarea" 
-                        placeholder="Введите здесь свои учебные материалы, заметки, тему или содержание статьи..."
+                        placeholder="Напишите здесь тему, учебные материалы, заметки или содержание статьи..."
                         maxlength="5000"
                     ></textarea>
                     <div class="text-counter">
                         <span id="char-count">0</span> / 5000
                     </div>
+                </div>
+
+                <div id="result-container" class="result-container">
+                    <p>Созданные тесты</p>
+                    <div class="test-grid" id="test-grid"></div>
+                    <br>
                 </div>
                 
                 <div class="controls-row">
@@ -191,42 +192,42 @@
 
                     <button 
                         id="generate-btn" 
-                        class="cta-button pulse-glow"
+                        class="cta-button cta-button-accent"
                         data-loading-text="Генерируем..."
                     >
-                        СОЗДАТЬ ТЕСТ 🚀
+                        🚀 СОЗДАТЬ ТЕСТ
                     </button>
+
                 </div>
             </div>
             
-            <div id="result-container" class="result-container">
-                <p>Созданные тесты</p>
-                <div class="test-grid" id="test-grid"></div>
+            <div class="result-container">
                 <br>
-                <!-- <div class="reg-block" style="background: #1A1A1A; border-radius: 24px; padding: 20px; border: 2px solid #6b4caf; margin: 15px 0;">
-                    <div style="margin-bottom: 15px;">
-                        <h3 >🔥 Зарегистрируйся и выжми из платформы всё</h3>
-                        <ul>
-                            <li><strong>1. Генерируй тесты за считанные секунды</strong> — не теряй ни минуты перед дедлайном</li>
-                            <li><strong>2. Все данные в облаке</strong> — доступ с телефона в метро или ночью перед экзаменом</li>
-                            <li><strong>3. Получай разбор полётов от ИИ</strong> — узнай, где ты валенок, а где гений</li>
-                          </ul>
-                    </div>
-                    <a href="/register" 
-                       style="display: block; 
-                              background: linear-gradient(45deg, #4c53af, #7a45a0);
-                              color: white; 
-                              padding: 12px 24px; 
-                              border-radius: 16px; 
-                              text-align: center; 
-                              text-decoration: none; 
-                              font-weight: 700;
-                              transition: transform 0.2s;
-                              box-shadow: 0 4px 15px rgba(99, 76, 175, 0.3);">
-                        Воспользоваться преимуществами 🚀
-                    </a>
-                    <p style="color: #888; font-size: 0.8em; margin-top: 10px; margin-bottom: 0;">Никакого спама. Только тесты и твои 90+ баллов</p>
-                </div> -->
+                <div class="reg-block" style="background: rgba(100, 100, 100, .3); border-radius: 20px; padding: 24px; border: 1px solid #7b5ce4; margin: 20px 0;">
+                <div style="margin-bottom: 18px;">
+                    <h3 style="color: #fff; font-size: 1.25rem; margin-bottom: 12px;">Сохрани свой тест</h3>
+                    <ul style="list-style: none; padding: 0; color: #ccc; font-size: 0.95rem; line-height: 1.5;">
+                    <li>• <strong>Зарегистрируйся</strong> — и все тесты будут в личном кабинете</li>
+                    <li>• <strong>Доступ с любого устройства</strong> — хоть с телефона в метро, хоть с планшета перед зачётом</li>
+                    <li>• <strong>Подходит для всех дисциплин</strong> — от истории до фармакологии</li>
+                    </ul>
+                </div>
+                <a href="/register"
+                    style="display: block;
+                            background: linear-gradient(45deg, #6f59f9, #5f45e0);
+                            color: white;
+                            padding: 14px 28px;
+                            border-radius: 14px;
+                            text-align: center;
+                            text-decoration: none;
+                            font-weight: 600;
+                            font-size: 1rem;
+                            transition: transform 0.2s, background 0.2s;
+                            box-shadow: 0 6px 18px rgba(123, 92, 228, 0.25);">
+                    Зарегистрироваться и сохранить тест
+                </a>
+                <p style="color: #888; font-size: 0.8em; margin-top: 12px; margin-bottom: 0;">Быстрая регистрация. Войди по почте или через Telegram.</p>
+                </div>
             </div>
 
         </div>
@@ -245,29 +246,33 @@
                 <span class="gradient-text">Как это работает</span>
             </h2>
             <div class="gif-placeholder">
-                <video autoplay loop muted playsinline>
+                <video autoplay loop muted playsinline data-src="{% static 'blog_img/0313-text.mp4' %}" preload="none">
                     <source preload="none" src="{% static 'blog_img/0313-text.mp4' %}" type="video/mp4">
                 </video>
             </div>
             <div class="steps-info">
                 <p>От загрузки конспекта до готового теста —<br>быстрее, чем <span class="highlight">приготовить дошик</span></p>
                 <div class="steps-grid">
-                    <div class="step">
+                    <div class="feature-card">
                         <div class="step-number">
-                            1
+                            <img src="{% static 'img/icon-start-02.webp' %}" alt="">
                         </div>
                         <div class="step-text">
-                            Загрузи материалы заметки, конспекты или текст статьи
+                            Загрузи материалы, заметки, конспекты или текст статьи
                         </div>
                     </div>
-                    <div class="step">
-                        <div class="step-number">2</div>
+                    <div class="feature-card">
+                        <div class="step-number">
+                            <img src="{% static 'img/icon-start-03.webp' %}" alt="">
+                        </div>
                         <div class="step-text">
                             Выбери количество вопросов
                         </div>
                     </div>
-                    <div class="step">
-                        <div class="step-number">3</div>
+                    <div class="feature-card">
+                        <div class="step-number">
+                            <img src="{% static 'img/icon-start-01.webp' %}" alt="">
+                        </div>
                         <div class="step-text">
                             Пройди тест онлайн или сохрани в&nbsp;PDF для печати
                         </div>
@@ -284,7 +289,7 @@
         </h2>
         <section class="comparison">
             <table>
-                <tr>
+                <tr class="comparison-title">
                     <th></th>
                     <th>Обычная подготовка</th>
                     <th>С Летучкой</th>
@@ -333,7 +338,7 @@
             <!-- Фича 2 -->
             <div class="feature-card">
                 <div class="feature-icon">🖨️</div>
-                <h3 class="feature-title">Печатай и проходи</h3>
+                <h3 class="feature-title">Решай и печатай</h3>
                 <p class="feature-text">
                     Нужен тест на&nbsp;бумаге? Генерируй и&nbsp;сразу скачивай готовый PDF. Или пройди сразу на платформе, получив фидбэк от нейросети
                 </p>
@@ -501,7 +506,7 @@
             <h3 class="plan-title">Старт</h3>
             <div class="plan-price">0 ₽</div>
             <ul class="plan-features">
-                <li>10 бесплатных тестов</li>
+                <li>20 бесплатных тестов</li>
                 <li>PDF с водяными знаками</li>
                 <li>Лёгкий старт для пробы</li>
             </ul>
@@ -515,8 +520,8 @@
             <div class="plan-price">420 ₽ / мес</div>
             <ul class="plan-features">
                 <li>50 тестов в день</li>
-                <li>Чистый PDF</li>
-                <li>Обратная связь от ИИ</li>
+                <li>PDF без водяных знаков</li>
+                <li>Персональные рекомендации по результатам</li>
             </ul>
             <a href="/payment" class="cta-button primary">Купить</a>
             </div>
@@ -529,7 +534,7 @@
             <ul class="plan-features">
                 <li>150 тестов в день</li>
                 <li>Загружайте pdf, doc, docx с материалами</li>
-                <li>Улучшенная обратная связь от ИИ</li>
+                <li>Улучшенная обратная связь от нейросети</li>
             </ul>
             <a href="/payment" class="cta-button primary">Купить</a>
             </div>
@@ -545,7 +550,7 @@
             <ul class="plan-features">
                 <li>50 тестов в день</li>
                 <li>PDF без водяных знаков</li>
-                <li>AI-анализ пробелов</li>
+                <li>Персональные рекомендации по результатам</li>
             </ul>
             <a href="/payment" class="cta-button primary">Купить</a>
             </div>
@@ -557,8 +562,8 @@
             <p class="plan-subtext"><s>7 080</s> → 4 800 ₽ / год</p>
             <ul class="plan-features">
                 <li>150 тестов в день</li>
-                <li>Собственные материалы</li>
-                <li>Максимум гибкости</li>
+                <li>Загружайте pdf, doc, docx с материалами</li>
+                <li>Улучшенная обратная связь от нейросети</li>
             </ul>
             <a href="/payment" class="cta-button primary">Купить</a>
             </div>
@@ -582,16 +587,60 @@
     <div class="popup-overlay" id="popupOverlay">
         <div class="popup-container">
             <div class="popup-content">
-                <h2 class="popup-title">🚀 Готов учиться быстрее?</h2>
-                <p class="popup-subtitle">С Летучкой ты сократишь время подготовки к экзаменам в 2 раза. Попробуй бесплатно прямо сейчас!</p>
+                <h2 class="popup-title">ХВАТИТ ТРАТИТЬ ЧАСЫ НА&nbsp;СОСТАВЛЕНИЕ ТЕСТОВ <br>🤯</h2>
+                <p>&ge;857 преподавателей уже экономят <strong>10+&nbsp;часов в&nbsp;неделю</strong> с&nbsp;Летучкой!</p>
+                <p class="popup-subtitle">Зарегистрируйся и получи <strong>20&nbsp;бесплатных тестов</strong>, чтобы:</p>
+                <ul class="popup-benefits">
+                    <li>✅ От нескольких часов рутины — к 30 секундам автоматизациия</li>
+                    <li>✅ Проходить тесты сразу на платформе или скачивать в PDF для печати</li>
+                    <li>✅ Получать персональные рекомендации от нейросети, с указанием на сильные и слабые стороны</li>
+                </ul>
                 <div class="popup-buttons">
                     <a href="/create" class="popup-button primary">Начать бесплатно</a>
-                    <a href="#pricing" class="popup-button secondary">Посмотреть тарифы</a>
+                    <a href="#pricing" class="popup-button secondary">Сравнить тарифы</a>
                 </div>
                 <button class="popup-close" id="popupClose">×</button>
             </div>
         </div>
     </div>
+
+</div>
+
+
+    <div id="cookie-banner" style="position: fixed; margin: 0 auto; bottom: 20px; left: 20px; right: 20px; background: rgba(255, 255, 255, 0.12); color: #fff; border-radius: 20px; padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 6px 24px rgba(0,0,0,0.2); z-index: 9999; -webkit-backdrop-filter: blur(32px); backdrop-filter: blur(32px); font-family: 'Namu Pro', sans-serif; font-size: 14px; line-height: 1.4; opacity: 0; transform: translateY(100px); transition: all 0.5s ease; max-width: 1200px">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span>Мы используем cookie-файлы, чтобы сайт работал стабильно, а сервис радовал. Никакого шпионажа.</span>
+            <button onclick="hideCookieBanner()" style="background: #6b4caf; color: #fff; border: none; padding: 12px 32px; border-radius: 24px; cursor: pointer; font-weight: 600; transition: background 0.3s;">
+                Принимаю
+            </button>
+        </div>
+        <div style="font-size: 12px; opacity: 0.8;">
+            Подробнее в <a href="/docs/privacy-policy/" style="color: #79EF66; text-decoration: underline;">политике конфиденциальности</a>.
+        </div>
+    </div>
+
+    <script>
+        function hideCookieBanner() {
+            localStorage.setItem('cookieAccepted', 'true');
+            document.getElementById('cookie-banner').style.opacity = '0';
+            document.getElementById('cookie-banner').style.transform = 'translateY(100px)';
+            setTimeout(() => {
+            document.getElementById('cookie-banner').style.display = 'none';
+            }, 500);
+        }
+
+        window.addEventListener('load', () => {
+            if (!localStorage.getItem('cookieAccepted')) {
+            const banner = document.getElementById('cookie-banner');
+            banner.style.display = 'flex';
+            setTimeout(() => {
+                banner.style.opacity = '1';
+                banner.style.transform = 'translateY(0)';
+            }, 100);
+            }
+        });
+    </script>
+
 
     <script src="{% static 'js/start.js' %}" defer></script>
     <script src="{% static 'js/generate-demo.js' %}" defer></script>
@@ -627,6 +676,88 @@
             window.addEventListener('scroll', handleScroll);
             handleScroll();
         });
+    </script>
+
+    <script>
+        // Новый скрипт вместо прелоадера
+            document.addEventListener('DOMContentLoaded', function() {
+            // 1. Сразу показываем критические блоки
+            document.getElementById('critical-header').style.opacity = 1;
+            document.getElementById('critical-hero').style.opacity = 1;
+            document.getElementById('create-now').style.opacity = 1;
+            
+            // 2. Загружаем остальные ресурсы
+            const lazyImages = [].slice.call(document.querySelectorAll('img.lazy, video.lazy'));
+            const lazySections = [].slice.call(document.querySelectorAll('.lazy-load'));
+            
+            // 3. Функция для ленивой загрузки
+            function loadContent() {
+                lazySections.forEach(section => {
+                if (isInViewport(section)) {
+                    section.classList.add('loaded');
+                }
+                });
+                
+                lazyImages.forEach(img => {
+                if (isInViewport(img)) {
+                    img.src = img.dataset.src;
+                    if (img.tagName === 'VIDEO') {
+                    img.load();
+                    }
+                    img.classList.remove('lazy');
+                }
+                });
+            }
+            
+            // 4. Проверка видимости элемента
+            function isInViewport(el) {
+                const rect = el.getBoundingClientRect();
+                return (
+                rect.top <= (window.innerHeight || document.documentElement.clientHeight) &&
+                rect.bottom >= 0
+                );
+            }
+            
+            // 5. Инициализация
+            window.addEventListener('load', function() {
+                // Загружаем видимые элементы сразу
+                loadContent();
+                
+                // Загружаем остальные при скролле
+                window.addEventListener('scroll', loadContent);
+                window.addEventListener('resize', loadContent);
+            });
+            
+            // 6. Предзагрузка важных ресурсов
+            const criticalAssets = [
+                '{% static "img/logo-header.png" %}',
+                '{% static "blog_img/letychka-banner-1703.png" %}'
+            ];
+            
+            criticalAssets.forEach(asset => {
+                const link = document.createElement('link');
+                link.rel = 'preload';
+                link.as = asset.includes('.png') ? 'image' : 'script';
+                link.href = asset;
+                document.head.appendChild(link);
+            });
+            });
+
+            // 7. Оптимизация анимаций
+            if ('IntersectionObserver' in window) {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('loaded');
+                    observer.unobserve(entry.target);
+                }
+                });
+            }, {threshold: 0.1});
+            
+            document.querySelectorAll('.lazy-load').forEach(section => {
+                observer.observe(section);
+            });
+            }
     </script>
 </body>
 

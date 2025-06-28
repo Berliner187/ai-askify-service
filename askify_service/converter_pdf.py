@@ -25,11 +25,11 @@ class ConverterPDF:
         y = 700
         max_width = 400
 
-        watermark_text = "ЛЕТУЧКА БЕСПЛАТНАЯ ВЕРСИЯ" if sub_level < 1 else None
+        watermark_text = "ЛЕТУЧКА.РУ" if sub_level < 1 else None
         watermark_font = ("Manrope Bold", 16)
-        watermark_color = colors.Color(0.7, 0.7, 0.7, alpha=0.15)  # Серый с прозрачностью
-        watermark_rotation = 30  # Угол поворота
-        watermark_spacing = 150  # Расстояние между водяными знаками
+        watermark_color = colors.Color(0.7, 0.7, 0.7, alpha=0.15)
+        watermark_rotation = 30
+        watermark_spacing = 150
 
         def draw_watermark(canvas):
             """Функция для рисования водяных знаков"""

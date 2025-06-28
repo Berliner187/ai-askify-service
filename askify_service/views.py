@@ -861,7 +861,7 @@ class TakeSurvey(View):
 
                 TokensUsed.objects.create(
                     id_staff=get_staff_id(request),
-                    tokens_feedback_used=ai_feedback.get('tokens_used')
+                    tokens_feedback_used=ai_feedback.get('tokens_used', '')
                 )
 
                 api_key_manage = APIKey.objects.filter(purpose='FEEDBACK', is_active=True).first()
@@ -936,7 +936,7 @@ def result_view(request, survey_id):
         'username': request.user.username if request.user.is_authenticated else None,
         'feedback_text': feedback_text,
         'subscription_level': subscription_level,
-        'model_name': format_model_name(model_name)
+        'model_name': f"Сгенерировано при помощи {format_model_name(model_name)}"
     }
 
     return render(request, 'result.html', json_response)
