@@ -94,7 +94,6 @@
                 <div class="admin-only-hint">
                     <small>Видно только тебе, повелитель</small>
                 </div>
-                
                 <div class="button-medium button-accent" style="margin: 20px 0; background: #ff4757;">
                     <a href="{% url 'db_viewer' %}">
                         <div>
@@ -105,11 +104,16 @@
             {% endif %}
 
             <div class="profile-info">
-                <h3>Токены</h3>
+                <h3>Токены в этом месяце</h3>
                 <ul>
                     <li>Для тестов <span class="accent-color-text">{{tokens.surveys}}</span></li>
                     <li>Для фидбэка <span class="accent-color-text">{{tokens.feedback}}</span></li>
                     <li>Всего использовано <span class="accent-color-text">{{tokens.total_tokens}}</span></li>
+                </ul>
+                <hr>
+                <h3>Лимит на создание тестов</h3>
+                <ul>
+                    <li>Доступно создать <span class="accent-color-text">{{ tokens.tests_count_limit }}</span> тестов сегодня</li>
                 </ul>
             </div>
 
@@ -142,11 +146,35 @@
             <h3>Вы уверены?</h3>
             <p>После подтверждения вы будете перенаправлены на страницу авторизации</p>
             <div class="buttons-container">
-                <button id="cancel-logout" class="button-accent">Отмена</button>
+                <button id="cancel-logout" class="">Отмена</button>
                 <button id="confirm-logout"  class="button-red">Выйти</button>
             </div>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const progressBarFill = document.getElementById('token-progress-fill');
+            const monthlyUsed = parseFloat("{{ tokens.monthly_used|default:0 }}".replace(/\s/g, ''));
+            const monthlyLimit = parseFloat("{{ tokens.monthly_limit|default:1 }}".replace(/\s/g, ''));
+
+            let percentage = 0;
+            let fillColorClass = 'normal';
+
+            if (monthlyLimit > 0) {
+                percentage = (monthlyUsed / monthlyLimit) * 100;
+                if (percentage > 100) {
+                    fillColorClass = 'exceeded';
+                    percentage = 100;
+                }
+            }
+            
+            progressBarFill.classList.remove('normal', 'exceeded');
+            progressBarFill.classList.add(fillColorClass);
+
+            progressBarFill.style.width = percentage + '%';
+        });
+    </script>
 
     <script>
         function modalWindow(elementId) {

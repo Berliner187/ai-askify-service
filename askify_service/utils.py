@@ -3,7 +3,7 @@ import datetime
 import random
 import string
 import uuid
-from datetime import timedelta
+from datetime import timedelta, datetime
 import locale
 import os
 import re
@@ -21,7 +21,9 @@ from .tracer import *
 from .constants import *
 
 
-tracer_l = TracerManager(TRACER_FILE)
+import logging
+
+tracer_l = logging.getLogger('askify_app')
 
 
 class ManageConfidentFields:
@@ -75,9 +77,8 @@ class ManageGenerationSurveys:
 
     def log_warning(self, message):
         print(message)
-        tracer_l.tracer_charge(
-            'WARNING', self.request.user.username, self.generate_survey_for_user.__name__,
-            message, "status: 400", self.text_from_user
+        tracer_l.warning(
+            f'{self.request.user.username} {self.generate_survey_for_user.__name__} {message, self.text_from_user}'
         )
 
     def generate_survey_for_user(self):
@@ -109,10 +110,7 @@ class ManageGenerationSurveys:
             #         return JsonResponse({'error': 'Сервер перегружен, попробуйте позже.'}, status=429)
 
     def log_info(self, message):
-        tracer_l.tracer_charge(
-            'INFO', self.request.user.username, self.generate_survey_for_user.__name__,
-            message
-        )
+        tracer_l.info(f"{self.request.user.username} {message} {self.generate_survey_for_user.__name__}")
 
     def process_generated_text(self, generated_text):
         json_match = re.search(r'(\{.*\})', generated_text, re.DOTALL)
@@ -130,9 +128,8 @@ class ManageGenerationSurveys:
 
     def log_error(self, error_type, message):
         print(error_type, message)
-        tracer_l.tracer_charge(
-            'ERROR', self.request.user.username, self.generate_survey_for_user.__name__,
-            error_type, message
+        tracer_l.error(
+            f"{self.request.user.username} {self.generate_survey_for_user.__name__} {message} {error_type}"
         )
 
     @staticmethod
@@ -183,11 +180,6 @@ class ManageGenerationSurveys:
         #             error_info = completion.error
         #             code = error_info.get('code', 'Unknown error code')
         #             raw_metadata = error_info.get('metadata', {}).get('raw', '')
-        #
-        #             tracer_l.tracer_charge(
-        #                 "ERROR", '', "__generate_completion",
-        #                 f"error generate: {completion}", f"{fail}"
-        #             )
         #
         #             if raw_metadata:
         #                 try:
@@ -343,8 +335,6 @@ class GenerationModelsControl:
                     reserve = self.get_feedback_together(text_from_user)
                     return reserve
                 except Exception as fail_02:
-                    tracer_l.tracer_charge('WARNING', '', 'get_generated_feedback_0003',
-                                           f'FAILED to load model. Error: {str(fail)}', fail_02)
 
                     return {'success': False, 'message': fail}
 
@@ -393,7 +383,6 @@ class GenerationModelsControl:
 
     @staticmethod
     def __generate_completion(completion, model) -> dict:
-        print(completion)
         try:
             if completion.choices:
                 generated_text = completion.choices[0].message.content
@@ -407,23 +396,16 @@ class GenerationModelsControl:
                 }
             else:
                 error_message = "No choices available in the completion response."
-                tracer_l.tracer_charge(
-                    "WARNING", '', "__generate_completion",
-                    "error generate", error_message
-                )
+                tracer_l.warning(f"error generate: {error_message}")
                 raise ValueError(error_message)
 
         except Exception as fail:
-            print(fail)
             if hasattr(completion, 'error') and completion.error is not None:
                 error_info = completion.error
                 code = error_info.get('code', 'Unknown error code')
                 raw_metadata = error_info.get('metadata', {}).get('raw', '')
 
-                tracer_l.tracer_charge(
-                    "ERROR", '', "__generate_completion",
-                    f"error generate: {completion}", f"{fail}"
-                )
+                tracer_l.error(f"error generate {completion}: {fail}")
 
                 if raw_metadata:
                     try:
@@ -487,8 +469,7 @@ class GenerationModelsControl:
                 )
                 return self.__generate_completion(completion, model)
             except Exception as fail:
-                tracer_l.tracer_charge('WARNING', '', 'get_generated_survey_0003',
-                                       f'FAILED to load model: {model}', fail)
+                tracer_l.error(f"FAILED to load model ({model}): {fail}")
 
         return None
 

@@ -10,25 +10,17 @@ from django.contrib.auth.decorators import login_required
 from asgiref.sync import sync_to_async
 from django.views import View
 from django.template.loader import render_to_string
-from django.db.models.signals import post_save
-from django.http import JsonResponse, HttpResponseBadRequest
 from django.utils.decorators import method_decorator
-# from asgiref.sync import database_sync_to_async
 from django.core import signing
 from django.core.mail import send_mail
 from django.urls import reverse
-from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.http import HttpResponseForbidden
-from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db.models import Q
-from django.utils import timezone
-from django.core.exceptions import ValidationError
 from django.db.models.functions import Length
-
 
 from .utils import *
 from .models import *
@@ -39,6 +31,8 @@ from .quant import Quant
 
 
 from askify_app.settings import DEBUG, BASE_DIR
+from askify_app.settings import TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
+
 from askify_app.middleware import check_blocked, subscription_required, check_legal_process
 
 
@@ -56,7 +50,7 @@ from tempfile import NamedTemporaryFile
 import textract
 
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
 import datetime as only_datetime
 import base64
 import asyncio
@@ -72,7 +66,7 @@ import hmac
 os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
 
 
-tracer_l = TracerManager(TRACER_FILE)
+tracer_l = logging.getLogger('askify_app')
 crypto_b = Quant()
 
 
@@ -85,9 +79,6 @@ def index(request):
         'total_users': calculate_total_users(start_date, 1200),
     }
 
-    tracer_l.tracer_charge(
-        'INFO', f"{get_client_ip(request)}", "PROMO PAGE", "load page")
-
     return render(request, 'askify_service/index.html', context)
 
 
@@ -97,21 +88,15 @@ def page_create_survey(request):
     current_id_staff = get_staff_id(request)
 
     subs = Subscription.objects.get(staff_id=current_id_staff)
-    tokens_limit = get_token_limit(subs.plan_name)
+    subs.status = subs.check_sub_status()
+    tests_count_limit = get_daily_test_limit(subs.plan_name) if subs.status == 'active' else 0
 
     manage_tokens_limits = ManageTokensLimits(current_id_staff)
-    tokens_used = manage_tokens_limits.get_usage_tokens()
-
-    print('---')
-    print(type(tokens_limit), tokens_limit, type(tokens_used), tokens_used)
-    print('---')
+    tests_used_today = manage_tokens_limits.get_tests_used_today()
 
     subscription_level = get_subscription_level(request)
 
-    tracer_l.tracer_charge(
-        'INFO', request.user.username, page_create_survey.__name__, "load page")
-
-    diff_limit = tokens_limit - tokens_used
+    diff_tests_count_limit = tests_count_limit - tests_used_today
 
     faq_file_path = os.path.join(BASE_DIR, 'docs', f'faq-s.md')
     with open(faq_file_path, 'r', encoding='utf-8') as f:
@@ -170,8 +155,8 @@ def page_create_survey(request):
     percent_with_feedback = (tests_with_feedback / total_tests * 100) if total_tests else 0
 
     # 19
-    avg_tokens_used = feedbacks.aggregate(Avg('tokens_used')).get('tokens_used__avg', 0) if hasattr(feedbacks.model,
-                                                                                                       'tokens_used') else 0
+    avg_tokens_used = feedbacks.aggregate(Avg('tokens_used')).get('tokens_used__avg', 0) if hasattr(
+        feedbacks.model, 'tokens_used') else 0
 
     # 20
     tests_created_and_passed = 0
@@ -187,8 +172,7 @@ def page_create_survey(request):
     # print(avg_score)
     context = {
         "page_title": "Создать тест",
-        'tokens_f': get_format_number(diff_limit) if diff_limit > 0 else 0,
-        'limit_tokens': tokens_limit,
+        'tests_today': diff_tests_count_limit if diff_tests_count_limit > 0 else 0,
         'username': get_username(request),
         'subscription_level': subscription_level,
         'faq_html': faq_html,
@@ -228,15 +212,15 @@ def page_history_surveys(request):
             'username': get_username(request),
             'paginator': survey_paginator.get_paginator(),
         }
-        print(surveys_page)
+        tracer_l.info(f"{request.user.username} --- {surveys_page}")
 
     except Exception as fatal:
         context = {
             'page_title': 'Предыдущие тесты',
             'username': get_username(request)
         }
-        tracer_l.tracer_charge(
-            'ERROR', request.user.username, page_history_surveys.__name__, f"{fatal}")
+        tracer_l.error(f"{request.user.username} --- {fatal}")
+
     return render(request, 'askify_service/history.html', context)
 
 
@@ -277,11 +261,9 @@ def drop_survey(request, survey_id):
         try:
             survey_user_answers = get_object_or_404(UserAnswers, survey_id=uuid.UUID(survey_id))
             survey_user_answers.delete()
-            tracer_l.tracer_charge(
-                'INFO', request.user.username, drop_survey.__name__, "Delete Survey")
+            tracer_l.info(f"{request.user.username} [ OK ]")
         except Exception as pass_fail:
-            tracer_l.tracer_charge(
-                'INFO', request.user.username, drop_survey.__name__, "Delete UserAnswers", pass_fail)
+            tracer_l.error(f"{request.user.username} {pass_fail}")
         return redirect('history')
 
     else:
@@ -320,6 +302,19 @@ class ManageTokensLimits:
 
             return total_used_today
 
+    def get_tests_used_today(self) -> int:
+        """
+        Возвращает количество тестов, созданных текущим staff_id за сегодня.
+        """
+        today = timezone.now().date()
+
+        tests_created_today = Survey.objects.filter(
+            id_staff=self.id_staff,
+            updated_at__date=today
+        ).count()
+
+        return tests_created_today
+
     @staticmethod
     def check_token_limits(token_used, token_limit) -> bool:
         if token_used >= token_limit:
@@ -329,7 +324,6 @@ class ManageTokensLimits:
 
 @sync_to_async
 def get_active_api_key(purpose: str):
-    print('SUUUUUUUUI', APIKey.objects.filter(purpose=purpose, is_active=True).first().key)
     return APIKey.objects.filter(purpose=purpose, is_active=True).first()
 
 
@@ -349,20 +343,14 @@ def create_api_key_usage(api_key_id, staff_id, purpose):
 class ManageSurveysView(View):
     async def post(self, request):
         if request.method == 'POST':
-            # try:
-            print("ВЛЕТЕЛ")
-
             request_from_user = json.loads(request.body)
             question_count = request_from_user['questions']
             text_from_user = request_from_user['text']
 
-            print(question_count, text_from_user)
-            tracer_l.tracer_charge(
-                'INFO', request.user.username, ManageSurveysView.post.__name__,
-                f"{question_count} {text_from_user}")
+            tracer_l.debug(f"{request.user.username} --- question_count: {question_count} text_from_user: {text_from_user}")
 
             if question_count.isdigit():
-                if int(question_count) > 20 or int(question_count) < 0:
+                if int(question_count) > 15 or int(question_count) < 0:
                     return JsonResponse({'error': 'Недоступное кол-во вопросов :('}, status=400)
             else:
                 return JsonResponse({'error': 'Кол-во вопросов должно быть число'}, status=400)
@@ -371,68 +359,51 @@ class ManageSurveysView(View):
             subscription_object = Subscription.objects.get(staff_id=staff_id)
             plan_name = subscription_object.plan_name
 
-            token_limit = get_token_limit(plan_name)
+            tests_count_limit = get_daily_test_limit(plan_name)
 
             # Получение кол-ва использованных токенов
             manage_tokens_limits = ManageTokensLimits(staff_id)
-            total_used_token_per_period = manage_tokens_limits.get_usage_tokens()
-            # total_used_token_per_period = 1_490_000
-            print("total_used_token_per_period", total_used_token_per_period)
+            total_used_per_period = manage_tokens_limits.get_tests_used_today()
+            tracer_l.debug(f"{request.user.username} --- total_used_per_period: {total_used_per_period}")
 
             if plan_name.lower() == 'стартовый':
-                if total_used_token_per_period >= token_limit:
+                if total_used_per_period >= tests_count_limit:
                     return JsonResponse({
                         'error': 'Токены закончились :(\n\nОзнакомьтесь с тарифами на странице профиля.'},
-                        status=403
+                        status=400
                     )
             else:
-                if total_used_token_per_period >= token_limit:
+                if total_used_per_period >= tests_count_limit:
                     return JsonResponse({
-                        'error': 'Токены закончились :(\n\nОзнакомьтесь с тарифами на странице профиля.'}, status=403)
+                        'error': 'Лимит по созданию тестов исчерпан :(\n\nОзнакомьтесь с тарифами на странице профиля.'
+                    }, status=400)
+
+            if subscription_object.check_sub_status() == 'inactive':
+                return JsonResponse({
+                    'error': 'Ваша подписка закончилась :(\n\nОзнакомьтесь с тарифами на странице профиля.'
+                }, status=400)
+
+            try:
+                tracer_l.debug(f"{request.user.username} --- GEN STAAAART")
+                start_time = time.perf_counter()
+
+                manage_generate_surveys_text = ManageGenerationSurveys(request, text_from_user, question_count)
+                generated_text = await manage_generate_surveys_text.github_gpt(await get_active_api_key('SURVEY'))
+
+                if generated_text.get('success'):
+                    tokens_used = generated_text.get('tokens_used')
+                    cleaned_generated_text = generated_text.get('generated_text')
+                    tracer_l.debug(f"{request.user.username} --- generated_text: {generated_text}")
+                    end_time = time.perf_counter()
+                    response_time_ms = int((end_time - start_time) * 1000)
+                else:
+                    return JsonResponse({'error': 'Произошла ошибка :(\nПожалуйста, попробуйте позже'}, status=429)
+
+            except Exception as fail:
+                tracer_l.error(f"{request.user.username} --- {fail}")
+                return JsonResponse({'error': 'Опаньки :(\n\nК сожалению, не удалось составить тест'}, status=400)
 
             # try:
-            # time.sleep(9999)
-            print(f"\n\nGEN STAAAART")
-
-            # tracer_l.tracer_charge(
-            #     'ADMIN', request.user.username, ManageSurveysView.post.__name__,
-            #     f"GEN STAAAART")
-
-            manage_generate_surveys_text = ManageGenerationSurveys(request, text_from_user, question_count)
-            generated_text = await manage_generate_surveys_text.github_gpt(await get_active_api_key('SURVEY'))
-
-            # tracer_l.tracer_charge(
-            #     'ADMIN', request.user.username, ManageSurveysView.post.__name__,
-            #     f"{generated_text}")
-
-            if generated_text.get('success'):
-                tokens_used = generated_text.get('tokens_used')
-                cleaned_generated_text = generated_text.get('generated_text')
-
-                print(f"\n\nGEN TEST: {generated_text}")
-                # tracer_l.tracer_charge(
-                #     'ADMIN', request.user.username, ManageSurveysView.post.__name__,
-                #     f"{cleaned_generated_text}")
-            else:
-                return JsonResponse({'error': 'Произошла ошибка :(\nПожалуйста, попробуйте позже'}, status=429)
-
-            # cleaned_generated_text = generated_text
-            # tracer_l.tracer_charge(
-            #     'INFO', request.user.username, ManageSurveysView.post.__name__,
-            #     f"success json.loads: {cleaned_generated_text.get('title')}")
-        # except (json.JSONDecodeError, TypeError) as json_error:
-            # tracer_l.tracer_charge(
-            #     'ERROR', request.user.username, ManageSurveysView.post.__name__,
-            #     "text is not valid JSON", str(json_error), "status: 400")
-            # return JsonResponse({'error': str(json_error)}, status=400)
-            # except Exception as fail:
-            #     # tracer_l.tracer_charge(
-            #     #     'CRITICAL', request.user.username, ManageSurveysView.post.__name__,
-            #     #     f"{fail}", "status: 400")
-            #     return JsonResponse({'error': 'Опаньки :(\n\nК сожалению, не удалось составить тест'}, status=400)
-
-            # try:
-            print(f"\n\n---- ТОКЕНОВ ИСПОЛЬЗОВАНО: {tokens_used}\n\n")
             new_survey_id = uuid.uuid4()
 
             survey = Survey(
@@ -447,7 +418,6 @@ class ManageSurveysView(View):
             _tokens_used = TokensUsed(
                 id_staff=get_staff_id(request),
                 tokens_survey_used=tokens_used,
-
             )
             _tokens_used.save()
 
@@ -455,10 +425,10 @@ class ManageSurveysView(View):
             APIKeyUsage.objects.create(
                 api_key=api_key_manage,
                 success=True,
+                response_time_ms=response_time_ms
             )
 
-            tracer_l.tracer_charge(
-                'DB', request.user.username, ManageSurveysView.post.__name__, "success save to DB")
+            tracer_l.info(f'{request.user.username} --- success save to DB')
 
             return JsonResponse({'survey': cleaned_generated_text, 'survey_id': f"{new_survey_id}"}, status=200)
             # except Exception as fail:
@@ -469,22 +439,7 @@ class ManageSurveysView(View):
             #     return JsonResponse(
             #         {'error': 'Ошибочка :(\n\nПожалуйста, попробуйте позже'}, status=400)
 
-            # except json.JSONDecodeError as json_decode:
-            #     # tracer_l.tracer_charge(
-            #     #     'ERROR', request.user.username, ManageSurveysView.post.__name__,
-            #     #     "Invalid JSON in request body", f"{json_decode}",
-            #     #     f"status: 400")
-            #     return JsonResponse({'error': 'Invalid JSON in request body'}, status=400)
-            # except Exception as e:
-            #     # tracer_l.tracer_charge(
-            #     #     'CRITICAL', request.user.username, ManageSurveysView.post.__name__,
-            #     #     "FATAL Exception", f"{e}",
-            #     #     f"status: 500")
-            #     return JsonResponse({'error': str(e)}, status=500)
-
-        # tracer_l.tracer_charge(
-        #     'CRITICAL', request.user.username, ManageSurveysView.post.__name__,
-        #     "Invalid request method", "status: 400")
+        tracer_l.warning(f'{request.user.username} --- Invalid request method: code 400')
         return JsonResponse({'error': 'Invalid request method'}, status=400)
 
 
@@ -492,105 +447,145 @@ class ManageSurveysView(View):
 class GenerationSurveysView(View):
     async def post(self, request):
         try:
-            print("ВЛЕТЕЛ В ASYNC POST")
             body = await sync_to_async(request.body.decode)('utf-8')
             request_from_user = json.loads(body)
             question_count = str(request_from_user['questions'])
             text_from_user = request_from_user['text']
+
             if not (0 < int(question_count) <= 5):
                 return JsonResponse({'error': 'Допустимо от 1 до 5 вопросов'}, status=400)
+
             client_ip = get_client_ip(request)
             hashed_ip = hash_data(client_ip)
 
-            existing_survey = Survey.objects.filter(title=text_from_user).first()
+            # !!! ИСПРАВЛЕНИЕ: Обертываем синхронную ORM-операцию
+            existing_survey = await sync_to_async(Survey.objects.filter(title=text_from_user).first)()
             if existing_survey:
+                tracer_l.info(
+                    f'{request.user.username or hashed_ip} --- Survey already exists: {existing_survey.survey_id}')
                 return JsonResponse({
                     'survey_id': str(existing_survey.survey_id),
-                    'redirect_url': f'/result/{existing_survey.survey_id}/'
+                    'redirect_url': f'/c/{existing_survey.survey_id}/'
                 }, status=200)
 
-            # Сначала пытаемся найти пользователя
+            auth_user = None
             try:
                 auth_user = await sync_to_async(AuthUser.objects.get)(hash_user_id=client_ip)
             except AuthUser.DoesNotExist:
-                # Если не нашли - создаем с уникальным username
                 auth_user = await sync_to_async(AuthUser.objects.create)(
                     username=f"{hashed_ip}_{uuid.uuid4().hex[:6]}",
                     hash_user_id=client_ip
                 )
 
-            staff_id = auth_user.id_staff
+            staff_id = auth_user.id_staff  # Предполагается, что id_staff доступен после получения/создания AuthUser
 
+            plan_name = "default"
+            token_limit = 0
             try:
-                subscription_object = await sync_to_async(Subscription.objects.filter)(staff_id=staff_id)
-                plan_name = subscription_object.plan_name
-                token_limit = get_token_limit(plan_name)
-            except:
-                pass
-            print('47387384')
+                # !!! ИСПРАВЛЕНИЕ: Обертываем синхронную ORM-операцию, получаем одну подписку
+                subscription_object = await sync_to_async(Subscription.objects.filter(staff_id=staff_id).first)()
+                if subscription_object:  # Проверяем, что объект подписки найден
+                    plan_name = subscription_object.plan_name
+                    token_limit = get_token_limit(plan_name)
+            except Exception as sub_e:
+                tracer_l.warning(f'{staff_id} --- Could not retrieve subscription details: {sub_e}')
 
-            surveys_count = Survey.objects.filter(id_staff=staff_id).count()
-            print(surveys_count)
-            if surveys_count > 1:
-                return JsonResponse({'error': 'Лимит исчерпан :(\n\nХочешь ещё? Зарегистрируйся, и дадим 10 тестов в подарок.'})
+            surveys_count = await sync_to_async(Survey.objects.filter(id_staff=staff_id).count)()
+            tracer_l.debug(f'{staff_id} --- surveys_count: {surveys_count}')
+
+            # Здесь можно использовать token_limit или surveys_count для логики лимитов
+            # Например, если лимит тестов по умолчанию 1 для незарегистрированных пользователей
+            if surveys_count >= 1 and not request.user.is_authenticated:  # Пример: лимит для неаутентифицированных
+                tracer_l.error(f'{staff_id} --- Лимит исчерпан: code 400 (unauthenticated user)')
+                return JsonResponse(
+                    {'error': 'Лимит исчерпан :(\n\nХочешь ещё? Зарегистрируйся, и дадим 10 тестов в подарок.'},
+                    status=400)
+
+            # TODO: Добавить проверку лимитов на основе token_limit и уже использованных токенов
+            # Например:
+            # tokens_used_by_staff = await sync_to_async(TokensUsed.objects.filter(id_staff=staff_id).aggregate)(total=Sum('tokens_survey_used'))
+            # if (tokens_used_by_staff.get('total', 0) + potential_tokens_for_this_request) > token_limit:
+            #     return JsonResponse({'error': 'Лимит токенов исчерпан!'}, status=400)
 
             manage_generate_surveys_text = ManageGenerationSurveys(request, text_from_user, question_count)
-            if DEBUG:
-                generated_text = {
-                    'success': True, 'generated_text': {
-                        "title": "Тест по процессорам Intel",
-                        "questions": [
-                            {
-                                "question": "Как называется технология Intel, которая позволяет процессору автоматически увеличивать тактовую частоту при необходимости?",
-                                "options": ["Hyper-Threading", "Turbo Boost", "Intel Optane", "Quick Sync", "Turbo Boost"],
-                                "correct_answer": "Turbo Boost"
-                            },
-                            {
-                                "question": "Какая архитектура процессоров Intel была представлена в 2021 году и сочетает производительные и энергоэффективные ядра?",
-                                "options": ["Rocket Lake", "Alder Lake", "Ice Lake", "Tiger Lake", "Alder Lake"],
-                                "correct_answer": "Alder Lake"
-                            }
-                        ]
-                    }, 'tokens_used': 200,
-                }
-            else:
-                generated_text = await manage_generate_surveys_text.github_gpt(await get_active_api_key('SURVEY'))
+            start_time = time.perf_counter()
 
-            if not generated_text.get('success'):
-                return JsonResponse({'error': 'Произошла ошибка генерации'}, status=500)
+            generated_text_data = None
+            # if DEBUG:
+            #     generated_text_data = {
+            #         'success': True, 'generated_text': {
+            #             "title": "Тест по процессорам Intel",
+            #             "questions": [
+            #                 {
+            #                     "question": "Как называется технология Intel, которая позволяет процессору автоматически увеличивать тактовую частоту при необходимости?",
+            #                     "options": ["Hyper-Threading", "Turbo Boost", "Intel Optane", "Quick Sync",
+            #                                 "Turbo Boost"],
+            #                     "correct_answer": "Turbo Boost"
+            #                 },
+            #                 {
+            #                     "question": "Какая архитектура процессоров Intel была представлена в 2021 году и сочетает производительные и энергоэффективные ядра?",
+            #                     "options": ["Rocket Lake", "Alder Lake", "Ice Lake", "Tiger Lake", "Alder Lake"],
+            #                     "correct_answer": "Alder Lake"
+            #                 }
+            #             ]
+            #         }, 'tokens_used': 200,
+            #     }
+            # else:
+            generated_text_data = await manage_generate_surveys_text.github_gpt(await get_active_api_key('SURVEY'))
+
+            end_time = time.perf_counter()
+
+            if not generated_text_data.get('success'):
+                tracer_l.error(f'{staff_id} --- Произошла ошибка генерации: {generated_text_data.get("message")}')
+                return JsonResponse({
+                    'error': f'Произошла ошибка генерации: {generated_text_data.get("message", "Неизвестная ошибка")}'
+                }, status=500)
+
+            response_time_ms = int((end_time - start_time) * 1000)
 
             new_survey_id = uuid.uuid4()
             survey = Survey(
                 survey_id=new_survey_id,
-                title=generated_text['generated_text']['title'],
-                id_staff=staff_id
+                title=generated_text_data['generated_text']['title'],
+                id_staff=staff_id,
+                model_name=generated_text_data.get('model_used', '')
             )
 
-            await sync_to_async(survey.save_questions)(generated_text['generated_text']['questions'])
+            await sync_to_async(survey.save_questions)(generated_text_data['generated_text']['questions'])
             await sync_to_async(survey.save)()
 
             _tokens_used = TokensUsed(
                 id_staff=staff_id,
-                tokens_survey_used=generated_text['tokens_used']
+                tokens_survey_used=generated_text_data['tokens_used']
             )
             await sync_to_async(_tokens_used.save)()
 
-            api_key_manage = APIKey.objects.filter(purpose='SURVEY', is_active=True).first()
-            APIKeyUsage.objects.create(
-                api_key=api_key_manage,
-                success=True,
-            )
+            # !!! ИСПРАВЛЕНИЕ: Обертываем синхронную ORM-операцию
+            api_key_manage = await sync_to_async(APIKey.objects.filter(purpose='SURVEY', is_active=True).first)()
+
+            # !!! ИСПРАВЛЕНИЕ: Обертываем синхронную ORM-операцию
+            if api_key_manage:  # Убедимся, что ключ найден, прежде чем использовать его
+                await sync_to_async(APIKeyUsage.objects.create)(
+                    api_key=api_key_manage,
+                    success=True,
+                    response_time_ms=response_time_ms
+                )
+            else:
+                tracer_l.warning(f'{staff_id} --- APIKey для SURVEY не найден для логирования использования.')
+
+            tracer_l.info(f'{staff_id} --- Успешная генерация: {new_survey_id}')
 
             return JsonResponse({
-                'survey': generated_text['generated_text'],
+                'survey': generated_text_data['generated_text'],
                 'survey_id': str(new_survey_id),
-                'redirect_url': f'/result/{new_survey_id}/'
+                'redirect_url': f'/c/{new_survey_id}/'
             }, status=200)
 
         except json.JSONDecodeError:
+            tracer_l.error(f'{request.user.username or get_client_ip(request)} --- Invalid JSON in request body.')
             return JsonResponse({'error': 'Невалидный JSON'}, status=400)
         except Exception as e:
-            print(f"FATAL ERROR: {str(e)}")
+            tracer_l.critical(f"FATAL ERROR in GenerationSurveysView: {e}", exc_info=True)
             return JsonResponse({'error': 'Внутренняя ошибка сервера'}, status=500)
 
 
@@ -909,13 +904,11 @@ def result_view(request, survey_id):
             feedback_text = markdown.markdown(feedback_text)
             model_name = feedback_obj.model_name
         else:
-            feedback_text = 'Не удалось получить обратную связь от ИИ :('
+            feedback_text = ''
 
     except Exception as fail:
         feedback_text = 'Не удалось получить обратную связь от ИИ :('
-        tracer_l.tracer_charge(
-            "INFO", f"{get_username(request)}", result_view.__name__,
-            "WARNING: Fail in get AI feedback", fail)
+        tracer_l.warning(f'{request.user.username} --- {fail}')
 
     subscription_db = Subscription.objects.get(staff_id=get_staff_id(request))
     subscription_check = SubscriptionCheck()
@@ -976,7 +969,6 @@ def register_survey_view(request, survey_id):
             data = json.loads(request.body)
             view_hash = data.get('hash', '')
 
-            # Проверяем существование такого хэша
             if view_hash and not SurveyView.objects.filter(
                     survey=survey, view_hash=view_hash
             ).exists():
@@ -987,30 +979,31 @@ def register_survey_view(request, survey_id):
                     'new_view': True,
                     'view_count': view_count
                 })
+            tracer_l.info(f'{request.user.username} --- Upload view counter')
             return JsonResponse({'success': True, 'new_view': False})
         except Survey.DoesNotExist:
+            tracer_l.error(f'{request.user.username} --- Survey not found')
             return JsonResponse({'success': False, 'error': 'Survey not found'})
     return JsonResponse({'success': False, 'error': 'Invalid request'})
 
 
 # @login_required
 def download_survey_pdf(request, survey_id):
-    # try:
-    survey = get_object_or_404(Survey, survey_id=uuid.UUID(survey_id))
-    tracer_l.tracer_charge(
-        'INFO', request.user.username, download_survey_pdf.__name__, "View survey in PDF")
-
     try:
-        subscription_db = Subscription.objects.get(staff_id=get_staff_id(request))
-        subscription_check = SubscriptionCheck()
-        subscription_level = subscription_check.get_subscription_level(subscription_db.plan_name)
-    except Exception:
-        subscription_level = 0
+        survey = get_object_or_404(Survey, survey_id=uuid.UUID(survey_id))
+        tracer_l.info(f'{request.user.username} --- View survey in PDF')
 
-    return survey.generate_pdf(subscription_level)
-    # except Exception as fatal:
-    #     tracer_l.tracer_charge(
-    #         'CRITICAL', request.user.username, download_survey_pdf.__name__, "FATAL with View survey in PDF", fatal)
+        try:
+            subscription_db = Subscription.objects.get(staff_id=get_staff_id(request))
+            subscription_check = SubscriptionCheck()
+            subscription_level = subscription_check.get_subscription_level(subscription_db.plan_name)
+        except Exception:
+            subscription_level = 0
+
+        tracer_l.info(f'{request.user.username} --- subscription_level: {subscription_level}')
+        return survey.generate_pdf(subscription_level)
+    except Exception as fatal:
+        tracer_l.critical(f'{request.user.username} --- FATAL with View survey in PDF: {fatal}')
 
 
 def generate_username(email):
@@ -1030,7 +1023,7 @@ def generate_username(email):
 def register(request):
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
-        print(form.is_valid(), form.cleaned_data.get('email'))
+        tracer_l.debug(f'{request.user.username} --- {form.is_valid()}: {form.cleaned_data.get("email")}')
 
         if not is_allowed_email(form.cleaned_data.get('email')):
             return JsonResponse({"error": "Not allowed hostname"})
@@ -1038,8 +1031,7 @@ def register(request):
         if form.is_valid():
             user = form.save()
 
-            tracer_l.tracer_charge(
-                'ADMIN', user.username, register.__name__, f"NEW USER")
+            tracer_l.warning(f'ADMIN. NEW USER {request.user.username}')
 
             plan_name, end_date, status, billing_cycle, discount = init_free_subscription()
             subscription = Subscription.objects.create(
@@ -1082,15 +1074,12 @@ def login_view(request):
         if user is not None:
             login(request, user)
             request.session['user_id'] = user.id
-            print(request.session.get('user_id'))
 
             if not DEBUG:
-                tracer_l.tracer_charge(
-                    'ADMIN', request.user.username, login_view.__name__, f"LOGGED IN")
+                tracer_l.warning(f'ADMIN. {request.user.username}: LOGGED IN')
 
             return redirect('/create')
         else:
-            print('Неверный email или пароль')
             return JsonResponse({'errors': {'email': ['Неверный email или пароль']}}, status=400)
 
     return render(request, 'login.html')
@@ -1218,39 +1207,40 @@ def profile_view(request, username):
     date_join = get_formate_date(user.date_joined)
     date_last_login = get_formate_date(user.last_login)
 
-    tokens_usage = TokensUsed.get_tokens_usage(staff_id)
+    tokens_usage_all_time = TokensUsed.get_tokens_usage_last_two_months(staff_id)  # Используем новое имя метода
 
-    total_tokens_for_surveys = get_format_number(tokens_usage['tokens_survey_used'])
-    total_tokens_for_feedback = get_format_number(tokens_usage['tokens_feedback_used'])
-
-    _total_tokens = tokens_usage['tokens_survey_used'] + tokens_usage['tokens_feedback_used']
+    total_tokens_for_surveys = get_format_number(tokens_usage_all_time['tokens_survey_used'])
+    total_tokens_for_feedback = get_format_number(tokens_usage_all_time['tokens_feedback_used'])
+    _total_tokens = tokens_usage_all_time['tokens_survey_used'] + tokens_usage_all_time['tokens_feedback_used']
     total_tokens = get_format_number(_total_tokens)
-    print('total_tokens', total_tokens)
 
     subscription = get_object_or_404(Subscription, staff_id=staff_id)
-    subscription_end_date = get_formate_date(subscription.end_date)
+    subscription_end_date_formatted = get_formate_date(subscription.end_date)
     human_readable_plan = subscription.get_human_plan()
 
-    if isinstance(subscription.end_date, str):
-        subscription.end_date = datetime.strptime(subscription.end_date, '%Y.%m.%d')
+    subscription_end_date_as_date = subscription.end_date.date()
 
-    days_until_end = (subscription.end_date - timezone.now()).days
-    print('days_until_end', days_until_end)
+    # Расчет дней до конца подписки
+    days_until_end = (subscription_end_date_as_date - timezone.now().date()).days
 
-    user = request.user
-    token = signing.dumps(user.pk, salt='email-verification')
+    user_django = request.user
+    token_email_verification = signing.dumps(user_django.pk, salt='email-verification')
+
+    subscription.status = subscription.check_sub_status()
+    tests_count_limit = get_daily_test_limit(subscription.plan_name) if subscription.status == 'active' else 0
 
     manage_tokens_limits = ManageTokensLimits(staff_id)
-    total_used_token_per_period = manage_tokens_limits.get_usage_tokens()
-    # total_used_token_per_period = 1_490_000
-    print("total_used_token_per_period", total_used_token_per_period)
+    tests_used_today = manage_tokens_limits.get_tests_used_today()
 
+    diff_tests_count_limit = tests_count_limit - tests_used_today
+
+    # --- Формирование контекста ---
     user_data = {
         'page_title': f'Профиль {username}',
         'username': username,
-        'email': 'E-mail: ' + user.email if user.email is not None else '',
-        'password': f'Пароль: *********' if user.password != '' else '',
-        'phone': 'Телефон: ' + user.phone if user.phone is not None else '',
+        'email': 'E-mail: ' + (user.email if user.email else ''),
+        'password': f'Пароль: *********' if user.password else '',
+        'phone': 'Телефон: ' + (user.phone if user.phone else 'Не указан'),
         'date_join': date_join,
         'date_last_login': date_last_login,
         'statistics': statistics,
@@ -1258,15 +1248,15 @@ def profile_view(request, username):
             'surveys': total_tokens_for_surveys,
             'feedback': total_tokens_for_feedback,
             'total_tokens': total_tokens,
-            'limit_tokens': get_format_number(get_token_limit(subscription.plan_name))
+            'tests_count_limit': diff_tests_count_limit
         },
         'subscription': {
             'plan_name': human_readable_plan,
-            'plan_end_date': f"заканчивается {subscription_end_date}" if days_until_end > 0 else "истёк :(",
-            'days_until_end': days_until_end
+            'plan_end_date': f"заканчивается {subscription_end_date_formatted}" if days_until_end > 0 else "истёк :(",
+            'days_until_end': days_until_end,
         },
-        'subscription_level': get_subscription_level(request),
-        'token': token
+        'subscription_level': get_subscription_level(request),  # Убедитесь, что эта функция возвращает int
+        'token': token_email_verification
     }
 
     return render(request, 'profile.html', user_data)
@@ -1339,20 +1329,14 @@ def admin_stats(request):
                 AuthUser.objects
                 .filter(date_joined__range=(start_date, end_date))
                 .annotate(username_len=Length('username'))
-                .filter(username_len__lte=20)
+                .filter(username_len__lte=30)
                 .count()
             )
             total_surveys = Survey.objects.filter(updated_at__range=(start_date, end_date)).count()
             total_answers = UserAnswers.objects.filter(created_at__range=(start_date, end_date)).count()
             subscriptions = Subscription.objects.filter(start_date__range=(start_date, end_date)).count()
-
-            user_activities = UserActivity.objects.filter(created_at__range=(start_date, end_date)).values('id_staff', 'ip_address', 'created_at')
-            user_activities_count = UserActivity.objects.filter(created_at__range=(start_date, end_date)).count()
-
         else:
             selected_users = total_surveys = subscriptions = total_answers = 0
-            user_activities = UserActivity.objects.none()
-            user_activities_count = 0
 
         payment_data = []
         for subscription in selected_subscription:
@@ -1375,7 +1359,7 @@ def admin_stats(request):
 
         completed_payments = Payment.objects.filter(status='completed')
 
-        total_revenue = completed_payments.aggregate(total=Sum('amount'))['total'] or 0
+        total_revenue = completed_payments.aggregate(total=Sum('amount'))['total'] / 100 or 0
         completed_count = completed_payments.count()
 
         average_check = total_revenue / completed_count if completed_count > 0 else 0
@@ -1392,8 +1376,6 @@ def admin_stats(request):
             'total_surveys': total_surveys,
             'total_answers': total_answers,
             'subscriptions': subscriptions,
-            'user_activities': user_activities,
-            'count_activities': user_activities_count,
             'selected_subscription': selected_subscription,
             'data': payment_data,
             'total_revenue': total_revenue,
@@ -1496,6 +1478,7 @@ def db_viewer(request):
     return render(request, 'askify_service/db_viewer.html', context)
 
 
+@login_required
 def db_search(request):
     query = request.GET.get('q', '').strip()
     if len(query) < 3:
@@ -1525,6 +1508,7 @@ def db_search(request):
     return JsonResponse(results, safe=False)
 
 
+@login_required
 def get_related_info(item):
     """ Получение связанных данных """
     if hasattr(item, 'id_staff'):
@@ -1536,6 +1520,7 @@ def get_related_info(item):
     return "Нет связанных данных"
 
 
+@login_required
 def block_by_staff_id(request, id_staff):
     maybe_admin = get_object_or_404(AuthUser, username=request.user.username)
 
@@ -1547,6 +1532,7 @@ def block_by_staff_id(request, id_staff):
     return redirect('login')
 
 
+@login_required
 def block_by_ip(request, ip_address):
     maybe_admin = get_object_or_404(AuthUser, username=request.user.username)
 
@@ -1571,6 +1557,7 @@ def unblock_by_ip(request, ip_address):
     return redirect('login')
 
 
+@login_required
 def unblock_by_staff_id(request, id_staff):
     maybe_admin = get_object_or_404(AuthUser, username=request.user.username)
 
@@ -1588,13 +1575,9 @@ def unblock_by_staff_id(request, id_staff):
 @login_required
 def create_payment(request):
     user_data = get_object_or_404(AuthUser, id_staff=get_staff_id(request))
-
     order_id = generate_payment_id()
 
-    tracer_l.tracer_charge(
-        'ADMIN', f"{get_username(request)}",
-        'PaymentInitiateView',
-        f"VIEW PAYMENT\n\n")
+    tracer_l.warning(f'ADMIN. {request.user.username}: VIEW PAYMENT')
 
     context = {
         'page_title': 'Выбор тарифного плана',
@@ -1635,10 +1618,11 @@ class PaymentInitiateView(View):
         }
 
         if int(amount) != plan_prices.get(description):
+            tracer_l.warning(f'ADMIN. {request.user.username}: Неверная сумма. code 400')
             return JsonResponse({'Success': False, 'Message': 'Неверная сумма.'}, status=400)
 
         order_id = generate_payment_id()
-        print('приход', order_id)
+        tracer_l.debug(f'{request.user.username}: Приход: {order_id}. ')
 
         items = [
             {
@@ -1663,8 +1647,9 @@ class PaymentInitiateView(View):
         tracer_l.tracer_charge(
             'ADMIN', f"{get_username(request)}",
             'PaymentInitiateView',
-            f"WANT TO BUY!!!\n\nAmount: {amount}\n"
-            f"About: {description}\nEmail: {email}\nPhone: {phone}")
+            )
+        tracer_l.warning(f'{request.user.username}\n\nWANT TO BUY!!!\n\nAmount: {amount}\n'
+                         f'About: {description}\nEmail: {email}\nPhone: {phone}')
 
         created_token = PaymentManager().generate_token_for_new_payment(data_token)
 
@@ -1689,11 +1674,6 @@ class PaymentInitiateView(View):
         headers = {"Content-Type": "application/json"}
         response = requests.post("https://securepay.tinkoff.ru/v2/Init/", json=request_body, headers=headers)
         response_data = response.json()
-
-        print()
-        for key, value in response_data.items():
-            print(key, value)
-        print()
 
         if response_data.get('Success'):
             subscription_obj = Subscription.objects.filter(staff_id=get_staff_id(request))
@@ -1783,7 +1763,6 @@ class PaymentSuccessView(View):
                     return render(request, 'payments/pay_status.html', error_payment_data)
 
                 elif payment_status == 'DEADLINE_EXPIRED':
-                    print("Срок действия платежа истек.")
                     return render(request, 'payments/pay_status.html', error_payment_data)
 
                 elif payment_status == 'CONFIRMED':
@@ -1844,11 +1823,10 @@ class PaymentSuccessView(View):
                                 fail_silently=False,
                                 html_message=message
                             )
+                        tracer_l.info(f'{request.user.username}\n\nSuccess send mail')
+
                     except Exception as fail:
-                        tracer_l.tracer_charge(
-                            'ADMIN', f"{get_username(request)}",
-                            'PaymentSuccess',
-                            f"Error to send check to email: {fail}")
+                        tracer_l.warning(f'{request.user.username}\n\nError to send check to email: {fail}')
 
                     try:
                         payment_details_text = "\n".join(
@@ -1870,26 +1848,23 @@ class PaymentSuccessView(View):
                         telegram_message_manager.send_message(TELEGRAM_CHAT_ID, message)
                         telegram_message_manager.send_message(additional_auth_user.id_telegram, message)
 
+                        tracer_l.info(f'{request.user.username}\n\nSuccess send to Telegram')
                     except Exception as fail:
-                        tracer_l.tracer_charge(
-                            'ERROR', f"{get_username(request)}",
-                            PaymentSuccessView.__name__,
-                            f'Fail while send info about payment to Telegram', fail)
+                        tracer_l.warning(f'{request.user.username}\n\nFail while send info about payment to Telegram: {fail}')
 
                     return render(request, 'payments/pay_status.html', payment_data)
                 else:
-                    print("Статус платежа: ", payment_status)
+                    tracer_l.debug(f'{request.user.username}\n\nСтатус платежа: {payment_status}')
+
                     return render(request, 'payments/pay_status.html', error_payment_data)
-            except Payment.DoesNotExist:
+            except Payment.DoesNotExist as fatal:
                 error_payment_data = {
                     "page_title": "Ошибка оплаты",
                     "payment_status": "Неудача",
                     "text_status": "Платеж не существует",
                 }
-                tracer_l.tracer_charge(
-                    'ERROR', f"{get_username(request)}",
-                    PaymentSuccessView.__name__,
-                    f'Payment Fail', error_payment_data)
+                tracer_l.error(f'{request.user.username}\n\nОшибка оплаты. Платеж не существует: {fatal}')
+
                 return render(request, 'payments/pay_status.html', error_payment_data)
         else:
             subscription = Subscription.objects.get(staff_id=get_staff_id(request))
@@ -1899,6 +1874,8 @@ class PaymentSuccessView(View):
                 "text_status": "Не удалось активировать план, попробуйте позже :(",
                 "plan_name": subscription.get_human_plan(),
             }
+            tracer_l.error(f'{request.user.username}\n\nОшибка при оплате. Не удалось активировать план')
+
             return render(request, 'payments/pay_status.html', payment_data)
 
 
@@ -1977,10 +1954,7 @@ class TelegramAuthManagement:
             )
             new_auth_telegram.save()
 
-            tracer_l.tracer_charge(
-                'ADMIN', f"telegram_id {telegram_user_id}",
-                'confirm_user',
-                f"Created additional auth for user: {telegram_user_id}")
+            tracer_l.debug(f'confirm_user: Created additional auth for user: {telegram_user_id}')
 
             plan_name, end_date, status, billing_cycle, discount = init_free_subscription()
             subscription = Subscription.objects.create(
@@ -2006,10 +1980,6 @@ class TelegramAuthManagement:
 
         if additional_auth:
             user = additional_auth.user
-            tracer_l.tracer_charge(
-                'ADMIN', f"telegram_id {telegram_user_id}",
-                'one_click_auth',
-                f"User already linked: {telegram_user_id}")
             return user
 
         user = AuthUser.objects.filter(username=username).first()
@@ -2021,16 +1991,6 @@ class TelegramAuthManagement:
                     'id_telegram': int(telegram_user_id),
                 }
             )
-            if not created:
-                tracer_l.tracer_charge(
-                    'ADMIN', f"telegram_id {telegram_user_id}",
-                    'one_click_auth',
-                    f"AuthAdditionalUser already exists for user: {user.id}")
-
-            tracer_l.tracer_charge(
-                'ADMIN', f"telegram_id {telegram_user_id}",
-                'one_click_auth',
-                f"Linked existing user: {telegram_user_id} to phone: {user.phone}")
         else:
             user, created = AuthUser.objects.get_or_create(
                 username=username,
@@ -2046,16 +2006,6 @@ class TelegramAuthManagement:
                     'id_telegram': int(telegram_user_id),
                 }
             )
-            if not created:
-                tracer_l.tracer_charge(
-                    'ADMIN', f"telegram_id {telegram_user_id}",
-                    'one_click_auth',
-                    f"AuthAdditionalUser already exists for new user: {user.id}")
-
-            tracer_l.tracer_charge(
-                'ADMIN', f"telegram_id {telegram_user_id}",
-                'one_click_auth',
-                f"Created new user: {telegram_user_id}")
 
             plan_name, end_date, status, billing_cycle, discount = init_free_subscription()
             subscription, created = Subscription.objects.get_or_create(
@@ -2105,21 +2055,14 @@ def one_click_auth_view(request, token: str, token_hash: str):
             username=f"{telegram_user_id}"
         )
 
-        tracer_l.tracer_charge(
-            'ADMIN', f"telegram_id {telegram_user_id}",
-            'one_click_auth_view',
-            f"User authorized via one-click link: {telegram_user_id}")
-
         login(request, user)
         request.session['user_id'] = user.id
 
         return redirect('create')
 
     except Exception as fail:
-        tracer_l.tracer_charge(
-            'ERROR', 'one_click_auth_view',
-            'one_click_auth_view',
-            f"Error: {fail}")
+        tracer_l.error(f'one_click_auth_view: {fail}')
+
         return JsonResponse({"status": "error", "message": f"Error: {fail}"}, status=500)
 
 
@@ -2147,10 +2090,7 @@ def confirm_user(request):
         first_name = data.get('first_name')
         last_name = data.get('last_name') or ''
 
-        tracer_l.tracer_charge(
-            'ADMIN', get_client_ip(request),
-            'confirm_user',
-            f"Success auth: hash is OK for {first_name} {username}")
+        tracer_l.info(f'Success auth: hash is OK --- ')
 
         telegram_auth_data = {
             'telegram_user_id': telegram_user_id,
@@ -2256,36 +2196,21 @@ def exchange_keys(request):
     try:
         body = json.loads(request.body)
     except json.JSONDecodeError as e:
-
-        tracer_l.tracer_charge(
-            'ERROR', get_client_ip(request),
-            'exchange_keys',
-            f"Invalid JSON: {e}")
-
+        tracer_l.error(f'exchange_keys --- Invalid JSON: {e}')
         return JsonResponse({"error": "Invalid JSON"}, status=400)
 
     try:
         public_key_a_pem = body["public_key"]
         telegram_user_id = body["telegram_user_id"]
     except KeyError as e:
-        print(f"Missing field: {e}")
-
-        tracer_l.tracer_charge(
-            'ERROR', get_client_ip(request),
-            'exchange_keys',
-            f"Missing field: {e}")
+        tracer_l.error(f'exchange_keys --- Missing field: {e}')
 
         return JsonResponse({"error": f"Missing field: {e}"}, status=400)
 
     try:
         public_key_a = ECC.import_key(public_key_a_pem)
     except Exception as e:
-
-        tracer_l.tracer_charge(
-            'ERROR', get_client_ip(request),
-            'exchange_keys',
-            f"Invalid public key: {e}")
-
+        tracer_l.error(f'exchange_keys --- Invalid public key: {e}')
         return JsonResponse({"error": f"Invalid public key"}, status=400)
 
     client_public_keys[telegram_user_id] = {
@@ -2320,10 +2245,7 @@ def phone_number_view(request):
                 telegram_message_manager = ManageTelegramMessages()
                 telegram_message_manager.send_code_to_user(new_auth_telegram.id_telegram, code)
 
-                tracer_l.tracer_charge(
-                    'ADMIN', get_client_ip(request),
-                    'phone_number_view',
-                    f"phone_number_view: {user.id}, {code}")
+                tracer_l.debug(f'phone_number_view. Код отправлен: {user.id}')
 
                 request.session['phone_number'] = phone_number
                 return JsonResponse({'status': 'success', 'message': 'Код отправлен'})
@@ -2352,11 +2274,6 @@ def verify_code_view(request):
 
         if user:
             if user_verify_code.get(user.phone) == int(verification_code):
-                tracer_l.tracer_charge(
-                    'ADMIN', get_client_ip(request),
-                    'phone_number_view',
-                    f"3 verify_code_view: {user.id} {user.username}")
-
                 login(request, user)
                 request.session['user_id'] = user.id
 
@@ -2367,10 +2284,7 @@ def verify_code_view(request):
         else:
             return JsonResponse({'status': 'error', 'message': 'Пользователь не найден'})
 
-    tracer_l.tracer_charge(
-        'ADMIN', get_client_ip(request),
-        'phone_number_view',
-        f"2 verify_code_view: {get_username(request)} Неверный запрос")
+    tracer_l.debug(f'2 verify_code_view. Неверный запрос')
     return JsonResponse({'status': 'error', 'message': 'Неверный запрос'})
 
 
@@ -2387,13 +2301,7 @@ def check_telegram_hash(auth_data):
 
 class TelegramAuthView(View):
     def post(self, request):
-        print("TelegramAuthView called")
         auth_data = request.POST
-
-        tracer_l.tracer_charge(
-            'INFO', get_client_ip(request),
-            'try tg auth',
-            f"request.POST: пришел в ТГ")
 
         try:
             auth_date = auth_data.get('auth_date', 999)
@@ -2401,11 +2309,6 @@ class TelegramAuthView(View):
             last_name = auth_data.get('last_name', '')
             telegram_id = auth_data.get('id', 0)
             username = auth_data.get('username', None)
-
-            tracer_l.tracer_charge(
-                'INFO', get_username(request),
-                'try tg auth',
-                f"{type(telegram_id)} {telegram_id}, auth_data: {auth_data}")
 
             if not check_telegram_hash(auth_data):
                 print("Invalid hash")
@@ -2415,24 +2318,11 @@ class TelegramAuthView(View):
                 return JsonResponse({'status': 'error', 'message': 'Invalid data'}, status=400)
 
             existing_user = AuthAdditionalUser.objects.filter(id_telegram=telegram_id).first()
-
-            tracer_l.tracer_charge(
-                'INFO', get_username(request),
-                'try tg auth',
-                f"{existing_user}")
+            tracer_l.debug(f'TelegramAuthView: existing_user: {existing_user}')
 
             if existing_user:
                 auth_user = existing_user.user
-                tracer_l.tracer_charge(
-                    'INFO', get_username(request),
-                    'try tg auth',
-                    f"{auth_user}")
             else:
-                tracer_l.tracer_charge(
-                    'INFO', get_username(request),
-                    'try tg auth',
-                    f"not exist{existing_user}")
-
                 auth_user = AuthUser.objects.create(
                     username=str(telegram_id) if username is None else username,
                     first_name=first_name,
@@ -2457,42 +2347,26 @@ class TelegramAuthView(View):
                 )
                 subscription.save()
 
-            tracer_l.tracer_charge(
-                'INFO', get_username(request),
-                'try tg auth',
-                f"login(request, {auth_user}, {auth_user.id})")
-
             login(request, auth_user)
             request.session['user_id'] = auth_user.id
 
-            tracer_l.tracer_charge(
-                'ADMIN', username, 'TelegramAuthView', f"user has been login in")
+            tracer_l.debug(f'TelegramAuthView: user has been login in')
 
             return redirect('create')
         except Exception as fail:
-            tracer_l.tracer_charge('ERROR', f"{get_client_ip(request)}", 'error in tg auth', fail)
+            tracer_l.error(f'TelegramAuthView: error in tg auth: {fail}')
             return JsonResponse({'status': 'error', 'message': 'Internal server error'}, status=500)
 
     def get(self, request):
         print("TelegramAuthView called")
         auth_data = request.GET
 
-        tracer_l.tracer_charge(
-            'INFO', get_client_ip(request),
-            'try tg auth',
-            f"request.GET: пришел в ТГ")
-
         try:
             auth_date = auth_data.get('auth_date', 999)
             first_name = auth_data.get('first_name', '')
             last_name = auth_data.get('last_name', '')
             telegram_id = auth_data.get('id', 0)
             username = auth_data.get('username', None)
-
-            tracer_l.tracer_charge(
-                'INFO', get_username(request),
-                'try tg auth',
-                f"{type(telegram_id)} {telegram_id}, auth_data: {auth_data}")
 
             if not check_telegram_hash(auth_data):
                 print("Invalid hash")
@@ -2503,23 +2377,9 @@ class TelegramAuthView(View):
 
             existing_user = AuthAdditionalUser.objects.filter(id_telegram=telegram_id).first()
 
-            tracer_l.tracer_charge(
-                'INFO', get_username(request),
-                'try tg auth',
-                f"{existing_user}")
-
             if existing_user:
                 auth_user = existing_user.user
-                tracer_l.tracer_charge(
-                    'INFO', get_username(request),
-                    'try tg auth',
-                    f"{auth_user}")
             else:
-                tracer_l.tracer_charge(
-                    'INFO', get_username(request),
-                    'try tg auth',
-                    f"not exist{existing_user}")
-
                 auth_user = AuthUser.objects.create(
                     username=str(telegram_id) if username is None else username,
                     first_name=first_name,
@@ -2544,20 +2404,14 @@ class TelegramAuthView(View):
                 )
                 subscription.save()
 
-            tracer_l.tracer_charge(
-                'INFO', get_username(request),
-                'try tg auth',
-                f"login(request, {auth_user}, {auth_user.id})")
-
             login(request, auth_user)
             request.session['user_id'] = auth_user.id
 
-            tracer_l.tracer_charge(
-                'ADMIN', username, login_view.__name__, f"user has been login in")
+            tracer_l.debug(f'TelegramAuthView: success')
 
             return redirect('create')
         except Exception as fail:
-            tracer_l.tracer_charge('ERROR', f"{get_client_ip(request)}", 'error in tg auth', fail)
+            tracer_l.error(f'TelegramAuthView: error in tg auth: {fail}')
             return JsonResponse({'status': 'error', 'message': 'Internal server error'}, status=500)
 
 
@@ -2572,7 +2426,7 @@ def available_plans(request):
 @check_legal_process
 def document_view(request, slug):
     file_path = os.path.join(BASE_DIR, 'docs', f'{slug}.md')
-    print(file_path)
+    tracer_l.debug(f'file_path: file_path')
 
     if not os.path.exists(file_path):
         return render(request, '404.html', status=404)

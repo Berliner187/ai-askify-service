@@ -10,6 +10,7 @@ from datetime import timedelta, datetime
 import json
 import uuid
 import hashlib
+import random
 
 from .converter_pdf import *
 
@@ -29,8 +30,30 @@ class Survey(models.Model):
     def __str__(self):
         return self.title
 
-    def save_questions(self, questions):
-        self.questions = json.dumps(questions)
+    def save_questions(self, questions_data):
+        """
+        Сохраняет вопросы в формате JSON, предварительно перемешивая варианты ответов.
+
+        Args:
+            questions_data (list): Список словарей вопросов. Каждый словарь должен
+                                   содержать 'question', 'options' и 'correct_answer'.
+        """
+        shuffled_questions = []
+        for q_data in questions_data:
+            if 'options' in q_data and isinstance(q_data['options'], list):
+                options = list(q_data['options'])
+                random.shuffle(options)
+
+                new_q_data = {
+                    "question": q_data.get('question', ''),
+                    "options": options,
+                    "correct_answer": q_data.get('correct_answer', '')
+                }
+                shuffled_questions.append(new_q_data)
+            else:
+                shuffled_questions.append(q_data)
+
+        self.questions = json.dumps(shuffled_questions, ensure_ascii=False)
 
     def generate_pdf(self, subscription_level):
         print(subscription_level)
@@ -147,15 +170,6 @@ class AuthAdditionalUser(models.Model):
     id_yandex = models.IntegerField(null=True, blank=True)
 
 
-class UserActivity(models.Model):
-    id_staff = models.UUIDField(null=True, blank=True)
-    ip_address = models.GenericIPAddressField(null=True, blank=True)
-    user_agent = models.CharField(max_length=255, null=True, blank=True)
-    referer = models.URLField(null=True, blank=True)
-    language_code = models.CharField(max_length=10, null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-
 class Subscription(models.Model):
     staff_id = models.UUIDField(blank=False, null=False, unique=True)
     plan_name = models.CharField(max_length=100)
@@ -186,6 +200,24 @@ class Subscription(models.Model):
             'ultra_plan': 'Ультра план на 30 дней',
         }
         return plan_mapping.get(self.plan_name, self.plan_name)
+
+    def check_sub_status(self, save=False):
+        """
+            Проверяет, истекла ли подписка, и возвращает
+            актуальный статус: 'active' или 'inactive'/'canceled'.
+        """
+        now = timezone.now()
+
+        if self.end_date < now:
+            new_status = 'inactive'
+        else:
+            new_status = 'active'
+
+        if save and new_status != self.status:
+            self.status = new_status
+            self.save(update_fields=['status'])
+
+        return new_status
 
     def __str__(self):
         return f'Subscription {self.plan_name} for {self.staff_id}'
@@ -278,8 +310,25 @@ def get_token_limit(plan_name):
         'стандартный': 50_000,
         'премиум': 500_000,
         'ультра': 2_500_000,
+        'стандартный год': 2_500_000,
+        'премиум год': 2_500_000,
     }
     return token_limits.get(plan_name.lower(), 0)
+
+
+def get_daily_test_limit(plan_name):
+    """
+    Возвращает дневной лимит на количество создаваемых тестов для данного плана.
+    """
+    daily_test_limits = {
+        'стартовый': 20,
+        'стандартный': 50,
+        'премиум': 150,
+        'ультра': 800,
+        'стандартный год': 50,
+        'премиум год': 150,
+    }
+    return daily_test_limits.get(plan_name.lower(), 0)
 
 
 def slugify_title(title):
@@ -365,15 +414,49 @@ class TokensUsed(models.Model):
         super().save(*args, **kwargs)
 
     @classmethod
-    def get_tokens_usage(cls, staff_id, date=None):
-        """Метод для получения использованных токенов для конкретного пользователя за определенную дату."""
-        if date is None:
-            date = timezone.now().date()
+    def get_tokens_usage(cls, staff_id):
+        """
+            Метод для получения использованных токенов для конкретного пользователя за последний месяц
+            (с начала предыдущего месяца до текущего дня включительно).
+        """
+        today = timezone.now().date()
+        first_day_of_current_month = today.replace(day=1)
 
-        tokens = cls.objects.filter(id_staff=staff_id).aggregate(
+        first_day_of_last_month = (first_day_of_current_month - timedelta(days=1)).replace(day=1)
+        tokens = cls.objects.filter(
+            id_staff=staff_id,
+            created_at__date__gte=first_day_of_last_month,
+            created_at__date__lte=today
+        ).aggregate(
             total_survey_tokens=Sum('tokens_survey_used'),
             total_feedback_tokens=Sum('tokens_feedback_used')
         )
+
+        return {
+            'tokens_survey_used': tokens['total_survey_tokens'] or 0,
+            'tokens_feedback_used': tokens['total_feedback_tokens'] or 0,
+        }
+
+    @classmethod
+    def get_tokens_usage_last_two_months(cls, staff_id):  # Переименованный метод
+        """
+            Метод для получения использованных токенов для конкретного пользователя за последний месяц
+            (с начала предыдущего месяца до текущего дня включительно).
+            Используется для ОБЩЕЙ СТАТИСТИКИ использования токенов.
+        """
+        today = timezone.now().date()
+        first_day_of_current_month = today.replace(day=1)
+        first_day_of_last_month = (first_day_of_current_month - timedelta(days=1)).replace(day=1)
+
+        tokens = cls.objects.filter(
+            id_staff=staff_id,
+            created_at__date__gte=first_day_of_last_month,
+            created_at__date__lte=today
+        ).aggregate(
+            total_survey_tokens=Sum('tokens_survey_used'),
+            total_feedback_tokens=Sum('tokens_feedback_used')
+        )
+
         return {
             'tokens_survey_used': tokens['total_survey_tokens'] or 0,
             'tokens_feedback_used': tokens['total_feedback_tokens'] or 0,

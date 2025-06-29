@@ -65,6 +65,28 @@
             </div>
         </div>
     </div>
+
+    <div class="glass-card">
+        <h3 class="card-title">Финансовая статистика</h3>
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="stat-value">{{ total_revenue|floatformat:2 }} р.</div>
+                <div class="stat-label">Общий доход</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">{{ average_check|floatformat:2 }} р.</div>
+                <div class="stat-label">Средний чек</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">{{ payment_conversion|floatformat:1 }}%</div>
+                <div class="stat-label">Конверсия платежей</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">{{ failed_payments_count }}</div>
+                <div class="stat-label">Проваленные платежи</div>
+            </div>
+        </div>
+    </div>
     
     <!-- API Keys Management -->
     <div class="glass-card">
@@ -129,7 +151,6 @@
                         <option value="">Выберите провайдера</option>
                         <option value="openrouter">OpenRouter</option>
                         <option value="azure">Azure</option>
-                        <option value="gemini">Gemini</option>
                     </select>
                     <select name="new_api_key_purpose" class="glass-input" required>
                         <option value="">Выберите назначение</option>

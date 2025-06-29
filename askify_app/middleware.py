@@ -15,10 +15,10 @@ from functools import wraps
 from askify_service.models import Subscription, Payment
 from django.utils import timezone
 
-from askify_service.tracer import TracerManager, TRACER_FILE
+import logging
 
 
-tracer_l = TracerManager(TRACER_FILE)
+tracer_l = logging.getLogger('askify_app')
 
 
 class BlockIPMiddleware:
