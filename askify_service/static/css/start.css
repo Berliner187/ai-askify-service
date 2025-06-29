@@ -192,6 +192,8 @@ img {
     max-width: 1200px;
     margin: 0 auto;
     background: url('../img/bg-subs.webp');
+    background-color: rgba(60, 60, 60, .12);
+    border: 1px solid rgba(255, 255, 255, 0.12);
     border-end-end-radius: 24px;
     border-bottom-left-radius: 24px;
 }
@@ -468,9 +470,9 @@ img {
 
 .pricing-card.glass {
     background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(32px);
     margin: 24px;
     min-width: 320px;
+    backdrop-filter: blur(32px);
     -webkit-backdrop-filter: blur(32px);
     border-radius: 24px;
     padding: 32px;
@@ -894,8 +896,8 @@ img {
     background: rgba(243, 243, 243, 0.12);
     border: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 0 8px 32px rgba(86, 86, 86, 0.2);
-    backdrop-filter: blur(48px) saturate(180%);
-    -webkit-backdrop-filter: blur(48px) saturate(180%);
+    backdrop-filter: blur(48px);
+    -webkit-backdrop-filter: blur(48px);
     border-radius: 24px;
     max-width: 400px;
     width: 100%;
@@ -1115,7 +1117,8 @@ img {
     background: rgba(255, 255, 255, 0.05);
     border-radius: 24px;
     border: 1px solid rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(12px);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
     padding: 2rem;
     margin: 0 auto;
     max-width: 800px;
@@ -1396,17 +1399,25 @@ img {
 }
 
 .neue-btn {
-    background-size: 100%;
-    background-repeat: no-repeat;
+    font-family: 'Namu Pro';
+    background-color: #5A66EB;
     border: none;
-    border-radius: 50%;
-    width: 36px;
-    height: 36px;
+    border-radius: 16px;
+    width: fit-content;
+    padding: 0 16px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     transition: all 0.2s ease;
+    color: #fff;
+}
+
+.neue-btn a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px 4px;
 }
 
 .neue-btn:hover {
@@ -1468,7 +1479,7 @@ img {
   max-width: 480px;
   min-width: 200px;
   width: fit-content;
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--glass-backgroud-color);
   border: 1px solid rgba(255, 213, 24, 0.8);
   border-radius: 20px;
   backdrop-filter: blur(24px) saturate(180%);

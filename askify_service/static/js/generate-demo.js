@@ -101,9 +101,10 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (data.survey_id) {
                 loadTests();
-                const url = `/survey/${data.survey_id}/download`;
-                window.open(url, '_blank');
+                // const url = `/survey/${data.survey_id}/download`;
+                // window.open(url, '_blank');
                 // window.location.href = `/survey/${data.survey_id}/download`;
+                window.location.href = `/c/${data.survey_id}/`;
             } else {
                 throw new Error('Неверный формат ответ')
             }
@@ -166,17 +167,14 @@ function renderTests(tests) {
         const testCard = document.createElement('div');
         testCard.className = 'test-card';
         testCard.style.animationDelay = `${index * 0.15}s`;
-        
+
         testCard.innerHTML = `
             <div class="test-header">
                 <p class="test-title">${test.title || 'Без названия'}</p>
                 <div class="copy-wrapper">
-                    <button class="copy-btn neue-btn" data-content="${test.url_link || ''}">
-                        <i class="fas fa-copy"></i>
+                    <button class="neue-btn" data-content="${test.url_link || ''}">
+                        <a href="/c/${test.survey_id}/">Открыть</p>
                     </button>
-                    <a href="${test.url_link}" class="neue-btn open-new-tab" target="_blank">
-                        <i class="fas fa-external-link-alt"></i>
-                    </a>
                 </div>
             </div>
             <!-- Остальной контент карточки -->

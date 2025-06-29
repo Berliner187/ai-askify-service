@@ -20,3 +20,4 @@ askify_service/tester.py
 blog/.DS_Store
 /askify_service/static/blog_img
 askify_service/static/css/.DS_Store
+/askify_app/__pycache__

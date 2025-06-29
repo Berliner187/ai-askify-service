@@ -44,6 +44,12 @@ class Survey(models.Model):
         return response
 
 
+class SurveyView(models.Model):
+    survey = models.ForeignKey(Survey, on_delete=models.CASCADE, related_name='views')
+    view_hash = models.CharField(max_length=255, db_index=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+
 class UserAnswers(models.Model):
     survey_id = models.UUIDField()
     selected_answer = models.CharField(max_length=255)

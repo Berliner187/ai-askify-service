@@ -68,7 +68,6 @@
 }
 
 .glass-button {
-    background: var(--primary-color);
     color: white;
     border: none;
     border-radius: 16px;
@@ -291,5 +290,118 @@
     
     .table-container {
         overflow-x: auto;
+    }
+}
+
+
+.glass-card {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 24px;
+    padding: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+}
+
+.card-title {
+    margin-bottom: 20px;
+    font-size: 1.5em;
+    text-align: center;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 20px;
+}
+
+.stat-value {
+    font-size: 2em;
+    font-weight: bold;
+}
+
+.stat-label {
+    font-size: 0.9em;
+    opacity: 0.8;
+    margin-top: 5px;
+}
+
+
+/* --- Мобильная адаптация --- */
+@media (max-width: 768px) {
+    .glass-container {
+        gap: 16px;
+        padding: 0 16px;
+    }
+
+    .glass-title {
+        font-size: 24px;
+    }
+
+    .card-title {
+        font-size: 18px;
+    }
+
+    .api-keys-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+    
+    .stat-value {
+        font-size: 20px;
+    }
+
+    .stat-label {
+        font-size: 13px;
+    }
+
+    .input-group {
+        flex-wrap: wrap;
+    }
+
+    .table-container {
+        overflow-x: auto;
+        /* Небольшой хак, чтобы тень от sticky header не перекрывалась */
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .glass-table th {
+      font-size: 13px;
+    }
+    
+    .glass-table td {
+      font-size: 14px;
+    }
+}
+
+/* Маленькие телефоны (до 480px) */
+@media (max-width: 480px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .glass-card {
+        padding: 16px;
+    }
+    
+    .stat-item {
+        padding: 12px;
+    }
+
+    .glass-title {
+        font-size: 20px;
+    }
+    
+    .stat-value {
+        font-size: 18px;
+    }
+
+    .glass-button {
+        padding: 10px 16px;
+        font-size: 15px;
     }
 }

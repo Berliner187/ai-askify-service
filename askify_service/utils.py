@@ -338,13 +338,14 @@ class GenerationModelsControl:
                 return self.__generate_completion(completion, model)
 
             except Exception as fail:
-                tracer_l.tracer_charge('WARNING', '', 'get_generated_feedback_0003',
-                                       f'FAILED to load model. Error: {str(fail)}', fail)
 
                 try:
                     reserve = self.get_feedback_together(text_from_user)
                     return reserve
-                except Exception as fail:
+                except Exception as fail_02:
+                    tracer_l.tracer_charge('WARNING', '', 'get_generated_feedback_0003',
+                                           f'FAILED to load model. Error: {str(fail)}', fail_02)
+
                     return {'success': False, 'message': fail}
 
         return None

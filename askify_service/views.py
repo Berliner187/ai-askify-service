@@ -7,19 +7,14 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, authenticate
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
-from django.contrib import messages
 from asgiref.sync import sync_to_async
-from django.utils import timezone
 from django.views import View
 from django.template.loader import render_to_string
 from django.db.models.signals import post_save
-from django.dispatch import receiver
 from django.http import JsonResponse, HttpResponseBadRequest
 from django.utils.decorators import method_decorator
 # from asgiref.sync import database_sync_to_async
 from django.core import signing
-from datetime import timedelta
-from django.urls import reverse
 from django.core.mail import send_mail
 from django.urls import reverse
 from django.utils.http import urlsafe_base64_encode
@@ -30,9 +25,9 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.http import HttpResponseForbidden
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db.models import Q
-from django.db import transaction, IntegrityError
 from django.utils import timezone
 from django.core.exceptions import ValidationError
+from django.db.models.functions import Length
 
 
 from .utils import *
@@ -62,6 +57,7 @@ import textract
 
 
 from datetime import datetime, timedelta
+import datetime as only_datetime
 import base64
 import asyncio
 import time
@@ -612,7 +608,8 @@ def get_demo_tests(request):
         for survey in surveys:
             tests.append({
                 'title': survey.title,
-                'url_link': f'/survey/{survey.survey_id}/download/'
+                'url_link': f'/survey/{survey.survey_id}/download/',
+                'survey_id': survey.survey_id
             })
         print(tests)
 
@@ -936,10 +933,64 @@ def result_view(request, survey_id):
         'username': request.user.username if request.user.is_authenticated else None,
         'feedback_text': feedback_text,
         'subscription_level': subscription_level,
-        'model_name': f"Сгенерировано при помощи {format_model_name(model_name)}"
+        'model_name': f"Сгенерировано {format_model_name(model_name)}"
     }
 
     return render(request, 'result.html', json_response)
+
+
+def demo_view(request, survey_id):
+    survey = Survey.objects.filter(survey_id=survey_id).first()
+
+    if survey:
+        questions = survey.get_questions()
+        view_count = SurveyView.objects.filter(survey=survey).count()
+
+        json_response = {
+            'page_title': f'{survey.title} | Создать тест с ИИ за считанные секунды в Летучке',
+            'title': survey.title,
+            'survey_id': survey_id,
+            'questions': questions,
+            'username': request.user.username if request.user.is_authenticated else 0,
+            'model_name': f"{'Сгенерировано ' + survey.model_name.upper().replace('O', 'o') if survey.model_name else 'Сгенерировано в Летучке'}",
+            'view_count': view_count,
+        }
+
+        return render(request, 'demo-view.html', json_response)
+
+    context = {
+        'page_title': f'Создать тест с ИИ за считанные секунды в Летучке',
+        'title': 'Создавайте тесты при помощи нейросети | Создать тест в Летучке',
+        'survey_id': survey_id,
+        'username': request.user.username if request.user.is_authenticated else None,
+    }
+
+    return render(request, 'demo-view.html', context)
+
+
+@csrf_exempt
+def register_survey_view(request, survey_id):
+    if request.method == 'POST':
+        try:
+            survey = Survey.objects.get(survey_id=survey_id)
+            data = json.loads(request.body)
+            view_hash = data.get('hash', '')
+
+            # Проверяем существование такого хэша
+            if view_hash and not SurveyView.objects.filter(
+                    survey=survey, view_hash=view_hash
+            ).exists():
+                SurveyView.objects.create(survey=survey, view_hash=view_hash)
+                view_count = SurveyView.objects.filter(survey=survey).count()
+                return JsonResponse({
+                    'success': True,
+                    'new_view': True,
+                    'view_count': view_count
+                })
+            return JsonResponse({'success': True, 'new_view': False})
+        except Survey.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Survey not found'})
+    return JsonResponse({'success': False, 'error': 'Invalid request'})
 
 
 # @login_required
@@ -1284,7 +1335,13 @@ def admin_stats(request):
             start_date = timezone.datetime.strptime(start_date, '%Y-%m-%d')
             end_date = timezone.datetime.strptime(end_date, '%Y-%m-%d') + timezone.timedelta(days=1)
 
-            selected_users = AuthUser.objects.filter(date_joined__range=(start_date, end_date)).count()
+            selected_users = (
+                AuthUser.objects
+                .filter(date_joined__range=(start_date, end_date))
+                .annotate(username_len=Length('username'))
+                .filter(username_len__lte=20)
+                .count()
+            )
             total_surveys = Survey.objects.filter(updated_at__range=(start_date, end_date)).count()
             total_answers = UserAnswers.objects.filter(created_at__range=(start_date, end_date)).count()
             subscriptions = Subscription.objects.filter(start_date__range=(start_date, end_date)).count()
@@ -1312,9 +1369,21 @@ def admin_stats(request):
                     'plan_name': subscription.plan_name,
                     'status': subscription.status,
                     'payment_status': payment.status,
-                    'amount': f'{get_format_number(payment.amount / 100)} руб',
+                    'amount': f'{get_format_number(payment.amount / 100)} руб.',
                     'date': get_formate_date(subscription.start_date),
                 })
+
+        completed_payments = Payment.objects.filter(status='completed')
+
+        total_revenue = completed_payments.aggregate(total=Sum('amount'))['total'] or 0
+        completed_count = completed_payments.count()
+
+        average_check = total_revenue / completed_count if completed_count > 0 else 0
+
+        total_attempts = Payment.objects.count()
+        payment_conversion = (completed_count / total_attempts) * 100 if total_attempts > 0 else 0
+
+        failed_count = Payment.objects.filter(status='failed').count()
 
         context = {
             'username': request.user.username,
@@ -1327,6 +1396,10 @@ def admin_stats(request):
             'count_activities': user_activities_count,
             'selected_subscription': selected_subscription,
             'data': payment_data,
+            'total_revenue': total_revenue,
+            'average_check': average_check,
+            'payment_conversion': payment_conversion,
+            'failed_payments_count': failed_count,
         }
 
         api_keys = APIKey.objects.all().order_by('-created_at')
@@ -1387,7 +1460,8 @@ def activate_api_key(request):
 
 
 MODEL_MAP = {
-    'Survey': ('📝 Опросы', Survey),
+    'Survey': ('📝 Тесты', Survey),
+    'SurveyView': ('📝 SurveyView', SurveyView),
     'UserAnswers': ('📤 Ответы', UserAnswers),
     'AuthUser': ('👥 Пользователи', AuthUser),
     'Subscription': ('💰 Подписки', Subscription),
@@ -1686,18 +1760,8 @@ class PaymentSuccessView(View):
         payment_id = request.GET.get('PaymentId')
         amount = request.GET.get('Amount')
 
-        tracer_l.tracer_charge(
-            'ADMIN', f"{get_username(request)}",
-            'PaymentSuccess',
-            f"PAYMENT INIT\n\n💰CHECK: {success} {error_code}")
-
         if success == 'true' and error_code == '0':
             try:
-                tracer_l.tracer_charge(
-                    'ADMIN', f"{get_username(request)}",
-                    'PaymentSuccess',
-                    f"TRUE 0\n\n💰CHECK: {payment_id} {amount}")
-
                 payment = Payment.objects.get(payment_id=payment_id)
                 subscription = Subscription.objects.get(staff_id=get_staff_id(request))
 
@@ -1714,11 +1778,6 @@ class PaymentSuccessView(View):
                     "Неудача", description_payment, subscription.plan_name, subscription.end_date,
                     payment.payment_id, payment.order_id, payment.amount
                 )
-
-                tracer_l.tracer_charge(
-                    'ADMIN', f"{get_username(request)}",
-                    'PaymentSuccess',
-                    f"💰CHECK: {payment_status} {description_payment}")
 
                 if int(payment.amount) != int(amount):
                     return render(request, 'payments/pay_status.html', error_payment_data)
@@ -1741,6 +1800,7 @@ class PaymentSuccessView(View):
                         {"label": "Сумма", "value": formatted_amount},
                         {"label": "ID платежа", "value": payment.payment_id},
                         {"label": "ID заказа", "value": payment.order_id},
+                        {"label": "Дата покупки", "value": only_datetime.date.today().strftime("%d.%m.%Y")},
                         {"label": "Заканчивается", "value": get_formate_date(subscription.end_date)},
                     ]
 
@@ -1762,11 +1822,6 @@ class PaymentSuccessView(View):
                         amount=int(amount),
                     )
                     new_transaction.save()
-
-                    tracer_l.tracer_charge(
-                        'ADMIN', f"{get_username(request)}",
-                        'PaymentSuccess',
-                        f"💰SUCCESS BUY!\n\n{payment_data}")
 
                     try:
                         message = render_to_string('payments/payment_success_email.html', {
@@ -2504,6 +2559,14 @@ class TelegramAuthView(View):
         except Exception as fail:
             tracer_l.tracer_charge('ERROR', f"{get_client_ip(request)}", 'error in tg auth', fail)
             return JsonResponse({'status': 'error', 'message': 'Internal server error'}, status=500)
+
+
+@check_legal_process
+def available_plans(request):
+    context = {
+        'page_title': 'Выберите оптимальный план подписки'
+    }
+    return render(request, 'askify_service/avaible-plans.html', context)
 
 
 @check_legal_process

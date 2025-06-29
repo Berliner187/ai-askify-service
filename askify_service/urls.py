@@ -10,6 +10,9 @@ urlpatterns = [
     path('survey/<str:survey_id>/', TakeSurvey.as_view(), name='survey'),
     path('result/<str:survey_id>/', result_view, name='result'),
 
+    path('c/<str:survey_id>/', demo_view, name='demo_view'),
+    path('register-view/<str:survey_id>/', register_survey_view, name='register_survey_view'),
+
     path('drop-survey/<str:survey_id>/', drop_survey, name='drop-survey'),
     path('history/', page_history_surveys, name='history'),
     path('load-more-surveys/', load_more_surveys, name='load-more-surveys'),
@@ -34,6 +37,7 @@ urlpatterns = [
 
     path('get_ip/', get_ip, name='get_ip'),
 
+    path('available-plans/', available_plans, name='available_plans'),
     path('payment/', create_payment, name='payment'),
     path('payment/success/', PaymentSuccessView.as_view(), name='payment_success'),
     path('payment/fail/', PaymentSuccessView.as_view(), name='payment_fail'),
