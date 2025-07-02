@@ -55,6 +55,7 @@ import PyPDF2
 from tempfile import NamedTemporaryFile
 import textract
 from bs4 import BeautifulSoup
+import environ
 
 
 from reportlab.lib import colors
@@ -79,6 +80,12 @@ import os
 import re
 import hmac
 import json
+import subprocess
+
+
+env = environ.Env()
+
+environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 
 os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
@@ -2998,24 +3005,37 @@ def password_reset_email(request):
     return render(request, 'confirmed_data/password_message_reset_email.html', context)
 
 
-import subprocess
+DEPLOY_SCRIPT_PATH = "/home/pumba/deploy.sh"
 
 
-def deploy_webhook(request, secret):
-    if secret != settings.DEPLOY_WEBHOOK_SECRET:
-        return HttpResponseForbidden("Permission denied. Wrong secret.")
+def black_ops_launch(request, secret_key):
+    # 1. Проверка секретного ключа
+    if secret_key != settings.SECRET_KEY_DEPLOY:
+        return HttpResponse("Forbidden", status=403)
 
+    # 2. Запуск скрипта в фоновом, НЕЗАВИСИМОМ процессе
+    # subprocess.Popen не блокирует выполнение, Django сразу ответит боту.
+    # Мы не используем nohup, так как systemd/gunicorn и так хорошо изолируют процессы.
+    subprocess.Popen([DEPLOY_SCRIPT_PATH], shell=True,
+                     stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    # 3. Немедленный ответ
+    return JsonResponse({"status": "ok", "message": "Deployment process started."})
+
+
+def health_check(request):
+    # Эта вьюха должна быть максимально легкой и быстрой
+    version = "unknown"
     try:
-        # result = subprocess.run(
-        #     ['/path/to/your/deploy.sh'],
-        #     capture_output=True,
-        #     text=True,
-        #     check=True
-        # )
-        # return HttpResponse(f"<pre>{result.stdout}\n{result.stderr}</pre>")
-        return HttpResponse(f"<pre>TEST deploy_webhook start --- [  OK  ]</pre>")
-    except subprocess.CalledProcessError as e:
-        return HttpResponse(f"<pre>Deployment failed:\n{e.stdout}\n{e.stderr}</pre>", status=500)
+        # Читаем версию из файла, который создает наш deploy.sh
+        with open(os.path.join(settings.BASE_DIR, 'version.txt'), 'r') as f:
+            version = f.read().strip()
+    except FileNotFoundError:
+        version = "not_found"
+    except Exception as e:
+        version = f"error: {e}"
+
+    return JsonResponse({"status": "ok", "version": version})
 
 
 def health_check_view(request):

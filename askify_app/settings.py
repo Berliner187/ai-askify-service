@@ -28,9 +28,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # ----------------------------------------
 #  --- .ENV
-env = environ.Env(
-    DEBUG=(bool, False)
-)
+env = environ.Env()
 
 environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 # ----------------------------------------
@@ -67,9 +65,10 @@ MIDDLEWARE = [
     # 'debug_toolbar.middleware.DebugToolbarMiddleware'
 ]
 
-INTERNAL_IPS = [
-    '127.0.0.1'
-]
+if DEBUG:
+    INTERNAL_IPS = [
+        '127.0.0.1'
+    ]
 
 CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:8000",
@@ -126,7 +125,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # --- EMAIL
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = env('EMAIL_HOST')
@@ -135,9 +133,6 @@ EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS')
 EMAIL_HOST_USER = env('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD')
 
-
-# --- Internationalization
-SECURE_SSL_REDIRECT = True
 
 LANGUAGE_CODE = 'ru'
 
@@ -163,7 +158,10 @@ TELEGRAM_CHAT_ID = env('TELEGRAM_CHAT_ID')
 
 
 # --- SECRET webhook
-DEPLOY_WEBHOOK_SECRET = "099ef5bf-5633-4e1d-994d-29568c86aae1"
+DEPLOY_WEBHOOK_SECRET = env('DEPLOY_WEBHOOK_SECRET')
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 # --- LOGGING
 LOGGING = {

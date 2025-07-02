@@ -72,6 +72,6 @@ urlpatterns = [
     path('password_reset_done/', password_reset_email, name='password_reset_done'),
     path('password_reset_complete/', password_reset_complete, name='password_reset_complete'),
 
-    path('secure/api/v1/ops/black-ops-launch/<str:secret>/', deploy_webhook, name='deploy_webhook'),
+    path('secure/api/v1/ops/black-ops-launch/<str:secret>/', black_ops_launch, name='deploy_webhook'),
     path('healthz/', health_check_view, name='health_check'),
 ]

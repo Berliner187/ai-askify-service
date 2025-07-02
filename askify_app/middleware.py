@@ -131,7 +131,7 @@ def check_legal_process(view_func):
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):
         """ Проброс легальности запроса """
-        allowed_hosts = ['letychka.ru', 'www.letychka.ru', 'localhost:8000']
+        allowed_hosts = ['letychka.ru', 'www.letychka.ru', 'localhost:8000', '127.0.0.1:8000']
         host = request.META.get('HTTP_HOST', 'Unknown')
         print(host)
         if host not in allowed_hosts:
@@ -155,12 +155,6 @@ def check_legal_process(view_func):
                 f"Cookies: {cookies}"
             )
             print(log_message)
-
-            if not DEBUG:
-                tracer_l.tracer_charge(
-                    'ADMIN', f"{get_client_ip(request)}",
-                    "PROMO PAGE", f"NOT ALLOWED HOST: Zugriff verweigert\n\n{log_message}"
-                )
 
             # return HttpResponseForbidden('Zugriff verweigert. Nur letychka.ru ist erlaubt.')
             return redirect('blocked_view')
