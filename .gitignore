@@ -1,11 +1,7 @@
-
 askify_app/config.json
-db.sqlite3
+*.sqlite3
 askify_app/forbidden_words.txt
-logger.csv
 .env
-*.csv
-logger.csv
 /docs
 /backup
 askify_app/settings.py
@@ -15,12 +11,10 @@ askify_service/tester-3.py
 askify_service/tester-4.py
 askify_service/tester.py
 /askify_service/migrations
-*.pyc
 *.md
-blog/.DS_Store
 /askify_service/static/blog_img
 askify_service/static/css/.DS_Store
 /askify_app/__pycache__
-app.log
+*.log
 *.pyc
 /askify_service/migrations
