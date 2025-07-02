@@ -3015,6 +3015,7 @@ def black_ops_launch(request, secret):
     command = f"nohup {DEPLOY_SCRIPT_PATH} > /dev/null 2>&1 &"
 
     subprocess.Popen(command, shell=True)
+    print('Deployment process started')
 
     return JsonResponse({"status": "ok", "message": "Deployment process started."})
 
