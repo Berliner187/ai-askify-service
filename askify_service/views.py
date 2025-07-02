@@ -3009,33 +3009,14 @@ DEPLOY_SCRIPT_PATH = "/home/pumba/deploy.sh"
 
 
 def black_ops_launch(request, secret_key):
-    # 1. Проверка секретного ключа
     if secret_key != settings.SECRET_KEY_DEPLOY:
         return HttpResponse("Forbidden", status=403)
 
-    # 2. Запуск скрипта в фоновом, НЕЗАВИСИМОМ процессе
-    # subprocess.Popen не блокирует выполнение, Django сразу ответит боту.
-    # Мы не используем nohup, так как systemd/gunicorn и так хорошо изолируют процессы.
-    subprocess.Popen([DEPLOY_SCRIPT_PATH], shell=True,
-                     stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    command = f"nohup {DEPLOY_SCRIPT_PATH} > /dev/null 2>&1 &"
 
-    # 3. Немедленный ответ
+    subprocess.Popen(command, shell=True)
+
     return JsonResponse({"status": "ok", "message": "Deployment process started."})
-
-
-def health_check(request):
-    # Эта вьюха должна быть максимально легкой и быстрой
-    version = "unknown"
-    try:
-        # Читаем версию из файла, который создает наш deploy.sh
-        with open(os.path.join(settings.BASE_DIR, 'version.txt'), 'r') as f:
-            version = f.read().strip()
-    except FileNotFoundError:
-        version = "not_found"
-    except Exception as e:
-        version = f"error: {e}"
-
-    return JsonResponse({"status": "ok", "version": version})
 
 
 def health_check_view(request):
