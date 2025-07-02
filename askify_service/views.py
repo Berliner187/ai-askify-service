@@ -3008,8 +3008,8 @@ def password_reset_email(request):
 DEPLOY_SCRIPT_PATH = "/home/pumba/deploy.sh"
 
 
-def black_ops_launch(request, secret_key):
-    if secret_key != settings.SECRET_KEY_DEPLOY:
+def black_ops_launch(request, secret):
+    if secret != settings.SECRET_KEY_DEPLOY:
         return HttpResponse("Forbidden", status=403)
 
     command = f"nohup {DEPLOY_SCRIPT_PATH} > /dev/null 2>&1 &"
