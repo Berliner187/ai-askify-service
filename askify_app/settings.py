@@ -9,29 +9,37 @@ https://docs.djangoproject.com/en/5.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
+import os
 
 from pathlib import Path
 
-from askify_service.utils import *
 
+import environ
+
+
+try:
+    import debug_toolbar
+except:
+    pass
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
+# ----------------------------------------
+#  --- .ENV
+env = environ.Env(
+    DEBUG=(bool, False)
+)
 
-manager_confident_fields = ManageConfidentFields("config.json")
-SECRET_KEY = manager_confident_fields.get_confident_key("secret_key")
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = ['*']
+environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
+# ----------------------------------------
 
 
-# Application definition
+DEBUG = env.bool('DEBUG')
+SECRET_KEY = env('SECRET_KEY')
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS')
+
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -42,7 +50,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'askify_service',
     'askify_app',
-    'corsheaders'
+    'corsheaders',
+    # 'debug_toolbar'
 ]
 
 MIDDLEWARE = [
@@ -54,7 +63,12 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'askify_app.middleware.BlockIPMiddleware',
-    'corsheaders.middleware.CorsMiddleware'
+    'corsheaders.middleware.CorsMiddleware',
+    # 'debug_toolbar.middleware.DebugToolbarMiddleware'
+]
+
+INTERNAL_IPS = [
+    '127.0.0.1'
 ]
 
 CORS_ALLOWED_ORIGINS = [
@@ -65,6 +79,8 @@ CORS_ALLOW_ALL_ORIGINS = True
 
 ROOT_URLCONF = 'askify_app.urls'
 
+
+# --- TEMPLATES
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -84,20 +100,17 @@ TEMPLATES = [
 WSGI_APPLICATION = 'askify_app.wsgi.application'
 
 
-# Database
-# https://docs.djangoproject.com/en/5.1/ref/settings/#databases
-
+# --- DATABASES
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
-# Password validation
-# https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
-
+# --- VALIDATORS
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -113,8 +126,18 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-# Internationalization
-# https://docs.djangoproject.com/en/5.1/topics/i18n/
+
+# --- EMAIL
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = env('EMAIL_HOST')
+EMAIL_PORT = env('EMAIL_PORT')
+EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS')
+EMAIL_HOST_USER = env('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD')
+
+
+# --- Internationalization
+SECURE_SSL_REDIRECT = True
 
 LANGUAGE_CODE = 'ru'
 
@@ -126,18 +149,85 @@ USE_TZ = True
 
 AUTH_USER_MODEL = 'askify_service.AuthUser'
 
-SESSION_COOKIE_AGE = 604800
+SESSION_COOKIE_AGE = 1_209_600
 
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.1/howto/static-files/
-
+# --- STATIC FILES & CONST
 STATIC_URL = '/static/'
 STATIC_ROOT = 'static/'
 
 LOGIN_URL = '/login/'
 
-# Default primary key field type
-# https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
+TELEGRAM_BOT_TOKEN = env('TELEGRAM_BOT_TOKEN')
+TELEGRAM_CHAT_ID = env('TELEGRAM_CHAT_ID')
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# --- SECRET webhook
+DEPLOY_WEBHOOK_SECRET = "099ef5bf-5633-4e1d-994d-29568c86aae1"
+
+# --- LOGGING
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+        'telegram_format': {
+            'format': 'Module: {module}\nFunction: {funcName}\nLine: {lineno}\n\nMessage: {message}',
+            'style': '{',
+        },
+        'colored_console': {
+            'class': 'colorlog.ColoredFormatter',
+            'format': '{log_color}{levelname:<8}{reset} {white}{message}',
+            'log_colors': {
+                'DEBUG':    'cyan',
+                'INFO':     'green',
+                'WARNING':  'yellow',
+                'ERROR':    'red',
+                'CRITICAL': 'bold_red',
+            },
+            'style': '{',
+        },
+    },
+
+    'handlers': {
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'colored_console',
+        },
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': os.path.join(BASE_DIR, 'app.log'),
+            'maxBytes': 5 * 1024 * 1024,
+            'backupCount': 5,
+            'formatter': 'verbose',
+        },
+        'telegram': {
+            'level': 'WARNING',
+            'class': 'askify_service.tracer.TelegramHandler',
+            'formatter': 'telegram_format',
+        },
+    },
+
+    'loggers': {
+        'django': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'askify_app': {
+            'handlers': ['console', 'file', 'telegram'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+    },
+}
