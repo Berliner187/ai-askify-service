@@ -219,6 +219,18 @@ class Subscription(models.Model):
 
         return new_status
 
+    def activate_subscription(self, duration_days, new_plan_name=None):
+        now = timezone.now()
+        if self.status == 'active' and self.end_date > now:
+            self.end_date = self.end_date + timedelta(days=duration_days)
+        else:
+            self.start_date = now
+            self.end_date = now + timedelta(days=duration_days)
+
+        self.status = 'active'
+        if new_plan_name: self.plan_name = new_plan_name
+        self.save(update_fields=['status', 'start_date', 'end_date', 'plan_name'])
+
     def __str__(self):
         return f'Subscription {self.plan_name} for {self.staff_id}'
 
@@ -245,7 +257,7 @@ class AvailableSubscription(models.Model):
             self.amount = 990
             self.expiration_date = timezone.now() + timedelta(days=30)
         elif self.plan_type in ['standard_plan', 'premium_plan']:
-            self.amount = 420 if self.plan_type == 'standard_plan' else 590
+            self.amount = 320 if self.plan_type == 'standard_plan' else 590
             self.expiration_date = timezone.now() + timedelta(days=30)
         elif self.plan_type in ['standard_plan_year', 'premium_plan_year']:
             self.amount = 2640 if self.plan_type == 'standard_plan_year' else 4800

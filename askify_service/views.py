@@ -1,5 +1,3 @@
-import json
-
 from django.contrib.auth.models import User
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -8,19 +6,27 @@ from django.contrib.auth import login, authenticate
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
 from asgiref.sync import sync_to_async
-from django.views import View
-from django.template.loader import render_to_string
 from django.utils.decorators import method_decorator
 from django.core import signing
-from django.core.mail import send_mail
-from django.urls import reverse
 from django.utils.encoding import force_bytes
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
-from django.http import HttpResponseForbidden
+from django.http import HttpResponseForbidden, HttpResponse
 from django.db.models import Q
 from django.db.models.functions import Length
+from django.shortcuts import render, redirect
+from django.views import View
+from django.db import transaction
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.utils import timezone
+from django.urls import reverse
+from django.db.models import F, ExpressionWrapper, DurationField
+from django.db.models.functions import Abs
+
+
+from io import BytesIO
 
 from .utils import *
 from .models import *
@@ -48,6 +54,17 @@ import docx
 import PyPDF2
 from tempfile import NamedTemporaryFile
 import textract
+from bs4 import BeautifulSoup
+
+
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfgen import canvas
+from reportlab.platypus import Paragraph, Spacer, PageBreak, SimpleDocTemplate
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.enums import TA_LEFT, TA_RIGHT
 
 
 from datetime import datetime, timedelta, time
@@ -61,6 +78,7 @@ import random
 import os
 import re
 import hmac
+import json
 
 
 os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
@@ -263,7 +281,7 @@ def drop_survey(request, survey_id):
             survey_user_answers.delete()
             tracer_l.info(f"{request.user.username} [ OK ]")
         except Exception as pass_fail:
-            tracer_l.error(f"{request.user.username} {pass_fail}")
+            tracer_l.info(f"warn: {request.user.username} {pass_fail}")
         return redirect('history')
 
     else:
@@ -482,7 +500,6 @@ class GenerationSurveysView(View):
             plan_name = "default"
             token_limit = 0
             try:
-                # !!! ИСПРАВЛЕНИЕ: Обертываем синхронную ORM-операцию, получаем одну подписку
                 subscription_object = await sync_to_async(Subscription.objects.filter(staff_id=staff_id).first)()
                 if subscription_object:  # Проверяем, что объект подписки найден
                     plan_name = subscription_object.plan_name
@@ -493,10 +510,7 @@ class GenerationSurveysView(View):
             surveys_count = await sync_to_async(Survey.objects.filter(id_staff=staff_id).count)()
             tracer_l.debug(f'{staff_id} --- surveys_count: {surveys_count}')
 
-            # Здесь можно использовать token_limit или surveys_count для логики лимитов
-            # Например, если лимит тестов по умолчанию 1 для незарегистрированных пользователей
-            if surveys_count >= 1 and not request.user.is_authenticated:  # Пример: лимит для неаутентифицированных
-                tracer_l.error(f'{staff_id} --- Лимит исчерпан: code 400 (unauthenticated user)')
+            if surveys_count >= 1 and not request.user.is_authenticated:
                 return JsonResponse(
                     {'error': 'Лимит исчерпан :(\n\nХочешь ещё? Зарегистрируйся, и дадим 10 тестов в подарок.'},
                     status=400)
@@ -611,10 +625,6 @@ def get_demo_tests(request):
         return JsonResponse({'tests': tests})
 
     return JsonResponse({'tests': {}})
-
-
-from django.db.models import F, ExpressionWrapper, DurationField
-from django.db.models.functions import Abs
 
 
 @login_required
@@ -775,7 +785,7 @@ class FileUploadView(View):
 
 
 @method_decorator(login_required, name='dispatch')
-# @method_decorator(subscription_required, name='dispatch')
+@method_decorator(subscription_required, name='dispatch')
 # @method_decorator(sync_to_async, name='dispatch')
 class TakeSurvey(View):
     def post(self, request, survey_id):
@@ -832,7 +842,10 @@ class TakeSurvey(View):
         subscription_check = SubscriptionCheck()
         subs_level = subscription_check.get_subscription_level(subscription.plan_name)
 
-        if (subscription.status == 'active') and (subs_level > 0):
+        status = subscription.check_sub_status()
+        tests_count_limit = get_daily_test_limit(subscription.plan_name) if status == 'active' else 0
+
+        if (status == 'active') and (tests_count_limit > 0):
             generation_models_control = GenerationModelsControl()
             ai_feedback = generation_models_control.get_feedback_001(
                 f"Список вопросов и моих ответов: {user_answers_list}.\n"
@@ -865,14 +878,17 @@ class TakeSurvey(View):
         context = {
             'score': correct_count, 'total': user_answers, 'survey_id': survey_id,
             'subscription_level': get_subscription_level(request),
-            'username': get_username(request)
+            'username': get_username(request),
         }
+
         return render(request, 'result.html', context)
 
     def get(self, request, survey_id):
         survey_id = uuid.UUID(survey_id)
         survey = get_object_or_404(Survey, survey_id=survey_id)
         questions = json.loads(survey.questions)
+
+        subscription = Subscription.objects.get(staff_id=get_staff_id(request))
 
         context = {
             'page_title': f'Прохождение теста – {survey.title}',
@@ -914,6 +930,8 @@ def result_view(request, survey_id):
     subscription_check = SubscriptionCheck()
     subscription_level = subscription_check.get_subscription_level(subscription_db.plan_name)
 
+    status = subscription_db.check_sub_status()
+
     json_response = {
         'page_title': f'Результаты прохождения теста – {survey.title}',
         'title': survey.title,
@@ -926,10 +944,330 @@ def result_view(request, survey_id):
         'username': request.user.username if request.user.is_authenticated else None,
         'feedback_text': feedback_text,
         'subscription_level': subscription_level,
-        'model_name': f"Сгенерировано {format_model_name(model_name)}"
+        'model_name': f"Сгенерировано {format_model_name(model_name)}",
+        'subs_active': True if status == 'active' else False
     }
 
     return render(request, 'result.html', json_response)
+
+
+def download_results_pdf(request, survey_id):
+    try:
+        from django.contrib.staticfiles import finders
+
+        font_path_medium = finders.find('fonts/Merriweather-Medium.ttf')
+        font_path_bold = finders.find('fonts/OpenSans-Bold.ttf')
+        font_signature = finders.find('fonts/Unbounded-Medium.ttf')
+
+        pdfmetrics.registerFont(TTFont('Manrope Medium', font_path_medium))
+        pdfmetrics.registerFont(TTFont('Manrope Bold', font_path_bold))
+        pdfmetrics.registerFont(TTFont('Unbounded Medium', font_signature))
+        logging.info("Шрифты ReportLab успешно зарегистрированы.")
+    except Exception as e:
+        logging.error(
+            f"Ошибка при регистрации шрифтов ReportLab: {e}. Убедитесь, что файлы шрифтов находятся по указанным путям ('fonts/'). PDF может быть нечитаемым.")
+
+    try:
+        survey = Survey.objects.get(survey_id=survey_id)
+        staff_id = get_staff_id(request)
+
+        user_answers_instances = UserAnswers.objects.filter(
+            survey_id=survey_id,
+            id_staff=staff_id
+        ).order_by('created_at')
+
+        if not user_answers_instances.exists():
+            return HttpResponse("Вы не проходили этот тест или ответы не найдены.", status=404)
+
+        last_user_answer_instance = user_answers_instances.last()
+
+        score = sum(answer.scored_points for answer in user_answers_instances)
+
+        original_questions_from_survey = survey.get_questions()
+        total_questions = len(original_questions_from_survey)
+
+        questions_for_pdf = []
+
+        user_answer_data_map = {}
+        for ua_instance in user_answers_instances:
+            try:
+                user_answer_json_data = ua_instance.user_answers
+                if isinstance(user_answer_json_data, str):
+                    user_answer_json_data = json.loads(user_answer_json_data)
+
+                if isinstance(user_answer_json_data, dict):
+                    if 'question' in user_answer_json_data and 'selected_answer' in user_answer_json_data:
+                        user_answer_data_map[user_answer_json_data['question']] = {
+                            'selected_answer': user_answer_json_data.get('selected_answer'),
+                            'is_correct': user_answer_json_data.get('is_correct', False),
+                            'scored_points': ua_instance.scored_points
+                        }
+
+            except (json.JSONDecodeError, TypeError) as e:
+                tracer_l.error(
+                    f"Ошибка парсинга JSON из user_answers для UserAnswers ID {ua_instance.id}: {ua_instance.user_answers} - {e}")
+
+        for i, original_q in enumerate(original_questions_from_survey):
+            q_text = original_q.get('question', f'Вопрос {i + 1} без текста')
+            q_options = original_q.get('options', [])
+            q_correct_answer = original_q.get('correct_answer', 'Нет правильного ответа')
+
+            selected_answer_text = "Нет ответа"
+            is_correct_user_answer = False
+
+            matched_answer_info = user_answer_data_map.get(q_text)
+
+            if matched_answer_info:
+                selected_answer_text = matched_answer_info['selected_answer']
+                is_correct_user_answer = matched_answer_info['is_correct']
+            else:
+                if last_user_answer_instance and isinstance(last_user_answer_instance.user_answers, dict):
+                    question_key_by_index = f'question_{i + 1}'
+                    if question_key_by_index in last_user_answer_instance.user_answers:
+                        selected_answer_text = last_user_answer_instance.user_answers[question_key_by_index]
+                        is_correct_user_answer = (selected_answer_text == q_correct_answer)
+                elif last_user_answer_instance and isinstance(last_user_answer_instance.user_answers, str):
+                    try:
+                        parsed_answers = json.loads(last_user_answer_instance.user_answers)
+                        if isinstance(parsed_answers, dict):
+                            question_key_by_index = f'question_{i + 1}'
+                            if question_key_by_index in parsed_answers:
+                                selected_answer_text = parsed_answers[question_key_by_index]
+                                is_correct_user_answer = (selected_answer_text == q_correct_answer)
+                    except (json.JSONDecodeError, TypeError):
+                        pass
+
+            questions_for_pdf.append({
+                'question_text': q_text,
+                'options': q_options,
+                'correct_answer_text': q_correct_answer,
+                'selected_answer': selected_answer_text,
+                'is_correct_user_answer': is_correct_user_answer,
+            })
+
+        feedback_obj = FeedbackFromAI.objects.filter(survey_id=survey_id).first()
+        story = []
+        model_name_ai = ''
+
+        # --- ИНИЦИАЛИЗАЦИЯ СТИЛЕЙ REPORTLAB ---
+        styles = getSampleStyleSheet()
+
+        styles['Normal'].fontName = 'Manrope Medium'
+        styles['Normal'].fontSize = 10
+        styles['Normal'].leading = 14
+        styles['Normal'].alignment = TA_LEFT
+        styles['Normal'].textColor = colors.black
+
+        styles.add(ParagraphStyle(name='h1_feedback',
+                                  parent=styles['Normal'],
+                                  fontName='Manrope Bold',
+                                  fontSize=16,
+                                  leading=18,
+                                  alignment=TA_LEFT,
+                                  spaceBefore=15,
+                                  spaceAfter=8,
+                                  textColor=colors.black))
+        styles.add(ParagraphStyle(name='h2_feedback',
+                                  parent=styles['Normal'],
+                                  fontName='Manrope Bold',
+                                  fontSize=14,
+                                  leading=16,
+                                  alignment=TA_LEFT,
+                                  spaceBefore=12,
+                                  spaceAfter=6,
+                                  textColor=colors.black))
+        styles.add(ParagraphStyle(name='h3_feedback',
+                                  parent=styles['Normal'],
+                                  fontName='Manrope Bold',
+                                  fontSize=12,
+                                  leading=14,
+                                  alignment=TA_LEFT,
+                                  spaceBefore=10,
+                                  spaceAfter=5,
+                                  textColor=colors.black))
+
+        feedback_text_style = ParagraphStyle('FeedbackTextStyle',
+                                             parent=styles['Normal'],
+                                             fontName='Manrope Medium',
+                                             fontSize=10,
+                                             leading=14,
+                                             spaceAfter=5,
+                                             allowWidows=1,
+                                             allowOrphans=1
+                                             )
+
+        title_style = ParagraphStyle('TitleStyle',
+                                     parent=styles['Normal'],
+                                     fontName='Manrope Bold',
+                                     fontSize=22,
+                                     leading=26,
+                                     alignment=TA_LEFT,
+                                     spaceAfter=15
+                                     )
+        subtitle_style = ParagraphStyle('SubtitleStyle',
+                                        parent=styles['Normal'],
+                                        fontName='Manrope Medium',
+                                        fontSize=10,
+                                        leading=12,
+                                        alignment=TA_LEFT,
+                                        spaceAfter=5
+                                        )
+        score_style = ParagraphStyle('ScoreStyle',
+                                     parent=styles['Normal'],
+                                     fontName='Manrope Bold',
+                                     fontSize=16,
+                                     leading=18,
+                                     alignment=TA_LEFT,
+                                     spaceAfter=25
+                                     )
+
+        question_style = ParagraphStyle('QuestionStyle',
+                                        parent=styles['Normal'],
+                                        fontName='Manrope Bold',
+                                        fontSize=12,
+                                        leading=14,
+                                        spaceBefore=20,
+                                        spaceAfter=8
+                                        )
+        option_header_style = ParagraphStyle('OptionHeaderStyle',
+                                             parent=styles['Normal'],
+                                             fontName='Manrope Medium',
+                                             fontSize=10,
+                                             leading=12,
+                                             spaceAfter=5,
+                                             leftIndent=10
+                                             )
+        option_style_base = ParagraphStyle('OptionStyleBase',
+                                           parent=styles['Normal'],
+                                           fontName='Manrope Medium',
+                                           fontSize=11,
+                                           leading=13,
+                                           leftIndent=20,
+                                           spaceAfter=3,
+                                           textColor=colors.black
+                                           )
+
+        option_style_correct_user = option_style_base
+        option_style_incorrect_user = option_style_base
+        option_style_correct_answer = option_style_base
+        option_style_default = option_style_base
+
+        feedback_header_style = ParagraphStyle('FeedbackHeaderStyle',
+                                               parent=styles['Normal'],
+                                               fontName='Manrope Bold',
+                                               fontSize=14,
+                                               leading=16,
+                                               spaceBefore=30,
+                                               spaceAfter=10
+                                               )
+
+        model_name_style = ParagraphStyle('ModelNameStyle',
+                                          parent=styles['Normal'],
+                                          fontName='Manrope Medium',
+                                          fontSize=8,
+                                          leading=10,
+                                          alignment=TA_RIGHT,
+                                          spaceAfter=20
+                                          )
+
+        footer_style = ParagraphStyle('FooterStyle',
+                                      parent=styles['Normal'],
+                                      fontName='Unbounded Medium',
+                                      fontSize=9,
+                                      alignment=TA_LEFT
+                                      )
+
+        # --- СОЗДАНИЕ ЭЛЕМЕНТОВ PDF В STORY ---
+        story.append(Paragraph(f"Результаты теста: «{survey.title}»", title_style))
+        story.append(Paragraph(f"Пользователь: {get_username(request)}", subtitle_style))
+        story.append(Paragraph(f"Тест пройден: {last_user_answer_instance.created_at.strftime('%d.%m.%Y %H:%M')}",
+                               subtitle_style))
+        story.append(Spacer(1, 10))
+        percent = round((score / total_questions) * 100, 2)
+        story.append(Paragraph(f"Результат: {score} из {total_questions} ({percent}%)", score_style))
+        story.append(Spacer(1, 20))
+
+        # --- Вопросы и ответы ---
+        for i, q_data in enumerate(questions_for_pdf):
+            story.append(Paragraph(f"Вопрос {i + 1}: {q_data['question_text']}", question_style))
+            story.append(Spacer(1, 5))
+            story.append(Paragraph("Варианты ответов:", option_header_style))
+            story.append(Spacer(1, 5))
+
+            for option in q_data['options']:
+                display_option = option
+                if option == q_data['selected_answer']:
+                    if q_data['is_correct_user_answer']:
+                        display_option = f"<b>[+] {display_option}</b> (Ваш верный ответ)"
+                    else:
+                        display_option = f"<b>[x] {display_option}</b> (Ваш неверный ответ)"
+                elif option == q_data['correct_answer_text']:
+                    if option != q_data['selected_answer']:
+                        display_option = f"[*] {display_option} (Правильный ответ)"
+                else:
+                    display_option = f"[ ] {display_option}"
+
+                story.append(Paragraph(display_option, option_style_base))
+                story.append(Spacer(1, 3))
+            story.append(Spacer(1, 15))
+
+        # --- Фидбэк от ИИ ---
+        if feedback_obj:
+            feedback_text_raw = feedback_obj.feedback_data
+            cleaned_feedback_raw = re.sub(r'think\s*', '', feedback_text_raw, flags=re.IGNORECASE).strip()
+            feedback_html = markdown.markdown(cleaned_feedback_raw)
+            soup = BeautifulSoup(feedback_html, 'html.parser')
+
+            story.append(Paragraph("Обратная связь от ИИ:",
+                                   feedback_header_style))  # Исправлено: добавляем Paragraph, а не стиль
+            story.append(Spacer(1, 10))
+
+            for tag in soup.children:
+                if tag.name == 'p':
+                    story.append(Paragraph(str(tag), feedback_text_style))
+                    story.append(Spacer(1, 6))
+                elif tag.name == 'ul' or tag.name == 'ol':
+                    for li in tag.find_all('li'):
+                        story.append(Paragraph(f"• {li.get_text()}", feedback_text_style))
+                        story.append(Spacer(1, 3))
+                    story.append(Spacer(1, 6))
+                elif tag.name == 'h1':
+                    story.append(Paragraph(tag.get_text(), styles['h1_feedback']))
+                    story.append(Spacer(1, 8))
+                elif tag.name == 'h2':
+                    story.append(Paragraph(tag.get_text(), styles['h2_feedback']))
+                    story.append(Spacer(1, 8))
+                elif tag.name == 'h3':
+                    story.append(Paragraph(tag.get_text(), styles['h3_feedback']))
+                    story.append(Spacer(1, 6))
+
+            model_name_ai = f"{'Сгенерировано ' + survey.model_name.upper().replace('O', 'o') if survey.model_name else ''}"
+            story.append(Paragraph(model_name_ai, model_name_style))
+            story.append(Spacer(1, 20))
+
+        # --- Футер ---
+        story.append(Paragraph(f"Сгенерировано в Летучке • {get_year_now()}", footer_style))
+
+        # --- Генерация PDF ---
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A4,
+                                leftMargin=50, rightMargin=50,
+                                topMargin=50, bottomMargin=50)
+
+        doc.build(story)
+        buffer.seek(0)
+
+        response = HttpResponse(buffer, content_type='application/pdf')
+        safe_title = re.sub(r'[^\w\s-]', '', survey.title).strip().replace(' ', '_')
+        response['Content-Disposition'] = f'attachment; filename="letychka_result_{safe_title}.pdf"'
+        return response
+
+    except Survey.DoesNotExist:
+        return HttpResponse("Тест не найден.", status=404)
+    except Exception as e:
+        tracer_l.exception(
+            f"Критическая ошибка при генерации PDF результатов для survey_id={survey_id}, staff_id={staff_id}: {e}")
+        return HttpResponse("Произошла критическая ошибка при генерации PDF. Пожалуйста, попробуйте позже.", status=500)
 
 
 def demo_view(request, survey_id):
@@ -940,7 +1278,7 @@ def demo_view(request, survey_id):
         view_count = SurveyView.objects.filter(survey=survey).count()
 
         json_response = {
-            'page_title': f'{survey.title} | Создать тест с ИИ за считанные секунды в Летучке',
+            'page_title': f'{survey.title} | Генератор тестов с ИИ | Создать тест в Летучке',
             'title': survey.title,
             'survey_id': survey_id,
             'questions': questions,
@@ -952,8 +1290,8 @@ def demo_view(request, survey_id):
         return render(request, 'demo-view.html', json_response)
 
     context = {
-        'page_title': f'Создать тест с ИИ за считанные секунды в Летучке',
-        'title': 'Создавайте тесты при помощи нейросети | Создать тест в Летучке',
+        'page_title': f'Генератор тестов с ИИ | Создать тест в Летучке',
+        'title': 'Создать тест при помощи нейросети | Создать тест в Летучке',
         'survey_id': survey_id,
         'username': request.user.username if request.user.is_authenticated else None,
     }
@@ -1190,9 +1528,6 @@ def vk_auth_callback(request):
             tracer_l.tracer_charge(
                 'ADMIN', request.user.username, vk_auth_callback.__name__, f"Error: {e}")
             return JsonResponse({'success': False, 'error': str(e)})
-
-    tracer_l.tracer_charge(
-        'ADMIN', request.user.username, vk_auth_callback.__name__, "Invalid request method")
 
     return JsonResponse({'success': False, 'error': 'Invalid request method'})
 
@@ -1485,19 +1820,28 @@ def db_search(request):
         return JsonResponse([])
 
     models_to_search = [
-        (Survey, ['survey_id', 'title', 'id_staff']),
-        (AuthUser, ['username', 'email', 'id_staff']),
-        (UserAnswers, ['survey_id', 'id_staff']),
-        (Subscription, ['staff_id', 'plan_name']),
+        (Survey, ['survey_id', 'title', 'description', 'id_staff']),
+        (AuthUser, ['username', 'email', 'first_name', 'last_name', 'id_staff']),
+        (UserAnswers, ['survey_id', 'id_staff', 'user_agent', 'answer_text']),
+        (Subscription, ['staff_id', 'plan_name', 'status', 'start_date', 'end_date']),
+        (Payment, ['user__username', 'amount', 'currency', 'status', 'transaction_id']),
+        (BlogPost, ['title', 'content', 'author__username']),
     ]
 
     results = []
     for model, fields in models_to_search:
         q_objects = Q()
         for field in fields:
-            q_objects |= Q(**{f'{field}__icontains': query})
+            try:
+                if '__' in field:
+                    model._meta.get_field(field.split('__')[0])
+                else:
+                    model._meta.get_field(field)
+                q_objects |= Q(**{f'{field}__icontains': query})
+            except Exception:
+                continue
 
-        for item in model.objects.filter(q_objects)[:10]:
+        for item in model.objects.filter(q_objects)[:5]:
             results.append({
                 'model': model.__name__,
                 'field': ', '.join(fields),
@@ -1505,19 +1849,80 @@ def db_search(request):
                 'source': get_related_info(item)
             })
 
+    results.sort(key=lambda x: x['model'])
     return JsonResponse(results, safe=False)
 
 
-@login_required
 def get_related_info(item):
-    """ Получение связанных данных """
-    if hasattr(item, 'id_staff'):
+    """
+    Получение расширенной связанной информации для элемента.
+    Показывает не только id_staff, но и другие значимые связи.
+    """
+    info_parts = []
+
+    if hasattr(item, 'id_staff') and item.id_staff:
         try:
             user = AuthUser.objects.get(id_staff=item.id_staff)
-            return f"{user.first_name} {user.last_name} ({user.email})"
+            info_parts.append(f"Пользователь: {user.username} ({user.email})")
+            if user.first_name and user.last_name:
+                info_parts.append(f"Имя: {user.first_name} {user.last_name}")
         except AuthUser.DoesNotExist:
-            return "Неизвестный пользователь"
-    return "Нет связанных данных"
+            info_parts.append(f"ID юзера: {item.id_staff} (Не найден)")
+        except Exception as e:
+            pass
+    elif hasattr(item, 'staff_id') and item.staff_id:
+        try:
+            user = AuthUser.objects.get(id=item.staff_id)
+            info_parts.append(f"Пользователь: {user.username} ({user.email})")
+            if user.first_name and user.last_name:
+                info_parts.append(f"Имя: {user.first_name} {user.last_name}")
+        except AuthUser.DoesNotExist:
+            info_parts.append(f"ID юзера: {item.staff_id} (Не найден)")
+        except Exception as e:
+            pass
+
+    if hasattr(item, 'user') and item.user:
+        try:
+            user = item.user
+            info_parts.append(f"Пользователь: {user.username} ({user.email})")
+            if user.first_name and user.last_name:
+                info_parts.append(f"Имя: {user.first_name} {user.last_name}")
+        except Exception as e:
+            info_parts.append(f"Пользователь: Неизвестен")
+
+    if hasattr(item, 'survey_id') and item.survey_id:
+        try:
+            survey = Survey.objects.get(survey_id=item.survey_id)
+            info_parts.append(f"Тест: {survey.title} (ID: {survey.survey_id})")
+        except Survey.DoesNotExist:
+            info_parts.append(f"ID теста: {item.survey_id} (Не найден)")
+        except Exception as e:
+            pass
+
+    if isinstance(item, AuthUser):
+        try:
+            subscriptions = Subscription.objects.filter(staff_id=item.id)
+            if subscriptions.exists():
+                for sub in subscriptions[:2]:
+                    info_parts.append(f"Подписка: {sub.plan_name} (Статус: {sub.status})")
+
+            payments = Payment.objects.filter(user=item)
+            if payments.exists():
+                for pay in payments[:2]:
+                    info_parts.append(f"Платеж: {pay.amount} {pay.currency} (Статус: {pay.status})")
+        except Exception as e:
+            pass
+
+    if hasattr(item, 'blog_post') and item.blog_post:
+        try:
+            info_parts.append(f"К посту: {item.blog_post.title}")
+        except Exception as e:
+            pass
+
+    if not info_parts:
+        return "Нет связанных данных"
+
+    return ", ".join(info_parts)
 
 
 @login_required
@@ -1610,7 +2015,7 @@ class PaymentInitiateView(View):
 
         plan_prices = {
             'Начальный': 0,
-            'Стандартный': 420,
+            'Стандартный': 320,
             'Премиум': 590,
             'Ультра': 990,
             'Стандартный Год': 2640,
@@ -1644,10 +2049,6 @@ class PaymentInitiateView(View):
             {"Password": TERMINAL_PASSWORD}
         ]
 
-        tracer_l.tracer_charge(
-            'ADMIN', f"{get_username(request)}",
-            'PaymentInitiateView',
-            )
         tracer_l.warning(f'{request.user.username}\n\nWANT TO BUY!!!\n\nAmount: {amount}\n'
                          f'About: {description}\nEmail: {email}\nPhone: {phone}')
 
@@ -1685,7 +2086,7 @@ class PaymentInitiateView(View):
             subscription = Subscription.objects.create(
                 staff_id=get_staff_id(request),
                 plan_name=description,
-                end_date=datetime.now() + timedelta(days=30),
+                end_date=datetime.now(),
                 status='inactive',
                 billing_cycle='monthly',
                 discount=0.00
@@ -1770,6 +2171,7 @@ class PaymentSuccessView(View):
                     payment.save()
 
                     subscription.start_date = datetime.now()
+                    subscription.end_date = datetime.now() + timedelta(days=30)
                     subscription.status = 'active'
                     subscription.save()
 
@@ -2469,7 +2871,7 @@ def blog_view(request, slug):
         'title': title,
         'content': content_html,
         'year': get_year_now(),
-        'view_count': f"{view_count_text} • {get_formate_date(post.created_at)}",
+        'view_count': f"{view_count_text} • {post.created_at.strftime('%d.%m')}",
         'article_url': f"media/{slug}"
     }
 
@@ -2594,3 +2996,34 @@ def password_reset_email(request):
         'page_title': 'Сброс пароля'
     }
     return render(request, 'confirmed_data/password_message_reset_email.html', context)
+
+
+import subprocess
+
+
+def deploy_webhook(request, secret):
+    if secret != settings.DEPLOY_WEBHOOK_SECRET:
+        return HttpResponseForbidden("Permission denied. Wrong secret.")
+
+    try:
+        # result = subprocess.run(
+        #     ['/path/to/your/deploy.sh'],
+        #     capture_output=True,
+        #     text=True,
+        #     check=True
+        # )
+        # return HttpResponse(f"<pre>{result.stdout}\n{result.stderr}</pre>")
+        return HttpResponse(f"<pre>TEST deploy_webhook start --- [  OK  ]</pre>")
+    except subprocess.CalledProcessError as e:
+        return HttpResponse(f"<pre>Deployment failed:\n{e.stdout}\n{e.stderr}</pre>", status=500)
+
+
+def health_check_view(request):
+    version_file_path = os.path.join(settings.BASE_DIR, 'VERSION.txt')
+    try:
+        with open(version_file_path, 'r') as f:
+            version = f.read().strip()
+    except FileNotFoundError:
+        version = 'unknown'
+
+    return JsonResponse({'status': 'ok', 'version': version})

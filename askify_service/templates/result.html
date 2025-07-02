@@ -26,15 +26,6 @@
                     </a>
                 </div>
 
-                 <div class="button-medium">
-                    <a href="{% url 'demo_view' survey_id %}">
-                        <div>
-                            <p>Посмотреть ответы</p>
-                            <img src="{% static 'img/icon-answer.png' %}" alt="">
-                        </div>
-                    </a>
-                </div>
-
                 <div class="button-medium">
                     <a href="{% url 'create' %}">
                         <div>
@@ -59,82 +50,129 @@
                     </div>
                     
                     <div class="container-buttons">
-                        <div class="button-medium button-accent">
-                            <a href="{% url 'survey' survey_id=survey_id %}">
-                                <div>
-                                    <img src="{% static 'img/icon-retry.png' %}" alt="">
-                                    <p>Пройти заново</p>
-                                </div>
-                            </a> 
-                        </div>
-
-                        <div class="button-medium">
-                            <a href="{% url 'download-survey_pdf' survey_id=survey_id %}">
-                                <div>
-                                    <p>Скачать в PDF</p>
-                                    <img src="{% static 'img/icon-download.png' %}" alt="Icon download in PDF">
-                                </div>
-                            </a> 
-                        </div>
-
+                        <a class="button-medium button-accent" href="{% url 'survey' survey_id=survey_id %}">
+                            <div>
+                                <img src="{% static 'img/icon-retry.png' %}" alt="">
+                                <p>Пройти заново</p>
+                            </div>
+                        </a> 
+                        <a class="button-medium" href="{% url 'demo_view' survey_id %}">
+                            <div>
+                                <p>Посмотреть ответы</p>
+                                <img src="{% static 'img/icon-answer.png' %}" alt="">
+                            </div>
+                        </a>
                     </div>
+
                 {% else %}
-                <div class="container-buttons">
-                    <div class="button-medium button-accent">
-                        <a href="{% url 'survey' survey_id=survey_id %}">
+
+                    <div class="container-buttons">
+                        <a class="button-medium button-accent" href="{% url 'survey' survey_id=survey_id %}">
                             <div>
                                 <p>Пройти тест</p>
                             </div>
                         </a> 
-                    </div>
 
-                    <div class="button-medium">
-                        <a href="{% url 'download-survey_pdf' survey_id=survey_id %}">
-                            <div>
-                                <p>Скачать в PDF</p>
-                                <img src="{% static 'img/icon-download.png' %}" alt="Icon download in PDF">
-                            </div>
-                        </a> 
-                    </div>
+                        {% if subs_active == False %}
 
-                </div>
+                            <a class="button-medium button-accent" href="{% url 'payment' %}">
+                                <div>
+                                    <p>Посмотреть ответы</p>
+                                    <img src="{% static 'img/icon-locked.png' %}" alt="">
+                                </div>
+                            </a>
+
+                        {% else %}
+
+                            {% if subscription_level < 1 %}
+                                <a class="button-medium" href="{% url 'payment' %}">
+                                    <div>
+                                        <p>Посмотреть ответы</p>
+                                        <img src="{% static 'img/icon-locked.png' %}" alt="">
+                                    </div>
+                                </a>
+                            {% else %}
+                                <a class="button-medium button-accent" href="{% url 'demo_view' survey_id %}">
+                                    <div>
+                                        <p>Посмотреть ответы</p>
+                                        <img src="{% static 'img/icon-answer.png' %}" alt="">
+                                    </div>
+                                </a>
+                            {% endif %}
+
+                        {% endif %}
+
+                    </div>
                 {% endif %}
+
+                <hr>
+
+                <div class="buttons-around">
+                    <a class="button-medium" href="{% url 'download-survey_pdf' survey_id=survey_id %}">
+                        <div>
+                            <p>Скачать тест</p>
+                            <img src="{% static 'img/icon-download.png' %}" alt="Иконка загрузки PDF">
+                        </div>
+                    </a> 
+                    <button class="button-medium" id="copyShareLink" data-content="/c/{{survey_id}}">
+                        <div>
+                            <img src="{% static 'img/icon-share.png' %}" alt="Иконка поделиться">
+                        </div>
+                    </button>
+
+                    {% if total > 0 %}
+                    <a class="button-medium" href="{% url 'download-results_pdf' survey_id=survey_id %}">
+                        <div>
+                            <img src="{% static 'img/icon-download-pdf.png' %}" alt="Icon download results in PDF">
+                        </div>
+                    </a>
+                    {% endif %}
+                </div>
                 
             </div>
 
         </div>
+        
+        <div class="copy-notification">Ссылка скопирована</div>
 
         <div>
             {% if total > 0 %}
 
-                {% if subscription_level < 1 %}
+                {% if subscription_level < 2 %}
+
                     <div class="container subscription-offer">
-                        <h2>🎁 Получите больше с Премиумом!</h2>
-                        <p>Премиум открывает доступ к индивидуальным рекоммендациям от ИИ.<br>
-                            Получайте обратную связь от ИИ, чтобы быть в курсе своего текущего уровня знаний.<br><br>
-                            <strong>Не упустите шанс улучшить свой опыт!</strong><br>
-                        </p>
+                        <h2>🎁 Откройте для себя максимум возможностей</h2>
+                        <p>Мы хотим, чтобы ваша подготовка к экзаменам была максимально эффективной. С Премиумом Вы получите:</p>
+                        <ul>
+                            <li><b>Получайте мгновенный фидбэк от ИИ.</b> Узнайте о своих слабых и сильных сторонах сразу после прохождения теста, даже на бесплатном плане!</li>
+                            <li><b>Просматривайте ответы до прохождения теста.</b> Экономьте время и закрепляйте материал, просматривая правильные решения в любой момент.</li>
+                            <li><b>Загрузка любых файлов (PDF, DOCX и другие).</b> Больше никаких ограничений! Создавайте тесты из любых ваших конспектов и материалов, независимо от формата.</li>
+                            <li><b>Экспорт результатов прохождения в PDF.</b> Экспортируйте результаты в PDF, делитесь с другими, чтобы отслеживать свой прогресс.</li>
+                        </ul>
+                        <p style="text-align: center;"><b>Не упустите шанс учиться по-новому</b></p>
                         <div class="container-buttons">
                             <div class="button-medium button-accent">
                                 <a href="{% url 'payment' %}">
                                     <div>
-                                        <p>Оформить доступ</p>
+                                        <p>💎  Перейти на Премиум  💎</p>
                                     </div>
                                 </a>
                             </div>
                         </div>
                     </div>
-                {% else %}
-                    <div class="container result-full feedback-container">
-                        <h2>Рекомендации</h2>
-                        {{ feedback_text|safe }}
-                        <hr>
-                        <p class="hint">{{ model_name }}</p>
-                    </div>
+                    
                 {% endif %}
             
+            <div class="container result-full feedback-container">
+                <h2>Рекомендации</h2>
+                {{ feedback_text|safe }}
+                <hr>
+                <p class="hint">{{ model_name }}</p>
+            </div>
+              
             <div class="container result-full">
                 <h2>Результаты теста</h2>
+                
                 <div class="questions-container">
                     {% for question in questions %}
                         <div class="question-item">
@@ -157,17 +195,16 @@
                 </div>
                 
                 <div class="result-summary">
-                    <p>Вы ответили правильно на <span class="result-score">{{ score }}</span> из <span class="result-total">{{ total }}</span> вопросов.</p>
+                    <p>Вы верно ответили на <span class="result-score">{{ score }}</span> из <span class="result-total">{{ total }}</span> вопросов.</p>
                 </div>
+                
                 <div class="head-button">
-                    <div class="button-medium">
-                        <a href="{% url 'download-survey_pdf' survey_id=survey_id %}">
-                            <div>
-                                <p>Скачать в PDF</p>
-                                <img src="{% static 'img/icon-file.png' %}" alt="Icon download in PDF">
-                            </div>
-                        </a> 
-                    </div>
+                    <a class="button-medium" href="{% url 'download-results_pdf' survey_id=survey_id %}">
+                        <div>
+                            <p>Экспортировать</p>
+                            <img src="{% static 'img/icon-download-pdf.png' %}" alt="Icon download results in PDF">
+                        </div>
+                    </a>
                     <div class="button-medium button-red">
                         <a href="{% url 'drop-survey' survey_id=survey_id %}">
                             <div>
@@ -177,8 +214,11 @@
                         </a> 
                     </div>
                 </div>
+
             </div>
-            {% endif %}
+        
+        {% endif %}
+        
         </div>
         {% include 'ui_components/bottom_menu.html' %}
 
@@ -211,6 +251,47 @@
                 container.classList.add('show');
             }, 1000);
         });
+
+        const copyButton = document.getElementById('copyShareLink');
+        const notification = document.querySelector('.copy-notification');
+
+        if (copyButton && notification) {
+            copyButton.addEventListener('click', async () => {
+                const relativePath = copyButton.getAttribute('data-content');
+                const fullLink = `${window.location.origin}${relativePath.startsWith('/') ? '' : '/'}${relativePath}`;
+                
+                try {
+                    await copyToClipboard(fullLink);
+                    notification.classList.add('show');
+                    setTimeout(() => {
+                        notification.classList.remove('show');
+                    }, 3000);
+                } catch (err) {
+                    console.error('Не удалось скопировать ссылку: ', err);
+                }
+            });
+        }
+
+        // Вспомогательная функция для копирования в буфер обмена
+        function copyToClipboard(text) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                return navigator.clipboard.writeText(text);
+            } else {
+                // Fallback для старых браузеров
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                textArea.style.position = "fixed"; // Избегаем прокрутки
+                textArea.style.left = "-999999px";
+                textArea.style.top = "-999999px";
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                return new Promise((res, rej) => {
+                    document.execCommand('copy') ? res() : rej();
+                    textArea.remove();
+                });
+            }
+        }
     </script>
 
     <script>

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <title>Успешная оплата</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #f5f7fa;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 40px auto;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background-color: #4CAF50;
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .content h2 {
+            margin-top: 0;
+            color: #333;
+        }
+
+        .details {
+            margin-top: 20px;
+        }
+
+        .details p {
+            margin: 6px 0;
+            font-size: 15px;
+            color: #444;
+        }
+
+        .btn {
+            display: inline-block;
+            margin-top: 25px;
+            padding: 12px 24px;
+            background-color: #4CAF50;
+            color: white !important;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+
+        .footer {
+            background: #f0f0f0;
+            padding: 20px;
+            text-align: center;
+            font-size: 13px;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>✅ Платёж прошёл успешно</h1>
+    </div>
+    <div class="content">
+        <h2>Спасибо за покупку!</h2>
+        <p>Ваш тариф <strong>{{ plan_name }}</strong> активирован.</p>
+
+        <div class="details">
+            <p><strong>Сумма:</strong> {{ amount }} ₽</p>
+            <p><strong>ID платежа:</strong> {{ payment_id }}</p>
+            <p><strong>ID заказа:</strong> {{ order_id }}</p>
+            <p><strong>Дата окончания:</strong> {{ end_date }}</p>
+        </div>
+
+        <a href="{{ next_url }}" class="btn">Перейти в сервис</a>
+    </div>
+    <div class="footer">
+        Это письмо отправлено автоматически. Если Вы не совершали покупку, просто проигнорируйте его.
+    </div>
+</div>
+</body>
+</html>

@@ -14,7 +14,7 @@
 
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://letychka.ru">
-    <meta property="og:image" content="https://letychka.ru/static/img/letychka-banner-1703.webp">
+    <meta property="og:image" content="https://letychka.ru/static/letychka-banner-1703.webp">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta name="twitter:card" content="https://letychka.ru/static/letychka-banner-1703.webp"/>
@@ -28,7 +28,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="{% static 'img/apple-touch-icon.png' %}">
     <link rel="shortcut icon" href="{% static 'img/favicon.ico' %}" type="image/ico">
     <link rel="stylesheet" href="{% static 'css/themes-carusel.css' %}?v=1.2">
-    <link rel="stylesheet" href="{% static 'css/start.css' %}?v=3.14">
+    <link rel="stylesheet" href="{% static 'css/start.css' %}?v=3.16">
     <link rel="stylesheet" href="{% static 'css/second-loader.css' %}">
     <link rel="stylesheet" href="{% static 'css/footer.css' %}">
 
@@ -508,9 +508,9 @@
             <h3 class="plan-title">Старт</h3>
             <div class="plan-price">0 ₽</div>
             <ul class="plan-features">
-                <li>20 бесплатных тестов</li>
+                <li>10 бесплатных тестов</li>
                 <li>PDF с водяными знаками</li>
-                <li>Лёгкий старт для пробы</li>
+                <li>Обратная связь от ИИ по результатам</li>
             </ul>
             <a href="/login" class="cta-button ghost">Попробовать</a>
             </div>
@@ -519,13 +519,14 @@
             <div class="pricing-card glass popular">
             <div class="badge">Рекомендуем</div>
             <h3 class="plan-title">Стандарт</h3>
-            <div class="plan-price">420 ₽ / мес</div>
+            <div class="plan-price">320 ₽ / мес</div>
             <ul class="plan-features">
                 <li>50 тестов в день</li>
                 <li>PDF без водяных знаков</li>
-                <li>Персональные рекомендации по результатам</li>
+                <li>Обратная связь от ИИ по результатам</li>
+                <li>Экспорт результатов о прохождении в PDF</li>
             </ul>
-            <a href="/available-plans/" class="cta-button primary">Купить</a>
+            <a href="/payment/" class="cta-button primary">Купить</a>
             </div>
 
             <!-- Premium Plan -->
@@ -535,15 +536,17 @@
             <div class="plan-price">590 ₽ / мес</div>
             <ul class="plan-features">
                 <li>150 тестов в день</li>
+                <li>Чистый PDF без водяных знаков</li>
+                <li>Обратная связь от ИИ по результатам</li>
                 <li>Загружайте pdf, doc, docx с материалами</li>
-                <li>Улучшенная обратная связь от нейросети</li>
+                <li>Экспорт результатов о прохождении в PDF</li>
             </ul>
-            <a href="/available-plans/" class="cta-button primary">Купить</a>
+            <a href="/payment/" class="cta-button primary">Купить</a>
             </div>
         </div>
 
         <!-- Годовые планы -->
-        <div class="pricing-grid yearly">
+        <!-- <div class="pricing-grid yearly">
             <div class="pricing-card glass">
             <div class="badge accent">–37%</div>
             <h3 class="plan-title">Стандарт / Год</h3>
@@ -569,7 +572,7 @@
             </ul>
             <a href="/available-plans/" class="cta-button primary">Купить</a>
             </div>
-        </div>
+        </div> -->
     </section>
 
 

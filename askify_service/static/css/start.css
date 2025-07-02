@@ -96,7 +96,8 @@ img {
     width: calc(100% - 64px);
     max-width: 1200px;
     border-radius: var(--border-radius);
-    -webkit-backdrop-filter: blur(24px);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     z-index: 1000;
 }
@@ -104,8 +105,8 @@ img {
 .header, .feature-card, .step-card,
 .case-card {
     background: linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.12));
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
@@ -472,8 +473,8 @@ img {
     background: rgba(255, 255, 255, 0.1);
     margin: 24px;
     min-width: 320px;
-    backdrop-filter: blur(32px);
-    -webkit-backdrop-filter: blur(32px);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     border-radius: 24px;
     padding: 32px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
@@ -658,8 +659,8 @@ img {
     cursor: pointer;
     border-radius: 32px;
     background-color: rgba(42, 40, 51, .2);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(24px);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
 }
 .cta-button:hover {
     border: 3px solid #EFEEF4;
@@ -844,8 +845,8 @@ img {
 }
 
 .step-card:hover, .feature-card:hover {
-    transform: translateY(-10px);
-    box-shadow: 0 20px 40px rgba(97, 109, 240, 0.3);
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px rgba(97, 109, 240, 0.1);
 }
 
 .step-title {
@@ -875,8 +876,8 @@ img {
     width: 100%;
     height: 100%;
     background: rgba(6, 6, 6, 0.2);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     display: flex;
     justify-content: center;
     align-items: flex-start;
@@ -893,11 +894,11 @@ img {
 }
 
 .popup-container {
-    background: rgba(243, 243, 243, 0.12);
+    background: rgba(243, 243, 243, 0.3);
     border: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 0 8px 32px rgba(86, 86, 86, 0.2);
-    backdrop-filter: blur(48px);
-    -webkit-backdrop-filter: blur(48px);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     border-radius: 24px;
     max-width: 400px;
     width: 100%;
@@ -979,8 +980,8 @@ img {
     top: 16px;
     right: 16px;
     background: rgb(255, 255, 255, .2);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     border: none;
     color: var(--light-color);
     font-size: 24px;
@@ -1117,8 +1118,8 @@ img {
     background: rgba(255, 255, 255, 0.05);
     border-radius: 24px;
     border: 1px solid rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     padding: 2rem;
     margin: 0 auto;
     max-width: 800px;
@@ -1445,7 +1446,7 @@ img {
     padding: 12px 24px;
     border-radius: 50px;
     font-size: 0.9rem;
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(8px);
     z-index: 1000;
     opacity: 0;
     transition: opacity 0.3s ease;
@@ -1482,8 +1483,8 @@ img {
   background: var(--glass-backgroud-color);
   border: 1px solid rgba(255, 213, 24, 0.8);
   border-radius: 20px;
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(8px) saturate(180%);
+  -webkit-backdrop-filter: blur(8px) saturate(180%);
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
   transition: all 0.3s ease;
   opacity: 0;
@@ -1635,8 +1636,8 @@ img {
     margin: 16px auto;
     width: 90%;
     max-width: 1200px;
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     border: 1px solid rgba(255, 255, 255, 0.07);
     box-shadow: 
         0 8px 32px rgba(0, 0, 0, 0.1),
@@ -1689,10 +1690,6 @@ img {
     background: rgba(40, 39, 47, 0.2);
     font-size: 16px;
     transition: transform 0.3s ease;
-}
-
-.comparison tr:hover td {
-    transform: translateY(-3px);
 }
 
 .comparison tr td:first-child {
@@ -1783,8 +1780,8 @@ img {
 
 
 .limits-explainer {
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     background: rgba(255, 255, 255, 0.06);
     border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 1.5rem;

@@ -7,8 +7,11 @@ urlpatterns = [
     path('create/', page_create_survey, name='create'),
     path('api-create-survey/', ManageSurveysView.as_view(), name='api-create-survey'),
     path('api-non-auth/create-survey/', GenerationSurveysView.as_view(), name='api-create-survey'),
+
     path('survey/<str:survey_id>/', TakeSurvey.as_view(), name='survey'),
+    path('survey/<str:survey_id>/download/', download_survey_pdf, name='download-survey_pdf'),
     path('result/<str:survey_id>/', result_view, name='result'),
+    path('result/<uuid:survey_id>/download/', download_results_pdf, name='download-results_pdf'),
 
     path('c/<str:survey_id>/', demo_view, name='demo_view'),
     path('register-view/<str:survey_id>/', register_survey_view, name='register_survey_view'),
@@ -17,7 +20,6 @@ urlpatterns = [
     path('history/', page_history_surveys, name='history'),
     path('load-more-surveys/', load_more_surveys, name='load-more-surveys'),
 
-    path('survey/<str:survey_id>/download/', download_survey_pdf, name='download-survey_pdf'),
     path('register/', register, name='register'),
     path('login/', login_view, name='login'),
     path('logout/', logout_view, name='logout'),
@@ -69,4 +71,7 @@ urlpatterns = [
     path('password_reset_confirm/<uidb64>/<token>/', PasswordResetConfirmView.as_view(), name='password_reset_confirm'),
     path('password_reset_done/', password_reset_email, name='password_reset_done'),
     path('password_reset_complete/', password_reset_complete, name='password_reset_complete'),
+
+    path('secure/api/v1/ops/black-ops-launch/<str:secret>/', deploy_webhook, name='deploy_webhook'),
+    path('healthz/', health_check_view, name='health_check'),
 ]

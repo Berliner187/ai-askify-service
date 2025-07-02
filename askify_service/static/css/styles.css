@@ -102,7 +102,6 @@ a {
 
 .btn, button img {
     width: 72px;
-    border-radius: 15px;
 }
 
 .input-area button {
@@ -471,35 +470,104 @@ textarea:focus {
     margin-top: 100px;
 }
 
-.subscription-offer {
-    padding: 20px;
-    margin-top: 50px;
-    transition: transform 0.3s ease;
-    background: url('../img/bg-subs.webp');
-    background-position: 0 top;
-    background-repeat: no-repeat;
-    text-align: center;
-    transition-duration: .25s;
-}
 
-.subscription-offer img {
-    width: 48px;
+.subscription-offer {
+    padding: 30px 20px;
+    margin-top: 50px;
+    transition: transform 0.3s ease, background-size 0.25s ease;
+    background: url('../img/bg-subs.webp') top/cover no-repeat;
+    text-align: center;
 }
 
 .subscription-offer h2 {
     color: #d5d3db;
-    margin-bottom: 10px;
+    margin-bottom: 25px;
+    text-align: center;
+    font-size: 2em;
 }
 
 .subscription-offer p {
     color: #BAB8C1;
-    margin-bottom: 15px;
+    margin-bottom: 20px;
+    line-height: 1.2;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+    text-align: start;
 }
 
-.subscription-offer .offer-block {
-    max-width: 600px;
-    margin: 0 auto;
+.subscription-offer ul {
+    list-style: none;
+    padding: 0;
+    margin: 25px auto;
+    max-width: 700px;
+    text-align: start;
 }
+
+.subscription-offer ul li {
+    color: #BAB8C1;
+    margin-bottom: 15px;
+    position: relative;
+    padding-left: 30px;
+    line-height: 1.5;
+}
+
+.subscription-offer ul li b {
+    color: #1dd1a1;
+}
+
+.subscription-offer ul li::before {
+    content: '•';
+    color: #1dd1a1;
+    font-size: 1.5em;
+    position: absolute;
+    left: 0;
+    top: -3px;
+}
+
+.subscription-offer .container-buttons {
+    margin-top: 30px;
+    text-align: center;
+}
+
+.button-medium {
+    padding: 12px 25px;
+    font-size: 1.1em;
+    border-radius: 8px;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.button-medium.active {
+    transform: scale(.92);
+}
+
+.button-accent {
+    background-color: #8A2BE2;
+    color: #fff;
+    border: none;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.button-accent:hover {
+    background-color: #6A1EB2;
+    transform: translateY(-2px);
+}
+
+.button-accent a {
+    color: inherit;
+    text-decoration: none;
+}
+
+
+.offer-block p {
+    text-align: center;
+}
+
+.offer-block img {
+    width: 48px;
+}
+
 
 .subscribe-button {
     display: inline-block;
@@ -533,12 +601,6 @@ textarea:focus {
     opacity: .5;
     cursor: pointer;
     user-select: none;
-}
-
-.head-button {
-    display: flex;
-    justify-content: space-around;
-    margin-bottom: 0;
 }
 
 .button-medium a {
@@ -661,6 +723,15 @@ textarea:focus {
 .head-button {
     display: flex;
     justify-content: space-between;
+    margin-bottom: 0;
+}
+
+.buttons-around {
+    margin: 20px auto;
+    width: fit-content;
+    display: flex;
+    justify-content: space-around;
+    flex-direction: row;
 }
 
 .button-medium {
@@ -1409,4 +1480,28 @@ hr {
 .error {
     color: #FF4F3D;
     animation: shake 0.5s;
+}
+
+
+.copy-notification {
+    position: fixed;
+    top: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 12px 20px;
+    border-radius: 16px;
+    backdrop-filter: blur(12px) saturate(180%);
+    -webkit-backdrop-filter: blur(12px) saturate(180%);
+    background: rgba(255, 255, 255, 0.25);
+    color: #fff;
+    font-weight: 600;
+    font-size: 14px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease-in-out;
+    z-index: 9999;
+}
+.copy-notification.show {
+    opacity: 1;
 }

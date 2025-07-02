@@ -16,7 +16,7 @@ subscriptionOptions.forEach(option => {
 
         switch (selectedPlan) {
             case 'standard':
-                price = 420;
+                price = 320;
                 description = 'Стандартный';
                 sub_description = 'Доступ на 30 дней за ' + price + ' руб';
                 break;
