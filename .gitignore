@@ -16,5 +16,7 @@ askify_service/tester.py
 askify_service/static/css/.DS_Store
 /askify_app/__pycache__
 *.log
-*.pyc
 /askify_service/migrations
+*.txt
+*.pyc
+*.DS_Store

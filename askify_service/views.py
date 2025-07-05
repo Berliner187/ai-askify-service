@@ -2840,7 +2840,7 @@ class TelegramAuthView(View):
 @check_legal_process
 def available_plans(request):
     context = {
-        'page_title': 'Выберите оптимальный план подписки'
+        'page_title': 'Выберите оптимальный план подписки | Летучка — создать тест онлайн бесплатно'
     }
     return render(request, 'askify_service/avaible-plans.html', context)
 

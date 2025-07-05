@@ -3,9 +3,30 @@
 <head>
     {% load static %}
     {% include 'components/meta_tags.html' %}
+    <meta name="description" content="Создание тестов онлайн. Подберите подходящий тариф: Автоматизируйте создание тестов и начните экономить до 10 часов в неделю уже сегодня">
+    <meta name="keywords" content="создать тест онлайн, создание тестов онлайн, генератор теста, составление тестов онлайн для студентов, тест создать, создать тест онлайн с результатами бесплатно, создать тест онлайн бесплатно">
     <link rel="shortcut icon" href="{% static 'img/logo.png' %}" type="image/png">
     <link rel="stylesheet" href="{% static 'css/start.css' %}?v=1.0">
     <link rel="stylesheet" href="{% static 'css/footer.css' %}">
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebPage",
+        "name": "Тарифы — Летучка",
+        "url": "https://letychka.ru/available-plans/",
+        "description": "Автоматическое создание тестов онлайн. Выберите тариф и экономьте до 10 часов в неделю. Начните бесплатно прямо сейчас.",
+        "mainEntity": {
+            "@type": "Product",
+            "name": "Летучка — генератор тестов онлайн",
+            "offers": {
+            "@type": "Offer",
+            "priceCurrency": "RUB",
+            "price": "0",
+            "availability": "https://schema.org/InStock"
+            }
+        }
+    }
+    </script>
 </head>
 
 <body class="bg-body">
@@ -34,9 +55,9 @@
     
     <div class="ios-pricing-container">
         <div class="pricing-header">
-            <h1 class="pricing-title">Выберите свой идеальный план</h1>
-            <p class="pricing-subtitle">92% пользователей экономят 10+ часов в неделю с нашими тарифами</p>
-            
+            <h1 class="pricing-title">Создать тест онлайн — проще с правильным тарифом</h1>
+            <p class="pricing-subtitle">Автоматизируйте создание тестов и начните экономить до 10 часов в неделю уже сегодня</p>
+
             <div class="toggle-container">
                 <span class="toggle-label">Ежемесячно</span>
                 <label class="ios-toggle">
@@ -56,80 +77,98 @@
                     <span class="price">320₽</span>
                     <span class="period">/ месяц</span>
                 </div>
-                <div class="annual-price">2640₽ за год (экономия 37%)</div>
+                <div class="annual-price">2 640₽ за год (экономия 37%)</div>
                 
                 <ul class="features-list">
                     <li class="feature-item">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                             <path d="M9 16.17L4.83 12L3.41 13.41L9 19L21 7L19.59 5.59L9 16.17Z" fill="#34C759"/>
                         </svg>
-                        <span>50 тестов в день</span>
+                        <span>Создавайте до 50 тестов в день</span>
                     </li>
                     <li class="feature-item">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                             <path d="M9 16.17L4.83 12L3.41 13.41L9 19L21 7L19.59 5.59L9 16.17Z" fill="#34C759"/>
                         </svg>
-                        <span>Скачивание в PDF</span>
+                        <span>Скачивание в PDF для печати без водяных знаков</span>
                     </li>
                     <li class="feature-item">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                             <path d="M9 16.17L4.83 12L3.41 13.41L9 19L21 7L19.59 5.59L9 16.17Z" fill="#34C759"/>
                         </svg>
-                        <span>Персональные рекомендации</span>
+                        <span>Можно пройти тесты на платформе</span>
                     </li>
                     <li class="feature-item">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                             <path d="M9 16.17L4.83 12L3.41 13.41L9 19L21 7L19.59 5.59L9 16.17Z" fill="#34C759"/>
                         </svg>
-                        <span>Доступ с 2 устройств</span>
+                        <span>Персональная обратная связь от ИИ</span>
+                    </li>
+                    <li class="feature-item">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                            <path d="M9 16.17L4.83 12L3.41 13.41L9 19L21 7L19.59 5.59L9 16.17Z" fill="#34C759"/>
+                        </svg>
+                        <span>Экспорт результатов прохождения в PDF</span>
                     </li>
                 </ul>
                 
                 <button class="ios-button" onclick="location.href='/payment/'">Выбрать Стандарт</button>
                 
                 <div class="testimonials">
-                    <div class="user-avatar">АВ</div>
+                    <div class="user-avatar">А</div>
                     <div class="testimonial-text">
                         "Экономлю 8 часов в неделю на подготовке тестов для студентов"
-                        <div class="user-info">Анна В., преподаватель</div>
+                        <div class="user-info">Анна, преподаватель</div>
                     </div>
                 </div>
             </div>
 
             <!-- Премиум -->
             <div class="pricing-card featured" data-plan="premium">
-                <div class="card-badge">ЛУЧШАЯ ЦЕННОСТЬ</div>
+                <div class="card-badge">ПОЛНЫЙ ПАКЕТ</div>
                 <h3 class="plan-name">Премиум</h3>
                 <div class="price-container">
                     <span class="price">590₽</span>
                     <span class="period">/ месяц</span>
                 </div>
-                <div class="annual-price">4800₽ за год (экономия 32%)</div>
+                <div class="annual-price">4 800₽ за год (экономия 32%)</div>
                 
                 <ul class="features-list">
                     <li class="feature-item">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                             <path d="M9 16.17L4.83 12L3.41 13.41L9 19L21 7L19.59 5.59L9 16.17Z" fill="#34C759"/>
                         </svg>
-                        <span><strong>150 тестов в день</strong></span>
+                        <span><strong>Создавайте до 150 тестов в день</strong></span>
                     </li>
                     <li class="feature-item">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                             <path d="M9 16.17L4.83 12L3.41 13.41L9 19L21 7L19.59 5.59L9 16.17Z" fill="#34C759"/>
                         </svg>
-                        <span>Загрузка PDF/DOC/DOCX</span>
+                        <span>Скачивание в PDF для печати без водяных знаков</span>
                     </li>
                     <li class="feature-item">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                             <path d="M9 16.17L4.83 12L3.41 13.41L9 19L21 7L19.59 5.59L9 16.17Z" fill="#34C759"/>
                         </svg>
-                        <span>Расширенный ИИ-анализ</span>
+                        <span>Можно пройти тесты на платформе</span>
                     </li>
                     <li class="feature-item">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                             <path d="M9 16.17L4.83 12L3.41 13.41L9 19L21 7L19.59 5.59L9 16.17Z" fill="#34C759"/>
                         </svg>
-                        <span>Доступ с 3 устройств</span>
+                        <span>Персональная обратная связь от ИИ</span>
+                    </li>
+                    <li class="feature-item">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                            <path d="M9 16.17L4.83 12L3.41 13.41L9 19L21 7L19.59 5.59L9 16.17Z" fill="#34C759"/>
+                        </svg>
+                        <span>Экспорт результатов прохождения в PDF</span>
+                    </li>
+                    <li class="feature-item">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                            <path d="M9 16.17L4.83 12L3.41 13.41L9 19L21 7L19.59 5.59L9 16.17Z" fill="#34C759"/>
+                        </svg>
+                        <span>Загрузка своих материалов в PDF / DOC / DOCX / TXT</span>
                     </li>
                     <li class="feature-item">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
@@ -145,7 +184,7 @@
                     <div class="user-avatar">МК</div>
                     <div class="testimonial-text">
                         "Автоматизировал проверку знаний для 200 сотрудников - экономия 120 часов в месяц!"
-                        <div class="user-info">Максим К., HR-директор</div>
+                        <div class="user-info">Максим, продакт-директор</div>
                     </div>
                 </div>
             </div>
@@ -163,35 +202,29 @@
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                             <path d="M9 16.17L4.83 12L3.41 13.41L9 19L21 7L19.59 5.59L9 16.17Z" fill="#34C759"/>
                         </svg>
-                        <span><strong>20 бесплатных тестов</strong></span>
+                        <span><strong>Создайте 10 бесплатных тестов</strong></span>
                     </li>
                     <li class="feature-item">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                             <path d="M9 16.17L4.83 12L3.41 13.41L9 19L21 7L19.59 5.59L9 16.17Z" fill="#34C759"/>
                         </svg>
-                        <span>Достаточно, чтобы начать</span>
+                        <span>Можно пройти тесты на платформе</span>
                     </li>
                     <li class="feature-item">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                             <path d="M9 16.17L4.83 12L3.41 13.41L9 19L21 7L19.59 5.59L9 16.17Z" fill="#34C759"/>
                         </svg>
-                        <span>Генерация тестов по запросу</span>
-                    </li>
-                    <li class="feature-item">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                            <path d="M9 16.17L4.83 12L3.41 13.41L9 19L21 7L19.59 5.59L9 16.17Z" fill="#34C759"/>
-                        </svg>
-                        <span>Возможность проходить тесты и экспортировать в PDF</span>
+                        <span>Скачивание в PDF для печати с водяными знаками</span>
                     </li>
                 </ul>
                 
-                <button class="ios-button" onclick="location.href='/payment/'">Выбрать Ультра</button>
+                <button class="ios-button" onclick="location.href='/login/'">Выбрать Стартовый</button>
                 
                 <div class="testimonials">
                     <div class="user-avatar">ДС</div>
                     <div class="testimonial-text">
                         "Идеально, чтобы попробовать функционал."
-                        <div class="user-info">Дарья, директор учебного центра</div>
+                        <div class="user-info">Дарья, студентка мед. ВУЗа</div>
                     </div>
                 </div>
             </div>
@@ -467,8 +500,9 @@
         .feature-item {
             display: flex;
             align-items: center;
-            gap: 12px;
-            padding: 12px 0;
+            margin: 0;
+            gap: 8px;
+            padding: 8px 0;
             border-bottom: 0.5px solid rgba(0,0,0,0.05);
         }
 
