@@ -187,9 +187,6 @@ class Subscription(models.Model):
     ])
     discount = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
 
-    def remaining_time(self):
-        return self.end_date - datetime.now()
-
     def get_human_plan(self):
         plan_mapping = {
             'free_plan': 'Стартовый на 7 дней',

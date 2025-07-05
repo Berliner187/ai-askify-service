@@ -88,6 +88,9 @@ env = environ.Env()
 environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 
+DEPLOY_SCRIPT_PATH = env('DEPLOY_PATH')
+
+
 os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
 
 
@@ -155,14 +158,14 @@ def page_create_survey(request):
     avg_questions = (total_questions / total_tests) if total_tests else None
 
     # 11
-    total_answers = user_answers.count() or None
+    total_answers = user_answers.count() or 0
 
     # 12
     try:
         correct_sum = user_answers.aggregate(total_correct=Avg('scored_points'))['total_correct']
-        avg_correct_answers = correct_sum or None
+        avg_correct_answers = correct_sum or 0
     except Exception:
-        avg_correct_answers = None
+        avg_correct_answers = 0
 
     # 14
     unique_models_count = feedbacks.values('model_name').distinct().count() or 0
@@ -2017,8 +2020,9 @@ class PaymentInitiateView(View):
         phone = data['phone']
         receipt = data['receipt']
 
-        print(phone, email)
-        print("amount", amount)
+        tracer_l.debug(
+            f"RECIEVED DATA:\n\nphone: {phone}, email: {email}, order_id: {order_id}, receipt: {receipt}")
+        tracer_l.debug(f"amount: {amount}")
 
         plan_prices = {
             'Начальный': 0,
@@ -2151,7 +2155,16 @@ class PaymentSuccessView(View):
         if success == 'true' and error_code == '0':
             try:
                 payment = Payment.objects.get(payment_id=payment_id)
-                subscription = Subscription.objects.get(staff_id=get_staff_id(request))
+                # subscription = Subscription.objects.get(staff_id=get_staff_id(request))
+
+                subscription, created = Subscription.objects.get_or_create(
+                    staff_id=get_staff_id(request),
+                    defaults={
+                        'plan_name': 'Стартовый',
+                        'status': 'inactive',
+                        'billing_cycle': 'monthly',
+                    }
+                )
 
                 payment_manager = PaymentManager()
                 payment_parameters = [payment.order_id, TERMINAL_PASSWORD, TERMINAL_KEY]
@@ -3003,9 +3016,6 @@ def password_reset_email(request):
         'page_title': 'Сброс пароля'
     }
     return render(request, 'confirmed_data/password_message_reset_email.html', context)
-
-
-DEPLOY_SCRIPT_PATH = "/home/pumba/deploy.sh"
 
 
 def black_ops_launch(request, secret):

@@ -249,7 +249,7 @@ def get_formate_date(date):
     locale.setlocale(locale.LC_TIME, 'ru_RU.UTF-8')
 
     date_str = str(date)
-    date_obj = datetime.fromisoformat(date_str[:-6])
+    date_obj = datetime.fromisoformat(date_str)
 
     return date_obj.strftime("%-d %B, в %H:%M")
 

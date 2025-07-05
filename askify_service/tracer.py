@@ -4,6 +4,8 @@ from threading import Thread
 
 from django.conf import settings
 
+from askify_app.settings import DEBUG
+
 
 WARNING_SYMBOL = "🚧"
 ERROR_SYMBOL = "❌"
@@ -23,6 +25,8 @@ class TelegramHandler(logging.Handler):
         self.chat_id = getattr(settings, 'TELEGRAM_CHAT_ID', None)
 
     def emit(self, record):
+        if DEBUG:
+            return
         if not self.token or not self.chat_id or record.levelno < logging.WARNING:
             return
 
@@ -44,7 +48,7 @@ class TelegramHandler(logging.Handler):
         thread.start()
 
     def send_message(self, message):
-        """Непосредственно отправка. Вызывается в отдельном потоке."""
+        """ Отправка сообщений в дежурный бот. Вызывается в отдельном потоке."""
         url = f'https://api.telegram.org/bot{self.token}/sendMessage'
         payload = {
             'chat_id': self.chat_id,
