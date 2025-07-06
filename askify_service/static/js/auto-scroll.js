@@ -3,11 +3,7 @@ const slider = document.getElementById('question-slider');
 const sliderValue = document.getElementById('slider-value');
 const questionSliderText = document.getElementById('question-slider-text');
 const charCount = document.getElementById('char-count');
-const maxLength = 16384;
-
-function underInputBlock(block_to_need) {
-
-}
+const maxLength = 32768;
 
 text.addEventListener('input', function() {
     // this.style.height = 'auto';

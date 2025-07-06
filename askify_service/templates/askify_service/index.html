@@ -93,7 +93,7 @@
     <header class="header" id="critical-header">
         <div class="logo">
             <a href="/">
-                <img src="{% static 'img/logo-header.png' %}" alt="Логотип Летучка" class="logo-img">
+                <img src="{% static 'img/logo-header.webp' %}" alt="Логотип Летучка" class="logo-img">
             </a>
         </div>
         <nav class="nav">
@@ -169,12 +169,6 @@
                         <span id="char-count">0</span> / 5000
                     </div>
                 </div>
-
-                <div id="result-container" class="result-container">
-                    <p>Созданные тесты</p>
-                    <div class="test-grid" id="test-grid"></div>
-                    <br>
-                </div>
                 
                 <div class="controls-row">
                     <div class="slider-block">
@@ -199,35 +193,41 @@
                         🚀 СОЗДАТЬ ТЕСТ
                     </button>
 
+
+                <div id="result-container" class="result-container">
+                    <p>Созданные тесты</p>
+                    <div class="test-grid" id="test-grid"></div>
+                    <br>
                 </div>
+
             </div>
             
             <div class="result-container">
                 <br>
                 <div class="reg-block" style="background: rgba(100, 100, 100, .3); border-radius: 20px; padding: 24px; border: 1px solid #7b5ce4; margin: 20px 0;">
-                <div style="margin-bottom: 18px;">
-                    <h3 style="color: #fff; font-size: 1.25rem; margin-bottom: 12px;">Сохрани свой тест</h3>
-                    <ul style="list-style: none; padding: 0; color: #ccc; font-size: 0.95rem; line-height: 1.5;">
-                    <li>• <strong>Зарегистрируйся</strong> — и все тесты будут в личном кабинете</li>
-                    <li>• <strong>Доступ с любого устройства</strong> — хоть с телефона в метро, хоть с планшета перед зачётом</li>
-                    <li>• <strong>Подходит для всех дисциплин</strong> — от истории до фармакологии</li>
-                    </ul>
-                </div>
-                <a href="/register"
-                    style="display: block;
-                            background: linear-gradient(45deg, #6f59f9, #5f45e0);
-                            color: white;
-                            padding: 14px 28px;
-                            border-radius: 14px;
-                            text-align: center;
-                            text-decoration: none;
-                            font-weight: 600;
-                            font-size: 1rem;
-                            transition: transform 0.2s, background 0.2s;
-                            box-shadow: 0 6px 18px rgba(123, 92, 228, 0.25);">
-                    Зарегистрироваться и сохранить тест
-                </a>
-                <p style="color: #888; font-size: 0.8em; margin-top: 12px; margin-bottom: 0;">Быстрая регистрация. Войди по почте или через Telegram.</p>
+                    <div style="margin-bottom: 18px;">
+                        <h3 style="color: #fff; font-size: 1.25rem; margin-bottom: 12px;">Сохрани свой тест</h3>
+                        <ul style="list-style: none; padding: 0; color: #ccc; font-size: 0.95rem; line-height: 1.5;">
+                        <li>• <strong>Зарегистрируйся</strong> — и все тесты будут в личном кабинете</li>
+                        <li>• <strong>Доступ с любого устройства</strong> — хоть с телефона в метро, хоть с планшета перед зачётом</li>
+                        <li>• <strong>Подходит для всех дисциплин</strong> — от истории до фармакологии</li>
+                        </ul>
+                    </div>
+                    <a href="/register"
+                        style="display: block;
+                                background: linear-gradient(45deg, #6f59f9, #5f45e0);
+                                color: white;
+                                padding: 14px 28px;
+                                border-radius: 14px;
+                                text-align: center;
+                                text-decoration: none;
+                                font-weight: 600;
+                                font-size: 1rem;
+                                transition: transform 0.2s, background 0.2s;
+                                box-shadow: 0 6px 18px rgba(123, 92, 228, 0.25);">
+                        Зарегистрироваться и сохранить тест
+                    </a>
+                    <p style="color: #888; font-size: 0.8em; margin-top: 12px; margin-bottom: 0;">Быстрая регистрация. Войди по почте или через Telegram.</p>
                 </div>
             </div>
 
@@ -355,7 +355,7 @@
         </div>
     </section>
 
-    <!-- Секция с картинкой слева и текстом справа -->
+    <!-- Секция с картинкой справа и текстом слева -->
     <section class="image-text-section">
         <div class="container">
             <div class="image-text-content reversed">
@@ -395,19 +395,19 @@
             </div>
 
             <div class="step-card">
-                <h3 class="step-title">≥857 преподавателей</h3>
+                <h3 class="step-title">≥900 преподавателей</h3>
                 <div class="step-subtitle">уже экономят 10 часов в неделю</div>
                 <p class="step-text">
                     Летучка помогает:<br>
                     - Создавать задания для разных УМК<br>
                     - Готовить контрольно-измерительные материалы<br>
                     - Анализировать пробелы в знаниях учеников<br><br>
-                    <span class="hint">+20 эффективности уроков</span>
+                    <span class="hint">+20 эффективности занятий</span>
                 </p>
             </div>
 
             <div class="step-card">
-                <h3 class="step-title">3,483 инженерных теста</h3>
+                <h3 class="step-title">≥4,000 инженерных теста</h3>
                 <div class="step-subtitle">по техническим дисциплинам</div>
                 <p class="step-text">
                     Создано за последний месяц:<br>
@@ -495,37 +495,35 @@
             <h2 class="section-title">
                 <span class="gradient-text">Тарифы</span>
             </h2>
-            <p class="section-subtitle">
-                Для начала нужен план.
-            </p>
+            <p class="section-subtitle">Для начала нужен план.</p>
         </div>
 
         <div class="pricing-grid">
             <!-- Free Plan -->
             <div class="pricing-card glass">
-            <div class="badge ghost">Чтобы начать</div>
-            <h3 class="plan-title">Старт</h3>
-            <div class="plan-price">0 ₽</div>
-            <ul class="plan-features">
-                <li>10 бесплатных тестов</li>
-                <li>PDF с водяными знаками</li>
-                <li>Обратная связь от ИИ по результатам</li>
-            </ul>
-            <a href="/login" class="cta-button ghost">Попробовать</a>
+                <div class="badge ghost">Чтобы начать</div>
+                <h3 class="plan-title">Старт</h3>
+                <div class="plan-price">0 ₽</div>
+                <ul class="plan-features">
+                    <li>10 бесплатных тестов</li>
+                    <li>PDF с водяными знаками</li>
+                    <li>Обратная связь от ИИ по результатам</li>
+                </ul>
+                <a href="/login" class="cta-button ghost">Попробовать</a>
             </div>
 
             <!-- Standard Plan -->
             <div class="pricing-card glass popular">
-            <div class="badge">Рекомендуем</div>
-            <h3 class="plan-title">Стандарт</h3>
-            <div class="plan-price">320 ₽ / мес</div>
-            <ul class="plan-features">
-                <li>50 тестов в день</li>
-                <li>PDF без водяных знаков</li>
-                <li>Обратная связь от ИИ по результатам</li>
-                <li>Экспорт результатов о прохождении в PDF</li>
-            </ul>
-            <a href="/payment/" class="cta-button primary">Купить</a>
+                <div class="badge">Рекомендуем</div>
+                <h3 class="plan-title">Стандарт</h3>
+                <div class="plan-price">320 ₽ / мес</div>
+                <ul class="plan-features">
+                    <li>50 тестов в день</li>
+                    <li>PDF без водяных знаков</li>
+                    <li>Обратная связь от ИИ по результатам</li>
+                    <li>Экспорт результатов о прохождении в PDF</li>
+                </ul>
+                <a href="/payment/" class="cta-button primary">Купить</a>
             </div>
 
             <!-- Premium Plan -->
@@ -544,34 +542,6 @@
             </div>
         </div>
 
-        <!-- Годовые планы -->
-        <!-- <div class="pricing-grid yearly">
-            <div class="pricing-card glass">
-            <div class="badge accent">–37%</div>
-            <h3 class="plan-title">Стандарт / Год</h3>
-            <div class="plan-price">220 ₽ / мес</div>
-            <p class="plan-subtext"><s>5 040</s> → 2 640 ₽ / год</p>
-            <ul class="plan-features">
-                <li>50 тестов в день</li>
-                <li>PDF без водяных знаков</li>
-                <li>Персональные рекомендации по результатам</li>
-            </ul>
-            <a href="/available-plans/" class="cta-button primary">Купить</a>
-            </div>
-
-            <div class="pricing-card glass">
-            <div class="badge accent">–32%</div>
-            <h3 class="plan-title">Премиум / Год</h3>
-            <div class="plan-price">400 ₽ / мес</div>
-            <p class="plan-subtext"><s>7 080</s> → 4 800 ₽ / год</p>
-            <ul class="plan-features">
-                <li>150 тестов в день</li>
-                <li>Загружайте pdf, doc, docx с материалами</li>
-                <li>Улучшенная обратная связь от нейросети</li>
-            </ul>
-            <a href="/available-plans/" class="cta-button primary">Купить</a>
-            </div>
-        </div> -->
     </section>
 
 
@@ -581,10 +551,10 @@
 
     <div id="glass-alert" class="glass-alert" aria-live="polite" hidden>
         <div class="glass-alert__container">
-          <div class="glass-alert__content">
-            <p class="glass-alert__message"></p>
-            <button class="glass-alert__close" aria-label="Закрыть уведомление">×</button>
-          </div>
+            <div class="glass-alert__content">
+                <p class="glass-alert__message"></p>
+                <button class="glass-alert__close" aria-label="Закрыть уведомление">×</button>
+            </div>
         </div>
     </div>
 
@@ -608,43 +578,90 @@
         </div>
     </div>
 
-</div>
-
-
-    <div id="cookie-banner" style="position: fixed; margin: 0 auto; bottom: 20px; left: 20px; right: 20px; background: rgba(255, 255, 255, 0.12); color: #fff; border-radius: 20px; padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 6px 24px rgba(0,0,0,0.2); z-index: 9999; -webkit-backdrop-filter: blur(32px); backdrop-filter: blur(32px); font-family: 'Namu Pro', sans-serif; font-size: 14px; line-height: 1.4; opacity: 0; transform: translateY(100px); transition: all 0.5s ease; max-width: 1200px">
+    <div id="cookie-banner" style="position: fixed; margin: 0 auto; bottom: 20px; left: 20px; right: 20px; background: rgba(255, 255, 255, 0.12); color: #fff; border-radius: 20px; padding: 12px 24px; display: flex; flex-direction: column; box-shadow: 0 6px 24px rgba(0,0,0,0.2); z-index: 9999; -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); font-family: 'Namu Pro', sans-serif; font-size: 14px; line-height: 1.4; opacity: 0; transform: translateY(100px); transition: all 0.5s ease; max-width: 600px">
         <div style="display: flex; justify-content: space-between; align-items: center;">
-            <span>Мы используем cookie-файлы, чтобы сайт работал стабильно, а сервис радовал. Никакого шпионажа.</span>
-            <button onclick="hideCookieBanner()" style="background: #616DF0; color: #fff; border: none; padding: 12px 32px; border-radius: 24px; cursor: pointer; font-weight: 600; transition: background 0.3s;">
+            <span>Мы используем cookie-файлы.</span>
+            <button onclick="hideCookieBanner()" style="background: #616DF0; color: #fff; border: none; padding: 12px 32px; border-radius: 24px; cursor: pointer; font-weight: 600; transition: background 0.3s; font-family: 'Namu Pro', sans-serif;">
                 Принимаю
             </button>
         </div>
         <div style="font-size: 12px; opacity: 0.8;">
-            Подробнее в <a href="/docs/privacy-policy/" style="color: #79EF66; text-decoration: underline;">политике конфиденциальности</a>.
+            <a href="/docs/privacy-policy/" style="color: #79EF66; text-decoration: underline;">Политика конфиденциальности</a>
         </div>
     </div>
 
+
     <script>
-        function hideCookieBanner() {
-            localStorage.setItem('cookieAccepted', 'true');
-            document.getElementById('cookie-banner').style.opacity = '0';
-            document.getElementById('cookie-banner').style.transform = 'translateY(100px)';
-            setTimeout(() => {
-            document.getElementById('cookie-banner').style.display = 'none';
-            }, 500);
-        }
-
-        window.addEventListener('load', () => {
-            if (!localStorage.getItem('cookieAccepted')) {
-            const banner = document.getElementById('cookie-banner');
-            banner.style.display = 'flex';
-            setTimeout(() => {
-                banner.style.opacity = '1';
-                banner.style.transform = 'translateY(0)';
-            }, 100);
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('critical-header').style.opacity = 1;
+            document.getElementById('critical-hero').style.opacity = 1;
+            document.getElementById('create-now').style.opacity = 1;
+            
+            const lazyImages = [].slice.call(document.querySelectorAll('img.lazy, video.lazy'));
+            const lazySections = [].slice.call(document.querySelectorAll('.lazy-load'));
+            
+            function loadContent() {
+                lazySections.forEach(section => {
+                if (isInViewport(section)) {
+                    section.classList.add('loaded');
+                }
+                });
+                
+                lazyImages.forEach(img => {
+                if (isInViewport(img)) {
+                    img.src = img.dataset.src;
+                    if (img.tagName === 'VIDEO') {
+                    img.load();
+                    }
+                    img.classList.remove('lazy');
+                }
+                });
             }
+            
+            function isInViewport(el) {
+                const rect = el.getBoundingClientRect();
+                return (
+                rect.top <= (window.innerHeight || document.documentElement.clientHeight) &&
+                rect.bottom >= 0
+                );
+            }
+            
+            window.addEventListener('load', function() {
+                loadContent();
+                
+                window.addEventListener('scroll', loadContent);
+                window.addEventListener('resize', loadContent);
+            });
+            
+            const criticalAssets = [
+                '{% static "img/logo-header.webp" %}',
+                '{% static "blog_img/letychka-banner-1703.webp" %}'
+            ];
+            
+            criticalAssets.forEach(asset => {
+                const link = document.createElement('link');
+                link.rel = 'preload';
+                link.as = asset.includes('.png') ? 'image' : 'script';
+                link.href = asset;
+                document.head.appendChild(link);
+            });
         });
-    </script>
 
+        if ('IntersectionObserver' in window) {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('loaded');
+                observer.unobserve(entry.target);
+            }
+            });
+        }, {threshold: 0.1});
+        
+        document.querySelectorAll('.lazy-load').forEach(section => {
+            observer.observe(section);
+        });
+        }
+    </script>
 
     <script src="{% static 'js/start.js' %}" defer></script>
     <script src="{% static 'js/generate-demo.js' %}" defer></script>
@@ -683,85 +700,25 @@
     </script>
 
     <script>
-        // Новый скрипт вместо прелоадера
-            document.addEventListener('DOMContentLoaded', function() {
-            // 1. Сразу показываем критические блоки
-            document.getElementById('critical-header').style.opacity = 1;
-            document.getElementById('critical-hero').style.opacity = 1;
-            document.getElementById('create-now').style.opacity = 1;
-            
-            // 2. Загружаем остальные ресурсы
-            const lazyImages = [].slice.call(document.querySelectorAll('img.lazy, video.lazy'));
-            const lazySections = [].slice.call(document.querySelectorAll('.lazy-load'));
-            
-            // 3. Функция для ленивой загрузки
-            function loadContent() {
-                lazySections.forEach(section => {
-                if (isInViewport(section)) {
-                    section.classList.add('loaded');
-                }
-                });
-                
-                lazyImages.forEach(img => {
-                if (isInViewport(img)) {
-                    img.src = img.dataset.src;
-                    if (img.tagName === 'VIDEO') {
-                    img.load();
-                    }
-                    img.classList.remove('lazy');
-                }
-                });
-            }
-            
-            // 4. Проверка видимости элемента
-            function isInViewport(el) {
-                const rect = el.getBoundingClientRect();
-                return (
-                rect.top <= (window.innerHeight || document.documentElement.clientHeight) &&
-                rect.bottom >= 0
-                );
-            }
-            
-            // 5. Инициализация
-            window.addEventListener('load', function() {
-                // Загружаем видимые элементы сразу
-                loadContent();
-                
-                // Загружаем остальные при скролле
-                window.addEventListener('scroll', loadContent);
-                window.addEventListener('resize', loadContent);
-            });
-            
-            // 6. Предзагрузка важных ресурсов
-            const criticalAssets = [
-                '{% static "img/logo-header.png" %}',
-                '{% static "blog_img/letychka-banner-1703.png" %}'
-            ];
-            
-            criticalAssets.forEach(asset => {
-                const link = document.createElement('link');
-                link.rel = 'preload';
-                link.as = asset.includes('.png') ? 'image' : 'script';
-                link.href = asset;
-                document.head.appendChild(link);
-            });
-            });
+        function hideCookieBanner() {
+            localStorage.setItem('cookieAccepted', 'true');
+            document.getElementById('cookie-banner').style.opacity = '0';
+            document.getElementById('cookie-banner').style.transform = 'translateY(100px)';
+            setTimeout(() => {
+            document.getElementById('cookie-banner').style.display = 'none';
+            }, 500);
+        }
 
-            // 7. Оптимизация анимаций
-            if ('IntersectionObserver' in window) {
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('loaded');
-                    observer.unobserve(entry.target);
-                }
-                });
-            }, {threshold: 0.1});
-            
-            document.querySelectorAll('.lazy-load').forEach(section => {
-                observer.observe(section);
-            });
+        window.addEventListener('load', () => {
+            if (!localStorage.getItem('cookieAccepted')) {
+            const banner = document.getElementById('cookie-banner');
+            banner.style.display = 'flex';
+            setTimeout(() => {
+                banner.style.opacity = '1';
+                banner.style.transform = 'translateY(0)';
+            }, 100);
             }
+        });
     </script>
 </body>
 
