@@ -1,17 +1,13 @@
 <!DOCTYPE html>
 <html lang="ru">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Создать тест по тексту онлайн | Создать тест по документу онлайн - бесплатно с результатами | Летучка</title>
-
     <meta name="description" content="Создать тест с ИИ за считанные секунды. Загрузите PDF, WORD, DOC, лекцию или методичку → получите тест с автопроверкой и аналитикой. Для преподавателей, медиков и студентов. Создайте свой первый тест бесплатно в 2 клика.">
     <meta name="keywords" content="создать тест, создать тест по тексту онлайн, ИИ для создания тестов бесплатно, составить тест по тексту онлайн, создать тест онлайн, летучка создать тест, по тексту онлайн, бесплатно, с результатами">
-
     <meta property="og:title" content="ИИ для создания тестов: медицинские специалисты и преподаватели экономят 3 часа в день | Летучка">
     <meta property="og:description" content="Попробуйте создать тест по тексту онлайн. Автоматическая проверка, аналитика слабых мест, экспорт в PDF. Бесплатный старт.">
-
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://letychka.ru">
     <meta property="og:image" content="https://letychka.ru/static/letychka-banner-1703.webp">
@@ -85,7 +81,6 @@
             "description": "Letychka is a service for creating tests and quizzes based on educational materials using AI."
         }
     </script>
-
 </head>
 
 <body>
@@ -169,7 +164,7 @@
                         <span id="char-count">0</span> / 5000
                     </div>
                 </div>
-                
+
                 <div class="controls-row">
                     <div class="slider-block">
                         <label for="question-count" class="slider-label">
@@ -192,7 +187,6 @@
                     >
                         🚀 СОЗДАТЬ ТЕСТ
                     </button>
-
 
                 <div id="result-container" class="result-container">
                     <p>Созданные тесты</p>
@@ -237,7 +231,6 @@
     <div class="loading-overlay" id="loadingOverlay">
         <div class="loading-spinner"></div>
     </div>
-
     <script src="{% static 'js/demo.js' %}"></script>
 
     <!-- Гифка-секция -->
@@ -376,7 +369,7 @@
             </div>
         </div>
     </section>
-    
+
     <section class="trusted-by" id="trusted-by">
         <h2 class="section-title">
             <span class="gradient-text">В Летучке уже</span>
@@ -420,7 +413,6 @@
         </div>
     </section>
 
-    
     <!-- Секция "Кейсы успеха" -->
     <section class="success-cases" id="success-cases">
         <div class="container">
@@ -488,7 +480,6 @@
         </div>
     </section>
 
-    
     <!-- Тарифы -->
     <section class="pricing" id="pricing">
         <div class="pricing-intro">
@@ -544,9 +535,7 @@
 
     </section>
 
-
     <a href="https://webmaster.yandex.ru/siteinfo/?site=https://letychka.ru"><img width="88" height="31" alt="" border="0" border-radius="8" src="https://yandex.ru/cycounter?https://letychka.ru&theme=light&lang=ru"/></a>
-
     {% include 'footer.html' %}
 
     <div id="glass-alert" class="glass-alert" aria-live="polite" hidden>
@@ -589,7 +578,6 @@
             <a href="/docs/privacy-policy/" style="color: #79EF66; text-decoration: underline;">Политика конфиденциальности</a>
         </div>
     </div>
-
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -648,24 +636,22 @@
         });
 
         if ('IntersectionObserver' in window) {
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.classList.add('loaded');
-                observer.unobserve(entry.target);
-            }
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('loaded');
+                    observer.unobserve(entry.target);
+                }
+                });
+            }, {threshold: 0.1});
+            
+            document.querySelectorAll('.lazy-load').forEach(section => {
+                observer.observe(section);
             });
-        }, {threshold: 0.1});
-        
-        document.querySelectorAll('.lazy-load').forEach(section => {
-            observer.observe(section);
-        });
         }
     </script>
-
     <script src="{% static 'js/start.js' %}" defer></script>
     <script src="{% static 'js/generate-demo.js' %}" defer></script>
-    
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const target = document.querySelector('.image-text-section');
@@ -696,28 +682,26 @@
         
             window.addEventListener('scroll', handleScroll);
             handleScroll();
-        });
-    </script>
 
-    <script>
-        function hideCookieBanner() {
-            localStorage.setItem('cookieAccepted', 'true');
-            document.getElementById('cookie-banner').style.opacity = '0';
-            document.getElementById('cookie-banner').style.transform = 'translateY(100px)';
-            setTimeout(() => {
-            document.getElementById('cookie-banner').style.display = 'none';
-            }, 500);
-        }
-
-        window.addEventListener('load', () => {
-            if (!localStorage.getItem('cookieAccepted')) {
-            const banner = document.getElementById('cookie-banner');
-            banner.style.display = 'flex';
-            setTimeout(() => {
-                banner.style.opacity = '1';
-                banner.style.transform = 'translateY(0)';
-            }, 100);
+            function hideCookieBanner() {
+                localStorage.setItem('cookieAccepted', 'true');
+                document.getElementById('cookie-banner').style.opacity = '0';
+                document.getElementById('cookie-banner').style.transform = 'translateY(100px)';
+                setTimeout(() => {
+                document.getElementById('cookie-banner').style.display = 'none';
+                }, 500);
             }
+
+            window.addEventListener('load', () => {
+                if (!localStorage.getItem('cookieAccepted')) {
+                const banner = document.getElementById('cookie-banner');
+                banner.style.display = 'flex';
+                setTimeout(() => {
+                    banner.style.opacity = '1';
+                    banner.style.transform = 'translateY(0)';
+                }, 100);
+                }
+            });
         });
     </script>
 </body>
