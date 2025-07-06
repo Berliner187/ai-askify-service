@@ -951,7 +951,11 @@ class TakeSurvey(View):
 @login_required
 # @subscription_required
 def result_view(request, survey_id):
-    survey = Survey.objects.get(survey_id=survey_id)
+    survey = Survey.objects.filter(survey_id=survey_id).first()
+
+    if not survey:
+        return redirect('history')
+
     user_answers = UserAnswers.objects.filter(survey_id=survey_id)
     score = sum(answer.scored_points for answer in user_answers)
 

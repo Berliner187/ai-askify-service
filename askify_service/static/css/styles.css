@@ -1237,6 +1237,7 @@ textarea:focus {
 }
 
 .laod-more-btn {
+    font-family: 'Namu Pro';
     font-size: .8em;
     padding: 8px 32px;
     background-color: rgba(40, 39, 47, .5);

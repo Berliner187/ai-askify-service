@@ -7,7 +7,7 @@
 
     <div class="logo-header">
         <a href="{% url 'create' %}">
-            <img src="{% static 'img/logo-header-beta.png' %}" alt="">
+            <img src="{% static 'img/logo-header.png' %}" alt="">
         </a>
     </div>
     
@@ -40,25 +40,6 @@
             {% endif %}
         </nav>
     </div>
-    
-    <!-- <div class="auth-buttons" data-authenticated="{% if user.is_authenticated %}true{% else %}false{% endif %}">
-        <div class="button-medium">
-            <a href="{% url 'login' %}">
-                <div>
-                    <p>Вход</p>
-                </div>
-            </a>
-        </div>
-        <div class="button-medium button-accent reg-button">
-            <a href="{% url 'register' %}">
-                <div>
-                    <p>Регистрация</p>
-                </div>
-            </a>
-        </div>
-    </div> -->
-
-
     <script src="{% static 'js/nav.js' %}"></script>
 
 </header>
