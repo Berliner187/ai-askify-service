@@ -40,3 +40,11 @@ class PhoneNumberForm(forms.Form):
 
 class VerificationCodeForm(forms.Form):
     verification_code = forms.CharField(max_length=6, label='Введите код')
+
+
+class FileUploadForm(forms.Form):
+    question_count = forms.IntegerField(min_value=1, max_value=15)
+    file = forms.FileField(
+        max_length=100,
+        allow_empty_file=False,
+    )

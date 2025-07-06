@@ -18,10 +18,10 @@ const showPopup = () => {
   
   popupTimer = setTimeout(() => {
     popup.classList.remove('active');
-  }, 30000);
+  }, 30 * 1000);
 };
 
-setTimeout(showPopup, 40000);
+setTimeout(showPopup, 120 * 1000);
 
 
 // Закрытие попапа при клике на крестик или вне зоны попапа

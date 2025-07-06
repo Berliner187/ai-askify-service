@@ -127,6 +127,12 @@
                         </div>
                     </a>
                     {% endif %}
+
+                    <a class="button-medium" href="{% url 'drop-survey' survey_id=survey_id %}">
+                        <div>
+                            <img src="{% static 'img/icon-delete.png' %}" alt="">
+                        </div>
+                    </a> 
                 </div>
                 
             </div>

@@ -676,70 +676,108 @@ def get_all_surveys(request):
     return response_data_all
 
 
+@method_decorator(login_required, name='dispatch')
+@method_decorator(subscription_required, name='dispatch')
 class FileUploadView(View):
-    # @login_required
-    # @subscription_required
     async def post(self, request):
-        question_count = request.POST.get('question_count')
+        form = FileUploadForm(request.POST, request.FILES)
+        if not form.is_valid():
+            tracer_l.error('Загружен невалидный файл')
+            return JsonResponse({'errors': form.errors}, status=400)
 
-        if 'file' not in request.FILES:
-            return JsonResponse({'error': 'No file provided'}, status=400)
+        available_file_types = [
+            'application/pdf', 'text/plain', 'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        ]
 
-        uploaded_file = request.FILES['file']
+        question_count = form.cleaned_data['question_count']
+        uploaded_file = form.cleaned_data['file']
+
+        tracer_l.debug(f'question_count {question_count} uploaded_file {uploaded_file}')
+
+        if uploaded_file.content_type not in available_file_types:
+            tracer_l.error('Недопустимый файл')
+            return JsonResponse({'error': 'Недопустимый файл'}, status=400)
+
         if uploaded_file.size > 5 * 1024 * 1024:
-            return JsonResponse({'error': 'File too large. Max size is 5 MB.'}, status=400)
+            tracer_l.error('No file provided')
+            return JsonResponse({'error': 'Файл слишком большой. Максимальный размер: 5 МБ'}, status=400)
 
         data = self.read_file_data(uploaded_file)
         if data == -1:
+            tracer_l.error('Файл не является допустимым документом')
             return JsonResponse({'error': 'Файл не является допустимым документом'})
 
-        # import tiktoken
-        #
-        # def count_tokens(text: str, model="gpt-4o") -> int:
-        #     encoding = tiktoken.encoding_for_model(model)
-        #     return len(encoding.encode(text))
-        #
-        # print(count_tokens(data))
-        print(data)
-        print("\n--- ТЕСТ ГЕНЕРИРУЕТСЯ ---")
         try:
+            prompts_tokens = 479
+            num_tokens = count_tokens(data) + prompts_tokens
+            tracer_l.info(f"Кол-во токенов в файле: {num_tokens}")
+            if num_tokens > 8000:
+                tracer_l.error(f'Слишком большой объем текста в файле ({num_tokens} токенов). ')
+                error_message = (
+                    f'Слишком большой объем текста в файле ({num_tokens} токенов). '
+                    f'Максимально допустимо {8000} токенов. '
+                    'Пожалуйста, сократите документ.'
+                )
+                return JsonResponse({'error': error_message}, status=400)
+        except Exception as e:
+            tracer_l.error(f'Error counting tokens: {e}')
+            # return JsonResponse({'error': 'Не удалось обработать текст файла.'}, status=500)
+
+        tracer_l.debug("--- ТЕСТ ГЕНЕРИРУЕТСЯ ---")
+        try:
+            tracer_l.debug("Начало генерации")
             manage_generate_surveys_text = ManageGenerationSurveys(request, data, f'{question_count}')
             generated_text = await manage_generate_surveys_text.github_gpt(await get_active_api_key('SURVEY'))
+            tracer_l.debug("Завершение генерации")
 
             if generated_text.get('success'):
                 tokens_used = generated_text.get('tokens_used')
                 cleaned_generated_text = generated_text.get('generated_text')
             else:
-                return JsonResponse({'error': 'Произошла ошибка при создании теста'}, status=429)
-        except TypeError:
-            return JsonResponse({'error': 'К сожалению, не удалось выполнить запрос'}, status=400)
+                tracer_l.critical(f'Произошла ошибка: {generated_text.get("message")}')
+                return JsonResponse({'error': f'Произошла ошибка: {generated_text.get("message")}'}, status=429)
+        except Exception as fatal:
+            return JsonResponse({'error': f'Не удалось выполнить запрос: {fatal}'}, status=400)
 
-        new_survey_id = uuid.uuid4()
-        survey = Survey(
-            survey_id=new_survey_id,
-            title=cleaned_generated_text['title'],
-            id_staff=get_staff_id(request)
-        )
-        survey.save_questions(cleaned_generated_text['questions'])
-        survey.save()
+        try:
+            with transaction.atomic():
+                staff_id = get_staff_id(request)
+                new_survey_id = uuid.uuid4()
 
-        _tokens_used = TokensUsed(
-            id_staff=get_staff_id(request),
-            tokens_survey_used=tokens_used
-        )
-        _tokens_used.save()
+                survey = Survey(
+                    survey_id=new_survey_id,
+                    title=cleaned_generated_text['title'],
+                    id_staff=staff_id
+                )
+                await sync_to_async(survey.save_questions)(cleaned_generated_text['questions'])
+                await sync_to_async(survey.save)()
 
-        api_key_manage = APIKey.objects.filter(purpose='SURVEY', is_active=True).first()
-        APIKeyUsage.objects.create(
-            api_key=api_key_manage,
-            success=True,
-        )
+                _tokens_used = TokensUsed(
+                    id_staff=staff_id,
+                    tokens_survey_used=tokens_used
+                )
+                await sync_to_async(_tokens_used.save)()
 
+                api_key_manage = await sync_to_async(APIKey.objects.filter(purpose='SURVEY', is_active=True).first)()
+                if api_key_manage:
+                    await sync_to_async(APIKeyUsage.objects.create)(
+                        api_key=api_key_manage,
+                        success=True,
+                    )
+
+        except Exception as fatal:
+            tracer_l.error(f"Failed to create survey: {fatal}")
+            return JsonResponse({'error': 'Произошла ошибка при сохранении теста'}, status=500)
+
+        tracer_l.info(f'Успешно создан тест: {new_survey_id}')
         return JsonResponse({'success': True, 'message': 'Success create survey', 'survey_id': f"{new_survey_id}"})
 
     def read_file_data(self, uploaded_file):
         full_text = ""
         ext = os.path.splitext(str(uploaded_file.name))[1].lower()
+
+        read_symbols_count = 2 ** 13
 
         if ext == '.pdf':
             try:
@@ -747,7 +785,7 @@ class FileUploadView(View):
                 for page in reader.pages:
                     if text := page.extract_text():
                         full_text += text.strip() + "\n"
-                return full_text[:2 ** 12]
+                return full_text[:read_symbols_count]
             except Exception as e:
                 print(f"Error reading PDF: {e}")
                 return -1
@@ -756,7 +794,7 @@ class FileUploadView(View):
             try:
                 uploaded_file.seek(0)
                 encoding = chardet.detect_encoding(uploaded_file)
-                return uploaded_file.read().decode(encoding)[:2 ** 14]
+                return uploaded_file.read().decode(encoding)[:read_symbols_count]
             except Exception as e:
                 print(f"Error reading TXT: {e}")
                 return -1
@@ -766,7 +804,7 @@ class FileUploadView(View):
                 with NamedTemporaryFile(delete=True, suffix=ext) as tmp:
                     tmp.write(uploaded_file.read())
                     tmp.seek(0)
-                    return self.extract_text_from_word(tmp.name)[:2 ** 14]
+                    return self.extract_text_from_word(tmp.name)[:read_symbols_count]
             except Exception as e:
                 print(f"Error reading Word document: {e}")
                 return -1

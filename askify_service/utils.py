@@ -16,6 +16,7 @@ from openai import OpenAI
 import requests
 import httpx
 import asyncio
+import tiktoken
 
 from .tracer import *
 from .constants import *
@@ -677,3 +678,14 @@ def format_model_name(raw_model: str) -> str:
         formatted_name += " (принадлежит компании Meta, признанной экстремистской в РФ)"
 
     return formatted_name
+
+
+def count_tokens(text: str, model: str = 'gpt-4o') -> int:
+    """Подсчитывает количество токенов в тексте для указанной модели."""
+    try:
+        encoding = tiktoken.encoding_for_model(model)
+        return len(encoding.encode(text))
+    except Exception as e:
+        tracer_l.warning(f"Warning: Could not get encoding for model {model}. Using cl100k_base. Error: {e}")
+        encoding = tiktoken.get_encoding("cl100k_base")
+        return len(encoding.encode(text))
