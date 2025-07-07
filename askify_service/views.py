@@ -36,7 +36,7 @@ from .tracer import *
 from .quant import Quant
 
 
-from askify_app.settings import DEBUG, BASE_DIR
+from askify_app.settings import DEBUG, BASE_DIR, ALLOWED_HOSTS
 from askify_app.settings import TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
 
 from askify_app.middleware import check_blocked, subscription_required, check_legal_process
@@ -1459,27 +1459,27 @@ def login_view(request):
     if request.user.is_authenticated:
         return redirect('/create')
 
+    next_url = request.GET.get('next')
+
     if request.method == 'POST':
         email = request.POST.get('email')
         password = request.POST.get('password')
-
         username = email.split('@')[0]
 
         user = authenticate(request, username=username, password=password)
-        user_auth = AuthUser.objects.filter(email=email).first()
 
         if user is not None:
             login(request, user)
             request.session['user_id'] = user.id
 
-            if not DEBUG:
-                tracer_l.warning(f'ADMIN. {request.user.username}: LOGGED IN')
+            post_next = request.POST.get('next', next_url)
+            safe_next = post_next if is_safe_url(post_next) else '/create'
 
-            return redirect('/create')
+            return JsonResponse({'redirect': safe_next})
         else:
             return JsonResponse({'errors': {'email': ['Неверный email или пароль']}}, status=400)
 
-    return render(request, 'login.html')
+    return render(request, 'login.html', {'next_url': next_url or '/create'})
 
 
 def logout_view(request):

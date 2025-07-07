@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Создать тест по тексту и документу | Онлайн бесплатно с результатами | Летучка</title>
-    <meta name="description" content="Создать тест с ИИ за считанные секунды. Загрузите PDF, WORD, DOC, лекцию или методичку → получите тест с автопроверкой и аналитикой. Для преподавателей, медиков и студентов.">
+    <meta name="description" content="Генератор тестов по PDF, лекциям и тексту. Создайте тест с ответами, автопроверкой и экспортом в PDF. Без регистрации. Бесплатный доступ.">
     <meta name="keywords" content="создать тест, создать тест по тексту онлайн, ИИ для создания тестов бесплатно, составить тест по тексту онлайн, создать тест онлайн, летучка создать тест, по тексту онлайн, бесплатно, с результатами">
     <meta property="og:title" content="ИИ для создания тестов: медицинские специалисты и преподаватели экономят 3 часа в день | Летучка">
     <meta property="og:description" content="Попробуйте создать тест по тексту онлайн. Автоматическая проверка, аналитика слабых мест, экспорт в PDF. Бесплатный старт.">
@@ -27,38 +27,18 @@
     <link rel="stylesheet" href="{% static 'css/start.css' %}?v=3.18">
     <link rel="stylesheet" href="{% static 'css/footer.css' %}">
 
-    <!-- Yandex.Metrika counter -->
+    <!-- Metrika -->
     <script type="text/javascript" >
-        setTimeout(function() {
-            (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
-            m[i].l=1*new Date();
-            for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
-            k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
-            (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
-        
-            ym(98823704, "init", {
-                clickmap:true,
-                trackLinks:true,
-                accurateTrackBounce:true,
-                webvisor:true
-            });
-        }, 3000);
+        window.addEventListener('DOMContentLoaded', function() {
+            // Яндекс.Метрика
+            (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)}; m[i].l=1*new Date(); k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a) })(window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym"); ym(98823704, "init", { clickmap:true, trackLinks:true, accurateTrackBounce:true });
+            
+            // Google Analytics
+            window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} gtag('js', new Date()); gtag('config', 'G-7D8EC81SBV');
+        });
     </script>
     <noscript><div><img src="https://mc.yandex.ru/watch/98823704" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
-    <!-- /Yandex.Metrika counter -->
-
-     <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-7D8EC81SBV"></script>
-    <script>
-        setTimeout(function() {
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-
-            gtag('config', 'G-7D8EC81SBV');
-        }, 3000);
-    </script>
-     <!-- /Google tag -->
+    <!-- /Metrika -->
 
     <script type="application/ld+json">
         {
@@ -500,7 +480,8 @@
                     <li>Можно пройти на платформе</li>
                     <li>Смотрите ответы сразу, без прохождения</li>
                 </ul>
-                <a href="/available-plans/" class="cta-button primary">Подробнее</a>
+                <a href="/payment/" class="cta-button primary">Приобрести</a>
+                <p><a href="/available-plans/" class="link">Узнать подробнее</a></p>
                 <p class="gen-hint">Абонемент, не подписка.<br>Никаких неожиданных списаний</p>
             </div>
             
@@ -515,7 +496,8 @@
                     <li>Обратная связь от ИИ по результатам</li>
                     <li>Экспорт результатов о прохождении в PDF</li>
                 </ul>
-                <a href="/available-plans/" class="cta-button primary">Подробнее</a>
+                <a href="/payment/" class="cta-button primary">Приобрести</a>
+                <p><a href="/available-plans/" class="link">Узнать подробнее</a></p>
                 <p class="gen-hint">Абонемент, не подписка.<br>Никаких неожиданных списаний</p>
             </div>
 
@@ -531,7 +513,8 @@
                     <li>Загрузка своих Word и PDF документов для генерации тестов</li>
                     <li>Экспорт результатов о прохождении в PDF</li>
                 </ul>
-                <a href="/available-plans/" class="cta-button primary">Подробнее</a>
+                <a href="/payment/" class="cta-button primary">Приобрести</a>
+                <p><a href="/available-plans/" class="link">Узнать подробнее</a></p>
                 <p class="gen-hint">Абонемент, не подписка.<br>Никаких неожиданных списаний</p>
             </div>
 

@@ -19,8 +19,8 @@
     src: url(../fonts/Unbounded-Regular.ttf);
 }
 @font-face {
-    font-family: 'Unbounded Bold';
-    src: url(../fonts/Unbounded-Bold.ttf);
+    font-family: 'Manrope Medium';
+    src: url(../fonts/Manrope-Medium.ttf);
 }
 
 @font-face {
@@ -379,7 +379,7 @@ img {
 
 .step-number {
     font-size: 3.5rem;
-    font-family: 'Unbounded Bold', sans-serif;
+    font-family: 'Unbounded Medium', sans-serif;
     color: var(--primary-color);
     /* margin-bottom: 20px; */
     text-shadow: 0 0 20px rgba(97, 109, 240, 0.7);
@@ -474,6 +474,10 @@ img {
     margin-top: 24px;
 }
 
+.pricing-card .link {
+    text-decoration: underline;
+}
+
 .pricing-card.glass {
     background: rgba(255, 255, 255, 0.1);
     margin: 16px;
@@ -499,7 +503,7 @@ img {
 
 .plan-price {
     font-size: 32px;
-    font-family: 'Unbounded Bold', sans-serif;
+    font-family: 'Unbounded Medium', sans-serif;
     margin-bottom: 20px;
 }
 
@@ -522,6 +526,7 @@ img {
 
 /* CTA-кнопки */
 .cta-button {
+    font-family: 'Manrope Medium';
     padding: 12px 42px;
     font-size: 16px;
     font-weight: bold;
@@ -529,6 +534,7 @@ img {
     text-transform: uppercase;
     display: inline-block;
     transition: all 0.3s ease;
+    letter-spacing: 1.6px;
 }
 
 .cta-button.primary {
@@ -924,7 +930,7 @@ img {
 }
 
 .popup-title {
-    font-family: 'Unbounded Bold', sans-serif;
+    font-family: 'Unbounded Medium', sans-serif;
     font-size: 20px;
     color: var(--light-color);
     margin-bottom: 16px;

@@ -9,6 +9,8 @@ import os
 import re
 import time
 import hashlib
+import logging
+from urllib.parse import urlparse
 
 from django.http import JsonResponse
 
@@ -21,8 +23,6 @@ import tiktoken
 from .tracer import *
 from .constants import *
 
-
-import logging
 
 tracer_l = logging.getLogger('askify_app')
 
@@ -689,3 +689,12 @@ def count_tokens(text: str, model: str = 'gpt-4o') -> int:
         tracer_l.warning(f"Warning: Could not get encoding for model {model}. Using cl100k_base. Error: {e}")
         encoding = tiktoken.get_encoding("cl100k_base")
         return len(encoding.encode(text))
+
+
+def is_safe_url(url, allowed_hosts=None):
+    if not url:
+        return False
+    if allowed_hosts is None:
+        allowed_hosts = {settings.ALLOWED_HOSTS[0]} if settings.ALLOWED_HOSTS else set()
+    url_info = urlparse(url)
+    return not url_info.netloc or url_info.netloc in allowed_hosts

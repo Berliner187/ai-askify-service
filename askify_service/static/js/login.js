@@ -23,17 +23,13 @@ $('#loginForm').on('submit', function(event) {
 
     $.ajax({
         type: 'POST',
-        url: '',
+        url: window.location.pathname + window.location.search,
         headers: {
             'X-CSRFToken': csrftoken
         },
         data: $(this).serialize(),
         success: function(response) {
-            if (response.redirect) {
-                window.location.href = response.redirect;
-            } else {
-                window.location.href = '/create';
-            }
+            window.location.href = response.redirect || '/create';
         },
         error: function(xhr) {
             if (xhr.status === 400) {
