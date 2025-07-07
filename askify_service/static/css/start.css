@@ -475,19 +475,24 @@ img {
 }
 
 .pricing-card .link {
+    transition: .25s;
     text-decoration: underline;
+}
+
+.pricing-card .link:hover {
+    text-decoration: none;
 }
 
 .pricing-card.glass {
     background: rgba(255, 255, 255, 0.1);
-    margin: 16px;
-    max-width: 360px;
-    min-width: 280px;
+    margin: 16px auto;
+    max-width: 350px;
+    min-width: 270px;
     width: 70%;
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     border-radius: 24px;
-    padding: 32px;
+    padding: 24px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
     text-align: center;
     border: 1px solid rgba(255, 255, 255, 0.12);
@@ -526,15 +531,13 @@ img {
 
 /* CTA-кнопки */
 .cta-button {
-    font-family: 'Manrope Medium';
     padding: 12px 42px;
     font-size: 16px;
     font-weight: bold;
     border-radius: 32px;
-    text-transform: uppercase;
     display: inline-block;
     transition: all 0.3s ease;
-    letter-spacing: 1.6px;
+    letter-spacing: 1.4px;
 }
 
 .cta-button.primary {
@@ -663,13 +666,13 @@ img {
 .cta-button {
     z-index: 3;
     margin: 0 auto;
-    transition: all 0.4s ease;
+    transition: all 0.3s ease;
     width: fit-content;
     text-align: center;
     color: #e8e7f1;
     border: 3px solid #5A66EB;
     cursor: pointer;
-    border-radius: 32px;
+    border-radius: 20px;
     background-color: rgba(42, 40, 51, .2);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);

@@ -79,12 +79,6 @@
     background-color: #0056b3;
 }
 
-.promo-block {
-    margin: 0 auto;
-    display: flex;
-    justify-content: center;
-    width: 100%;
-}
 .promo-input, .contact {
     font-family: 'Unbounded Regular';
     width: 100%;
