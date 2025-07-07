@@ -477,6 +477,7 @@ img {
 .pricing-card .link {
     transition: .25s;
     text-decoration: underline;
+    font-size: 14px;
 }
 
 .pricing-card .link:hover {

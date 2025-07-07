@@ -149,4 +149,9 @@
     color: #d5d3db;
     border: none;
     padding: 16px;
-} 
+}
+
+.payform-tbank p {
+    color: #928b98;
+    font-size: .8em;
+}

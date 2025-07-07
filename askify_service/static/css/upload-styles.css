@@ -75,6 +75,10 @@
     margin-top: 120px;
 }
 
+.locked-upload .container-buttons {
+    margin-top: 0;
+}
+
 .drop-area {
     padding: 10px 30px;
     display: flex;
