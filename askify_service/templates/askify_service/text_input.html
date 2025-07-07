@@ -41,7 +41,7 @@
     
     <div id="page-container" class="fade" style="display: none;">
         {% include 'header.html' %}
-        {% if subscription_level < 2 %}
+        {% if subscription_level < 2 or subscription_level == 99 %}
         
             <div class="container subscription-offer locked-upload">
 
@@ -198,7 +198,7 @@
                 </div>
 
                 <div class="slider-container">
-                    <div id="char-count">0 / 16384</div>
+                    <div id="char-count">0 / 32768</div>
                     <p id="question-slider-text"><span id="slider-value">1</span> вопросов</p>
                     <input type="range" id="question-slider" class="custom-slider" min="1" max="15" value="5" style="display: none;">
                 </div>
@@ -212,14 +212,14 @@
                                 </div>
                             </a>
                         </div>
-                        {% if subscription_level > 1 %}
-                        <div class="button-medium" onclick="document.getElementById('hidden-file-input').click();">
-                            <div>
-                                <img src="{% static 'img/icon-upload-file.png' %}" alt="">
-                                <p>Прикрепить</p>
+                        {% if subscription_level > 1 and subscription_level < 50 %}
+                            <div class="button-medium" onclick="document.getElementById('hidden-file-input').click();">
+                                <div>
+                                    <img src="{% static 'img/icon-upload-file.png' %}" alt="">
+                                    <p>Прикрепить</p>
+                                </div>
                             </div>
-                        </div>
-                        <input type="file" id="hidden-file-input" accept=".pdf, .doc, .docx, .txt" style="display: none;" onchange="handleFiles(this.files)">
+                            <input type="file" id="hidden-file-input" accept=".pdf, .doc, .docx, .txt" style="display: none;" onchange="handleFiles(this.files)">
                         {% endif %}
 
                     </div>

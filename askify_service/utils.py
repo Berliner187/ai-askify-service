@@ -568,7 +568,7 @@ class SubscriptionCheck:
     def get_subscription_name(self):
         return self.plans.get(self.level, "Стартовый")
 
-    def get_subscription_level(self, subscription_name):
+    def get_subscription_level(self, subscription_name) -> int:
         for number, name in self.plans.items():
             if name == subscription_name:
                 return number

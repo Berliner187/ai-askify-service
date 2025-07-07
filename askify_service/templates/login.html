@@ -57,5 +57,16 @@
         {% include 'footer.html' %}
         <script src="{% static 'js/login.js' %}"></script>
     </div>
+
+    <script>
+        window.addEventListener('message', function(e) {
+        if (e.origin !== 'https://letychka.ru') return;
+        
+        if (e.data.event === 'telegram-auth') {
+            window.location.href = '/create';
+        }
+        });
+    </script>
+    
 </body>
 </html>

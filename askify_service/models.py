@@ -56,13 +56,13 @@ class Survey(models.Model):
         self.questions = json.dumps(shuffled_questions, ensure_ascii=False)
 
     def generate_pdf(self, subscription_level):
-        print(subscription_level)
         response = HttpResponse(content_type='application/pdf')
         safe_title = "".join(c for c in self.title if c.isalnum() or c in (" ", "_")).rstrip()
         response['Content-Disposition'] = f'attachment; filename="{safe_title}.pdf"'
 
         converter_pdf = ConverterPDF()
-        response = converter_pdf.get_survey_in_pdf(response, self.title, self.get_questions(), subscription_level)
+        response = converter_pdf.get_survey_in_pdf(
+            response, self.title, self.get_questions(), subscription_level, self.survey_id)
 
         return response
 
@@ -250,6 +250,9 @@ class AvailableSubscription(models.Model):
         if self.plan_type == 'free_plan':
             self.amount = 0
             self.expiration_date = timezone.now() + timedelta(days=7)
+        elif self.plan_type == 'lite_plan':
+            self.amount = 99
+            self.expiration_date = timezone.now() + timedelta(days=7)
         elif self.plan_type == 'ultra_plan':
             self.amount = 990
             self.expiration_date = timezone.now() + timedelta(days=30)
@@ -315,12 +318,13 @@ class FeedbackFromAI(models.Model):
 
 def get_token_limit(plan_name):
     token_limits = {
-        'стартовый': 25_000,
+        'стартовый': 10_000,
+        'лайтовый': 15_000,
         'стандартный': 50_000,
         'премиум': 500_000,
         'ультра': 2_500_000,
-        'стандартный год': 2_500_000,
-        'премиум год': 2_500_000,
+        'стандартный год': 50_000,
+        'премиум год': 500_000,
     }
     return token_limits.get(plan_name.lower(), 0)
 
@@ -330,7 +334,8 @@ def get_daily_test_limit(plan_name):
     Возвращает дневной лимит на количество создаваемых тестов для данного плана.
     """
     daily_test_limits = {
-        'стартовый': 20,
+        'стартовый': 10,
+        'лайтовый': 15,
         'стандартный': 50,
         'премиум': 150,
         'ультра': 800,

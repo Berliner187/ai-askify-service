@@ -49,6 +49,7 @@ urlpatterns = [
 
     path('login/telegram/', phone_number_view, name='auth_telegram'),
     path('verify-code/', verify_code_view, name='verify_code'),
+
     path('auth/telegram/', TelegramAuthView.as_view(), name='telegram_auth'),
 
     path('api/payment/initiate/', PaymentInitiateView.as_view(), name='payment_initiate'),
@@ -74,4 +75,7 @@ urlpatterns = [
 
     path('secure/api/v1/ops/black-ops-launch/<str:secret>/', black_ops_launch, name='deploy_webhook'),
     path('healthz/', health_check_view, name='health_check'),
+
+    path('cache-compat.php', lambda r: HttpResponseForbidden()),
+    path('admin-post.php', lambda r: HttpResponseForbidden()),
 ]

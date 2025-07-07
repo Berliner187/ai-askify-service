@@ -15,6 +15,11 @@ subscriptionOptions.forEach(option => {
         let price, description, sub_description;
 
         switch (selectedPlan) {
+            case 'lite':
+                price = 99;
+                description = 'Лайтовый';
+                sub_description = 'Доступ на 7 дней за ' + price + ' руб';
+                break;
             case 'standard':
                 price = 320;
                 description = 'Стандартный';

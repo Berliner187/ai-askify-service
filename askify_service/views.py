@@ -155,7 +155,7 @@ def page_create_survey(request):
             total_questions += len(questions)
         except Exception:
             continue
-    avg_questions = (total_questions / total_tests) if total_tests else None
+    avg_questions = (total_questions / total_tests) if total_tests else 0
 
     # 11
     total_answers = user_answers.count() or 0
@@ -211,16 +211,16 @@ def page_create_survey(request):
         "today_uploads": today_uploads,
         "model_used": model_used,
         # "avg_score": f"{avg_score:.1f}" if avg_score else '',
-        "total_questions": total_questions or '',
-        "avg_questions": f"{avg_questions:.1f}" if avg_questions else '',
-        "total_answers": total_answers or '',
-        "avg_correct_answers": f"{avg_correct_answers:.1f}" if avg_correct_answers else '',
-        "unique_models_count": unique_models_count or '',
-        "tests_this_month": tests_this_month or '',
-        "feedback_last_week": feedback_last_week or '',
-        "percent_with_feedback": f"{percent_with_feedback:.1f}%" if percent_with_feedback else '',
-        "avg_tokens_used": f"{avg_tokens_used:.1f}" if avg_tokens_used else '',
-        "tests_created_and_passed": tests_created_and_passed or '',
+        "total_questions": total_questions or 0,
+        "avg_questions": f"{avg_questions:.1f}" if avg_questions else 0,
+        "total_answers": total_answers or 0,
+        "avg_correct_answers": f"{avg_correct_answers:.1f}" if avg_correct_answers else 0,
+        "unique_models_count": unique_models_count or 0,
+        "tests_this_month": tests_this_month or 0,
+        "feedback_last_week": feedback_last_week or 0,
+        "percent_with_feedback": f"{percent_with_feedback:.1f}%" if percent_with_feedback else 0,
+        "avg_tokens_used": f"{avg_tokens_used:.1f}" if avg_tokens_used else 0,
+        "tests_created_and_passed": tests_created_and_passed or 0,
     }
 
     return render(request, 'askify_service/text_input.html', context)
@@ -676,10 +676,13 @@ def get_all_surveys(request):
     return response_data_all
 
 
-@method_decorator(login_required, name='dispatch')
-@method_decorator(subscription_required, name='dispatch')
+# @method_decorator(login_required, name='dispatch')
+# @method_decorator(subscription_required, name='dispatch')
 class FileUploadView(View):
     async def post(self, request):
+        if not request.user.is_authenticated:
+            return HttpResponseForbidden()
+
         form = FileUploadForm(request.POST, request.FILES)
         if not form.is_valid():
             tracer_l.error('Загружен невалидный файл')
@@ -772,6 +775,11 @@ class FileUploadView(View):
 
         tracer_l.info(f'Успешно создан тест: {new_survey_id}')
         return JsonResponse({'success': True, 'message': 'Success create survey', 'survey_id': f"{new_survey_id}"})
+
+    async def get(self, request):
+        if not request.user.is_authenticated:
+            return HttpResponseForbidden()
+        return JsonResponse({'error': True, 'message': 'Invalid method'})
 
     def read_file_data(self, uploaded_file):
         full_text = ""
@@ -887,13 +895,12 @@ class TakeSurvey(View):
 
         subscription = Subscription.objects.get(staff_id=get_staff_id(request))
 
-        subscription_check = SubscriptionCheck()
-        subs_level = subscription_check.get_subscription_level(subscription.plan_name)
+        subs_level = get_subscription_level(request)
 
         status = subscription.check_sub_status()
         tests_count_limit = get_daily_test_limit(subscription.plan_name) if status == 'active' else 0
 
-        if (status == 'active') and (tests_count_limit > 0):
+        if (status == 'active') and (tests_count_limit > 0) and (subs_level != 99):
             generation_models_control = GenerationModelsControl()
             ai_feedback = generation_models_control.get_feedback_001(
                 f"Список вопросов и моих ответов: {user_answers_list}.\n"
@@ -976,7 +983,7 @@ def result_view(request, survey_id):
 
     except Exception as fail:
         feedback_text = 'Не удалось получить обратную связь от ИИ :('
-        tracer_l.warning(f'{request.user.username} --- {fail}')
+        tracer_l.warning(f'Нет фидбэка: {request.user.username} --- {fail}')
 
     subscription_db = Subscription.objects.get(staff_id=get_staff_id(request))
     subscription_check = SubscriptionCheck()
@@ -1390,7 +1397,7 @@ def download_survey_pdf(request, survey_id):
         except Exception:
             subscription_level = 0
 
-        tracer_l.info(f'{request.user.username} --- subscription_level: {subscription_level}')
+        tracer_l.info(f'{request.user.id} --- success view: subscription_level {subscription_level}')
         return survey.generate_pdf(subscription_level)
     except Exception as fatal:
         tracer_l.critical(f'{request.user.username} --- FATAL with View survey in PDF: {fatal}')
@@ -1602,7 +1609,8 @@ def profile_view(request, username):
     total_tokens = get_format_number(_total_tokens)
 
     subscription = get_object_or_404(Subscription, staff_id=staff_id)
-    subscription_end_date_formatted = get_formate_date(subscription.end_date)
+    subscription_end_date_formatted = subscription.end_date.strftime('%d.%m.%Y')
+
     human_readable_plan = subscription.get_human_plan()
 
     subscription_end_date_as_date = subscription.end_date.date()
@@ -1625,7 +1633,7 @@ def profile_view(request, username):
     user_data = {
         'page_title': f'Профиль {username}',
         'username': username,
-        'email': 'E-mail: ' + (user.email if user.email else ''),
+        'email': ('E-mail: ' + user.email) if user.email else '',
         'password': f'Пароль: *********' if user.password else '',
         'phone': 'Телефон: ' + (user.phone if user.phone else 'Не указан'),
         'date_join': date_join,
@@ -1635,7 +1643,8 @@ def profile_view(request, username):
             'surveys': total_tokens_for_surveys,
             'feedback': total_tokens_for_feedback,
             'total_tokens': total_tokens,
-            'tests_count_limit': diff_tests_count_limit
+            'tests_remaining_count_limit': diff_tests_count_limit,
+            'tests_total_limit': tests_count_limit
         },
         'subscription': {
             'plan_name': human_readable_plan,
@@ -1649,7 +1658,7 @@ def profile_view(request, username):
     return render(request, 'profile.html', user_data)
 
 
-def get_subscription_level(request):
+def get_subscription_level(request) -> int:
     subscription_db = Subscription.objects.get(staff_id=get_staff_id(request))
     subscription_check = SubscriptionCheck()
     return subscription_check.get_subscription_level(subscription_db.plan_name)
@@ -2068,6 +2077,7 @@ class PaymentInitiateView(View):
 
         plan_prices = {
             'Начальный': 0,
+            'Лайтовый': 99,
             'Стандартный': 320,
             'Премиум': 590,
             'Ультра': 990,
@@ -2103,7 +2113,7 @@ class PaymentInitiateView(View):
         ]
 
         tracer_l.warning(f'{request.user.username}\n\nWANT TO BUY!!!\n\nAmount: {amount}\n'
-                         f'About: {description}\nEmail: {email}\nPhone: {phone}')
+                         f'About: {description}')
 
         created_token = PaymentManager().generate_token_for_new_payment(data_token)
 
@@ -2232,6 +2242,8 @@ class PaymentSuccessView(View):
                     payment.status = 'completed'
                     payment.save()
 
+                    tracer_l.critical(f'SUCCESS BUY - {request.user.username} - {description_payment}')
+
                     subscription.start_date = datetime.now()
                     subscription.end_date = datetime.now() + timedelta(days=30)
                     subscription.status = 'active'
@@ -2287,10 +2299,10 @@ class PaymentSuccessView(View):
                                 fail_silently=False,
                                 html_message=message
                             )
-                        tracer_l.info(f'{request.user.username}\n\nSuccess send mail')
+                        tracer_l.info(f'{request.user.username} Success send mail')
 
                     except Exception as fail:
-                        tracer_l.warning(f'{request.user.username}\n\nError to send check to email: {fail}')
+                        tracer_l.warning(f'{request.user.username} Error to send check to email: {fail}')
 
                     try:
                         payment_details_text = "\n".join(
@@ -2304,15 +2316,15 @@ class PaymentSuccessView(View):
                             f"{payment_details_text}\n\n"
                             f"<b>ID пользователя:</b> {get_staff_id(request)}"
                         )
-
-                        auth_user = AuthUser.objects.get(id_staff=get_staff_id(request))
-                        additional_auth_user = AuthAdditionalUser.objects.get(user=auth_user)
-
                         telegram_message_manager = ManageTelegramMessages()
                         telegram_message_manager.send_message(TELEGRAM_CHAT_ID, message)
-                        telegram_message_manager.send_message(additional_auth_user.id_telegram, message)
 
-                        tracer_l.info(f'{request.user.username}\n\nSuccess send to Telegram')
+                        auth_user = AuthUser.objects.filter(id_staff=get_staff_id(request)).first()
+                        if auth_user:
+                            additional_auth_user = AuthAdditionalUser.objects.get(user=auth_user)
+                            telegram_message_manager.send_message(additional_auth_user.id_telegram, message)
+
+                            tracer_l.info(f'{request.user.username}\n\nSuccess send to Telegram')
                     except Exception as fail:
                         tracer_l.warning(f'{request.user.username}\n\nFail while send info about payment to Telegram: {fail}')
 
@@ -2763,9 +2775,17 @@ def check_telegram_hash(auth_data):
     return hash_check
 
 
+@method_decorator(csrf_exempt, name='dispatch')
 class TelegramAuthView(View):
+    def dispatch(self, request, *args, **kwargs):
+        tracer_l.warning(f"TelegramAuthView dispatch method={request.method} GET={request.GET} POST={request.POST}")
+        return super().dispatch(request, *args, **kwargs)
+
     def post(self, request):
         auth_data = request.POST
+
+        tracer_l.warning("TelegramAuthView called")
+        tracer_l.warning(f"{auth_data}")
 
         try:
             auth_date = auth_data.get('auth_date', 999)
@@ -2775,10 +2795,11 @@ class TelegramAuthView(View):
             username = auth_data.get('username', None)
 
             if not check_telegram_hash(auth_data):
-                print("Invalid hash")
+                tracer_l.warning("Invalid hash")
                 return JsonResponse({'status': 'Error', 'message': 'Invalid auth'}, status=400)
 
-            if (int(time.time()) - int(auth_date) > 600) or (telegram_id == 0):
+            if (int(time.time()) - int(auth_date) > 600) or (int(telegram_id) == 0):
+                tracer_l.warning("Invalid timestamp or ID")
                 return JsonResponse({'status': 'error', 'message': 'Invalid data'}, status=400)
 
             existing_user = AuthAdditionalUser.objects.filter(id_telegram=telegram_id).first()
@@ -2816,14 +2837,30 @@ class TelegramAuthView(View):
 
             tracer_l.debug(f'TelegramAuthView: user has been login in')
 
-            return redirect('create')
+            auth_data = {
+                'id': telegram_id,
+                'first_name': first_name,
+                'last_name': last_name,
+                'username': username,
+                'auth_date': auth_date,
+                'hash': request.GET.get('hash') or request.POST.get('hash')
+            }
+            return render(request, "telegram.html", {
+                "target_url": reverse('create'),
+                "auth_data": auth_data  # Добавляем данные для шаблона
+            })
+
         except Exception as fail:
+            import traceback
+            tracer_l.error(f'Error: {fail}\n{traceback.format_exc()}')
             tracer_l.error(f'TelegramAuthView: error in tg auth: {fail}')
             return JsonResponse({'status': 'error', 'message': 'Internal server error'}, status=500)
 
     def get(self, request):
-        print("TelegramAuthView called")
         auth_data = request.GET
+
+        tracer_l.warning("TelegramAuthView called")
+        tracer_l.warning(f"{auth_data}")
 
         try:
             auth_date = auth_data.get('auth_date', 999)
@@ -2873,8 +2910,23 @@ class TelegramAuthView(View):
 
             tracer_l.debug(f'TelegramAuthView: success')
 
-            return redirect('create')
+            # return redirect('create')
+            auth_data = {
+                'id': telegram_id,
+                'first_name': first_name,
+                'last_name': last_name,
+                'username': username,
+                'auth_date': auth_date,
+                'hash': request.GET.get('hash') or request.POST.get('hash')
+            }
+            return render(request, "telegram.html", {
+                "target_url": reverse('create'),
+                "auth_data": auth_data  # Добавляем данные для шаблона
+            })
+
         except Exception as fail:
+            import traceback
+            tracer_l.error(f'Error: {fail}\n{traceback.format_exc()}')
             tracer_l.error(f'TelegramAuthView: error in tg auth: {fail}')
             return JsonResponse({'status': 'error', 'message': 'Internal server error'}, status=500)
 

@@ -467,6 +467,11 @@ img {
 .pricing-grid {
     display: flex;
     justify-content: space-evenly;
+    flex-wrap: wrap;
+}
+
+.pricing-card .gen-hint {
+    margin-top: 24px;
 }
 
 .pricing-card.glass {

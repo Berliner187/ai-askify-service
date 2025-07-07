@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Redirecting...</title>
+  <script>
+    (function() {
+      // Формат ответа, который ожидает Telegram Widget
+      const response = {
+        event: 'telegram-auth',
+        data: {
+          id: {{ auth_data.id }},
+          first_name: "{{ auth_data.first_name|escapejs }}",
+          {% if auth_data.last_name %}last_name: "{{ auth_data.last_name|escapejs }}",{% endif %}
+          {% if auth_data.username %}username: "{{ auth_data.username|escapejs }}",{% endif %}
+          auth_date: {{ auth_data.auth_date }},
+          hash: "{{ auth_data.hash|escapejs }}"
+        }
+      };
+
+      if (window.opener) {
+        window.opener.postMessage(response, 'https://letychka.ru');
+      }
+      
+      setTimeout(function() {
+        window.location.href = "{{ target_url }}";
+      }, 100);
+    })();
+  </script>
+</head>
+<body>
+  <p>Авторизация завершена. Перенаправляем...</p>
+</body>
+</html>

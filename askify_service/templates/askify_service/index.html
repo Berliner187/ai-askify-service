@@ -24,7 +24,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="{% static 'img/apple-touch-icon.png' %}">
     <link rel="shortcut icon" href="{% static 'img/favicon.ico' %}" type="image/ico">
     <link rel="stylesheet" href="{% static 'css/themes-carusel.css' %}?v=1.2">
-    <link rel="stylesheet" href="{% static 'css/start.css' %}?v=3.16">
+    <link rel="stylesheet" href="{% static 'css/start.css' %}?v=3.17">
     <link rel="stylesheet" href="{% static 'css/footer.css' %}">
 
     <!-- Yandex.Metrika counter -->
@@ -490,47 +490,65 @@
         </div>
 
         <div class="pricing-grid">
-            <!-- Free Plan -->
             <div class="pricing-card glass">
-                <div class="badge ghost">Чтобы начать</div>
-                <h3 class="plan-title">Старт</h3>
-                <div class="plan-price">0 ₽</div>
+                <div class="badge ghost">Перед экзаменом</div>
+                <h3 class="plan-title">Лайтовый</h3>
+                <div class="plan-price">99 ₽ на неделю</div>
                 <ul class="plan-features">
-                    <li>10 бесплатных тестов</li>
-                    <li>PDF с водяными знаками</li>
-                    <li>Обратная связь от ИИ по результатам</li>
+                    <li>15 тестов в день</li>
+                    <li>PDF без водяных знаков</li>
+                    <li>Можно пройти на платформе</li>
+                    <li>Смотрите ответы сразу, без прохождения</li>
                 </ul>
-                <a href="/login" class="cta-button ghost">Попробовать</a>
+                <a href="/available-plans/" class="cta-button primary">Подробнее</a>
+                <p class="gen-hint">Абонемент, не подписка.<br>Никаких неожиданных списаний</p>
             </div>
-
+            
             <!-- Standard Plan -->
             <div class="pricing-card glass popular">
                 <div class="badge">Рекомендуем</div>
                 <h3 class="plan-title">Стандарт</h3>
-                <div class="plan-price">320 ₽ / мес</div>
+                <div class="plan-price">320 ₽ на мес</div>
                 <ul class="plan-features">
                     <li>50 тестов в день</li>
                     <li>PDF без водяных знаков</li>
                     <li>Обратная связь от ИИ по результатам</li>
                     <li>Экспорт результатов о прохождении в PDF</li>
                 </ul>
-                <a href="/payment/" class="cta-button primary">Купить</a>
+                <a href="/available-plans/" class="cta-button primary">Подробнее</a>
+                <p class="gen-hint">Абонемент, не подписка.<br>Никаких неожиданных списаний</p>
             </div>
 
             <!-- Premium Plan -->
             <div class="pricing-card glass">
-            <div class="badge ghost">Полный пакет</div>
-            <h3 class="plan-title">Премиум</h3>
-            <div class="plan-price">590 ₽ / мес</div>
-            <ul class="plan-features">
-                <li>150 тестов в день</li>
-                <li>Чистый PDF без водяных знаков</li>
-                <li>Обратная связь от ИИ по результатам</li>
-                <li>Загружайте PDF, DOC, DOCX с материалами</li>
-                <li>Экспорт результатов о прохождении в PDF</li>
-            </ul>
-            <a href="/payment/" class="cta-button primary">Купить</a>
+                <div class="badge ghost">Полный пакет</div>
+                <h3 class="plan-title">Премиум</h3>
+                <div class="plan-price">590 ₽ на мес</div>
+                <ul class="plan-features">
+                    <li>150 тестов в день</li>
+                    <li>Чистый PDF без водяных знаков</li>
+                    <li>Обратная связь от ИИ по результатам</li>
+                    <li>Загрузка своих Word и PDF документов для генерации тестов</li>
+                    <li>Экспорт результатов о прохождении в PDF</li>
+                </ul>
+                <a href="/available-plans/" class="cta-button primary">Подробнее</a>
+                <p class="gen-hint">Абонемент, не подписка.<br>Никаких неожиданных списаний</p>
             </div>
+
+            <!-- Free Plan -->
+            <div class="pricing-card glass">
+                <div class="badge ghost">Чтобы начать</div>
+                <h3 class="plan-title">Стартовый</h3>
+                <div class="plan-price">0 ₽ на неделю</div>
+                <ul class="plan-features">
+                    <li>10 бесплатных тестов</li>
+                    <li>PDF с водяными знаками</li>
+                    <li>Можно пройти на платформе</li>
+                </ul>
+                <a href="/login" class="cta-button ghost">Попробовать</a>
+                <p class="gen-hint">Абонемент, не подписка.<br>Никаких неожиданных списаний</p>
+            </div>
+
         </div>
 
     </section>

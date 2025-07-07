@@ -18,7 +18,7 @@
 
 body {
     font-family: "Namu Pro", Arial, sans-serif;
-    background-color: #18171a;
+    background-color: #101012;
     color: #dbdae3;
     margin: 0;
     padding: 0;
@@ -29,7 +29,7 @@ body {
     background: url('../img/bg-gradient-17063.png');
     background-position: top center;
     background-repeat: no-repeat;
-    background-color: #18171a;
+    background-color: #101012;
 }
 
 html, body {
@@ -1268,7 +1268,7 @@ hr {
     font-size: 14px;
     cursor: pointer;
     padding: 10px;
-    background-color: #18171a;
+    background-color: #101012;
     margin: 8px 0;
     user-select: none;
 }

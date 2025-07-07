@@ -33,10 +33,10 @@ SUBSCRIPTION_TIERS = {
     0: "Стартовый",
     1: "Стандартный",
     2: "Премиум",
-    4: "Ультра",
-    5: "Enterprise",
-    6: "Стандартный Год",
-    7: "Премиум Год"
+    3: "Ультра",
+    4: "Стандартный Год",
+    5: "Премиум Год",
+    99: "Лайтовый",
 }
 
 ALLOWED_DOMAINS = [
@@ -56,10 +56,3 @@ ALLOWED_DOMAINS = [
     'hotmail.ru',
     'tut.by'
 ]
-
-# PLANS = {
-#     "starter": Plan(name="Стартовый", token_limit=10_000, duration=timedelta(days=7), is_paid=False),
-#     "standard": Plan(name="Стандартный", token_limit=50_000, duration=timedelta(days=30), is_paid=True),
-#     "premium": Plan(name="Премиум", token_limit=150_000, duration=timedelta(days=30), is_paid=True),
-#     "ultra": Plan(name="Ультра", token_limit=500_000, duration=timedelta(days=30), is_paid=True),
-# }

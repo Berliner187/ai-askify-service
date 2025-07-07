@@ -77,7 +77,7 @@
                             </div>
                         </a>
                     </div>
-                {% elif subscription_level < 2 %}
+                {% elif subscription_level < 2 or subscription_level == 99 %}
                     <div class="button-medium">
                         <a href="{% url 'payment' %}">
                             <div>
@@ -111,9 +111,9 @@
                     <li>Всего использовано <span class="accent-color-text">{{tokens.total_tokens}}</span></li>
                 </ul>
                 <hr>
-                <h3>Лимит на создание тестов</h3>
+                <h3>Лимиты</h3>
                 <ul>
-                    <li>Доступно создать <span class="accent-color-text">{{ tokens.tests_count_limit }}</span> тестов сегодня</li>
+                    <li>Доступно создать <span class="accent-color-text">{{ tokens.tests_remaining_count_limit }}</span> тестов сегодня</li>
                 </ul>
             </div>
 
