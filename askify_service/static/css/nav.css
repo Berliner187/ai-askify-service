@@ -615,11 +615,12 @@ ul {
 
     .vision-container {
         margin: 0 auto;
+        top: 0;
         width: 92%;
-        height: 98%;
+        height: 96%;
         border-radius: 24px 24px 0 0;
         box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.4);
-        padding-bottom: env(safe-area-inset-bottom);
+        padding-bottom: 40px;
     }
 
     .vision-header {

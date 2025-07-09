@@ -1,196 +1,209 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    {% include 'components/meta_tags.html' %}
-    {% load static %}
-    <link rel="shortcut icon" href="{% static 'img/favicon.ico' %}" type="image/png">
-    {% include 'components/linker.html' %}
-    <link rel="stylesheet" href="{% static 'css/change-plan.css' %}">
-    <script src="https://securepay.tinkoff.ru/html/payForm/js/tinkoff_v2.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Оплата | Летучка</title>
+  {% load static %}
+  <link rel="shortcut icon" href="{% static 'img/favicon.ico' %}" type="image/png" />
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://securepay.tinkoff.ru/html/payForm/js/tinkoff_v2.js"></script>
+    <link rel="stylesheet" href="{% static 'css/footer.css' %}">
+  <style>
+    :root {
+      --bg:rgba(15, 8, 24, 1);
+      --card-bg:rgba(255,255,255,0.06);
+      --stroke:rgba(255,255,255,0.12);
+      --accent:#616DF0;
+      --accent-green:#79EF66;
+      --text:#ffffff;
+      --text-dim:rgba(255,255,255,0.6);
+      --radius: 16px;
+    }
+
+    @font-face {
+        font-family: 'Namu Pro';
+        src: url(../fonts/NAMU-Pro.woff2);
+    }
+    html,body{
+        margin:0; padding:0;
+        color:var(--text);
+        font-family: 'Namu Pro', Roboto,Arial,sans-serif;-webkit-font-smoothing: antialiased;
+    }
+    html {
+        background-color: var(--bg);
+        background-image: url(../../static/img/bg-gradient-0907.svg);
+    }
+    *,*:before,*:after{box-sizing:border-box}
+    a{color:var(--accent-green);text-decoration:none}
+    .fade-in{animation:fade 0.4s ease forwards}
+    @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+    .container{
+        width: 92%; min-width: 600px; max-width: 1000px;
+        padding: 16px 16px;margin: 100px auto;
+        display:flex;flex-direction:column;gap:20px; 
+        background-color: var(--card-bg);border-radius: 32px;
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+    @font-face {
+        font-family: 'Unbounded Medium';
+        src: url(../../static/fonts/Unbounded-Medium.ttf);
+    }
+    h2.product-title{
+        font-family: 'Unbounded Medium'; font-size:1.4rem;font-weight:700;
+    }
+    .plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px}
+    .plan{position:relative;padding:24px;border:1px solid var(--stroke);border-radius:var(--radius);background:var(--card-bg);backdrop-filter:blur(24px);cursor:pointer;transition:all 0.25s ease}
+    .plan:hover{transform:translateY(-4px);box-shadow:0 8px 16px rgba(40, 38, 43, 0.2)}
+    .plan.selected{border-color:var(--accent-green);box-shadow:0 0 0 2px var(--accent-green)}
+    .plan-title{font-weight:600;font-size:1.1rem;margin-bottom:6px;color:var(--accent-green)}
+    .plan-desc{font-size:0.88rem;color:var(--text-dim);line-height:1.4;margin:6px 0}
+    .plan-price{font-family: 'Unbounded Medium'; font-size:1.6rem;font-weight:700;color:var(--accent-green);margin-top:12px}
+    .yearly-label{font-size:0.75rem;color:var(--text-dim)}
+    .agreement{display:flex;align-items:center;font-size:0.8rem;gap:8px;margin-top:8px}
+    .agreement input{accent-color:var(--accent-green)}
+    .agreement{display:flex;align-items:center;font-size:0.8rem;gap:8px;position:relative} .agreement input[type="checkbox"]{position:absolute;opacity:0;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);margin:0;padding:0} .agreement label{position:relative;padding-left:28px;cursor:pointer;color:var(--text)} .agreement label::before{content:"";position:absolute;top:50%;left:0;width:18px;height:18px;border:2px solid var(--stroke);border-radius:var(--radius);background:var(--card-bg);transform:translateY(-50%);transition:border-color .2s,background .2s;box-sizing:border-box} .agreement label::after{content:"";position:absolute;top:50%;left:4px;width:6px;height:10px;border:solid var(--card-bg);border-width:0 2px 2px 0;transform:translateY(-50%) rotate(45deg) scale(0);transition:transform .15s ease-in-out} .agreement input[type="checkbox"]:checked+label::before{background:var(--accent-green);border-color:var(--accent-green)} .agreement input[type="checkbox"]:checked+label::after{transform:translateY(-50%) rotate(45deg) scale(1)} .agreement input[type="checkbox"]:focus+label::before,.agreement label:hover::before{border-color:var(--accent-green)} .agreement a{color:var(--accent-green);text-decoration:none} .agreement a:hover{text-decoration:underline}
+    .contact-container{display:flex;flex-wrap:wrap;gap:12px;margin-top:16px}
+    .contact{flex:1 1 260px;padding:12px 14px;border:1px solid var(--stroke);border-radius:var(--radius);background:transparent;color:var(--text)}
+    .contact::placeholder{color:var(--text-dim)}
+    .payment-button{width:100%;margin-top:24px;padding:14px 0;border:none;border-radius:var(--radius);font-size:1rem;font-weight:600;background:var(--accent);color:#fff;cursor:pointer;transition:background 0.25s ease}
+    .payment-button:hover{background:var(--accent-green)}
+    hr{border:none;height:1px;background:var(--stroke);margin:28px 0}
+
+    @media(max-width:600px) {
+        .plans{
+            grid-template-columns:1fr
+        }
+        .plan{padding:20px}
+        .container {
+            width: 92%; min-width: 100px; max-width: 580px;
+        }
+        body {
+            background-size: 300%;
+        }
+        html {
+            background-position: center;
+        }
+    }
+  </style>
 </head>
 <body>
-    <script src="{% static 'js/second-loader.js' %}"></script>
-    {% include 'components/loader.html' %}
+    {% include 'header.html' %}
+  <div class="container fade-in">
+    <h2 class="product-title">Выберите план</h2>
 
-    <div id="page-container" class="fade" style="display: none;">
-        {% include 'header.html' %}
-        
-        <div class="container payment-container">
-            <h2 class="product-title">Выбор плана</h2>
-
-            <div class="subscription-selector">
-        
-                <div class="subscription-options">
-                    
-                    <div class="subscription-option" data-plan="lite">
-                        <div>
-                            <p><strong>Лайтовый план</strong></p>
-                            <p class="description">⮑ Генерация тестов по запросу</p>
-                            <p class="description">⮑ Можно пройти тесты на платформе</p>
-                            <p class="description">⮑ Скачивание в PDF для печати без водяных знаков</p>
-                            <p class="description">⮑ Просмотр ответов без прохождения</p>
-                            <p class="description">⮑ 10 тестов в сутки</p>
-                            <p class="description">Доступ на неделю</p>
-                        </div>
-                        <h3 class="price">₽99</h3>
-                    </div>
-
-                    <div class="subscription-option" data-plan="standard">
-                        <div>
-                            <p><strong>Стандартный план</strong></p>
-                            <p class="description">⮑ Генерация тестов по запросу</p>
-                            <p class="description">⮑ Скачивание в PDF для печати без водяных знаков</p>
-                            <p class="description">⮑ Обратная связь от ИИ</p>
-                            <p class="description">⮑ Смотрите ответы сразу, без прохождения</p>
-                            <p class="description">⮑ 50 тестов в сутки</p>
-                            <p class="description">Доступ на месяц</p>
-                        </div>
-                        <h3 class="price">320₽</h3>
-                    </div>
-
-                    <div class="subscription-option" data-plan="premium">
-                        <div>
-                            <p><strong>Премиум план</strong></p>
-                            <p class="description">⮑ Генерация тестов по запросу</p>
-                            <p class="description">⮑ Скачивание в PDF для печати без водяных знаков</p>
-                            <p class="description">⮑ Обратная связь от ИИ</p>
-                            <p class="description">⮑ Смотрите ответы сразу, без прохождения</p>
-                            <p class="description">⮑ Просмотр ответов без прохождения</p>
-                            <p class="description">⮑ Экспорт результатов о прохождении в PDF</p>
-                            <p class="description">⮑ Возможность загрузки Word и PDF документов для генерации тестов</p>
-                            <p class="description">⮑ 150 тестов в сутки</p>
-                            <p class="description">Доступ на месяц</p>
-                        </div>
-                        <h3 class="price">590₽</h3>
-                    </div>
-        
-                    <!-- <div class="subscription-option" data-plan="ultra">
-                        <div>
-                            <p><strong>Ультра</strong></p>
-                            <p class="description">⮑ Все функции Премиум плана</p>
-                            <p class="description">⮑ Доступ с 4-х устройств</p>
-                            <p class="description">⮑ 800 тестов в сутки</p>
-                            <p class="description">Доступ на 30 дней</p>
-                        </div>
-                        <h3 class="price">990₽</h3>
-                    </div> -->
-                    <hr>
-
-                    <h3>Годовые тарифы</h3>
-
-                    <div class="subscription-option" data-plan="standard-year">
-                        <div>
-                            <p><strong>Стандартный план (годовой) – 37% скидка</strong></p>
-                            <p class="description">⮑ Все то же самое, что и в Стандартном, но со скидкой</p>
-                            <p class="description">Доступ на 365 дней</p>
-                        </div>
-                        <h3 class="price">2640₽</h3>
-                    </div>
-        
-                    <div class="subscription-option" data-plan="premium-year">
-                        <div>
-                            <p><strong>Премиум план (годовой) – 32% скидка</strong></p>
-                            <p class="description">⮑ Все то же самое, что и в Премиуме, но со скидкой</p>
-                            <p class="description">Доступ на 365 дней</p>
-                        </div>
-                        <h3 class="price">4800₽</h3>
-                    </div>
-                </div>
-            </div>
-
-            <p><strong class="selected_plan_text">План не выбран</strong></p>
-
-            <div class="agreement">
-                <input type="checkbox" id="agreement" class="agreement-checkbox">
-                <label for="agreement">Согласен с <a href="/docs/user-agreement">пользовательским соглашением</a> и <a href="/docs/privacy-policy">политикой обработки персональных данных</a>.</label>
-            </div>
-
-            <form class="payform-tbank" name="payform-tbank" id="payform-tbank">
-                {% csrf_token %}
-                <input class="payform-tbank-row" type="hidden" name="frame" value="false">
-                <input class="payform-tbank-row" type="hidden" name="language" value="ru">
-                <input class="payform-tbank-row" type="hidden" name="receipt" value="">
-                <input class="payform-tbank-row" type="hidden" placeholder="Сумма заказа" name="amount" id="amount_price">
-                <input class="payform-tbank-row" type="hidden" placeholder="Номер заказа" name="order" value="{{order_id}}">
-                <input class="payform-tbank-row" type="hidden" placeholder="Описание заказа" id="description_order" name="description" value="">
-                <div class="contact-container">
-                    <input class="payform-tbank-row contact" placeholder="E-mail" name="email" value="{{email}}">
-                    <input class="payform-tbank-row contact" placeholder="Контактный телефон" name="phone" value="{{phone}}">
-                </div>
-                <input class="payform-tbank-row payment-button" type="submit" value="Перейти к оплате">
-            </form>
-        </div>
-        
-        {% include 'footer.html' %}
+    <div class="plans" id="planSelector">
+      <!-- Standard -->
+      <div class="plan" data-plan="standard" data-price="320" data-desc="Стандартный">
+        <div class="plan-title">Стандартный</div>
+        <div class="plan-desc">⮑ 50 тестов в день<br>⮑ AI‑обратная связь<br>⮑ PDF без водяных знаков<br>⮑ доступ на месяц</div>
+        <div class="plan-price">320 ₽</div>
+      </div>
+      <!-- Premium -->
+      <div class="plan" data-plan="premium" data-price="590" data-desc="Премиум">
+        <div class="plan-title">Премиум</div>
+        <div class="plan-desc">⮑ 150 тестов в день<br>⮑ Загрузка PDF/DOCX<br>⮑ Экспорт результатов<br>⮑ доступ на месяц</div>
+        <div class="plan-price">590 ₽</div>
+      </div>
+      <!-- Lite -->
+      <div class="plan" data-plan="lite" data-price="99" data-desc="Лайтовый">
+        <div class="plan-title">Лайтовый</div>
+        <div class="plan-desc">⮑ 10 тестов в день<br>⮑ PDF без водяных знаков<br>⮑ Просмотр ответов<br>⮑ Доступ на неделю</div>
+        <div class="plan-price">99 ₽</div>
+      </div>
+      <!-- Yearly Standard -->
+      <div class="plan" data-plan="standard-year" data-price="2640" data-desc="Стандартный Год">
+        <div class="plan-title">Стандартный • Годовой <span class="yearly-label">–37 %</span></div>
+        <div class="plan-desc">⮑ Всё как в Standard, но выгоднее</div>
+        <div class="plan-price">2 640 ₽</div>
+      </div>
+      <!-- Yearly Premium -->
+      <div class="plan" data-plan="premium-year" data-price="4800" data-desc="Премиум Год">
+        <div class="plan-title">Премиум • Годовой <span class="yearly-label">–32 %</span></div>
+        <div class="plan-desc">⮑ Всё как в Premium, но выгоднее</div>
+        <div class="plan-price">4 800 ₽</div>
+      </div>
     </div>
 
-    <script src="{% static 'js/plan-selector.js' %}"></script>
+    <p><span class="selected_plan_text" id="selectedPlanText">Не выбран</span> план</p>
 
-    <script type="text/javascript">
-        const TPF = document.getElementById("payform-tbank");
+    <div class="agreement">
+        <input type="checkbox" id="agreement" />
+        <label for="agreement">
+            Даю согласие с
+            <a href="/docs/user-agreement" target="_blank">условиями</a> и
+            <a href="/docs/privacy-policy" target="_blank">политикой конфиденциальности</a>.
+        </label>
+    </div>
 
-        TPF.addEventListener("submit", function (e) {
-            e.preventDefault();
-            const {description, amount, email, phone} = TPF;
 
-            if (!email.value && !phone.value) {
-                return alert("Поле E-mail или Phone не должно быть пустым");
-            }
+    <form name="payform-tbank" id="payform-tbank">
+      {% csrf_token %}
+      <input type="hidden" name="frame" value="false" />
+      <input type="hidden" name="language" value="ru" />
+      <input type="hidden" name="receipt" value="" />
+      <input type="hidden" name="amount" id="amount_price" />
+      <input type="hidden" name="order" value="{{order_id}}" />
+      <input type="hidden" name="description" id="description_order" />
 
-            const requestData = {
-                amount: amount.value,
-                orderId: TPF.order.value,
-                description: description.value,
-                email: email.value,
-                phone: phone.value,
-                receipt: JSON.stringify({
-                    "EmailCompany": "support@letychka.ru",
-                    "Taxation": "patent",
-                    "FfdVersion": "1.2",
-                    "Items": [
-                        {
-                            "Name": description.value || "Оплата",
-                            "Price": amount.value + '00',
-                            "Quantity": 1.00,
-                            "Amount": amount.value + '00',
-                            "PaymentMethod": "full_prepayment",
-                            "PaymentObject": "service",
-                            "Tax": "none",
-                            "MeasurementUnit": "pc"
-                        }
-                    ]
-                })
-            };
+      <div class="contact-container">
+        <input class="contact" placeholder="E‑mail" name="email" value="{{email}}" />
+        <input class="contact" placeholder="Телефон (не обязательно)" name="phone" value="{{phone}}" />
+      </div>
+      <input class="payment-button" type="submit" value="Перейти к оплате" />
+    </form>
+  </div>
 
-            const csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]').value;
+  <script>
+    const plans = document.querySelectorAll('.plan');
+    const amountInput = document.getElementById('amount_price');
+    const descInput   = document.getElementById('description_order');
+    const selectedTxt = document.getElementById('selectedPlanText');
 
-            fetch('/api/payment/initiate/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': csrfToken
-                },
-                body: JSON.stringify(requestData)
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok.');
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log('Success:', data);
-                if (data.Success) {
-                    window.location.href = data.PaymentURL;
-                } else {
-                    alert(`Ошибка: ${data.Message}`);
-                }
-            })
-            .catch((error) => {
-                console.error('Error:', error);
-                alert('Невозможно создать платеж :()');
-            });
-        });
-    </script>
+    plans.forEach(card=>card.addEventListener('click',()=>{
+        plans.forEach(c=>c.classList.remove('selected'));
+        card.classList.add('selected');
+        const price = card.dataset.price;
+        const desc  = card.dataset.desc;
+        amountInput.value = price;
+        descInput.value   = desc;
+        selectedTxt.textContent = desc;
+    }));
+
+    console.log(amountInput.value);
+
+    $('#payform-tbank').on('submit',function(e){
+      e.preventDefault();
+      if(!$('#agreement').is(':checked')){alert('Нужно принять условия.');return;}
+      const email = $('input[name="email"]').val();
+      const phone = $('input[name="phone"]').val();
+      if(!email && !phone){alert('Нужно указать email или телефон');return;}
+
+      const data={
+        amount:amountInput.value,
+        orderId:$('input[name="order"]').val(),
+        description:descInput.value,
+        email,phone,
+        receipt:JSON.stringify({
+            EmailCompany:'support@letychka.ru', Taxation:'patent', FfdVersion:'1.2', 
+            Items:[{Name:descInput.value||'Оплата',
+            Price:amountInput.value+'00', Quantity:1, Amount:amountInput.value,
+            PaymentMethod:'full_prepayment', PaymentObject:'service',
+            Tax:'none', MeasurementUnit:'pc'
+        }]})
+      };
+
+      fetch('/api/payment/initiate/',{
+            method:'POST',
+            headers:{'Content-Type':'application/json','X-CSRFToken':'{{ csrf_token }}'},
+            body:JSON.stringify(data)
+      }).then(r=>r.json())
+        .then(resp=>{if(resp.Success){window.location.href=resp.PaymentURL;}else{alert(resp.Message||'Ошибка платежа');}})
+        .catch(()=>alert('Ошибка сети'));
+    });
+  </script>
+    {% include 'footer-s.html' %}
 </body>
 </html>
