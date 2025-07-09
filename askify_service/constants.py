@@ -22,10 +22,10 @@ PAYMENT_STATUSES = {
 MODEL_NAMES = [
     "google/gemini-2.0-flash-exp:free",
     "google/gemma-3-27b-it:free",
+    "meta-llama/llama-4-maverick:free",
     "deepseek/deepseek-chat-v3-0324:free",
     "deepseek/deepseek-chat:free",
     "qwen/qwq-32b:free",
-    "meta-llama/llama-4-maverick:free",
     "deepseek/deepseek-v3-base:free"
 ]
 

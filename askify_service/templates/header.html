@@ -21,7 +21,7 @@
         <nav id="nav">
             {% if username %}
                 <ul>
-                    {% if subscription_level < 1 %}
+                    {% if subscription_level < 1 or subscription_level == 99 %}
                         <li><a href="{% url 'payment' %}">Купить премиум 💎</a></li>
                     {% endif %}
                     <li><a href="/profile/{{ username }}">Перейти в профиль</a></li>
@@ -42,4 +42,508 @@
     </div>
     <script src="{% static 'js/nav.js' %}"></script>
 
+    <style>
+        
+    </style>
+
 </header>
+
+    <div class="vision-modal" id="vision-modal">
+    <div class="vision-container">
+        <div class="vision-header">
+            <div class="vision-logo">
+                <img src="{% static 'img/icon-sensors.png' %}" alt="">
+                <h2>Пульс</h2>
+            </div>
+            <div class="header-meta">
+                <div class="user-badge">
+                    {% if username %}
+                    <div class="user-avatar">{{ username|make_list|first|upper }}</div>
+                    <span>{{ username }}</span>
+                    {% else %}
+                    <i class="guest-icon">👤</i>
+                    <span>Гость</span>
+                    {% endif %}
+                </div>
+                <div class="vision-close">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                </div>
+            </div>
+        </div>
+        
+        <div class="vision-body">
+            <div class="vision-nav">
+                <div class="nav-section">
+                    <div class="section-header">Навигация</div>
+                    <ul>
+                        <li class="vision-nav-item" data-view="dashboard">
+                            <div class="nav-icon"><img src="{% static 'img/icon-stat.png' %}" alt=""></div>
+                            <div class="nav-content">
+                                <div class="nav-title">Моя активность</div>
+                                <div class="nav-subtitle">Обзор активности</div>
+                            </div>
+                        </li>
+                        {% if username %}
+                        <li class="vision-nav-item" data-view="tests">
+                            <div class="nav-icon"><img src="{% static 'img/icon-history.png' %}" alt=""></div>
+                            <div class="nav-content">
+                                <div class="nav-title">История</div>
+                                <div class="nav-subtitle">Предыдущие тесты</div>
+                            </div>
+                        </li>
+                        <li class="vision-nav-item" data-view="create">
+                            <div class="nav-icon"><img src="{% static 'img/icon-new.png' %}" alt=""></div>
+                            <div class="nav-content">
+                                <div class="nav-title">Новый тест</div>
+                                <div class="nav-subtitle">Создать с нейросетью</div>
+                            </div>
+                        </li>
+                        {% else %}
+                        <li class="vision-nav-item" data-view="home">
+                            <div class="nav-icon">🏠</div>
+                            <div class="nav-content">
+                                <div class="nav-title">На главную</div>
+                                <div class="nav-subtitle">Вернуться на лендинг</div>
+                            </div>
+                        </li>
+                        {% endif %}
+                    </ul>
+                    
+                    <div class="section-header" style="margin-top: 30px">Аккаунт</div>
+                    <ul>
+                        {% if username %}
+                            <li class="vision-nav-item" data-view="profile">
+                                <div class="nav-icon"><img src="{% static 'img/icon-pro.png' %}" alt=""></div>
+                                <div class="nav-content">
+                                    <div class="nav-title">Аккаунт</div>
+                                    <div class="nav-subtitle">Управление аккаунтом</div>
+                                </div>
+                            </li>
+                        {% if subscription_level < 2 or subscription_level == 99 %}
+                            <li class="vision-nav-item highlight" data-view="upgrade">
+                                <div class="nav-icon"><img src="{% static 'img/icon-diamond.png' %}" alt=""></div>
+                                <div class="nav-content">
+                                    <div class="nav-title">Премиум доступ</div>
+                                    <div class="nav-subtitle">Расширенные функции</div>
+                                </div>
+                            </li>
+                        {% endif %}
+                        {% else %}
+                            <li class="vision-nav-item" data-view="telegram">
+                                <div class="nav-icon">🤖</div>
+                                <div class="nav-content">
+                                    <div class="nav-title">Авторизация в Telegram</div>
+                                    <div class="nav-subtitle">Войти по одному клику</div>
+                                </div>
+                            </li>
+                            <li class="vision-nav-item" data-view="login">
+                                <div class="nav-icon">🔑</div>
+                                <div class="nav-content">
+                                    <div class="nav-title">Обычный вход</div>
+                                    <div class="nav-subtitle">Email/Пароль</div>
+                                </div>
+                            </li>
+                            <li class="vision-nav-item" data-view="register">
+                                <div class="nav-icon">📝</div>
+                                <div class="nav-content">
+                                    <div class="nav-title">Регистрация</div>
+                                    <div class="nav-subtitle">Создать аккаунт</div>
+                                </div>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </div>
+                
+                <div class="divider"></div>
+                
+                <div class="nav-section">
+                    <div class="section-header">Прочее</div>
+                    <ul>
+                        <li class="vision-nav-item" data-view="support">
+                            <div class="nav-icon">🛟</div>
+                            <div class="nav-content">
+                                <div class="nav-title">Поддержка</div>
+                                <div class="nav-subtitle">Задать вопрос</div>
+                            </div>
+                        </li>
+                        <li class="vision-nav-item" data-view="docs">
+                            <div class="nav-icon">📚</div>
+                            <div class="nav-content">
+                                <div class="nav-title">Документация</div>
+                                <div class="nav-subtitle">API и интеграции</div>
+                            </div>
+                        </li>
+                        <li class="vision-nav-item" data-view="about">
+                            <div class="nav-icon">ℹ️</div>
+                            <div class="nav-content">
+                                <div class="nav-title">О проекте</div>
+                                <div class="nav-subtitle">Команда и технологии</div>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="divider vertical"></div>
+            <div class="vision-content" id="vision-content"><!-- Динамический контент отображается тут --></div>
+        </div>
+    </div>
+</div>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const visionModal = document.getElementById('vision-modal');
+        const visionClose = document.querySelector('.vision-close');
+        const navItems = document.querySelectorAll('.vision-nav-item[data-view]');
+        
+        // Функция для создания контента
+        function createView(viewName) {
+            const container = document.getElementById('vision-content');
+            container.innerHTML = '';
+            
+            const content = document.createElement('div');
+            content.className = 'content-view active';
+            content.id = `view-${viewName}`;
+            console.log(viewName);
+            
+            switch(viewName) {
+                case 'dashboard':
+                console.log(document.getElementById('view-dashboard'))
+                    
+                    content.innerHTML = `
+                        <h2 class="content-header">Моя активность</h2>
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <div>Всего тестов</div>
+                                <div class="stat-value" data-stat="total_tests">–</div>
+                                <div class="stat-label">за всё время</div>
+                            </div>
+                            <div class="stat-item">
+                                <div>Еще можно</div>
+                                <div class="stat-value" data-stat="tests_remaining_today">–</div>
+                                <div class="stat-label">создать сегодня</div>
+                            </div>
+                            <div class="stat-item">
+                                <div>Решено</div>
+                                <div class="stat-value" data-stat="passed_tests">–</div>
+                                <div class="stat-label">за всё время</div>
+                            </div>
+                        </div>
+
+                        <div class="content-grid" style="margin-top:40px">
+                            <div class="content-card">
+                                <div class="card-title">📊 Общая статистика</div>
+                                <ul>
+                                    <li><strong>Вопросов создано:</strong> <span data-stat="total_questions">–</span></li>
+                                    <li><strong>Среднее в тесте:</strong> <span data-stat="avg_questions">–</span></li>
+                                    <li><strong>Средний балл:</strong> <span data-stat="avg_correct_answers">–</span></li>
+                                    <li><strong>Чаще используется:</strong> <span data-stat="model_most_used">–</span></li>
+                                </ul>
+                            </div>
+
+                            <div class="content-card">
+                                <div class="card-title">📈 Дополнительно</div>
+                                <ul>
+                                    <li><strong>Создано сегодня:</strong> <span data-stat="today_created">–</span></li>
+                                    <li><strong>В этом месяце:</strong> <span data-stat="tests_this_month">–</span></li>
+                                    <li><strong>Фидбэка:</strong> <span data-stat="feedback_count">–</span></li>
+                                    <li><strong>Охват фидбэком:</strong> <span data-stat="percent_with_feedback">–</span></li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="content-grid" style="margin-top:30px">
+                            <div class="content-card">
+                                <div class="card-title">🧠 Модель и метрики</div>
+                                <ul>
+                                    <li><strong>Уникальных моделей:</strong> <span data-stat="unique_models_count">–</span></li>
+                                    <li><strong>Среднее кол-во токенов:</strong> <span data-stat="avg_tokens_used">–</span></li>
+                                    <li><strong>Тестов с прохождением:</strong> <span data-stat="tests_created_and_passed">–</span></li>
+                                    <li><strong>Лучший результат:</strong> <span data-stat="best_result">–</span></li>
+                                </ul>
+                            </div>
+                        </div>
+                    `;
+
+                    loadUserStats();
+                    break;
+                    
+                case 'upgrade':
+                    content.innerHTML = `
+                        <h2 class="content-header">Премиум доступ</h2>
+                        <div class="content-grid">
+                            <div class="content-card">
+                                <div class="card-title">💎 Полный доступ</div>
+                                <ul>
+                                    <li>✅ Скачивание в PDF для печати без водяных знаков</li>
+                                    <li>✅ Можно пройти тесты на платформе</li>
+                                    <li>✅ Персональная обратная связь от ИИ</li>
+                                    <li>✅ Создавайте до 150 тестов в день — всего 4 рубля за тест</li>
+                                </ul>
+                                <a href="/payment" class="card-action green-action">Перейти к оплате</a>
+                            </div>
+
+                            <div class="content-card">
+                                <div class="card-title">Расширенные функции</div>
+                                <ul>
+                                    <li>- Загрузка своих Word и PDF документов для генерации тестов</li>
+                                    <li>- Экспорт результатов прохождения в PDF</li>
+                                    <li>Приоритетная поддержка</li>
+                                </ul>
+                                <a href="/available-plans/" class="card-action">Подробности</a>
+                            </div>
+                        </div>
+                    `;
+                    break;
+
+                case 'tests':
+                    content.innerHTML = `
+                        <h2 class="content-header">История</h2>
+                        <div class="content-grid">
+                            <div class="content-card">
+                                <div class="card-title">Предыдущие тесты</div>
+                                <ul id="tests-list" class="list">
+                                    <li>Загрузка...</li>
+                                </ul>
+                                <a class="card-action" href="/history">Остальные тесты</a>
+                            </div>
+                        </div>
+                    `;
+
+                    setTimeout(() => {
+                        loadTestsList();
+                    }, 0);
+                    break;
+
+                case 'create':
+                    content.innerHTML = `
+                        <h2 class="content-header">Новый тест</h2>
+                        <div class="content-grid">
+                            <div class="content-card">
+                                <div class="card-title">Создайте новый тест</div>
+                                <p>Создать новый тест на основе Ваших учебных материалов</p>
+                                <a class="card-action" href='/create'>Создать</a>
+                            </div>
+                        </div>
+                    `;
+                    break;
+
+                case 'profile':
+                    content.innerHTML = `
+                        <h2 class="content-header">Аккаунт</h2>
+                        <div class="content-grid">
+                            <div class="content-card">
+                                <div class="card-title">Профиль</div>
+                                <ul>
+                                    <li><strong>Email:</strong> <span data-prof="email">–</span></li>
+                                    <li><strong>Телефон:</strong> <span data-prof="phone">–</span></li>
+                                    <li><strong>Дата регистрации:</strong> <span data-prof="date_join">–</span></li>
+                                    <li><strong>Последний вход:</strong> <span data-prof="date_last_login">–</span></li>
+                                </ul>
+                            </div>
+                            <div class="content-card">
+                                <div class="card-title">💳 Подписка</div>
+                                <ul>
+                                    <li><strong>Тариф:</strong> <span data-prof="plan_name">–</span></li>
+                                    <li><strong>Истекает:</strong> <span data-prof="plan_end_date">–</span></li>
+                                    <li><strong>Осталось дней:</strong> <span data-prof="days_until_end">–</span></li>
+                                </ul>
+                            </div>
+                            <div class="content-card" id="tokens-card">
+                                <div class="card-title">🧪 Лимиты сегодня</div>
+                                <ul>
+                                    <li><strong>Токенов на тесты:</strong> <span data-prof="tokens_surveys">–</span></li>
+                                    <li><strong>Токенов на фидбэк:</strong> <span data-prof="tokens_feedback">–</span></li>
+                                    <li><strong>Всего использовано:</strong> <span data-prof="tokens_total">–</span></li>
+                                    <li><strong>Доступно:</strong> <span data-prof="tokens_remaining">–</span></li>
+                                    <li><strong>Дневной лимит:</strong> <span data-prof="tokens_limit">–</span></li>
+                                </ul>
+
+                                <div class="token-progress-wrapper">
+                                    <div class="token-progress-bar">
+                                        <div class="token-progress-fill" id="token-fill" style="width: 0%"></div>
+                                    </div>
+                                    <div class="token-progress-label"><span id="token-percent-label">0%</span></div>
+                                </div>
+
+                                <a class="card-action" href="/premium" id="go-premium-btn" style="display: none;">🚀 Перейти на Премиум</a>
+                            </div>
+                            <div class="content-card">
+                                <div class="card-title">Выйти из аккаунта</div>
+                                    <p>Закрыть сессию и перейти на страницу авторизации</p>
+                                    <a class="card-action red-action" href='{% url 'logout' %}'>Выйти</a>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    loadUserProfile();
+                    break;
+                    
+                default:
+                    content.innerHTML = `
+                        <h2 class="content-header">${viewName}</h2>
+                        <p>Контент для этой секции будет загружен в ближайшее время</p>
+                    `;
+            }
+            
+            container.appendChild(content);
+        }
+
+        function formatWithSpaces(number) {
+            return number
+                .toString()
+                .replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+        }
+
+
+        // Открытие модального окна по клику на логотип
+        document.querySelector('.logo-header').addEventListener('click', function(e) {
+            e.preventDefault();
+            visionModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            
+            navItems.forEach((item, index) => {
+                item.style.transitionDelay = `${index * 0.08}s`;
+            });
+            
+            navItems.forEach(nav => nav.classList.remove('selected'));
+            createView('dashboard');
+        });
+        
+        // Закрытие модального окна
+        visionClose.addEventListener('click', function() {
+            visionModal.classList.remove('active');
+            document.body.style.overflow = '';
+        });
+        
+        // Навигация
+        navItems.forEach(item => {
+            item.addEventListener('click', function () {
+                const view = this.getAttribute('data-view');
+                createView(view);
+
+                document.querySelectorAll('.content-view').forEach(viewEl => {
+                    viewEl.classList.remove('active');
+                });
+
+                navItems.forEach(nav => nav.classList.remove('selected'));
+
+                setTimeout(() => {
+                    document.getElementById(`view-${view}`).classList.add('active');
+                    this.classList.add('selected');
+                }, 50);
+            });
+        });
+
+        // Загрузка вида по умолчанию в скрытом состоянии
+        window.addEventListener('load', function() {
+            createView('dashboard');
+            document.getElementById('view-dashboard').classList.remove('active');
+        });
+
+        async function loadUserStats() {
+            try {
+                const res = await fetch('/api/user-stats/');
+                if (!res.ok) throw new Error('API error');
+                const stats = await res.json();
+
+                for (const key in stats) {
+                    const el = document.querySelector(`[data-stat="${key}"]`);
+                    if (el) el.textContent = stats[key];
+                }
+            } catch (err) {
+                console.error('Ошибка загрузки статистики:', err);
+            }
+        }
+
+        async function loadUserProfile() {
+            try {
+                const res = await fetch('/api/user-profile/');
+                if (!res.ok) throw new Error('Profile API error');
+                const data = await res.json();
+
+                const flatMap = {
+                    'username': data.username,
+                    'email': data.email || '–',
+                    'phone': data.phone || '–',
+                    'date_join': data.date_join,
+                    'date_last_login': data.date_last_login || '–',
+                    'plan_name': data.subscription.plan_name,
+                    'plan_end_date': data.subscription.plan_end_date,
+                    'days_until_end': data.subscription.days_until_end,
+                    'tests_remaining_today': data.tokens.tests_remaining_today,
+                    'tests_daily_limit': data.tokens.tests_daily_limit,
+                    'tokens_surveys': formatWithSpaces(data.tokens.surveys),
+                    'tokens_feedback': formatWithSpaces(data.tokens.feedback),
+                    'tokens_total': formatWithSpaces(data.tokens.total),
+                    'tokens_limit': formatWithSpaces(data.tokens.limit),
+                    'tokens_remaining': formatWithSpaces(data.tokens.remaining),
+                    'tokens_used_percent': data.tokens.used_percent
+                };
+
+                // Подстановка значений
+                for (const key in flatMap) {
+                    const el = document.querySelector(`[data-prof="${key}"]`);
+                    if (el) el.textContent = flatMap[key];
+                }
+
+                // Прогресс-бар
+                const usedPercent = parseInt(data.tokens.used_percent);
+                const fill = document.getElementById('token-fill');
+                const label = document.getElementById('token-percent-label');
+                const button = document.getElementById('go-premium-btn');
+
+                if (fill) fill.style.width = `${usedPercent}%`;
+                if (label) label.textContent = `${usedPercent}% использовано`;
+
+                if (usedPercent >= 70) {
+                    fill?.classList.add('danger');
+                    if (button) button.style.display = 'inline-block';
+                } else {
+                    fill?.classList.remove('danger');
+                    if (button) button.style.display = 'none';
+                }
+
+            } catch (err) {
+                console.error('Ошибка загрузки профиля:', err);
+            }
+        }
+
+
+        async function loadTestsList() {
+            const list = document.getElementById('tests-list');
+            if (!list) return;
+
+            try {
+                const res = await fetch('/load-more-surveys/?page=1', {
+                    headers: { 'x-requested-with': 'XMLHttpRequest' }
+                });
+
+                if (!res.ok) throw new Error('Ошибка при получении истории');
+
+                const data = await res.json();
+
+                if (!data.surveys || data.surveys.length === 0) {
+                    list.innerHTML = '<li>Нет тестов</li>';
+                    return;
+                }
+
+                list.innerHTML = '';
+
+                for (const survey of data.surveys) {
+                    const li = document.createElement('li');
+
+                    li.innerHTML = `
+                        <a href="/result/${survey.survey_id}" style="color: #ccc; text-decoration: none;">
+                            ${survey.title}
+                        </a><span style="opacity: 0.6; font-size: 0.85rem;"> ${survey.update}</span>
+                    `;
+
+                    list.appendChild(li);
+                }
+            } catch (err) {
+                console.error('Ошибка загрузки тестов:', err);
+                list.innerHTML = '<li>Ошибка при загрузке</li>';
+            }
+        }
+    });
+</script>

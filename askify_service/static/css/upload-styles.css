@@ -79,6 +79,10 @@
     margin-top: 0;
 }
 
+.locked-upload {
+    margin-bottom: -80px;
+}
+
 .drop-area {
     padding: 10px 30px;
     display: flex;

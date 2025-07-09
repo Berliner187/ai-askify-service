@@ -13,7 +13,7 @@ urlpatterns = [
     path('result/<str:survey_id>/', result_view, name='result'),
     path('result/<uuid:survey_id>/download/', download_results_pdf, name='download-results_pdf'),
 
-    path('c/<str:survey_id>/', demo_view, name='demo_view'),
+    path('c/<str:survey_id>/', preview_test, name='demo_view'),
     path('register-view/<str:survey_id>/', register_survey_view, name='register_survey_view'),
 
     path('drop-survey/<str:survey_id>/', drop_survey, name='drop-survey'),
@@ -54,6 +54,9 @@ urlpatterns = [
 
     path('api/payment/initiate/', PaymentInitiateView.as_view(), name='payment_initiate'),
     path('api/ghost_disconnect/', terminate_session, name='ghost_disconnect'),
+
+    path("api/user-stats/", user_stats_api, name="user_stats_api"),
+    path('api/user-profile/', user_profile_api, name='user_profile_api'),
 
     path('api/v1/signal-secure/', confirm_user, name='api_v1_signal_secure'),
     path('api/v2/signal-secure/', confirm_user_v2, name='api_v2_signal_secure'),

@@ -143,7 +143,7 @@ img {
 
 /* Кнопка "Войти" */
 .nav-link.login-button {
-    border: 2px solid #7c4dff;
+    border: 2px solid var(--primary-color);
     color: white;
     padding: 8px 32px;
     border-radius: 50px;
@@ -191,12 +191,11 @@ img {
     justify-content: space-between;
     padding: 120px 20px;
     max-width: 1200px;
-    margin: 0 auto;
+    margin: 12px auto;
     background: url('../img/bg-subs.webp');
     background-color: rgba(60, 60, 60, .12);
     border: 1px solid rgba(255, 255, 255, 0.12);
-    border-end-end-radius: 24px;
-    border-bottom-left-radius: 24px;
+    border-radius: 24px;
 }
 
 .hero-content {
@@ -256,6 +255,193 @@ img {
     margin-bottom: 40px;
 }
 
+/* Стили для Telegram баннера */
+.telegram-register {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 120px 20px;
+}
+
+.telegram-container {
+    background: linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.12));
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: var(--border-radius);
+    display: flex;
+    overflow: hidden;
+    box-shadow: 
+        0 8px 32px rgba(108, 99, 255, 0.15),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.telegram-content {
+    padding: 20px;
+    width: 50%;
+    position: relative;
+    z-index: 2;
+}
+
+.telegram-icon {
+    position: absolute;
+    width: 72px;
+    height: 72px;
+    right: 20px;
+    z-index: -1;
+}
+
+.telegram-title {
+    font-family: 'Unbounded Medium', sans-serif;
+    font-size: 2.2rem;
+    background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 20px;
+    position: relative;
+}
+
+.telegram-description {
+    font-size: 1.3rem;
+    margin-bottom: 25px;
+    line-height: 1.6;
+}
+
+.telegram-benefits {
+    display: grid;
+    gap: 12px;
+    margin-bottom: 30px;
+}
+
+.benefit {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.1rem;
+    font-family: 'Manrope Medium', sans-serif;
+}
+
+.telegram-btn {
+    background: linear-gradient(45deg, var(--primary-color), #2AABEE);
+    color: white !important;
+    padding: 16px 28px;
+    border-radius: var(--border-radius);
+    font-weight: bold;
+    font-size: 1.1rem;
+    font-family: 'Unbounded Medium', sans-serif;
+    transition: all 0.3s ease;
+    text-align: center;
+    display: inline-block;
+    box-shadow: 0 10px 20px rgba(42, 171, 238, 0.4);
+    border: none;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.telegram-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 15px 30px rgba(42, 171, 238, 0.6);
+}
+
+.telegram-illustration {
+    width: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    background: rgba(0, 0, 0, 0.1);
+    border-left: 1px solid rgba(255,255,255,0.08);
+}
+
+.phone-mockup {
+    width: 220px;
+    height: 450px;
+    background: #0a0711;
+    border-radius: 30px;
+    padding: 15px;
+    position: relative;
+    box-shadow: 
+        0 20px 50px rgba(0,0,0,0.3),
+        inset 0 0 0 1px rgba(255,255,255,0.05);
+}
+
+.phone-screen {
+    width: 80%;
+    height: 90%;
+    background: linear-gradient(135deg, #1a0f30, #0d081a);
+    border-radius: 20px;
+    overflow: hidden;
+    position: relative;
+    padding: 20px;
+}
+
+.telegram-animation {
+    display: grid;
+    gap: 15px;
+    animation: slide-in 6s infinite ease-in-out;
+}
+
+@keyframes slide-in {
+    0%, 30%, 100% { transform: translateY(0); }
+    60% { transform: translateY(-30px); }
+}
+
+.chat-bubble {
+    border-radius: 18px;
+    padding: 12px 16px;
+    max-width: 80%;
+    font-size: 0.9rem;
+}
+
+.chat-bubble.right {
+    background: linear-gradient(90deg, var(--primary-color), #616DF0aa);
+    margin-left: auto;
+}
+
+.chat-bubble.left {
+    background: rgba(255,255,255,0.1);
+    margin-right: auto;
+}
+
+.pulse {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(97, 109, 240, 0.5); }
+    70% { box-shadow: 0 0 0 15px rgba(97, 109, 240, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(97, 109, 240, 0); }
+}
+
+/* Адаптация для мобилок */
+@media (max-width: 768px) {
+    .telegram-container {
+        flex-direction: column;
+    }
+    
+    .telegram-content, 
+    .telegram-illustration {
+        width: 100%;
+    }
+    
+    .telegram-illustration {
+        padding: 30px;
+        border-left: none;
+        border-top: 1px solid rgba(255,255,255,0.08);
+    }
+    
+    .telegram-icon {
+        top: 20px;
+        right: 20px;
+        width: 50px;
+    }
+    
+    .phone-mockup {
+        width: 190px;
+        height: 380px;
+    }
+}
+
 .features-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -288,12 +474,6 @@ img {
 .feature-text {
     font-size: 16px;
     color: #AAA;
-}
-
-.steps-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 30px;
 }
 
 .step-card {

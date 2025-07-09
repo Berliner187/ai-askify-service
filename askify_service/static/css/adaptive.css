@@ -21,13 +21,17 @@
         font-size: 12px;
         margin: 2px 8px;
     }
+    
+    .input-area {
+        gap: 0;
+    }
 
     .input-area, textarea {
         display: flex;
         flex-wrap: nowrap;
         justify-content: center;
         max-width: 1200px;
-        min-height: 120px;
+        min-height: 80px;
     }
     .input-area button {
         width: 48px;

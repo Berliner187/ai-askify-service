@@ -698,3 +698,12 @@ def is_safe_url(url, allowed_hosts=None):
         allowed_hosts = {settings.ALLOWED_HOSTS[0]} if settings.ALLOWED_HOSTS else set()
     url_info = urlparse(url)
     return not url_info.netloc or url_info.netloc in allowed_hosts
+
+
+def is_valid_uuid(value):
+    from uuid import UUID
+    try:
+        UUID(str(value))
+        return True
+    except ValueError:
+        return False

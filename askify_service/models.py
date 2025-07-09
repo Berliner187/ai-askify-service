@@ -321,10 +321,10 @@ def get_token_limit(plan_name):
         'стартовый': 10_000,
         'лайтовый': 15_000,
         'стандартный': 50_000,
-        'премиум': 500_000,
+        'премиум': 150_000,
         'ультра': 2_500_000,
         'стандартный год': 50_000,
-        'премиум год': 500_000,
+        'премиум год': 150_000,
     }
     return token_limits.get(plan_name.lower(), 0)
 
@@ -452,7 +452,7 @@ class TokensUsed(models.Model):
         }
 
     @classmethod
-    def get_tokens_usage_last_two_months(cls, staff_id):  # Переименованный метод
+    def get_tokens_usage_last_months(cls, staff_id):  # Переименованный метод
         """
             Метод для получения использованных токенов для конкретного пользователя за последний месяц
             (с начала предыдущего месяца до текущего дня включительно).
@@ -460,11 +460,35 @@ class TokensUsed(models.Model):
         """
         today = timezone.now().date()
         first_day_of_current_month = today.replace(day=1)
-        first_day_of_last_month = (first_day_of_current_month - timedelta(days=1)).replace(day=1)
+        last_day_of_last_month = first_day_of_current_month - timedelta(days=1)
+        first_day_of_last_month = last_day_of_last_month.replace(day=1)
 
         tokens = cls.objects.filter(
             id_staff=staff_id,
             created_at__date__gte=first_day_of_last_month,
+            created_at__date__lte=last_day_of_last_month
+        ).aggregate(
+            total_survey_tokens=Sum('tokens_survey_used'),
+            total_feedback_tokens=Sum('tokens_feedback_used')
+        )
+
+        return {
+            'tokens_survey_used': tokens['total_survey_tokens'] or 0,
+            'tokens_feedback_used': tokens['total_feedback_tokens'] or 0,
+        }
+
+    @classmethod
+    def get_tokens_usage_today(cls, staff_id):  # Переименованный метод
+        """
+            Метод для получения использованных токенов для конкретного пользователя за последний месяц
+            (с начала предыдущего месяца до текущего дня включительно).
+            Используется для ОБЩЕЙ СТАТИСТИКИ использования токенов.
+        """
+        today = timezone.now().date()
+
+        tokens = cls.objects.filter(
+            id_staff=staff_id,
+            created_at__date__gte=today,
             created_at__date__lte=today
         ).aggregate(
             total_survey_tokens=Sum('tokens_survey_used'),

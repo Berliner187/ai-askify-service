@@ -101,9 +101,6 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (data.survey_id) {
                 loadTests();
-                // const url = `/survey/${data.survey_id}/download`;
-                // window.open(url, '_blank');
-                // window.location.href = `/survey/${data.survey_id}/download`;
                 window.location.href = `/c/${data.survey_id}/`;
             } else {
                 throw new Error('Неверный формат ответ')

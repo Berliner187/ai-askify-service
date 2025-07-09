@@ -141,11 +141,11 @@ def page_create_survey(request):
     passed_tests = UserAnswers.calculate_user_statistics(current_id_staff)['passed_tests']
     best_result = UserAnswers.calculate_user_statistics(current_id_staff)['best_result']
     feedback_count = FeedbackFromAI.objects.filter(id_staff=current_id_staff).count()
-    today_uploads = Survey.objects.filter(updated_at__date=date.today()).count()
+    today_created = Survey.objects.filter(updated_at__date=date.today()).count()
 
     model_most_used = FeedbackFromAI.objects.filter(id_staff=current_id_staff).values('model_name') \
         .annotate(c=Count('model_name')).order_by('-c').first()
-    model_used = model_most_used['model_name'] if model_most_used else "–"
+    model_used = format_model_name(model_most_used['model_name']) if model_most_used else "–"
 
     # 8, 9 — вопросы во всех тестах
     total_questions = 0
@@ -208,7 +208,7 @@ def page_create_survey(request):
         "passed_tests": passed_tests,
         "best_result": best_result,
         "feedback_count": feedback_count,
-        "today_uploads": today_uploads,
+        "today_uploads": today_created,
         "model_used": model_used,
         # "avg_score": f"{avg_score:.1f}" if avg_score else '',
         "total_questions": total_questions or 0,
@@ -224,6 +224,68 @@ def page_create_survey(request):
     }
 
     return render(request, 'askify_service/text_input.html', context)
+
+
+from datetime import date, timedelta
+
+
+@login_required
+def user_stats_api(request):
+    staff_id = get_staff_id(request)
+    subs = Subscription.objects.get(staff_id=staff_id)
+    subs.status = subs.check_sub_status()
+    tests_limit = get_daily_test_limit(subs.plan_name) if subs.status == 'active' else 0
+    used_today = ManageTokensLimits(staff_id).get_tests_used_today()
+    remaining_tests = max(0, tests_limit - used_today)
+
+    surveys = Survey.objects.filter(id_staff=staff_id)
+    answers = UserAnswers.objects.filter(id_staff=staff_id)
+    feedbacks = FeedbackFromAI.objects.filter(id_staff=staff_id)
+
+    total_tests = surveys.count()
+    passed_tests = UserAnswers.calculate_user_statistics(staff_id)['passed_tests']
+    best_result = UserAnswers.calculate_user_statistics(staff_id)['best_result']
+    feedback_count = feedbacks.count()
+    today_created = surveys.filter(updated_at__date=date.today()).count()
+
+    model_most_used = feedbacks.values('model_name').annotate(c=Count('model_name')).order_by('-c').first()
+    model_most_used = format_model_name(model_most_used['model_name']) if model_most_used else "–"
+
+    total_questions = sum(len(json.loads(s.questions)) for s in surveys if s.questions)
+    avg_questions = round(total_questions / total_tests, 1) if total_tests else 0
+
+    total_answers = answers.count()
+    avg_correct = round(answers.aggregate(avg=Avg('scored_points'))['avg'] or 0, 1)
+
+    unique_models = feedbacks.values('model_name').distinct().count()
+    this_month_count = surveys.filter(updated_at__gte=date.today().replace(day=1)).count()
+    last_week_feedback = feedbacks.filter(created_at__gte=date.today() - timedelta(days=7)).count()
+    feedback_coverage = (feedbacks.values('survey_id').distinct().count() / total_tests * 100) if total_tests else 0
+    # avg_tokens = round(feedbacks.aggregate(Avg('tokens_used')).get('tokens_used__avg', 0), 1)
+
+    created_and_passed = sum(
+        1 for s in surveys if answers.filter(survey_id=s.survey_id).exists()
+    )
+
+    return JsonResponse({
+        "tests_remaining_today": remaining_tests,
+        "total_tests": total_tests,
+        "passed_tests": passed_tests,
+        "best_result": best_result,
+        "feedback_count": feedback_count,
+        "today_created": today_created,
+        "model_most_used": model_most_used,
+        "total_questions": total_questions,
+        "avg_questions": avg_questions,
+        "total_answers": total_answers,
+        "avg_correct_answers": avg_correct,
+        "unique_models_count": unique_models,
+        "tests_this_month": this_month_count,
+        "feedback_last_week": last_week_feedback,
+        "percent_with_feedback": round(feedback_coverage, 1),
+        "avg_tokens_used": 0,
+        "tests_created_and_passed": created_and_passed
+    })
 
 
 @login_required
@@ -406,7 +468,7 @@ class ManageSurveysView(View):
                         'error': 'Лимит по созданию тестов исчерпан :(\n\nОзнакомьтесь с тарифами на странице профиля.'
                     }, status=400)
 
-            if subscription_object.check_sub_status() == 'inactive':
+            if subscription_object.check_sub_status() != 'active':
                 return JsonResponse({
                     'error': 'Ваша подписка закончилась :(\n\nОзнакомьтесь с тарифами на странице профиля.'
                 }, status=400)
@@ -511,7 +573,7 @@ class GenerationSurveysView(View):
             token_limit = 0
             try:
                 subscription_object = await sync_to_async(Subscription.objects.filter(staff_id=staff_id).first)()
-                if subscription_object:  # Проверяем, что объект подписки найден
+                if subscription_object:
                     plan_name = subscription_object.plan_name
                     token_limit = get_token_limit(plan_name)
             except Exception as sub_e:
@@ -649,7 +711,7 @@ def get_all_surveys(request):
     tokens_entries = TokensUsed.objects.filter(id_staff=staff_id)
 
     for survey in surveys:
-        format_date_update = get_formate_date(survey.updated_at)
+        format_date_update = survey.updated_at.strftime('%d.%m.%Y')
 
         time_margin = timedelta(seconds=5)
         nearby_tokens = (
@@ -668,7 +730,7 @@ def get_all_surveys(request):
         tokens_used = nearby_tokens.tokens_survey_used if nearby_tokens else None
 
         response_data_all[str(survey.survey_id)] = {
-            'title': survey.title,
+            'title': survey.title if len(survey.title) < 32 else survey.title[:32] + '...',
             'update': format_date_update,
             'tokens': tokens_used
         }
@@ -682,6 +744,8 @@ class FileUploadView(View):
     async def post(self, request):
         if not request.user.is_authenticated:
             return HttpResponseForbidden()
+
+        staff_id = get_staff_id(request)
 
         form = FileUploadForm(request.POST, request.FILES)
         if not form.is_valid():
@@ -710,6 +774,12 @@ class FileUploadView(View):
         if data == -1:
             tracer_l.error('Файл не является допустимым документом')
             return JsonResponse({'error': 'Файл не является допустимым документом'})
+
+        subscription_object = await sync_to_async(Subscription.objects.filter(staff_id=staff_id).first)()
+        if subscription_object.check_sub_status() != 'active':
+            return JsonResponse({
+                'error': 'Ваша подписка закончилась :(\n\nОзнакомьтесь с тарифами на странице профиля.'
+            }, status=400)
 
         try:
             prompts_tokens = 479
@@ -1329,7 +1399,9 @@ def download_results_pdf(request, survey_id):
         return HttpResponse("Произошла критическая ошибка при генерации PDF. Пожалуйста, попробуйте позже.", status=500)
 
 
-def demo_view(request, survey_id):
+def preview_test(request, survey_id):
+    if not is_valid_uuid(survey_id):
+        return JsonResponse({'message': 'Неверный ID теста'})
     survey = Survey.objects.filter(survey_id=survey_id).first()
 
     if survey:
@@ -1601,7 +1673,7 @@ def profile_view(request, username):
     date_join = get_formate_date(user.date_joined)
     date_last_login = get_formate_date(user.last_login)
 
-    tokens_usage_all_time = TokensUsed.get_tokens_usage_last_two_months(staff_id)  # Используем новое имя метода
+    tokens_usage_all_time = TokensUsed.get_tokens_usage_today(staff_id)
 
     total_tokens_for_surveys = get_format_number(tokens_usage_all_time['tokens_survey_used'])
     total_tokens_for_feedback = get_format_number(tokens_usage_all_time['tokens_feedback_used'])
@@ -1656,6 +1728,61 @@ def profile_view(request, username):
     }
 
     return render(request, 'profile.html', user_data)
+
+
+@login_required
+def user_profile_api(request):
+    staff_id = get_staff_id(request)
+    user = get_object_or_404(AuthUser, id_staff=staff_id)
+    subscription = get_object_or_404(Subscription, staff_id=staff_id)
+
+    statistics = UserAnswers.calculate_user_statistics(staff_id)
+    subscription_status = subscription.check_sub_status()
+    subscription_level = get_subscription_level(request)
+    token_limit = get_token_limit(subscription.plan_name)
+
+    # Подписка и лимиты
+    tests_limit = get_daily_test_limit(subscription.plan_name) if subscription_status == 'active' else 0
+    used_today = ManageTokensLimits(staff_id).get_tests_used_today()
+    tests_remaining = max(0, tests_limit - used_today)
+
+    end_date = subscription.end_date.date()
+    days_until_end = (end_date - timezone.now().date()).days
+
+    # Токены
+    usage = TokensUsed.get_tokens_usage_today(staff_id)
+    survey_tokens = usage['tokens_survey_used']
+    feedback_tokens = usage['tokens_feedback_used']
+    total_used = survey_tokens + feedback_tokens
+    percent_used = (total_used / token_limit * 100) if token_limit > 0 else 0
+
+    return JsonResponse({
+        "username": user.username,
+        "email": user.email,
+        "phone": user.phone or None,
+        "date_join": user.date_joined.strftime("%d.%m.%Y"),
+        "date_last_login": user.last_login.strftime("%d.%m.%Y") if user.last_login else None,
+        "statistics": statistics,
+        "tokens": {
+            "surveys": survey_tokens,
+            "feedback": feedback_tokens,
+            "total": total_used,
+            "limit": token_limit,
+            "token_limit": token_limit,
+            "remaining": max(0, token_limit - total_used),
+            "used_percent": round(percent_used),
+            "tests_remaining_today": tests_remaining,
+            "tests_daily_limit": tests_limit
+        },
+        "subscription": {
+            "plan_name": subscription.get_human_plan(),
+            "plan_end_date": subscription.end_date.strftime("%d.%m.%Y"),
+            "days_until_end": days_until_end,
+            "is_active": days_until_end >= 0
+        },
+        "subscription_level": subscription_level,
+        "email_verification_token": signing.dumps(user.pk, salt="email-verification")
+    })
 
 
 def get_subscription_level(request) -> int:
@@ -2084,6 +2211,8 @@ class PaymentInitiateView(View):
             'Стандартный Год': 2640,
             'Премиум Год': 4800
         }
+
+        print(int(amount), description, plan_prices.get(description))
 
         if int(amount) != plan_prices.get(description):
             tracer_l.warning(f'ADMIN. {request.user.username}: Неверная сумма. code 400')
@@ -2533,6 +2662,8 @@ def one_click_auth_view(request, token: str, token_hash: str):
 
         login(request, user)
         request.session['user_id'] = user.id
+
+        tracer_l.warning(f'ADMIN. LOGGED IN {telegram_user_id}')
 
         return redirect('create')
 

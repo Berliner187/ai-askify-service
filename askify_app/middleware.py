@@ -50,8 +50,8 @@ class BlockIPMiddleware:
             host = request.META.get('HTTP_HOST', '')
             referer = request.META.get('HTTP_REFERER', '')
 
-            allowed_hosts = ['letychka.ru', 'www.letychka.ru']
-            allowed_referers = ['https://letychka.ru', 'https://www.letychka.ru']
+            allowed_hosts = ['letychka.ru', 'www.letychka.ru', 'localhost:8000', '127.0.0.1:8000']
+            allowed_referers = ['https://letychka.ru', 'https://www.letychka.ru', 'https://localhost:8000', 'https://127.0.0.1:8000']
 
             if host not in allowed_hosts and not any(referer.startswith(ref) for ref in allowed_referers):
                 return HttpResponseForbidden('Zugriff verweigert. Nur letychka.ru ist erlaubt.')
