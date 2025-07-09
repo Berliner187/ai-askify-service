@@ -410,7 +410,6 @@ textarea:focus {
 }
 
 
-
 .container, .preview-content {
     margin: 0 auto;
     display: block;
@@ -436,9 +435,6 @@ textarea:focus {
 
 .container::before, .preview-content::before,
 .container::after, .preview-content::after {
-    /* content: '';
-    position: absolute;
-    border-radius: 50%; */
     opacity: 0;
     pointer-events: none;
     transition: opacity 3s ease-in-out;
@@ -449,15 +445,14 @@ textarea:focus {
     opacity: 0.5;
 }
 
-.question-container {
-
-}
-
 .container, .preview-content, .history-container,
 #saved-survey-container, .upload-container {
     margin-top: 100px;
 }
 
+#faq-container {
+    margin-top: 20px;
+}
 
 .subscription-offer {
     padding: 30px 20px;
@@ -804,7 +799,7 @@ textarea:focus {
 
 
 #block-generate, .glass-metrics-container, .features-container,
-#file-preview-container {
+#file-preview-container, #faq-container {
     background: linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(16px);
@@ -1051,7 +1046,7 @@ textarea:focus {
 .feature-icon {
     width: 48px;
     height: 48px;
-    margin-bottom: 15px;
+    margin: 0;
 }
 
 .feature-block h3 {
@@ -1192,7 +1187,7 @@ hr {
     font-size: 14px;
     cursor: pointer;
     padding: 10px;
-    background-color: #101012;
+    background-color: rgba(16, 16, 18, .25);
     margin: 8px 0;
     user-select: none;
 }
@@ -1217,7 +1212,7 @@ hr {
 }
 
 
-/* Контейнер с примерами */
+/* Контейнер с примерами / РЕФАКТОР */
 .topic {
     border: 2px solid rgb(75, 70, 82, .25);
     border-radius: 32px;

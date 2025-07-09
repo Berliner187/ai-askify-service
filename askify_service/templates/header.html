@@ -4,51 +4,50 @@
 </head>
 
 <header class="header">
-
     <div class="logo-header">
         <a href="{% url 'create' %}">
             <img src="{% static 'img/logo-header-alt-pulse.png' %}" alt="">
         </a>
     </div>
-    
     <div class="menu-container" style="position: relative;">
-        <div class="burger" id="burger">
-            <div class="line"></div>
-            <div class="line"></div>
-            <div class="line"></div>
-        </div>
-    
-        <nav id="nav">
-            {% if username %}
-                <ul>
-                    {% if subscription_level < 1 or subscription_level == 99 %}
-                        <li><a href="{% url 'payment' %}">Купить премиум 💎</a></li>
-                    {% endif %}
-                    <li><a href="/profile/{{ username }}">Перейти в профиль</a></li>
-                    <li><a href="{% url 'history' %}">История тестов</a></li>
-                    <li><a href="{% url 'create' %}">Создать тест</a></li>
-                    <hr>
-                    <li><a href="{% url 'logout' %}">Выйти</a></li>
-                </ul>
-            {% else %}
-                <ul>
-                    <li><a href="/docs/privacy-policy">Политика конфиденциальности</a></li>
-                    <li><a href="/docs/user-agreement">Пользовательское соглашение</a></li>
-                    <hr>
-                    <li><a href="/">На главную</a></li>
-                </ul>
-            {% endif %}
-        </nav>
+        {% if username %}
+            <a href="/profile/{{ username }}">
+                <div class="user-avatar">{{ username|make_list|first|upper }}</div>
+            </a>
+        {% else %}
+            <div class="burger" id="burger">
+                <div class="line"></div>
+                <div class="line"></div>
+                <div class="line"></div>
+            </div>
+        
+            <nav id="nav">
+                {% if username %}
+                    <ul>
+                        {% if subscription_level < 1 or subscription_level == 99 %}
+                            <li><a href="{% url 'payment' %}">Купить премиум 💎</a></li>
+                        {% endif %}
+                        <li><a href="/profile/{{ username }}">Перейти в профиль</a></li>
+                        <li><a href="{% url 'history' %}">История тестов</a></li>
+                        <li><a href="{% url 'create' %}">Создать тест</a></li>
+                        <hr>
+                        <li><a href="{% url 'logout' %}">Выйти</a></li>
+                    </ul>
+                {% else %}
+                    <ul>
+                        <li><a href="/docs/privacy-policy">Политика конфиденциальности</a></li>
+                        <li><a href="/docs/user-agreement">Пользовательское соглашение</a></li>
+                        <hr>
+                        <li><a href="/">На главную</a></li>
+                    </ul>
+                {% endif %}
+            </nav>
+        {% endif %}
     </div>
     <script src="{% static 'js/nav.js' %}"></script>
-
-    <style>
-        
-    </style>
-
 </header>
 
-    <div class="vision-modal" id="vision-modal">
+<div class="vision-modal" id="vision-modal">
     <div class="vision-container">
         <div class="vision-header">
             <div class="vision-logo">
@@ -61,7 +60,6 @@
                     <div class="user-avatar">{{ username|make_list|first|upper }}</div>
                     <span>{{ username }}</span>
                     {% else %}
-                    <i class="guest-icon">👤</i>
                     <span>Гость</span>
                     {% endif %}
                 </div>
@@ -100,7 +98,7 @@
                         </li>
                         {% else %}
                         <li class="vision-nav-item" data-view="home">
-                            <div class="nav-icon">🏠</div>
+                            <div class="nav-icon"><img src="{% static 'img/icon-home.png' %}" alt=""></div>
                             <div class="nav-content">
                                 <div class="nav-title">На главную</div>
                                 <div class="nav-subtitle">Вернуться на лендинг</div>
@@ -130,21 +128,21 @@
                         {% endif %}
                         {% else %}
                             <li class="vision-nav-item" data-view="telegram">
-                                <div class="nav-icon">🤖</div>
+                                <div class="nav-icon"><img src="{% static 'img/logo-telegram.png' %}" alt=""></div>
                                 <div class="nav-content">
                                     <div class="nav-title">Авторизация в Telegram</div>
                                     <div class="nav-subtitle">Войти по одному клику</div>
                                 </div>
                             </li>
                             <li class="vision-nav-item" data-view="login">
-                                <div class="nav-icon">🔑</div>
+                                <div class="nav-icon"><img src="{% static 'img/icon-login.png' %}" alt=""></div>
                                 <div class="nav-content">
                                     <div class="nav-title">Обычный вход</div>
                                     <div class="nav-subtitle">Email/Пароль</div>
                                 </div>
                             </li>
                             <li class="vision-nav-item" data-view="register">
-                                <div class="nav-icon">📝</div>
+                                <div class="nav-icon"><img src="{% static 'img/icon-register.png' %}" alt=""></div>
                                 <div class="nav-content">
                                     <div class="nav-title">Регистрация</div>
                                     <div class="nav-subtitle">Создать аккаунт</div>
@@ -160,21 +158,21 @@
                     <div class="section-header">Прочее</div>
                     <ul>
                         <li class="vision-nav-item" data-view="support">
-                            <div class="nav-icon">🛟</div>
+                            <div class="nav-icon"><img src="{% static 'img/icon-support.png' %}" alt=""></div>
                             <div class="nav-content">
                                 <div class="nav-title">Поддержка</div>
                                 <div class="nav-subtitle">Задать вопрос</div>
                             </div>
                         </li>
                         <li class="vision-nav-item" data-view="docs">
-                            <div class="nav-icon">📚</div>
+                            <div class="nav-icon"><img src="{% static 'img/icon-docs.png' %}" alt=""></div>
                             <div class="nav-content">
-                                <div class="nav-title">Документация</div>
-                                <div class="nav-subtitle">API и интеграции</div>
+                                <div class="nav-title">Документы</div>
+                                <div class="nav-subtitle">Правовой статус Сервиса</div>
                             </div>
                         </li>
-                        <li class="vision-nav-item" data-view="about">
-                            <div class="nav-icon">ℹ️</div>
+                        <li class="vision-nav-item" data-view="more-info">
+                            <div class="nav-icon"><img src="{% static 'img/icon-more.png' %}" alt=""></div>
                             <div class="nav-content">
                                 <div class="nav-title">О проекте</div>
                                 <div class="nav-subtitle">Команда и технологии</div>
@@ -377,6 +375,99 @@
                         </div>
                     `;
                     loadUserProfile();
+                    break;
+                
+                case 'docs':
+                    content.innerHTML = `
+                        <h2 class="content-header">Документы</h2>
+                        <div class="content-grid">
+                            <div class="content-card">
+                                <div class="card-title">Публичная оферта</div>
+                                <p>Условия доступа к сервису «Летучка» — кто, как, за сколько и на каких основаниях получает услуги. Всё официально.</p>
+                                <a class="card-action" href='/docs/public-offer'>Открыть</a>
+                            </div>
+                            <div class="content-card">
+                                <div class="card-title">Пользовательское соглашение</div>
+                                <p>Правила использования сервиса, обязанности, права пользователей и исполнителя.</p>
+                                <a class="card-action" href='/docs/user-agreement'>Открыть</a>
+                            </div>
+                            <div class="content-card">
+                                <div class="card-title">Политика конфиденциальности</div>
+                                <p>Как мы собираем, храним и защищаем ваши персональные данные.</p>
+                                <a class="card-action" href='/docs/privacy-policy'>Открыть</a>
+                            </div>
+                        </div>
+                    `;
+                    break;
+                
+                case 'telegram':
+                    content.innerHTML = `
+                        <h2 class="content-header">Авторизация в Telegram</h2>
+                        <div class="content-grid">
+                            <div class="content-card">
+                                <div class="card-title">Войти через Telegram</div>
+                                <p>Быстрая и безопасная авторизация в один клик без пароля.</p>
+                                <a class="card-action" href="https://t.me/LetychkaRobot">Войти через Telegram</a>
+                            </div>
+                        </div>
+                    `;
+                    break;
+
+                case 'login':
+                    content.innerHTML = `
+                        <h2 class="content-header">Обычный вход</h2>
+                        <div class="content-grid">
+                            <div class="content-card">
+                                <div class="card-title">Вход с Email и паролем</div>
+                                <p>Введите ваш email и пароль для доступа к аккаунту.</p>
+                                <a class="card-action" href="/login">Войти</a>
+                            </div>
+                        </div>
+                    `;
+                    break;
+
+                case 'register':
+                    content.innerHTML = `
+                        <h2 class="content-header">Регистрация</h2>
+                        <div class="content-grid">
+                            <div class="content-card">
+                                <div class="card-title">Создайте новый аккаунт</div>
+                                <p>Зарегистрируйтесь, чтобы использовать все возможности сервиса.</p>
+                                <a class="card-action" href="/register">Зарегистрироваться</a>
+                            </div>
+                        </div>
+                    `;
+                    break;
+                
+                case 'support':
+                    content.innerHTML = `
+                        <h2 class="content-header">Поддержка</h2>
+                        <div class="content-grid">
+                            <div class="content-card">
+                                <div class="card-title">Электронная почта</div>
+                                <p>Напишите нам по любым вопросам и предложениям</p>
+                                <a class="card-action" href="mailto:support@letychka.ru">support@letychka.ru</a>
+                            </div>
+                            <div class="content-card">
+                                <div class="card-title">Telegram-бот</div>
+                                <p>Обратитесь в наш бот для быстрого ответа и помощи</p>
+                                <a class="card-action" href="https://t.me/LetychkaRobot" target="_blank">Открыть бота</a>
+                            </div>
+                        </div>
+                    `;
+                    break;
+                
+                case 'home':
+                    content.innerHTML = `
+                        <h2 class="content-header">Главная страница</h2>
+                        <div class="content-grid">
+                            <div class="content-card">
+                                <div class="card-title">Вернуться на лендинг</div>
+                                <p>Перейти на главную страницу сервиса «Летучка» и узнать больше о возможностях</p>
+                                <a class="card-action" href='/'>На главную</a>
+                            </div>
+                        </div>
+                    `;
                     break;
                     
                 default:

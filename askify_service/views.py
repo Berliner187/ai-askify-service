@@ -1777,7 +1777,7 @@ def user_profile_api(request):
         "subscription": {
             "plan_name": subscription.get_human_plan(),
             "plan_end_date": subscription.end_date.strftime("%d.%m.%Y"),
-            "days_until_end": days_until_end,
+            "days_until_end": days_until_end if days_until_end > 0 else 0,
             "is_active": days_until_end >= 0
         },
         "subscription_level": subscription_level,
