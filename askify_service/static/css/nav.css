@@ -147,20 +147,23 @@ ul {
     transition: .25s;
 }
 
-.logo-header:hover {
-    opacity: .75;
-}
-
 .logo-header img {
     width: 120px;
 }
 
+.user-avatar img:hover {
+    opacity: .5;
+}
 
-/*  */
+.user-avatar a:active {
+    transform: translateY(2px);
+}
+
+/* Меню ПУЛЬС */
 :root {
     --primary-color: #616DF0;
     --secondary-color: #79EF66;
-    --glass-background: rgba(49, 46, 60, 0.75);
+    --glass-background: rgba(49, 46, 60, 0.3);
 }
 .vision-modal {
     position: fixed;
@@ -446,7 +449,6 @@ ul {
     flex: 1;
     padding: 30px 40px;
     overflow-y: auto;
-    background: rgba(15, 12, 24, 0.3);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     position: relative;
@@ -625,7 +627,7 @@ ul {
         top: 0;
         height: 100%;
         padding: 0;
-        align-items: flex-end;
+        align-items: center;
         background: rgba(5, 3, 12, 0.8);
         backdrop-filter: blur(30px);
         -webkit-backdrop-filter: blur(30px);
@@ -635,10 +637,9 @@ ul {
         margin: 0 auto;
         top: 0;
         width: 92%;
-        height: 94%;
+        height: 96%;
         border-radius: 24px 24px 0 0;
         box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.4);
-        padding-bottom: 40px;
     }
 
     .vision-header {

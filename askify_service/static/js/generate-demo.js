@@ -164,19 +164,16 @@ function renderTests(tests) {
         const testCard = document.createElement('div');
         testCard.className = 'test-card';
         testCard.style.animationDelay = `${index * 0.15}s`;
-
+        
         testCard.innerHTML = `
             <div class="test-header">
                 <p class="test-title">${test.title || 'Без названия'}</p>
                 <div class="copy-wrapper">
-                    <button class="neue-btn" data-content="${test.url_link || ''}">
-                        <a href="/c/${test.survey_id}/">Открыть</p>
-                    </button>
+                    <button class="neue-btn" onclick="window.location.href='/c/${test.survey_id}/'">Открыть</button>
                 </div>
             </div>
-            <!-- Остальной контент карточки -->
         `;
-        
+
         testGrid.appendChild(testCard);
         
         setTimeout(() => {

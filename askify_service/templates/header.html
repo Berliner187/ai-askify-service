@@ -11,38 +11,39 @@
     </div>
     <div class="menu-container" style="position: relative;">
         {% if username %}
-            <a href="/profile/{{ username }}">
+            <!-- <a href="/profile/{{ username }}">
                 <div class="user-avatar">{{ username|make_list|first|upper }}</div>
-            </a>
+            </a> -->
         {% else %}
-            <div class="burger" id="burger">
-                <div class="line"></div>
-                <div class="line"></div>
-                <div class="line"></div>
-            </div>
-        
-            <nav id="nav">
-                {% if username %}
-                    <ul>
-                        {% if subscription_level < 1 or subscription_level == 99 %}
-                            <li><a href="{% url 'payment' %}">Купить премиум 💎</a></li>
-                        {% endif %}
-                        <li><a href="/profile/{{ username }}">Перейти в профиль</a></li>
-                        <li><a href="{% url 'history' %}">История тестов</a></li>
-                        <li><a href="{% url 'create' %}">Создать тест</a></li>
-                        <hr>
-                        <li><a href="{% url 'logout' %}">Выйти</a></li>
-                    </ul>
-                {% else %}
-                    <ul>
-                        <li><a href="/docs/privacy-policy">Политика конфиденциальности</a></li>
-                        <li><a href="/docs/user-agreement">Пользовательское соглашение</a></li>
-                        <hr>
-                        <li><a href="/">На главную</a></li>
-                    </ul>
-                {% endif %}
-            </nav>
+            
         {% endif %}
+        <div class="burger" id="burger">
+            <div class="line"></div>
+            <div class="line"></div>
+            <div class="line"></div>
+        </div>
+    
+        <nav id="nav">
+            {% if username %}
+                <ul>
+                    {% if subscription_level < 1 or subscription_level == 99 %}
+                        <li><a href="{% url 'payment' %}">Купить премиум 💎</a></li>
+                    {% endif %}
+                    <li><a href="/profile/{{ username }}">Перейти в профиль</a></li>
+                    <li><a href="{% url 'history' %}">История тестов</a></li>
+                    <li><a href="{% url 'create' %}">Создать тест</a></li>
+                    <hr>
+                    <li><a href="{% url 'logout' %}">Выйти</a></li>
+                </ul>
+            {% else %}
+                <ul>
+                    <li><a href="/docs/privacy-policy">Политика конфиденциальности</a></li>
+                    <li><a href="/docs/user-agreement">Пользовательское соглашение</a></li>
+                    <hr>
+                    <li><a href="/">На главную</a></li>
+                </ul>
+            {% endif %}
+        </nav>
     </div>
     <script src="{% static 'js/nav.js' %}"></script>
 </header>

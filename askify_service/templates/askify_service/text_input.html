@@ -77,7 +77,7 @@
                 </div>
                 <div class="metric-ios">
                     <span class="metric-title">Лучший результат</span>
-                    <span class="metric-badge">{{ best_result }}</span>
+                    <span class="metric-badge"><strong>{{ best_result }}</strong></span>
                 </div>
                 <div class="metric-ios">
                     <span class="metric-title">Фидбэка от ИИ</span>
@@ -89,11 +89,11 @@
                 </div>
                 <div class="metric-ios">
                     <span class="metric-title">Часто используется</span>
-                    <span class="metric-badge">{{ model_used|default:"–" }}</span>
+                    <span class="metric-badge"><strong>{{ model_used|default:"–" }}</strong></span>
                 </div>
                 <div class="metric-ios">
                     <span class="metric-title">Средний балл</span>
-                    <span class="metric-badge">{{ avg_score|default:"–" }} / 100</span>
+                    <span class="metric-badge"><strong>{{ avg_score|default:"–" }}</strong> / 100</span>
                 </div>
                 <div class="metric-ios">
                     <span class="metric-title">Всего вопросов создано</span>
@@ -101,7 +101,7 @@
                 </div>
                 <div class="metric-ios">
                     <span class="metric-title">Вопросов в среднем</span>
-                    <span class="metric-badge">{{ avg_questions }} на тест</span>
+                    <span class="metric-badge"><strong>{{ avg_questions }}</strong> на тест</span>
                 </div>
                 <div class="metric-ios">
                     <span class="metric-title">Ответов за всё время</span>
@@ -109,7 +109,7 @@
                 </div>
                 <div class="metric-ios">
                     <span class="metric-title">Средне верно</span>
-                    <span class="metric-badge">{{ avg_correct_answers|default:"–" }}</span>
+                    <span class="metric-badge"><strong>{{ avg_correct_answers|default:"–" }}</strong></span>
                 </div>
                 <div class="metric-ios">
                     <span class="metric-title">Моделей опробовано</span>
@@ -124,8 +124,8 @@
                     <span class="metric-badge"><strong>{{ feedback_last_week }}</strong></span>
                 </div>
                 <div class="metric-ios">
-                    <span class="metric-title">Столько раз ИИ оценивал</span>
-                    <span class="metric-badge">{{ percent_with_feedback }}</span>
+                    <span class="metric-title">ИИ оценивал</span>
+                    <span class="metric-badge"><strong>{{ percent_with_feedback }}</strong></span>
                 </div>
                 <div class="metric-ios">
                     <span class="metric-title">Решённых тестов</span>

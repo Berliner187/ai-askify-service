@@ -24,46 +24,46 @@
     <link rel="apple-touch-icon" sizes="180x180" href="{% static 'img/apple-touch-icon.png' %}">
     <link rel="shortcut icon" href="{% static 'img/favicon.ico' %}" type="image/ico">
     <link rel="stylesheet" href="{% static 'css/themes-carusel.css' %}?v=1.2">
-    <link rel="stylesheet" href="{% static 'css/start.css' %}?v=3.20">
+    <link rel="stylesheet" href="{% static 'css/start.css' %}?v=3.21">
     <link rel="stylesheet" href="{% static 'css/footer.css' %}">
 
-    <!-- Metrika -->
+    <!-- Yandex.Metrika counter -->
     <script type="text/javascript" >
-        window.addEventListener('DOMContentLoaded', function() {
-            // Яндекс.Метрика
-            (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)}; m[i].l=1*new Date(); k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a) })(window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym"); ym(98823704, "init", { clickmap:true, trackLinks:true, accurateTrackBounce:true });
-            
-            // Google Analytics
-            window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} gtag('js', new Date()); gtag('config', 'G-7D8EC81SBV');
-        });
+        setTimeout(function() {
+            (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+            m[i].l=1*new Date();
+            for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+            k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+            (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+        
+            ym(98823704, "init", {
+                clickmap:true,
+                trackLinks:true,
+                accurateTrackBounce:true,
+                webvisor:true
+            });
+        }, 1000);
     </script>
     <noscript><div><img src="https://mc.yandex.ru/watch/98823704" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
-    <!-- /Metrika -->
+    <!-- /Yandex.Metrika counter -->
 
-    <script type="application/ld+json">
-        {
-            "@context": "https://schema.org",
-            "@type": "SoftwareApplication",
-            "name": "Letychka",
-            "applicationCategory": "EducationApplication",
-            "operatingSystem": "Web",
-            "aggregateRating": {
-                "@type": "AggregateRating",
-                "ratingValue": "4.8",
-                "reviewCount": "235"
-            },
-            "provider": {
-                "@type": "SoftwareApplication",
-                "name": "Letychka",
-                "url": "https://letychka.ru/",
-                "logo": "https://letychka.ru/static/img/favicon.ico"
-              },
-            "description": "Letychka is a service for creating tests and quizzes based on educational materials using AI."
-        }
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-7D8EC81SBV"></script>
+    <script>
+        setTimeout(function() {
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+
+            gtag('config', 'G-7D8EC81SBV');
+        }, 1000);
     </script>
 </head>
-
 <body>
+    <div id="fixed-popup">
+        <div>Внимание! С августа тарифы станут другими. Зафиксируйте выгодные условия сейчас!</div>
+        <a href="/available-plans/">Подробнее</a>
+    </div>
+
     <!-- Хедер -->
     <header class="header" id="critical-header">
         <div class="logo">
@@ -73,8 +73,8 @@
         </div>
         <nav class="nav">
             <div class="nav-links">
-                <a href="#how-it-works" class="nav-link">Начать</a>
                 <a href="#gif-section" class="nav-link">Как работает</a>
+                <a href="#how-it-works" class="nav-link">Начать</a>
                 <a href="#features" class="nav-link">Фичи</a>
                 <a href="/media/main" class="nav-link">Блог</a>
                 <a href="/login" class="nav-link login-button">Войти</a>
@@ -96,7 +96,7 @@
             <p class="hero-subtitle">
                 Загрузи методичку, лекцию или конспект &rarr; ИИ&nbsp;создаст тест с&nbsp;вопросами.<br>Пройди сразу или скачай PDF.
             </p>
-            <a href="#create-now" class="cta-button cta-button-accent">Создать тест бесплатно →</a>
+            <a href="#create-now" class="cta-button cta-button-accent">СОЗДАТЬ ТЕСТ БЕСПЛАТНО →</a>
         </div>
         <div class="hero-image">
             <img src="{% static 'letychka-banner-1703.webp' %}" alt="Летучка — создание тестов" class="hero-img">
@@ -255,72 +255,30 @@
             </div>
         </div>
     </section>
-
-    <section class="telegram-register" id="how-it-works">
-        <div class="telegram-container">
+    
+    <section class="telegram-register how-it-works" id="how-it-works">
+        <div class="comparison telegram-container">
             <div class="telegram-content">
-                <div class="telegram-icon">
-                    <!-- <svg viewBox="0 0 24 24" width="72" height="72" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M20.665 3.71701L2.93496 10.554C1.72496 11.04 1.73196 11.715 2.71296 12.017L7.26496 13.436L17.797 6.79101C18.295 6.48801 18.749 6.65101 18.371 6.98301L9.84396 14.683H9.84196L9.84396 14.684L9.52896 19.377C9.95396 19.377 10.142 19.166 10.384 18.94L12.681 16.769L17.248 19.96C18.101 20.42 18.72 20.182 18.926 19.166L21.947 4.96601C22.256 3.67401 21.474 3.10001 20.665 3.71701Z" fill="#34AADC"/>
-                    </svg> -->
-                    <img src="{% static 'img/tg-logo.webp' %}" alt="">
-                </div>
-                <div class="telegram-text">
-                    <h3 class="telegram-title">Быстро</h3>
-                    <p class="telegram-description">Мгновенный доступ к платформе через <strong>Telegram</strong> — без паролей, приложений и лишних шагов.</p>
-                    <div class="telegram-benefits">
-                        <div class="benefit"><svg viewBox="0 0 24 24" width="16" height="16" fill="var(--secondary-color)"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> Вход без пароля</div>
-                        <div class="benefit"><svg viewBox="0 0 24 24" width="16" height="16" fill="var(--secondary-color)"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> Моментальная регистрация</div>
-                        <div class="benefit"><svg viewBox="0 0 24 24" width="16" height="16" fill="var(--secondary-color)"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> Только Telegram</div>
-                    </div>
-                </div>
-                <a href="https://t.me/LetychkaRobot" class="cta-button">АВТОРИЗОВАТЬСЯ →</a>
+            <div class="telegram-icon">
+                <img src="{% static 'img/tg-logo.webp' %}" alt="Telegram" />
             </div>
-            <div class="telegram-illustration">
-                <div class="phone-mockup">
-                    <div class="phone-screen">
-                        <div class="telegram-animation">
-                            <div class="chat-bubble right">Войти в Летучку</div>
-                            <div class="chat-bubble left">Готово! Переходите по ссылке:</div>
-                            <div class="telegram-btn pulse"><a href="https://t.me/LetychkaRobot">Войти</a></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
 
-    <!-- Секция "Как начать" -->
-    <section class="how-it-works">
-        <h2 class="section-title">
-            <span class="gradient-text">Зубришь по старинке?</span>
-        </h2>
-        <section class="comparison">
-            <table>
-                <tr class="comparison-title">
-                    <th></th>
-                    <th>Обычная подготовка</th>
-                    <th>С Летучкой</th>
-                </tr>
-                <tr>
-                    <td data-label="">Создание теста</td>
-                    <td data-label="Обычная подготовка"><strong class="red">2+ часа</strong> вручную</td>
-                    <td data-label="С Летучкой"><strong>До 30 секунд</strong> автогенерации</td>
-                </tr>
-                <tr>
-                    <td data-label="">Поиск ошибок</td>
-                    <td data-label="Обычная подготовка">Перечитываешь всё 3 раза</td>
-                    <td data-label="С Летучкой">Детальный фидбэк от нейросети</td>
-                </tr>
-                <tr>
-                    <td data-label="">Эффективность</td>
-                    <td data-label="Обычная подготовка">Лишь <strong class="red">30% инфы</strong> запоминается</td>
-                    <td data-label="С Летучкой"><strong>В 2,5 раза</strong> лучше запоминается</td>
-                </tr>
-                </table>
-        </section>
-        <div class="center-button">
-            <a href="/login" class="cta-button">Создать тест в 2 клика →</a>
+            <h3 class="telegram-title">Вход через Telegram без паролей</h3>
+
+            <ul class="telegram-benefits">
+                <li>Моментальная регистрация в 1 клик</li>
+                <li>Нет необходимости вводить пароль</li>
+                <li>Работает без дополнительных приложений</li>
+            </ul>
+
+            <div class="center-button">
+                <a href="https://t.me/LetychkaRobot" class="cta-button">Авторизоваться →</a>
+            </div>
+            </div>
+
+            <div class="telegram-illustration">
+            <img src="{% static 'blog_img/letychka-telegram-1007.png' %}" alt="Телефон с Telegram" />
+            </div>
         </div>
     </section>
 
@@ -359,6 +317,40 @@
                     После прохождения&nbsp;&mdash; подробный разбор ошибок. Покажем, что было не&nbsp;так и&nbsp;как понять тему. Помогло улучшить результат у&nbsp;4&nbsp;из&nbsp;5&nbsp;студентов
                 </p>
             </div>
+        </div>
+    </section>
+
+    <!-- Секция "Как начать" -->
+    <section class="how-it-works">
+        <h2 class="section-title">
+            <span class="gradient-text">Зубришь по старинке?</span>
+        </h2>
+        <section class="comparison">
+            <table>
+                <tr class="comparison-title">
+                    <th></th>
+                    <th>Обычная подготовка</th>
+                    <th>С Летучкой</th>
+                </tr>
+                <tr>
+                    <td data-label="">Создание теста</td>
+                    <td data-label="Обычная подготовка"><strong class="red">2+ часа</strong> вручную</td>
+                    <td data-label="С Летучкой"><strong>До 30 секунд</strong> автогенерации</td>
+                </tr>
+                <tr>
+                    <td data-label="">Поиск ошибок</td>
+                    <td data-label="Обычная подготовка">Перечитываешь всё 3 раза</td>
+                    <td data-label="С Летучкой">Детальный фидбэк от нейросети</td>
+                </tr>
+                <tr>
+                    <td data-label="">Эффективность</td>
+                    <td data-label="Обычная подготовка">Лишь <strong class="red">30% инфы</strong> запоминается</td>
+                    <td data-label="С Летучкой"><strong>В 2,5 раза</strong> лучше запоминается</td>
+                </tr>
+                </table>
+        </section>
+        <div class="center-button">
+            <a href="/login" class="cta-button">Создать тест в 2 клика →</a>
         </div>
     </section>
 
@@ -598,18 +590,6 @@
         </div>
     </div>
 
-    <div id="cookie-banner" style="position: fixed; margin: 0 auto; bottom: 20px; left: 20px; right: 20px; background: rgba(255, 255, 255, 0.12); color: #fff; border-radius: 20px; padding: 12px 24px; display: flex; flex-direction: column; box-shadow: 0 6px 24px rgba(0,0,0,0.2); z-index: 9999; -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); font-family: 'Namu Pro', sans-serif; font-size: 14px; line-height: 1.4; opacity: 0; transform: translateY(100px); transition: all 0.5s ease; max-width: 600px">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <span>Мы используем cookie-файлы.</span>
-            <button onclick="hideCookieBanner()" style="background: #616DF0; color: #fff; border: none; padding: 12px 32px; border-radius: 24px; cursor: pointer; font-weight: 600; transition: background 0.3s; font-family: 'Namu Pro', sans-serif;">
-                Принимаю
-            </button>
-        </div>
-        <div style="font-size: 12px; opacity: 0.8;">
-            <a href="/docs/privacy-policy/" style="color: #79EF66; text-decoration: underline;">Политика конфиденциальности</a>
-        </div>
-    </div>
-
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('critical-header').style.opacity = 1;
@@ -714,15 +694,6 @@
             window.addEventListener('scroll', handleScroll);
             handleScroll();
 
-            function hideCookieBanner() {
-                localStorage.setItem('cookieAccepted', 'true');
-                document.getElementById('cookie-banner').style.opacity = '0';
-                document.getElementById('cookie-banner').style.transform = 'translateY(100px)';
-                setTimeout(() => {
-                document.getElementById('cookie-banner').style.display = 'none';
-                }, 500);
-            }
-
             window.addEventListener('load', () => {
                 if (!localStorage.getItem('cookieAccepted')) {
                 const banner = document.getElementById('cookie-banner');
@@ -735,6 +706,30 @@
             });
         });
     </script>
+
+    <div id="cookie-banner" style="position: fixed; margin: 0 auto; bottom: 20px; left: 20px; right: 20px; background: rgba(255, 255, 255, 0.12); color: #fff; border-radius: 20px; padding: 12px 24px; display: flex; flex-direction: column; box-shadow: 0 6px 24px rgba(0,0,0,0.2); z-index: 9999; -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); font-family: 'Namu Pro', sans-serif; font-size: 14px; line-height: 1.4; opacity: 0; transform: translateY(100px); transition: all 0.5s ease; max-width: 600px">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span>Мы используем cookie-файлы.</span>
+            <button onclick="hideCookieBanner()" style="background: #616DF0; color: #fff; border: none; padding: 12px 32px; border-radius: 24px; cursor: pointer; font-weight: 600; transition: background 0.3s; font-family: 'Namu Pro', sans-serif;">
+                Принимаю
+            </button>
+        </div>
+        <div style="font-size: 12px; opacity: 0.8;">
+            <a href="/docs/privacy-policy/" style="color: #79EF66; text-decoration: underline;">Политика конфиденциальности</a>
+        </div>
+    </div>
+
+    <script>
+        function hideCookieBanner() {
+            localStorage.setItem('cookieAccepted', 'true');
+            document.getElementById('cookie-banner').style.opacity = '0';
+            document.getElementById('cookie-banner').style.transform = 'translateY(100px)';
+            setTimeout(() => {
+            document.getElementById('cookie-banner').style.display = 'none';
+            }, 500);
+        }
+    </script>
+
 </body>
 
 </html>

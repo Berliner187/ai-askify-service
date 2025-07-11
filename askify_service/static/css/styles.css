@@ -385,6 +385,9 @@ textarea:focus {
     position: fixed;
     top: 72px;
     left: 50%;
+    width: 70%;
+    max-width: max-content;
+    text-align: center;
     transform: translateX(-50%);
     background: var(--dark-color);
     backdrop-filter: blur(10px);
@@ -454,6 +457,7 @@ textarea:focus {
     margin-top: 20px;
 }
 
+/* Промо блок для купки подписки */
 .subscription-offer {
     padding: 30px 20px;
     margin-top: 50px;
@@ -797,17 +801,15 @@ textarea:focus {
     font-size: 10px;
 }
 
-
 #block-generate, .glass-metrics-container, .features-container,
-#file-preview-container, #faq-container {
+#file-preview-container, #faq-container, .fixed-bottom-menu {
     background: linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
-    backdrop-filter: blur(24px);
+    backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-
-/* Блок с короткой статистикой */
+/* БЛОК МЕТРИКИ /create */
 .glass-metrics-container {
     background: linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
     backdrop-filter: blur(16px);
@@ -818,9 +820,6 @@ textarea:focus {
     font-family: 'Unbounded Medium';
     overflow: hidden;
     position: relative;
-    /* box-shadow: 
-        inset 0 0 0 1px rgba(255,255,255,0.08),
-        0 20px 50px rgba(0,0,0,0.3); */
 }
 
 /* Анимированная переливающаяся граница */
@@ -875,6 +874,7 @@ textarea:focus {
     font-size: 16px;
     color: rgba(255,255,255,0.8);
     letter-spacing: 0.3px;
+    text-align: center;
 }
 
 .metric-badge {
@@ -1063,19 +1063,6 @@ textarea:focus {
     margin: 0;
 }
 
-@media (max-width: 1024px) {
-    .features-container {
-        grid-template-columns: 1fr 1fr;
-    }
-}
-
-@media (max-width: 640px) {
-    .features-container {
-        grid-template-columns: 1fr;
-    }
-}
-
-
 /* Слайдер-ползунок кол-ва вопросов */
 .custom-slider {
     -webkit-appearance: none;
@@ -1251,19 +1238,6 @@ hr {
     color: #555;
 }
 
-@media (max-width: 768px) {
-    .topic {
-        flex: 1 1 calc(50% - 10px);
-    }
-}
-
-@media (max-width: 480px) {
-    .topic {
-        flex: 1 1 100%;
-    }
-}
-
-
 /* Страница профиля */
 .profile ul, .profile p {
     color: #9f9ca9;
@@ -1326,16 +1300,11 @@ hr {
     margin: 20px 30px;
     border-radius: 16px;
     justify-content: space-around;
-    background-color: rgba(39, 41, 61, .25);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(16px);
-    /* border: 1px solid #5A66EB; */
     color: #BAB8C1;
     padding: 8px;
     z-index: 1000;
     max-width: 768px;
     transition: .25s;
-    /* box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.5); */
 }
 
 .bottom-menu-item {
