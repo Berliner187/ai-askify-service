@@ -1,46 +1,18 @@
-.burger {
+.burger, #burger {
     cursor: pointer;
-    width: 25px;
-    height: 18px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
+    width: 36px;
+    height: 36px;
     transition-duration: .25s;
 }
 
-.burger div {
-    background-color: #cecdd9;
-    height: 3px;
-    width: 100%;
-    border-radius: 15px;
-    transition: all 0.3s ease;
-}
-.line:nth-child(2) {
-    top: 8px;
-}
-.line:nth-child(3) {
-    top: 16px;
-}
-
-.burger.active .line:nth-child(1) {
-    transform: rotate(45deg);
-    position: absolute;
-    top: 8px;
-}
-
-.burger.active .line:nth-child(2) {
-    opacity: 0;
-}
-
-.burger.active .line:nth-child(3) {
-    transform: rotate(-45deg);
-    position: absolute;
-    top: 8px;
-}
-
 nav {
+    font-family: 'Namu Pro';
     display: none;
     transition: .25s;
+    background: rgba(255,255,255,0.12);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 nav.active {
@@ -48,14 +20,13 @@ nav.active {
     position: absolute;
     text-align: center;
     top: 100%;
-    margin-top: 10px;
+    margin-top: 24px;
     right: 0;
     min-width: 100px;
     width: max-content;
     max-width: 300px;
     padding: 1em;
     border-radius: 16px;
-    background-color: #151417;
     z-index: 1000;
     user-select: none;
 }
@@ -85,7 +56,7 @@ nav ul {
 
 nav ul li {
     padding: 10px 20px 10px 20px;
-    background-color: #201e24;
+    background: rgba(255,255,255,0.2);
     border-radius: 10px;
     transition-duration: .25s;
 }
@@ -133,7 +104,7 @@ ul {
     width: 88%;
     min-width: 220px;
     max-width: 1200px;
-    border-radius: 20px;
+    border-radius: 24px;
     border: 1px solid rgba(255, 255, 255, 0.12);
     background: rgba(132, 120, 145, 0.2);
     z-index: 1000;

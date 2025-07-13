@@ -25,21 +25,21 @@ document.addEventListener('DOMContentLoaded', function() {
         medicine: {
             title: "медицине",
             phrases: [
-                "по фармакологии для терапевтов",
-                "по диагностике сердечно-сосудистых заболеваний",
-                "по неотложной помощи в педиатрии",
-                "по клинической биохимии",
-                "по антибиотикотерапии в стоматологии"
+                "по фармакологии для аккредитации",
+                "по ЭКГ-диагностике за 5 минут",
+                "по неотложным состояниям в терапии",
+                "по антибиотикотерапии (с ответами)",
+                "по сестринскому делу для практики"
             ],
             color: "linear-gradient(45deg, #ff6b6b, #ffa3a3)"
         },
         science: {
             title: "науке",
             phrases: [
-                "по методикам преподавания",
+               "по методикам преподавания",
+                "для подготовки к ЕГЭ",
                 "по инклюзивному образованию",
-                "по современным образовательным стандартам",
-                "по развивающим методикам для дошкольников",
+                "по ФГОС нового поколения",
                 "по нейропедагогике"
             ],
             color: "linear-gradient(45deg, #48dbfb, #0abde3)"
@@ -58,32 +58,33 @@ document.addEventListener('DOMContentLoaded', function() {
         education: {
             title: "образованию",
             phrases: [
-                "по педагогике и методикам",
-                "по психологии обучения",
-                "по дошкольному образованию",
-                "по подготовке к ЕГЭ"
+                "по конспекту лекции за 30 сек",
+                "для подготовки к зачету",
+                "по учебнику без ручного ввода",
+                "с автоматической проверкой",
+                "с экспортом в PDF"
             ],
             color: "linear-gradient(45deg, #48dbfb, #0abde3)"
         },
         history: {
             title: "истории",
             phrases: [
-                "по Великой Отечественной войне",
-                "по истории СССР",
-                "по Древнему миру",
-                "по эпохе Возрождения",
-                "по обществознанию"
+                "по технике безопасности",
+                "для аттестации сотрудников",
+                "по продукту компании",
+                "по стандартам ISO",
+                "по compliance-требованиям"
             ],
             color: "linear-gradient(45deg, #feca57, #ff9f43)"
         },
         culture: {
             title: "культуре",
             phrases: [
-                "по русской философии",
-                "по народным сказкам",
-                "по кулинарным традициям",
-                "по истории танцев",
-                "по литературным направлениям"
+                "для подготовки к ОГЭ/ЕГЭ",
+                "по биологии с автопроверкой",
+                "по обществознанию (с ответами)",
+                "по истории для 10 класса",
+                "по химии с разбором ошибок"
             ],
             color: "linear-gradient(45deg, #9c88ff, #8c7ae6)"
         }
@@ -110,10 +111,10 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (!isDeleting && currentLetter <= phrases[currentPhrase].length) {
             typingElement.textContent = phrases[currentPhrase].substring(0, currentLetter++);
-            typingInterval = setTimeout(typeTheme, 60);
+            typingInterval = setTimeout(typeTheme, 40);
         } else if (isDeleting && currentLetter >= 0) {
             typingElement.textContent = phrases[currentPhrase].substring(0, currentLetter--);
-            typingInterval = setTimeout(typeTheme, 20);
+            typingInterval = setTimeout(typeTheme, 10);
         } else {
             isDeleting = !isDeleting;
             

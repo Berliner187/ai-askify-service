@@ -11,17 +11,23 @@
     </div>
     <div class="menu-container" style="position: relative;">
         {% if username %}
-            <!-- <a href="/profile/{{ username }}">
-                <div class="user-avatar">{{ username|make_list|first|upper }}</div>
-            </a> -->
+            <div id="burger">
+                <!-- <a href="/profile/{{ username }}"> -->
+                    <div class="user-avatar">{{ username|make_list|first|upper }}</div>
+                <!-- </a> -->
+            </div>
         {% else %}
-            
+            <div id="burger">
+                <!-- <a href="/profile/{{ username }}"> -->
+                    <div class="user-avatar">М</div>
+                <!-- </a> -->
+            </div>
         {% endif %}
-        <div class="burger" id="burger">
+        <!-- <div class="burger" id="burger">
             <div class="line"></div>
             <div class="line"></div>
             <div class="line"></div>
-        </div>
+        </div> -->
     
         <nav id="nav">
             {% if username %}
@@ -37,8 +43,9 @@
                 </ul>
             {% else %}
                 <ul>
-                    <li><a href="/docs/privacy-policy">Политика конфиденциальности</a></li>
+                    <li><a href="/docs/public-offer">Публичная оферта</a></li>
                     <li><a href="/docs/user-agreement">Пользовательское соглашение</a></li>
+                    <li><a href="/docs/privacy-policy">Политика конфиденциальности</a></li>
                     <hr>
                     <li><a href="/">На главную</a></li>
                 </ul>

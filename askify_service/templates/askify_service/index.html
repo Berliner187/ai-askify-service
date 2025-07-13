@@ -76,7 +76,7 @@
                 <a href="#gif-section" class="nav-link">Как работает</a>
                 <a href="#how-it-works" class="nav-link">Начать</a>
                 <a href="#features" class="nav-link">Фичи</a>
-                <a href="/media/main" class="nav-link">Блог</a>
+                <a href="#success-cases" class="nav-link">Кейсы</a>
                 <a href="/login" class="nav-link login-button">Войти</a>
             </div>
             <div class="burger" id="burger">
@@ -91,7 +91,7 @@
     <section class="hero" id="critical-hero">
         <div class="hero-content">
             <h1 class="hero-title">
-                <span class="gradient-text">Создавай тесты</span><br>за считанные секунды
+                <span class="gradient-text">Создавай тесты по&nbsp;тексту</span> <br>за&nbsp;считанные секунды
             </h1>
             <p class="hero-subtitle">
                 Загрузи методичку, лекцию или конспект &rarr; ИИ&nbsp;создаст тест с&nbsp;вопросами.<br>Пройди сразу или скачай PDF.
@@ -128,8 +128,8 @@
                     </div>
                 </div>
 
-                <p class="gen-subtitle">Загрузи материалы → Скачай сгенерированный тест</p>
-                <p class="gen-hint">Скопируй и отправь ссылку в чат, email или соцсети — получатели смогут скачать созданный тест</p>
+                <p class="gen-subtitle">Загрузи текст, лекцию или документ → Получи готовый тест за 30 секунд</p>
+                <p class="gen-hint">Отправь ссылку на тест ученикам или коллегам — они смогут пройти его онлайн или скачать PDF</p>
             </div>
 
             <div class="gen-controls">
@@ -137,7 +137,8 @@
                     <textarea 
                         id="text-input" 
                         class="neon-textarea" 
-                        placeholder="Напишите здесь тему, учебные материалы, заметки или содержание статьи..."
+                        placeholder="Вставьте сюда текст – сгенерируем тест по нему.
+Например: Теорема Пифагора гласит, что в прямоугольном..."
                         maxlength="5000"
                     ></textarea>
                     <div class="text-counter">
@@ -167,44 +168,65 @@
                     >
                         🚀 СОЗДАТЬ ТЕСТ
                     </button>
-
+                </div>
+                <div class="gen-hint">
+                    <p>⏱ Генерация займёт до&nbsp;30&nbsp;секунд. Зарегистрируйтесь, чтобы сохранить и&nbsp;сгенерировать ещё +10&nbsp;тестов бесплатно!</p>
+                </div>
                 <div id="result-container" class="result-container">
                     <p>Созданные тесты</p>
                     <div class="test-grid" id="test-grid"></div>
                     <br>
                 </div>
-
             </div>
             
-            <div class="result-container">
-                <br>
-                <div class="reg-block" style="background: rgba(100, 100, 100, .3); border-radius: 20px; padding: 24px; border: 1px solid #7b5ce4; margin: 20px 0;">
-                    <div style="margin-bottom: 18px;">
-                        <h3 style="color: #fff; font-size: 1.25rem; margin-bottom: 12px;">Сохрани свой тест</h3>
-                        <ul style="list-style: none; padding: 0; color: #ccc; font-size: 0.95rem; line-height: 1.5;">
-                        <li>• <strong>Зарегистрируйся</strong> — и все тесты будут в личном кабинете</li>
-                        <li>• <strong>Доступ с любого устройства</strong> — хоть с телефона в метро, хоть с планшета перед зачётом</li>
-                        <li>• <strong>Подходит для всех дисциплин</strong> — от истории до фармакологии</li>
+            <div class="reg-block glass-block">
+                <div class="access-comparison">
+                    <div class="access-column glass-card">
+                        <h3>Без регистрации</h3>
+                        <ul>
+                            <li>✅ 2 бесплатных теста</li>
+                            <li>✅ До 5 вопросов</li>
+                            <li>❌ История тестов</li>
                         </ul>
                     </div>
-                    <a href="/register"
-                        style="display: block;
-                                background: linear-gradient(45deg, #6f59f9, #5f45e0);
-                                color: white;
-                                padding: 14px 28px;
-                                border-radius: 14px;
-                                text-align: center;
-                                text-decoration: none;
-                                font-weight: 600;
-                                font-size: 1rem;
-                                transition: transform 0.2s, background 0.2s;
-                                box-shadow: 0 6px 18px rgba(123, 92, 228, 0.25);">
-                        Зарегистрироваться и сохранить тест
-                    </a>
-                    <p style="color: #888; font-size: 0.8em; margin-top: 12px; margin-bottom: 0;">Быстрая регистрация. Войди по почте или через Telegram.</p>
+                    
+                    <div class="access-divider">
+                        <div class="vs-badge glass-badge">VS</div>
+                    </div>
+                    
+                    <div class="access-column glass-card registered">
+                        <h3>С регистрацией</h3>
+                        <ul>
+                            <li>🚀 10 бесплатных тестов</li>
+                            <li>🚀 До 15 вопросов</li>
+                            <li>✅ Сохранение истории</li>
+                        </ul>
+                    </div>
                 </div>
+                
+                <div class="reg-benefits">
+                    <h3>Зарегистрируйтесь и получите:</h3>
+                    <div class="benefits-grid">
+                        <div class="benefit-card glass-card">
+                            <div class="benefit-icon">⏱️</div>
+                            <div>В 5 раз больше тестов</div>
+                        </div>
+                        <div class="benefit-card glass-card">
+                            <div class="benefit-icon">🧠</div>
+                            <div>В 3 раза больше вопросов</div>
+                        </div>
+                        <div class="benefit-card glass-card">
+                            <div class="benefit-icon">📁</div>
+                            <div>Доступ с любого устройства</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <a href="/register" class="glass-button">
+                    Зарегистрироваться и получить полный доступ →
+                </a>
+                <p class="reg-hint">Быстрая регистрация за 20 секунд через Telegram или почту</p>
             </div>
-
         </div>
     </section>
 
@@ -225,30 +247,33 @@
                 </video>
             </div>
             <div class="steps-info">
-                <p>От загрузки конспекта до готового теста —<br>быстрее, чем <span class="highlight">приготовить дошик</span></p>
+                <p>Почему стоит <span class="highlight">использовать Летучку</span></p>
                 <div class="steps-grid">
                     <div class="feature-card">
                         <div class="step-number">
-                            <img src="{% static 'img/icon-start-02.webp' %}" alt="">
+                            <img src="{% static 'img/icon-start-02.webp' %}" alt="Скорость">
                         </div>
                         <div class="step-text">
-                            Загрузи материалы, заметки, конспекты или текст статьи
+                            <strong>Экономия 2+ часов в день</strong><br>
+                            Автоматизируйте рутинную работу
                         </div>
                     </div>
                     <div class="feature-card">
                         <div class="step-number">
-                            <img src="{% static 'img/icon-start-03.webp' %}" alt="">
+                            <img src="{% static 'img/icon-start-03.webp' %}" alt="Качество">
                         </div>
                         <div class="step-text">
-                            Выбери количество вопросов
+                            <strong>На 87% точнее ручного составления</strong><br>
+                            ИИ выявляет ключевые темы
                         </div>
                     </div>
                     <div class="feature-card">
                         <div class="step-number">
-                            <img src="{% static 'img/icon-start-01.webp' %}" alt="">
+                            <img src="{% static 'img/icon-start-01.webp' %}" alt="Удобство">
                         </div>
                         <div class="step-text">
-                            Пройди тест онлайн или сохрани в&nbsp;PDF для печати
+                            <strong>Удобство для учеников и коллег</strong><br>
+                            Отправляйте тесты в 1 клик
                         </div>
                     </div>
                 </div>
@@ -514,10 +539,10 @@
                 <h3 class="plan-title">Лайтовый</h3>
                 <div class="plan-price">99 ₽ <span class="plan-subtext">на неделю</span></div>
                 <ul class="plan-features">
-                    <li>15 тестов в день</li>
-                    <li>PDF без водяных знаков</li>
+                    <li>15 тестов в день — достаточно для подготовки к любому предмету</li>
+                    <li>Скачивайте PDF без водяных знаков — можно сразу печатать</li>
                     <li>Можно пройти на платформе</li>
-                    <li>Смотрите ответы сразу, без прохождения</li>
+                    <li>Сразу видите ответы, не тратя время на прохождение</li>
                 </ul>
                 <a href="/payment/" class="cta-button primary">Приобрести</a>
                 <p><a href="/available-plans/" class="link">Узнать подробнее</a></p>
@@ -709,13 +734,13 @@
 
     <div id="cookie-banner" style="position: fixed; margin: 0 auto; bottom: 20px; left: 20px; right: 20px; background: rgba(255, 255, 255, 0.12); color: #fff; border-radius: 20px; padding: 12px 24px; display: flex; flex-direction: column; box-shadow: 0 6px 24px rgba(0,0,0,0.2); z-index: 9999; -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); font-family: 'Namu Pro', sans-serif; font-size: 14px; line-height: 1.4; opacity: 0; transform: translateY(100px); transition: all 0.5s ease; max-width: 600px">
         <div style="display: flex; justify-content: space-between; align-items: center;">
-            <span>Мы используем cookie-файлы.</span>
+            <span>Продолжая использовать сайт, вы принимаете условия политики конфиденциальности.</span>
             <button onclick="hideCookieBanner()" style="background: #616DF0; color: #fff; border: none; padding: 12px 32px; border-radius: 24px; cursor: pointer; font-weight: 600; transition: background 0.3s; font-family: 'Namu Pro', sans-serif;">
-                Принимаю
+                ОК
             </button>
         </div>
         <div style="font-size: 12px; opacity: 0.8;">
-            <a href="/docs/privacy-policy/" style="color: #79EF66; text-decoration: underline;">Политика конфиденциальности</a>
+            <a href="/docs/privacy-policy/" style="color: #79EF66; text-decoration: underline;">Подробнее</a>
         </div>
     </div>
 
