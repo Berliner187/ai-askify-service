@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Генератор тестов для преподавателей | Создание заданий за секунды | Летучка</title>
+    <meta name="description" content="Автоматизируйте создание тестов для студентов. Загрузите материалы лекций → получите готовые задания с автопроверкой. Экономьте 10+ часов в неделю.">
+    <meta name="keywords" content="создать тест для студентов, генератор тестов для преподавателей, автоматическая проверка заданий, экономия времени преподавателя">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://letychka.ru">
+    <meta property="og:image" content="https://letychka.ru/static/letychka-banner-1703.webp">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta name="twitter:card" content="https://letychka.ru/static/letychka-banner-1703.webp"/>
+    <meta name="twitter:image" content="https://letychka.ru/static/letychka-banner-1703.webp"/>
+    <meta property="og:site_name" content="Летучка – создание тестов с помощью ИИ">
+    <meta name="theme-color" content="#0F0818">
+    <link rel="canonical" href="https://letychka.ru" />
+
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    {% load static %}
+    <link rel="apple-touch-icon" sizes="180x180" href="{% static 'img/apple-touch-icon.png' %}">
+    <link rel="shortcut icon" href="{% static 'img/favicon.ico' %}" type="image/ico">
+    <link rel="stylesheet" href="{% static 'css/themes-carusel.css' %}?v=1.2">
+    <link rel="stylesheet" href="{% static 'css/start.css' %}?v=3.21">
+    <link rel="stylesheet" href="{% static 'css/footer.css' %}">
+</head>
+<body>
+    <!-- Хедер -->
+    <header class="header" id="critical-header">
+        <div class="logo">
+            <a href="/">
+                <img src="{% static 'img/logo-header.webp' %}" alt="Логотип Летучка" class="logo-img">
+            </a>
+        </div>
+        <nav class="nav">
+            <div class="nav-links">
+                <a href="#gif-section" class="nav-link">Как работает</a>
+                <a href="#how-it-works" class="nav-link">Начать</a>
+                <a href="#features" class="nav-link">Фичи</a>
+                <a href="#success-cases" class="nav-link">Кейсы</a>
+                <a href="/login" class="nav-link login-button">Войти</a>
+            </div>
+            <div class="burger" id="burger">
+                <div class="burger-line"></div>
+                <div class="burger-line"></div>
+                <div class="burger-line"></div>
+            </div>
+        </nav>
+    </header>
+
+    <section class="hero" id="critical-hero">
+        <div class="hero-content">
+            <h1 class="hero-title">
+                <span class="gradient-text">10 часов вашего времени</span><br>еженедельно — на создание тестов?
+            </h1>
+            <p class="hero-subtitle">
+                Летучка создает задания из ваших материалов за 30 секунд.<br>
+                <strong>Автоматическая проверка + аналитика знаний студентов</strong>
+            </p>
+            <a href="#create-now" class="cta-button cta-button-accent">ПОПРОБОВАТЬ БЕСПЛАТНО →</a>
+            
+            <div class="hero-stats">
+                <div class="stat-item">
+                    <div class="stat-value">87%</div>
+                    <div class="stat-label">преподавателей экономят время</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">24/7</div>
+                    <div class="stat-label">доступ к материалам</div>
+                </div>
+            </div>
+        </div>
+        <div class="hero-image">
+            <img src="{% static 'teacher-hero.webp' %}" alt="Преподаватель создает тесты с Летучкой" class="hero-img">
+        </div>
+    </section>
+
+    <section class="generator-section" id="create-now">
+        <!-- Блок генератора без изменений -->
+    </section>
+
+    <section class="pain-section glass-block">
+        <h2 class="section-title">Преподаватели тратят до 15 часов в неделю на рутину</h2>
+        
+        <div class="pain-points">
+            <div class="pain-card glass-card">
+                <div class="pain-icon">⏱️</div>
+                <h3>Составление тестов</h3>
+                <p>Часы на формулирование вопросов и вариантов ответов</p>
+            </div>
+            
+            <div class="pain-card glass-card">
+                <div class="pain-icon">📝</div>
+                <h3>Проверка работ</h3>
+                <p>Монотонная проверка десятков идентичных заданий</p>
+            </div>
+            
+            <div class="pain-card glass-card">
+                <div class="pain-icon">📊</div>
+                <h3>Анализ результатов</h3>
+                <p>Ручной подсчет баллов и выявление пробелов</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="solution-section">
+        <div class="solution-container">
+            <div class="solution-content">
+                <h2 class="section-title">Решение для загруженного преподавателя</h2>
+                
+                <div class="solution-steps">
+                    <div class="step-card">
+                        <div class="step-number">1</div>
+                        <div class="step-text">
+                            <strong>Загрузите материалы лекций</strong><br>
+                            PDF, презентации или текстовые файлы
+                        </div>
+                    </div>
+                    
+                    <div class="step-card">
+                        <div class="step-number">2</div>
+                        <div class="step-text">
+                            <strong>Получите готовый тест</strong><br>
+                            ИИ сформирует вопросы по ключевым темам
+                        </div>
+                    </div>
+                    
+                    <div class="step-card">
+                        <div class="step-number">3</div>
+                        <div class="step-text">
+                            <strong>Отправьте студентам</strong><br>
+                            Ссылка или PDF-файл с автоматической проверкой
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="solution-image">
+                <img src="{% static 'teacher-workflow.webp' %}" alt="Рабочий процесс преподавателя">
+            </div>
+        </div>
+    </section>
+
+    <section class="features" id="features">
+        <div class="features-intro">
+            <h2 class="section-title">
+                <span class="gradient-text">Преподавательский инструментарий</span>
+            </h2>
+            <p class="section-subtitle">
+                Все необходимое для эффективной работы со студентами
+            </p>
+        </div>
+        
+        <div class="features-grid">
+            <div class="feature-card glass-card">
+                <div class="feature-icon">📚</div>
+                <h3 class="feature-title">По любому предмету</h3>
+                <p class="feature-text">
+                    От математики до литературы. Загружайте материалы по вашей дисциплине
+                </p>
+            </div>
+            
+            <div class="feature-card glass-card">
+                <div class="feature-icon">📱</div>
+                <h3 class="feature-title">Доступ с любого устройства</h3>
+                <p class="feature-text">
+                    Работайте с компьютера в аудитории или с планшета дома
+                </p>
+            </div>
+            
+            <div class="feature-card glass-card">
+                <div class="feature-icon">📈</div>
+                <h3 class="feature-title">Аналитика знаний</h3>
+                <p class="feature-text">
+                    Автоматическое выявление тем, которые студенты усвоили хуже всего
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <section class="pricing" id="pricing">
+        <div class="pricing-intro">
+            <h2 class="section-title">
+                <span class="gradient-text">Тарифы для преподавателей</span>
+            </h2>
+            <p class="section-subtitle">Специальные условия для образовательных учреждений</p>
+        </div>
+
+        <div class="pricing-grid">
+            <!-- Стартовый -->
+            <div class="pricing-card glass">
+                <div class="badge ghost">Для начала</div>
+                <h3 class="plan-name">Базовый</h3>
+                <div class="price-container">
+                    <span class="price">0₽</span>
+                </div>
+                
+                <ul class="plan-features">
+                    <li>10 тестов в месяц</li>
+                    <li>До 5 вопросов в тесте</li>
+                    <li>PDF с водяными знаками</li>
+                </ul>
+                <button class="cta-button ghost">Начать бесплатно</button>
+            </div>
+            
+            <!-- Стандарт -->
+            <div class="pricing-card glass popular">
+                <div class="badge">Рекомендуем</div>
+                <h3 class="plan-name">Профессиональный</h3>
+                <div class="price-container">
+                    <span class="price">490₽</span>
+                    <span class="period">/месяц</span>
+                </div>
+                
+                <ul class="plan-features">
+                    <li>100 тестов в месяц</li>
+                    <li>До 15 вопросов в тесте</li>
+                    <li>PDF без водяных знаков</li>
+                    <li>Аналитика по группам</li>
+                </ul>
+                <button class="cta-button primary">Выбрать тариф</button>
+            </div>
+            
+            <!-- Премиум -->
+            <div class="pricing-card glass">
+                <div class="badge">Для кафедры</div>
+                <h3 class="plan-name">Премиум</h3>
+                <div class="price-container">
+                    <span class="price">1490₽</span>
+                    <span class="period">/месяц</span>
+                </div>
+                
+                <ul class="plan-features">
+                    <li>Неограниченные тесты</li>
+                    <li>До 25 вопросов в тесте</li>
+                    <li>White-label решения</li>
+                    <li>Приоритетная поддержка</li>
+                </ul>
+                <button class="cta-button">Для ВУЗов и колледжей</button>
+            </div>
+        </div>
+    </section>
+
+    <section class="testimonials">
+        <h2 class="section-title">Преподаватели выбирают Летучку</h2>
+        
+        <div class="testimonial-cards">
+            <div class="testimonial glass-card">
+                <div class="teacher-info">
+                    <img src="{% static 'teacher-1.webp' %}" alt="Мария Иванова">
+                    <div>
+                        <div class="teacher-name">Мария Иванова</div>
+                        <div class="teacher-position">Доцент кафедры биологии</div>
+                    </div>
+                </div>
+                <p class="quote">"Раньше тратила 3 часа на составление теста, теперь - 10 минут. Качество вопросов выше, чем когда я составляла сама"</p>
+                <div class="results">
+                    <div>+1.5 балла средний балл</div>
+                    <div>-83% времени на подготовку</div>
+                </div>
+            </div>
+            
+            <div class="testimonial glass-card">
+                <div class="teacher-info">
+                    <img src="{% static 'teacher-2.webp' %}" alt="Алексей Петров">
+                    <div>
+                        <div class="teacher-name">Алексей Петров</div>
+                        <div class="teacher-position">Преподаватель информатики</div>
+                    </div>
+                </div>
+                <p class="quote">"Мои студенты технических специальностей особенно оценили автоматическую проверку заданий по программированию"</p>
+                <div class="results">
+                    <div>300+ тестов создано</div>
+                    <div>Для 5 учебных групп</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="cta-section glass-block">
+        <h2 class="section-title">Начните экономить свое время уже сегодня</h2>
+        <p class="section-subtitle">Первый тест - бесплатно, без регистрации</p>
+        
+        <div class="cta-buttons">
+            <a href="#create-now" class="glass-button">Создать тест</a>
+            <a href="#pricing" class="cta-button ghost">Смотреть тарифы</a>
+        </div>
+    </section>
+
+    <!-- Остальные секции (footer и т.д.) без изменений -->
+</body>
+</html>

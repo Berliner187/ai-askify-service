@@ -16,6 +16,10 @@ urlpatterns = [
     path('c/<str:survey_id>/', preview_test, name='demo_view'),
     path('register-view/<str:survey_id>/', register_survey_view, name='register_survey_view'),
 
+    path('solving-tests/', solving_tests_promo, name='solving_tests_promo'),
+    path('for-teachers/', teachers_promo, name='teachers_promo'),
+    path('for-medics/', medicine_promo, name='medicine_promo'),
+
     path('drop-survey/<str:survey_id>/', drop_survey, name='drop-survey'),
     path('history/', page_history_surveys, name='history'),
     path('load-more-surveys/', load_more_surveys, name='load-more-surveys'),

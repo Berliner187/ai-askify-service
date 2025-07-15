@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Летучка - автоматическое решение тестов онлайн | ИИ помощник для студентов</title>
+    <meta name="description" content="Автоматически решайте тесты за секунды с ИИ. Летучка анализирует вопросы и находит правильные ответы. Для студентов и преподавателей. Попробуйте бесплатно!">
+    <meta name="keywords" content="решить тест онлайн, автоматическое решение тестов, ИИ для тестов, помощник для студентов, генератор ответов, Летучка">
+    <meta property="og:title" content="Летучка - автоматическое решение тестов с ИИ">
+    <meta property="og:description" content="Ваш персональный ИИ-помощник для решения любых тестов онлайн. Точно. Быстро. Бесплатно.">
+    <link rel="stylesheet" href="/static/css/start.css">
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Анимация появления элементов
+            const animateOnScroll = () => {
+                document.querySelectorAll('.lazy-load').forEach(el => {
+                    if (el.getBoundingClientRect().top < window.innerHeight - 100) {
+                        el.classList.add('loaded');
+                    }
+                });
+            };
+            window.addEventListener('scroll', animateOnScroll);
+            animateOnScroll();
+
+            // Обработка формы
+            const testForm = document.getElementById('test-form');
+            if (testForm) {
+                testForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    
+                    const submitBtn = document.getElementById('solve-btn');
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = 'Решаем...';
+                    
+                    try {
+                        const formData = new FormData(testForm);
+                        const response = await fetch('/api/solve-test/', {
+                            method: 'POST',
+                            body: formData,
+                            headers: {
+                                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                            }
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (data.success) {
+                            showResults(data.answers);
+                        } else {
+                            showAlert(data.error || 'Произошла ошибка', 'error');
+                        }
+                    } catch (error) {
+                        showAlert('Ошибка соединения', 'error');
+                    } finally {
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = '🚀 Решить тест';
+                    }
+                });
+            }
+
+            // Попап с примерами
+            document.querySelectorAll('.show-examples').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.getElementById('examples-popup').classList.add('active');
+                });
+            });
+
+            // Закрытие попапов
+            document.querySelectorAll('.popup-close').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    btn.closest('.popup-overlay').classList.remove('active');
+                });
+            });
+
+            // Показать/скрыть FAQ
+            document.querySelectorAll('.faq-question').forEach(question => {
+                question.addEventListener('click', () => {
+                    question.parentElement.classList.toggle('active');
+                });
+            });
+        });
+
+        function showResults(answers) {
+            const resultsContainer = document.getElementById('results-container');
+            resultsContainer.innerHTML = answers.map((answer, i) => `
+                <div class="answer-card">
+                    <div class="question">${i+1}. ${answer.question}</div>
+                    <div class="answer">${answer.answer}</div>
+                    <div class="confidence">Точность: ${answer.confidence}%</div>
+                </div>
+            `).join('');
+            
+            document.getElementById('results-section').classList.remove('hidden');
+            window.scrollTo({
+                top: document.getElementById('results-section').offsetTop - 100,
+                behavior: 'smooth'
+            });
+        }
+
+        function showAlert(message, type = 'success') {
+            const alert = document.getElementById('glass-alert');
+            alert.querySelector('.glass-alert__message').textContent = message;
+            alert.className = `glass-alert ${type} visible`;
+            
+            setTimeout(() => {
+                alert.classList.remove('visible');
+            }, 5000);
+        }
+    </script>
+</head>
+<body>
+    <!-- Хедер -->
+    <header class="header" id="critical-header">
+        <div class="logo">
+            <a href="/">
+                <img src="/static/img/logo-header.webp" alt="Логотип Летучка" class="logo-img">
+            </a>
+        </div>
+        <nav class="nav">
+            <div class="nav-links">
+                <a href="#how-it-works" class="nav-link">Как работает</a>
+                <a href="#features" class="nav-link">Преимущества</a>
+                <a href="#examples" class="nav-link">Примеры</a>
+                <a href="/login" class="nav-link login-button">Войти</a>
+            </div>
+            <div class="burger" id="burger">
+                <div class="burger-line"></div>
+                <div class="burger-line"></div>
+                <div class="burger-line"></div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Герой-секция -->
+    <section class="hero lazy-load">
+        <div class="hero-content">
+            <h1 class="hero-title">
+                <span class="gradient-text">Автоматическое решение тестов</span><br>с ИИ за секунды
+            </h1>
+            <p class="hero-subtitle">
+                Загрузите вопросы — получите готовые ответы. Точность до 95% для любых дисциплин
+            </p>
+            <a href="#solve" class="cta-button cta-button-accent">Попробовать бесплатно →</a>
+            
+            <div class="trust-badges">
+                <div class="trust-item">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="#79EF66">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                    </svg>
+                    <span>Без регистрации</span>
+                </div>
+                <div class="trust-item">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="#79EF66">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                    </svg>
+                    <span>Конфиденциально</span>
+                </div>
+            </div>
+        </div>
+        <div class="hero-image">
+            <img src="/static/img/test-solving-demo.webp" alt="Пример решения теста" class="hero-img lazy">
+        </div>
+    </section>
+
+    <!-- Секция решения тестов -->
+    <section id="solve" class="generator-section lazy-load">
+        <div class="glassy-box">
+            <h2 class="section-title">Решите тест прямо сейчас</h2>
+            <p class="gen-subtitle">Загрузите вопросы или сфотографируйте тест</p>
+            
+            <form id="test-form" class="gen-controls">
+                <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                
+                <div class="text-input-wrapper">
+                    <textarea name="questions" class="neon-textarea" placeholder="Введите вопросы теста (каждый с новой строки)..." required></textarea>
+                    <div class="text-counter"><span id="char-count">0</span> / 2000</div>
+                </div>
+                
+                <div class="controls-row">
+                    <div class="file-upload">
+                        <label for="file-upload" class="cta-button ghost">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                            </svg>
+                            Загрузить файл
+                        </label>
+                        <input id="file-upload" type="file" name="test_file" accept=".txt,.pdf,.doc,.docx,.jpg,.png">
+                    </div>
+                    
+                    <button id="solve-btn" type="submit" class="cta-button cta-button-accent">
+                        🚀 Решить тест
+                    </button>
+                </div>
+            </form>
+            
+            <p class="gen-hint">
+                <a href="#examples" class="show-examples">Посмотрите примеры</a> или 
+                <a href="/register">зарегистрируйтесь</a> для сохранения результатов
+            </p>
+        </div>
+    </section>
+
+    <!-- Результаты (скрыты изначально) -->
+    <section id="results-section" class="hidden lazy-load">
+        <div class="glassy-box">
+            <h2 class="section-title">Результаты решения</h2>
+            <div id="results-container" class="results-grid"></div>
+            
+            <div class="actions">
+                <button class="cta-button primary" onclick="window.print()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/>
+                    </svg>
+                    Распечатать
+                </button>
+                <button class="cta-button ghost" id="copy-results">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                    </svg>
+                    Копировать
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Как это работает -->
+    <section id="how-it-works" class="steps-info lazy-load">
+        <div class="container">
+            <h2 class="section-title"><span class="gradient-text">Как работает Летучка</span></h2>
+            <p class="section-subtitle">3 простых шага к решенному тесту</p>
+            
+            <div class="steps-grid">
+                <div class="step-card">
+                    <div class="step-number">1</div>
+                    <h3 class="step-title">Загрузите вопросы</h3>
+                    <p class="step-text">
+                        Вставьте текст теста или загрузите файл (PDF, Word, фото). 
+                        Наш ИИ распознает даже рукописный текст.
+                    </p>
+                </div>
+                
+                <div class="step-card">
+                    <div class="step-number">2</div>
+                    <h3 class="step-title">Анализ и поиск</h3>
+                    <p class="step-text">
+                        ИИ анализирует каждый вопрос, находит ключевые слова 
+                        и ищет точные ответы в проверенных источниках.
+                    </p>
+                </div>
+                
+                <div class="step-card">
+                    <div class="step-number">3</div>
+                    <h3 class="step-title">Получите ответы</h3>
+                    <p class="step-text">
+                        Через 10-60 секунд вы получаете готовые ответы 
+                        с указанием точности каждого.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="center-button">
+                <a href="#solve" class="cta-button cta-button-accent">Попробовать сейчас →</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Примеры решенных тестов (попап) -->
+    <div id="examples-popup" class="popup-overlay">
+        <div class="popup-container">
+            <div class="popup-content">
+                <h3 class="popup-title">Примеры решенных тестов</h3>
+                
+                <div class="example-tabs">
+                    <button class="tab-button active" data-tab="math">Математика</button>
+                    <button class="tab-button" data-tab="history">История</button>
+                    <button class="tab-button" data-tab="biology">Биология</button>
+                </div>
+                
+                <div class="tab-content active" id="math-tab">
+                    <div class="example-question">
+                        <p><strong>Вопрос:</strong> Чему равно значение выражения 2x + 3, если x = 5?</p>
+                        <p><strong>Ответ:</strong> 13 (точность 98%)</p>
+                        <p><strong>Решение:</strong> Подставляем x=5: 2*5 + 3 = 10 + 3 = 13</p>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="history-tab">
+                    <div class="example-question">
+                        <p><strong>Вопрос:</strong> В каком году началась Вторая мировая война?</p>
+                        <p><strong>Ответ:</strong> 1939 (точность 99%)</p>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="biology-tab">
+                    <div class="example-question">
+                        <p><strong>Вопрос:</strong> Какой органоид клетки отвечает за синтез белка?</p>
+                        <p><strong>Ответ:</strong> Рибосома (точность 97%)</p>
+                    </div>
+                </div>
+                
+                <button class="popup-close">×</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Преимущества -->
+    <section id="features" class="features lazy-load">
+        <div class="features-intro">
+            <h2 class="section-title"><span class="gradient-text">Почему выбирают Летучку</span></h2>
+        </div>
+        
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">⚡</div>
+                <h3 class="feature-title">Мгновенно</h3>
+                <p class="feature-text">
+                    Среднее время решения теста — 27 секунд. В 5 раз быстрее, чем искать ответы вручную.
+                </p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">🎯</div>
+                <h3 class="feature-title">Точно</h3>
+                <p class="feature-text">
+                    Точность ответов до 95% благодаря нейросетям последнего поколения и проверенным источникам.
+                </p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">🔒</div>
+                <h3 class="feature-title">Конфиденциально</h3>
+                <p class="feature-text">
+                    Ваши данные не сохраняются и не передаются третьим лицам. Полная анонимность.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="faq-section lazy-load">
+        <div class="glassy-box">
+            <h2 class="section-title">Частые вопросы</h2>
+            
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>Насколько точны ответы?</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/>
+                    </svg>
+                </div>
+                <div class="faq-answer">
+                    <p>Средняя точность ответов составляет 85-95% в зависимости от дисциплины. 
+                    Для точных наук (математика, физика) точность выше, для гуманитарных — 
+                    немного ниже из-за вариативности формулировок.</p>
+                </div>
+            </div>
+            
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>Можно ли решить тест с фото?</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/>
+                    </svg>
+                </div>
+                <div class="faq-answer">
+                    <p>Да, наш ИИ распознает текст с фотографий и сканов, в том числе 
+                    рукописный текст (если он разборчивый). Лучшие результаты с четкими 
+                    изображениями и хорошим освещением.</p>
+                </div>
+            </div>
+            
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>Это легально?</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/>
+                    </svg>
+                </div>
+                <div class="faq-answer">
+                    <p>Летучка предназначена для обучения и самопроверки. Мы не рекомендуем 
+                    использовать сервис для сдачи экзаменов, если это запрещено вашим 
+                    учебным заведением.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA секция -->
+    <section class="cta-section lazy-load">
+        <div class="glassy-box">
+            <h2 class="section-title">Готовы решить тест за минуту?</h2>
+            <p class="section-subtitle">Попробуйте прямо сейчас — без регистрации</p>
+            
+            <div class="center-button">
+                <a href="#solve" class="cta-button cta-button-accent">Начать бесплатно →</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Футер -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-logo">
+                <img src="/static/img/logo-footer.webp" alt="Летучка" width="120">
+                <p>Ваш ИИ помощник в обучении</p>
+            </div>
+            
+            <div class="footer-links">
+                <div class="link-group">
+                    <h4>Сервис</h4>
+                    <a href="/about">О проекте</a>
+                    <a href="/pricing">Тарифы</a>
+                    <a href="/blog">Блог</a>
+                </div>
+                
+                <div class="link-group">
+                    <h4>Помощь</h4>
+                    <a href="/faq">FAQ</a>
+                    <a href="/support">Поддержка</a>
+                    <a href="/docs">Документы</a>
+                </div>
+                
+                <div class="link-group">
+                    <h4>Контакты</h4>
+                    <a href="mailto:support@letychka.ru">Email</a>
+                    <a href="https://t.me/LetychkaRobot">Telegram</a>
+                    <a href="/contact">Форма обратной связи</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer-bottom">
+            <p>© 2023 Летучка. Все права защищены.</p>
+            <div class="legal-links">
+                <a href="/privacy">Политика конфиденциальности</a>
+                <a href="/terms">Условия использования</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Алерт -->
+    <div id="glass-alert" class="glass-alert" aria-live="polite">
+        <div class="glass-alert__container">
+            <div class="glass-alert__content">
+                <p class="glass-alert__message"></p>
+                <button class="glass-alert__close" aria-label="Закрыть уведомление">×</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Попап регистрации -->
+    <div id="register-popup" class="popup-overlay">
+        <div class="popup-container">
+            <div class="popup-content">
+                <h3 class="popup-title">Сохраняйте историю решенных тестов</h3>
+                <p class="popup-subtitle">Зарегистрируйтесь, чтобы получить:</p>
+                
+                <ul class="popup-benefits">
+                    <li>🔒 Доступ ко всем решенным тестам с любого устройства</li>
+                    <li>📊 Статистику по вашей успеваемости</li>
+                    <li>🎁 10 бесплатных решений в месяц</li>
+                </ul>
+                
+                <div class="popup-buttons">
+                    <a href="/register" class="popup-button primary">Зарегистрироваться</a>
+                    <a href="/login" class="popup-button secondary">Уже есть аккаунт</a>
+                </div>
+                
+                <button class="popup-close">×</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Тут будет основной JS код
+        // В реальном проекте лучше вынести в отдельный файл
+    </script>
+</body>
+</html>

@@ -1057,7 +1057,7 @@ img {
     resize: none;
     width: 95%;
     margin: 0 auto;
-    height: 5em;
+    height: 10em;
     padding: 1.2rem;
     background: rgba(40, 39, 47, 0.3);
     border: 2px solid rgba(97, 109, 240, 0.3);
@@ -1622,6 +1622,7 @@ img {
 
     .neon-textarea {
         width: 90%;
+        height: 8em;
     }
 
     .glass-alert {
@@ -1974,7 +1975,7 @@ footer {
 }
 
 /* Стили блока в демо для конвертации в регистрации */
-.glass-block {background: rgba(255, 255, 255, 0.08);backdrop-filter: blur(12px);-webkit-backdrop-filter: blur(12px);border-radius: 20px;border: 1px solid rgba(255, 255, 255, 0.1);box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);padding: 28px;margin: 20px 0;position: relative;overflow: hidden;}.glass-block::before {content: '';position: absolute;top: -50%;left: -50%;width: 200%;height: 200%;background: radial-gradient(circle, rgba(123, 92, 228, 0.15) 0%, transparent 60%);z-index: -1;opacity: 0.6;}.glass-card {background: rgba(255, 255, 255, 0.06);backdrop-filter: blur(8px);-webkit-backdrop-filter: blur(8px);border-radius: 20px;border: 1px solid rgba(255, 255, 255, 0.08);padding: 20px;transition: all 0.3s ease;}.glass-card:hover {transform: translateY(-5px);box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);}.glass-card.registered {background: rgba(123, 92, 228, 0.12);border: 1px solid rgba(123, 92, 228, 0.25);}.glass-badge {background: rgba(123, 92, 228, 0.25);border: 1px solid rgba(255, 255, 255, 0.15);color: white;}.glass-button {display: block;background: linear-gradient(45deg, rgba(111, 89, 249, 0.8), rgba(95, 69, 224, 0.8));color: white;padding: 16px 32px;border-radius: 20px;text-align: center;text-decoration: none;font-weight: 600;font-size: 1.05rem;transition: all 0.3s ease;backdrop-filter: blur(4px);border: 1px solid rgba(255, 255, 255, 0.2);position: relative;overflow: hidden;margin: 25px 0 15px;}.glass-button::before {content: '';position: absolute;top: -50%;left: -50%;width: 200%;height: 200%;background: radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, transparent 60%);z-index: 0;opacity: 0;transition: opacity 0.3s ease;}.glass-button:hover {transform: translateY(-4px);box-shadow: 0 10px 25px rgba(123, 92, 228, 0.3);}.glass-button:active {transform: translateY(2px);}.glass-button:hover::before {opacity: 1;}.reg-benefits h3 {color: #fff;font-size: 1.25rem;text-align: center;margin: 25px 0 18px;font-weight: 500;letter-spacing: 0.5px;}.benefits-grid {display: grid;grid-template-columns: repeat(3, 1fr);gap: 18px;margin: 20px 0;}.benefit-card {padding: 18px 12px;text-align: center;font-size: 0.95rem;border-radius: 16px;}.benefit-icon {font-size: 1.8rem;margin-bottom: 12px;filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));}.reg-hint {color: rgba(255, 255, 255, 0.6);font-size: 0.85em;text-align: center;margin: 10px 0 0;font-weight: 300;}.access-comparison {display: flex;gap: 25px;margin-bottom: 20px;}.access-column {flex: 1;}.access-column h3 {color: #fff;font-size: 1.1rem;text-align: center;margin-bottom: 18px;font-weight: 500;}.access-column ul {list-style: none;padding: 0;margin: 0;color: rgba(255, 255, 255, 0.85);font-size: 0.95rem;}.access-column ul li {padding: 0;display: flex;align-items: center;justify-content: center;border-bottom: 1px solid rgba(255, 255, 255, 0.08);}.access-divider {position: relative;width: 50px;}.vs-badge {position: absolute;top: 50%;left: 50%;transform: translate(-50%, -50%);width: 42px;height: 42px;border-radius: 50%;display: flex;align-items: center;justify-content: center;font-weight: 600;font-size: 0.9rem;backdrop-filter: blur(4px);}
+.glass-button {display: block;background: linear-gradient(45deg, rgba(111, 89, 249, 0.8), rgba(95, 69, 224, 0.8));color: white;padding: 16px 32px;border-radius: 20px;text-align: center;text-decoration: none;font-weight: 600;font-size: 1.05rem;transition: all 0.3s ease;backdrop-filter: blur(4px);border: 1px solid rgba(255, 255, 255, 0.2);position: relative;overflow: hidden;margin: 25px 0 15px;}.glass-button::before {content: '';position: absolute;top: -50%;left: -50%;width: 200%;height: 200%;background: radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, transparent 60%);z-index: 0;opacity: 0;transition: opacity 0.3s ease;}.glass-button:hover {transform: translateY(-4px);box-shadow: 0 10px 25px rgba(123, 92, 228, 0.3);}.glass-button:active {transform: translateY(2px);}.glass-button:hover::before {opacity: 1;}.reg-hint {color: rgba(255, 255, 255, 0.6);font-size: 0.85em;text-align: center;margin: 10px 0 0;font-weight: 300;}
 
 .payment-banner {
     display: flex;

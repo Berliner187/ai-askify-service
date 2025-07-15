@@ -288,6 +288,18 @@ def user_stats_api(request):
     })
 
 
+def solving_tests_promo(request):
+    return render(request, 'landings/solving-tests.html')
+
+
+def teachers_promo(request):
+    return render(request, 'landings/teachers.html')
+
+
+def medicine_promo(request):
+    return render(request, 'landings/medicine.html')
+
+
 @login_required
 def page_history_surveys(request):
     try:
@@ -1566,101 +1578,98 @@ def blocked_view(request):
 
 VK_CLIENT_ID = 52653516
 VK_CLIENT_SECRET = "Qh6Z7Nax0GeXpIzxOJ6S"
-VK_REDIRECT_URI = "https://letychka.ru/create/"
+VK_REDIRECT_URI = "https://letychka.ru/vk-auth-callback/"
+VK_API_VERSION = "5.131"
 
 
 def vk_auth(request):
-    vk_session = vk_api.VkApi(app_id=VK_CLIENT_ID, client_secret=VK_CLIENT_SECRET)
-    auth_url = vk_session.get_auth_url()
+    # Формируем правильный URL для авторизации
+    auth_url = (
+        f"https://oauth.vk.com/authorize?"
+        f"client_id={VK_CLIENT_ID}&"
+        f"display=page&"
+        f"redirect_uri={VK_REDIRECT_URI}&"
+        f"response_type=code&"
+        f"v={VK_API_VERSION}"
+    )
     return redirect(auth_url)
 
 
 def vk_auth_callback(request):
     if request.method == 'GET':
         try:
+            # Получаем только code (device_id не требуется)
             code = request.GET.get('code')
-            device_id = request.GET.get('device_id')
+            if not code:
+                return JsonResponse({'success': False, 'error': 'Authorization code missing'})
 
-            tracer_l.tracer_charge(
-                'ADMIN', request.user.username, vk_auth_callback.__name__, f"Code: {code}, Device ID: {device_id}")
-
-            if not code or not device_id:
-                return JsonResponse({'success': False, 'error': 'Invalid data'})
-
-            url = 'https://api.vk.com/oauth/access_token'
+            # Формируем запрос для получения токена
+            token_url = "https://oauth.vk.com/access_token"
             params = {
                 'client_id': VK_CLIENT_ID,
                 'client_secret': VK_CLIENT_SECRET,
                 'redirect_uri': VK_REDIRECT_URI,
-                'code': code,
+                'code': code
             }
 
-            response = requests.post(url, params=params)
-
-            tracer_l.tracer_charge(
-                'ADMIN', request.user.username, vk_auth_callback.__name__, f"{response} {response.text }")
-
+            response = requests.get(token_url, params=params)
             response_data = response.json()
 
-            if 'access_token' not in response_data:
-                return JsonResponse({'success': False, 'error': 'Failed to get access token'})
+            # Обрабатываем ошибки VK
+            if 'error' in response_data:
+                error_msg = f"{response_data['error']}: {response_data.get('error_description', '')}"
+                return JsonResponse({'success': False, 'error': error_msg})
 
-            tracer_l.tracer_charge(
-                'ADMIN', request.user.username, vk_auth_callback.__name__, f"access_token in response_data: {response_data}")
+            access_token = response_data.get('access_token')
+            user_id = response_data.get('user_id')
 
-            access_token = response_data['access_token']
-            user_id = response_data['user_id']
-
-            tracer_l.tracer_charge(
-                'ADMIN', request.user.username, vk_auth_callback.__name__, f"access_token: {access_token}")
+            if not access_token or not user_id:
+                return JsonResponse({'success': False, 'error': 'Missing access token or user ID'})
 
             # Получаем данные пользователя
-            vk_session = vk_api.VkApi(token=access_token)
-            user_info = vk_session.method('users.get', {'user_ids': user_id, 'fields': 'photo_200'})
+            api_url = "https://api.vk.com/method/users.get"
+            user_params = {
+                'user_ids': user_id,
+                'fields': 'photo_200,domain',
+                'access_token': access_token,
+                'v': VK_API_VERSION
+            }
+            user_response = requests.get(api_url, params=user_params)
+            user_data = user_response.json()
 
-            tracer_l.tracer_charge(
-                'ADMIN', request.user.username, vk_auth_callback.__name__, f"User Info: {user_info}")
+            if 'error' in user_data:
+                return JsonResponse({'success': False, 'error': user_data['error']['error_msg']})
 
-            if user_info:
-                first_name = user_info[0]['first_name']
-                last_name = user_info[0]['last_name']
+            user_info = user_data.get('response', [])
+            if not user_info:
+                return JsonResponse({'success': False, 'error': 'Empty user data'})
 
-                tracer_l.tracer_charge(
-                    'ADMIN', request.user.username, vk_auth_callback.__name__,
-                    f"Creating user: {first_name} {last_name}")
+            # Создаем или обновляем пользователя
+            user_info = user_info[0]
+            username = user_info.get('domain') or f"vk{user_id}"
 
-                # Создаем пользователя
-                auth_user = AuthUser.objects.create(
-                    username=str(uuid.uuid4()),
-                    first_name=first_name,
-                    last_name=last_name
-                )
-                auth_user.save()
+            user, created = AuthUser.objects.update_or_create(
+                username=username,
+                defaults={
+                    'first_name': user_info.get('first_name', ''),
+                    'last_name': user_info.get('last_name', ''),
+                }
+            )
 
-                # Создаем дополнительную информацию о пользователе
-                add_user = AuthAdditionalUser.objects.create(
-                    user=auth_user,
-                    id_vk=user_id
-                )
-                add_user.save()
+            # Создаем/обновляем профиль
+            AuthAdditionalUser.objects.update_or_create(
+                user=user,
+                defaults={'id_vk': user_id}
+            )
 
-                # Логиним пользователя
-                login(request, auth_user)
-                request.session['user_id'] = auth_user.id
-
-                # Перенаправляем на страницу создания теста
-                return redirect('create')
-            else:
-                tracer_l.tracer_charge(
-                    'ADMIN', request.user.username, vk_auth_callback.__name__, "Failed to get user info")
-                return JsonResponse({'success': False, 'error': 'Failed to get user info'})
+            # Авторизуем пользователя
+            login(request, user)
+            return redirect('create')
 
         except Exception as e:
-            tracer_l.tracer_charge(
-                'ADMIN', request.user.username, vk_auth_callback.__name__, f"Error: {e}")
             return JsonResponse({'success': False, 'error': str(e)})
 
-    return JsonResponse({'success': False, 'error': 'Invalid request method'})
+    return JsonResponse({'success': False, 'error': 'Invalid method'})
 
 
 @login_required

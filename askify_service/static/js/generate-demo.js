@@ -101,6 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (data.survey_id) {
                 loadTests();
+                generateBtn.textContent = 'Начать создание'
                 window.location.href = `/c/${data.survey_id}/`;
             } else {
                 throw new Error('Неверный формат ответ')

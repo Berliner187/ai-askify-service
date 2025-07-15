@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Медицинские тесты и подготовка НМО | Тренажер тестов с ответами | Летучка</title>
+    <meta name="description" content="Тренажер для подготовки к медицинским тестам: НМО, аккредитация, вступительные экзамены в колледж. Бесплатные тесты с ответами по всем медицинским дисциплинам.">
+    <meta name="keywords" content="медицинские тесты, НМО с ответами, аккредитация врачей, психологический тест в медколледж, тесты для медиков, подготовка к медицинским экзаменам, НМО онлайн, тесты с ответами, скоррея помощь тест">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://letychka.ru">
+    <meta property="og:image" content="https://letychka.ru/static/letychka-banner-1703.webp">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta name="twitter:card" content="https://letychka.ru/static/letychka-banner-1703.webp"/>
+    <meta name="twitter:image" content="https://letychka.ru/static/letychka-banner-1703.webp"/>
+    <meta property="og:site_name" content="Летучка – создание тестов с помощью ИИ">
+    <meta name="theme-color" content="#0F0818">
+    <link rel="canonical" href="https://letychka.ru" />
+
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    {% load static %}
+    <link rel="apple-touch-icon" sizes="180x180" href="{% static 'img/apple-touch-icon.png' %}">
+    <link rel="shortcut icon" href="{% static 'img/favicon.ico' %}" type="image/ico">
+    <link rel="stylesheet" href="{% static 'css/themes-carusel.css' %}?v=1.2">
+    <link rel="stylesheet" href="{% static 'css/start.css' %}?v=3.21">
+    <link rel="stylesheet" href="{% static 'css/footer.css' %}">
+</head>
+<body>
+    <!-- Хедер -->
+    <header class="header" id="critical-header">
+        <div class="logo">
+            <a href="/">
+                <img src="{% static 'img/logo-header.webp' %}" alt="Логотип Летучка" class="logo-img">
+            </a>
+        </div>
+        <nav class="nav">
+            <div class="nav-links">
+                <a href="#gif-section" class="nav-link">Как работает</a>
+                <a href="#how-it-works" class="nav-link">Начать</a>
+                <a href="#features" class="nav-link">Фичи</a>
+                <a href="#success-cases" class="nav-link">Кейсы</a>
+                <a href="/login" class="nav-link login-button">Войти</a>
+            </div>
+            <div class="burger" id="burger">
+                <div class="burger-line"></div>
+                <div class="burger-line"></div>
+                <div class="burger-line"></div>
+            </div>
+        </nav>
+    </header>
+    <section class="hero" id="critical-hero">
+        <div class="hero-content">
+            <h1 class="hero-title">
+                <span class="gradient-text">Тесты для медицинского образования</span><br>и аккредитации специалистов
+            </h1>
+            <p class="hero-subtitle">
+                Создавайте задания для НМО, вступительных экзаменов и проверки знаний<br>
+                <strong>По фармакологии, анатомии, сестринскому делу и клинической практике</strong>
+            </p>
+            <a href="#create-now" class="cta-button cta-button-accent">СОЗДАТЬ МЕДИЦИНСКИЙ ТЕСТ →</a>
+            
+            <div class="hero-stats">
+                <div class="stat-item">
+                    <div class="stat-value">150+</div>
+                    <div class="stat-label">медицинских дисциплин</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">98%</div>
+                    <div class="stat-label">соответствие стандартам НМО</div>
+                </div>
+            </div>
+        </div>
+        <div class="hero-image">
+            <img src="{% static 'medical-hero.webp' %}" alt="Медицинские тесты для образования и аккредитации" class="hero-img">
+        </div>
+    </section>
+
+    <section class="generator-section" id="create-now">
+        <!-- Блок генератора с медицинской спецификой -->
+        <div class="gen-container glassy-box">
+            <div class="gen-header">
+                <div class="theme-suggestions">
+                    <div class="theme-carousel">
+                        <div class="theme-item active" data-theme="pharmacology">
+                            Создать тест по <span class="typing-animation"></span>
+                        </div>
+                    </div>
+                </div>
+                <p class="gen-subtitle">Загрузите методички, протоколы лечения или лекции → Получите тест с ответами</p>
+            </div>
+
+            <div class="medical-categories">
+                <h3>Популярные медицинские категории:</h3>
+                <div class="categories-grid">
+                    <a href="#pharmacology" class="category-card">Фармакология</a>
+                    <a href="#nursing" class="category-card">Сестринское дело</a>
+                    <a href="#surgery" class="category-card">Хирургия</a>
+                    <a href="#psychology" class="category-card">Медицинская психология</a>
+                    <a href="#nmo" class="category-card">Тесты НМО</a>
+                    <a href="#emergency" class="category-card">Неотложная помощь</a>
+                </div>
+            </div>
+            
+            <!-- Остальной блок генератора без изменений -->
+        </div>
+    </section>
+
+    <section class="benefits-section glass-block">
+        <h2 class="section-title">Почему медицинские преподаватели выбирают Летучку</h2>
+        
+        <div class="benefits-grid">
+            <div class="benefit-card glass-card">
+                <div class="benefit-icon">📋</div>
+                <h3>Стандарты НМО</h3>
+                <p>Автоматическое соответствие требованиям непрерывного медицинского образования</p>
+            </div>
+            
+            <div class="benefit-card glass-card">
+                <div class="benefit-icon">🏥</div>
+                <h3>Клинические кейсы</h3>
+                <p>Генерация ситуационных задач на основе реальных клинических случаев</p>
+            </div>
+            
+            <div class="benefit-card glass-card">
+                <div class="benefit-icon">📊</div>
+                <h3>Аналитика пробелов</h3>
+                <p>Выявление слабых мест в знаниях студентов по конкретным темам</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="medical-use-cases">
+        <h2 class="section-title">Решения для медицинского образования</h2>
+        
+        <div class="case-tabs">
+            <button class="tab-btn active" data-tab="college">Для медицинских колледжей</button>
+            <button class="tab-btn" data-tab="nmo">Для НМО и аккредитации</button>
+            <button class="tab-btn" data-tab="admission">Для вступительных экзаменов</button>
+        </div>
+        
+        <div class="tab-content active" id="college-content">
+            <div class="case-content">
+                <div class="case-text">
+                    <h3>Подготовка студентов медицинских колледжей</h3>
+                    <ul>
+                        <li>Тесты по сестринскому делу с эталонами ответов</li>
+                        <li>Задания по медицинской манипуляционной технике</li>
+                        <li>Контрольные работы по анатомии и физиологии</li>
+                        <li>Ситуационные задачи по клинической практике</li>
+                    </ul>
+                    <a href="#create" class="cta-button">Создать тест для колледжа</a>
+                </div>
+                <div class="case-image">
+                    <img src="{% static 'medical-college.webp' %}" alt="Тесты для медицинских колледжей">
+                </div>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="nmo-content">
+            <!-- Контент для НМО -->
+        </div>
+        
+        <div class="tab-content" id="admission-content">
+            <!-- Контент для вступительных экзаменов -->
+        </div>
+    </section>
+
+    <section class="test-types">
+        <h2 class="section-title">Готовые шаблоны медицинских тестов</h2>
+        
+        <div class="test-cards">
+            <div class="test-card glass-card">
+                <div class="test-icon">💊</div>
+                <h3>Фармакология</h3>
+                <ul>
+                    <li>Классификация лекарственных средств</li>
+                    <li>Механизмы действия препаратов</li>
+                    <li>Побочные эффекты и противопоказания</li>
+                </ul>
+                <button class="use-template">Использовать шаблон</button>
+            </div>
+            
+            <div class="test-card glass-card">
+                <div class="test-icon">🩺</div>
+                <h3>Сестринское дело</h3>
+                <ul>
+                    <li>Техника выполнения манипуляций</li>
+                    <li>Документация и отчетность</li>
+                    <li>Этика и деонтология</li>
+                </ul>
+                <button class="use-template">Использовать шаблон</button>
+            </div>
+            
+            <div class="test-card glass-card">
+                <div class="test-icon">🚨</div>
+                <h3>Неотложная помощь</h3>
+                <ul>
+                    <li>Алгоритмы действий при ЧС</li>
+                    <li>Диагностика неотложных состояний</li>
+                    <li>Протоколы экстренной помощи</li>
+                </ul>
+                <button class="use-template">Использовать шаблон</button>
+            </div>
+        </div>
+    </section>
+
+    <section class="pricing" id="pricing">
+        <div class="pricing-intro">
+            <h2 class="section-title">
+                <span class="gradient-text">Специальные тарифы для медицинских учреждений</span>
+            </h2>
+        </div>
+
+        <div class="pricing-grid">
+            <!-- Для преподавателей -->
+            <div class="pricing-card glass">
+                <div class="badge">Для преподавателей</div>
+                <h3 class="plan-name">Медицинский</h3>
+                <div class="price-container">
+                    <span class="price">590₽</span>
+                    <span class="period">/месяц</span>
+                </div>
+                
+                <ul class="plan-features">
+                    <li>100 медицинских тестов</li>
+                    <li>До 20 вопросов в тесте</li>
+                    <li>Шаблоны по НМО и аккредитации</li>
+                    <li>PDF для печати без водяных знаков</li>
+                </ul>
+                <button class="cta-button primary">Выбрать для преподавателя</button>
+            </div>
+            
+            <!-- Для колледжей -->
+            <div class="pricing-card glass popular">
+                <div class="badge">Для колледжей</div>
+                <h3 class="plan-name">Профессиональный</h3>
+                <div class="price-container">
+                    <span class="price">2 990₽</span>
+                    <span class="period">/месяц</span>
+                </div>
+                
+                <ul class="plan-features">
+                    <li>Неограниченное число тестов</li>
+                    <li>До 30 вопросов в тесте</li>
+                    <li>White-label решение</li>
+                    <li>Аналитика по группам и потокам</li>
+                    <li>Интеграция с Moodle</li>
+                </ul>
+                <button class="cta-button primary">Для медицинских колледжей</button>
+            </div>
+            
+            <!-- Для НМО -->
+            <div class="pricing-card glass">
+                <div class="badge">Для НМО</div>
+                <h3 class="plan-name">Аккредитационный</h3>
+                <div class="price-container">
+                    <span class="price">1 290₽</span>
+                    <span class="period">/месяц</span>
+                </div>
+                
+                <ul class="plan-features">
+                    <li>Тесты для аккредитации</li>
+                    <li>Автоматическая генерация отчетов НМО</li>
+                    <li>Обновляемые базы вопросов</li>
+                    <li>Поддержка стандартов Минздрава</li>
+                </ul>
+                <button class="cta-button">Для центров НМО</button>
+            </div>
+        </div>
+    </section>
+
+    <section class="faq-section">
+        <h2 class="section-title">Частые вопросы о медицинских тестах</h2>
+        
+        <div class="faq-grid">
+            <div class="faq-card glass-card">
+                <h3>Как создать тест для НМО?</h3>
+                <p>Загрузите актуальные клинические рекомендации → выберите категорию "Аккредитация" → сгенерируйте тест с ответами → экспортируйте результаты в формате, подходящем для системы НМО.</p>
+            </div>
+            
+            <div class="faq-card glass-card">
+                <h3>Есть ли шаблоны для вступительных испытаний?</h3>
+                <p>Да, в разделе "Шаблоны" доступны готовые структуры тестов по медицинской психологии, биологии и основам сестринского дела, соответствующие требованиям медицинских колледжей.</p>
+            </div>
+            
+            <div class="faq-card glass-card">
+                <h3>Можно ли создать ситуационные задачи?</h3>
+                <p>Да, при загрузке клинических случаев система автоматически генерирует кейсы с вопросами по диагностике и тактике лечения.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="cta-section glass-block">
+        <h2 class="section-title">Начните создавать профессиональные медицинские тесты</h2>
+        <p class="section-subtitle">Первый тест - бесплатно, без регистрации</p>
+        
+        <div class="cta-buttons">
+            <a href="#create-now" class="glass-button">Создать медицинский тест</a>
+            <a href="#templates" class="cta-button ghost">Посмотреть шаблоны</a>
+        </div>
+    </section>
+
+    <!-- Остальные секции (footer и т.д.) без изменений -->
+</body>
+</html>
