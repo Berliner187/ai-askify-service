@@ -92,15 +92,13 @@
 
             {% if user.is_superuser %}
                 <div class="admin-only-hint">
-                    <small>Видно только тебе, повелитель</small>
+                    <small>Видно только тебе</small>
                 </div>
-                <div class="button-medium button-accent" style="margin: 20px 0; background: #ff4757;">
-                    <a href="{% url 'db_viewer' %}">
-                        <div>
-                            <p>Админ-панель 👑</p>
-                        </div>
-                    </a>
-                </div>
+                <a class="button-medium button-accent" style="margin: 20px 0; background: #ff4757;" href="{% url 'db_viewer' %}">
+                    <div>
+                        <p>Админ-панель 👑</p>
+                    </div>
+                </a>
             {% endif %}
 
             <div class="profile-info">
@@ -118,14 +116,12 @@
             </div>
 
             <div class="head-button">
-                <div class="button-medium">
-                    <a href="{% url 'payment' %}">
-                        <div>
-                            <p>Тарифы</p>
-                            <img src="{% static 'img/icon-stars.png' %}" alt="">
-                        </div>
-                    </a>
-                </div>
+                <a class="button-medium" href="{% url 'payment' %}">
+                    <div>
+                        <p>Тарифы</p>
+                        <img src="{% static 'img/icon-stars.png' %}" alt="">
+                    </div>
+                </a>
 
                 <div class="button-medium button-red" id="logout-button">
                     <div>
