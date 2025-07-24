@@ -37,6 +37,7 @@ environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 DEBUG = env.bool('DEBUG')
 SECRET_KEY = env('SECRET_KEY')
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS')
+CSRF_TRUSTED_ORIGINS = ['https://letychka.ru', 'https://www.letychka.ru']
 
 
 INSTALLED_APPS = [
@@ -74,7 +75,10 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:8000",
     "http://localhost:8000"
 ]
-CORS_ALLOW_ALL_ORIGINS = True
+# CORS_ALLOW_ALL_ORIGINS = False
+# CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_AGE = 86400
 
 ROOT_URLCONF = 'askify_app.urls'
 

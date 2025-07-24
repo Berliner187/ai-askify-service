@@ -1506,6 +1506,9 @@ def register(request):
         form = CustomUserCreationForm(request.POST)
         tracer_l.debug(f'{request.user.username} --- {form.is_valid()}: {form.cleaned_data.get("email")}')
 
+        if not form.is_valid():
+            return JsonResponse({"error": "Invalid form data", "details": form.errors}, status=400)
+
         if not is_allowed_email(form.cleaned_data.get('email')):
             return JsonResponse({"error": "Not allowed hostname"})
 
@@ -1576,100 +1579,119 @@ def blocked_view(request):
     return render(request, 'askify_service/blocked.html')
 
 
-VK_CLIENT_ID = 52653516
-VK_CLIENT_SECRET = "Qh6Z7Nax0GeXpIzxOJ6S"
-VK_REDIRECT_URI = "https://letychka.ru/vk-auth-callback/"
-VK_API_VERSION = "5.131"
+VK_CLIENT_ID = env('VK_CLIENT_ID')
+VK_CLIENT_SECRET = env('VK_CLIENT_SECRET')
+VK_REDIRECT_URI = env('VK_REDIRECT_URI')
+VK_API_VERSION = env('VK_API_VERSION')
 
 
 def vk_auth(request):
-    # Формируем правильный URL для авторизации
+    if not request.session.session_key:
+        request.session.create()
+
+    tracer_l.warning(f'ADMIN. VK_AUTH START. Session: {request.session.session_key}')
+
     auth_url = (
         f"https://oauth.vk.com/authorize?"
         f"client_id={VK_CLIENT_ID}&"
         f"display=page&"
         f"redirect_uri={VK_REDIRECT_URI}&"
         f"response_type=code&"
-        f"v={VK_API_VERSION}"
+        f"v={VK_API_VERSION}&"
+        f"state={request.session.session_key}&"
+        f"scope=email"
     )
+    tracer_l.warning(f'ADMIN. VK AUTH URL: {auth_url}')
     return redirect(auth_url)
 
 
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+
+
+@csrf_exempt
 def vk_auth_callback(request):
-    if request.method == 'GET':
+    # Получаем код из GET или POST запроса
+    code = request.GET.get('code') or request.POST.get('code')
+    if not code:
+        return JsonResponse({'success': False, 'error': 'Authorization code missing'}, status=400)
+
+    # Для VK ID SDK (code_v2)
+    if code.startswith('vk2.a.'):
         try:
-            # Получаем только code (device_id не требуется)
-            code = request.GET.get('code')
-            if not code:
-                return JsonResponse({'success': False, 'error': 'Authorization code missing'})
-
-            # Формируем запрос для получения токена
-            token_url = "https://oauth.vk.com/access_token"
-            params = {
-                'client_id': VK_CLIENT_ID,
-                'client_secret': VK_CLIENT_SECRET,
-                'redirect_uri': VK_REDIRECT_URI,
-                'code': code
-            }
-
-            response = requests.get(token_url, params=params)
-            response_data = response.json()
-
-            # Обрабатываем ошибки VK
-            if 'error' in response_data:
-                error_msg = f"{response_data['error']}: {response_data.get('error_description', '')}"
-                return JsonResponse({'success': False, 'error': error_msg})
-
-            access_token = response_data.get('access_token')
-            user_id = response_data.get('user_id')
-
-            if not access_token or not user_id:
-                return JsonResponse({'success': False, 'error': 'Missing access token or user ID'})
-
-            # Получаем данные пользователя
-            api_url = "https://api.vk.com/method/users.get"
-            user_params = {
-                'user_ids': user_id,
-                'fields': 'photo_200,domain',
-                'access_token': access_token,
-                'v': VK_API_VERSION
-            }
-            user_response = requests.get(api_url, params=user_params)
-            user_data = user_response.json()
-
-            if 'error' in user_data:
-                return JsonResponse({'success': False, 'error': user_data['error']['error_msg']})
-
-            user_info = user_data.get('response', [])
-            if not user_info:
-                return JsonResponse({'success': False, 'error': 'Empty user data'})
-
-            # Создаем или обновляем пользователя
-            user_info = user_info[0]
-            username = user_info.get('domain') or f"vk{user_id}"
-
-            user, created = AuthUser.objects.update_or_create(
-                username=username,
-                defaults={
-                    'first_name': user_info.get('first_name', ''),
-                    'last_name': user_info.get('last_name', ''),
+            # Получаем данные пользователя напрямую через service token
+            response = requests.get(
+                "https://api.vk.com/method/users.get",
+                params={
+                    'v': VK_API_VERSION,
+                    'access_token': "cf8db51fcf8db51fcf8db51f86ccaed8d3ccf8dcf8db51fa7f5bfa0b76655e0b9e7acae",
+                    'fields': 'first_name,last_name,photo_200',
+                    'code': code
                 }
             )
+            data = response.json()
 
-            # Создаем/обновляем профиль
-            AuthAdditionalUser.objects.update_or_create(
-                user=user,
-                defaults={'id_vk': user_id}
-            )
+            if 'error' in data:
+                return JsonResponse({
+                    'success': False,
+                    'error': data['error']['error_msg']
+                }, status=400)
 
-            # Авторизуем пользователя
-            login(request, user)
-            return redirect('create')
+            # Проверяем что есть данные пользователя
+            if not data.get('response'):
+                return JsonResponse({
+                    'success': False,
+                    'error': 'No user data received'
+                }, status=400)
+
+            user_data = data['response'][0]
+            return JsonResponse({
+                'success': True,
+                'user_id': user_data['id'],
+                'first_name': user_data['first_name'],
+                'last_name': user_data['last_name'],
+                'photo': user_data.get('photo_200', '')
+            })
 
         except Exception as e:
-            return JsonResponse({'success': False, 'error': str(e)})
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            }, status=500)
 
-    return JsonResponse({'success': False, 'error': 'Invalid method'})
+    # Для обычного OAuth
+    else:
+        try:
+            # Получаем access token
+            response = requests.post(
+                "https://oauth.vk.com/access_token",
+                data={
+                    'client_id': VK_CLIENT_ID,
+                    'client_secret': VK_CLIENT_SECRET,
+                    'redirect_uri': VK_REDIRECT_URI,
+                    'code': code
+                }
+            )
+            data = response.json()
+
+            if 'error' in data:
+                return JsonResponse({
+                    'success': False,
+                    'error': data.get('error_description', 'VK auth error')
+                }, status=400)
+
+            return JsonResponse({
+                'success': True,
+                'access_token': data['access_token'],
+                'user_id': data['user_id'],
+                'email': data.get('email', '')
+            })
+
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            }, status=500)
 
 
 @login_required

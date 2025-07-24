@@ -640,6 +640,8 @@ def get_view_count_text(count):
 
 
 def is_allowed_email(email):
+    if not email:
+        return False
     domain = email.split('@')[-1]
     return domain in ALLOWED_DOMAINS
 

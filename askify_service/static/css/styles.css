@@ -3,14 +3,9 @@
     src: url(../fonts/Unbounded-Medium.ttf);
 }
 @font-face {
-    font-family: 'Unbounded Regular';
-    src: url(../fonts/Unbounded-Regular.ttf);
-}
-@font-face {
     font-family: 'Unbounded Bold';
     src: url(../fonts/Unbounded-Bold.ttf);
 }
-
 @font-face {
     font-family: 'Namu Pro';
     src: url(../fonts/NAMU-Pro.woff2);
@@ -26,7 +21,7 @@ body {
 }
 
 .bg-create {
-    background: url('../img/bg-gradient-17063.png');
+    background: url('../img/bg-gradient-17065.webp');
     background-position: top center;
     background-repeat: no-repeat;
     background-color: #101012;
@@ -202,6 +197,10 @@ button:active {
     }
 }
 
+.buttons-container {
+    float: right;
+}
+
 .question {
     display: flex;
     margin-bottom: 15px;
@@ -209,9 +208,6 @@ button:active {
 }
 .question label input[type="radio"] {
     display: none;
-}
-.buttons-container {
-    float: right;
 }
 
 .question label {
@@ -670,7 +666,7 @@ textarea:focus {
     margin-bottom: 1em;
 }
 
-
+/* Контейнеры с кнопками */
 .container-buttons {
     display: flex;
     flex-direction: column;
@@ -679,13 +675,11 @@ textarea:focus {
     margin: 0 auto;
     margin-top: 20px;
 }
-
 .head-button {
     display: flex;
     justify-content: space-between;
     margin-bottom: 0;
 }
-
 .buttons-around {
     margin: 20px auto;
     width: fit-content;
@@ -693,7 +687,13 @@ textarea:focus {
     justify-content: space-around;
     flex-direction: row;
 }
+.center-button {
+    margin: 0 auto;
+    width: 100%;
+    text-align: center;
+}
 
+/* Стандартная кнопка */
 .button-medium {
   display: inline-flex;
   align-items: center;
@@ -715,13 +715,11 @@ textarea:focus {
   user-select: none;
   -webkit-tap-highlight-color: transparent;
 }
-
 .button-medium:hover {
   background: rgba(60, 59, 67, 0.6);
   box-shadow: 0 6px 12px rgba(0,0,0,0.3);
   transform: translateY(-2px);
 }
-
 .button-medium:active {
   transform: scale(0.96) translateY(2px);
   box-shadow: inset 0 4px 8px rgba(0, 0, 0, 0.6);
@@ -733,14 +731,12 @@ textarea:focus {
   align-items: center;
   gap: 6px;
 }
-
 .button-medium div p {
   color: #d5d3db;
   font-size: 0.72rem;
   font-weight: 600;
   margin: 0;
 }
-
 .button-medium img {
   width: 16px;
 }
@@ -749,7 +745,6 @@ textarea:focus {
     background-color: #616DF0;
     color: #d5d3db;
 }
-
 .button-red {
     background-color: rgba(231, 76, 117, 0.4);
     backdrop-filter: blur(12px);
@@ -769,382 +764,17 @@ textarea:focus {
     color: #e8e7f1;
 }
 
-
-.navigation {
-    flex: 2;
-    text-align: center;
-}
-
-.navigation ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    justify-content: center;
-}
-
-.navigation li {
-    margin-left: 20px;
-}
-
-.navigation a {
-    text-decoration: none;
-    color: white;
-    font-size: 1rem;
-    transition: color 0.3s;
-}
-
-.navigation a:hover, .accent-color-text, .profile-info strong {
-    color: #7A8FFF;
-}
 .small-text {
     font-size: 10px;
 }
 
 #block-generate, .glass-metrics-container, .features-container,
-#file-preview-container, #faq-container, .fixed-bottom-menu {
-    background: linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-/* БЛОК МЕТРИКИ /create */
-.glass-metrics-container {
-    background: linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border-radius: 24px;
-    padding: 16px;
-    color: #ffffff;
-    font-family: 'Unbounded Medium';
-    overflow: hidden;
-    position: relative;
-}
-
-/* Анимированная переливающаяся граница */
-.glass-metrics-container::before {
-    content: "";
-    position: absolute;
-    top: -2px;
-    left: -2px;
-    right: -2px;
-    bottom: -2px;
-    background: linear-gradient(
-        45deg,
-        rgba(131, 78, 223, 0.39),
-        rgba(20, 255, 122, 0.39),
-        rgba(72, 23, 232, 0.39),
-    );
-    background-size: 300% 300%;
-    border-radius: 26px;
-    z-index: -1;
-    animation: gradientShift 3s ease infinite;
-}
-
-@keyframes gradientShift {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
-}
-
-.metrics-scroll-box {
-    position: relative;
-    height: 80px;
-}
-
-.metric-ios {
-    position: absolute;
-    width: 100%;
-    opacity: 0;
-    transform: translateY(30px);
-    transition: all 1s cubic-bezier(0.2, 0.8, 0.4, 1);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-}
-
-.metric-ios.active {
-    opacity: 1;
-    transform: translateY(0);
-}
-
-.metric-title {
-    font-size: 16px;
-    color: rgba(255,255,255,0.8);
-    letter-spacing: 0.3px;
-    text-align: center;
-}
-
-.metric-badge {
-    background: rgba(255, 255, 255, 0.12);
-    padding: 6px 16px;
-    border-radius: 16px;
-    font-size: 18px;
-    font-weight: 600;
-    backdrop-filter: blur(6px);
-    position: relative;
-    overflow: hidden;
-}
-
-.metric-badge::before {
-    content: "";
-    position: absolute;
-    margin: 0;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(136, 104, 233, 0.1);
-    z-index: -1;
-}
-
-.metric-badge strong {
-    background: linear-gradient(45deg, #c3b4f9,#b6bfff);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    text-shadow: 0 0 12px rgba(138, 198, 255, 0.3);
-}
-
-
-/* Блок прикрепленногофайла */
-#file-preview-container {
-    margin: 20px auto;
-    border-radius: 24px;
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    position: relative;
-    color: #fff;
-    font-family: 'Unbounded Medium', sans-serif;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    background: rgba(15, 8, 24, 0.7);
-    box-shadow: 
-        inset 0 0 0 1px rgba(255,255,255,0.08),
-        0 20px 50px rgba(0,0,0,0.4);
-    z-index: 1;
-}
-
-#file-preview-container::before {
-    content: "";
-    position: absolute;
-    top: -2px;
-    left: -2px;
-    right: -2px;
-    bottom: -2px;
-    background: linear-gradient(45deg, 
-        rgba(138, 69, 191, 0.39), 
-        rgba(97, 90, 169, 0.39));
-    background-size: 300% 300%;
-    border-radius: 26px;
-    z-index: -1;
-    animation: gradientFlow 18s ease infinite;
-    opacity: 0.7;
-}
-
-@keyframes gradientFlow {
-    0% { background-position: 0% 50% }
-    50% { background-position: 100% 50% }
-    100% { background-position: 0% 50% }
-}
-
-.file-preview {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    width: 100%;
-}
-
-.file-icon {
-    flex-shrink: 0;
-    width: 72px;
-    height: 72px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 18px;
-    backdrop-filter: blur(8px);
-    box-shadow: 
-        inset 0 0 0 1px rgba(255,255,255,0.1),
-        0 4px 20px rgba(0,0,0,0.2);
-}
-
-.file-icon img {
-    width: 42px;
-    height: 42px;
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
-}
-
-.file-info {
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    overflow: hidden;
-}
-
-.file-name {
-    font-size: 14px;
-    color: rgba(255, 255, 255, 0.95);
-    margin: 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    font-weight: 500;
-    letter-spacing: 0.3px;
-}
-
-.file-size {
-    font-family: 'Namu Pro';
-    font-size: 14px;
-    color: rgba(255, 255, 255, 0.7);
-    margin: 0;
-    font-weight: 300;
-}
-
-.file-name, .file-size {
-    margin-left: 12px;
-}
-
-#attached-file-name {
-    position: absolute;
-    top: -40px;
-    left: 0;
-    width: 100%;
-    text-align: center;
-    font-size: 16px;
-    color: rgba(255, 255, 255, 0.8);
-}
-
-
-/* 3 БЛОКА */
-.features-container {
-    margin-top: 20px;
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 30px;
-}
-
-.feature-block {
-    background: rgba(255, 255, 255, 0.12);
-    border-radius: 18px;
-    padding: 25px 20px;
-    text-align: center;
-    transition: all 0.25s ease;
-}
-
-.feature-block:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 0 20px rgba(255, 255, 255, 0.08);
-}
-
-.feature-icon {
-    width: 48px;
-    height: 48px;
-    margin: 0;
-}
-
-.feature-block h3 {
-    font-size: 16px;
-    font-weight: 600;
-    margin-bottom: 10px;
-    color: #ffffff;
-}
-
-.feature-block p {
-    font-size: 12px;
-    color: #c0c0c0;
-    line-height: 1.6;
-    margin: 0;
-}
-
-/* Слайдер-ползунок кол-ва вопросов */
-.custom-slider {
-    -webkit-appearance: none;
-    width: 90%;
-    height: 6px;
-    background: rgba(97, 109, 240, 0.5);
-    border-radius: 16px;
-    outline: none;
-    margin: 16px 60px;
-    margin-bottom: 8px;
-    transition: background 0.3s;
-    transition-duration: .25s;
-}
-
-.slider-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin: 0;
-    margin-top: 10px;
-    opacity: 0;
-    transform: translateY(-20px);
-    transition: opacity 0.5s ease, transform 0.5s ease; /* Плавный переход */
-}
-
-.slider-container.show {
-    opacity: 1;
-    transform: translateY(0);
-}
-
-.custom-slider:hover {
-    background: rgba(97, 109, 240, 0.8);
-}
-
-.custom-slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    background: #616DF0;
-    border: 2px solid #616DF0;
-    cursor: pointer;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
-    transition: background 0.3s, transform 0.2s;
-}
-
-.custom-slider::-webkit-slider-thumb:hover {
-    transform: scale(1.1);
-}
-
-.custom-slider::-moz-range-thumb {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    background: #616DF0;
-    border: 2px solid #616DF0;
-    cursor: pointer;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
-    transition: background 0.3s, transform 0.2s;
-}
-
-.custom-slider::-moz-range-thumb:hover {
-    transform: scale(1.1);
-}
-
-#question-slider-text {
-    text-align: center;
-    margin-left: 50px;
-    margin: 0 auto;
-    display: block;
-}
-
-#char-count, #question-slider-text {
-    font-size: .8em;
-}
-
-
-.center-button {
-    margin: 0 auto;
-    width: 100%;
-    text-align: center;
+#file-preview-container, #faq-container,
+.container, .fixed-bottom-menu {
+    background: linear-gradient(145deg, rgba(255,255,255,0.08), rgba(132, 120, 145,0.16));
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .laod-more-btn {
@@ -1164,11 +794,10 @@ hr {
     border-radius: 12px;
     border: none;
     height: 4px;
-    background-color: #29272d;
+    background-color: rgb(41, 39, 45, .75);
     margin: 20px 0;
     width: 100%;
 }
-
 
 .faq-question {
     font-size: 14px;
@@ -1191,13 +820,6 @@ hr {
     padding-left: 16px;
     width: 80%;
 }
-
-.topic-container {
-    display: flex;
-    flex-wrap: wrap;
-    margin: 16px 0;
-}
-
 
 /* Контейнер с примерами / РЕФАКТОР */
 .topic {
@@ -1297,8 +919,8 @@ hr {
     bottom: 0;
     left: 0;
     right: 0;
-    margin: 20px 30px;
-    border-radius: 16px;
+    margin: 16px 24px;
+    border-radius: 32px;
     justify-content: space-around;
     color: #BAB8C1;
     padding: 8px;

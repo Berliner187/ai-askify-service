@@ -17,23 +17,19 @@
 
             <div class="head-button">
 
-                <div class="button-medium">
-                    <a href="{% url 'history' %}">
-                        <div>
-                            <img src="{% static 'img/icon-history.png' %}" alt="">
-                            <p>История</p>
-                        </div>
-                    </a>
-                </div>
+                <a class="button-medium" href="{% url 'history' %}">
+                    <div>
+                        <img src="{% static 'img/icon-history.png' %}" alt="">
+                        <p>История</p>
+                    </div>
+                </a>
 
-                <div class="button-medium">
-                    <a href="{% url 'create' %}">
-                        <div>
-                            <p>Создать новый</p>
-                            <img src="{% static 'img/icon-new.png' %}" alt="">
-                        </div>
-                    </a>
-                </div>
+                <a class="button-medium" href="{% url 'create' %}">
+                    <div>
+                        <p>Создать новый</p>
+                        <img src="{% static 'img/icon-new.png' %}" alt="">
+                    </div>
+                </a>
 
             </div>
             
@@ -159,13 +155,11 @@
                         </ul>
                         <p style="text-align: center;"><b>Не упустите шанс учиться по-новому</b></p>
                         <div class="container-buttons">
-                            <div class="button-medium button-accent">
-                                <a href="{% url 'payment' %}">
-                                    <div>
-                                        <p>💎  Перейти на Премиум  💎</p>
-                                    </div>
-                                </a>
-                            </div>
+                            <a class="button-medium button-accent" href="{% url 'payment' %}">
+                                <div>
+                                    <p>💎  Перейти на Премиум  💎</p>
+                                </div>
+                            </a>
                         </div>
                     </div>
                     
@@ -213,14 +207,12 @@
                             <img src="{% static 'img/icon-download-pdf.png' %}" alt="Icon download results in PDF">
                         </div>
                     </a>
-                    <div class="button-medium button-red">
-                        <a href="{% url 'drop-survey' survey_id=survey_id %}">
-                            <div>
-                                <img src="{% static 'img/icon-delete.png' %}" alt="">
-                                <p>Удалить тест</p>
-                            </div>
-                        </a> 
-                    </div>
+                    <a class="button-medium button-red" href="{% url 'drop-survey' survey_id=survey_id %}">
+                        <div>
+                            <img src="{% static 'img/icon-delete.png' %}" alt="">
+                            <p>Удалить тест</p>
+                        </div>
+                    </a> 
                 </div>
 
             </div>
@@ -280,15 +272,13 @@
             });
         }
 
-        // Вспомогательная функция для копирования в буфер обмена
         function copyToClipboard(text) {
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 return navigator.clipboard.writeText(text);
             } else {
-                // Fallback для старых браузеров
                 const textArea = document.createElement("textarea");
                 textArea.value = text;
-                textArea.style.position = "fixed"; // Избегаем прокрутки
+                textArea.style.position = "fixed";
                 textArea.style.left = "-999999px";
                 textArea.style.top = "-999999px";
                 document.body.appendChild(textArea);
