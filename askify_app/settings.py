@@ -50,7 +50,7 @@ INSTALLED_APPS = [
     'askify_service',
     'askify_app',
     'corsheaders',
-    # 'debug_toolbar'
+    'debug_toolbar'
 ]
 
 MIDDLEWARE = [
@@ -63,7 +63,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'askify_app.middleware.BlockIPMiddleware',
     'corsheaders.middleware.CorsMiddleware',
-    # 'debug_toolbar.middleware.DebugToolbarMiddleware'
+    'debug_toolbar.middleware.DebugToolbarMiddleware'
 ]
 
 if DEBUG:
@@ -73,7 +73,9 @@ if DEBUG:
 
 CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:8000",
-    "http://localhost:8000"
+    "http://localhost:8000",
+    "https://letychka.ru",
+    "https://www.letychka.ru",
 ]
 # CORS_ALLOW_ALL_ORIGINS = False
 # CSRF_COOKIE_SECURE = True

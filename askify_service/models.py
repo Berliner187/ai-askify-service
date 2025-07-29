@@ -5,6 +5,8 @@ from django.db.models import Avg, Count, Max, Min
 from django.contrib.auth.models import User
 from django.utils import timezone
 from django.db.models import Sum
+from django.db.models import Sum, F, Value, FloatField
+from django.db.models.functions import Coalesce
 
 from datetime import timedelta, datetime
 import json
@@ -93,37 +95,46 @@ class UserAnswers(models.Model):
 
     @classmethod
     def calculate_user_statistics(cls, id_staff):
-        user_surveys = Survey.objects.filter(id_staff=id_staff)
-        user_answers = cls.objects.filter(id_staff=id_staff)
+        from django.db.models import Q
 
-        total_tests = user_surveys.count()
+        surveys = Survey.objects.filter(id_staff=id_staff).only('survey_id', 'title')
+        total_tests = surveys.count()
+
+        answers = (
+            cls.objects
+            .filter(id_staff=id_staff)
+            .values('survey_id')
+            .annotate(
+                scored=Coalesce(Sum('scored_points'), 0),
+                total=Coalesce(Sum('total_points'), 0)
+            )
+        )
+
+        survey_results = {a['survey_id']: a for a in answers}
+
         passed_tests = 0
-        total_scored_points = 0
-
-        unique_survey_ids = user_answers.values_list('survey_id', flat=True).distinct()
         best_result = None
 
-        for survey in user_surveys:
-            if survey.survey_id in unique_survey_ids:
-                answers_for_survey = user_answers.filter(survey_id=survey.survey_id)
+        for survey in surveys:
+            result = survey_results.get(survey.survey_id)
+            if not result or result['total'] == 0:
+                continue
 
-                # Считаем набранные и общие баллы
-                scored_points = sum(answer.scored_points for answer in answers_for_survey)
-                total_points = sum(answer.scored_points for answer in answers_for_survey)
+            ratio = result['scored'] / result['total']
+            if result['scored'] > 0:
+                passed_tests += 1
 
-                if total_points > 0:
-                    if scored_points > 0:
-                        passed_tests += 1
-                    # Проверяем лучший результат
-                    if best_result is None or (scored_points / total_points) > (
-                            best_result['scored_points'] / best_result['total_points']):
-                        best_result = {
-                            'title': survey.title,
-                            'scored_points': scored_points,
-                            'total_points': total_points,
-                        }
+            if best_result is None or ratio > (best_result['scored'] / best_result['total']):
+                best_result = {
+                    'title': survey.title,
+                    'scored': result['scored'],
+                    'total': result['total']
+                }
 
-        best_result_str = f"{best_result['title']} – {best_result['scored_points']} из {best_result['total_points']}" if best_result else "Нет пройденных тестов."
+        best_result_str = (
+            f"{best_result['title']} – {best_result['scored']} из {best_result['total']}"
+            if best_result else "Пока пусто"
+        )
 
         return {
             'total_tests': total_tests,

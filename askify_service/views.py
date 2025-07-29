@@ -24,6 +24,16 @@ from django.utils import timezone
 from django.urls import reverse
 from django.db.models import F, ExpressionWrapper, DurationField
 from django.db.models.functions import Abs
+from django.db.models import Count, Avg
+from collections import defaultdict
+from datetime import date, timedelta
+from django.db import transaction
+from django.db.models import Count, Max, Avg, Q
+from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
 
 
 from io import BytesIO
@@ -121,167 +131,166 @@ def page_create_survey(request):
 
     manage_tokens_limits = ManageTokensLimits(current_id_staff)
     tests_used_today = manage_tokens_limits.get_tests_used_today()
+    diff_tests_count_limit = tests_count_limit - tests_used_today
 
     subscription_level = get_subscription_level(request)
 
-    diff_tests_count_limit = tests_count_limit - tests_used_today
-
-    faq_file_path = os.path.join(BASE_DIR, 'docs', f'faq-s.md')
+    faq_file_path = os.path.join(BASE_DIR, 'docs', 'faq-s.md')
     with open(faq_file_path, 'r', encoding='utf-8') as f:
-        faq_content = f.read()
-        faq_html = markdown.markdown(faq_content)
+        faq_html = markdown.markdown(f.read())
 
-    from datetime import date
+    start_month = date.today().replace(day=1)
+    week_ago = date.today() - timedelta(days=7)
+    today = date.today()
 
-    user_surveys = Survey.objects.filter(id_staff=current_id_staff)
+    user_surveys = Survey.objects.filter(id_staff=current_id_staff).only('survey_id', 'questions', 'title', 'updated_at')
     user_answers = UserAnswers.objects.filter(id_staff=current_id_staff)
     feedbacks = FeedbackFromAI.objects.filter(id_staff=current_id_staff)
 
-    total_tests = Survey.objects.filter(id_staff=current_id_staff).count()
-    passed_tests = UserAnswers.calculate_user_statistics(current_id_staff)['passed_tests']
-    best_result = UserAnswers.calculate_user_statistics(current_id_staff)['best_result']
-    feedback_count = FeedbackFromAI.objects.filter(id_staff=current_id_staff).count()
-    today_created = Survey.objects.filter(updated_at__date=date.today()).count()
+    total_tests = user_surveys.count()
 
-    model_most_used = FeedbackFromAI.objects.filter(id_staff=current_id_staff).values('model_name') \
-        .annotate(c=Count('model_name')).order_by('-c').first()
+    stats = UserAnswers.calculate_user_statistics(current_id_staff)
+
+    feedback_agg = feedbacks.aggregate(
+        feedback_count=Count('id'),
+        unique_models=Count('model_name', distinct=True),
+    )
+
+    today_uploads = user_surveys.filter(updated_at__date=today).count()
+    tests_this_month = user_surveys.filter(updated_at__gte=start_month).count()
+    feedback_last_week = feedbacks.filter(created_at__gte=week_ago).count()
+
+    model_most_used = feedbacks.values('model_name').annotate(c=Count('model_name')).order_by('-c').first()
     model_used = format_model_name(model_most_used['model_name']) if model_most_used else "–"
 
-    # 8, 9 — вопросы во всех тестах
-    total_questions = 0
-    for survey in user_surveys:
-        try:
-            questions = json.loads(survey.questions)
-            total_questions += len(questions)
-        except Exception:
-            continue
-    avg_questions = (total_questions / total_tests) if total_tests else 0
+    total_questions = sum(len(json.loads(s.questions)) for s in user_surveys if s.questions)
+    avg_questions = total_questions / total_tests if total_tests else 0
 
-    # 11
-    total_answers = user_answers.count() or 0
+    total_answers = user_answers.count()
+    avg_correct_answers = user_answers.aggregate(avg=Avg('scored_points'))['avg'] or 0
 
-    # 12
-    try:
-        correct_sum = user_answers.aggregate(total_correct=Avg('scored_points'))['total_correct']
-        avg_correct_answers = correct_sum or 0
-    except Exception:
-        avg_correct_answers = 0
+    surveys_with_feedback = feedbacks.values_list('survey_id', flat=True).distinct().count()
+    percent_with_feedback = (surveys_with_feedback / total_tests * 100) if total_tests else 0
 
-    # 14
-    unique_models_count = feedbacks.values('model_name').distinct().count() or 0
+    passed_survey_ids = user_answers.values_list('survey_id', flat=True).distinct()
+    tests_created_and_passed = user_surveys.filter(survey_id__in=passed_survey_ids).count()
 
-    # 15
-    start_month = date.today().replace(day=1)
-    tests_this_month = user_surveys.filter(updated_at__gte=start_month).count() or 0
-
-    # 16
-    week_ago = date.today() - timedelta(days=7)
-    feedback_last_week = feedbacks.filter(created_at__gte=week_ago).count() or 0
-
-    # 18
-    tests_with_feedback = feedbacks.values_list('survey_id', flat=True).distinct().count() or 0
-    percent_with_feedback = (tests_with_feedback / total_tests * 100) if total_tests else 0
-
-    # 19
-    avg_tokens_used = feedbacks.aggregate(Avg('tokens_used')).get('tokens_used__avg', 0) if hasattr(
-        feedbacks.model, 'tokens_used') else 0
-
-    # 20
-    tests_created_and_passed = 0
-    try:
-        for survey in user_surveys:
-            if user_answers.filter(survey_id=survey.survey_id).exists():
-                tests_created_and_passed += 1
-    except Exception:
-        tests_created_and_passed = 0
-
-    # 7
-    # avg_score = user_answers.aggregate(Avg('scored_points')).get('scored_points__avg', None) * tests_created_and_passed
-    # print(avg_score)
     context = {
         "page_title": "Создать тест",
-        'tests_today': diff_tests_count_limit if diff_tests_count_limit > 0 else 0,
+        'tests_today': max(diff_tests_count_limit, 0),
         'username': get_username(request),
         'subscription_level': subscription_level,
         'faq_html': faq_html,
         "total_tests": total_tests,
-        "passed_tests": passed_tests,
-        "best_result": best_result,
-        "feedback_count": feedback_count,
-        "today_uploads": today_created,
+        "passed_tests": stats['passed_tests'],
+        "best_result": stats['best_result'],
+        "feedback_count": feedback_agg['feedback_count'] or 0,
+        "today_uploads": today_uploads,
         "model_used": model_used,
-        # "avg_score": f"{avg_score:.1f}" if avg_score else '',
-        "total_questions": total_questions or 0,
-        "avg_questions": f"{avg_questions:.1f}" if avg_questions else 0,
-        "total_answers": total_answers or 0,
-        "avg_correct_answers": f"{avg_correct_answers:.1f}" if avg_correct_answers else 0,
-        "unique_models_count": unique_models_count or 0,
-        "tests_this_month": tests_this_month or 0,
-        "feedback_last_week": feedback_last_week or 0,
-        "percent_with_feedback": f"{percent_with_feedback:.1f}%" if percent_with_feedback else 0,
-        "avg_tokens_used": f"{avg_tokens_used:.1f}" if avg_tokens_used else 0,
-        "tests_created_and_passed": tests_created_and_passed or 0,
+        "total_questions": total_questions,
+        "avg_questions": f"{avg_questions:.1f}" if total_tests else 0,
+        "total_answers": total_answers,
+        "avg_correct_answers": f"{avg_correct_answers:.1f}" if total_answers else 0,
+        "unique_models_count": feedback_agg['unique_models'] or 0,
+        "tests_this_month": tests_this_month,
+        "feedback_last_week": feedback_last_week,
+        "percent_with_feedback": f"{percent_with_feedback:.1f}%" if total_tests else "0%",
+        "tests_created_and_passed": tests_created_and_passed,
     }
 
     return render(request, 'askify_service/text_input.html', context)
 
 
-from datetime import date, timedelta
-
-
 @login_required
 def user_stats_api(request):
     staff_id = get_staff_id(request)
-    subs = Subscription.objects.get(staff_id=staff_id)
-    subs.status = subs.check_sub_status()
-    tests_limit = get_daily_test_limit(subs.plan_name) if subs.status == 'active' else 0
+
+    # 1. Получаем все данные за минимальное количество запросов
+    with transaction.atomic():
+        # Основные данные за 3 запроса
+        subs = (
+            Subscription.objects
+            .filter(staff_id=staff_id)
+            .only('plan_name', 'status')
+            .first()
+        )
+
+        surveys = (
+            Survey.objects
+            .filter(id_staff=staff_id)
+            .only('survey_id', 'questions', 'updated_at')
+        )
+
+        answers = UserAnswers.objects.filter(id_staff=staff_id)
+        feedbacks = FeedbackFromAI.objects.filter(id_staff=staff_id).only('model_name', 'survey_id', 'created_at')
+
+        # 2. Пакетные агрегации
+        answer_stats = answers.aggregate(
+            total_answers=Count('id'),
+            avg_correct=Avg('scored_points'),
+            passed_tests=Count('survey_id', distinct=True),
+            best_result=Max('scored_points')
+        )
+
+        feedback_stats = feedbacks.aggregate(
+            feedback_count=Count('id'),
+            unique_models=Count('model_name', distinct=True),
+            last_week_feedback=Count('id', filter=Q(created_at__gte=date.today() - timedelta(days=7))),
+            this_month_surveys=Count('id', filter=Q(created_at__gte=date.today().replace(day=1)))
+        )
+
+        # 3. Оптимизированные вычисления
+        survey_ids = [s.survey_id for s in surveys]
+        passed_surveys = set(answers.values_list('survey_id', flat=True).distinct())
+
+        # 4. Подсчет метрик за один проход
+        total_questions = 0
+        today_created = 0
+        created_and_passed = 0
+
+        for survey in surveys:
+            if survey.questions:
+                total_questions += len(survey.questions)
+            if survey.updated_at.date() == date.today():
+                today_created += 1
+            if survey.survey_id in passed_surveys:
+                created_and_passed += 1
+
+        # 5. Самый популярный model_name
+        model_most_used = "-"
+        if feedbacks.exists():
+            model_counts = defaultdict(int)
+            for feedback in feedbacks:
+                model_counts[feedback.model_name] += 1
+            model_most_used = format_model_name(max(model_counts.items(), key=lambda x: x[1])[0])
+
+    # 6. Вычисление лимитов
+    subs_status = subs.check_sub_status() if subs else 'inactive'
+    tests_limit = get_daily_test_limit(subs.plan_name) if (subs and subs_status == 'active') else 0
     used_today = ManageTokensLimits(staff_id).get_tests_used_today()
     remaining_tests = max(0, tests_limit - used_today)
 
-    surveys = Survey.objects.filter(id_staff=staff_id)
-    answers = UserAnswers.objects.filter(id_staff=staff_id)
-    feedbacks = FeedbackFromAI.objects.filter(id_staff=staff_id)
-
-    total_tests = surveys.count()
-    passed_tests = UserAnswers.calculate_user_statistics(staff_id)['passed_tests']
-    best_result = UserAnswers.calculate_user_statistics(staff_id)['best_result']
-    feedback_count = feedbacks.count()
-    today_created = surveys.filter(updated_at__date=date.today()).count()
-
-    model_most_used = feedbacks.values('model_name').annotate(c=Count('model_name')).order_by('-c').first()
-    model_most_used = format_model_name(model_most_used['model_name']) if model_most_used else "–"
-
-    total_questions = sum(len(json.loads(s.questions)) for s in surveys if s.questions)
-    avg_questions = round(total_questions / total_tests, 1) if total_tests else 0
-
-    total_answers = answers.count()
-    avg_correct = round(answers.aggregate(avg=Avg('scored_points'))['avg'] or 0, 1)
-
-    unique_models = feedbacks.values('model_name').distinct().count()
-    this_month_count = surveys.filter(updated_at__gte=date.today().replace(day=1)).count()
-    last_week_feedback = feedbacks.filter(created_at__gte=date.today() - timedelta(days=7)).count()
-    feedback_coverage = (feedbacks.values('survey_id').distinct().count() / total_tests * 100) if total_tests else 0
-    # avg_tokens = round(feedbacks.aggregate(Avg('tokens_used')).get('tokens_used__avg', 0), 1)
-
-    created_and_passed = sum(
-        1 for s in surveys if answers.filter(survey_id=s.survey_id).exists()
-    )
+    # 7. Расчет покрытия фидбэком
+    feedback_coverage = 0.0
+    if survey_ids:
+        feedback_surveys = {f.survey_id for f in feedbacks}
+        feedback_coverage = (len(feedback_surveys) / len(survey_ids)) * 100
 
     return JsonResponse({
         "tests_remaining_today": remaining_tests,
-        "total_tests": total_tests,
-        "passed_tests": passed_tests,
-        "best_result": best_result,
-        "feedback_count": feedback_count,
+        "total_tests": len(survey_ids),
+        "passed_tests": answer_stats.get('passed_tests', 0),
+        "best_result": answer_stats.get('best_result', 0),
+        "feedback_count": feedback_stats.get('feedback_count', 0),
         "today_created": today_created,
         "model_most_used": model_most_used,
         "total_questions": total_questions,
-        "avg_questions": avg_questions,
-        "total_answers": total_answers,
-        "avg_correct_answers": avg_correct,
-        "unique_models_count": unique_models,
-        "tests_this_month": this_month_count,
-        "feedback_last_week": last_week_feedback,
+        "avg_questions": round(total_questions / len(survey_ids), 1) if survey_ids else 0.0,
+        "total_answers": answer_stats.get('total_answers', 0),
+        "avg_correct_answers": round(answer_stats.get('avg_correct', 0.0), 1),
+        "unique_models_count": feedback_stats.get('unique_models', 0),
+        "tests_this_month": feedback_stats.get('this_month_surveys', 0),
+        "feedback_last_week": feedback_stats.get('last_week_feedback', 0),
         "percent_with_feedback": round(feedback_coverage, 1),
         "avg_tokens_used": 0,
         "tests_created_and_passed": created_and_passed
@@ -303,18 +312,15 @@ def medicine_promo(request):
 @login_required
 def page_history_surveys(request):
     try:
-        surveys_data = get_all_surveys(request)
-
-        survey_paginator = PaginatorManager(surveys_data, per_page=5)
-        surveys_page = survey_paginator.get_page(1)
+        surveys_data = get_all_surveys(request, page=1)
 
         context = {
             'page_title': 'Предыдущие тесты',
-            'surveys_data': dict(surveys_page.object_list),
+            'surveys_data': surveys_data['results'],
             'username': get_username(request),
-            'paginator': survey_paginator.get_paginator(),
+            'paginator': surveys_data['paginator'],
         }
-        tracer_l.info(f"{request.user.username} --- {surveys_page}")
+        tracer_l.info(f"{request.user.username} --- loaded surveys page 1")
 
     except Exception as fatal:
         context = {
@@ -329,27 +335,29 @@ def page_history_surveys(request):
 @login_required
 def load_more_surveys(request):
     if request.method == "GET" and request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        try:
+            page_number = int(request.GET.get('page', 2))
+            surveys_data = get_all_surveys(request, page=page_number)
 
-        page_number = request.GET.get('page', 2)
-        surveys_data = get_all_surveys(request)
+            surveys_list = [
+                {
+                    'survey_id': survey_id,
+                    'title': survey['title'],
+                    'update': survey['update'],
+                    'tokens': survey['tokens']
+                }
+                for survey_id, survey in surveys_data['results'].items()
+            ]
 
-        survey_paginator = PaginatorManager(surveys_data, per_page=5)
-        surveys_page = survey_paginator.get_page(page_number)
+            has_next = surveys_data['page_obj'].has_next()
+            return JsonResponse({
+                'surveys': surveys_list,
+                'has_next': has_next,
+                'next_page': page_number + 1 if has_next else None,
+            })
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
 
-        surveys_list = [
-            {
-                'survey_id': survey_id,
-                'title': survey_data['title'],
-                'update': survey_data['update'],
-            }
-            for survey_id, survey_data in surveys_page
-        ]
-
-        return JsonResponse({
-            'surveys': surveys_list,
-            'has_next': surveys_page.has_next(),
-            'next_page': surveys_page.next_page_number() if surveys_page.has_next() else None,
-        })
     return JsonResponse({'error': 'Invalid request'}, status=400)
 
 
@@ -712,20 +720,28 @@ def get_demo_tests(request):
 
 
 @login_required
-def get_all_surveys(request):
+def get_all_surveys(request, page=1, per_page=5):
     staff_id = get_staff_id(request)
     if staff_id is None:
         return {}
 
-    surveys = Survey.objects.filter(id_staff=staff_id).order_by('-updated_at')
-    response_data_all = {}
+    # Базовый запрос + сортировка
+    surveys_queryset = Survey.objects.filter(id_staff=staff_id).order_by('-updated_at')
 
+    # Django пагинация
+    paginator = Paginator(surveys_queryset, per_page)
+    try:
+        surveys_page = paginator.page(page)
+    except (EmptyPage, PageNotAnInteger):
+        surveys_page = paginator.page(1)
+
+    # Предзагружаем все токены, чтобы не лупить запросы по одному
     tokens_entries = TokensUsed.objects.filter(id_staff=staff_id)
 
-    for survey in surveys:
-        format_date_update = survey.updated_at.strftime('%d.%m.%Y')
+    results = {}
+    time_margin = timedelta(seconds=5)
 
-        time_margin = timedelta(seconds=5)
+    for survey in surveys_page.object_list:
         nearby_tokens = (
             tokens_entries
             .filter(created_at__range=(survey.updated_at - time_margin, survey.updated_at + time_margin))
@@ -741,13 +757,18 @@ def get_all_surveys(request):
 
         tokens_used = nearby_tokens.tokens_survey_used if nearby_tokens else None
 
-        response_data_all[str(survey.survey_id)] = {
+        results[str(survey.survey_id)] = {
             'title': survey.title if len(survey.title) < 32 else survey.title[:32] + '...',
-            'update': format_date_update,
+            'update': survey.updated_at.strftime('%d.%m.%Y'),
             'tokens': tokens_used
         }
 
-    return response_data_all
+    return {
+        'results': results,
+        'paginator': paginator,
+        'page_obj': surveys_page
+    }
+
 
 
 # @method_decorator(login_required, name='dispatch')
@@ -1603,10 +1624,6 @@ def vk_auth(request):
     )
     tracer_l.warning(f'ADMIN. VK AUTH URL: {auth_url}')
     return redirect(auth_url)
-
-
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
 
 
 @csrf_exempt
