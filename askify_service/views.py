@@ -259,10 +259,17 @@ def user_stats_api(request):
         # 5. Самый популярный model_name
         model_most_used = "-"
         if feedbacks.exists():
-            model_counts = defaultdict(int)
-            for feedback in feedbacks:
-                model_counts[feedback.model_name] += 1
-            model_most_used = format_model_name(max(model_counts.items(), key=lambda x: x[1])[0])
+            try:
+                model_counts = defaultdict(int)
+                for feedback in feedbacks.iterator():
+                    if feedback.model_name:  # Проверка на None
+                        model_counts[str(feedback.model_name)] += 1  # Явное преобразование в строку
+
+                if model_counts:
+                    model_most_used = format_model_name(max(model_counts.items(), key=lambda x: x[1])[0])
+            except ValueError as e:
+                tracer_l.error(f"Error processing model_name: {e}")
+                model_most_used = "-"
 
     # 6. Вычисление лимитов
     subs_status = subs.check_sub_status() if subs else 'inactive'
@@ -271,10 +278,14 @@ def user_stats_api(request):
     remaining_tests = max(0, tests_limit - used_today)
 
     # 7. Расчет покрытия фидбэком
-    feedback_coverage = 0.0
-    if survey_ids:
-        feedback_surveys = {f.survey_id for f in feedbacks}
-        feedback_coverage = (len(feedback_surveys) / len(survey_ids)) * 100
+    feedback_coverage = 0
+    try:
+        if survey_ids:
+            feedback_surveys = {f.survey_id for f in feedbacks}
+            feedback_coverage = (len(feedback_surveys) / len(survey_ids)) * 100
+    except ValueError as e:
+        tracer_l.error(f"Error processing model_name: {e}")
+        feedback_coverage = 0
 
     return JsonResponse({
         "tests_remaining_today": remaining_tests,

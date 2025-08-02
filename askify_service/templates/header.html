@@ -4,23 +4,19 @@
 </head>
 
 <header class="header">
-    <div class="logo-header">
+    <div class="logo-header" id="pulse-trigger">
         <a href="{% url 'create' %}">
             <img src="{% static 'img/logo-header-alt-pulse.png' %}" alt="">
         </a>
     </div>
-    <div class="menu-container" style="position: relative;">
+    <div class="menu-container" id="nav-trigger"  style="position: relative;">
         {% if username %}
             <div id="burger">
-                <!-- <a href="/profile/{{ username }}"> -->
-                    <div class="user-avatar">{{ username|make_list|first|upper }}</div>
-                <!-- </a> -->
+                <img src="{% static 'img/icon-dots.png' %}" class="icon" alt="">
             </div>
         {% else %}
             <div id="burger">
-                <!-- <a href="/profile/{{ username }}"> -->
-                    <div class="user-avatar">М</div>
-                <!-- </a> -->
+                <img src="{% static 'img/icon-dots.png' %}" class="icon" alt="">
             </div>
         {% endif %}
         <!-- <div class="burger" id="burger">
@@ -28,18 +24,17 @@
             <div class="line"></div>
             <div class="line"></div>
         </div> -->
-    
         <nav id="nav">
             {% if username %}
                 <ul>
                     {% if subscription_level < 1 or subscription_level == 99 %}
-                        <li><a href="{% url 'payment' %}">Купить премиум 💎</a></li>
+                        <li><a href="{% url 'payment' %}"><img src="{% static 'img/icon-diamond.png' %}" alt="" class="icon profile"> Купить премиум</a></li>
                     {% endif %}
-                    <li><a href="/profile/{{ username }}">Перейти в профиль</a></li>
-                    <li><a href="{% url 'history' %}">История тестов</a></li>
-                    <li><a href="{% url 'create' %}">Создать тест</a></li>
+                    <li><a href="/profile/{{ username }}"><img src="{% static 'img/icon-pro.png' %}" alt="" class="icon profile"> Перейти в профиль</a></li>
+                    <li><a href="{% url 'history' %}"><img src="{% static 'img/icon-history.png' %}" alt="" class="icon"> История тестов</a></li>
+                    <li><a href="{% url 'create' %}"><img src="{% static 'img/icon-new.png' %}" alt="" class="icon"> Создать тест</a></li>
                     <hr>
-                    <li><a href="{% url 'logout' %}">Выйти</a></li>
+                    <li><a href="{% url 'logout' %}" class="danger"><img src="{% static 'img/icon-logout.png' %}" alt="" class="icon"> Выйти</a></li>
                 </ul>
             {% else %}
                 <ul>
@@ -51,6 +46,7 @@
                 </ul>
             {% endif %}
         </nav>
+
     </div>
     <script src="{% static 'js/nav.js' %}"></script>
 </header>

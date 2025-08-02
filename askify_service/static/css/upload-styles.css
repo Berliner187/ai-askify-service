@@ -325,13 +325,14 @@
     margin-top: 20px;
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 30px;
+    gap: 24px;
+    flex-wrap: wrap;
 }
 
 .feature-block {
-    background: rgba(255, 255, 255, 0.12);
+    background: rgba(169, 158, 194, 0.12);
     border-radius: 18px;
-    padding: 25px 20px;
+    padding: 16px 20px;
     text-align: center;
     transition: all 0.25s ease;
 }
@@ -436,4 +437,11 @@
 
 #char-count, #question-slider-text {
     font-size: .8em;
+}
+
+@media (max-width: 768px) {
+    .features-container {
+        display: flex;
+        flex-wrap: wrap;
+    }
 }

@@ -50,7 +50,7 @@ INSTALLED_APPS = [
     'askify_service',
     'askify_app',
     'corsheaders',
-    'debug_toolbar'
+    # 'debug_toolbar'
 ]
 
 MIDDLEWARE = [
@@ -63,7 +63,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'askify_app.middleware.BlockIPMiddleware',
     'corsheaders.middleware.CorsMiddleware',
-    'debug_toolbar.middleware.DebugToolbarMiddleware'
+    # 'debug_toolbar.middleware.DebugToolbarMiddleware'
 ]
 
 if DEBUG:

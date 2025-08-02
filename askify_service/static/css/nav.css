@@ -5,8 +5,9 @@
     transition-duration: .25s;
 }
 
+
 nav {
-    font-family: 'Namu Pro';
+    font-family: 'Namu Pro', -apple-system, BlinkMacSystemFont, sans-serif;
     display: none;
     transition: .25s;
 }
@@ -14,73 +15,84 @@ nav {
 nav.active {
     display: block;
     position: fixed;
-    text-align: center;
     top: 100%;
     margin-top: 24px;
     right: 0;
-    min-width: 100px;
+    min-width: 220px;
     width: max-content;
     max-width: 300px;
-    padding: 1em;
+    padding: 12px 0;
     border-radius: 24px;
     user-select: none;
-    background: rgba(62, 57, 73, 0.96);
+    background: rgba(62, 57, 73, 0.96); /* Уменьшаем непрозрачность фона */
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border: 1px solid rgba(255, 255, 255, 0.12);
     box-shadow: 0 4px 20px rgba(0,0,0,0.25);
 }
 
-
-nav.active a {
-    color: #cecdd9;
-}
-
 nav ul {
     display: flex;
     flex-direction: column;
     list-style-type: none;
     margin: 0;
-}
-
-nav ul li:active, .burger:active {
-    transform: scale(0.9);
-}
-
-
-nav ul {
-    display: flex;
-    flex-direction: column;
-    list-style-type: none;
-    margin: 0;
+    padding: 0;
 }
 
 nav ul li {
-    padding: 10px 20px 10px 20px;
-    background: rgba(255,255,255,0.2);
-    border-radius: 14px;
+    padding: 0;
     transition-duration: .25s;
 }
 
 nav ul li a {
-    width: max-content;
+    display: flex;
+    align-items: center;
+    padding: 10px 20px;
+    margin: 0 12px;
     text-decoration: none;
-    font-size: 1em;
-    transition: color 0.2s;
+    font-size: 0.95em;
+    color: #cecdd9;
+    transition: all 0.2s;
+    border-radius: 48px;
 }
 
 nav ul li a:hover {
-    opacity: .75;
+    background: rgba(255, 255, 255, 0.1);
 }
 
-li {
-    font-size: 1em;
-    margin: 5px 0;
+nav ul li a:active {
+    transform: translateY(2px);
 }
 
-ul {
-    list-style-type: none;
-    padding: 0;
+nav ul li a .icon, .icon {
+    margin-right: 12px;
+    font-size: 1.1em;
+    width: 24px;
+    height: 24px;
+}
+
+.icon {
+    width: 36px;
+    height: 36px;
+}
+
+nav ul hr {
+    border: none;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.1);
+    margin: 6px 0;
+}
+
+.danger {
+    color: #ff6b6b !important;
+}
+
+.icon-credits {
+    font-size: 0.7em;
+    color: rgba(255, 255, 255, 0.4);
+    text-align: center;
+    margin-top: 12px;
+    padding: 0 20px;
 }
 
 @media (max-width: 768px) {
@@ -778,4 +790,285 @@ ul {
 
 .not-selected {
     background-color: rgba(24, 71, 241, .1);
+}
+
+
+/* Онбординг */
+.onboarding-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(23, 22, 23, 0.5);
+    z-index: 9998;
+}
+
+.onboarding-highlight {
+    position: relative;
+    z-index: 10000 !important;
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.8);
+    border-radius: 24px;
+    animation: pulse-border 2s infinite;
+}
+
+.onboarding-tooltip {
+    position: fixed;
+    background: white;
+    padding: 20px;
+    border-radius: 16px;
+    max-width: 300px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    z-index: 10001;
+    animation: fadeIn 0.3s ease-out;
+    will-change: transform, top, left;
+}
+
+.onboarding-progress {
+    margin-top: 10px;
+    font-size: 0.8em;
+    color: #999;
+    text-align: right;
+}
+
+.onboarding-nav button {
+    font-family: 'Namu Pro';
+    padding: 12px 32px;
+    border: none;
+    border-radius: 24px;
+    cursor: pointer;
+}
+
+.onboarding-nav button:nth-child(2) {
+    background: #79EF66;
+    color: #1E1E2D;
+}
+
+.onboarding-center-message {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 30px;
+    border-radius: 24px;
+    max-width: 400px;
+    text-align: center;
+    z-index: 10001;
+    animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+
+/* Основные стили */
+@keyframes pulse-border {
+    0% { box-shadow: 0 0 0 0 rgb(180, 157, 222); }
+    70% { box-shadow: 0 0 0 10px rgba(138, 99, 210, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(138, 99, 210, 0); }
+}
+
+.onboarding-tooltip {
+    display: none;
+    position: fixed;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(12px) saturate(180%);
+    -webkit-backdrop-filter: blur(12px) saturate(180%);
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 
+        0 8px 32px rgba(0, 0, 0, 0.3),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.1),
+        0 0 20px rgba(138, 99, 210, 0.3); /* Фиолетовый неон */
+    padding: 20px;
+    max-width: 320px;
+    z-index: 10001;
+    color: #fff;
+    animation: fadeIn 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    overflow: hidden;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.onboarding-tooltip.active {
+    display: block;
+    opacity: 1;
+}
+
+.onboarding-tooltip::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+        45deg,
+        rgba(138, 99, 210, 0.1) 0%,
+        rgba(255, 255, 255, 0) 50%,
+        rgba(92, 167, 255, 0.1) 100%
+    );
+    transform: rotate(30deg);
+    pointer-events: none;
+    animation: liquidFlow 8s infinite linear;
+}
+
+.onboarding-tooltip > * {
+    position: relative;
+    z-index: 2;
+}
+
+.onboarding-tooltip h3 {
+    margin: 0 0 12px 0;
+    color: #fff;
+    font-size: 1.3rem;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    font-weight: 600;
+}
+
+.onboarding-tooltip p {
+    margin: 0;
+    line-height: 1.5;
+    font-size: 1rem;
+    color: rgba(255, 255, 255, 0.9);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.onboarding-tooltip.with-image img {
+    width: 100%;
+    border-radius: 12px;
+    margin-bottom: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* Анимации */
+@keyframes liquidFlow {
+    0% { transform: rotate(30deg) translate(-10%, -10%); }
+    100% { transform: rotate(30deg) translate(10%, 10%); }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(15px) scale(0.95); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Для кнопок внутри тултипа */
+.onboarding-tooltip .onboarding-button {
+    background: rgba(138, 99, 210, 0.7);
+    border: none;
+    color: white;
+    backdrop-filter: blur(5px);
+    transition: all 0.3s ease;
+}
+
+.onboarding-tooltip .onboarding-button:hover {
+    background: rgba(138, 99, 210, 0.9);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(138, 99, 210, 0.4);
+}
+
+.onboarding-progress {
+    margin-top: 12px;
+    font-size: 0.8rem;
+    color: #7A7A8C;
+    text-align: right;
+}
+
+/* Навигация */
+.onboarding-nav {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 12px;
+    z-index: 10001;
+    background: rgba(170, 170, 200, 0.2);
+    padding: 12px 20px;
+    border-radius: 50px;
+    backdrop-filter: blur(8px);
+    border: 1px solid #5f5f77;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.onboarding-button {
+    padding: 10px 18px;
+    border: none;
+    border-radius: 48px;
+    cursor: pointer;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+    font-size: 0.9rem;
+}
+
+.onboarding-button.primary {
+    background: #8A63D2;
+    color: white;
+}
+
+.onboarding-button.primary:hover {
+    background: #7B52C3;
+    transform: translateY(-1px);
+}
+
+.onboarding-button.secondary {
+    background: rgba(138, 99, 210, 0.1);
+    color: #8A63D2;
+    border: 1px solid rgba(138, 99, 210, 0.3);
+}
+
+.onboarding-button.secondary:hover {
+    background: rgba(138, 99, 210, 0.2);
+}
+
+.onboarding-button.text {
+    background: transparent;
+    color: #7A7A8C;
+}
+
+.onboarding-button.text:hover {
+    color: #E0E0E0;
+}
+
+/* Анимации */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Дополнительные стили для новых блоков */
+.feature-badge {
+    background: rgba(138, 99, 210, 0.2);
+    color: #8A63D2;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    display: inline-block;
+    margin-bottom: 10px;
+}
+
+.tip-box {
+    background: rgba(138, 99, 210, 0.1);
+    border-left: 3px solid #8A63D2;
+    padding: 12px;
+    border-radius: 0 8px 8px 0;
+    margin: 15px 0;
+    font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+    .onboarding-nav {
+        padding: 8px 12px;
+    }
+
+    .onboarding-nav button {
+        padding: 8px 12px;
+    }
 }
