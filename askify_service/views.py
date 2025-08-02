@@ -262,13 +262,12 @@ def user_stats_api(request):
             try:
                 model_counts = defaultdict(int)
                 for feedback in feedbacks.iterator():
-                    if feedback.model_name:  # Проверка на None
-                        model_counts[str(feedback.model_name)] += 1  # Явное преобразование в строку
+                    if feedback.model_name:
+                        model_counts[str(feedback.model_name)] += 1
 
                 if model_counts:
                     model_most_used = format_model_name(max(model_counts.items(), key=lambda x: x[1])[0])
             except ValueError as e:
-                tracer_l.error(f"Error processing model_name: {e}")
                 model_most_used = "-"
 
     # 6. Вычисление лимитов
@@ -284,7 +283,6 @@ def user_stats_api(request):
             feedback_surveys = {f.survey_id for f in feedbacks}
             feedback_coverage = (len(feedback_surveys) / len(survey_ids)) * 100
     except ValueError as e:
-        tracer_l.error(f"Error processing model_name: {e}")
         feedback_coverage = 0
 
     return JsonResponse({
