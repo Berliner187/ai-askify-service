@@ -4,6 +4,7 @@
     --dark-color: #0F0818;
     --light-color: #F5F5F5;
     --gradient: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+    --accent-text: linear-gradient(45deg, var(--primary-color), var(--primary-color));
     --shadow: 0 8px 32px rgba(108, 99, 255, 0.1);
     --border-radius: 24px;
     --card-bg: rgba(255,255,255,0.06);
@@ -182,11 +183,9 @@ img {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 120px 20px;
+    padding: 120px 20px 0 20px;
     max-width: 1200px;
     margin: 12px auto;
-    background: url('../img/bg-subs.webp');
-    background-color: rgba(60, 60, 60, .12);
     border-radius: 24px;
 }
 
@@ -196,21 +195,36 @@ img {
 }
 
 .hero-title {
-    font-size: 36px;
+    font-size: 2.5rem;
     line-height: 1.2;
     margin-bottom: 20px;
+    color: #dbdae3;
+}
+
+.centered-hero {
+    text-align: center;
+    max-width: 800px;
+    margin: 20px auto;
+}
+
+.generator-section {
+    padding-top: 0;
 }
 
 .gradient-text {
     background: var(--gradient);
+}
+.accent-text {
+    background: var(--accent-text);
+}
+.accent-text, .gradient-text {
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
 .hero-subtitle {
     font-size: 16px;
-    color: #AAA;
-    margin-bottom: 30px;
+    color: #BAB8C1;
 }
 
 .hero-image {
@@ -516,32 +530,6 @@ img {
     margin-bottom: 10px;
 }
 
-/* CTA-кнопки */
-.cta-button {
-    padding: 12px 32px;
-    font-size: 16px;
-    font-weight: bold;
-    border-radius: 32px;
-    display: inline-block;
-    transition: all 0.3s ease;
-}
-
-.cta-button.primary {
-    background: var(--primary-color);
-    color: white;
-    box-shadow: 0 8px 20px rgba(97, 109, 240, 0.4);
-}
-
-.cta-button.primary:hover {
-    box-shadow: 0 12px 32px rgba(97, 109, 240, 0.6);
-    transform: translateY(-2px);
-}
-
-.cta-button.ghost {
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: #fff;
-}
-
 
 .features, .success-cases, .trusted-by, 
 .steps-info, .pricing:before, .generator-section {
@@ -649,27 +637,73 @@ img {
     margin-top: 24px;
 }
 
+/* CTA-кнопки */
 .cta-button {
+    font-family: 'Namu Pro';
     z-index: 3;
     margin: 0 auto;
     transition: all 0.25s ease;
     width: fit-content;
     text-align: center;
     color: #e8e7f1;
-    border: 3px solid #5A66EB;
+    border: 2px solid #5A66EB;
     cursor: pointer;
-    border-radius: 20px;
+    border-radius: 48px;
+    padding: 8px 32px;
+    font-size: 16px;
+    display: inline-block;
+    transition: all 0.3s ease;
     background-color: rgba(42, 40, 51, .2);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
 }
 .cta-button:hover {
     border: 3px solid #EFEEF4;
-    transform: translateY(-6px);
+    transform: translateY(-4px);
     box-shadow: 0 2px 32px rgba(90, 102, 235, .5);
 }
 .cta-button:active, .cta-button-accent:active {
     transform: scale(0.96);
+}
+
+
+.cta-button.primary {
+    background: var(--primary-color);
+    color: white;
+    box-shadow: 0 8px 20px rgba(97, 109, 240, 0.4);
+}
+
+.cta-button.primary:hover {
+    box-shadow: 0 12px 32px rgba(97, 109, 240, 0.6);
+    transform: translateY(-2px);
+}
+
+.cta-button.ghost {
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+}
+
+
+.floating-cta-container {
+    border: none;
+    position: fixed;
+    bottom: -100px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    z-index: 999;
+    pointer-events: none;
+}
+
+.floating-cta-container.visible {
+    bottom: 20px;
+}
+
+.floating-cta {
+    pointer-events: auto;
+    animation: floatUp 0.5s ease-out forwards;
+    box-shadow: 0 8px 20px rgba(97, 109, 240, 0.4);
 }
 
 
@@ -678,9 +712,17 @@ img {
     border: none;
     padding: 16px 32px;
 }
-
 .cta-button-accent:hover {
     background: linear-gradient(135deg, #3a1cff, #7c4dff);
+    border: none;
+}
+.cta-button-secondary-accent {
+    background: linear-gradient(135deg, var(--secondary-color), #1cff6b);
+    border: none;
+    color: #0F0818;
+    padding: 12px 32px;
+}
+.cta-button-secondary-accent:hover {
     border: none;
 }
 
@@ -945,7 +987,7 @@ img {
     width: 50%;
     height: 8px;
     border-radius: 4px;
-    background: rgba(45, 43, 53, .75);
+    background: rgba(51, 83, 60, 0.75);
     outline: none;
     opacity: 0.9;
     transition: all 0.3s ease;
@@ -1029,7 +1071,7 @@ img {
 
 
 .generator-section {
-    padding: 4rem 0;
+    padding: 0;
     position: relative;
     background: url('../img/bg-gradient-demo.webp');
     background-position: 100%;
@@ -1042,7 +1084,7 @@ img {
     border: 1px solid rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
-    padding: 2rem;
+    padding: 12px;
     margin: 0 auto;
     max-width: 800px;
     box-shadow: 0 8px 32px rgba(0,0,0,0.1);
@@ -1051,14 +1093,16 @@ img {
 .text-input-wrapper {
     position: relative;
     margin: 1rem 0;
+    display: flex;
+    justify-content: space-between;
 }
 
 .neon-textarea {
     resize: none;
-    width: 95%;
+    width: 100%;
     margin: 0 auto;
     height: 10em;
-    padding: 1.2rem;
+    padding: 12px;
     background: rgba(40, 39, 47, 0.3);
     border: 2px solid rgba(97, 109, 240, 0.3);
     border-radius: 20px;
@@ -1238,7 +1282,7 @@ img {
     background: rgba(255, 255, 255, 0.12);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 20px;
-    padding: 16px 24px;
+    padding: 16px 12px;
     transition: transform 0.9s ease;
     position: relative;
     overflow: hidden;
@@ -1457,12 +1501,13 @@ img {
 @media (max-width: 768px) {
     .hero {
         flex-direction: column;
-        padding: 60px 20px;
+        padding: 60px 20px 0 20px;
         text-align: center;
     }
 
     .section-title {
-        font-size: 1.em;
+        font-size: 2em;
+        line-height: 1.2;
     }
 
     .hero-content {
@@ -1480,6 +1525,7 @@ img {
 
     .pricing-card.glass {
         min-width: fit-content;
+        margin: 0 12px auto;
     }
 
     .pricing-card.popular {
@@ -1627,6 +1673,10 @@ img {
 
     .glass-alert {
         width: 90%;
+    }
+
+    .generator-section {
+        margin: 0 12px auto;
     }
 }
 
@@ -1876,6 +1926,7 @@ img {
 
 .telegram-container {
   display: flex;
+  width: 86%;
   gap: 40px;
   align-items: center;
   justify-content: space-between;
@@ -1886,15 +1937,6 @@ img {
   color: #eee;
   position: relative;
   font-family: 'Namu Pro', sans-serif;
-}
-
-.telegram-icon {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 48px;
-  opacity: 0.75;
-  pointer-events: none;
 }
 
 .telegram-title {
