@@ -15,18 +15,15 @@
         <div class="container question" id="saved-survey-container">
             <div class="head-button">
                 <h2>История</h2>
-                <div class="button-medium">
-                    <a href="{% url 'create' %}">
-                        <div>
-                            <p>Создать новый</p>
-                            <img src="{% static 'img/icon-new.png' %}" alt="">
-                        </div>
-                    </a>
-                </div>
+                <a class="button-medium" href="{% url 'create' %}">
+                    <div>
+                        <p>Создать новый</p>
+                        <img src="{% static 'img/icon-new.png' %}" alt="">
+                    </div>
+                </a>
             </div>
 
             <div id="surveys-container">
-                <h3>Предыдущие тесты</h3>
                 <div id="surveys-list">
                     
                     {% for survey_id, survey_data in surveys_data.items %}

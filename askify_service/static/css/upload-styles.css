@@ -330,7 +330,7 @@
 }
 
 .feature-block {
-    background: rgba(169, 158, 194, 0.12);
+    background: rgba(93, 86, 110, 0.12);
     border-radius: 18px;
     padding: 16px 20px;
     text-align: center;
@@ -338,8 +338,7 @@
 }
 
 .feature-block:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 0 20px rgba(255, 255, 255, 0.08);
+    transform: translateY(-4px);
 }
 
 .feature-icon {

@@ -70,21 +70,17 @@
                     <li>План <strong>{{subscription.plan_name}}</strong>, и он {{ subscription.plan_end_date }}</li>
                 </ul>
                 {% if subscription.days_until_end is not none and subscription.days_until_end < 3 %}
-                    <div class="button-medium button-accent">
-                        <a href="{% url 'payment' %}">
-                            <div>
-                                <p>Продлить 💎</p>
-                            </div>
-                        </a>
-                    </div>
+                    <a class="button-medium button-accent" href="{% url 'payment' %}">
+                        <div>
+                            <p>Продлить 💎</p>
+                        </div>
+                    </a>
                 {% elif subscription_level < 2 or subscription_level == 99 %}
-                    <div class="button-medium">
-                        <a href="{% url 'payment' %}">
-                            <div>
-                                <p>Купить премиум 💎</p>
-                            </div>
-                        </a>
-                    </div>
+                    <a href="{% url 'payment' %}" class="button-medium">
+                        <div>
+                            <p>Купить премиум 💎</p>
+                        </div>
+                    </a>
                 {% endif %}
             </div>
 

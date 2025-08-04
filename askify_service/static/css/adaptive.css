@@ -140,6 +140,10 @@
     .topic {
         flex: 1 1 calc(50% - 10px);
     }
+
+    .header {
+        width: 80%;
+    }
 }
 
 @media (max-width: 1024px) {

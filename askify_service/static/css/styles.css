@@ -34,6 +34,7 @@ html, body {
 
 #page-container {
     min-height: 80vh;
+    height: 100%;
 }
 
 h1 {
@@ -935,12 +936,12 @@ hr {
     text-decoration: none;
     flex: 1;
     transition-duration: .25s;
-    border-radius: 12px;
-    padding: 8px 0;
+    border-radius: 16px;
+    padding: 2px 0;
 }
 
 .bottom-menu-item:hover {
-    background-color: #6a61f0;
+    background-color: #27293d;
 }
 
 .menu-icon {

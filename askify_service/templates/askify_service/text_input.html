@@ -206,33 +206,28 @@
 
                 <div class="head-button">
                     <div class="head-button">
-                        <div class="button-medium">
-                            <a href="{% url 'history' %}">
-                                <div>
-                                    <img src="{% static 'img/icon-history.png' %}" alt="">
-                                    <p>История</p>
-                                </div>
-                            </a>
-                        </div>
+                        <a class="button-medium" href="{% url 'history' %}">
+                             <div>
+                                <img src="{% static 'img/icon-history.png' %}" alt="">
+                                <p>История</p>
+                            </div>
+                        </a>
                         {% if subscription_level > 1 and subscription_level < 50 %}
-                            <div class="button-medium" onclick="document.getElementById('hidden-file-input').click();">
+                            <a class="button-medium" onclick="document.getElementById('hidden-file-input').click();">
                                 <div>
                                     <img src="{% static 'img/icon-upload-file.png' %}" alt="">
                                     <p>Прикрепить</p>
                                 </div>
-                            </div>
+                            </a>
                             <input type="file" id="hidden-file-input" accept=".pdf, .doc, .docx, .txt" style="display: none;" onchange="handleFiles(this.files)">
                         {% endif %}
-
                     </div>
-                    <div class="button-medium" id="#tokens-color">
-                        <a href="{% url 'profile' username %}">
-                            <div>
-                                <img src="{% static 'img/icon-stars.png' %}" alt="">
-                                <p><span>{{ tests_today }}</span></p>
-                            </div>
-                        </a>
-                    </div>
+                    <a class="button-medium" href="{% url 'profile' username %}" id="#tokens-color">
+                        <div>
+                            <img src="{% static 'img/icon-stars.png' %}" alt="">
+                            <p><span>{{ tests_today }}</span></p>
+                        </div>
+                    </a>
                 </div>
             </form>
         </div>
