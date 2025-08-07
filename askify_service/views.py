@@ -728,6 +728,32 @@ def get_demo_tests(request):
     return JsonResponse({'tests': {}})
 
 
+def toggle_answers(request, survey_id):
+    if request.method == 'POST':
+        try:
+            survey_data = Survey.objects.filter(survey_id=survey_id).first()
+            client_ip = get_client_ip(request)
+            staff_id = get_staff_id(request)
+
+            if not staff_id:
+                staff_id = AuthUser.objects.filter(hash_user_id=client_ip).first()
+
+            if staff_id:
+
+                survey_data.show_answers = not survey_data.show_answers
+                survey_data.save()
+
+                return JsonResponse({
+                    'status': 'success',
+                    'show_answers': survey_data.show_answers
+                })
+
+            return JsonResponse({'status': 'error', 'message': 'Not authorized'}, status=403)
+
+        except Survey.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Survey not found'}, status=404)
+
+
 @login_required
 def get_all_surveys(request, page=1, per_page=5):
     staff_id = get_staff_id(request)
@@ -1446,6 +1472,11 @@ def preview_test(request, survey_id):
         return JsonResponse({'message': 'Неверный ID теста'})
     survey = Survey.objects.filter(survey_id=survey_id).first()
 
+    client_ip = get_client_ip(request)
+
+    auth_user = AuthUser.objects.filter(hash_user_id=client_ip).first()
+    staff_id = auth_user.id_staff
+
     if survey:
         questions = survey.get_questions()
         view_count = SurveyView.objects.filter(survey=survey).count()
@@ -1458,6 +1489,8 @@ def preview_test(request, survey_id):
             'username': request.user.username if request.user.is_authenticated else 0,
             'model_name': f"{'Сгенерировано ' + survey.model_name.upper().replace('O', 'o') if survey.model_name else 'Сгенерировано в Летучке'}",
             'view_count': view_count,
+            'is_creator': True,
+            'show_answers': survey.show_answers
         }
 
         return render(request, 'demo-view.html', json_response)

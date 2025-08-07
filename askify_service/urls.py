@@ -15,6 +15,7 @@ urlpatterns = [
 
     path('c/<str:survey_id>/', preview_test, name='demo_view'),
     path('register-view/<str:survey_id>/', register_survey_view, name='register_survey_view'),
+    path('api/surveys/<uuid:survey_id>/toggle-answers/', toggle_answers, name='toggle-answers'),
 
     path('solving-tests/', solving_tests_promo, name='solving_tests_promo'),
     path('for-teachers/', teachers_promo, name='teachers_promo'),

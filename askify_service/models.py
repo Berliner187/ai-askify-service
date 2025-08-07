@@ -25,6 +25,7 @@ class Survey(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     id_staff = models.UUIDField()
     model_name = models.CharField(max_length=255, blank=True, null=True)
+    show_answers = models.BooleanField(default=False)
 
     def get_questions(self):
         return json.loads(self.questions)
@@ -144,7 +145,6 @@ class UserAnswers(models.Model):
 
 
 class AuthUser(AbstractUser):
-    id_arrival = models.CharField(max_length=100, blank=True, null=True)
     id_staff = models.UUIDField(default=uuid.uuid4, blank=False, null=False)
     hash_user_id = models.CharField(max_length=100, blank=False, null=True)
 
@@ -160,7 +160,6 @@ class AuthUser(AbstractUser):
     )
 
     confirmed_user = models.BooleanField(default=False, null=False, blank=False)
-    vk_id = models.CharField(max_length=255, unique=True, null=True, blank=True)
     name = models.CharField(max_length=255, unique=False, null=True, blank=True)
     phone = models.CharField(max_length=20, null=True, blank=True)
     email = models.EmailField(unique=True, null=True, blank=True)
