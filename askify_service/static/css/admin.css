@@ -9,7 +9,7 @@
     background: var(--glass-bg);
     backdrop-filter: var(--glass-blur);
     border: 1px solid var(--glass-border);
-    border-radius: 18px;
+    border-radius: 24px;
     padding: 20px;
     box-shadow: var(--glass-shadow);
 }
@@ -17,6 +17,7 @@
 .glass-title {
     font-size: 28px;
     font-weight: 600;
+    margin-top: 100px;
     margin-bottom: 10px;
     text-align: center;
 }
@@ -172,19 +173,18 @@
     background: rgba(255, 255, 255, 0.1);
     border-radius: 2px;
     flex-grow: 1;
-    overflow: hidden; /* Чтобы скругленные углы работали правильно */
+    overflow: hidden;
 }
 
 .usage-fill {
     height: 100%;
     border-radius: 2px;
-    background: rgba(134, 54, 255, 1); /* Фиолетовый по умолчанию */
-    transition: background 0.3s ease; /* Плавное изменение цвета */
+    background: rgba(134, 54, 255, 1);
+    transition: background 0.3s ease;
 }
 
-/* Если usage 100% - красный цвет */
 .usage-fill[style*="100%"] {
-    background: rgba(255, 59, 48, 1); /* Красный iOS */
+    background: rgba(255, 59, 48, 1);
 }
 
 .key-usage {
@@ -365,7 +365,6 @@
 
     .table-container {
         overflow-x: auto;
-        /* Небольшой хак, чтобы тень от sticky header не перекрывалась */
         -webkit-overflow-scrolling: touch;
     }
     
@@ -376,10 +375,7 @@
     .glass-table td {
       font-size: 14px;
     }
-}
 
-/* Маленькие телефоны (до 480px) */
-@media (max-width: 480px) {
     .stats-grid {
         grid-template-columns: 1fr;
     }
