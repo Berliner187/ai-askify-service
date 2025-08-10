@@ -630,19 +630,7 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Переключение между месячными и годовыми тарифами
-            const annualToggle = document.getElementById('annualToggle');
             const pricingCards = document.querySelectorAll('.pricing-card');
-            
-            annualToggle.addEventListener('change', function() {
-                if(this.checked) {
-                    document.querySelector('.toggle-label:first-child').classList.remove('active');
-                    document.querySelector('.toggle-label:last-child').classList.add('active');
-                } else {
-                    document.querySelector('.toggle-label:first-child').classList.add('active');
-                    document.querySelector('.toggle-label:last-child').classList.remove('active');
-                }
-            });
 
             // Раскрытие FAQ
             const faqItems = document.querySelectorAll('.faq-item');
@@ -656,7 +644,6 @@
                 window.location.href = '/payment/'
             }
 
-            // Анимация карточек при загрузке
             pricingCards.forEach((card, index) => {
                 card.style.opacity = '0';
                 card.style.transform = 'translateY(20px)';
