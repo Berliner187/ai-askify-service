@@ -1470,12 +1470,13 @@ def download_results_pdf(request, survey_id):
 def preview_test(request, survey_id):
     if not is_valid_uuid(survey_id):
         return JsonResponse({'message': 'Неверный ID теста'})
+
     survey = Survey.objects.filter(survey_id=survey_id).first()
 
     client_ip = get_client_ip(request)
-
     auth_user = AuthUser.objects.filter(hash_user_id=client_ip).first()
-    staff_id = auth_user.id_staff
+
+    is_creator = True if auth_user else False
 
     if survey:
         questions = survey.get_questions()
@@ -1489,7 +1490,7 @@ def preview_test(request, survey_id):
             'username': request.user.username if request.user.is_authenticated else 0,
             'model_name': f"{'Сгенерировано ' + survey.model_name.upper().replace('O', 'o') if survey.model_name else 'Сгенерировано в Летучке'}",
             'view_count': view_count,
-            'is_creator': True,
+            'is_creator': is_creator,
             'show_answers': survey.show_answers
         }
 

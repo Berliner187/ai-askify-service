@@ -123,7 +123,7 @@
                             <a href="{% url 'download-survey_pdf' survey_id %}" class="action-button primary">
                                 Скачать в PDF
                             </a>
-                            <a href="/survey/{{ survey_id }}/take" class="action-button secondary">
+                            <a href="/survey/{{ survey_id }}/" class="action-button secondary">
                                 Пройти тест
                             </a>
                             <button class="action-button tertiary" id="shareBtn2">
@@ -267,7 +267,6 @@
     .answers-toggle-container {
         margin: 20px 0;
         padding: 15px;
-        background: rgba(255, 255, 255, 0.05);
         border-radius: 10px;
     }
 
