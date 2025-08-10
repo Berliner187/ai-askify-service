@@ -108,8 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
         } catch (error) {
-            console.error('Ошибка:', error);
-            alert(error.message || 'Ошибка генерации');
+            glassAlert.show(error.message);
         } finally {
             await toggleLoading(false);
         }

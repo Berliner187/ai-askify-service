@@ -587,19 +587,17 @@ class GenerationSurveysView(View):
                     'redirect_url': f'/c/{existing_survey.survey_id}/'
                 }, status=200)
 
-            auth_user = None
             try:
                 auth_user = await sync_to_async(AuthUser.objects.get)(hash_user_id=client_ip)
-            except AuthUser.DoesNotExist:
+            except Exception as fail:
+                tracer_l.warning(f'{fail}')
                 auth_user = await sync_to_async(AuthUser.objects.create)(
                     username=f"{hashed_ip}_{uuid.uuid4().hex[:6]}",
                     hash_user_id=client_ip
                 )
 
-            staff_id = auth_user.id_staff  # Предполагается, что id_staff доступен после получения/создания AuthUser
+            staff_id = auth_user.id_staff
 
-            plan_name = "default"
-            token_limit = 0
             try:
                 subscription_object = await sync_to_async(Subscription.objects.filter(staff_id=staff_id).first)()
                 if subscription_object:
@@ -611,21 +609,13 @@ class GenerationSurveysView(View):
             surveys_count = await sync_to_async(Survey.objects.filter(id_staff=staff_id).count)()
             tracer_l.debug(f'{staff_id} --- surveys_count: {surveys_count}')
 
-            if surveys_count >= 1 and not request.user.is_authenticated:
+            if surveys_count > 1:
                 return JsonResponse(
-                    {'error': 'Лимит исчерпан :(\n\nХочешь ещё? Зарегистрируйся, и дадим 10 тестов в подарок.'},
-                    status=400)
-
-            # TODO: Добавить проверку лимитов на основе token_limit и уже использованных токенов
-            # Например:
-            # tokens_used_by_staff = await sync_to_async(TokensUsed.objects.filter(id_staff=staff_id).aggregate)(total=Sum('tokens_survey_used'))
-            # if (tokens_used_by_staff.get('total', 0) + potential_tokens_for_this_request) > token_limit:
-            #     return JsonResponse({'error': 'Лимит токенов исчерпан!'}, status=400)
+                    {'error': 'Лимит исчерпан :(\n\nХочешь ещё? Зарегистрируйся, и дадим 10 тестов в подарок.'})
 
             manage_generate_surveys_text = ManageGenerationSurveys(request, text_from_user, question_count)
             start_time = time.perf_counter()
 
-            generated_text_data = None
             # if DEBUG:
             #     generated_text_data = {
             #         'success': True, 'generated_text': {
@@ -651,7 +641,7 @@ class GenerationSurveysView(View):
             end_time = time.perf_counter()
 
             if not generated_text_data.get('success'):
-                tracer_l.error(f'{staff_id} --- Произошла ошибка генерации: {generated_text_data.get("message")}')
+                tracer_l.error(f'{staff_id} --- Generation error: {generated_text_data.get("message")}')
                 return JsonResponse({
                     'error': f'Произошла ошибка генерации: {generated_text_data.get("message", "Неизвестная ошибка")}'
                 }, status=500)
@@ -679,7 +669,7 @@ class GenerationSurveysView(View):
             api_key_manage = await sync_to_async(APIKey.objects.filter(purpose='SURVEY', is_active=True).first)()
 
             # !!! ИСПРАВЛЕНИЕ: Обертываем синхронную ORM-операцию
-            if api_key_manage:  # Убедимся, что ключ найден, прежде чем использовать его
+            if api_key_manage:
                 await sync_to_async(APIKeyUsage.objects.create)(
                     api_key=api_key_manage,
                     success=True,
