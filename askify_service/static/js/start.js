@@ -1,11 +1,19 @@
 // Управление бургер-меню
 const burger = document.getElementById('burger');
 const navLinks = document.querySelector('.nav-links');
-burger.addEventListener('click', () => {
-    navLinks.classList.toggle('active');
-    burger.classList.toggle('active');
-});
 
+function toggleMenu() {
+burger.classList.toggle('active');
+navLinks.classList.toggle('active');
+
+if (navLinks.classList.contains('active')) {
+        document.body.style.overflow = 'hidden';
+    } else {
+        document.body.style.overflow = '';
+    }
+}
+
+burger.addEventListener('click', toggleMenu);
 
 let popupTimer;
 

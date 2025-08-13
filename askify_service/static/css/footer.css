@@ -26,7 +26,8 @@ footer {
     border-top-right-radius: 20px;
     color: #BAB8C1;
     padding: 10px 20px;
-    margin-top: 90%;
+    margin-top: 50px;
+    margin-bottom: 0;
 }
 footer a {
     color: #A190F8;
