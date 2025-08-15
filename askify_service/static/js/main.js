@@ -187,8 +187,6 @@ function validatorText(text_request) {
         errors.push('Очень короткий запрос :(');
     } else if (text_request.length > 150000) {
         errors.push('Очень длинный запрос :(');
-    } else if (containsHTMLTags(text_request)) {
-        errors.push('Запрос не должен содержать HTML-теги!');
     }
 
     if (errors.length > 0) {

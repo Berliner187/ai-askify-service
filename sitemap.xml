@@ -1,68 +1,69 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-    <!-- Статические URL-адреса -->
     <url>
-        <loc>https://letychka.ru/</loc>
-        <lastmod>2024-06-30</lastmod>
-        <changefreq>daily</changefreq>
-        <priority>1.0</priority>
-    </url>
-    <!-- Динамические URL-адреса. Эти URL-адреса должны генерироваться динамически на основе данных из вашей БД. -->
-    <!-- Используйте фреймворк sitemap в Django для автоматической генерации этих URL-адресов. -->
-    <url>
-        <loc>https://letychka.ru/c/14bed22e-fa89-4546-b239-9e62477446f2/</loc>
-        <lastmod>2024-06-30</lastmod>
-        <changefreq>weekly</changefreq>
-        <priority>0.9</priority>
+      <loc>https://letychka.ru/</loc>
+      <lastmod>2025-08-15</lastmod>
+      <changefreq>weekly</changefreq>
+      <priority>1</priority>
     </url>
     <url>
-        <loc>https://letychka.ru/c/another-example-uuid-1234-abcd/</loc>
-        <lastmod>2024-06-29</lastmod>
-        <changefreq>weekly</changefreq>
-        <priority>0.9</priority>
+      <loc>https://letychka.ru/docs/privacy-policy/</loc>
+      <lastmod>2025-07-13</lastmod>
+      <changefreq>weekly</changefreq>
+      <priority>0.5</priority>
     </url>
     <url>
-        <loc>https://letychka.ru/c/yet-another-uuid-5678-efgh/</loc>
-        <lastmod>2024-06-28</lastmod>
-        <changefreq>weekly</changefreq>
-        <priority>0.9</priority>
-    </url>
-    <!--
-    <url>
-        <loc>https://letychka.ru/survey/your_survey_id_1/</loc>
-        <lastmod>2024-06-30</lastmod>
-        <changefreq>weekly</changefreq>
-        <priority>0.9</priority>
+      <loc>https://letychka.ru/docs/user-agreement/</loc>
+      <lastmod>2025-07-13</lastmod>
+      <changefreq>weekly</changefreq>
+      <priority>0.5</priority>
     </url>
     <url>
-        <loc>https://letychka.ru/survey/your_survey_id_2/</loc>
-        <lastmod>2024-06-29</lastmod>
-        <changefreq>weekly</changefreq>
-        <priority>0.9</priority>
+      <loc>https://letychka.ru/docs/public-offer/</loc>
+      <lastmod>2025-07-13</lastmod>
+      <changefreq>weekly</changefreq>
+      <priority>0.5</priority>
     </url>
     <url>
-        <loc>https://letychka.ru/result/your_survey_id_1/</loc>
-        <lastmod>2024-06-30</lastmod>
-        <changefreq>weekly</changefreq>
-        <priority>0.8</priority>
+      <loc>https://letychka.ru/available-plans/</loc>
+      <lastmod>2025-08-15</lastmod>
+      <changefreq>weekly</changefreq>
+      <priority>0.9</priority>
     </url>
     <url>
-        <loc>https://letychka.ru/profile/username_example/</loc>
-        <lastmod>2024-06-30</lastmod>
-        <changefreq>weekly</changefreq>
-        <priority>0.7</priority>
+      <loc>https://letychka.ru/register/</loc>
+      <lastmod>2025-08-15</lastmod>
+      <changefreq>weekly</changefreq>
+      <priority>0.5</priority>
     </url>
     <url>
-        <loc>https://letychka.ru/docs/some-document-slug/</loc>
-        <lastmod>2024-06-30</lastmod>
-        <changefreq>monthly</changefreq>
-        <priority>0.7</priority>
+      <loc>https://letychka.ru/login/telegram/</loc>
+      <lastmod>2025-08-15</lastmod>
+      <changefreq>weekly</changefreq>
+      <priority>0.5</priority>
     </url>
     <url>
-        <loc>https://letychka.ru/media/some-blog-post-slug/</loc>
-        <lastmod>2024-06-30</lastmod>
-        <changefreq>weekly</changefreq>
-        <priority>0.7</priority>
+      <loc>https://letychka.ru/media/kak-nachat-ispolzovat-letuchku-poshagovoe-rukovodstvo-dlya-studentov/</loc>
+      <lastmod>2025-07-27</lastmod>
+      <changefreq>weekly</changefreq>
+      <priority>0.8</priority>
     </url>
-    -->
+    <url>
+      <loc>https://letychka.ru/media/main/</loc>
+      <lastmod>2025-07-27</lastmod>
+      <changefreq>weekly</changefreq>
+      <priority>0.8</priority>
+    </url>
+    <url>
+      <loc>https://letychka.ru/media/kak-sozdat-test-dlya-uroka-za-5-minut/</loc>
+      <lastmod>2025-07-27</lastmod>
+      <changefreq>weekly</changefreq>
+      <priority>0.8</priority>
+    </url>
+    <url>
+      <loc>https://letychka.ru/media/sdal-test-na-otlichno-poka-drugie-listali-konspekty/</loc>
+      <lastmod>2025-07-27</lastmod>
+      <changefreq>weekly</changefreq>
+      <priority>0.8</priority>
+    </url>
 </urlset>
