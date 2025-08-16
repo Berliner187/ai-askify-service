@@ -1509,29 +1509,21 @@ from datetime import timedelta
 def register_survey_view(request, survey_id):
     if request.method == 'POST':
         try:
-            survey = Survey.objects.select_for_update().get(survey_id=survey_id)
+            survey = Survey.objects.get(survey_id=survey_id)
             data = json.loads(request.body)
             view_hash = data.get('hash', '')
 
             if not view_hash:
                 return JsonResponse({'success': False, 'error': 'Hash required'})
 
-            time_threshold = timezone.now() - timedelta(hours=24)
-
-            view, created = SurveyView.objects.get_or_create(
+            _, created = SurveyView.objects.get_or_create(
                 survey=survey,
-                view_hash=view_hash,
-                defaults={'last_view': timezone.now()}
+                view_hash=view_hash
             )
-
-            if not created and view.last_view < time_threshold:
-                view.last_view = timezone.now()
-                view.save()
-                created = True
 
             view_count = SurveyView.objects.filter(survey=survey).count()
 
-            tracer_l.info(f'{request.user.username} --- Survey view registered')
+            tracer_l.info(f'View registered for survey {survey_id}')
             return JsonResponse({
                 'success': True,
                 'new_view': created,
@@ -1539,10 +1531,10 @@ def register_survey_view(request, survey_id):
             })
 
         except Survey.DoesNotExist:
-            tracer_l.error(f'{request.user.username} --- Survey not found')
+            tracer_l.error(f'Survey {survey_id} not found')
             return JsonResponse({'success': False, 'error': 'Survey not found'})
         except Exception as e:
-            tracer_l.error(f'{request.user.username} --- Error: {str(e)}')
+            tracer_l.error(f'Error: {str(e)}')
             return JsonResponse({'success': False, 'error': str(e)})
     return JsonResponse({'success': False, 'error': 'Invalid request'})
 
