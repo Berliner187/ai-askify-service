@@ -33,6 +33,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+from datetime import timedelta
 
 
 from io import BytesIO
@@ -428,7 +429,7 @@ class ManageTokensLimits:
 
         tests_created_today = Survey.objects.filter(
             id_staff=self.id_staff,
-            updated_at__date=today
+            created_at__date=today
         ).count()
 
         return tests_created_today
@@ -749,10 +750,8 @@ def get_all_surveys(request, page=1, per_page=5):
     if staff_id is None:
         return {}
 
-    # Базовый запрос + сортировка
     surveys_queryset = Survey.objects.filter(id_staff=staff_id).order_by('-updated_at')
 
-    # Django пагинация
     paginator = Paginator(surveys_queryset, per_page)
     try:
         surveys_page = paginator.page(page)
@@ -1499,9 +1498,6 @@ def preview_test(request, survey_id):
     }
 
     return render(request, 'demo-view.html', context)
-
-
-from datetime import timedelta
 
 
 @csrf_exempt

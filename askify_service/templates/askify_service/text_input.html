@@ -222,7 +222,7 @@
                             <input type="file" id="hidden-file-input" accept=".pdf, .doc, .docx, .txt" style="display: none;" onchange="handleFiles(this.files)">
                         {% endif %}
                     </div>
-                    <a class="button-medium" href="{% url 'profile' username %}" id="#tokens-color">
+                    <a class="button-medium" href="{% url 'payment' %}">
                         <div>
                             <img src="{% static 'img/icon-stars.png' %}" alt="">
                             <p><span>{{ tests_today }}</span></p>
@@ -286,7 +286,7 @@
 
         // Завершение онбординга
         function completeOnboarding() {
-            setCookie('onboarding_completed', 'true', 365); // Храним 1 год
+            setCookie('onboarding_completed', 'true', 365);
         }
 
         // Запуск онбординга
@@ -298,7 +298,8 @@
             }
         }
 
-        document.addEventListener('DOMContentLoaded', initOnboarding);
+        // СТАРТ
+        // document.addEventListener('DOMContentLoaded', initOnboarding);
 
         function startOnboarding() {
             return new Promise((resolve) => {

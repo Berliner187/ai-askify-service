@@ -23,6 +23,7 @@ class Survey(models.Model):
     # questions = models.JSONField()
     questions = models.TextField()
     updated_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
     id_staff = models.UUIDField()
     model_name = models.CharField(max_length=255, blank=True, null=True)
     show_answers = models.BooleanField(default=False)
