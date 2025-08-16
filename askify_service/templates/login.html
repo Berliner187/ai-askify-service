@@ -3,16 +3,13 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
     <title>Вход в Летучку — авторизация</title>
-    <meta name="description" content="Авторизуйтесь в сервисе Летучка, чтобы создавать тесты, проходить их и получать обратную связь от ИИ." />
+    <meta name="description" content="Авторизуйтесь в сервисе Летучка, чтобы создавать свои тесты по тексту, проходить их и получать обратную связь от ИИ." />
     <meta name="robots" content="noindex, nofollow" />
     <link rel="canonical" href="https://letychka.ru/login/" />
-
     {% load static %}
     <link rel="apple-touch-icon" sizes="180x180" href="{% static 'img/apple-touch-icon.png' %}">
     <link rel="shortcut icon" href="{% static 'img/favicon.ico' %}" type="image/ico">
-
     <link rel="stylesheet" href="{% static 'css/second-loader.css' %}">
     <link rel="stylesheet" href="{% static 'css/loader.css' %}">
     <link rel="stylesheet" href="{% static 'css/auth.css' %}?v=1.0">
@@ -34,7 +31,7 @@
         {% include 'header.html' %}
         <div class="container">
             <section class="content-container">
-                <h2>Вход</h2>
+                <h1>Вход</h1>
 
                 <a href="{% url 'auth_telegram' %}" class="tg-auth-btn">
                     <img src="{% static 'img/tg-logo.webp' %}" alt="Telegram Logo">
@@ -69,11 +66,11 @@
 
     <script>
         window.addEventListener('message', function(e) {
-        if (e.origin !== 'https://letychka.ru') return;
-        
-        if (e.data.event === 'telegram-auth') {
-            window.location.href = '/create';
-        }
+            if (e.origin !== 'https://letychka.ru') return;
+            
+            if (e.data.event === 'telegram-auth') {
+                window.location.href = '/create';
+            }
         });
     </script>
     

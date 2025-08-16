@@ -17,7 +17,6 @@ from django.db.models import Q
 from django.db.models.functions import Length
 from django.shortcuts import render, redirect
 from django.views import View
-from django.db import transaction
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.utils import timezone
@@ -1464,9 +1463,15 @@ def preview_test(request, survey_id):
     survey = Survey.objects.filter(survey_id=survey_id).first()
 
     client_ip = get_client_ip(request)
-    auth_user = AuthUser.objects.filter(hash_user_id=client_ip).first()
 
-    is_creator = True if auth_user else False
+    auth_user = AuthUser.objects.filter(hash_user_id=client_ip).first()
+    main_auth_user = AuthUser.objects.filter(id_staff=get_staff_id(request)).first()
+
+    is_creator = False
+    if auth_user:
+        is_creator = True
+    if main_auth_user:
+        is_creator = True
 
     if survey:
         questions = survey.get_questions()
@@ -1496,29 +1501,49 @@ def preview_test(request, survey_id):
     return render(request, 'demo-view.html', context)
 
 
+from datetime import timedelta
+
+
 @csrf_exempt
+@transaction.atomic
 def register_survey_view(request, survey_id):
     if request.method == 'POST':
         try:
-            survey = Survey.objects.get(survey_id=survey_id)
+            survey = Survey.objects.select_for_update().get(survey_id=survey_id)
             data = json.loads(request.body)
             view_hash = data.get('hash', '')
 
-            if view_hash and not SurveyView.objects.filter(
-                    survey=survey, view_hash=view_hash
-            ).exists():
-                SurveyView.objects.create(survey=survey, view_hash=view_hash)
-                view_count = SurveyView.objects.filter(survey=survey).count()
-                return JsonResponse({
-                    'success': True,
-                    'new_view': True,
-                    'view_count': view_count
-                })
-            tracer_l.info(f'{request.user.username} --- Upload view counter')
-            return JsonResponse({'success': True, 'new_view': False})
+            if not view_hash:
+                return JsonResponse({'success': False, 'error': 'Hash required'})
+
+            time_threshold = timezone.now() - timedelta(hours=24)
+
+            view, created = SurveyView.objects.get_or_create(
+                survey=survey,
+                view_hash=view_hash,
+                defaults={'last_view': timezone.now()}
+            )
+
+            if not created and view.last_view < time_threshold:
+                view.last_view = timezone.now()
+                view.save()
+                created = True
+
+            view_count = SurveyView.objects.filter(survey=survey).count()
+
+            tracer_l.info(f'{request.user.username} --- Survey view registered')
+            return JsonResponse({
+                'success': True,
+                'new_view': created,
+                'view_count': view_count
+            })
+
         except Survey.DoesNotExist:
             tracer_l.error(f'{request.user.username} --- Survey not found')
             return JsonResponse({'success': False, 'error': 'Survey not found'})
+        except Exception as e:
+            tracer_l.error(f'{request.user.username} --- Error: {str(e)}')
+            return JsonResponse({'success': False, 'error': str(e)})
     return JsonResponse({'success': False, 'error': 'Invalid request'})
 
 

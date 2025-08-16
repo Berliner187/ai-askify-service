@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Войти при помощи Telegram: Летучка</title>
+    <meta name="description" content="Войдите по номеру телефона, чтобы создавать тесты при помощи ИИ. Загрузите текст и получите тест за считанные секунды.">
+    des
     {% load static %}
     {% include 'components/linker.html' %}
     <script src="{% static 'js/auth-telegram.js' %}"></script>
@@ -166,7 +168,7 @@
             <div class="enter-phone-container">
                 <form class="enter-phone-form" id="phone-input" method="post" onsubmit="submitForm(event);">
                     {% csrf_token %}
-                    <h2>Введите номер телефона</h2>
+                    <h1>Введите номер телефона</h1>
 
                     <div class="already-exist">
                         <p class="subs">Введите свой номер телефона для быстрой и безопасной авторизации. Это позволит легко входить в систему в будущем, не запоминая пароли.</p>
