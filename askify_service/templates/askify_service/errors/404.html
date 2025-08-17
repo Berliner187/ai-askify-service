@@ -1,0 +1,16 @@
+{% extends "askify_service/errors/base_error.html" %}
+{% load static %}
+
+{% block error_title %}NOT FOUND | LETYCKHA{% endblock %}
+
+{% block primary_color %}#00ff88{% endblock %}
+{% block secondary_color %}#002211{% endblock %}
+{% block bg_color %}#00110a{% endblock %}
+{% block neon_pulse %}0 0 30px rgba(0, 255, 136, 0.5){% endblock %}
+{% block glitch_effect %}0 0 30px rgba(0,255,136,0.7){% endblock %}
+
+{% block error_code %}404{% endblock %}
+{% block error_message %}Страница не найдена :({% endblock %}
+{% block error_description %}Возможно, Вы попали сюда по ошибке.{% endblock %}
+{% block action_url %}/{% endblock %}
+{% block action_text %}Вернуться{% endblock %}

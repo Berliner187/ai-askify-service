@@ -253,6 +253,38 @@
     <script src="{% static 'js/auto-scroll.js' %}"></script>
 
     <script>
+    // Фикс для iOS - предотвращение масштабирования
+    document.addEventListener('DOMContentLoaded', function() {
+        const textarea = document.getElementById('user-text');
+        
+        // Отключаем масштабирование при фокусе
+        textarea.addEventListener('focus', function() {
+            document.querySelector('meta[name="viewport"]').content = 
+                'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
+        });
+        
+        // Возвращаем нормальное поведение при потере фокуса
+        textarea.addEventListener('blur', function() {
+            document.querySelector('meta[name="viewport"]').content = 
+                'width=device-width, initial-scale=1.0';
+        });
+        
+        // Обработчик для счетчика символов
+        textarea.addEventListener('input', function() {
+            document.getElementById('char-count').textContent = 
+                this.value.length + '/32768';
+        });
+        
+        // Обработчик для слайдера
+        const slider = document.getElementById('question-slider');
+        slider.addEventListener('input', function() {
+            document.getElementById('question-count').textContent = 
+                this.value + (this.value == 1 ? ' вопрос' : ' вопросов');
+        });
+    });
+    </script>
+
+    <script>
         let current = 0;
         const metrics = document.querySelectorAll('.metric-ios');
 

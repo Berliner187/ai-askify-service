@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block error_title %}ERROR{% endblock %}</title>
+    {% load static %}
+    <style>
+        :root {
+            --primary-color: {% block primary_color %}#ffffff{% endblock %};
+            --secondary-color: {% block secondary_color %}#000000{% endblock %};
+            --bg-color: {% block bg_color %}#121212{% endblock %};
+            --neon-pulse: {% block neon_pulse %}0 0 30px rgba(255, 255, 255, 0.3){% endblock %};
+            --glitch-effect: {% block glitch_effect %}0 0 30px rgba(255,255,255,0.7){% endblock %};
+        }
+        
+        @font-face {
+            font-family: 'Unbounded Bold';
+            src: url("{% static 'fonts/Unbounded-Medium.ttf' %}");
+        }
+
+        body {
+            font-family: 'Unbounded Bold', sans-serif;
+            margin: 0;
+            height: 100vh;
+            background: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+            color: var(--primary-color);
+            transition: background 0.5s ease;
+        }
+
+        .error-code {
+            font-size: 35vw;
+            color: rgba(255, 255, 255, 0.15);
+            text-shadow: var(--neon-pulse);
+            line-height: 0.8;
+            margin-top: -15vh;
+            user-select: none;
+        }
+
+        .message {
+            text-align: center;
+            font-size: 2.5em;
+            margin: 2vh 0;
+            text-shadow: 0 0 15px rgba(0,0,0,0.3);
+            letter-spacing: 2px;
+        }
+
+        .description {
+            font-size: 1.6em;
+        }
+
+        .action-btn {
+            background: var(--secondary-color);
+            color: var(--primary-color);
+            padding: 1.5rem 4rem;
+            border: 3px solid var(--primary-color);
+            border-radius: 12px;
+            font-size: 1.8em;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            box-shadow: var(--neon-pulse);
+            position: relative;
+            z-index: 2;
+        }
+
+        .action-btn:hover {
+            background: var(--primary-color);
+            color: var(--secondary-color);
+            box-shadow: 0 0 50px var(--primary-color);
+            transform: scale(1.05);
+        }
+
+        @keyframes glitch {
+            0% { text-shadow: var(--glitch-effect); }
+            50% { text-shadow: 
+                -5px 5px 40px rgba(255,255,255,0.8), 
+                5px -5px 40px rgba(0,255,255,0.3); }
+            100% { text-shadow: var(--glitch-effect); }
+        }
+
+        @media (max-width: 768px) {
+            .error-code { font-size: 50vw; }
+            .message { font-size: 1.8em; }
+            .action-btn { padding: 1rem 2rem; font-size: 1.2em; }
+        }
+    </style>
+</head>
+<body>
+    <div class="error-code">{% block error_code %}XXX{% endblock %}</div>
+    <div class="message">{% block error_message %}ERROR MESSAGE{% endblock %}</div>
+    <div class="message description">{% block error_description %}ERROR MESSAGE{% endblock %}</div>
+    <a href="{% block action_url %}/{% endblock %}" class="action-btn">
+        {% block action_text %}TAKE ACTION{% endblock %}
+    </a>
+
+    {% block extra_effects %}
+    {% endblock %}
+</body>
+</html>

@@ -1,0 +1,26 @@
+{% extends "askify_service/errors/base_error.html" %}
+{% load static %}
+
+{% block error_title %}ACCESS DENIED | LETYCKHA{% endblock %}
+
+{% block primary_color %}#ff0022{% endblock %}
+{% block secondary_color %}#000000{% endblock %}
+{% block bg_color %}#1a0003{% endblock %}
+{% block neon_pulse %}0 0 30px rgba(255, 0, 34, 0.7){% endblock %}
+{% block glitch_effect %}0 0 30px rgba(255,0,34,0.7){% endblock %}
+
+{% block error_code %}403{% endblock %}
+{% block error_message %}UNAUTHORIZED ACCESS DETECTED{% endblock %}
+{% block action_url %}https://letychka.ru{% endblock %}
+{% block action_text %}BACK TO SAFETY{% endblock %}
+
+{% block extra_effects %}
+<script>
+    setInterval(() => {
+        document.body.style.background = `hsl(${Math.random() * 10}, 100%, 40%)`;
+        setTimeout(() => {
+            document.body.style.background = var(--bg-color);
+        }, 50);
+    }, 2000);
+</script>
+{% endblock %}

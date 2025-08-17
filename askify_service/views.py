@@ -3358,3 +3358,15 @@ def health_check_view(request):
         version = 'unknown'
 
     return JsonResponse({'status': 'ok', 'version': version})
+
+
+def handler403(request, exception=None):
+    return render(request, 'askify_service/errors/403.html', status=403)
+
+
+def handler404(request, exception=None):
+    return render(request, 'askify_service/errors/404.html', status=404)
+
+
+def handler500(request):
+    return render(request, 'askify_service/errors/500.html', status=500)

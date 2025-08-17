@@ -1,0 +1,28 @@
+{% extends "askify_service/errors/base_error.html" %}
+{% load static %}
+
+{% block error_title %}SERVER ERROR | LETYCKHA{% endblock %}
+
+{% block primary_color %}#ff6600{% endblock %}
+{% block secondary_color %}#331100{% endblock %}
+{% block bg_color %}#1a0a00{% endblock %}
+{% block neon_pulse %}0 0 30px rgba(255, 102, 0, 0.5){% endblock %}
+{% block glitch_effect %}0 0 30px rgba(255,102,0,0.7){% endblock %}
+
+{% block error_code %}500{% endblock %}
+{% block error_message %}Ошибка на стороне сервера :({% endblock %}
+{% block error_description %}Пожалуйста, попробуйте позже{% endblock %}
+{% block action_url %}/create{% endblock %}
+{% block action_text %}Вернуться назад{% endblock %}
+
+{% block extra_effects %}
+<script>
+    setInterval(() => {
+        const colors = ['#ff6600', '#ff3300', '#ff9900'];
+        document.body.style.background = colors[Math.floor(Math.random() * colors.length)];
+        setTimeout(() => {
+            document.body.style.background = var(--bg-color);
+        }, 100);
+    }, 1500);
+</script>
+{% endblock %}
