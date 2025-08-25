@@ -21,12 +21,12 @@ subscriptionOptions.forEach(option => {
                 sub_description = 'Доступ на 7 дней за ' + price + ' руб';
                 break;
             case 'standard':
-                price = 320;
+                price = 420;
                 description = 'Стандартный';
                 sub_description = 'Доступ на 30 дней за ' + price + ' руб';
                 break;
             case 'premium':
-                price = 590;
+                price = 690;
                 sub_description = 'Доступ на 30 дней за ' + price + ' руб';
                 description = 'Премиум';
                 break;
