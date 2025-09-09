@@ -268,7 +268,7 @@ class AvailableSubscription(models.Model):
             self.amount = 990
             self.expiration_date = timezone.now() + timedelta(days=30)
         elif self.plan_type in ['standard_plan', 'premium_plan']:
-            self.amount = 420 if self.plan_type == 'standard_plan' else 690
+            self.amount = 420 if self.plan_type == 'standard_plan' else 590
             self.expiration_date = timezone.now() + timedelta(days=30)
         elif self.plan_type in ['standard_plan_year', 'premium_plan_year']:
             self.amount = 2640 if self.plan_type == 'standard_plan_year' else 4800

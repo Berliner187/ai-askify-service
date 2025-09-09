@@ -26,7 +26,7 @@ subscriptionOptions.forEach(option => {
                 sub_description = 'Доступ на 30 дней за ' + price + ' руб';
                 break;
             case 'premium':
-                price = 690;
+                price = 590;
                 sub_description = 'Доступ на 30 дней за ' + price + ' руб';
                 description = 'Премиум';
                 break;
