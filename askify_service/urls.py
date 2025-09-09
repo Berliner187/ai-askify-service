@@ -7,6 +7,8 @@ from askify_app.settings import DEBUG
 
 urlpatterns = [
     path('', index, name='home'),
+    path('dlya-prepodavateley/', for_prepods, name='for_prepods'),
+
     path('create/', page_create_survey, name='create'),
     path('api-create-survey/', ManageSurveysView.as_view(), name='api-create-survey'),
     path('api-non-auth/create-survey/', GenerationSurveysView.as_view(), name='api-create-survey'),

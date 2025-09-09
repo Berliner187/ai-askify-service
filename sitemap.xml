@@ -2,50 +2,19 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
       <loc>https://letychka.ru/</loc>
-      <lastmod>2025-08-15</lastmod>
-      <changefreq>weekly</changefreq>
-      <priority>1</priority>
+      <lastmod>2025-09-09</lastmod>
+      <changefreq>monthly</changefreq>
     </url>
     <url>
-      <loc>https://letychka.ru/docs/privacy-policy/</loc>
-      <lastmod>2025-07-13</lastmod>
-      <changefreq>weekly</changefreq>
-      <priority>0.5</priority>
-    </url>
-    <url>
-      <loc>https://letychka.ru/docs/user-agreement/</loc>
-      <lastmod>2025-07-13</lastmod>
-      <changefreq>weekly</changefreq>
-      <priority>0.5</priority>
-    </url>
-    <url>
-      <loc>https://letychka.ru/docs/public-offer/</loc>
-      <lastmod>2025-07-13</lastmod>
-      <changefreq>weekly</changefreq>
-      <priority>0.5</priority>
-    </url>
-    <url>
-      <loc>https://letychka.ru/available-plans/</loc>
-      <lastmod>2025-08-15</lastmod>
-      <changefreq>weekly</changefreq>
+      <loc>https://letychka.ru/dlya-prepodavateley/</loc>
+      <lastmod>2025-09-09</lastmod>
+      <changefreq>monthly</changefreq>
       <priority>0.9</priority>
     </url>
     <url>
-      <loc>https://letychka.ru/register/</loc>
-      <lastmod>2025-08-15</lastmod>
-      <changefreq>weekly</changefreq>
-      <priority>0.5</priority>
-    </url>
-    <url>
-      <loc>https://letychka.ru/login/telegram/</loc>
-      <lastmod>2025-08-15</lastmod>
-      <changefreq>weekly</changefreq>
-      <priority>0.5</priority>
-    </url>
-    <url>
-      <loc>https://letychka.ru/media/kak-nachat-ispolzovat-letuchku-poshagovoe-rukovodstvo-dlya-studentov/</loc>
-      <lastmod>2025-07-27</lastmod>
-      <changefreq>weekly</changefreq>
+      <loc>https://letychka.ru/available-plans/</loc>
+      <lastmod>2025-09-09</lastmod>
+      <changefreq>monthly</changefreq>
       <priority>0.8</priority>
     </url>
     <url>
@@ -55,15 +24,45 @@
       <priority>0.8</priority>
     </url>
     <url>
+      <loc>https://letychka.ru/media/kak-nachat-ispolzovat-letuchku-poshagovoe-rukovodstvo-dlya-studentov/</loc>
+      <lastmod>2025-07-27</lastmod>
+      <changefreq>weekly</changefreq>
+      <priority>0.7</priority>
+    </url>
+    <url>
       <loc>https://letychka.ru/media/kak-sozdat-test-dlya-uroka-za-5-minut/</loc>
       <lastmod>2025-07-27</lastmod>
       <changefreq>weekly</changefreq>
-      <priority>0.8</priority>
+      <priority>0.7</priority>
     </url>
     <url>
       <loc>https://letychka.ru/media/sdal-test-na-otlichno-poka-drugie-listali-konspekty/</loc>
       <lastmod>2025-07-27</lastmod>
       <changefreq>weekly</changefreq>
-      <priority>0.8</priority>
+      <priority>0.7</priority>
+    </url>
+    <url>
+      <loc>https://letychka.ru/register/</loc>
+      <lastmod>2025-08-15</lastmod>
+      <changefreq>yearly</changefreq>
+      <priority>0.5</priority>
+    </url>
+    <url>
+      <loc>https://letychka.ru/docs/privacy-policy/</loc>
+      <lastmod>2025-07-13</lastmod>
+      <changefreq>yearly</changefreq>
+      <priority>0.3</priority>
+    </url>
+    <url>
+      <loc>https://letychka.ru/docs/user-agreement/</loc>
+      <lastmod>2025-07-13</lastmod>
+      <changefreq>yearly</changefreq>
+      <priority>0.3</priority>
+    </url>
+    <url>
+      <loc>https://letychka.ru/docs/public-offer/</loc>
+      <lastmod>2025-07-13</lastmod>
+      <changefreq>yearly</changefreq>
+      <priority>0.3</priority>
     </url>
 </urlset>
