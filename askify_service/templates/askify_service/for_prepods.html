@@ -215,6 +215,35 @@
             </div>
         </section>
 
+        <!-- Оверлей загрузки -->
+        <div id="loading-overlay" class="fixed inset-0 bg-black/80 z-50 hidden items-center justify-center flex-col">
+            <div class="w-16 h-16 border-4 border-t-[var(--color-accent-primary)] border-transparent rounded-full animate-spin"></div>
+            <p id="loading-hint" class="mt-4 text-white">Генерация может занять до 1 минуты...</p>
+        </div>
+
+        <!-- VIDEO DEMO                  -->
+        <section id="video-demo" class="py-16 text-center">
+            <div class="max-w-4xl mx-auto">
+                <h2 class="text-3xl sm:text-5xl font-extrabold text-white leading-tight">
+                    Ваши <span class="highlight">2 часа</span> рутины. <br>Наши <span class="highlight">30 секунд</span> работы.
+                </h2>
+                <p class="mt-4 max-w-2xl mx-auto text-[var(--color-text-secondary)]">
+                    Хватит перепечатывать вопросы вручную. Просто загрузите ваш учебный материал. Смотрите.
+                </p>
+                <div class="mt-12 w-full max-w-3xl mx-auto rounded-2xl border-2 border-[var(--color-border)] shadow-2xl shadow-black/50 overflow-hidden">
+                    <video autoplay loop muted playsinline preload="metadata" class="w-full h-auto">
+                        <source src="{% static 'blog_img/0313-text.mp4' %}" type="video/mp4">
+                        Ваш браузер не поддерживает видео. Вот как это работает: Вы загружаете текст, и через пару секунд получаете готовый тест.
+                    </video>
+                </div>
+                <div class="mt-12">
+                    <a href="/register" class="inline-block bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] px-10 py-4 text-base font-bold rounded-full transition hover:opacity-90 shadow-lg shadow-[var(--color-accent-primary)]/20">
+                        Попробовать на своем материале (бесплатно)
+                    </a>
+                </div>
+            </div>
+        </section>
+
         <section id="pain-points" class="py-16">
             <div class="max-w-4xl mx-auto space-y-12">
                 <div class="text-center">
@@ -222,7 +251,7 @@
                         Тратите <span class="highlight">воскресенье</span> на подготовку к понедельнику?
                     </h2>
                     <p class="mt-4 max-w-2xl mx-auto text-[var(--color-text-secondary)]">
-                        Пока ваши коллеги отдыхают, вы часами сидите над методичками, вручную копируя вопросы в Word, чтобы создать очередную контрольную. Знакомо?
+                        Пока ваши коллеги отдыхают, Вы часами сидите над методичками, вручную копируя вопросы в Word, чтобы создать очередную контрольную. Знакомо?
                     </p>
                 </div>
                 <div class="text-center">
@@ -248,35 +277,6 @@
                 <a href="#interactive-demo" class="mt-6 inline-block bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] px-10 py-4 text-base font-bold rounded-full transition hover:opacity-90 shadow-lg shadow-[var(--color-accent-primary)]/20">
                     Показать, как это исправить за 30 секунд
                 </a>
-            </div>
-        </section>
-
-        <!-- Оверлей загрузки -->
-        <div id="loading-overlay" class="fixed inset-0 bg-black/80 z-50 hidden items-center justify-center flex-col">
-            <div class="w-16 h-16 border-4 border-t-[var(--color-accent-primary)] border-transparent rounded-full animate-spin"></div>
-            <p id="loading-hint" class="mt-4 text-white">Генерация может занять до 1 минуты...</p>
-        </div>
-
-        <!-- VIDEO DEMO                  -->
-        <section id="video-demo" class="py-16 text-center">
-            <div class="max-w-4xl mx-auto">
-                <h2 class="text-3xl sm:text-5xl font-extrabold text-white leading-tight">
-                    Ваши <span class="highlight">2 часа</span> рутины. <br>Наши <span class="highlight">30 секунд</span> работы.
-                </h2>
-                <p class="mt-4 max-w-2xl mx-auto text-[var(--color-text-secondary)]">
-                    Хватит перепечатывать вопросы вручную. Просто загрузите ваш учебный материал. Смотрите.
-                </p>
-                <div class="mt-12 w-full max-w-3xl mx-auto rounded-2xl border-2 border-[var(--color-border)] shadow-2xl shadow-black/50 overflow-hidden">
-                    <video autoplay loop muted playsinline preload="metadata" class="w-full h-auto">
-                        <source src="{% static 'blog_img/0313-text.mp4' %}" type="video/mp4">
-                        Ваш браузер не поддерживает видео. Вот как это работает: вы загружаете текст, и через пару секунд получаете готовый тест.
-                    </video>
-                </div>
-                <div class="mt-12">
-                    <a href="/register" class="inline-block bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] px-10 py-4 text-base font-bold rounded-full transition hover:opacity-90 shadow-lg shadow-[var(--color-accent-primary)]/20">
-                        Попробовать на своем материале (бесплатно)
-                    </a>
-                </div>
             </div>
         </section>
 
@@ -313,7 +313,7 @@
 
         <section id="features-for-teachers">
              <div class="text-center max-w-3xl mx-auto mb-12">
-                <h2 class="text-3xl sm:text-4xl font-bold text-white">Инструмент, который думает как вы</h2>
+                <h2 class="text-3xl sm:text-4xl font-bold text-white">Инструмент, который думает как Вы</h2>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
                  <div class="flex items-start space-x-4">
@@ -350,7 +350,7 @@
         <section id="plan-comparison" class="py-16">
             <div class="max-w-4xl mx-auto">
                 <h2 class="text-3xl sm:text-4xl font-bold text-white text-center mb-4">Разница — в деталях.</h2>
-                <p class="text-center text-[var(--color-text-secondary)]">Посмотрите, что именно вы получаете, переходя на «Премиум».</p>
+                <p class="text-center text-[var(--color-text-secondary)]">Посмотрите, что именно Вы получаете, переходя на «Премиум».</p>
                 
                 <div class="mt-12 bg-[var(--color-surface)]/70 backdrop-blur-lg rounded-3xl border border-[var(--color-border)] overflow-hidden">
                     

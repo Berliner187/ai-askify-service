@@ -126,6 +126,11 @@ img {
     align-items: center;
 }
 
+.feature-item.feature-locked span {
+    color: #888;
+    text-decoration: line-through;
+}
+
 .nav-link {
     font-weight: 500;
     transition: color 0.3s ease;
@@ -2102,3 +2107,11 @@ footer {
     color: var(--stroke);
     font-size: 0.8rem;
 }
+
+.simulator-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 2rem; }
+.simulator-column { display: flex; flex-direction: column; }
+.simulator-result { margin-top: 1rem; padding: 1rem; background: rgba(0,0,0,0.2); border-radius: 16px; min-height: 100px; transition: all 0.3s; }
+.simulator-result p { margin: 0; animation: fadeIn 0.5s; }
+.cta-button.ghost-button { border-color: #888; color: #888; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@media (max-width: 768px) { .simulator-grid { grid-template-columns: 1fr; } }

@@ -710,9 +710,7 @@ def get_demo_tests(request):
     user = AuthUser.objects.filter(hash_user_id=client_ip).first()
 
     if user:
-        print(client_ip, user.id_staff)
         surveys = Survey.objects.filter(id_staff=user.id_staff)
-        print(surveys)
 
         tests = []
         for survey in surveys:
@@ -721,7 +719,6 @@ def get_demo_tests(request):
                 'url_link': f'/survey/{survey.survey_id}/download/',
                 'survey_id': survey.survey_id
             })
-        print(tests)
 
         return JsonResponse({'tests': tests})
 
