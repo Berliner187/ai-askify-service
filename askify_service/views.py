@@ -306,7 +306,7 @@ def user_stats_api(request):
         "total_questions": total_questions,
         "avg_questions": round(total_questions / len(survey_ids), 1) if survey_ids else 0.0,
         "total_answers": answer_stats.get('total_answers', 0),
-        "avg_correct_answers": round(answer_stats.get('avg_correct', 0.0), 1),
+        "avg_correct_answers": 0,
         "unique_models_count": feedback_stats.get('unique_models', 0),
         "tests_this_month": feedback_stats.get('this_month_surveys', 0),
         "feedback_last_week": feedback_stats.get('last_week_feedback', 0),
