@@ -516,6 +516,32 @@
             </div>
         </section> -->
 
+        <section id="technology" class="py-16 sm:py-24">
+            <div class="max-w-5xl mx-auto px-4 sm:px-8">
+                <div class="text-center max-w-3xl mx-auto">
+                    <h2 class="text-3xl sm:text-4xl font-bold text-white">Как <span class="gradient-text">Летучка</span> создаёт качественные вопросы?</h2>
+                    <p class="mt-4 text-lg text-[var(--color-text-secondary)]">Наш AI позволяет составить тест по тексту онлайн, который действительно проверяет знания, а не просто ищет совпадения по словам.</p>
+                </div>
+                <div class="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div class="bg-[var(--color-surface)] p-8 rounded-2xl border border-[var(--color-border)]">
+                        <i class="fas fa-project-diagram text-2xl text-[var(--color-accent-primary)] mb-4"></i>
+                        <h3 class="font-bold text-white text-lg">Семантический анализ текста</h3>
+                        <p class="mt-2 text-sm text-gray-400">AI&nbsp;понимает контекст и&nbsp;связи между понятиями. Это позволяет создать тест по&nbsp;тексту, который проверяет глубину понимания, а&nbsp;не&nbsp;поверхностную зубрёжку.</p>
+                    </div>
+                    <div class="bg-[var(--color-surface)] p-8 rounded-2xl border border-[var(--color-border)]">
+                        <i class="fas fa-graduation-cap text-2xl text-[var(--color-accent-primary)] mb-4"></i>
+                        <h3 class="font-bold text-white text-lg">Генерация вопросов разной сложности</h3>
+                        <p class="mt-2 text-sm text-gray-400">Алгоритмы генерируют не&nbsp;только репродуктивные, но&nbsp;и&nbsp;проблемные вопросы. Идеально, если вам нужно составление тестов по&nbsp;тексту онлайн для разных уровней подготовки.</p>
+                    </div>
+                    <div class="bg-[var(--color-surface)] p-8 rounded-2xl border border-[var(--color-border)]">
+                        <i class="fas fa-file-circle-check text-2xl text-[var(--color-accent-primary)] mb-4"></i>
+                        <h3 class="font-bold text-white text-lg">Автоматическое создание ключей</h3>
+                        <p class="mt-2 text-sm text-gray-400">Система формирует правильный ответ на&nbsp;каждый вопрос. Это основа, чтобы создать тест онлайн с&nbsp;результатами бесплатно и&nbsp;без ручной проверки.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <!-- ====================================================== -->
         <!--         TRANSFORMATION BLOCK: FROM CHAOS TO ORDER        -->
         <!-- ====================================================== -->
@@ -589,32 +615,6 @@
                         </div>
                     </div>
 
-                </div>
-            </div>
-        </section>
-
-        <section id="technology" class="py-16 sm:py-24">
-            <div class="max-w-5xl mx-auto px-4 sm:px-8">
-                <div class="text-center max-w-3xl mx-auto">
-                    <h2 class="text-3xl sm:text-4xl font-bold text-white">Как <span class="gradient-text">Летучка</span> создаёт качественные вопросы?</h2>
-                    <p class="mt-4 text-lg text-[var(--color-text-secondary)]">Наш AI позволяет составить тест по тексту онлайн, который действительно проверяет знания, а не просто ищет совпадения по словам.</p>
-                </div>
-                <div class="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <div class="bg-[var(--color-surface)] p-8 rounded-2xl border border-[var(--color-border)]">
-                        <i class="fas fa-project-diagram text-2xl text-[var(--color-accent-primary)] mb-4"></i>
-                        <h3 class="font-bold text-white text-lg">Семантический анализ текста</h3>
-                        <p class="mt-2 text-sm text-gray-400">AI&nbsp;понимает контекст и&nbsp;связи между понятиями. Это позволяет создать тест по&nbsp;тексту, который проверяет глубину понимания, а&nbsp;не&nbsp;поверхностную зубрёжку.</p>
-                    </div>
-                    <div class="bg-[var(--color-surface)] p-8 rounded-2xl border border-[var(--color-border)]">
-                        <i class="fas fa-graduation-cap text-2xl text-[var(--color-accent-primary)] mb-4"></i>
-                        <h3 class="font-bold text-white text-lg">Генерация вопросов разной сложности</h3>
-                        <p class="mt-2 text-sm text-gray-400">Алгоритмы генерируют не&nbsp;только репродуктивные, но&nbsp;и&nbsp;проблемные вопросы. Идеально, если вам нужно составление тестов по&nbsp;тексту онлайн для разных уровней подготовки.</p>
-                    </div>
-                    <div class="bg-[var(--color-surface)] p-8 rounded-2xl border border-[var(--color-border)]">
-                        <i class="fas fa-file-circle-check text-2xl text-[var(--color-accent-primary)] mb-4"></i>
-                        <h3 class="font-bold text-white text-lg">Автоматическое создание ключей</h3>
-                        <p class="mt-2 text-sm text-gray-400">Система формирует правильный ответ на&nbsp;каждый вопрос. Это основа, чтобы создать тест онлайн с&nbsp;результатами бесплатно и&nbsp;без ручной проверки.</p>
-                    </div>
                 </div>
             </div>
         </section>
@@ -1285,6 +1285,10 @@
                 const form = $(this);
                 const errorDisplay = $('#form-error');
                 errorDisplay.hide().text('');
+
+                const submitBtn = $('#submit-register-btn');
+                const originalBtnText = submitBtn.text();
+                const loadingBtnText = submitBtn.data('loading-text');
                 
                 const csrftoken = getCookie('csrftoken');
 
@@ -1295,6 +1299,19 @@
                         'X-CSRFToken': csrftoken
                     },
                     data: form.serialize(),
+                    
+                    beforeSend: function() {
+                        submitBtn.prop('disabled', true);
+                        submitBtn.html(`
+                            <span class="flex items-center justify-center">
+                                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <span>${loadingBtnText}</span>
+                            </span>
+                        `);
+                    },
                     success: function(response) {
                         if (response.redirect) {
                             window.location.href = response.redirect;
@@ -1306,6 +1323,10 @@
                             errorMessage = xhr.responseJSON.error;
                         }
                         errorDisplay.text(errorMessage).show();
+                    },
+                    complete: function() {
+                        submitBtn.prop('disabled', false); 
+                        submitBtn.text(originalBtnText);
                     }
                 });
             });
