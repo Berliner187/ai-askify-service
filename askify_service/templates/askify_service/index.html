@@ -72,25 +72,58 @@
         
         #glass-alert {
             position: fixed;
-            bottom: 2rem;
-            left: 50%;
-            transform: translateX(-50%) translateY(200%);
-            background: rgba(64, 13, 132, 0.8);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
+            z-index: 100;
+            top: 16px;
+            left: 0;
+            right: 0;
+            width: 100%;
+            transform: translateY(-140%); 
+            background: rgba(30, 24, 48, 0.9);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             color: white;
             padding: 1rem 1.5rem;
-            border-radius: 9999px;
-            border: 1px solid var(--color-border);
-            z-index: 100;
+            border-top: 1px solid var(--color-border);
+            border-radius: 32px;
+            
             transition: transform 0.4s ease-in-out;
             display: flex;
             align-items: center;
+            justify-content: space-between;
             gap: 1rem;
         }
-        #glass-alert.visible { transform: translateX(-50%) translateY(0); }
-        .glass-alert__close { background: none; border: none; color: var(--color-text-secondary); font-size: 1.5rem; cursor: pointer; line-height: 1; }
-        
+
+        #glass-alert.visible {
+            transform: translateY(0);
+        }
+
+        @media screen and (min-width: 640px) {
+            #glass-alert {
+                bottom: 2rem;
+                left: 50%;
+                right: auto;
+                width: max-content;
+                max-width: 90%;
+                transform: translateX(-50%) translateY(200%);
+                
+                border: 1px solid var(--color-border);
+                border-radius: 9999px;
+            }
+
+            #glass-alert.visible {
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+
+        .glass-alert__close { 
+            background: none; 
+            border: none; 
+            color: var(--color-text-secondary); 
+            font-size: 1.5rem; 
+            cursor: pointer; 
+            line-height: 1; 
+        }
+
         #main-header {
             transition: padding 0.3s ease-in-out, background-color 0.3s ease, box-shadow 0.3s ease, top 0.3s ease-in-out;
             max-width: max-content;
