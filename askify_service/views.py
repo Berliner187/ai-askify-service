@@ -214,106 +214,61 @@ def page_create_survey(request):
 @login_required
 def user_stats_api(request):
     staff_id = get_staff_id(request)
-
-    # 1. Получаем все данные за минимальное количество запросов
-    with transaction.atomic():
-        # Основные данные за 3 запроса
-        subs = (
-            Subscription.objects
-            .filter(staff_id=staff_id)
-            .only('plan_name', 'status')
-            .first()
-        )
-
-        surveys = (
-            Survey.objects
-            .filter(id_staff=staff_id)
-            .only('survey_id', 'questions', 'updated_at')
-        )
-
-        answers = UserAnswers.objects.filter(id_staff=staff_id)
-        feedbacks = FeedbackFromAI.objects.filter(id_staff=staff_id).only('model_name', 'survey_id', 'created_at')
-
-        # 2. Пакетные агрегации
-        answer_stats = answers.aggregate(
-            total_answers=Count('id'),
-            avg_correct=Avg('scored_points'),
-            passed_tests=Count('survey_id', distinct=True),
-            best_result=Max('scored_points')
-        )
-
-        feedback_stats = feedbacks.aggregate(
-            feedback_count=Count('id'),
-            unique_models=Count('model_name', distinct=True),
-            last_week_feedback=Count('id', filter=Q(created_at__gte=date.today() - timedelta(days=7))),
-            this_month_surveys=Count('id', filter=Q(created_at__gte=date.today().replace(day=1)))
-        )
-
-        # 3. Оптимизированные вычисления
-        survey_ids = [s.survey_id for s in surveys]
-        passed_surveys = set(answers.values_list('survey_id', flat=True).distinct())
-
-        # 4. Подсчет метрик за один проход
-        total_questions = 0
-        today_created = 0
-        created_and_passed = 0
-
-        for survey in surveys:
-            if survey.questions:
-                total_questions += len(survey.questions)
-            if survey.updated_at.date() == date.today():
-                today_created += 1
-            if survey.survey_id in passed_surveys:
-                created_and_passed += 1
-
-        # 5. Самый популярный model_name
-        model_most_used = "-"
-        if feedbacks.exists():
-            try:
-                model_counts = defaultdict(int)
-                for feedback in feedbacks.iterator():
-                    if feedback.model_name:
-                        model_counts[str(feedback.model_name)] += 1
-
-                if model_counts:
-                    model_most_used = format_model_name(max(model_counts.items(), key=lambda x: x[1])[0])
-            except ValueError as e:
-                model_most_used = "-"
-
-    # 6. Вычисление лимитов
-    subs_status = subs.check_sub_status() if subs else 'inactive'
-    tests_limit = get_daily_test_limit(subs.plan_name) if (subs and subs_status == 'active') else 0
+    subs = Subscription.objects.get(staff_id=staff_id)
+    subs.status = subs.check_sub_status()
+    tests_limit = get_daily_test_limit(subs.plan_name) if subs.status == 'active' else 0
     used_today = ManageTokensLimits(staff_id).get_tests_used_today()
     remaining_tests = max(0, tests_limit - used_today)
 
-    # 7. Расчет покрытия фидбэком
-    feedback_coverage = 0
-    try:
-        if survey_ids:
-            feedback_surveys = {f.survey_id for f in feedbacks}
-            feedback_coverage = (len(feedback_surveys) / len(survey_ids)) * 100
-    except ValueError as e:
-        feedback_coverage = 0
+    surveys = Survey.objects.filter(id_staff=staff_id)
+    answers = UserAnswers.objects.filter(id_staff=staff_id)
+    feedbacks = FeedbackFromAI.objects.filter(id_staff=staff_id)
+
+    total_tests = surveys.count()
+    passed_tests = UserAnswers.calculate_user_statistics(staff_id)['passed_tests']
+    best_result = UserAnswers.calculate_user_statistics(staff_id)['best_result']
+    feedback_count = feedbacks.count()
+    today_created = surveys.filter(updated_at__date=date.today()).count()
+
+    model_most_used = feedbacks.values('model_name').annotate(c=Count('model_name')).order_by('-c').first()
+    model_most_used = format_model_name(model_most_used['model_name']) if model_most_used else "–"
+
+    total_questions = sum(len(json.loads(s.questions)) for s in surveys if s.questions)
+    avg_questions = round(total_questions / total_tests, 1) if total_tests else 0
+
+    total_answers = answers.count()
+    avg_correct = round(answers.aggregate(avg=Avg('scored_points'))['avg'] or 0, 1)
+
+    unique_models = feedbacks.values('model_name').distinct().count()
+    this_month_count = surveys.filter(updated_at__gte=date.today().replace(day=1)).count()
+    last_week_feedback = feedbacks.filter(created_at__gte=date.today() - timedelta(days=7)).count()
+    feedback_coverage = (feedbacks.values('survey_id').distinct().count() / total_tests * 100) if total_tests else 0
+    # avg_tokens = round(feedbacks.aggregate(Avg('tokens_used')).get('tokens_used__avg', 0), 1)
+
+    created_and_passed = sum(
+        1 for s in surveys if answers.filter(survey_id=s.survey_id).exists()
+    )
 
     return JsonResponse({
         "tests_remaining_today": remaining_tests,
-        "total_tests": len(survey_ids),
-        "passed_tests": answer_stats.get('passed_tests', 0),
-        "best_result": answer_stats.get('best_result', 0),
-        "feedback_count": feedback_stats.get('feedback_count', 0),
+        "total_tests": total_tests,
+        "passed_tests": passed_tests,
+        "best_result": best_result,
+        "feedback_count": feedback_count,
         "today_created": today_created,
         "model_most_used": model_most_used,
         "total_questions": total_questions,
-        "avg_questions": round(total_questions / len(survey_ids), 1) if survey_ids else 0.0,
-        "total_answers": answer_stats.get('total_answers', 0),
-        "avg_correct_answers": 0,
-        "unique_models_count": feedback_stats.get('unique_models', 0),
-        "tests_this_month": feedback_stats.get('this_month_surveys', 0),
-        "feedback_last_week": feedback_stats.get('last_week_feedback', 0),
+        "avg_questions": avg_questions,
+        "total_answers": total_answers,
+        "avg_correct_answers": avg_correct,
+        "unique_models_count": unique_models,
+        "tests_this_month": this_month_count,
+        "feedback_last_week": last_week_feedback,
         "percent_with_feedback": round(feedback_coverage, 1),
         "avg_tokens_used": 0,
         "tests_created_and_passed": created_and_passed
     })
+
 
 
 def solving_tests_promo(request):
@@ -1613,6 +1568,38 @@ def register(request):
         form = CustomUserCreationForm()
 
     return render(request, 'register.html', {'form': form})
+
+
+@check_legal_process
+def quick_register_api(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Метод не разрешен'}, status=405)
+
+    form = CustomUserCreationForm(request.POST)
+
+    if form.is_valid():
+        user = form.save()
+
+        tracer_l.warning(f'API REGISTRATION. NEW USER {user.username}')
+
+        plan_name, end_date, status, billing_cycle, discount = init_free_subscription()
+        subscription = Subscription.objects.create(
+            staff_id=user.id_staff,
+            plan_name=plan_name,
+            end_date=end_date,
+            status=status,
+            billing_cycle=billing_cycle,
+            discount=0.00
+        )
+        subscription.save()
+
+        login(request, user)
+        return JsonResponse({'redirect': '/payment'})
+    else:
+        print(form.errors.as_json())
+        print("=" * 50)
+        error_message = next(iter(form.errors.values()))[0]
+        return JsonResponse({'error': error_message}, status=400)
 
 
 @check_legal_process

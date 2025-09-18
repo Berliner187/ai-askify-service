@@ -30,6 +30,7 @@ urlpatterns = [
     path('history/', page_history_surveys, name='history'),
     path('load-more-surveys/', load_more_surveys, name='load-more-surveys'),
 
+    path('api/quick-register/', quick_register_api, name='api_quick_register'),
     path('register/', register, name='register'),
     path('login/', login_view, name='login'),
     path('logout/', logout_view, name='logout'),
