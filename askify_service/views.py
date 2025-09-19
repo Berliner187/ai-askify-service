@@ -1471,7 +1471,7 @@ def preview_test(request, survey_id):
             'is_creator': is_creator,
             'show_answers': survey.show_answers,
             'can_generate': can_generate,
-            'debug': f"{DEBUG}".lower()
+            'debug': DEBUG
         }
 
         return render(request, 'demo-view.html', json_response)
