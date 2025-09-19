@@ -123,10 +123,9 @@ def index(request):
 
 @check_legal_process
 def for_prepods(request):
-    start_date = "01.01.2025"
     context = {
         'username': request.user.username if request.user.is_authenticated else 0,
-        'total_users': calculate_total_users(start_date, 1200),
+        'debug': DEBUG
     }
     return render(request, 'askify_service/for_prepods.html', context)
 

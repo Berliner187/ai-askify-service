@@ -12,16 +12,39 @@
     <meta property="og:url" content="https://letychka.ru/dlya-prepodavateley/">
     <link rel="canonical" href="https://letychka.ru/dlya-prepodavateley/" />
     
-    <meta property="og:image" content="https://letychka.ru/static/letychka-banner.webp">
+    <meta property="og:image" content="https://letychka.ru/static/letychka-banner-1703.webp">
     <meta name="robots" content="index, follow">
 
-    <script src="https://cdn.tailwindcss.com"></script>
+    {% if debug %}
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    {% else %}
+        <script src="{% static 'vendor/tailwind.full.min.js' %}"></script>
+        <script src="{% static 'vendor/jquery.min.js' %}"></script>
+    {% endif %}
 
     <link rel="icon" href="{% static 'img/favicon.ico' %}" type="image/ico">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [{
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Летучка",
+            "item": "https://letychka.ru/"
+        },{
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Для преподавателей"
+        }]
+    }
+    </script>
 
     <style>
         :root {
