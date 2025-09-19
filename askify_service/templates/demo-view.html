@@ -1,1179 +1,465 @@
-{% load static %}
-
+<!DOCTYPE html>
+<html lang="ru">
 <head>
-    {% include 'components/meta_tags.html' %}
-    <meta name="theme-color" content="#18171a">
-    <link rel="shortcut icon" href="{% static 'img/logo.png' %}" type="image/png">
-    <link rel="stylesheet" href="{% static 'css/second-loader.css' %}">
-    <link rel="stylesheet" href="{% static 'css/nav.css' %}?v=1.0">
-    <link rel="stylesheet" href="{% static 'css/styles.css' %}?v=2.2">
-    <link rel="stylesheet" href="{% static 'css/adaptive.css' %}?v=2.1">
-    <link rel="stylesheet" href="{% static 'css/footer.css' %}?v=1.0">
+    {% include 'components/meta_tags.html' %} 
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    {% load static %}
+    <link rel="icon" href="{% static 'img/favicon.ico' %}" type="image/ico">
+    
+    {% if debug %}
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    {% else %}
+        {% load static %}
+        <script src="{% static 'vendor/tailwindcss.min.js' %}"></script>
+        <script src="{% static 'vendor/jquery.min.js' %}"></script>
+    {% endif %}
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=Unbounded:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --color-bg: #0F0818;
+            --color-surface: rgba(30, 24, 48, 0.5);
+            --color-border: rgba(97, 109, 240, 0.2);
+            --color-text-primary: #f0f0f0;
+            --color-text-secondary: #a0a0b0;
+            --color-accent-primary: #616DF0;
+            --color-accent-secondary: #79EF66;
+        }
+        body { background-color: var(--color-bg); font-family: 'Inter', sans-serif; }
+        h1, h2, h3 { font-family: 'Unbounded', sans-serif; }
+        .gradient-text {
+            background: linear-gradient(45deg, var(--color-accent-primary), var(--color-accent-secondary));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+
+        .toggle-switch input:checked + .slider { background-color: var(--color-accent-secondary); }
+        .toggle-switch input:checked + .slider:before { transform: translateX(26px); }
+        .toggle-switch input:disabled + .slider { opacity: 0.5; cursor: not-allowed; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeIn {
+            animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+    </style>
 </head>
+<body class="text-[var(--color-text-primary)]">
 
-<html>
-    <body class="bg-body">
-        <div class="ios-dark-container">
-            <div class="sticky-header">
-                <div class="header-content">
-                    <div class="header-left">
-                        <div class="titles">
-                            <h1 class="survey-title">{{ title }}</h1>
-                            <p class="survey-subtitle">{{ model_name }}</p>
-                            <hr>
-                            <p class="survey-subtitle">{{ view_count }} просмотр(-ов)</p>
-                        </div>
+    {% if not_found %}
+        <main class="max-w-xl mx-auto text-center py-24 px-4">
+            <div class="flex justify-center mb-6">
+                <div class="flex items-center justify-center h-20 w-20 rounded-full bg-red-500/10 border border-red-500/30">
+                    <i class="fas fa-exclamation-triangle text-4xl text-red-400"></i>
+                </div>
+            </div>
+            <h1 class="text-3xl sm:text-4xl font-extrabold text-white">Тест не найден</h1>
+            <p class="mt-4 text-lg text-gray-400">
+                Возможно, ссылка устарела или была удалена.
+            </p>
+            <div class="mt-8">
+                <a href="/#create-now" class="inline-block bg-[var(--color-accent-primary)] text-white px-10 py-4 font-bold rounded-full transition-transform hover:scale-105 shadow-lg shadow-[var(--color-accent-primary)]/20">
+                    Создать свой тест
+                </a>
+            </div>
+        </main>
+
+    {% else %}
+
+        <div id="scrollProgress" class="fixed top-0 left-0 h-1 bg-[var(--color-accent-primary)] z-50" style="width: 0%;"></div>
+
+        <div class="max-w-3xl mx-auto p-4 sm:p-8">
+            <header class="sticky top-4 z-40 bg-[var(--color-surface)]/80 backdrop-blur-xl rounded-3xl border border-[var(--color-border)] p-4 shadow-2xl shadow-black/50">
+                <div class="flex justify-between items-center gap-4">
+                    <div class="flex-grow min-w-0">
+                        <h1 class="text-lg font-bold text-white truncate" title="{{ title }}">{{ title }}</h1>
+                        <p class="text-xs text-gray-400">{{ model_name }} • {{ view_count }} просмотров</p>
                     </div>
-
-                    <div class="action-buttons">
-                        <button class="ios-icon-button" id="shareBtn">
-                            <img src="{% static 'img/icon-share.png' %}" alt="">
+                    <div class="flex-shrink-0 flex items-center gap-2">
+                        <button data-action="share" class="h-10 w-10 flex items-center justify-center bg-black/20 rounded-full hover:bg-black/40 transition-colors" title="Скопировать ссылку">
+                            <i class="fas fa-share-alt text-gray-300"></i>
                         </button>
-                        <a href="{% url 'download-survey_pdf' survey_id %}" class="ios-icon-button primary">
-                            <img src="{% static 'img/icon-download-pdf.png' %}" alt="">
+                        <a href="{% url 'download-survey_pdf' survey_id %}" class="h-10 w-10 flex items-center justify-center bg-[var(--color-accent-primary)] rounded-full transition-transform hover:scale-105" title="Скачать PDF">
+                            <i class="fas fa-download text-white"></i>
                         </a>
                     </div>
                 </div>
 
-                {% if username == 0 %}
-                    <div class="auth-alert">
-                        <p>Чтобы видеть ответы, <a href="/register">зарегистрируйтесь</a></p>
-                    </div>
-                {% else %}
-                    <div class="answers-toggle-container">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="answersToggle" 
-                                {% if survey_view.show_answers %}checked{% endif %}
-                                {% if not is_creator %}disabled{% endif %}>
-                            <span class="slider round"></span>
+                {% if username != 0 and is_creator %}
+                    <div class="mt-4 pt-4 border-t border-[var(--color-border)] flex items-center gap-3">
+                        <label class="toggle-switch relative inline-block w-[52px] h-[28px]">
+                            
+                            <input type="checkbox" id="answersToggle" class="opacity-0 w-0 h-0" {% if show_answers %}checked{% endif %}>
+                            <span class="slider absolute cursor-pointer top-0 left-0 right-0 bottom-0 bg-gray-600 rounded-full transition-colors before:absolute before:content-[''] before:h-[20px] before:w-[20px] before:left-[4px] before:bottom-[4px] before:bg-white before:rounded-full before:transition-transform"></span>
                         </label>
-                        <span class="toggle-label">Показать ответы</span>
+                        <span class="text-sm font-semibold text-white">Показать ответы</span>
                     </div>
+                {% elif username == 0 %}
+                    {% if is_creator %}
+                        <div class="mt-3 text-center text-sm bg-red-500/10 text-red-400 p-2 rounded-2xl border border-red-500/20">
+                            Чтобы видеть ответы, <button data-trigger-modal="register" class="font-bold hover:underline">зарегистрируйтесь</button>.
+                        </div>
+                    {% else %}
+                    {% endif %}
                 {% endif %}
-            </div>
+            </header>
 
-            <!-- Контейнер контента с анимацией загрузки -->
-            <div class="content-container">
-                <div class="questions-list">
-                    {% for question in questions %}
-                    <div class="question-card">
-                        <div class="question-header">
-                            <span class="question-number">Вопрос {{ forloop.counter }}</span>
-                            <p class="question-text">{{ question.question }}</p>
-                        </div>
-                        
-                        <div class="options-list">
-                            {% for option in question.options %}
-                            <div class="option-item">
-                                <div class="option-text">{{ option }}</div>
-                            </div>
-                            {% endfor %}
-                        </div>
-
-                        {% if question.correct_answer %}
-                            {% if show_answers %}
-                                <div class="correct-answer">
-                                    <div class="correct-icon">
-                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                                            <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM10 17L5 12L6.41 10.59L10 14.17L17.59 6.58L19 8L10 17Z" fill="#32D74B"/>
-                                        </svg>
-                                    </div>
-                                    <div class="correct-text">Правильный ответ: <strong>{{ question.correct_answer }}</strong></div>
-                                </div>
-                            {% endif %}
-                        {% endif %}
+            <!-- СПИСОК ВОПРОСОВ -->
+            <div class="mt-8 space-y-4">
+                {% for question in questions %}
+                <div class="question-card bg-[var(--color-surface)] rounded-3xl border border-[var(--color-border)] p-5 animate-fadeIn">
+                    <div class="flex items-center gap-3 mb-3">
+                        <span class="px-3 py-1 text-xs font-semibold bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)] rounded-full">Вопрос {{ forloop.counter }}</span>
                     </div>
-                    {% endfor %}
+                    <p class="text-lg font-semibold text-white">{{ question.question }}</p>
+                    
+                    <div class="mt-4 space-y-3">
+                        {% for option in question.options %}
+                        <div class="flex items-start gap-3">
+                            <div class="flex-shrink-0 flex items-center justify-center h-7 w-7 bg-black/20 rounded-full border border-[var(--color-border)] text-sm font-semibold text-[var(--color-text-secondary)]">
+                                {{ forloop.counter }}
+                            </div>
+                            <div class="pt-0.5 text-white">
+                                {{ option }}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    {% if question.correct_answer %}
+                        <div class="correct-answer mt-4 p-3 bg-green-500/10 border border-green-500/20 rounded-2xl flex items-center gap-3" style="display: {% if show_answers %}flex{% else %}none{% endif %};">
+                            <i class="fas fa-check-circle text-green-400"></i>
+                            <p class="text-sm text-gray-300">Правильный ответ: <strong class="text-white">{{ question.correct_answer }}</strong></p>
+                        </div>
+                    {% endif %}
                 </div>
-
-                {% if username == 0 %}
-                    <div class="action-section">
-                        <div class="reg-block">
-                            <div class="reg-content">
-                                <h3 class="reg-title">Создай аккаунт, чтобы:</h3>
-                                <ul class="reg-benefits">
-                                    <li>• Проходить тесты сразу на платформе</li>
-                                    <li>• Получать фидбэк от нейросети*</li>
-                                    <li>• Скачивать тесты в PDF без водяных знаков*</li>
-                                    <li>• Загружать файлы с материалами (pdf, doc, txt)**</li>
-                                </ul>
-                            </div>
-                            <div class="action-buttons-grid">
-                                <a href="/register" class="action-button primary">
-                                    Зарегистрироваться
-                                </a>
-                                <div class="secondary-actions">
-                                    <button class="icon-action" id="shareBtn2">
-                                        <img src="{% static 'img/icon-share.png' %}" alt="Поделиться">
-                                    </button>
-                                    <a href="{% url 'download-survey_pdf' survey_id %}" class="icon-action download">
-                                        <img src="{% static 'img/icon-download-pdf.png' %}" alt="Скачать PDF">
-                                    </a>
-                                </div>
-                            </div>
-                            <div class="reg-footnotes">
-                                <p>* С тарифным планом Стандартный и выше. <a href="/available-plans">Подробнее</a></p>
-                                <p>** С тарифным планом Премиум и выше. <a href="/available-plans">Подробнее</a></p>
-                            </div>
-                        </div>
-                    </div>
-                {% else %}
-                    <div class="action-section">
-                        <div class="action-buttons-grid">
-                            <a href="{% url 'download-survey_pdf' survey_id %}" class="action-button primary">
-                                Скачать в PDF
-                            </a>
-                            <a href="/survey/{{ survey_id }}/" class="action-button secondary">
-                                Пройти тест
-                            </a>
-                            <button class="action-button tertiary" id="shareBtn2">
-                                Поделиться
-                            </button>
-                        </div>
-                    </div>
-                {% endif %}
+                {% endfor %}
             </div>
         </div>
 
-        <div class="scroll-progress" id="scrollProgress"></div>
-    </body>
-</html>
+        <footer class="mt-16 sm:mt-24">
+            <div class="max-w-3xl mx-auto px-4 sm:px-8">
+                <div class="bg-[var(--color-surface)] p-6 sm:p-8 rounded-3xl border border-[var(--color-border)]">
+                        {% if username == 0 %}
 
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const questions = document.querySelectorAll('.question-card');
-        questions.forEach((card, index) => {
-            card.style.animationDelay = `${index * 0.1}s`;
-            card.style.opacity = "0";
-        });
+                            {% if can_generate %}
+                                <a href="/#create-now" class="mt-6 block w-full text-center bg-[var(--color-accent-primary)] text-white p-5 rounded-2xl transition-transform hover:scale-[1.03] shadow-lg shadow-[var(--color-accent-primary)]/20">
+                                    <span class="text-lg font-bold">Создать еще один тест</span>
+                                    <span class="block text-sm opacity-70">Вернуться на главную и попробовать снова</span>
+                                </a>
+                            {% else %}
+                                <div class="mt-8 text-center bg-gradient-to-r from-[#211a32] to-[var(--color-surface)] p-8 rounded-3xl border border-[var(--color-border)]">
+                                    <div class="flex justify-center mb-4">
+                                        <div class="flex items-center justify-center h-16 w-16 rounded-full bg-red-500/10 border border-red-500/30">
+                                            <i class="fas fa-lock text-3xl text-red-400"></i>
+                                        </div>
+                                    </div>
+                                    
+                                    <h3 class="text-2xl font-bold text-white">Демо-лимит исчерпан</h3>
+                                    <p class="mt-2 text-gray-400 max-w-md mx-auto">
+                                        Вы использовали все бесплатные генерации. Но это только начало.
+                                    </p>
+                                    
+                                    <div class="mt-6 bg-black/20 p-4 rounded-xl">
+                                        <p class="text-lg font-semibold text-white">
+                                            Зарегистрируйтесь и получите <span class="text-[var(--color-accent-secondary)]">еще 10 тестов в подарок.</span>
+                                        </p>
+                                    </div>
+                                    
+                                    <a href="{% url 'register' %}" class="mt-6 inline-block w-full sm:w-auto bg-[var(--color-accent-secondary)] text-black px-10 py-4 text-base font-bold rounded-full transition-transform hover:scale-105 shadow-lg shadow-[var(--color-accent-secondary)]/20">
+                                        Зарегистрироваться и забрать подарок
+                                    </a>
+                                </div>
+                            {% endif %}
+
+                        {% endif %}
+
+                        <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <a href="{% url 'download-survey_pdf' survey_id %}" class="group flex items-center justify-center text-center p-4 bg-black/20 rounded-2xl border border-transparent hover:border-[var(--color-border)] transition-colors">
+                                <div class="flex items-center gap-3">
+                                    <i class="fas fa-download text-lg text-gray-400 group-hover:text-[var(--color-accent-primary)] transition-colors"></i>
+                                    <span class="font-semibold text-white">Скачать в PDF</span>
+                                </div>
+                            </a>
+                            <button data-action="share" class="group flex items-center justify-center text-center p-4 bg-black/20 rounded-2xl border border-transparent hover:border-[var(--color-border)] transition-colors">
+                                <div class="flex items-center gap-3">
+                                    <i class="fas fa-share-alt text-lg text-gray-400 group-hover:text-[var(--color-accent-primary)] transition-colors"></i>
+                                    <span class="font-semibold text-white">Скопировать ссылку</span>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+
+                <div class="mt-8 pt-8 border-t border-[var(--color-border)] flex flex-col sm:flex-row justify-between items-center text-xs text-gray-600 text-center">
+                    <p>&copy; 2024-2025 Летучка. Все права защищены.</p>
+                    <div class="mt-2 sm:mt-0">
+                        <a href="/docs/public-offer" class="hover:text-gray-400">Публичная оферта</a>
+                        <span class="mx-2">|</span>
+                        <a href="/docs/privacy-policy" class="hover:text-gray-400">Политика конфиденциальности</a>
+                    </div>
+                </div>
+            </div>
+        </footer>
         
-        setTimeout(() => {
-            questions.forEach(card => card.style.opacity = "1");
-        }, 100);
-        
-        // Индикатор прокрутки
-        const scrollProgress = document.getElementById('scrollProgress');
-        window.onscroll = function() {
-            const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
-            const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
-            const scrolled = (winScroll / height) * 100;
-            scrollProgress.style.width = `${scrolled}%`;
-        };
-
-        function copyBuffer(shareBtn) {
-            document.getElementById(shareBtn).addEventListener('click', async function() {
-                try {
-                    await navigator.clipboard.writeText(window.location.href);
-                    
-                    const message = document.createElement('div');
-                    message.textContent = 'Ссылка скопирована!';
-                    message.style.position = 'fixed';
-                    message.style.top = '120px';
-                    message.style.left = '50%';
-                    message.style.textAlign = 'center';
-                    message.style.width = '90%';
-                    message.style.maxWidth = '320px';
-                    message.style.transform = 'translateX(-50%)';
-                    message.style.backgroundColor = 'rgba(74, 84, 204, .8)';
-                    message.style.color = '#fff';
-                    message.style.padding = '14px 24px';
-                    message.style.borderRadius = '30px';
-                    message.style.fontWeight = '500';
-                    message.style.boxShadow = '0 4px 20px rgba(0,0,0,0.4)';
-                    message.style.zIndex = '1000';
-                    message.style.backdropFilter = 'blur(10px)';
-                    document.body.appendChild(message);
-                    
-                    setTimeout(() => {
-                        message.remove();
-                    }, 3000);
-                } catch (err) {
-                    console.log('Ошибка при попытке поделиться:', err);
-                }
-            });
-        }
-
-        copyBuffer('shareBtn');
-        copyBuffer('shareBtn2');
-        
-        document.querySelectorAll('.ios-icon-button, .option-item').forEach(element => {
-            element.addEventListener('touchstart', function() {
-                this.classList.add('active');
-            });
-            
-            element.addEventListener('touchend', function() {
-                this.classList.remove('active');
-            });
-        });
-    });
-</script>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const toggle = document.getElementById('answersToggle');
-        console.log(toggle);
-        if (!toggle) return;
-
-        // Устанавливаем начальное состояние
-        const initialShowAnswers = JSON.parse('{{ show_answers|lower|default:"false" }}');
-        console.log(initialShowAnswers);
-        toggle.checked = initialShowAnswers;
-        updateAnswersVisibility(initialShowAnswers);
-
-        console.log('NIGGERS', toggle.disabled);
-
-        // Обработчик для создателя теста
-        if (toggle.disabled === false) {
-            toggle.addEventListener('change', async function() {
-                const surveyId = window.location.pathname.split('/')[2];
+        <!-- ====================================================== -->
+        <!--         THE MODAL. THE WHOLE FUCKING THING.            -->
+        <!-- ====================================================== -->
+        <div id="register-modal" class="fixed inset-0 bg-black/80 z-50 hidden items-center justify-center p-4">
+            <div id="modal-content" class="bg-[var(--color-surface)] w-full max-w-md p-8 rounded-3xl border border-[var(--color-border)] transform scale-95 opacity-0 transition-all duration-300 backdrop-blur-xl">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-2xl font-bold text-white">Регистрация</h3>
+                    <button id="close-modal-btn" class="text-gray-500 hover:text-white text-2xl">&times;</button>
+                </div>
+                <p class="mt-2 text-sm text-gray-400">Создайте аккаунт, чтобы видеть ответы и сохранять тесты.</p>
                 
-                try {
-                    const response = await fetch(`/api/surveys/${surveyId}/toggle-answers/`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRFToken': '{{ csrf_token }}'
-                        },
-                        body: JSON.stringify({show_answers: this.checked})
-                    });
+                <form id="quick-register-form" class="mt-6 space-y-4" method="POST" action="/api/quick-register/">
+                    {% csrf_token %}
+                    <div>
+                        <label for="id_email" class="text-sm font-semibold text-gray-300">Ваш Email</label>
+                        <input type="email" name="email" id="id_email" required class="mt-1 w-full p-3 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]">
+                    </div>
+                    <div>
+                        <label for="id_password1" class="text-sm font-semibold text-gray-300">Придумайте пароль</label>
+                        <input type="password" name="password1" id="id_password1" required class="mt-1 w-full p-3 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]">
+                    </div>
+                    <div>
+                        <label for="id_password2" class="text-sm font-semibold text-gray-300">Повторите пароль</label>
+                        <input type="password" name="password2" id="id_password2" required class="mt-1 w-full p-3 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]">
+                    </div>
+
+                    <div class="pt-2">
+                        <label class="flex items-start gap-3 cursor-pointer">
+                            <input type="checkbox" id="terms-checkbox" class="mt-1 h-4 w-4 rounded border-gray-500 bg-gray-700 text-[var(--color-accent-primary)] focus:ring-[var(--color-accent-primary)]">
+                            <span class="text-xs text-gray-400">
+                                Я принимаю условия
+                                <a href="/docs/public-offer" target="_blank" rel="noopener noreferrer" class="text-[var(--color-accent-primary)] hover:underline">Публичной оферты</a>
+                                и
+                                <a href="/docs/privacy-policy" target="_blank" rel="noopener noreferrer" class="text-[var(--color-accent-primary)] hover:underline">Политики конфиденциальности</a>.
+                            </span>
+                        </label>
+                    </div>
                     
-                    const data = await response.json();
+                    <p id="form-error" class="text-red-500 text-sm hidden"></p>
                     
-                    if (data.status === 'success') {
-                        updateAnswersVisibility(data.show_answers);
-                    } else {
-                        toggle.checked = !toggle.checked;
+                    <button type="submit" id="submit-register-btn" disabled 
+                            class="w-full py-3 font-bold text-center rounded-full bg-[var(--color-accent-primary)] text-white transition-opacity duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                            data-loading-text="Создаем аккаунт...">
+                        Зарегистрироваться
+                    </button>
+                </form>
+            </div>
+        </div>
+    {% endif %}
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script>
+        function copyLinkAndNotify() {
+            navigator.clipboard.writeText(window.location.href).then(function() {
+                const message = $('<div/>', {
+                    text: 'Ссылка скопирована!',
+                    css: {
+                        position: 'fixed', top: '20px', left: '50%', transform: 'translateX(-50%)',
+                        background: 'rgba(30, 24, 48, 0.9)', backdropFilter: 'blur(10px)',
+                        color: 'white', padding: '12px 24px', borderRadius: '9999px',
+                        border: '1px solid var(--color-border)', zIndex: '1000',
+                        opacity: '0', transition: 'opacity 0.3s ease'
                     }
-
-                    if (!toggle.cheched) {
-                        window.location.reload();
-                    }
-                } catch (error) {
-                    console.error('Error:', error);
-                    toggle.checked = !toggle.checked;
-                }
-            });
-        }
-
-        function updateAnswersVisibility(show) {
-            document.querySelectorAll('.correct-answer').forEach(elem => {
-                elem.style.display = show ? 'flex' : 'none';
-            });
-        }
-    });
-</script>
-
-<style>
-    .auth-required-message {
-        color: #ff6b6b;
-        text-align: center;
-    }
-
-    .register-link {
-        display: inline-block;
-        margin-top: 10px;
-        padding: 8px 16px;
-        background: #7b5ce4;
-        color: white;
-        border-radius: 5px;
-        text-decoration: none;
-        transition: background 0.3s;
-    }
-
-    .register-link:hover {
-        background: #6a4bc9;
-    }
-
-    .toggle-switch {
-        position: relative;
-        display: inline-block;
-        width: 60px;
-        height: 34px;
-        vertical-align: middle;
-    }
-
-    .toggle-switch input {
-        opacity: 0;
-        width: 0;
-        height: 0;
-    }
-
-    .slider {
-        position: absolute;
-        cursor: pointer;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background-color: #ccc;
-        transition: .4s;
-        border-radius: 34px;
-    }
-
-    .slider:before {
-        position: absolute;
-        content: "";
-        height: 26px;
-        width: 26px;
-        left: 4px;
-        bottom: 4px;
-        background-color: white;
-        transition: .4s;
-        border-radius: 50%;
-    }
-
-    input:checked + .slider {
-        background-color: #7b5ce4;
-    }
-
-    input:checked + .slider:before {
-        transform: translateX(26px);
-    }
-
-    input:disabled + .slider {
-        opacity: 0.7;
-        cursor: not-allowed;
-    }
-
-    .toggle-label {
-        margin-left: 10px;
-        vertical-align: middle;
-        color: var(--text-primary);
-    }
-</style>
-
-<div class="blur-overlays">
-    <div class="blob one"></div>
-    <div class="blob two"></div>
-    <div class="blob three"></div>
-</div>
-
-<style>
-    :root {
-        --primary-color: #616DF0;
-        --primary-hover: #8D9CFF;
-        --secondary-color: #7b5ce4;
-        --tertiary-color: #4A4A4A;
-        --dark-0: #000000;
-        --dark-1: #121212;
-        --dark-2: #1E1E1E;
-        --dark-3: #252526;
-        --text-primary: #F5F5F5;
-        --text-secondary: #AEAEB2;
-        --card-bg: rgba(36, 31, 48, 0.3);
-        --accent-bg: rgba(43, 51, 164, 0.15);
-        --accent-border: rgba(110, 120, 240, 0.2);
-        --shadow-primary: 0 4px 20px rgba(0, 0, 0, 0.4);
-        --shadow-inner: inset 0 1px 0 rgba(255, 255, 255, 0.05);
-        --transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    body {
-        background: var(--dark-1);
-        color: var(--text-primary);
-        font-family: 'Namu Pro', sans-serif;
-        line-height: 1.5;
-        margin: 0;
-        padding: 0;
-        overflow-x: hidden;
-        -webkit-font-smoothing: antialiased;
-    }
-
-    .bg-body {
-        background-image: url("{% static 'img/bg-gradient-demo.webp' %}");
-        background-position: 0 center;
-    }
-
-    .answers-toggle-container {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin: 12px 0 0 0;
-    }
-    
-    .toggle-switch {
-        position: relative;
-        display: inline-block;
-        width: 60px;
-        height: 34px;
-    }
-    
-    .toggle-switch input {
-        opacity: 0;
-        width: 0;
-        height: 0;
-    }
-    
-    .slider {
-        position: absolute;
-        cursor: pointer;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background-color: #ccc;
-        transition: .4s;
-        border-radius: 34px;
-    }
-    
-    .slider:before {
-        position: absolute;
-        content: "";
-        height: 26px;
-        width: 26px;
-        left: 4px;
-        bottom: 4px;
-        background-color: white;
-        transition: .4s;
-        border-radius: 50%;
-    }
-    
-    input:checked + .slider {
-        background-color: #7b5ce4;
-    }
-    
-    input:checked + .slider:before {
-        transform: translateX(26px);
-    }
-    
-    .toggle-label {
-        font-size: 16px;
-        color: var(--text-primary);
-    }
-    
-    input:disabled + .slider {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-
-    /* Стили для блока действий */
-    .action-section {
-        margin-top: 24px;
-    }
-
-    .action-buttons-grid {
-        display: flex;
-        grid-template-columns: 1fr;
-        gap: 12px;
-        justify-content: center;
-        flex-direction: column;
-    }
-
-    .action-button {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 14px 48px;
-        border-radius: 14px;
-        text-align: center;
-        text-decoration: none;
-        font-weight: 600;
-        font-size: 1rem;
-        transition: all 0.2s ease;
-        border: none;
-        cursor: pointer;
-    }
-
-    .action-button.primary {
-        background: linear-gradient(45deg, var(--secondary-color), #6f59f9);
-        color: white;
-        box-shadow: 0 6px 18px rgba(123, 92, 228, 0.25);
-    }
-
-    .action-button.secondary {
-        background: rgba(255, 255, 255, 0.1);
-        color: var(--text-primary);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .action-button.tertiary {
-        background: transparent;
-        color: var(--text-primary);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .action-button:hover {
-        transform: translateY(-2px);
-    }
-
-    .action-button.primary:hover {
-        background: linear-gradient(45deg, #6f59f9, var(--secondary-color));
-        box-shadow: 0 8px 24px rgba(123, 92, 228, 0.35);
-    }
-
-    .action-button.secondary:hover {
-        background: rgba(255, 255, 255, 0.15);
-    }
-
-    .action-button.tertiary:hover {
-        background: rgba(255, 255, 255, 0.05);
-    }
-
-    /* Стили для блока регистрации */
-    .reg-block {
-        background: rgba(100, 100, 100, 0.3);
-        border-radius: 20px;
-        padding: 24px;
-        border: 1px solid var(--secondary-color);
-        margin: 0;
-    }
-
-    .reg-content, .reg-footnotes {
-        width: fit-content;
-        margin: 0 auto;
-    }
-
-    .reg-content {
-        margin-bottom: 18px;
-    }
-
-    .reg-title {
-        color: #fff;
-        font-size: 1.25rem;
-        margin-bottom: 12px;
-        text-align: center;
-    }
-
-    .reg-benefits {
-        list-style: none;
-        padding: 0;
-        color: #ccc;
-        font-size: 0.95rem;
-        line-height: 1.5;
-        margin-bottom: 20px;
-    }
-
-    .reg-footnotes {
-        color: #888;
-        font-size: 0.8em;
-        margin-top: 12px;
-    }
-
-    .reg-footnotes p {
-        margin: 6px 0 0 0;
-    }
-
-    .reg-footnotes a {
-        color: var(--secondary-color);
-        text-decoration: none;
-    }
-
-    /* Стили для иконок действий */
-    .secondary-actions {
-        display: flex;
-        gap: 12px;
-        margin: 12px auto;
-        justify-content: center;
-    }
-
-    .icon-action {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 48px;
-        height: 48px;
-        border-radius: 12px;
-        background: rgba(255, 255, 255, 0.1);
-        border: none;
-        cursor: pointer;
-        transition: all 0.2s ease;
-    }
-
-    .icon-action.download {
-        background: linear-gradient(45deg, var(--secondary-color), #6f59f9);
-    }
-
-    .icon-action:hover {
-        transform: scale(1.05);
-    }
-
-    .icon-action img {
-        width: 24px;
-        height: 24px;
-    }
-
-    .titles hr {
-        margin: 8px 0 0 0;
-        width: 50%;
-        background-color: #5e5e5e;
-    }
-
-    .ios-dark-container {
-        max-width: 800px;
-        margin: 0 auto;
-        position: relative;
-    }
-
-    /* Sticky Header (For Mobile Navigation) */
-    .sticky-header {
-        position: sticky;
-        top: 8px;
-        z-index: 100;
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: 24px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(24px);
-        -webkit-backdrop-filter: blur(24px);
-        margin: 0 auto;
-        width: 96%;
-        max-width: 1200px;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-
-        padding: 16px;
-    }
-
-    .header-content {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .header-left {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-    }
-
-    .survey-title {
-        font-size: 20px;
-        font-weight: 600;
-        margin: 0;
-        letter-spacing: -0.2px;
-        max-width: 70vw;
-        overflow: hidden;
-        white-space: nowrap;
-        text-overflow: ellipsis;
-    }
-
-    .survey-subtitle {
-        font-size: 13px;
-        color: var(--text-secondary);
-        margin: 0;
-        font-weight: 400;
-    }
-
-    .action-buttons {
-        display: flex;
-        gap: 12px;
-    }
-
-    @media (max-width: 768px) {
-        .action-buttons-grid {
-        }
-    }
-
-    .ios-icon-button {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 16px;
-        border: none;
-        width: 64px;
-        height: 64px;
-        color: var(--text-primary);
-        font-size: 18px;
-        cursor: pointer;
-        transition: var(--transition);
-        position: relative;
-        overflow: hidden;
-    }
-
-    .ios-icon-button::after {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: linear-gradient(rgba(255, 255, 255, 0.1), transparent);
-        pointer-events: none;
-    }
-
-    .ios-icon-button.primary {
-        background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
-        color: white;
-        box-shadow: 0 5px 15px rgba(80, 95, 240, 0.4), var(--shadow-inner);
-    }
-
-    .ios-icon-button:hover {
-        transform: scale(1.05);
-        background: var(--dark-3);
-    }
-
-    .ios-icon-button.primary:hover {
-        transform: scale(1.05);
-        background: linear-gradient(135deg, var(--primary-hover), var(--primary-color));
-    }
-
-    .ios-icon-button img {
-        width: 44px;
-        height: 44px;
-    }
-
-    /* Scroll Progress Indicator */
-    .scroll-progress {
-        position: fixed;
-        top: 0;
-        left: 0;
-        height: 3px;
-        background: linear-gradient(to right, var(--primary-color), var(--primary-hover));
-        transform-origin: left;
-        z-index: 101;
-        width: 0%;
-        transition: width 0.1s linear;
-    }
-
-    /* Content Container with Load Animation */
-    .content-container {
-        padding: 24px 16px;
-        animation: fadeIn 0.4s ease-out;
-    }
-
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-
-    .questions-list {
-        display: flex;
-        flex-direction: column;
-        gap: 18px;
-    }
-
-    .question-card {
-        background: var(--card-bg);
-        backdrop-filter: blur(24px);
-        -webkit-backdrop-filter: blur(24px);
-        border-radius: 20px;
-        padding: 20px;
-        border: 0.5px solid var(--accent-border);
-        box-shadow: var(--shadow-primary), inset 0 0 0 1px rgba(255, 255, 255, 0.02);
-        transition: var(--transition);
-        animation: cardAppear 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
-    }
-
-    @keyframes cardAppear {
-        0% { opacity: 0; transform: translateY(15px); }
-        100% { opacity: 1; transform: translateY(0); }
-    }
-
-    .question-card:hover {
-        transform: translateY(-3px);
-    }
-
-    .question-header {
-        margin-bottom: 18px;
-        position: relative;
-    }
-
-    .question-header::after {
-        content: '';
-        position: absolute;
-        bottom: -8px;
-        left: 0;
-        right: 0;
-        height: 1px;
-        background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);
-    }
-
-    .question-number {
-        display: inline-block;
-        font-size: 13px;
-        font-weight: 600;
-        color: var(--primary-color);
-        background: rgba(75, 85, 235, 0.12);
-        padding: 5px 12px;
-        border-radius: 20px;
-        margin-bottom: 12px;
-    }
-
-    .question-text {
-        font-size: 18px;
-        font-weight: 500;
-        margin: 0;
-        line-height: 1.4;
-        color: var(--text-primary);
-    }
-
-    .options-list {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        margin-top: 16px;
-    }
-
-    .option-item {
-        display: flex;
-        align-items: center;
-        padding: 14px 16px;
-        background: rgba(40, 40, 40, 0.1);
-        border: 1px solid var(--accent-border);
-        border-radius: 12px;
-        transition: var(--transition);
-        overflow: hidden;
-        position: relative;
-    }
-
-    .option-item::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
-        transition: all 0.6s ease;
-    }
-
-    .option-item:hover::before {
-        left: 100%;
-    }
-
-    .option-item:hover {
-        transform: translateX(5px);
-    }
-
-    .option-radio {
-        width: 22px;
-        height: 22px;
-        border: 1.5px solid #3A3A3C;
-        border-radius: 50px;
-        margin-right: 14px;
-        position: relative;
-        background: rgba(30, 30, 30, 0.7);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: var(--transition);
-    }
-
-    .option-radio .radio-inner {
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        background-color: transparent;
-        transition: var(--transition);
-    }
-
-    .option-text {
-        font-size: 16px;
-        color: var(--text-primary);
-        font-weight: 400;
-        letter-spacing: -0.1px;
-    }
-
-    .correct-answer {
-        display: flex;
-        align-items: center;
-        margin-top: 20px;
-        padding: 14px;
-        background: rgba(50, 215, 75, 0.1);
-        border-radius: 12px;
-        gap: 10px;
-        border: 1px solid rgba(50, 215, 75, 0.12);
-        animation: pulse 2s infinite;
-    }
-
-    @keyframes pulse {
-        0% { box-shadow: 0 0 0 0 rgba(50, 215, 75, 0.1); }
-        70% { box-shadow: 0 0 0 6px rgba(50, 215, 75, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(50, 215, 75, 0); }
-    }
-
-    .correct-icon {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        position: relative;
-    }
-
-    .correct-text {
-        font-size: 15px;
-        color: #32D74B;
-        font-weight: 500;
-    }
-
-    .correct-text strong {
-        color: var(--text-primary);
-    }
-
-    /* Mobile Optimizations */
-    @media (max-width: 768px) {
-        .ios-dark-container {
-            padding: 0;
-        }
-
-        .sticky-header {
-            padding: 12px 16px;
-            box-shadow: 0 1px 12px rgba(0,0,0,0.3);
-            width: 90%;
-        }
-
-        .header-left {
-            width: 70%;
-        }
-
-        .content-container {
-            padding: 16px;
-        }
-
-        .survey-title {
-            font-size: 18px;
-        }
-
-        .survey-subtitle {
-            font-size: 12px;
-        }
-
-        .action-buttons {
-            gap: 8px;
-        }
-
-        .ios-icon-button {
-            width: 36px;
-            height: 36px;
-            font-size: 15px;
-        }
-
-        .ios-icon-button img {
-            width: 32px;
-            height: 32px;
-        }
-
-        .question-card {
-            padding: 16px;
-            border-radius: 14px;
-        }
-
-        .question-text {
-            font-size: 17px;
-        }
-
-        .option-text {
-            font-size: 15px;
-        }
-
-        .option-item {
-            padding: 13px 16px;
-        }
-    }
-
-    @media (max-width: 480px) {
-        .sticky-header {
-            padding: 10px 14px;
-        }
-
-        .content-container {
-            padding: 12px;
-        }
-
-        .survey-title {
-            font-size: 16px;
-        }
-
-        .question-number {
-            font-size: 12px;
-            padding: 4px 10px;
-        }
-
-        .question-text {
-            font-size: 16px;
-        }
-    }
-
-    footer {
-        margin-top: 24px;
-    }
-    
-    .blur-overlays {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        z-index: -1;
-        overflow: hidden;
-    }
-    
-    .blur-overlays .blob {
-        position: absolute;
-        width: 500px;
-        height: 500px;
-        border-radius: 50%;
-        filter: blur(120px);
-        opacity: 0.1;
-        background: linear-gradient(120deg, var(--primary-color), #a7b0ff, #9ca7f9);
-        animation: blobMove 15s infinite linear;
-    }
-    
-    .blob.one {
-        top: -200px;
-        right: -250px;
-        animation-delay: 0s;
-    }
-    
-    .blob.two {
-        bottom: -150px;
-        left: -200px;
-        animation-delay: -5s;
-        opacity: 0.08;
-    }
-    
-    .blob.three {
-        top: 30%;
-        left: 20%;
-        width: 300px;
-        height: 300px;
-        animation-delay: -10s;
-        opacity: 0.05;
-    }
-    
-    @keyframes blobMove {
-        0%, 100% { transform: translate(0, 0) rotate(0); }
-        25% { transform: translate(50px, -50px) rotate(60deg); }
-        50% { transform: translate(0px, 50px) rotate(120deg); }
-        75% { transform: translate(-50px, 0px) rotate(180deg); }
-    }
-
-    /* Стили для счетчика просмотров */
-    .view-counter {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 6px 12px;
-        border-radius: 24px;
-        background: rgba(40, 40, 50, 0.3);
-        margin-right: 12px;
-        position: relative;
-        overflow: hidden;
-    }
-    .view-counter::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: linear-gradient(rgba(255,255,255,0.03), transparent);
-        pointer-events: none;
-    }
-    .view-counter i {
-        color: var(--primary-hover);
-        font-size: 16px;
-    }
-    .counter-display {
-        font-size: 16px;
-        font-weight: 600;
-        color: var(--text-primary);
-        min-width: 20px;
-        text-align: center;
-        transition: all 0.3s ease;
-    }
-    .counter-display.counter-pulse {
-        animation: counterPulse 0.5s ease-in-out;
-        color: var(--primary-color);
-    }
-    @keyframes counterPulse {
-        0% { transform: scale(1); }
-        50% { transform: scale(1.5); }
-        100% { transform: scale(1); }
-    }
-    .counter-label {
-        font-size: 12px;
-        color: var(--text-secondary);
-        white-space: nowrap;
-    }
-    @media (max-width: 768px) {
-        .view-counter {
-            position: absolute;
-            bottom: -40px;
-            left: 90px;
-            gap: 6px;
-            padding: 5px 10px;
-        }
-        
-        .counter-label {
-            display: none;
-        }
-    }
-
-    .action-buttons-full {
-        display: block;
-        background: linear-gradient(45deg, #6f59f9, #5f45e0);
-        color: white;
-        padding: 14px 28px;
-        border-radius: 14px;
-        text-align: center;
-        text-decoration: none;
-        font-weight: 600;
-        font-size: 1rem;
-        transition: transform 0.2s, background 0.2s;
-        box-shadow: 0 6px 18px rgba(123, 92, 228, 0.25);"
-    }
-</style>
-
-<script>
-    // Система регистрации просмотров
-    async function registerView(surveyId) {
-        try {
-            const hashedIP = await generateHash();
-            const response = await fetch(`/register-view/${surveyId}/`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': '{{ csrf_token }}'
-                },
-                body: JSON.stringify({ hash: hashedIP })
-            });
-            
-            const data = await response.json();
-            if (data.success && data.new_view) {
-                // Анимированное обновление счетчика
-                const counterElement = document.getElementById('viewCounter');
-                const targetCount = parseInt(counterElement.textContent) + 1;
+                }).appendTo('body');
                 
-                let current = parseInt(counterElement.textContent);
-                const counterInterval = setInterval(() => {
-                    current += 1;
-                    counterElement.textContent = current;
-                    if (current >= targetCount) {
-                        clearInterval(counterInterval);
-                    }
-                }, 50);
-                
-                // Добавляем мигание
-                counterElement.classList.add('counter-pulse');
+                setTimeout(() => message.css('opacity', '1'), 10);
                 setTimeout(() => {
-                    counterElement.classList.remove('counter-pulse');
-                }, 500);
-            }
-        } catch (error) {
-            console.error('Ошибка регистрации просмотра:', error);
-        }
-    }
-    // Генерируем уникальный хеш для пользователя
-    async function generateHash() {
-        try {
-            const ipInfo = await fetch('https://api.ipify.org/?format=json');
-            const ipData = await ipInfo.json();
-            const userIp = ipData.ip;
-            
-            // Хэшируем IP с дополнительными уникальными идентификаторами
-            const uniqueString = `${userIp}-${navigator.userAgent}-${screen.width}x${screen.height}`;
-            const encoder = new TextEncoder();
-            const data = encoder.encode(uniqueString);
-            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-            const hashArray = Array.from(new Uint8Array(hashBuffer));
-            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-        } catch {
-            // Резервный метод, если IP не получен
-            return 'fallback_' + Math.random().toString(36).substring(2, 12);
-        }
-    }
-    // Регистрируем просмотр при загрузке страницы
-    document.addEventListener('DOMContentLoaded', function() {
-        registerView('{{ survey_id }}');
-    });
-</script>
+                    message.css('opacity', '0');
+                    setTimeout(() => message.remove(), 300);
+                }, 2000);
 
-{% include 'footer.html' %}
+            }, function(err) {
+                console.error('Ошибка копирования: ', err);
+            });
+        }
+
+        $(document).ready(function() {
+            const scrollProgress = $('#scrollProgress');
+            $(window).on('scroll', function() {
+                const winScroll = $(this).scrollTop();
+                const height = $(document).height() - $(window).height();
+                const scrolled = (winScroll / height) * 100;
+                scrollProgress.css('width', scrolled + '%');
+            });
+
+            // --- КНОПКА "ПОДЕЛИТЬСЯ" ---
+            $('button[data-action="share"]').on('click', copyLinkAndNotify);
+
+            const toggle = $('#answersToggle');
+            if (toggle.length) {
+                if (!toggle.is(':disabled')) {
+                    toggle.on('change', async function() {
+                        const surveyId = '{{ survey_id }}';
+                        const showAnswers = this.checked;
+
+                        try {
+                            const response = await fetch(`/api/surveys/${surveyId}/toggle-answers/`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                                body: JSON.stringify({ show_answers: showAnswers })
+                            });
+                            const data = await response.json();
+
+                            if (data.status === 'success') {
+                                window.location.reload();
+                            } else {
+                                this.checked = !showAnswers;
+                            }
+                        } catch (error) {
+                            this.checked = !showAnswers;
+                        }
+                    });
+                }
+            }
+
+            // --- ЛОГИКА МОДАЛКИ ---
+            const modal = $('#register-modal');
+            const openModalButtons = $('button[data-trigger-modal="register"]');
+            const closeModalBtn = $('#close-modal-btn');
+            const modalContent = $('#modal-content');
+            const form = $('#quick-register-form');
+            const errorDisplay = $('#form-error');
+            const termsCheckbox = $('#terms-checkbox');
+            const submitBtn = $('#submit-register-btn');
+            const originalBtnText = submitBtn.text();
+            const loadingBtnText = submitBtn.data('loading-text');
+
+            // --- ФУНКЦИИ ОТКРЫТИЯ/ЗАКРЫТИЯ ---
+            const openModal = () => {
+                modal.removeClass('hidden').addClass('flex');
+                setTimeout(() => {
+                    modalContent.removeClass('scale-95 opacity-0').addClass('scale-100 opacity-100');
+                }, 10);
+            };
+
+            const closeModal = () => {
+                modalContent.addClass('scale-95 opacity-0').removeClass('scale-100 opacity-100');
+                setTimeout(() => {
+                    modal.addClass('hidden').removeClass('flex');
+                }, 300);
+            };
+
+            // --- ОБРАБОТЧИКИ СОБЫТИЙ ---
+
+            // Кнопки, которые открывают модалку
+            openModalButtons.on('click', openModal);
+
+            // Кнопка "крестик" для закрытия
+            closeModalBtn.on('click', closeModal);
+
+            // Закрытие по клику на темный фон
+            modal.on('click', function(e) {
+                if (e.target === this) {
+                    closeModal();
+                }
+            });
+
+            // Галочка согласия
+            termsCheckbox.on('change', function() {
+                submitBtn.prop('disabled', !this.checked);
+            });
+            
+            function getCookie(name) {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            }
+
+            openModalButtons.on('click', openModal);
+            closeModalBtn.on('click', closeModal);
+            modal.on('click', function(e) { if (e.target === this) closeModal(); });
+
+            termsCheckbox.on('change', function() { submitBtn.prop('disabled', !this.checked); });
+            
+            // 3. "УМНЫЙ ENTER"
+            form.on('keydown', 'input', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+
+                    const inputs = form.find('input:not([type="hidden"])');
+                    const currentIndex = inputs.index(this);
+                    const nextIndex = currentIndex + 1;
+
+                    if (nextIndex < inputs.length) {
+                        inputs.eq(nextIndex).focus();
+                    } else {
+                        if (!submitBtn.is(':disabled')) {
+                            form.submit();
+                        }
+                    }
+                }
+            });
+
+            form.on('submit', function(event) {
+                event.preventDefault();
+                errorDisplay.hide().text('');
+
+                const password = $('input[name="password1"]', this).val();
+                const password2 = $('input[name="password2"]', this).val();
+                if (password !== password2) {
+                    errorDisplay.text('Пароли не совпадают.').show();
+                    return;
+                }
+
+                const csrftoken = getCookie('csrftoken');
+
+                $.ajax({
+                    type: 'POST',
+                    url: '/api/quick-register/',
+                    headers: {
+                        'X-CSRFToken': csrftoken
+                    },
+                    data: form.serialize(),
+                    
+                    beforeSend: function() {
+                        submitBtn.prop('disabled', true);
+                        submitBtn.html(`
+                            <span class="flex items-center justify-center">
+                                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <span>${loadingBtnText}</span>
+                            </span>
+                        `);
+                    },
+                    success: function(response) {
+                        window.location.reload();
+                    },
+                    error: function(xhr) {
+                        let errorMessage = 'Произошла ошибка. Попробуйте снова.';
+                        if (xhr.responseJSON && xhr.responseJSON.error) {
+                            errorMessage = xhr.responseJSON.error;
+                        }
+                        errorDisplay.text(errorMessage).show();
+                    },
+                    complete: function(xhr, status) {
+                        if (status !== 'success' || !xhr.responseJSON.redirect) {
+                            submitBtn.prop('disabled', !termsCheckbox.is(':checked'));
+                            submitBtn.text(originalBtnText);
+                        }
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

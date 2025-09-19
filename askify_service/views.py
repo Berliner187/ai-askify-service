@@ -482,7 +482,7 @@ class ManageSurveysView(View):
                     end_time = time.perf_counter()
                     response_time_ms = int((end_time - start_time) * 1000)
                 else:
-                    return JsonResponse({'error': 'Произошла ошибка :(\nПожалуйста, попробуйте позже'}, status=429)
+                    return JsonResponse({'error': f'Произошла ошибка :( {generated_text}'}, status=429)
 
             except Exception as fail:
                 tracer_l.error(f"{request.user.username} --- {fail}")
@@ -1420,20 +1420,41 @@ def download_results_pdf(request, survey_id):
 
 def preview_test(request, survey_id):
     if not is_valid_uuid(survey_id):
-        return JsonResponse({'message': 'Неверный ID теста'})
+        context = {
+            'not_found': True,
+            'survey_id': None,
+            'page_title': 'Тест не найден | Летучка',
+        }
+        return render(request, 'demo-view.html', context, status=404)
 
     survey = Survey.objects.filter(survey_id=survey_id).first()
+    if (not survey) or (not is_valid_uuid(survey_id)):
+        context = {
+            'not_found': True,
+            'page_title': 'Тест не найден | Летучка',
+        }
+        return render(request, 'demo-view.html', context, status=404)
 
-    client_ip = get_client_ip(request)
+    current_user_id_staff = None
+    is_authenticated = request.user.is_authenticated
 
-    auth_user = AuthUser.objects.filter(hash_user_id=client_ip).first()
-    main_auth_user = AuthUser.objects.filter(id_staff=get_staff_id(request)).first()
+    if is_authenticated:
+        current_user_id_staff = get_staff_id(request)
+    else:
+        client_ip = get_client_ip(request)
+        anonymous_user = AuthUser.objects.filter(hash_user_id=client_ip).first()
+        if anonymous_user:
+            current_user_id_staff = anonymous_user.id_staff
 
     is_creator = False
-    if auth_user:
+    if current_user_id_staff and current_user_id_staff == survey.id_staff:
         is_creator = True
-    if main_auth_user:
-        is_creator = True
+
+    can_generate = True
+    if not is_authenticated and current_user_id_staff:
+        total_demo_surveys_count = Survey.objects.filter(id_staff=current_user_id_staff).count()
+        if total_demo_surveys_count >= 2:
+            can_generate = False
 
     if survey:
         questions = survey.get_questions()
@@ -1448,7 +1469,9 @@ def preview_test(request, survey_id):
             'model_name': f"{'Сгенерировано ' + survey.model_name.upper().replace('O', 'o') if survey.model_name else 'Сгенерировано в Летучке'}",
             'view_count': view_count,
             'is_creator': is_creator,
-            'show_answers': survey.show_answers
+            'show_answers': survey.show_answers,
+            'can_generate': can_generate,
+            'debug': f"{DEBUG}".lower()
         }
 
         return render(request, 'demo-view.html', json_response)
@@ -1458,6 +1481,7 @@ def preview_test(request, survey_id):
         'title': 'Создать тест при помощи нейросети | Создать тест в Летучке',
         'survey_id': survey_id,
         'username': request.user.username if request.user.is_authenticated else None,
+        'debug': f"{DEBUG}".lower()
     }
 
     return render(request, 'demo-view.html', context)
