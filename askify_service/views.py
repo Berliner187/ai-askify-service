@@ -115,6 +115,7 @@ def index(request):
     context = {
         'username': request.user.username if request.user.is_authenticated else 0,
         'total_users': calculate_total_users(start_date, 1200),
+        'debug': f'{DEBUG}'.lower()
     }
 
     return render(request, 'askify_service/index.html', context)
