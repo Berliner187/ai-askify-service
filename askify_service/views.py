@@ -115,7 +115,7 @@ def index(request):
     context = {
         'username': request.user.username if request.user.is_authenticated else 0,
         'total_users': calculate_total_users(start_date, 1200),
-        'debug': f'{DEBUG}'.lower()
+        'debug': DEBUG
     }
 
     return render(request, 'askify_service/index.html', context)
@@ -1481,7 +1481,7 @@ def preview_test(request, survey_id):
         'title': 'Создать тест при помощи нейросети | Создать тест в Летучке',
         'survey_id': survey_id,
         'username': request.user.username if request.user.is_authenticated else None,
-        'debug': f"{DEBUG}".lower()
+        'debug': DEBUG
     }
 
     return render(request, 'demo-view.html', context)
