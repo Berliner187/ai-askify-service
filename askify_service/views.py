@@ -1450,6 +1450,10 @@ def preview_test(request, survey_id):
     if current_user_id_staff and current_user_id_staff == survey.id_staff:
         is_creator = True
 
+    anonymous_user = AuthUser.objects.filter(hash_user_id=get_client_ip(request)).first()
+    if anonymous_user:
+        is_creator = True
+
     can_generate = True
     if not is_authenticated and current_user_id_staff:
         total_demo_surveys_count = Survey.objects.filter(id_staff=current_user_id_staff).count()
