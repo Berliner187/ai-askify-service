@@ -2018,6 +2018,26 @@ def admin_stats(request):
 
         failed_count = Payment.objects.filter(status='failed').count()
 
+        telegram_users_count = AuthUser.objects.filter(
+            Q(hash_user_id__isnull=True) | Q(hash_user_id__exact=''),
+            email__exact=''
+        ).count()
+
+        email_users_count = AuthUser.objects.exclude(email__exact='').count()
+
+        thirty_days_ago = timezone.now() - timedelta(days=30)
+        active_users_monthly = AuthUser.objects.filter(last_login__gte=thirty_days_ago).count()
+        wau_weekly_active_users = AuthUser.objects.filter(last_login__gte=timezone.now() - timedelta(days=7)).count()
+
+        total_users_count = AuthUser.objects.all().count()
+        conversion_rate_to_paid = (Payment.objects.filter(status='completed').values(
+            'staff_id').distinct().count() / total_users_count) * 100 if total_users_count > 0 else 0
+
+        daily_active_users = AuthUser.objects.filter(last_login__gte=timezone.now() - timedelta(days=1)).count()
+        stickiness_ratio = (daily_active_users / active_users_monthly) * 100 if active_users_monthly > 0 else 0
+
+        total_api_calls_today = APIKeyUsage.objects.filter(timestamp__date=timezone.now().date()).count()
+
         context = {
             'username': request.user.username,
             'selected_users': selected_users,
@@ -2031,6 +2051,13 @@ def admin_stats(request):
             'average_check': average_check,
             'payment_conversion': payment_conversion,
             'failed_payments_count': failed_count,
+            'telegram_users_count': telegram_users_count,
+            'email_users_count': email_users_count,
+            'active_users_monthly': active_users_monthly,
+            'wau_weekly_active_users': wau_weekly_active_users,
+            'conversion_rate_to_paid': conversion_rate_to_paid,
+            'stickiness_ratio': stickiness_ratio,
+            'total_api_calls_today': total_api_calls_today,
         }
 
         api_keys = APIKey.objects.all().order_by('-created_at')

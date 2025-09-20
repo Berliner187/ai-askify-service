@@ -3,381 +3,235 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Админ-панель | Летучка</title>
+    <meta name="robots" content="noindex, nofollow" />
     {% load static %}
     <link rel="shortcut icon" href="{% static 'img/logo.png' %}" type="image/png">
-    <link rel="stylesheet" href="{% static 'css/second-loader.css' %}">
-    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
-    <link rel="stylesheet" href="{% static 'css/footer.css' %}">
-    <link rel="stylesheet" href="{% static 'css/admin.css' %}">
-    <link rel="stylesheet" href="{% static 'css/adaptive.css' %}">
-    <title>2975</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=Unbounded:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --color-bg: #0F0818;
+            --color-surface: rgba(30, 24, 48, 0.5);
+            --color-border: rgba(97, 109, 240, 0.2);
+            --color-text-primary: #f0f0f0;
+            --color-text-secondary: #a0a0b0;
+            --color-accent-primary: #616DF0;
+            --color-accent-secondary: #79EF66;
+        }
+        body { background-color: var(--color-bg); color: var(--color-text-primary); font-family: 'Inter', sans-serif; }
+        h1, h2, h3 { font-family: 'Unbounded', sans-serif; }
+        .gradient-text {
+            background: linear-gradient(45deg, var(--color-accent-primary), var(--color-accent-secondary));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .progress-bar-fill { transition: width 0.5s ease-in-out; }
+    </style>
 </head>
-<style>
+<body class="bg-[var(--color-bg)] text-[var(--color-text-primary)]">
 
-</style>
-<body>
-    <script src="{% static 'js/second-loader.js' %}"></script>
-    {% include 'components/loader.html' %}
+    {% include 'header.html' %}
 
-    <div id="page-container" class="fade" style="display: block;">
-        {% include 'header.html' %}
-    
-        <div class="glass-container" id="stats-container">
-    <h2 class="glass-title">Админ панель</h2>
-    
-    <!-- Date Filter Card -->
-    <div class="glass-card">
-        <h3 class="card-title">Фильтр по дате</h3>
-        <form method="get" id="date-filter-form" class="glass-form">
-            <div class="form-group">
-                <label for="start_date" class="glass-label">Начальная дата</label>
-                <input type="date" name="start_date" id="start_date" class="glass-input" required>
-            </div>
-            
-            <div class="form-group">
-                <label for="end_date" class="glass-label">Конечная дата</label>
-                <input type="date" name="end_date" id="end_date" class="glass-input" required>
-            </div>
-            
-            <button type="submit" class="glass-button">Применить фильтр</button>
-        </form>
-    </div>
+    <main class="max-w-7xl mx-auto p-4 sm:p-8 space-y-8">
+        
+        <h1 class="text-3xl font-bold text-white">Админ-панель</h1>
 
-    <!-- Statistics Card -->
-    <div class="glass-card">
-        <h3 class="card-title">Статистика</h3>
-        <div class="stats-grid">
-            <div class="stat-item">
-                <div class="stat-value">{{ selected_users }}</div>
-                <div class="stat-label">Новых пользователей</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-value">{{ total_surveys }}</div>
-                <div class="stat-label">Созданных тестов</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-value">{{ total_answers }}</div>
-                <div class="stat-label">Ответов на тесты</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-value">{{ subscriptions }}</div>
-                <div class="stat-label">Подписок</div>
-            </div>
-        </div>
-    </div>
-
-    <div class="glass-card">
-        <h3 class="card-title">Финансовая статистика</h3>
-        <div class="stats-grid">
-            <div class="stat-item">
-                <div class="stat-value">{{ total_revenue|floatformat:2 }} р.</div>
-                <div class="stat-label">Общий доход</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-value">{{ average_check|floatformat:2 }} р.</div>
-                <div class="stat-label">Средний чек</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-value">{{ payment_conversion|floatformat:1 }}%</div>
-                <div class="stat-label">Конверсия платежей</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-value">{{ failed_payments_count }}</div>
-                <div class="stat-label">Проваленные платежи</div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- API Keys Management -->
-    <div class="glass-card">
-        <h3 class="card-title">Управление API ключами</h3>
-
-        {% for purpose, keys in keys_by_purpose.items %}
-        <div class="api-purpose-group">
-            <h4 class="glass-heading">{{ purpose|capfirst }}</h4>
-
-            <div class="api-keys-grid">
-                {% for key in keys %}
-                <div class="api-key-card {% if key.is_active %}active{% endif %}">
-                    <div class="key-header">
-                        <span class="key-name">{{ key.name }}</span>
-                        <span class="key-provider">{{ key.provider }}</span>
-                    </div>
-
-                    <div class="key-details">
-                        <div class="key-expiry">
-                            <span>До {{ key.expires_at|date:'d.m.Y'|default:"∞" }}</span>
-                        </div>
-
-                        <div class="key-usage">
-                            <div class="usage-bar">
-                                <div class="usage-fill" style="width: {{ key.usage_percent }}%"></div>
-                            </div>
-                            <span class="usage-percent {% if key.usage_percent >= 100 %}high-usage{% endif %}">
-                                {{ key.usage_percent }}%
-                            </span>
-                        </div>
-
-                        <div class="usage-today">
-                            <strong>{{ key.today_usage_count }} запросов сегодня</strong>
-                        </div>
-                    </div>
-
-                    <form method="post" action="{% url 'activate_api_key' %}" class="key-action">
-                        {% csrf_token %}
-                        <input type="hidden" name="activate_api_key_id" value="{{ key.id }}">
-                        {% if not key.is_active %}
-                        <button type="submit" class="glass-button-sm">Активировать</button>
-                        {% else %}
-                        <div class="active-badge">
-                            <span>Активен</span>
-                        </div>
-                        {% endif %}
+        <section class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <!-- Левая колонка: Фильтр и Админ-действия -->
+            <div class="lg:col-span-1 space-y-6">
+                <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
+                    <h2 class="font-bold text-white mb-4">Фильтр по дате</h2>
+                    <form method="get" class="space-y-4">
+                        <input type="date" name="start_date" value="{{ request.GET.start_date }}" class="w-full p-2 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg">
+                        <input type="date" name="end_date" value="{{ request.GET.end_date }}" class="w-full p-2 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg">
+                        <button type="submit" class="w-full py-2 font-bold text-center rounded-full bg-[var(--color-accent-primary)] text-white">Применить</button>
                     </form>
                 </div>
-                {% endfor %}
+                <!-- Сюда можно перенести карточки бана и повышения прав -->
             </div>
-        </div>
-        {% endfor %}
 
-        <div class="add-key-form">
-            <h4 class="form-subtitle">Добавить новый ключ</h4>
-            <form id="api-key-form" method="post" class="glass-form">
-                {% csrf_token %}
-                <div class="form-row">
-                    <input type="text" name="new_api_key_name" class="glass-input" placeholder="Название ключа" required>
-                    <input type="text" name="new_api_key_value" class="glass-input" placeholder="Значение ключа" required>
-                    <select name="new_api_key_provider" class="glass-input" required>
-                        <option value="">Выберите провайдера</option>
-                        <option value="openrouter">OpenRouter</option>
-                        <option value="azure">Azure</option>
-                    </select>
-                    <select name="new_api_key_purpose" class="glass-input" required>
-                        <option value="">Выберите назначение</option>
-                        <option value="FEEDBACK">FEEDBACK</option>
-                        <option value="SURVEY">SURVEY</option>
-                    </select>
+            <!-- Правая колонка: ВСЯ, СУКА, ТЕЛЕМЕТРИЯ -->
+            <div class="lg:col-span-3 space-y-6">
+                
+                <!-- БЛОК "РОСТ" -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="bg-[var(--color-surface)] p-4 rounded-xl border border-[var(--color-border)] text-center"><p class="text-2xl font-bold gradient-text">{{ selected_users }}</p><p class="text-xs text-gray-400">Новых юзеров <span class="text-gray-600">(за период)</span></p></div>
+                    <div class="bg-[var(--color-surface)] p-4 rounded-xl border border-[var(--color-border)] text-center"><p class="text-2xl font-bold gradient-text">{{ subscriptions }}</p><p class="text-xs text-gray-400">Новых подписок <span class="text-gray-600">(за период)</span></p></div>
+                    <div class="bg-[var(--color-surface)] p-4 rounded-xl border border-[var(--color-border)] text-center"><p class="text-2xl font-bold text-white">{{ email_users_count }}</p><p class="text-xs text-gray-400">Юзеров (Email)</p></div>
+                    <div class="bg-[var(--color-surface)] p-4 rounded-xl border border-[var(--color-border)] text-center"><p class="text-2xl font-bold text-white">{{ telegram_users_count }}</p><p class="text-xs text-gray-400">Юзеров (Telegram)</p></div>
                 </div>
-                <div class="form-row">
-                    <input type="date" name="new_api_key_expires" class="glass-input" placeholder="Заканчивается">
-                    <button type="submit" class="glass-button">Добавить</button>
-                </div>
-            </form>
-        </div>
-    </div>
 
-    <!-- Subscriptions Table -->
-    <div class="glass-card">
-        <h3 class="card-title">Подписки пользователей</h3>
-        <div class="table-container">
-            <table class="glass-table">
-                <thead>
-                    <tr>
-                        <th>Никнейм</th>
-                        <th>План</th>
-                        <th>Статус</th>
-                        <th>Платеж</th>
-                        <th>Сумма</th>
-                        <th>Дата</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for item in data %}
-                    <tr>
-                        <td>{{ item.name }}</td>
-                        <td>{{ item.plan_name }}</td>
-                        <td>
-                            <span class="status-badge {% if item.status == 'active' %}success{% else %}error{% endif %}">
-                                {% if item.status == 'active' %}Активна{% else %}Неактивна{% endif %}
-                            </span>
-                        </td>
-                        <td>
-                            <span class="status-badge {% if item.payment_status == 'completed' %}success{% else %}error{% endif %}">
-                                {% if item.payment_status == 'completed' %}Успешно{% else %}Ошибка{% endif %}
-                            </span>
-                        </td>
-                        <td>{{ item.amount }}</td>
-                        <td>{{ item.date }}</td>
-                    </tr>
+                <!-- БЛОК "АКТИВНОСТЬ" -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="bg-[var(--color-surface)] p-4 rounded-xl border border-[var(--color-border)] text-center"><p class="text-2xl font-bold gradient-text">{{ wau_weekly_active_users }}</p><p class="text-xs text-gray-400">Активных за неделю</p></div>
+                    <div class="bg-[var(--color-surface)] p-4 rounded-xl border border-[var(--color-border)] text-center"><p class="text-2xl font-bold gradient-text">{{ active_users_monthly }}</p><p class="text-xs text-gray-400">Активных за месяц</p></div>
+                    <div class="bg-[var(--color-surface)] p-4 rounded-xl border border-[var(--color-border)] text-center"><p class="text-2xl font-bold text-white">{{ stickiness_ratio|floatformat:1 }}%</p><p class="text-xs text-gray-400">"Липкость" (DAU/MAU)</p></div>
+                    <div class="bg-[var(--color-surface)] p-4 rounded-xl border border-[var(--color-border)] text-center"><p class="text-2xl font-bold text-white">{{ conversion_rate_to_paid|floatformat:2 }}%</p><p class="text-xs text-gray-400">Конверсия в оплату</p></div>
+                </div>
+
+                <!-- БЛОК "ПРОДУКТ" -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="bg-[var(--color-surface)] p-4 rounded-xl border border-[var(--color-border)] text-center"><p class="text-2xl font-bold gradient-text">{{ total_surveys }}</p><p class="text-xs text-gray-400">Тестов создано <span class="text-gray-600">(за период)</span></p></div>
+                    <div class="bg-[var(--color-surface)] p-4 rounded-xl border border-[var(--color-border)] text-center"><p class="text-2xl font-bold gradient-text">{{ total_answers }}</p><p class="text-xs text-gray-400">Ответов дано <span class="text-gray-600">(за период)</span></p></div>
+                    <div class="bg-[var(--color-surface)] p-4 rounded-xl border border-[var(--color-border)] text-center"><p class="text-2xl font-bold text-white">{{ total_api_calls_today }}</p><p class="text-xs text-gray-400">Вызовов API <span class="text-gray-600">(сегодня)</span></p></div>
+                    <div class="bg-[var(--color-surface)] p-4 rounded-xl border border-[var(--color-border)] text-center"><p class="text-2xl font-bold text-white">{{ total_users }}</p><p class="text-xs text-gray-400">Всего юзеров</p></div>
+                </div>
+
+            </div>
+        </section>
+
+        <section class="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]"><h3 class="font-bold text-white">Общий доход</h3><p class="text-3xl font-bold text-[var(--color-accent-secondary)] mt-2">{{ total_revenue|floatformat:2 }} ₽</p></div>
+            <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]"><h3 class="font-bold text-white">Средний чек</h3><p class="text-3xl font-bold text-white mt-2">{{ average_check|floatformat:2 }} ₽</p></div>
+            <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]"><h3 class="font-bold text-white">Конверсия в оплату</h3><p class="text-3xl font-bold text-white mt-2">{{ payment_conversion|floatformat:1 }}%</p></div>
+            <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]"><h3 class="font-bold text-white">Ошибок оплаты</h3><p class="text-3xl font-bold text-red-500 mt-2">{{ failed_payments_count }}</p></div>
+        </section>
+
+        <section class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
+            <h2 class="font-bold text-white mb-4">Управление API ключами</h2>
+            {% for purpose, keys in keys_by_purpose.items %}
+                <h3 class="text-sm font-semibold text-gray-400 uppercase mt-4 mb-2">{{ purpose }}</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {% for key in keys %}
+                        <div class="p-4 rounded-lg border {% if key.is_active %}border-[var(--color-accent-secondary)] shadow-lg shadow-[var(--color-accent-secondary)]/20{% else %}border-[var(--color-border)]{% endif %}">
+                            <div class="flex justify-between items-center"><span class="font-bold text-white">{{ key.name }}</span> <span class="text-xs px-2 py-1 bg-black/20 rounded-full">{{ key.provider }}</span></div>
+                            <div class="text-xs text-gray-500 mt-1">До {{ key.expires_at|date:'d.m.Y'|default:"∞" }}</div>
+                            <div class="w-full bg-black/20 rounded-full h-2.5 mt-2"><div class="progress-bar-fill bg-[var(--color-accent-secondary)] h-2.5 rounded-full" style="width: {{ key.usage_percent }}%"></div></div>
+                            <div class="flex justify-between items-center mt-2">
+                                <span class="text-xs text-gray-400">{{ key.today_usage_count }} / 50 сегодня</span>
+                                {% if not key.is_active %}
+                                    <form method="post" class="activate-key-form"><input type="hidden" name="activate_api_key_id" value="{{ key.id }}"><button type="submit" class="text-xs font-bold text-[var(--color-accent-primary)] hover:text-white">Активировать</button></form>
+                                {% endif %}
+                            </div>
+                        </div>
                     {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <!-- Admin Actions Card -->
-    <div class="glass-card">
-        <h3 class="card-title">Администрирование</h3>
-        <form method="post" id="ip-user-form" class="glass-form">
-            {% csrf_token %}
-            <div class="form-group">
-                <label for="ip_address" class="glass-label">Блокировка IP</label>
-                <div class="input-group">
-                    <input type="text" name="ip_address" id="ip_address" class="glass-input" placeholder="Введите IP адрес">
-                    <button type="submit" class="glass-button-icon">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM4 12C4 7.58 7.58 4 12 4C13.85 4 15.55 4.63 16.9 5.69L5.69 16.9C4.63 15.55 4 13.85 4 12ZM12 20C10.15 20 8.45 19.37 7.1 18.31L18.31 7.1C19.37 8.45 20 10.15 20 12C20 16.42 16.42 20 12 20Z" fill="currentColor"/>
-                        </svg>
-                    </button>
                 </div>
+            {% endfor %}
+            
+            <div class="mt-6 pt-6 border-t border-[var(--color-border)]">
+                <h3 class="font-bold text-white mb-4">Добавить новый ключ</h3>
+                <form method="post" class="space-y-4">
+                    {% csrf_token %}
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <input type="text" name="new_api_key_name" class="p-2 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg" placeholder="Название" required>
+                        <input type="text" name="new_api_key_value" class="p-2 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg" placeholder="Значение" required>
+                        <select name="new_api_key_provider" class="p-2 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg" required><option value="openrouter">OpenRouter</option><option value="azure">Azure</option></select>
+                        <select name="new_api_key_purpose" class="p-2 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg" required><option value="FEEDBACK">FEEDBACK</option><option value="SURVEY">SURVEY</option></select>
+                    </div>
+                    <div class="flex gap-4">
+                        <input type="date" name="new_api_key_expires" class="flex-grow p-2 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg">
+                        <button type="submit" class="w-full md:w-auto flex-grow py-2 font-bold text-center rounded-lg bg-[var(--color-accent-primary)] text-white">Добавить ключ</button>
+                    </div>
+                </form>
             </div>
-            <div class="form-group">
-                <label for="username" class="glass-label">Назначение прав</label>
-                <div class="input-group">
-                    <input type="text" name="username" id="username" class="glass-input" placeholder="Введите username">
-                    <button type="submit" class="glass-button-icon">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 1L3 5V11C3 16.55 6.84 21.74 12 23C17.16 21.74 21 16.55 21 11V5L12 1ZM12 11.99H19C18.47 16.11 15.72 19.78 12 20.93V12H5V6.3L12 3.19V11.99Z" fill="currentColor"/>
-                        </svg>
-                    </button>
-                </div>
+        </section>
+        
+        <section class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
+             <h2 class="font-bold text-white mb-4">История платежей</h2>
+             <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left">
+                    <thead class="text-xs text-gray-400 uppercase"><tr><th class="p-2">Пользователь</th><th class="p-2">План</th><th class="p-2">Статус</th><th class="p-2">Сумма</th><th class="p-2">Дата</th></tr></thead>
+                    <tbody>
+                        {% for item in data %}
+                        <tr class="border-b border-[var(--color-border)]"><td class="p-2">{{ item.name }}</td><td class="p-2">{{ item.plan_name }}</td><td class="p-2"><span class="px-2 py-1 rounded-full text-xs {% if item.payment_status == 'completed' %}bg-green-500/10 text-green-400{% else %}bg-red-500/10 text-red-400{% endif %}">{{ item.payment_status }}</span></td><td class="p-2">{{ item.amount }}</td><td class="p-2">{{ item.date }}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+             </div>
+        </section>
+
+        <section class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
+                <h2 class="font-bold text-white mb-4">Бан по IP</h2>
+                <form method="post" class="ajax-form flex gap-2"><input type="text" name="ip_address" class="w-full p-2 bg-[var(--color-bg)] rounded-lg"><button type="submit" class="bg-red-800/80 hover:bg-red-700/80 px-4 rounded-lg font-bold">Ban</button></form>
             </div>
-        </form>
-    </div>
+            <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
+                 <h2 class="font-bold text-white mb-4">Дать права админа</h2>
+                <form method="post" class="ajax-form flex gap-2"><input type="text" name="username" class="w-full p-2 bg-[var(--color-bg)] rounded-lg"><button type="submit" class="bg-green-800/80 hover:bg-green-700/80 px-4 rounded-lg font-bold">Promote</button></form>
+            </div>
+        </section>
 
-    <!-- Back Button -->
-    <div class="action-footer">
-        <a href="{% url 'profile' username %}" class="glass-button back-button">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M20 11H7.83L13.42 5.41L12 4L4 12L12 20L13.41 18.59L7.83 13H20V11Z" fill="currentColor"/>
-            </svg>
-            <span>Вернуться в профиль</span>
-        </a>
-    </div>
-</div>
-    </div>
+    </main>
 
-    <!-- Модальное окно -->
-    <div id="modal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <span class="close" id="close-modal">&times;</span>
-            <p id="modal-message"></p>
-            <button id="modal-ok" class="button-medium">ОК</button>
-        </div>
-    </div>
-
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script>
-        function showModal(message) {
-            document.getElementById('modal-message').innerText = message;
-            document.getElementById('modal').style.display = 'flex';
-        }
-    
-        document.getElementById('close-modal').onclick = function() {
-            document.getElementById('modal').style.display = 'none';
-        }
-    
-        document.getElementById('modal-ok').onclick = function() {
-            document.getElementById('modal').style.display = 'none';
-        }
-    
-        document.getElementById('ip-user-form').onsubmit = function(event) {
-            event.preventDefault();
-    
-            const formData = new FormData(this);
-            fetch(this.action, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRFToken': '{{ csrf_token }}'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status) {
-                    showModal(data.message);
-                } else {
-                    showModal(data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Ошибка:', error);
-                showModal('[  ERROR  ]:', error);
-            });
-        }
-    </script>
-
-    <script>
-        function activateKey(id) {
-            const formData = new FormData();
-            formData.append('activate_api_key_id', id);
-
-            fetch("", {
-                method: "POST",
-                headers: {
-                    'X-CSRFToken': '{{ csrf_token }}',
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: formData
-            }).then(res => res.json()).then(data => {
-                if (data.status) location.reload();
-                else alert(data.message);
-            });
-        }
-    </script>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-        // Обработка форм активации ключей
-        document.querySelectorAll('.key-action').forEach(form => {
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                const formData = new FormData(this);
-                const submitButton = this.querySelector('button[type="submit"]');
-                
-                if (submitButton) {
-                    submitButton.disabled = true;
-                    submitButton.textContent = 'Активируем...';
-                }
-                
-                fetch(this.action, {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
                     }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status) {
-                        showToast('success', data.message);
-                        // Перезагружаем страницу для обновления состояния
-                        setTimeout(() => location.reload(), 1000);
-                    } else {
-                        showToast('error', data.message);
-                        if (submitButton) {
-                            submitButton.disabled = false;
-                            submitButton.textContent = 'Активировать';
-                        }
-                    }
-                })
-                .catch(error => {
-                    showToast('error', 'Ошибка сети');
-                    if (submitButton) {
-                        submitButton.disabled = false;
-                        submitButton.textContent = 'Активировать';
+                }
+            }
+            return cookieValue;
+        }
+
+        $(document).ready(function() {
+            const csrftoken = getCookie('csrftoken');
+            const currentUrl = window.location.pathname; // Это /stats2975/
+
+            // --- Обработчик для AJAX-форм (Бан, Права) ---
+            $('.ajax-form').on('submit', function(event) {
+                event.preventDefault();
+                const form = $(this);
+                const submitBtn = form.find('button[type="submit"]');
+                const originalBtnText = submitBtn.html();
+
+                $.ajax({
+                    type: 'POST',
+                    url: currentUrl, // Отправляем на ту же страницу
+                    headers: { 'X-CSRFToken': csrftoken },
+                    data: form.serialize(),
+                    beforeSend: function() {
+                        submitBtn.prop('disabled', true).text('...');
+                    },
+                    success: function(response) {
+                        alert(response.message); // Простое уведомление
+                    },
+                    error: function(xhr) {
+                        alert('Ошибка: ' + (xhr.responseJSON ? xhr.responseJSON.message : 'Сервер не отвечает'));
+                    },
+                    complete: function() {
+                        submitBtn.prop('disabled', false).html(originalBtnText);
+                        form.trigger('reset');
                     }
                 });
             });
+
+            // --- Обработчик для активации ключей ---
+            $('.activate-key-form').on('submit', function(event) {
+                event.preventDefault();
+                const form = $(this);
+                const submitBtn = form.find('button[type="submit"]');
+
+                $.ajax({
+                    type: 'POST',
+                    url: currentUrl,
+                    headers: { 'X-CSRFToken': csrftoken },
+                    data: form.serialize(),
+                    beforeSend: function() {
+                        submitBtn.prop('disabled', true).text('...');
+                    },
+                    success: function(response) {
+                        if (response.status) {
+                            window.location.reload(); // Перезагружаем для обновления статусов
+                        } else {
+                             alert('Ошибка: ' + response.message);
+                        }
+                    },
+                    error: function(xhr) {
+                         alert('Ошибка сети');
+                    },
+                });
+            });
         });
-        
-        function showToast(type, message) {
-            // Реализация toast-уведомлений
-            const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
-            toast.textContent = message;
-            document.body.appendChild(toast);
-            
-            setTimeout(() => {
-                toast.remove();
-            }, 3000);
-        }
-    });
     </script>
-    
-    <script src="{% static 'js/second-loader.js' %}"></script>
-    
-    {% include 'footer.html' %}
 </body>
 </html>
