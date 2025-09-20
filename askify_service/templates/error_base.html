@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Ошибка{% endblock %} | Голосок</title>
+    <link rel="icon" href="{% static 'img/golosok-favicon.png' %}" type="image/x-icon">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #141614; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; overflow: hidden; }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen text-white text-center p-4">
+
+    <div class="relative">
+        <div class="absolute inset-0 flex items-center justify-center z-0">
+            <span class="text-[20rem] sm:text-[30rem] font-black text-[#222925] -translate-y-4">
+                {% block error_code %}XXX{% endblock %}
+            </span>
+        </div>
+
+        <div class="relative z-10 space-y-6">
+            <h1 class="text-4xl sm:text-5xl font-bold">{% block message %}Что-то пошло не так{% endblock %}</h1>
+            <p class="text-lg text-gray-400">{% block sub_message %}Мы уже разбираемся. Попробуйте позже.{% endblock %}</p>
+            
+            {% block extra_content %}{% endblock %}
+
+            <div>
+                <a href="{% url 'home' %}" class="inline-block bg-[#A3BEAE] text-[#1A1D1B] font-bold px-8 py-3 rounded-full transition hover:opacity-80">
+                    Вернуться на главную
+                </a>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
