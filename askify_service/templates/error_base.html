@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="ru" class="dark">
+<html lang="ru">
 <head>
     {% load static %}
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Ошибка{% endblock %} | Летучка</title>
     <link rel="icon" href="{% static 'img/favicon.ico' %}" type="image/ico">
-    <script src="{% static 'vendor/tailwind.full.min.js' %}"></script>
+    <script src="{% static 'vendor/tailwindcss.full.min.js' %}"></script>
     <style>
         :root {
             --color-bg: #0F0818;
@@ -30,31 +30,43 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
+<body class="flex items-center justify-center min-h-screen text-white p-4">
 
-<body class="flex items-center justify-center min-h-screen text-white text-center p-4">
-    <div class="w-full max-w-2xl mx-auto">
-        <h1 class="text-4xl sm:text-6xl font-black gradient-text">
-            {% block error_code %}404{% endblock %}
-        </h1>
+    <div class="relative w-full h-full flex items-center justify-center">
 
-        <h2 class="mt-4 text-3xl sm:text-4xl font-bold text-white">
-            {% block message %}Что-то пошло не так{% endblock %}
-        </h2>
+        <div class="absolute inset-0 flex items-center justify-start opacity-5 z-0">
+            <h1 class="text-[30rem] lg:text-[40rem] font-black text-white whitespace-nowrap -translate-x-1/4">
+                {% block error_code %}404{% endblock %}
+            </h1>
+        </div>
 
-        <p class="mt-4 text-lg text-gray-400 max-w-md mx-auto">
-            {% block sub_message %}Кажется, этой страницы не существует. Или мы ее уже куда-то проебали.{% endblock %}
-        </p>
-        
-        {% block extra_content %}{% endblock %}
+        <div class="relative z-10 flex flex-col items-center text-center max-w-xl mx-auto" style="animation: fadeIn 1s ease-out forwards;">
+            
+            <h2 class="mt-8 text-4xl sm:text-5xl font-bold text-white leading-tight">
+                {% block message %}Что-то пошло не так{% endblock %}
+            </h2>
 
-        <div class="mt-8">
-            <a href="/" class="inline-block bg-[var(--color-accent-primary)] text-white font-bold px-10 py-4 rounded-full transition-transform hover:scale-105">
-                Вернуться на главную
-            </a>
+            <p class="mt-4 text-lg text-gray-400">
+                {% block sub_message %}{% endblock %}
+            </p>
+            
+            <div class="mt-8">
+                <a href="/" 
+                   class="inline-block bg-[var(--color-accent-primary)] text-white font-bold px-10 py-4 rounded-full 
+                          transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-[var(--color-accent-primary)]/30">
+                    Вернуться в реальность
+                </a>
+            </div>
+
+            {% block extra_content_bottom %}{% endblock %}
         </div>
     </div>
-</body>
 
+</body>
 </html>
