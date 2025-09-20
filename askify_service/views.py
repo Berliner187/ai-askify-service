@@ -1434,23 +1434,25 @@ def preview_test(request, survey_id):
         }
         return render(request, 'demo-view.html', context, status=404)
 
+    survey_creator_id_staff = survey.id_staff
+
+    # 2. ОПРЕДЕЛЯЕМ ID ТЕКУЩЕГО ПОЛЬЗОВАТЕЛЯ.
     current_user_id_staff = None
     is_authenticated = request.user.is_authenticated
 
     if is_authenticated:
+        # Если юзер залогинен, его id_staff - наш кандидат.
         current_user_id_staff = get_staff_id(request)
     else:
+        # Если аноним, ищем его по IP и берем его id_staff.
         client_ip = get_client_ip(request)
         anonymous_user = AuthUser.objects.filter(hash_user_id=client_ip).first()
         if anonymous_user:
             current_user_id_staff = anonymous_user.id_staff
 
+    # 3. СРАВНИВАЕМ, БЛЯТЬ, ИХ. ОДНОЙ, СУКА, СТРОКОЙ.
     is_creator = False
-    if current_user_id_staff and current_user_id_staff == survey.id_staff:
-        is_creator = True
-
-    anonymous_user = AuthUser.objects.filter(hash_user_id=get_client_ip(request)).first()
-    if anonymous_user:
+    if current_user_id_staff and current_user_id_staff == survey_creator_id_staff:
         is_creator = True
 
     can_generate = True

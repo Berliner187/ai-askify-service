@@ -132,13 +132,12 @@
                     {% endif %}
                 {% else %}
                     <div class="mt-3 text-center text-sm bg-gray-800/50 text-gray-400 p-2 rounded-lg">
-                        {% if survey.show_answers %}
+                        {% if show_answers %}
                             <i class="fas fa-eye text-green-400"></i> Автор разрешил просмотр ответов.
                         {% else %}
                             <i class="fas fa-eye-slash text-red-400"></i> Автор скрыл ответы.
                         {% endif %}
                     </div>
-
                 {% endif %}
             </header>
 
