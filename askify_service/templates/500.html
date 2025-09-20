@@ -1,0 +1,17 @@
+{% extends "error_base.html" %}
+{% load static %}
+
+{% block title %}Ошибка сервера{% endblock %}
+
+{% block error_code %}500{% endblock %}
+
+{% block message %}Что-то пошло не так{% endblock %}
+{% block sub_message %}Кажется, один из наших серверов решил устроить себе незапланированный отпуск. Мы уже отправили за ним бригаду{% endblock %}
+
+{% block extra_content_top %}
+    <div class="w-full max-w-md mx-auto aspect-video rounded-2xl ...">
+        <video autoplay loop muted playsinline class="w-full h-full object-cover">
+            <source src="{% static 'blog_img/mem2.mp4' %}" type="video/mp4">
+        </video>
+    </div>
+{% endblock %}

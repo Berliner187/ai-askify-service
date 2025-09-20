@@ -6,7 +6,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Ошибка{% endblock %} | Летучка</title>
     <link rel="icon" href="{% static 'img/favicon.ico' %}" type="image/ico">
-    <script src="{% static 'vendor/tailwindcss.full.min.js' %}"></script>
+    
+    <!-- ПРАВИЛЬНЫЙ, БЛЯТЬ, ИМПОРТ -->
+    <script src="{% static 'vendor/tailwind.full.min.js' %}"></script>
+    
+    <!-- ШРИФТЫ -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Unbounded:wght@500;900&display=swap" rel="stylesheet">
+
     <style>
         :root {
             --color-bg: #0F0818;
@@ -21,9 +28,11 @@
             background-color: var(--color-bg); 
             font-family: 'Inter', sans-serif; 
             overflow: hidden;
+            position: relative; /* Для позиционирования фона */
         }
         h1, h2, h3 { 
             font-family: 'Unbounded', sans-serif;
+            font-weight: 900; /* ДЕЛАЕМ ЗАГОЛОВКИ ЖИРНЕЕ */
         }
         .gradient-text {
             background: linear-gradient(45deg, var(--color-accent-primary), var(--color-accent-secondary));
@@ -38,34 +47,33 @@
 </head>
 <body class="flex items-center justify-center min-h-screen text-white p-4">
 
-    <div class="relative w-full h-full flex items-center justify-center">
+    <div class="absolute inset-0 flex items-center justify-center sm:justify-start overflow-hidden z-0">
+        <h1 class="text-[20rem] sm:text-[30rem] lg:text-[45rem] font-black text-white/5 whitespace-nowrap -translate-x-1/4 sm:-translate-x-1/4">
+            {% block error_code %}404{% endblock %}
+        </h1>
+    </div>
 
-        <div class="absolute inset-0 flex items-center justify-start opacity-5 z-0">
-            <h1 class="text-[30rem] lg:text-[40rem] font-black text-white whitespace-nowrap -translate-x-1/4">
-                {% block error_code %}404{% endblock %}
-            </h1>
+    <div class="relative z-10 flex flex-col items-center text-center max-w-xl mx-auto" style="animation: fadeIn 1s ease-out 0.2s forwards; opacity: 0;">
+        
+        {% block extra_content_top %}{% endblock %}
+
+        <h2 class="mt-8 text-4xl sm:text-3xl text-white leading-tight">
+            {% block message %}{% endblock %}
+        </h2>
+
+        <p class="mt-4 text-base sm:text-lg text-gray-400">
+            {% block sub_message %}{% endblock %}
+        </p>
+        
+        <div class="mt-8">
+            <a href="/" 
+               class="inline-block bg-[var(--color-accent-primary)] text-white font-bold px-8 py-3 sm:px-10 sm:py-4 rounded-full 
+                      transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-[var(--color-accent-primary)]/30">
+                Вернуться в реальность
+            </a>
         </div>
 
-        <div class="relative z-10 flex flex-col items-center text-center max-w-xl mx-auto" style="animation: fadeIn 1s ease-out forwards;">
-            
-            <h2 class="mt-8 text-4xl sm:text-5xl font-bold text-white leading-tight">
-                {% block message %}Что-то пошло не так{% endblock %}
-            </h2>
-
-            <p class="mt-4 text-lg text-gray-400">
-                {% block sub_message %}{% endblock %}
-            </p>
-            
-            <div class="mt-8">
-                <a href="/" 
-                   class="inline-block bg-[var(--color-accent-primary)] text-white font-bold px-10 py-4 rounded-full 
-                          transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-[var(--color-accent-primary)]/30">
-                    Вернуться в реальность
-                </a>
-            </div>
-
-            {% block extra_content_bottom %}{% endblock %}
-        </div>
+        {% block extra_content_bottom %}{% endblock %}
     </div>
 
 </body>

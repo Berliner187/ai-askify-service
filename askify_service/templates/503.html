@@ -1,0 +1,17 @@
+{% extends "error_base.html" %}
+{% load static %}
+
+{% block title %}Сервис временно недоступен{% endblock %}
+
+{% block error_code %}503{% endblock %}
+
+{% block message %}Наш сервер взял короткий перерыв на кофе{% endblock %}
+{% block sub_message %}Он немного перегружен и решил помедитировать. Мы уже несем ему смузи и скоро вернем в строй. Попробуйте обновить страницу через пару минут.{% endblock %}
+
+{% block extra_content_top %}
+    <div class="w-full max-w-md mx-auto aspect-video rounded-2xl ...">
+        <video autoplay loop muted playsinline class="w-full h-full object-cover">
+            <source src="{% static 'blog_img/mem2.mp4' %}" type="video/mp4">
+        </video>
+    </div>
+{% endblock %}
