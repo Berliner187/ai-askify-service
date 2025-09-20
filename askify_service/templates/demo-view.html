@@ -119,9 +119,9 @@
                 {% if is_creator %}
                     {% if username != 0 %}
                         <div class="mt-4 pt-4 border-t border-[var(--color-border)] flex items-center gap-3">
-                            <label class="toggle-switch ...">
-                                <input type="checkbox" id="answersToggle" ... {% if survey.show_answers %}checked{% endif %}>
-                                <span class="slider ..."></span>
+                            <label class="toggle-switch relative inline-block w-[52px] h-[28px]">
+                                <input type="checkbox" id="answersToggle" class="opacity-0 w-0 h-0" {% if show_answers %}checked{% endif %}>
+                                <span class="slider absolute cursor-pointer top-0 left-0 right-0 bottom-0 bg-gray-600 rounded-full transition-colors before:absolute before:content-[''] before:h-[20px] before:w-[20px] before:left-[4px] before:bottom-[4px] before:bg-white before:rounded-full before:transition-transform"></span>
                             </label>
                             <span class="text-sm font-semibold text-white">Показать ответы</span>
                         </div>
@@ -330,6 +330,58 @@
 
             // --- КНОПКА "ПОДЕЛИТЬСЯ" ---
             $('button[data-action="share"]').on('click', copyLinkAndNotify);
+
+            // Регистрация просмотров
+            async function generateVisitorHash() {
+                const uniqueString = `${navigator.userAgent}-${navigator.language}-${new Date().getTimezoneOffset()}`;
+                const encoder = new TextEncoder();
+                const data = encoder.encode(uniqueString);
+                const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            }
+
+            async function registerView() {
+                const surveyId = '{{ survey_id }}';
+                if (!surveyId) return;
+
+                try {
+                    const visitorHash = await generateVisitorHash();
+                    const csrftoken = getCookie('csrftoken');
+
+                    const response = await fetch(`/register-view/${surveyId}/`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': csrftoken
+                        },
+                        body: JSON.stringify({ hash: visitorHash })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        const counterElement = $('#view-counter-value'); 
+                        const currentCount = parseInt(counterElement.text());
+                        const newCount = data.view_count;
+
+                        if (data.new_view && newCount > currentCount) {
+                            counterElement.text(newCount);
+                            counterElement.addClass('counter-pulse');
+                            setTimeout(() => {
+                                counterElement.removeClass('counter-pulse');
+                            }, 600);
+                        } else {
+                            counterElement.text(newCount);
+                        }
+                    }
+                } catch (error) {
+                    console.error('Ошибка регистрации просмотра:', error);
+                }
+            }
+            // --- Регистрация просмотров ---
+
+            registerView();
 
             const toggle = $('#answersToggle');
             if (toggle.length) {
