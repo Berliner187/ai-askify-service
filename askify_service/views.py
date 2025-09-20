@@ -1559,43 +1559,37 @@ def generate_username(email):
 
 @check_legal_process
 def register(request):
+    if request.user.is_authenticated:
+        return redirect('create')
+
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
-        tracer_l.debug(f'{request.user.username} --- {form.is_valid()}: {form.cleaned_data.get("email")}')
-
-        if not form.is_valid():
-            return JsonResponse({"error": "Invalid form data", "details": form.errors}, status=400)
-
-        if not is_allowed_email(form.cleaned_data.get('email')):
-            return JsonResponse({"error": "Not allowed hostname"})
 
         if form.is_valid():
-            user = form.save()
+            if not is_allowed_email(form.cleaned_data.get('email')):
+                form.add_error('email', 'Регистрация с этого почтового домена не разрешена.')
+            else:
+                user = form.save()
 
-            tracer_l.warning(f'ADMIN. NEW USER {request.user.username}')
+                tracer_l.warning(f'ADMIN. NEW USER {user.username}')
 
-            plan_name, end_date, status, billing_cycle, discount = init_free_subscription()
-            subscription = Subscription.objects.create(
-                staff_id=user.id_staff,
-                plan_name=plan_name,
-                end_date=end_date,
-                status=status,
-                billing_cycle=billing_cycle,
-                discount=0.00
-            )
-            subscription.save()
+                plan_name, end_date, status, billing_cycle, discount = init_free_subscription()
+                Subscription.objects.create(
+                    staff_id=user.id_staff,
+                    plan_name=plan_name,
+                    end_date=end_date,
+                    status=status,
+                    billing_cycle=billing_cycle
+                )
 
-            login(request, user)
-            return JsonResponse({'redirect': '/create'})
-        else:
-            errors = {field: errors for field, errors in form.errors.items()}
-            print(errors)
-            return JsonResponse({'errors': errors}, status=400)
+                login(request, user)
+                return redirect('create')
 
     else:
         form = CustomUserCreationForm()
 
-    return render(request, 'register.html', {'form': form})
+    context = {'form': form, 'debug': DEBUG}
+    return render(request, 'register.html', context)
 
 
 @check_legal_process
@@ -1635,12 +1629,24 @@ def login_view(request):
     if request.user.is_authenticated:
         return redirect('/create')
 
-    next_url = request.GET.get('next')
+    context = {}
 
     if request.method == 'POST':
-        email = request.POST.get('email')
-        password = request.POST.get('password')
-        username = email.split('@')[0]
+        email = request.POST.get('email', '').strip()
+        password = request.POST.get('password', '')
+
+        if not email or not password:
+            context['error'] = 'Введите email и пароль.'
+            return render(request, 'login.html', context, status=400)
+
+        if '@' not in email:
+            context['error'] = 'Неверный email.'
+            return render(request, 'login.html', context, status=400)
+
+        try:
+            username = email.split('@')[0]
+        except IndexError:
+            username = ''
 
         user = authenticate(request, username=username, password=password)
 
@@ -1648,14 +1654,18 @@ def login_view(request):
             login(request, user)
             request.session['user_id'] = user.id
 
-            post_next = request.POST.get('next', next_url)
-            safe_next = post_next if is_safe_url(post_next) else '/create'
+            tracer_l.warning(f'ADMIN. NEW USER {user.username}')
 
-            return JsonResponse({'redirect': safe_next})
+            next_url = request.POST.get('next', '/create')
+            safe_next = next_url if is_safe_url(next_url) else '/create'
+            return redirect(safe_next)
         else:
-            return JsonResponse({'errors': {'email': ['Неверный email или пароль']}}, status=400)
+            context['error'] = 'Неверный email или пароль. Попробуйте снова.'
+            return render(request, 'login.html', context, status=400)
 
-    return render(request, 'login.html', {'next_url': next_url or '/create'})
+    context['next_url'] = request.GET.get('next', '/create')
+    context['debug'] =  DEBUG
+    return render(request, 'login.html', context)
 
 
 def logout_view(request):

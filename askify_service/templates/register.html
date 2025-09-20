@@ -5,64 +5,285 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Летучка • Регистрация</title>
     {% load static %}
-    <link rel="shortcut icon" href="{% static 'img/logo.png' %}" type="image/png">
-    <link rel="stylesheet" href="{% static 'css/second-loader.css' %}">
-    <link rel="stylesheet" href="{% static 'css/loader.css' %}">
-    <link rel="stylesheet" href="{% static 'css/auth.css' %}?v=1.0">
-    <link rel="stylesheet" href="{% static 'css/footer.css' %}">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="icon" href="{% static 'img/favicon.ico' %}" type="image/ico">
+    <link rel="apple-touch-icon" sizes="180x180" href="{% static 'img/apple-touch-icon.png' %}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=Unbounded:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    {% if debug %}
+        <script src="https://cdn.tailwindcss.com"></script>
+    {% else %}
+        <script src="{% static 'vendor/tailwind.full.min.js' %}"></script>
+    {% endif %}
+
+    <style>
+        :root {
+            --color-bg: #0F0818;
+            --color-surface: rgba(30, 24, 48, 0.5);
+            --color-border: rgba(97, 109, 240, 0.2);
+            --color-text-primary: #f0f0f0;
+            --color-text-secondary: #a0a0b0;
+            --color-accent-primary: #616DF0;
+            --color-accent-secondary: #79EF66;
+        }
+        body { background-color: var(--color-bg); color: var(--color-text-primary); font-family: 'Inter', sans-serif; }
+        h1, h2, h3 { font-family: 'Unbounded', sans-serif; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeIn { animation: fadeIn 0.5s ease-out forwards; }
+
+        input[type="checkbox"]:checked ~ div svg {
+            opacity: 1;
+        }
+
+        #main-header {
+            transition: padding 0.3s ease-in-out, background-color 0.3s ease, box-shadow 0.3s ease, top 0.3s ease-in-out;
+            max-width: max-content;
+            border-radius: 9999px;
+            margin: 0 auto;
+            top: 32px;
+            padding: 0.5rem;
+        }
+        
+        #main-header.scrolled {
+            padding-top: 0.75rem;
+            padding-bottom: 0.75rem;
+            background-color: rgba(20, 18, 23, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            box-shadow: 0 8px 32px rgba(62, 30, 112, 0.3);
+            top: 12px;
+            z-index: 50;
+        }
+        
+        /* Плавность для внутренних элементов */
+        #main-header .logo-img, #main-header .nav-link, #main-header .cta-btn, #main-header .main-nav {
+            transition: all 0.3s ease-in-out;
+        }
+        #main-header .main-nav {
+            padding: 0 64px;
+        }
+        #main-header.scrolled .main-nav {
+            padding: 0 32px;
+        }
+
+        /* СТИЛИ ДЛЯ МОБИЛЬНОГО МЕНЮ */
+        #mobile-menu {
+            max-width: 100%;
+            position: absolute;
+            top: calc(100% + 0.5rem);
+            right: 0;
+            opacity: 0;
+            transform-origin: top right;
+            transform: scale(0.95);
+            pointer-events: none;
+            transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
+        }
+
+        #mobile-menu.menu-open {
+            opacity: 1;
+            transform: scale(1);
+            pointer-events: auto;
+        }
+
+        @media screen and (width <= 600px) {
+            #main-header {
+                max-width: 100%;
+            }
+        }
+    </style>
 </head>
-<body>
-    <script src="{% static 'js/second-loader.js' %}"></script>
-    {% include 'components/loader.html' %}
+<body class="bg-[var(--color-bg)] text-[var(--color-text-primary)] min-h-screen flex flex-col">
 
-    <div id="alertContainer" class="alert" role="alert"></div>
+    <header id="main-header" class="sticky z-50 w-full">
+        <div class="relative max-w-6xl mx-auto px-4 sm:px-8">
+            <div class="flex justify-between items-center">
+                
+                <a href="/" class="flex-shrink-0">
+                    <img src="{% static 'img/logo-header.webp' %}" alt="Летучка Логотип" class="logo-img w-32 md:w-32 h-auto">
+                </a>
 
-    <div id="page-container" class="fade" style="display: none;">
-        {% include 'header.html' %}
-        <div class="container">
-        
-            <section class="content-container">
-                <h1>Регистрация</h1>
+                <nav class="main-nav hidden lg:flex items-center gap-6">
+                    <a href="/#transformation" class="nav-link text-sm text-[var(--color-text-secondary)] font-semibold hover:text-white">Возможности</a>
+                    <a href="/available-plans" class="nav-link text-sm text-[var(--color-text-secondary)] font-semibold hover:text-white">Тарифы</a>
+                    <a href="/#faq" class="nav-link text-sm text-[var(--color-text-secondary)] font-semibold hover:text-white">FAQ</a>
+                </nav>
 
-                <div>
-                    <a href="https://t.me/LetychkaRobot" target="_blank" class="tg-auth-btn">
-                        <img src="{% static 'img/tg-logo.webp' %}" alt="Telegram Logo">
-                        <span>Войти через Telegram</span>
-                    </a>
+                <div class="hidden lg:flex items-center space-x-3">
+                    <a href="/login" class="cta-btn bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] px-5 py-2.5 text-sm font-bold rounded-full transition-transform hover:scale-105">Вход</a>
                 </div>
-                
-                <form id="registration-form" method="post" class="registration-form">
-                    {% csrf_token %}
-                    <div class="form-group">
-                        <label for="id_email">E-mail</label>
-                        <input type="email" name="email" maxlength="254" id="id_email" required>
-                        <div id="emailError" class="error-message" style="display: none;"></div>
-                    </div>
-                    <div class="form-group">
-                        <label for="id_password1">Пароль</label>
-                        <input type="password" name="password1" autocomplete="new-password" id="id_password1" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="id_password2">Подтверждение пароля</label>
-                        <input type="password" name="password2" autocomplete="new-password" id="id_password2" required>
-                        <div id="confirmPasswordError" class="error-message" style="display: none;"></div>
-                    </div>
-                    <button type="submit">Зарегистрироваться</button>
-                    
-                    <div class="already-exist">
-                        <p>Есть аккаунт? <a href="{% url 'login' %}">Войти</a></p>
-                        <div class="or-divider"></div>
-                        <p class="subs">Мы заботимся о вашей конфиденциальности</p>
-                        <a href="/docs/privacy-policy">Политика конфиденциальности</a>
-                    </div>
-                </form>
-                
-            </section>
+
+                <div class="lg:hidden">
+                    <button id="burger-btn" class="text-white text-2xl w-10 h-10 flex items-center justify-center">
+                        <i id="burger-icon" class="fas fa-bars transition-transform duration-300"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div id="mobile-menu" class="w-64 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/80 backdrop-blur-xl shadow-2xl shadow-black/50">
+                <nav class="flex flex-col p-4 space-y-2">
+                    <a href="/#transformation" class="px-4 py-3 text-base text-white font-semibold rounded-lg hover:bg-black/20">Возможности</a>
+                    <a href="/available-plans" class="px-4 py-3 text-base text-white font-semibold rounded-lg hover:bg-black/20">Тарифы</a>
+                    <a href="/#faq" class="px-4 py-3 text-base text-white font-semibold rounded-lg hover:bg-black/20">FAQ</a>
+                    <hr class="border-t border-[var(--color-border)] !my-3">
+                    <a href="/login" class="block text-center bg-[var(--color-accent-primary)] text-white px-5 py-3 text-base font-bold rounded-3xl mt-2">Вход</a>
+                </nav>
+            </div>
         </div>
-        
-        {% include 'footer.html' %}
-        <script src="{% static 'js/reg.js' %}"></script>
-    </div>
+    </header>
+
+    <main class="flex-grow flex items-center justify-center p-4">
+        <div class="w-full max-w-md mx-auto">
+            <div class="bg-[var(--color-surface)]/80 backdrop-blur-xl p-8 rounded-3xl border border-[var(--color-border)] text-center animate-fadeIn">
+                <h1 class="text-3xl font-bold text-white">Регистрация</h1>
+                <p class="mt-2 text-sm text-gray-400">Присоединяйтесь к&nbsp;сотням пользователей, которые уже отдали рутину машине.</p>
+                
+                <a href="https://t.me/LetychkaRobot" target="_blank" class="mt-6 group flex items-center justify-center gap-3 w-full p-4 bg-[#2AABEE] text-white font-bold rounded-2xl transition-transform hover:scale-105">
+                    <i class="fab fa-telegram-plane text-2xl"></i>
+                    <span>Продолжить через Telegram</span>
+                </a>
+                
+                <div class="my-6 flex items-center gap-4 text-xs text-gray-500">
+                    <hr class="w-full border-t border-[var(--color-border)]">
+                    <span>ИЛИ</span>
+                    <hr class="w-full border-t border-[var(--color-border)]">
+                </div>
+
+                <form id="classic-register-form" method="post" class="space-y-4 text-left">
+                    {% csrf_token %}
+                    
+                    {% if form.non_field_errors %}
+                        <div class="p-3 bg-red-900/50 border border-red-500/50 rounded-lg text-red-300 text-sm">
+                            {{ form.non_field_errors.as_text | cut:"* " }}
+                        </div>
+                    {% endif %}
+                    
+                    <div>
+                        <label for="{{ form.email.id_for_label }}" class="text-sm font-semibold text-gray-300">{{ form.email.label }}</label>
+                        <input type="email" name="{{ form.email.name }}" id="{{ form.email.id_for_label }}" required 
+                               class="mt-1 w-full p-3 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]">
+                        {% if form.email.errors %}
+                            <div class="mt-1 text-red-400 text-xs">{{ form.email.errors.as_text | cut:"* " }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div>
+                        <label for="{{ form.password1.id_for_label }}" class="text-sm font-semibold text-gray-300">{{ form.password1.label }}</label>
+                        <input type="password" name="{{ form.password1.name }}" id="{{ form.password1.id_for_label }}" required
+                               autocomplete="new-password"
+                               class="mt-1 w-full p-3 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]">
+                        {% if form.password1.errors %}
+                             <div class="mt-1 text-red-400 text-xs">{{ form.password1.errors.as_text | cut:"* " }}</div>
+                        {% endif %}
+                    </div>
+
+                     <div>
+                        <label for="{{ form.password2.id_for_label }}" class="text-sm font-semibold text-gray-300">{{ form.password2.label }}</label>
+                        <input type="password" name="{{ form.password2.name }}" id="{{ form.password2.id_for_label }}" required
+                               autocomplete="new-password"
+                               class="mt-1 w-full p-3 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]">
+                        {% if form.password2.errors %}
+                             <div class="mt-1 text-red-400 text-xs">{{ form.password2.errors.as_text | cut:"* " }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="pt-2">
+                        <label class="flex items-start gap-3 cursor-pointer group">
+                            <input type="checkbox" id="terms-checkbox" required class="absolute opacity-0 h-0 w-0">
+                            
+                            <div class="flex-shrink-0 mt-0.5 h-5 w-5 rounded-md border-2 border-gray-500 bg-[var(--color-bg)] 
+                                        transition-all duration-200 
+                                        group-hover:border-[var(--color-accent-primary)]
+                                        peer-checked:bg-[var(--color-accent-primary)] 
+                                        peer-checked:border-[var(--color-accent-primary)]">
+                                <svg class="h-full w-full text-white opacity-0 transition-opacity duration-200" 
+                                    xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                            
+                            <span class="text-xs text-gray-400">
+                                Я&nbsp;принимаю условия
+                                <a href="/docs/public-offer" target="_blank" rel="noopener noreferrer" class="text-[var(--color-accent-primary)] hover:underline">Публичной оферты</a>
+                                и&nbsp;<a href="/docs/privacy-policy" target="_blank" rel="noopener noreferrer" class="text-[var(--color-accent-primary)] hover:underline">Политики конфиденциальности</a>.
+                            </span>
+                        </label>
+                    </div>
+
+                    <button type="submit" id="submit-register-btn" disabled 
+                            class="w-full py-3 font-bold text-center rounded-full bg-[var(--color-accent-primary)] text-white transition-opacity duration-300 disabled:opacity-50 disabled:cursor-not-allowed" 
+                            data-loading-text="Создаем аккаунт...">
+                        Зарегистрироваться
+                    </button>
+                </form>
+
+                <p class="mt-6 text-sm text-gray-400">
+                    Уже есть аккаунт? <a href="{% url 'login' %}" class="font-bold text-[var(--color-accent-primary)] hover:underline">Войти</a>
+                </p>
+            </div>
+        </div>
+    </main>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.querySelector('#classic-login-form, #classic-register-form');
+            
+            if (form) {
+                const submitBtn = form.querySelector('#submit-register-btn');
+                
+                form.addEventListener('submit', () => {
+                    if (submitBtn && !submitBtn.disabled) {
+                        if (submitBtn.disabled) return;
+
+                        submitBtn.disabled = true;
+                        const loadingText = 'Подождите...';
+                        submitBtn.innerHTML = `
+                            <span style="display: flex; align-items: center; justify-content: center;">
+                                <svg style="animation: spin 1s linear infinite; margin-right: 0.75rem; height: 1.25rem; width: 1.25rem; color: white;" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle style="opacity: 0.25;" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path style="opacity: 0.75;" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <span>${loadingText}</span>
+                            </span>
+                        `;
+                    }
+                });
+
+                form.addEventListener('keydown', (e) => {
+                    if (e.target.tagName === 'INPUT' && e.key === 'Enter') {
+                        e.preventDefault();
+
+                        const inputs = Array.from(form.querySelectorAll('input:not([type="hidden"]):not([type="checkbox"])'));
+                        const currentIndex = inputs.indexOf(e.target);
+                        const nextInput = inputs[currentIndex + 1];
+
+                        if (nextInput) {
+                            nextInput.focus();
+                        } else {
+                            if (submitBtn && !submitBtn.disabled) {
+                                submitBtn.click();
+                            }
+                        }
+                    }
+                });
+            }
+
+            const termsCheckbox = document.getElementById('terms-checkbox');
+            const registerSubmitBtn = document.getElementById('submit-register-btn');
+            
+            if (termsCheckbox && registerSubmitBtn) {
+                const toggleButtonState = () => {
+                    registerSubmitBtn.disabled = !termsCheckbox.checked;
+                };
+                termsCheckbox.addEventListener('change', toggleButtonState);
+                toggleButtonState();
+            }
+        });
+    </script>
+    <script src="{% static 'js/head-landing.js' %}"></script>
+    
 </body>
 </html>

@@ -170,7 +170,7 @@ class AuthUser(AbstractUser):
 
     def save(self, *args, **kwargs):
         if not self.username:
-            self.username = self.email.split('@')[0]
+            self.username = str(self.email).split('@')[0]
         super().save(*args, **kwargs)
 
 

@@ -1567,7 +1567,6 @@
     </script>
 
     <script>
-        // Тумблер контента в the-choice
         document.addEventListener('DOMContentLoaded', () => {
             const toggle = document.getElementById('choice-toggle');
             const routineCard = document.getElementById('routine-card');
@@ -1589,31 +1588,7 @@
         });
     </script>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const header = document.getElementById('main-header');
-            const burgerBtn = document.getElementById('burger-btn');
-            const burgerIcon = document.getElementById('burger-icon');
-            const mobileMenu = document.getElementById('mobile-menu');
-
-            if (header) {
-                const handleScroll = () => {
-                    header.classList.toggle('scrolled', window.scrollY > 20);
-                };
-                window.addEventListener('scroll', handleScroll);
-                handleScroll();
-            }
-
-            if (burgerBtn && mobileMenu && burgerIcon) {
-                burgerBtn.addEventListener('click', () => {
-                    const isOpened = mobileMenu.classList.toggle('menu-open');
-                    document.body.style.overflow = isOpened ? 'hidden' : '';
-                    burgerIcon.classList.toggle('fa-bars', !isOpened);
-                    burgerIcon.classList.toggle('fa-times', isOpened);
-                });
-            }
-        });
-    </script>
+    <script src="{% static 'js/head-landing.js' %}"></script>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
@@ -1637,7 +1612,6 @@
                 const currentTheme = themes[themeIndex];
                 let displayText = '';
 
-                // Устанавливаем градиент для текущей темы
                 animatedTextSpan.style.background = currentTheme.gradient;
                 animatedTextSpan.style.webkitBackgroundClip = 'text';
                 animatedTextSpan.style.backgroundClip = 'text';
