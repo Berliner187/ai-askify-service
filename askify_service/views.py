@@ -1461,7 +1461,7 @@ def preview_test(request, survey_id):
 
     if survey:
         questions = survey.get_questions()
-        view_count = SurveyView.objects.filter(survey=survey).count()
+        view_count = survey.view_count
 
         json_response = {
             'page_title': f'{survey.title} | Генератор тестов с ИИ | Создать тест в Летучке',
@@ -1495,34 +1495,35 @@ def preview_test(request, survey_id):
 def register_survey_view(request, survey_id):
     if request.method == 'POST':
         try:
-            survey = Survey.objects.get(survey_id=survey_id)
+            survey = Survey.objects.select_for_update().get(survey_id=survey_id)
             data = json.loads(request.body)
             view_hash = data.get('hash', '')
 
             if not view_hash:
                 return JsonResponse({'success': False, 'error': 'Hash required'})
 
-            _, created = SurveyView.objects.get_or_create(
+            _, created = SurveyUniqueView.objects.get_or_create(
                 survey=survey,
                 view_hash=view_hash
             )
 
-            view_count = SurveyView.objects.filter(survey=survey).count()
+            if created:
+                survey.view_count = F('view_count') + 1
+                survey.save(update_fields=['view_count'])
+                survey.refresh_from_db()
 
-            tracer_l.info(f'View registered for survey {survey_id}')
             return JsonResponse({
                 'success': True,
                 'new_view': created,
-                'view_count': view_count
+                'view_count': survey.view_count
             })
 
         except Survey.DoesNotExist:
-            tracer_l.error(f'Survey {survey_id} not found')
-            return JsonResponse({'success': False, 'error': 'Survey not found'})
+            return JsonResponse({'success': False, 'error': 'Survey not found'}, status=404)
         except Exception as e:
-            tracer_l.error(f'Error: {str(e)}')
-            return JsonResponse({'success': False, 'error': str(e)})
-    return JsonResponse({'success': False, 'error': 'Invalid request'})
+            return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+    return JsonResponse({'success': False, 'error': 'Invalid request'}, status=400)
 
 
 # @login_required
@@ -2119,7 +2120,7 @@ def activate_api_key(request):
 
 MODEL_MAP = {
     'Survey': ('📝 Тесты', Survey),
-    'SurveyView': ('📝 SurveyView', SurveyView),
+    'SurveyView': ('📝 SurveyView', SurveyUniqueView),
     'UserAnswers': ('📤 Ответы', UserAnswers),
     'AuthUser': ('👥 Пользователи', AuthUser),
     'Subscription': ('💰 Подписки', Subscription),

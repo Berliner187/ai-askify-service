@@ -71,10 +71,13 @@ class Survey(models.Model):
         return response
 
 
-class SurveyView(models.Model):
-    survey = models.ForeignKey(Survey, on_delete=models.CASCADE, related_name='views')
-    view_hash = models.CharField(max_length=255, db_index=True)
+class SurveyUniqueView(models.Model):
+    survey = models.ForeignKey(Survey, on_delete=models.CASCADE, related_name='unique_views')
+    view_hash = models.CharField(max_length=64, db_index=True)
     timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('survey', 'view_hash')
 
 
 class UserAnswers(models.Model):
