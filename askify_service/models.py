@@ -27,6 +27,7 @@ class Survey(models.Model):
     id_staff = models.UUIDField()
     model_name = models.CharField(max_length=255, blank=True, null=True)
     show_answers = models.BooleanField(default=False)
+    view_count = models.PositiveIntegerField(default=0)
 
     def get_questions(self):
         return json.loads(self.questions)
