@@ -60,19 +60,34 @@
                     </div>
                     
                     <div class="container-buttons">
+                        <a class="button-medium" href="{% url 'preview_test' survey_id %}">
+                            <div>
+                                <p>Смотреть ответы</p>
+                                <img src="{% static 'img/icon-answer.png' %}" alt="">
+                            </div>
+                        </a>
+                    </div>
+
+                    <div class="container-buttons">
                         <a class="button-medium button-accent" href="{% url 'survey' survey_id=survey_id %}">
                             <div>
                                 <img src="{% static 'img/icon-retry.png' %}" alt="">
                                 <p>Пройти заново</p>
                             </div>
                         </a> 
-                        <a class="button-medium" href="{% url 'demo_view' survey_id %}">
+                        <a class="button-medium" href="{% url 'preview_test_result' survey_id %}">
                             <div>
-                                <p>Посмотреть ответы</p>
-                                <img src="{% static 'img/icon-answer.png' %}" alt="">
+                                <p>Смотреть аналитику</p>
+                                <img src="{% static 'img/icon-analytics.png' %}" alt="">
                             </div>
                         </a>
                     </div>
+                    <a class="button-medium mt-4" href="{% url 'preview_test' survey_id %}">
+                        <div>
+                            <p>Поделиться с учениками</p>
+                            <img src="{% static 'img/icon-share.png' %}" alt="">
+                        </div>
+                    </a>
 
                 {% else %}
 
@@ -81,36 +96,21 @@
                             <div>
                                 <p>Пройти тест</p>
                             </div>
-                        </a> 
+                        </a>
 
-                        {% if subs_active == False %}
+                        <a class="button-medium" href="{% url 'preview_test_result' survey_id %}">
+                            <div>
+                                <p>Смотреть аналитику</p>
+                                <img src="{% static 'img/icon-analytics.png' %}" alt="">
+                            </div>
+                        </a>
 
-                            <a class="button-medium button-accent" href="{% url 'payment' %}">
-                                <div>
-                                    <p>Посмотреть ответы</p>
-                                    <img src="{% static 'img/icon-locked.png' %}" alt="">
-                                </div>
-                            </a>
-
-                        {% else %}
-
-                            {% if subscription_level < 1 %}
-                                <a class="button-medium" href="{% url 'payment' %}">
-                                    <div>
-                                        <p>Посмотреть ответы</p>
-                                        <img src="{% static 'img/icon-locked.png' %}" alt="">
-                                    </div>
-                                </a>
-                            {% else %}
-                                <a class="button-medium button-accent" href="{% url 'demo_view' survey_id %}">
-                                    <div>
-                                        <p>Посмотреть ответы</p>
-                                        <img src="{% static 'img/icon-answer.png' %}" alt="">
-                                    </div>
-                                </a>
-                            {% endif %}
-
-                        {% endif %}
+                        <a class="button-medium mt-4" href="{% url 'preview_test' survey_id %}">
+                            <div>
+                                <p>Поделиться с учениками</p>
+                                <img src="{% static 'img/icon-share.png' %}" alt="">
+                            </div>
+                        </a>
 
                     </div>
                 {% endif %}
