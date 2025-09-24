@@ -1481,7 +1481,7 @@ def submit_answers(request, survey_id):
             score=score,
             total_questions=total_questions
         )
-        tracer_l.warning(f'USER {student_name} take {survey.survey_id}')
+        tracer_l.warning(f'USER {student_name} take {survey.title}')
 
         return JsonResponse({'success': True, 'score': score, 'total': total_questions})
 
@@ -1581,8 +1581,8 @@ def view_results(request, survey_id):
     if current_user_id_staff and current_user_id_staff == survey_creator_id_staff:
         is_creator = True
 
-    if is_creator:
-        return HttpResponse("Доступ запрещен", status=403)
+    # if is_creator:
+    #     return HttpResponse("Доступ запрещен", status=403)
 
     seven_days_ago = timezone.now() - timedelta(days=7)
     TestAttempt.objects.filter(survey=survey, created_at__lt=seven_days_ago).delete()
@@ -1659,7 +1659,7 @@ def view_results(request, survey_id):
         'total_attempts': total_attempts,
         'average_score_percent': average_score_percent,
         'median_score': median_score,
-        'perfect_attempts_percent': perfect_attempts_percent,
+        'perfect_attempts_percent': 0,
         'hardest_question': hardest_question,
         'easiest_question': easiest_question,
         'score_distribution': sorted(score_distribution.items()),
