@@ -1565,7 +1565,22 @@ def preview_test(request, survey_id):
 def view_results(request, survey_id):
     survey = get_object_or_404(Survey, survey_id=survey_id)
 
-    is_creator = get_is_creator(request, survey)
+    survey_creator_id_staff = survey.id_staff
+
+    current_user_id_staff = None
+    is_authenticated = request.user.is_authenticated
+
+    client_ip = get_client_ip(request)
+    anonymous_user = AuthUser.objects.filter(hash_user_id=client_ip).first()
+    if anonymous_user:
+        current_user_id_staff = anonymous_user.id_staff
+    if survey.id_staff == get_staff_id(request):
+        survey_creator_id_staff = current_user_id_staff
+
+    is_creator = False
+    if current_user_id_staff and current_user_id_staff == survey_creator_id_staff:
+        is_creator = True
+
     if is_creator:
         return HttpResponse("Доступ запрещен", status=403)
 
