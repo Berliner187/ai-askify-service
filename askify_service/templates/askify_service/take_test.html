@@ -55,7 +55,7 @@
                 </p>
 
                 <form id="start-test-form" class="mt-8 flex flex-col sm:flex-row gap-3">
-                    <input type="text" id="student-name" class="flex-grow w-full p-4 bg-[var(--color-bg)] border-2 border-[var(--color-border)] rounded-full text-center text-lg text-white focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)] placeholder:text-gray-600 transition-colors" placeholder="Имя и Фамилия" required>
+                    <input type="text" id="student-name" class="flex-grow w-full p-4 bg-[var(--color-bg)] border-2 border-[var(--color-border)] rounded-full text-center text-lg text-white focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)] placeholder:text-gray-600 transition-colors" placeholder="Имя" required>
                     <button type="submit" class="w-full sm:w-auto bg-[var(--color-accent-primary)] text-white px-8 py-4 font-bold rounded-full text-lg transition-transform hover:scale-105 shadow-lg shadow-[var(--color-accent-primary)]/20">Начать</button>
                 </form>
             </div>
@@ -132,7 +132,7 @@
                 });
 
                 testForm.append(questionBlock);
-                testForm.append('<button type="submit" class="button type="submit" class="w-full mt-4 bg-[var(--color-accent-secondary)] text-black px-8 py-4 font-bold rounded-full text-lg transition-transform hover:scale-105 shadow-lg shadow-[var(--color-accent-secondary)]/20">Ответить</button>');
+                testForm.append('<button type=submit" class="w-full mt-4 inline-block bg-[var(--color-accent-primary)] text-white px-10 py-4 font-bold rounded-full transition-transform hover:scale-105 shadow-lg shadow-[var(--color-accent-primary)]/20">Ответить</button>');
             }
             
             $('#start-test-form').on('submit', function(e) {
