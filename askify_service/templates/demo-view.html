@@ -325,7 +325,7 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script>
         function copyLinkAndNotify() {
-            navigator.clipboard.writeText('https://letychka.ru/t/{{survey_id/}}').then(function() {
+            navigator.clipboard.writeText(window.location.href).then(function() {
                 const message = $('<div/>', {
                     text: 'Ссылка скопирована!',
                     css: {
