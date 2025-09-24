@@ -1444,13 +1444,12 @@ def take_test(request, survey_id):
     """
     survey = get_object_or_404(Survey, survey_id=survey_id)
 
-    # Перемешиваем вопросы один раз при загрузке страницы
     questions_list = survey.get_questions()
-    random.shuffle(questions_list)  # <--- Перемешиваем вопросы для каждого студента
+    random.shuffle(questions_list)
 
     context = {
         'survey': survey,
-        'questions_json': json.dumps(questions_list, ensure_ascii=False)  # Передаем как JSON для JS
+        'questions_json': json.dumps(questions_list, ensure_ascii=False)
     }
     return render(request, 'askify_service/take_test.html', context)
 
@@ -1482,6 +1481,7 @@ def submit_answers(request, survey_id):
             score=score,
             total_questions=total_questions
         )
+        tracer_l.warning(f'USER {student_name} take {survey.survey_id}')
 
         return JsonResponse({'success': True, 'score': score, 'total': total_questions})
 
