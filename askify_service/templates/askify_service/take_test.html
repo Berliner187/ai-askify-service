@@ -79,8 +79,8 @@
                 <h1 class="text-4xl font-bold text-white">Ваш результат:</h1>
                 <p class="text-8xl font-black gradient-text my-4"><span id="score-value"></span>/<span id="total-value"></span></p>
                 <p class="text-lg text-[var(--color-text-secondary)]">Отлично! Результат отправлен автору.</p>
-                <a href="/#create-now" class="mt-8 inline-block bg-[var(--color-accent-primary)] text-white px-10 py-4 font-bold rounded-full transition-transform hover:scale-105 shadow-lg shadow-[var(--color-accent-primary)]/20">
-                    Создать свой тест
+                <a href="{% url 'preview_test' survey.survey_id %}" class="mt-8 inline-block bg-[var(--color-accent-primary)] text-white px-10 py-4 font-bold rounded-full transition-transform hover:scale-105 shadow-lg shadow-[var(--color-accent-primary)]/20">
+                    Посмотреть вопросы
                 </a>
             </div>
         </div>
@@ -119,9 +119,10 @@
                 `);
 
                 const optionsContainer = questionBlock.find('.space-y-3');
-                q.options.forEach(option => {
-                    const optionId = `q${index}_${option.replace(/[^a-zA-Z0-9]/g, '-')}`;
-                    // --- И ВАРИАНТЫ ОТВЕТА ТОЖЕ ---
+                q.options.forEach((option, i) => {
+                    // FIX: Генерируем гарантированно уникальный ID, чтобы избежать коллизий
+                    const optionId = `q${index}_option${i}_${Math.random().toString(36).substring(2, 9)}`;
+                    
                     const optionLabel = $(`
                         <label for="${optionId}" class="block p-4 bg-[var(--color-bg)] hover:bg-black/50 rounded-xl cursor-pointer border-2 border-[var(--color-border)] has-[:checked]:border-[var(--color-accent-primary)] has-[:checked]:bg-[var(--color-accent-primary)]/10 transition-all duration-200">
                             <input type="radio" id="${optionId}" name="question_${index}" value="${option}" class="hidden">
@@ -132,14 +133,17 @@
                 });
 
                 testForm.append(questionBlock);
-                testForm.append('<button type=submit" class="w-full mt-4 inline-block bg-[var(--color-accent-primary)] text-white px-10 py-4 font-bold rounded-full transition-transform hover:scale-105 shadow-lg shadow-[var(--color-accent-primary)]/20">Ответить</button>');
+                // FIX: Исправлена опечатка в type="submit"
+                testForm.append('<button type="submit" class="w-full mt-4 inline-block bg-[var(--color-accent-primary)] text-white px-10 py-4 font-bold rounded-full transition-transform hover:scale-105 shadow-lg shadow-[var(--color-accent-primary)]/20">Ответить</button>');
             }
             
             $('#start-test-form').on('submit', function(e) {
                 e.preventDefault();
                 studentName = studentNameInput.val();
                 if (studentName.trim() === '') {
-                    alert('Пожалуйста, введите имя.'); return;
+                    // Заменим alert на что-то более стильное в будущем, но для функционала сойдет
+                    studentNameInput.css('border-color', 'red');
+                    return;
                 }
                 landingView.addClass('hidden');
                 questionsView.removeClass('hidden');
@@ -150,7 +154,9 @@
                 e.preventDefault();
                 const selectedOption = $(`input[name="question_${currentQuestionIndex}"]:checked`).val();
                 if (!selectedOption) {
-                    alert('Пожалуйста, выберите вариант ответа.'); return;
+                    // Можно добавить более явное уведомление для пользователя
+                    alert('Пожалуйста, выберите вариант ответа.'); 
+                    return;
                 }
                 studentAnswers[questions[currentQuestionIndex].question] = selectedOption;
                 currentQuestionIndex++;
@@ -159,11 +165,14 @@
 
             async function submitTest() {
                 questionsView.addClass('hidden');
+                // Здесь можно добавить красивый прелоадер
                 
                 try {
                     const response = await fetch(`/api/t/{{ survey.survey_id }}/submit/`, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: { 
+                            'Content-Type': 'application/json'
+                        },
                         body: JSON.stringify({ student_name: studentName, answers: studentAnswers })
                     });
                     const data = await response.json();
@@ -172,9 +181,11 @@
                         $('#score-value').text(data.score);
                         $('#total-value').text(data.total);
                         resultView.removeClass('hidden');
-                    } else { throw new Error(data.error); }
+                    } else { 
+                        throw new Error(data.error || 'Unknown error'); 
+                    }
                 } catch (err) {
-                    alert('Произошла ошибка при отправке результатов.');
+                    alert('Произошла ошибка при отправке результатов: ' + err.message);
                 }
             }
         });
