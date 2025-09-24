@@ -241,7 +241,7 @@
                                 <span class="block text-sm opacity-70">Просматривайте результаты тех, кому Вы отправили тест</span>
                             </a>
                             {% else %}
-                            <a href="{% url 'preview_test_result' survey_id %}" class="mt-6 block w-full text-center bg-[var(--color-accent-primary)] text-white p-5 rounded-2xl transition-transform hover:scale-[1.03] shadow-lg shadow-[var(--color-accent-primary)]/20">
+                            <a href="{% url 'take_test' survey_id %}" class="mt-6 block w-full text-center bg-[var(--color-accent-primary)] text-white p-5 rounded-2xl transition-transform hover:scale-[1.03] shadow-lg shadow-[var(--color-accent-primary)]/20">
                                 <span class="text-lg font-bold">ПРОЙТИ ТЕСТ 🚀</span>
                                 <span class="block text-sm opacity-70">Пройдите тест, и автор увидит Ваш результат</span>
                             </a>
