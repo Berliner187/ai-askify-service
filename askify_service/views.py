@@ -270,7 +270,6 @@ def user_stats_api(request):
     })
 
 
-
 def solving_tests_promo(request):
     return render(request, 'landings/solving-tests.html')
 
@@ -1417,6 +1416,78 @@ def download_results_pdf(request, survey_id):
         return HttpResponse("Произошла критическая ошибка при генерации PDF. Пожалуйста, попробуйте позже.", status=500)
 
 
+def get_is_creator(request, survey):
+    survey_creator_id_staff = survey.id_staff
+
+    current_user_id_staff = None
+    is_authenticated = request.user.is_authenticated
+
+    if is_authenticated:
+        current_user_id_staff = get_staff_id(request)
+    else:
+        client_ip = get_client_ip(request)
+        anonymous_user = AuthUser.objects.filter(hash_user_id=client_ip).first()
+        if anonymous_user:
+            current_user_id_staff = anonymous_user.id_staff
+
+    is_creator = False
+    if current_user_id_staff and current_user_id_staff == survey_creator_id_staff:
+        is_creator = True
+
+    return is_creator
+
+
+@csrf_exempt
+def take_test(request, survey_id):
+    """
+    Отображает страницу прохождения теста (все 3 этапа).
+    """
+    survey = get_object_or_404(Survey, survey_id=survey_id)
+
+    # Перемешиваем вопросы один раз при загрузке страницы
+    questions_list = survey.get_questions()
+    random.shuffle(questions_list)  # <--- Перемешиваем вопросы для каждого студента
+
+    context = {
+        'survey': survey,
+        'questions_json': json.dumps(questions_list, ensure_ascii=False)  # Передаем как JSON для JS
+    }
+    return render(request, 'askify_service/take_test.html', context)
+
+
+@csrf_exempt
+def submit_answers(request, survey_id):
+    """
+    API-ручка, которая принимает ответы.
+    """
+    if request.method == 'POST':
+        survey = get_object_or_404(Survey, survey_id=survey_id)
+        data = json.loads(request.body)
+
+        student_name = data.get('student_name', 'Аноним').strip()
+        answers = data.get('answers', {})
+
+        questions_data = {q['question']: q for q in survey.get_questions()}
+        score = 0
+        total_questions = len(questions_data)
+
+        for q_text, student_answer in answers.items():
+            if q_text in questions_data and student_answer == questions_data[q_text]['correct_answer']:
+                score += 1
+
+        TestAttempt.objects.create(
+            survey=survey,
+            student_name=student_name if student_name else "Аноним",
+            answers_json=json.dumps(answers, ensure_ascii=False),
+            score=score,
+            total_questions=total_questions
+        )
+
+        return JsonResponse({'success': True, 'score': score, 'total': total_questions})
+
+    return JsonResponse({'error': 'Invalid request'}, status=400)
+
+
 def preview_test(request, survey_id):
     if not is_valid_uuid(survey_id):
         context = {
@@ -1436,21 +1507,17 @@ def preview_test(request, survey_id):
 
     survey_creator_id_staff = survey.id_staff
 
-    # 2. ОПРЕДЕЛЯЕМ ID ТЕКУЩЕГО ПОЛЬЗОВАТЕЛЯ.
     current_user_id_staff = None
     is_authenticated = request.user.is_authenticated
 
-    if is_authenticated:
-        # Если юзер залогинен, его id_staff - наш кандидат.
-        current_user_id_staff = get_staff_id(request)
-    else:
-        # Если аноним, ищем его по IP и берем его id_staff.
-        client_ip = get_client_ip(request)
-        anonymous_user = AuthUser.objects.filter(hash_user_id=client_ip).first()
-        if anonymous_user:
-            current_user_id_staff = anonymous_user.id_staff
+    # if is_authenticated:
+    #     current_user_id_staff = get_staff_id(request)
+    # else:
+    client_ip = get_client_ip(request)
+    anonymous_user = AuthUser.objects.filter(hash_user_id=client_ip).first()
+    if anonymous_user:
+        current_user_id_staff = anonymous_user.id_staff
 
-    # 3. СРАВНИВАЕМ, БЛЯТЬ, ИХ. ОДНОЙ, СУКА, СТРОКОЙ.
     is_creator = False
     if current_user_id_staff and current_user_id_staff == survey_creator_id_staff:
         is_creator = True
@@ -1490,6 +1557,100 @@ def preview_test(request, survey_id):
     }
 
     return render(request, 'demo-view.html', context)
+
+
+@login_required
+def view_results(request, survey_id):
+    survey = get_object_or_404(Survey, survey_id=survey_id)
+
+    is_creator = get_is_creator(request, survey)
+    if is_creator:
+        return HttpResponse("Доступ запрещен", status=403)
+
+    seven_days_ago = timezone.now() - timedelta(days=7)
+    TestAttempt.objects.filter(survey=survey, created_at__lt=seven_days_ago).delete()
+
+    # Собираем данные о всех попытках
+    attempts_qs = survey.attempts.all().order_by('-created_at')
+    total_attempts = attempts_qs.count()
+
+    average_score_percent = 0
+    median_score = 0
+    perfect_attempts_count = 0
+    hardest_question, easiest_question = "-", "-"
+    score_distribution = {}
+
+    if total_attempts > 0:
+        # Расчет среднего балла
+        stats = attempts_qs.aggregate(
+            avg_percent=Avg(100.0 * F('score') / F('total_questions'))
+        )
+        average_score_percent = stats['avg_percent']
+
+        # Расчет медианного балла
+        scores = [attempt.score for attempt in attempts_qs]
+        if scores:
+            scores.sort()
+            count = len(scores)
+            if count % 2 == 1:
+                median_score = scores[count // 2]
+            else:
+                mid1 = scores[count // 2 - 1]
+                mid2 = scores[count // 2]
+                median_score = (mid1 + mid2) / 2
+
+        # Считаем количество 100% результатов
+        perfect_attempts_count = attempts_qs.filter(
+            score=F('total_questions')
+        ).count()
+        perfect_attempts_percent = (perfect_attempts_count / total_attempts) * 100
+
+        questions_stats = {}
+        for attempt in attempts_qs:
+            try:
+                answers = attempt.get_answers()
+                if isinstance(answers, dict):
+                    for q_text, result in answers.items():
+                        if isinstance(result, dict) and 'is_correct' in result:
+                            if q_text not in questions_stats:
+                                questions_stats[q_text] = {'correct': 0, 'incorrect': 0}
+
+                            if result.get('is_correct'):
+                                questions_stats[q_text]['correct'] += 1
+                            else:
+                                questions_stats[q_text]['incorrect'] += 1
+            except (json.JSONDecodeError, AttributeError):
+                continue
+
+        if questions_stats:
+            hardest_q = min(questions_stats, key=lambda q: questions_stats[q]['correct'])
+            easiest_q = max(questions_stats, key=lambda q: questions_stats[q]['correct'])
+            hardest_question = hardest_q
+            easiest_question = easiest_q
+
+        for attempt in attempts_qs:
+            if attempt.total_questions > 0:
+                score_percent = (attempt.score / attempt.total_questions) * 100
+                score_bucket = int(score_percent // 10) * 10
+                if score_bucket not in score_distribution:
+                    score_distribution[score_bucket] = 0
+                score_distribution[score_bucket] += 1
+
+    context = {
+        'survey': survey,
+        'attempts': attempts_qs,
+        'total_attempts': total_attempts,
+        'average_score_percent': average_score_percent,
+        'median_score': median_score,
+        'perfect_attempts_percent': perfect_attempts_percent,
+        'hardest_question': hardest_question,
+        'easiest_question': easiest_question,
+        'score_distribution': sorted(score_distribution.items()),
+        'view_count': survey.view_count,
+        'username': get_username(request)
+    }
+
+    return render(request, 'askify_service/test_results.html', context)
 
 
 @csrf_exempt

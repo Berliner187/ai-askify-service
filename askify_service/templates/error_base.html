@@ -55,8 +55,6 @@
 
     <div class="relative z-10 flex flex-col items-center text-center max-w-xl mx-auto" style="animation: fadeIn 1s ease-out 0.2s forwards; opacity: 0;">
         
-        {% block extra_content_top %}{% endblock %}
-
         <h2 class="mt-8 text-4xl sm:text-3xl text-white leading-tight">
             {% block message %}{% endblock %}
         </h2>
@@ -73,7 +71,7 @@
             </a>
         </div>
 
-        {% block extra_content_bottom %}{% endblock %}
+        {% block extra_content %}{% endblock %}
     </div>
 
 </body>

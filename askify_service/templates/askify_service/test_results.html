@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    {% include 'components/meta_tags.html' %} 
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    {% load static %}
+    <link rel="icon" href="{% static 'img/favicon.ico' %}" type="image/ico">
+    <link rel="stylesheet" href="{% static 'css/footer.css' %}">
+
+    {% if debug %}
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    {% else %}
+        <script src="{% static 'vendor/tailwind.full.min.js' %}"></script>
+        <script src="{% static 'vendor/jquery.min.js' %}"></script>
+    {% endif %}
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=Unbounded:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --color-bg: #0F0818;
+            --color-surface: rgba(30, 24, 48, 0.5);
+            --color-border: rgba(97, 109, 240, 0.2);
+            --color-text-primary: #f0f0f0;
+            --color-text-secondary: #a0a0b0;
+            --color-accent-primary: #616DF0;
+            --color-accent-secondary: #79EF66;
+        }
+        body { background-color: var(--color-bg); font-family: 'Inter', sans-serif; }
+        h1, h2, h3 { font-family: 'Unbounded', sans-serif; }
+        .gradient-text {
+            background: linear-gradient(45deg, var(--color-accent-primary), var(--color-accent-secondary));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeIn {
+            animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+    </style>
+</head>
+<body class="text-[var(--color-text-primary)]">
+    <main class="max-w-4xl mx-auto px-4 py-8 sm:py-12 space-y-8 animate-fadeIn">
+        <header class="sticky top-4 z-40 bg-[var(--color-surface)]/80 backdrop-blur-xl rounded-3xl border border-[var(--color-border)] p-4 shadow-2xl shadow-black/50">
+            <div class="flex justify-between items-center gap-4">
+                <div class="flex-grow min-w-0">
+                    <h1 class="text-sm font-bold text-white truncate" title="{{ title }}">{{ survey.title }}</h1>
+                    <div class="flex items-center gap-3 text-xs text-gray-400">
+                        <span>{{ username }}</span>
+                        <span class="text-gray-600">•</span>
+                        <div class="flex items-center gap-1.5" title="{{ view_count }} просмотров">
+                            <i class="fas fa-eye"></i>
+                            <span>{{ view_count }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- "ПАСПОРТ" ТЕСТА -->
+        <div class="bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] shadow-2xl shadow-black/50">
+            <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+                <div>
+                    <a href="{% url 'preview_test' survey.survey_id %}" class="text-sm text-[var(--color-text-secondary)] hover:text-white transition-colors duration-200">
+                        <i class="fas fa-arrow-left mr-2"></i>Вернуться к просмотру теста
+                    </a>
+                    <!-- <h1 class="mt-2 text-2xl sm:text-3xl font-bold text-white">{{ survey.title }}</h1> -->
+                </div>
+                <!-- <div class="flex-shrink-0">
+                    <a href="#" class="inline-block bg-[var(--color-accent-primary)] text-white px-6 py-3 text-sm font-bold rounded-full transition-transform hover:scale-105 shadow-lg shadow-[var(--color-accent-primary)]/20">
+                        <i class="fas fa-download mr-2"></i>Скачать отчет в CSV
+                    </a>
+                </div> -->
+            </div>
+        </div>
+        
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] text-center shadow-2xl shadow-black/50">
+                <p class="text-xs text-[var(--color-text-secondary)] font-semibold uppercase tracking-wider">Всего прохождений</p>
+                <p class="text-5xl font-extrabold gradient-text mt-2">{{ total_attempts }}</p>
+            </div>
+            
+            <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] text-center shadow-2xl shadow-black/50">
+                <p class="text-xs text-[var(--color-text-secondary)] font-semibold uppercase tracking-wider">Средний балл</p>
+                <p class="text-5xl font-extrabold gradient-text mt-2">{{ average_score_percent|floatformat:0 }}<span class="text-3xl">%</span></p>
+            </div>
+            
+            <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] text-center shadow-2xl shadow-black/50">
+                <p class="text-xs text-[var(--color-text-secondary)] font-semibold uppercase tracking-wider">Медианный балл</p>
+                <p class="text-5xl font-extrabold gradient-text mt-2">{{ median_score|floatformat:0 }}<span class="text-3xl">%</span></p>
+            </div>
+
+            <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] text-center shadow-2xl shadow-black/50 flex flex-col justify-center">
+                <p class="text-xs text-[var(--color-text-secondary)] font-semibold uppercase tracking-wider">Самый сложный вопрос</p>
+                <p class="text-lg font-bold text-white mt-2 leading-tight">{{ hardest_question|default:"Нет данных" }}</p>
+            </div>
+
+            <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] text-center shadow-2xl shadow-black/50 flex flex-col justify-center">
+                <p class="text-xs text-[var(--color-text-secondary)] font-semibold uppercase tracking-wider">Самый легкий вопрос</p>
+                <p class="text-lg font-bold text-white mt-2 leading-tight">{{ easiest_question|default:"Нет данных" }}</p>
+            </div>
+
+            <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] text-center shadow-2xl shadow-black/50">
+                <p class="text-xs text-[var(--color-text-secondary)] font-semibold uppercase tracking-wider">Идеальные результаты</p>
+                <p class="text-5xl font-extrabold gradient-text mt-2">{{ perfect_attempts_percent|floatformat:0 }}<span class="text-3xl">%</span></p>
+            </div>
+        </div>
+
+        <!-- СПИСОК РЕЗУЛЬТАТОВ -->
+        <div class="bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] shadow-2xl shadow-black/50">
+            <h2 class="text-xl font-bold text-white mb-4">Последние попытки</h2>
+            
+            <div class="flow-root">
+                <ul class="-my-3 divide-y divide-[var(--color-border)]">
+                    {% for attempt in attempts %}
+                    <li class="py-4 flex flex-col sm:flex-row justify-between sm:items-center gap-3 hover:bg-black/20 -mx-4 px-4 rounded-lg transition-colors duration-200">
+                        <div class="flex items-center gap-4">
+                            <!-- Аватарка по первой букве имени -->
+                            <div class="flex-shrink-0 flex items-center justify-center h-11 w-11 rounded-full bg-[var(--color-accent-primary)]/20 border border-[var(--color-border)]">
+                                <span class="font-bold text-lg text-white">{{ attempt.student_name|first|upper }}</span>
+                            </div>
+                            <div>
+                                <p class="font-semibold text-white">{{ attempt.student_name }}</p>
+                                <p class="text-xs text-[var(--color-text-secondary)]">{{ attempt.created_at|date:"d M Y в H:i" }}</p>
+                            </div>
+                        </div>
+                        <div class="text-right mt-2 sm:mt-0 flex-shrink-0">
+                            <p class="font-bold text-lg {% if attempt.percent == 100 %}text-[var(--color-accent-secondary)]{% else %}text-white{% endif %}">
+                                {{ attempt.score }} / {{ attempt.total_questions }}
+                            </p>
+                        </div>
+                    </li>
+                    {% empty %}
+                    <li class="text-center text-[var(--color-text-secondary)] py-16">
+                        <i class="fas fa-ghost text-4xl mb-4 opacity-50"></i>
+                        <p class="font-semibold text-white">Здесь пока пусто</p>
+                        <p class="text-sm">Еще никто не прошел этот тест.</p>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </main>
+
+    {% include 'footer.html' %}
+</body>
+</html>

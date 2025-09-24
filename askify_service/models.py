@@ -28,6 +28,7 @@ class Survey(models.Model):
     model_name = models.CharField(max_length=255, blank=True, null=True)
     show_answers = models.BooleanField(default=False)
     view_count = models.PositiveIntegerField(default=0)
+    description = models.CharField(max_length=255, blank=True, null=True)
 
     def get_questions(self):
         return json.loads(self.questions)
@@ -557,3 +558,21 @@ class APIKeyUsage(models.Model):
 
     class Meta:
         db_table = 'api_key_usage'
+
+
+class TestAttempt(models.Model):
+    survey = models.ForeignKey(Survey, on_delete=models.CASCADE, related_name='attempts')
+
+    student_name = models.CharField(max_length=100)
+
+    answers_json = models.TextField()
+    score = models.PositiveIntegerField()
+    total_questions = models.PositiveIntegerField()
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Попытка от {self.student_name} для теста {self.survey.title}"
+
+    def get_answers(self):
+        return json.loads(self.answers_json)

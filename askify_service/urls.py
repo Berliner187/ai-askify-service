@@ -18,7 +18,11 @@ urlpatterns = [
     path('result/<str:survey_id>/', result_view, name='result'),
     path('result/<uuid:survey_id>/download/', download_results_pdf, name='download-results_pdf'),
 
-    path('c/<str:survey_id>/', preview_test, name='demo_view'),
+    path('c/<str:survey_id>/', preview_test, name='preview_test'),
+    path('t/<str:survey_id>/', take_test, name='take_test'),
+    path('api/t/<str:survey_id>/submit/', submit_answers, name='submit_answers'),
+    path('c/<str:survey_id>/result/', view_results, name='preview_test_result'),
+
     path('register-view/<str:survey_id>/', register_survey_view, name='register_survey_view'),
     path('api/surveys/<uuid:survey_id>/toggle-answers/', toggle_answers, name='toggle-answers'),
 
