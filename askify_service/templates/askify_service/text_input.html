@@ -51,7 +51,7 @@
     
     <div id="page-container" class="fade" style="display: none;">
         {% include 'header.html' %}
-        {% if subscription_level < 2 or subscription_level == 99 %}
+        {% if subscription_level < 1 or subscription_level == 99 %}
         
             <div class="container subscription-offer locked-upload" id="upload-files-container">
 
@@ -61,13 +61,12 @@
                 </div>
                 
                 <div class="container-buttons">
-                    <div class="button-medium button-accent">
-                        <a href="{% url 'payment' %}">
-                            <div>
-                                <p>Приобрести</p>
-                            </div>
-                        </a>
-                    </div>
+                    <a class="button-medium button-accent" href="{% url 'payment' %}">
+                        <div>
+                            <img src="{% static 'img/icon-diamond.png' %}" alt="">
+                            <p>Приобрести</p>
+                        </div>
+                    </a>
                 </div>
             </div>
 
