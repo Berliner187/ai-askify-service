@@ -540,14 +540,6 @@ body {
     font-size: .8em;
 }
 
-@media (max-width: 768px) {
-    .features-container {
-        display: flex;
-        flex-wrap: wrap;
-    }
-}
-
-
 .locked-upload-integrated {
     display: flex;
     align-items: center;
@@ -581,4 +573,18 @@ body {
 }
 .locked-upload-integrated .button-medium {
     flex-shrink: 0;
+}
+
+
+@media (max-width: 768px) {
+    .features-container {
+        display: flex;
+        flex-wrap: wrap;
+    }
+    .locked-upload-integrated {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    .locked-upload-integrated p {
+    }
 }

@@ -56,6 +56,8 @@ urlpatterns = [
     path('get_ip/', get_ip, name='get_ip'),
 
     path('available-plans/', available_plans, name='available_plans'),
+
+    path('api/payment/initiate/', PaymentInitiateView.as_view(), name='payment_initiate'),
     path('payment/', create_payment, name='payment'),
     path('payment/success/', PaymentSuccessView.as_view(), name='payment_success'),
     path('payment/fail/', PaymentSuccessView.as_view(), name='payment_fail'),
@@ -68,7 +70,6 @@ urlpatterns = [
 
     path('auth/telegram/', TelegramAuthView.as_view(), name='telegram_auth'),
 
-    path('api/payment/initiate/', PaymentInitiateView.as_view(), name='payment_initiate'),
     path('api/ghost_disconnect/', terminate_session, name='ghost_disconnect'),
 
     path("api/user-stats/", user_stats_api, name="user_stats_api"),

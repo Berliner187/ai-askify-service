@@ -2712,15 +2712,27 @@ class PaymentInitiateView(View):
 
             # TODO: Сделать как транзакцию
             # Инициализация тарифного плана
-            subscription = Subscription.objects.create(
-                staff_id=get_staff_id(request),
-                plan_name=description,
-                end_date=datetime.now(),
-                status='inactive',
-                billing_cycle='monthly',
-                discount=0.00
-            )
-            subscription.save()
+            if description == 'Премиум Год' or description == 'Стандартный Год':
+                subscription = Subscription.objects.create(
+                    staff_id=get_staff_id(request),
+                    plan_name=description,
+                    end_date=datetime.now(),
+                    status='inactive',
+                    billing_cycle='yearly',
+                    discount=0.00
+                )
+                subscription.save()
+            else:
+                subscription = Subscription.objects.create(
+                    staff_id=get_staff_id(request),
+                    plan_name=description,
+                    end_date=datetime.now(),
+                    status='inactive',
+                    billing_cycle='monthly',
+                    discount=0.00
+                )
+                subscription.save()
+
             # Инициализация оплаты
             new_payment = Payment.objects.create(
                 staff_id=get_staff_id(request),
@@ -2810,8 +2822,12 @@ class PaymentSuccessView(View):
 
                     tracer_l.critical(f'SUCCESS BUY - {request.user.username} - {description_payment}')
 
+                    if subscription.billing_cycle == 'yearly':
+                        subscription.end_date = datetime.now() + timedelta(days=365)
+                    else:
+                        subscription.end_date = datetime.now() + timedelta(days=45)
+
                     subscription.start_date = datetime.now()
-                    subscription.end_date = datetime.now() + timedelta(days=30)
                     subscription.status = 'active'
                     subscription.save()
 

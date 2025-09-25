@@ -134,14 +134,15 @@
         {% if subscription_level < 1 or subscription_level == 99 %}
             <div class="container locked-upload-integrated">
                 <div class="icon-wrapper">
-                    <img src="{% static 'img/icon-locked.png' %}" alt="Замок">
+                    <i class="fas fa-gift text-6xl text-[var(--secondary-color)]"></i>
                 </div>
                 <div class="text-wrapper">
-                    <h3>Загрузка файлов — это Премиум</h3>
-                    <p>Перейдите на Премиум, чтобы создавать тесты из PDF, DOCX и TXT файлов.</p>
+                    <h3>Осенний бонус – <span style="color: var(--secondary-color);">+15 дней в&nbsp;подарок!</span></h3>
+                    <p>Получите <span style="color: var(--secondary-color);">на 50% больше времени</span> для&nbsp;творчества и&nbsp;отдыха с&nbsp;Летучкой</p><br>
+                    <p>Только <span style="color: var(--secondary-color);">до конца сентября</span> мы&nbsp;превращаем каждый купленный месяц – в&nbsp;полтора. Освободите свои вечера от&nbsp;рутины — инвестируйте в&nbsp;себя.</p>
                 </div>
                 <a class="button-medium button-accent" href="{% url 'payment' %}">
-                    <div><img src="{% static 'img/icon-diamond.png' %}" alt=""> <p>Улучшить</p></div>
+                    <div><img src="{% static 'img/icon-diamond.png' %}" alt=""> <p>Воспользоваться</p></div>
                 </a>
             </div>
         {% else %}
