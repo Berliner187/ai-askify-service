@@ -325,9 +325,7 @@ def page_history_surveys(request):
 @login_required
 def api_get_history(request):
     surveys_data = get_all_surveys(request, page=1)
-
     tracer_l.info(f"{request.user.username} --- loaded surveys page 1")
-
     return JsonResponse({'data': surveys_data['results']})
 
 
@@ -2052,7 +2050,7 @@ def profile_view(request, username):
         },
         'subscription': {
             'plan_name': human_readable_plan,
-            'plan_end_date': f"заканчивается {subscription_end_date_formatted}" if days_until_end > 0 else "истёк :(",
+            'plan_end_date': f"{subscription_end_date_formatted}" if days_until_end > 0 else "Закончился",
             'days_until_end': days_until_end,
         },
         'subscription_level': get_subscription_level(request),

@@ -132,14 +132,16 @@
         </div>
 
         {% if subscription_level < 1 or subscription_level == 99 %}
-            <div class="container subscription-offer locked-upload locked-upload-integrated">
-                <div class="icon-wrapper"><img src="{% static 'img/icon-locked.png' %}" alt="Замок"></div>
+            <div class="container locked-upload-integrated">
+                <div class="icon-wrapper">
+                    <img src="{% static 'img/icon-locked.png' %}" alt="Замок">
+                </div>
                 <div class="text-wrapper">
                     <h3>Загрузка файлов — это Премиум</h3>
-                    <p>Создавайте тесты из PDF и DOCX, разблокировав все возможности.</p>
+                    <p>Перейдите на Премиум, чтобы создавать тесты из PDF, DOCX и TXT файлов.</p>
                 </div>
                 <a class="button-medium button-accent" href="{% url 'payment' %}">
-                    <div><img src="{% static 'img/icon-diamond.png' %}" alt=""><p>Улучшить</p></div>
+                    <div><img src="{% static 'img/icon-diamond.png' %}" alt=""> <p>Улучшить</p></div>
                 </a>
             </div>
         {% else %}

@@ -13,125 +13,96 @@
 
     <div id="page-container" class="fade" style="display: none;">
         {% include 'header.html' %}
-        
-        <div class="container profile" id="profile-container">
-            <h2>Профиль <span class="accent-color-text">{{ username }}</span></h2>
 
-            <div class="profile-info">
-                <p>{{ email }}</p>
-                <p>{{ phone }}</p>
-                <p>{{ password }}</p>
-
-                <ul>
-                    <li class="small-text">Последняя авторизация: {{ date_last_login }}</li>
-                    <li class="small-text">Дата регистрации: {{ date_join }}</li>
-                </ul>
-
-                {% if password != '' %}
-                    <form method="post" action="{% url 'password_reset' %}">
-                        {% csrf_token %}
-                        <div class="button-medium">
-                            <button type="submit">
-                                <div>
-                                    <p>Сбросить пароль</p>
-                                    <img src="{% static 'img/icon-retry.png' %}" alt="">
-                                </div>
-                            </button>
-                        </div>
-                    </form>
-                {% endif %}
-                <!-- <div class="button-medium">
-                    <a href="{% url 'verify_email' token=token %}">
-                        <div>
-                            <p>Подтвердить почту</p>
-                            <img src="{% static 'img/icon-confirm.png' %}" alt="">
-                        </div>
-                    </a>
-                </div> -->
-                
+        <main class="profile-main">
+        <div class="container profile-container">
+            <div class="profile-header">
+                <h1>{{ username }}</h1>
+                <p>Ваш личный кабинет и статистика</p>
             </div>
 
-            <hr>
-
-            <div class="profile-info">
-                <h3>Статистика</h3>
-                <ul>
-                    <li>Создано тестов: <span class="accent-color-text">{{ statistics.total_tests }}</span></li>
-                    <li>Пройдено: <span id="accent-color">{{ statistics.passed_tests }}</span></li>
-                    <li>Лучший: <span id="accent-color">{{ statistics.best_result }}</span></li>
-                </ul>
-            </div>
-
-            <hr>
-
-            <div class="profile-info">
-                <h3>Активный план</h3>
-                <ul>
-                    <li>План <strong>{{subscription.plan_name}}</strong>, и он {{ subscription.plan_end_date }}</li>
+            <div class="profile-section">
+                <h3><i class="fas fa-gem"></i> Активный план</h3>
+                <ul class="profile-list">
+                    <li>
+                        <span class="label">Тариф</span>
+                        <span class="value plan-name">{{ subscription.plan_name }}</span>
+                    </li>
+                    <li>
+                        <span class="label">Действителен до</span>
+                        <span class="value">{{ subscription.plan_end_date }}</span>
+                    </li>
                 </ul>
                 {% if subscription.days_until_end is not none and subscription.days_until_end < 3 %}
-                    <a class="button-medium button-accent" href="{% url 'payment' %}">
-                        <div>
-                            <p>Продлить 💎</p>
-                        </div>
-                    </a>
+                    <a class="button-medium button-accent section-action-button" href="{% url 'payment' %}"><div><p>Продлить 💎</p></div></a>
                 {% elif subscription_level < 2 or subscription_level == 99 %}
-                    <a href="{% url 'payment' %}" class="button-medium">
-                        <div>
-                            <p>Купить премиум 💎</p>
-                        </div>
-                    </a>
+                    <a href="{% url 'payment' %}" class="button-medium button-accent section-action-button"><div><p>Купить Премиум 💎</p></div></a>
                 {% endif %}
             </div>
 
-            <hr>
+            <hr class="profile-divider">
 
-            {% if user.is_superuser %}
-                <div class="admin-only-hint">
-                    <small>Видно только тебе</small>
-                </div>
-                <a class="button-medium button-accent" style="margin: 20px 0; background: #ff4757;" href="{% url 'db_viewer' %}">
-                    <div>
-                        <p>Админ-панель 👑</p>
-                    </div>
-                </a>
-            {% endif %}
-
-            <div class="profile-info">
-                <h3>Токены в этом месяце</h3>
-                <ul>
-                    <li>Для тестов <span class="accent-color-text">{{tokens.surveys}}</span></li>
-                    <li>Для фидбэка <span class="accent-color-text">{{tokens.feedback}}</span></li>
-                    <li>Всего использовано <span class="accent-color-text">{{tokens.total_tokens}}</span></li>
+            <div class="profile-section">
+                <h3><i class="fas fa-user-cog"></i> Аккаунт</h3>
+                <ul class="profile-list">
+                    {% if email %}<li><span class="label">E-mail</span><span class="value">{{ user.email }}</span></li>{% endif %}
+                    {% if phone != 'Телефон: Не указан' %}<li><span class="label">Телефон</span><span class="value">{{ user.phone }}</span></li>{% endif %}
                 </ul>
-                <hr>
-                <h3>Лимиты</h3>
-                <ul>
-                    <li>Доступно создать <span class="accent-color-text">{{ tokens.tests_remaining_count_limit }}</span> тестов сегодня</li>
+                <div class="account-actions">
+                    {% if password != '' %}
+                        <form method="post" action="{% url 'password_reset' %}">
+                            {% csrf_token %}
+                            <button type="submit" class="button-medium"><div><p>Сбросить пароль</p></div></button>
+                        </form>
+                    {% endif %}
+                    <div class="button-medium button-red" id="logout-button"><div><p>Выйти из аккаунта</p></div></div>
+                </div>
+                 {% if user.is_superuser %}
+                    <a class="button-medium admin-button" href="{% url 'db_viewer' %}"><div><p>Админ-панель 👑</p></div></a>
+                {% endif %}
+            </div>
+            
+            <hr class="profile-divider">
+
+            <div class="profile-section">
+                <h3><i class="fas fa-chart-pie"></i> Статистика</h3>
+                <ul class="profile-list">
+                    <li>
+                        <span class="label">Создано тестов</span>
+                        <span class="value">{{ statistics.total_tests }}</span>
+                    </li>
+                    <li>
+                        <span class="label">Пройдено учениками</span>
+                        <span class="value">{{ statistics.passed_tests }}</span>
+                    </li>
+                    <li>
+                        <span class="label">Лучший результат</span>
+                        <span class="value">{{ statistics.best_result }}</span>
+                    </li>
                 </ul>
             </div>
 
-            <div class="head-button">
-                <a class="button-medium" href="{% url 'payment' %}">
-                    <div>
-                        <p>Тарифы</p>
-                        <img src="{% static 'img/icon-stars.png' %}" alt="">
-                    </div>
-                </a>
+            <hr class="profile-divider">
 
-                <div class="button-medium button-red" id="logout-button">
-                    <div>
-                        <p>Выйти</p>
-                        <img src="{% static 'img/icon-logout.png' %}" alt="">
-                    </div>
-                </div>
-
+            <div class="profile-section">
+                <h3><i class="fas fa-sliders-h"></i> Лимиты и Использование</h3>
+                <ul class="profile-list">
+                    <li>
+                        <span class="label">Доступно тестов сегодня</span>
+                        <span class="value accent-color-text">{{ tokens.tests_remaining_count_limit }} / {{ tokens.tests_total_limit }}</span>
+                    </li>
+                    <li>
+                        <span class="label">Токены ИИ (тесты)</span>
+                        <span class="value">{{tokens.surveys}}</span>
+                    </li>
+                     <li>
+                        <span class="label">Токены ИИ (фидбэк)</span>
+                        <span class="value">{{tokens.feedback}}</span>
+                    </li>
+                </ul>
             </div>
         </div>
-        {% include 'ui_components/bottom_menu.html' %}
-
-        {% include 'footer-s.html' %}
-    </div>
+    </main>
 
     <div id="modal-exit" class="modal">
         <div class="modal-content">
@@ -143,30 +114,6 @@
             </div>
         </div>
     </div>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const progressBarFill = document.getElementById('token-progress-fill');
-            const monthlyUsed = parseFloat("{{ tokens.monthly_used|default:0 }}".replace(/\s/g, ''));
-            const monthlyLimit = parseFloat("{{ tokens.monthly_limit|default:1 }}".replace(/\s/g, ''));
-
-            let percentage = 0;
-            let fillColorClass = 'normal';
-
-            if (monthlyLimit > 0) {
-                percentage = (monthlyUsed / monthlyLimit) * 100;
-                if (percentage > 100) {
-                    fillColorClass = 'exceeded';
-                    percentage = 100;
-                }
-            }
-            
-            progressBarFill.classList.remove('normal', 'exceeded');
-            progressBarFill.classList.add(fillColorClass);
-
-            progressBarFill.style.width = percentage + '%';
-        });
-    </script>
 
     <script>
         function modalWindow(elementId) {
@@ -186,35 +133,6 @@
         modalWindow('modal-exit-menu');
         modalWindow('modal-exit');
     </script>
-    
-    <script>
-        function getColor(averageScore) {
-            averageScore = Math.max(0, Math.min(5, averageScore));
 
-            let red, green;
-
-            if (averageScore <= 3) {
-                red = 255;
-                green = Math.round(255 * (averageScore / 5));
-            } else if (averageScore <= 3.8) {
-                red = 255;
-                green = 255;
-            } else if (averageScore <= 4.2) {
-                red = Math.round(255 * (1 - (averageScore - 3) / 1.5));
-                green = 255;
-            } else {
-                red = 0;
-                green = 255;
-            }
-        
-            return `rgb(${red}, ${green}, 0)`;
-        }
-        
-        const averageScore = {{ statistics.average_score }};
-        const color = getColor(averageScore);
-        
-        const scoreElement = document.getElementById('accent-color');
-        scoreElement.style.color = color;
-    </script>
 </body>
 </html>

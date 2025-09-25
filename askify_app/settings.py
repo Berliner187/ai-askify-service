@@ -157,6 +157,8 @@ SESSION_COOKIE_AGE = 1_209_600
 STATIC_URL = '/static/'
 STATIC_ROOT = 'static/'
 
+STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'
+
 LOGIN_URL = '/login/'
 
 TELEGRAM_BOT_TOKEN = env('TELEGRAM_BOT_TOKEN')

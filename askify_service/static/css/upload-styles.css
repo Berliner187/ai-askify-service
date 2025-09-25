@@ -546,3 +546,39 @@ body {
         flex-wrap: wrap;
     }
 }
+
+
+.locked-upload-integrated {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    background: rgba(15, 8, 24, 0.7);
+    border: 1px dashed #4b4652;
+    border-radius: 24px;
+    padding: 20px;
+    margin-bottom: 24px;
+    margin-top: 20px;
+}
+.locked-upload-integrated .icon-wrapper {
+    flex-shrink: 0;
+}
+.locked-upload-integrated .icon-wrapper img {
+    width: 48px;
+    height: 48px;
+}
+.locked-upload-integrated .text-wrapper {
+    flex-grow: 1;
+}
+.locked-upload-integrated h3 {
+    font-family: 'Unbounded Medium';
+    margin: 0 0 4px 0;
+    color: #fff;
+}
+.locked-upload-integrated p {
+    margin: 0;
+    font-size: 14px;
+    color: #c0c0c0;
+}
+.locked-upload-integrated .button-medium {
+    flex-shrink: 0;
+}

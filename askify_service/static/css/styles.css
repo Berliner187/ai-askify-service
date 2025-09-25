@@ -23,6 +23,12 @@ body {
     min-height: 100vh;
 }
 
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
 .bg-create {
     background-color: #101012;
 }
@@ -35,6 +41,7 @@ html, body {
 #page-container {
     min-height: 80vh;
     height: 100%;
+    flex-grow: 1;
 }
 
 h1 {
@@ -941,12 +948,140 @@ hr {
 }
 
 /* Страница профиля */
-.profile ul, .profile p {
-    color: #9f9ca9;
-}
-.profile-info {
+.profile-main {
+    padding: 40px 20px 100px 20px;
     margin-top: 2em;
     margin-bottom: 1.5em;
+}
+.profile-container {
+    max-width: 800px; /* Идеальная ширина для контента */
+    margin: 0 auto;
+    padding: 32px 40px;
+}
+.profile-header {
+    text-align: center;
+    margin-bottom: 32px;
+}
+.profile-header h1 {
+    font-family: "Unbounded Bold";
+    font-size: 2.2em;
+    margin-bottom: 8px;
+}
+.profile-header p {
+    font-size: 1.1em;
+    color: #bab8c1;
+    margin: 0;
+}
+
+/* 2. Секции контента */
+.profile-section {
+    padding: 24px 0;
+}
+.profile-section h3 {
+    font-family: "Unbounded Medium";
+    font-size: 16px;
+    color: #e8e7f1;
+    margin: 0 0 24px 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.profile-section h3 i {
+    color: #a0a0b0;
+    font-size: 18px;
+}
+.profile-section a {
+    border-radius: 16px;
+}
+.profile-section a p {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+}
+
+/* 3. Списки данных (ключевой элемент) */
+.profile-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    text-align: start;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+.profile-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    transition: background-color 0.2s ease;
+}
+.profile-list .label {
+    font-size: 16px;
+    color: #bab8c1; 
+}
+.profile-list .value {
+    font-family: 'Namu Pro';
+    font-weight: 600;
+    font-size: 16px;
+    color: #e8e7f1;
+}
+.profile-list .plan-name {
+    font-family: 'Unbounded Medium';
+    background: linear-gradient(45deg, #c3b4f9, #b6bfff);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+.accent-color-text {
+    color: #79EF66;
+}
+
+/* 4. Разделитель */
+.profile-divider {
+    border: none;
+    height: 1px;
+    background: linear-gradient(to right, rgba(255,255,255,0), rgba(255,255,255,0.1), rgba(255,255,255,0));
+    margin: 0;
+}
+
+/* 5. Кнопки и действия */
+.section-action-button {
+    margin-top: 24px;
+    display: block;
+    text-align: center;
+}
+.section-action-button div {
+    justify-content: center;
+}
+.account-actions {
+    margin-top: 24px;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: nowrap;
+    gap: 12px;
+}
+.admin-button {
+    margin-top: 12px;
+    display: block;
+    text-align: center;
+    background-color: #ff4757 !important;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .profile-container {
+        padding: 24px;
+    }
+    .profile-list li {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+    }
+    .account-actions {
+        flex-direction: row;
+    }
 }
 
 .modal {
