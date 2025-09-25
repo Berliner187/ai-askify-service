@@ -133,7 +133,6 @@
                 });
 
                 testForm.append(questionBlock);
-                // FIX: Исправлена опечатка в type="submit"
                 testForm.append('<button type="submit" class="w-full mt-4 inline-block bg-[var(--color-accent-primary)] text-white px-10 py-4 font-bold rounded-full transition-transform hover:scale-105 shadow-lg shadow-[var(--color-accent-primary)]/20">Ответить</button>');
             }
             
@@ -141,7 +140,6 @@
                 e.preventDefault();
                 studentName = studentNameInput.val();
                 if (studentName.trim() === '') {
-                    // Заменим alert на что-то более стильное в будущем, но для функционала сойдет
                     studentNameInput.css('border-color', 'red');
                     return;
                 }
@@ -154,7 +152,6 @@
                 e.preventDefault();
                 const selectedOption = $(`input[name="question_${currentQuestionIndex}"]:checked`).val();
                 if (!selectedOption) {
-                    // Можно добавить более явное уведомление для пользователя
                     alert('Пожалуйста, выберите вариант ответа.'); 
                     return;
                 }

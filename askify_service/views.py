@@ -1440,7 +1440,7 @@ def get_is_creator(request, survey):
 @csrf_exempt
 def take_test(request, survey_id):
     """
-    Отображает страницу прохождения теста (все 3 этапа).
+    Отображает страницу прохождения теста.
     """
     survey = get_object_or_404(Survey, survey_id=survey_id)
 
@@ -2030,7 +2030,7 @@ def profile_view(request, username):
             'plan_end_date': f"заканчивается {subscription_end_date_formatted}" if days_until_end > 0 else "истёк :(",
             'days_until_end': days_until_end,
         },
-        'subscription_level': get_subscription_level(request),  # Убедитесь, что эта функция возвращает int
+        'subscription_level': get_subscription_level(request),
         'token': token_email_verification
     }
 
@@ -2139,9 +2139,19 @@ def admin_stats(request):
             return redirect('stats2975')
 
         if 'activate_api_key_id' in request.POST:
-            APIKey.objects.all().update(is_active=False)
-            APIKey.objects.filter(id=request.POST['activate_api_key_id']).update(is_active=True)
-            return JsonResponse({'status': True, 'message': 'Ключ активирован'})
+            key_id_to_activate = request.POST.get('activate_api_key_id')
+            key_purpose = request.POST.get('key_purpose')
+
+            if not key_id_to_activate or not key_purpose:
+                return JsonResponse({'status': False, 'message': 'Недостаточно данных'}, status=400)
+
+            try:
+                APIKey.objects.filter(purpose=key_purpose).update(is_active=False)
+                APIKey.objects.filter(id=key_id_to_activate, purpose=key_purpose).update(is_active=True)
+                return JsonResponse({'status': True, 'message': f'Ключ для {key_purpose} активирован'})
+
+            except Exception as e:
+                return JsonResponse({'status': False, 'message': f'Ошибка: {str(e)}'}, status=500)
 
     all_users = AuthUser.objects.all().count()
 

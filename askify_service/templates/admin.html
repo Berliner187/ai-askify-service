@@ -103,7 +103,11 @@
                             <div class="flex justify-between items-center mt-2">
                                 <span class="text-xs text-gray-400">{{ key.today_usage_count }} / 50 сегодня</span>
                                 {% if not key.is_active %}
-                                    <form method="post" class="activate-key-form"><input type="hidden" name="activate_api_key_id" value="{{ key.id }}"><button type="submit" class="text-xs font-bold text-[var(--color-accent-primary)] hover:text-white">Активировать</button></form>
+                                    <form method="post" class="activate-key-form">
+                                        <input type="hidden" name="activate_api_key_id" value="{{ key.id }}">
+                                        <input type="hidden" name="key_purpose" value="{{ key.purpose }}">
+                                        <button type="submit" class="text-xs font-bold text-[var(--color-accent-primary)] hover:text-white">Активировать</button>
+                                    </form>
                                 {% endif %}
                             </div>
                         </div>
