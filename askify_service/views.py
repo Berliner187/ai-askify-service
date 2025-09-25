@@ -554,7 +554,6 @@ class GenerationSurveysView(View):
             try:
                 auth_user = await sync_to_async(AuthUser.objects.get)(hash_user_id=client_ip)
             except Exception as fail:
-                tracer_l.warning(f'{fail}')
                 auth_user = await sync_to_async(AuthUser.objects.create)(
                     username=f"{hashed_ip}_{uuid.uuid4().hex[:6]}",
                     hash_user_id=client_ip
@@ -1835,7 +1834,7 @@ def login_view(request):
             login(request, user)
             request.session['user_id'] = user.id
 
-            tracer_l.warning(f'ADMIN. NEW USER {user.username}')
+            tracer_l.warning(f'ADMIN. LOGGED IN {user.username}')
 
             next_url = request.POST.get('next', '/create')
             safe_next = next_url if is_safe_url(next_url) else '/create'
