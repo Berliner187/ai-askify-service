@@ -132,6 +132,26 @@
                 </form>
             </div>
         </section>
+
+        {% if chart_data %}
+        <section class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
+            <h2 class="font-bold text-white mb-4">Аналитика за период</h2>
+            <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                <div>
+                    <h3 class="font-semibold text-gray-300 mb-2">Динамика регистраций</h3>
+                    <div class="h-64">
+                        <canvas id="userChart"></canvas>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-300 mb-2">Использование API</h3>
+                    <div class="h-64">
+                        <canvas id="apiChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+        {% endif %}
         
         <section class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
              <h2 class="font-bold text-white mb-4">История платежей</h2>
@@ -236,6 +256,80 @@
                 });
             });
         });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            {% if chart_data %}
+                const chartData = JSON.parse('{{ chart_data|safe }}');
+                const accentPrimary = 'rgba(97, 109, 240, 1)';
+                const accentSecondary = 'rgba(121, 239, 102, 1)';
+                const borderColor = 'rgba(97, 109, 240, 0.2)';
+                const textColor = 'rgba(160, 160, 176, 1)';
+
+                // Хелпер для создания градиента
+                function createGradient(ctx, color) {
+                    const gradient = ctx.createLinearGradient(0, 0, 0, ctx.canvas.height);
+                    gradient.addColorStop(0, color.replace('1)', '0.5)'));
+                    gradient.addColorStop(1, color.replace('1)', '0)'));
+                    return gradient;
+                }
+
+                // 1. График регистраций
+                const userCtx = document.getElementById('userChart').getContext('2d');
+                new Chart(userCtx, {
+                    type: 'line',
+                    data: {
+                        labels: chartData.labels,
+                        datasets: [{
+                            label: 'Новые пользователи',
+                            data: chartData.user_counts,
+                            borderColor: accentPrimary,
+                            backgroundColor: createGradient(userCtx, accentPrimary),
+                            fill: true,
+                            tension: 0.4,
+                            pointBackgroundColor: accentPrimary,
+                            pointBorderColor: '#fff',
+                            pointHoverRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { ticks: { color: textColor }, grid: { color: borderColor } },
+                            y: { ticks: { color: textColor, stepSize: 1 }, grid: { color: borderColor } }
+                        }
+                    }
+                });
+
+                // 2. График использования API
+                const apiCtx = document.getElementById('apiChart').getContext('2d');
+                new Chart(apiCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: chartData.labels,
+                        datasets: [{
+                            label: 'Вызовы API',
+                            data: chartData.api_counts,
+                            backgroundColor: accentSecondary.replace('1)', '0.7)'),
+                            borderColor: accentSecondary,
+                            borderWidth: 1,
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { ticks: { color: textColor }, grid: { display: false } },
+                            y: { ticks: { color: textColor, stepSize: 5 }, grid: { color: borderColor } }
+                        }
+                    }
+                });
+            {% endif %}
+        });
+
     </script>
 </body>
 </html>

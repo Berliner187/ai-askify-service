@@ -32,6 +32,7 @@ urlpatterns = [
 
     path('drop-survey/<str:survey_id>/', drop_survey, name='drop-survey'),
     path('history/', page_history_surveys, name='history'),
+    path('api/get-history/', api_get_history, name='api_history'),
     path('load-more-surveys/', load_more_surveys, name='load-more-surveys'),
 
     path('api/quick-register/', quick_register_api, name='api_quick_register'),

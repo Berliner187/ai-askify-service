@@ -18,12 +18,12 @@ body {
     margin: 0;
     padding: 0;
     transition-duration: .25s;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
 }
 
 .bg-create {
-    background: url('../img/bg-gradient-17065.webp');
-    background-position: top center;
-    background-repeat: no-repeat;
     background-color: #101012;
 }
 
@@ -93,7 +93,6 @@ a {
 .input-area button {
     border: 2px solid #616DF0;
     transition: .25s;
-    transform: rotate(-90deg);
 }
 
 button:active {
@@ -252,80 +251,161 @@ button:active {
 
 #block-generate {
     position: sticky;
-    bottom: 0;
+    bottom: 16px; /* Отступ от края экрана */
     left: 0;
     right: 0;
-    z-index: 2;
-    width: 90%;
+    z-index: 100;
+
+    width: 95%;
+    max-width: 800px; /* Сделали чуть шире на десктопе */
     margin: 0 auto;
+
+    background: rgba(30, 29, 36, 0.6);
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
-    background: rgba(30, 29, 36, 0.3);
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 24px;
-    padding: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+    
+    padding: 8px; /* Внутренний отступ поменьше */
     transition: all 0.3s ease-in-out;
 }
 
+/* 2. Область ввода (textarea + кнопки) */
 .input-area {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    max-width: 1200px;
-    gap: 12px;
-    margin-bottom: 16px;
+    position: relative; /* Для позиционирования кнопок */
+    display: block; /* Убираем flex, он больше не нужен */
+    margin: 0;
 }
 
+/* 3. Textarea: главный элемент */
 textarea {
     width: 100%;
-    background: rgba(20, 20, 25, 0.7);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    color: #e5e5f1;
-    border-radius: 20px;
+    min-height: 56px; /* Высота одной строки с отступами */
+    max-height: 50vh; /* Ограничиваем максимальную высоту */
     padding: 16px;
-    font-size: 15px;
-    font-family: 'Namu Pro';
-    box-shadow: inset 0 0 12px rgba(255, 255, 255, 0.02);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    resize: none;
-    overflow: auto;
-    transition: all 0.2s ease-in-out;
-    min-height: 80px;
+    padding-right: 120px; /* !!! Резервируем место для двух кнопок */
+    
+    /* Убираем собственный фон, чтобы она была частью "стекла" */
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    
+    color: #e5e5f1;
+    font-size: 16px;
+    font-family: 'Namu Pro', sans-serif;
+    resize: vertical; /* Разрешаем менять высоту */
+    line-height: 1.5;
 }
 
 textarea:focus {
     outline: none;
-    border-color: #7A8FFF;
-    box-shadow: 0 0 0 2px rgba(122, 143, 255, 0.3);
 }
 
-.input-area button {
-    min-width: 52px;
-    height: 52px;
-    border-radius: 50%;
-    background: linear-gradient(145deg, #5A66EB, #7A8FFF);
-    border: none;
+/* 4. Обертка для кнопок внутри textarea */
+.input-buttons-wrapper {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    display: flex;
+    gap: 8px;
+}
+
+/* 5. Кнопки внутри textarea */
+.attach-button, .send-button {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: transform 0.1s ease, box-shadow 0.2s;
-    box-shadow: 0 4px 15px rgba(122, 143, 255, 0.25);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 18px;
 }
 
-.input-area button:hover {
-    box-shadow: 0 6px 18px rgba(122, 143, 255, 0.35);
-    transform: scale(1.04);
+.attach-button {
+    background: rgba(255, 255, 255, 0.05);
+    color: #a0a0b0;
+}
+.attach-button:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
 }
 
-.input-area button:active {
-    transform: scale(0.92);
+.send-button {
+    background: linear-gradient(145deg, #5A66EB, #7A8FFF);
+    color: #fff;
+    box-shadow: 0 4px 15px rgba(122, 143, 255, 0.2);
+}
+.send-button:hover {
+    box-shadow: 0 6px 20px rgba(122, 143, 255, 0.3);
+    transform: scale(1.05);
+}
+.send-button:active {
+    transform: scale(0.95);
 }
 
-.input-area button img {
-    width: 24px;
-    height: 24px;
-    filter: brightness(1000%);
+/* 6. Нижняя панель инструментов */
+.controls-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 16px 4px 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    margin-top: 8px;
+}
+.slider-container {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-grow: 1; /* Занимает доступное пространство */
+}
+#char-count {
+    font-size: 12px;
+    color: #888;
+    min-width: 80px;
+    text-align: right;
+}
+.toolbar-actions {
+    display: flex;
+    gap: 8px;
+    padding-left: 16px;
+}
+
+/* Стили иконок в кнопках на панели */
+.toolbar-actions .button-medium i {
+    font-size: 14px;
+    color: #a0a0b0;
+}
+.toolbar-actions .button-medium p {
+    font-size: 13px;
+}
+
+/* 7. Адаптивность */
+@media (max-width: 768px) {
+    #block-generate {
+        border-radius: 18px;
+        width: calc(100% - 24px);
+        bottom: 12px;
+    }
+    .controls-toolbar {
+        flex-wrap: wrap; /* Разрешаем перенос элементов */
+        padding: 8px;
+    }
+    .slider-container {
+        width: 100%;
+        order: 1; /* Слайдер всегда сверху */
+        margin-bottom: 8px;
+    }
+    #char-count { display: none; } /* Скрываем счетчик на мобилках для экономии места */
+    .toolbar-actions {
+        width: 100%;
+        order: 2;
+        justify-content: space-around; /* Равномерно распределяем кнопки */
+        padding-left: 0;
+    }
 }
 
 .slider-container {
@@ -457,7 +537,6 @@ textarea:focus {
 /* Промо блок для купки подписки */
 .subscription-offer {
     padding: 30px 20px;
-    margin-top: 50px;
     transition: transform 0.3s ease, background-size 0.25s ease;
     background: url('../img/bg-subs.webp') top/cover no-repeat;
     text-align: center;
@@ -772,10 +851,10 @@ textarea:focus {
 #block-generate, .glass-metrics-container, .features-container,
 #file-preview-container, #faq-container,
 .container, .fixed-bottom-menu {
-    background: linear-gradient(145deg, rgba(255,255,255,0.08), rgba(132, 120, 145,0.16));
+    background: linear-gradient(145deg, rgba(51, 48, 57, 0.3), rgba(34, 27, 43, 0.16));
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(48, 47, 50, 0.3);
 }
 
 .laod-more-btn {
@@ -985,7 +1064,7 @@ hr {
     position: absolute;
     user-select: none;
     transition: color 0.3s ease;
-    margin-left: 90%;
+    right: 16px;
     z-index: 500;
 }
 

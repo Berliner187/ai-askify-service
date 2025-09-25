@@ -217,3 +217,63 @@ function containsHTMLTags(text) {
     const regex = /<\/?[^>]+(>|$)/;
     return regex.test(text);
 }
+
+
+// Функция для загрузки и отображения истории тестов
+async function loadRecentHistory() {
+    const historyContent = document.getElementById('history-content');
+    if (!historyContent) return;
+
+    const loaderHTML = `
+        <div class="history-loader">
+            <div class="spinner"></div>
+            <p>Загружаем вашу историю...</p>
+        </div>
+    `;
+    historyContent.innerHTML = loaderHTML;
+
+    try {
+        const response = await fetch('/api/get-history/');
+        if (!response.ok) {
+            throw new Error(`Ошибка сети: ${response.status}`);
+        }
+        const result = await response.json();
+        const surveys = result.data;
+
+        if (surveys && Object.keys(surveys).length > 0) {
+            const historyListHTML = `
+                <ul class="history-list">
+                    ${Object.entries(surveys).map(([surveyId, surveyData]) => `
+                        <li class="history-item">
+                            <a href="/result/${surveyId}">
+                                <span class="history-item-title">${surveyData.title}</span>
+                                <span class="history-item-date">${surveyData.update}</span>
+                            </a>
+                        </li>
+                    `).join('')}
+                </ul>
+            `;
+            historyContent.innerHTML = historyListHTML;
+        } else {
+            const emptyStateHTML = `
+                <div class="history-empty-state">
+                    <i class="fas fa-ghost"></i>
+                    <p>Здесь пока пусто</p>
+                    <span>Когда вы создадите свой первый тест, он появится здесь.</span>
+                </div>
+            `;
+            historyContent.innerHTML = emptyStateHTML;
+        }
+    } catch (error) {
+        console.error("Не удалось загрузить историю:", error);
+        const errorStateHTML = `
+            <div class="history-empty-state error">
+                <i class="fas fa-exclamation-triangle"></i>
+                <p>Не удалось загрузить историю</p>
+            </div>
+        `;
+        historyContent.innerHTML = errorStateHTML;
+    }
+}
+
+loadRecentHistory();

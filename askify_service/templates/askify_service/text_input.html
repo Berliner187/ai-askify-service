@@ -12,8 +12,9 @@
     <link rel="shortcut icon" href="{% static 'img/logo.png' %}" type="image/png">
     
     {% include 'components/linker.html' %}
-    <link rel="stylesheet" href="{% static 'css/upload-styles.css' %}">
-    
+    <link rel="stylesheet" href="{% static 'css/upload-styles.css' %}?v=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <!-- Yandex.Metrika counter -->
     <script type="text/javascript">
         (function(m,e,t,r,i,k,a){
@@ -51,28 +52,6 @@
     
     <div id="page-container" class="fade" style="display: none;">
         {% include 'header.html' %}
-        {% if subscription_level < 1 or subscription_level == 99 %}
-        
-            <div class="container subscription-offer locked-upload" id="upload-files-container">
-
-                <div class="offer-block">
-                    <p>Загружайте свои файлы с учебными материалами с планом Премиум</p>
-                    <img src="{% static 'img/icon-locked.png' %}" alt="Иконка загрузки файла" class="upload-icon">
-                </div>
-                
-                <div class="container-buttons">
-                    <a class="button-medium button-accent" href="{% url 'payment' %}">
-                        <div>
-                            <img src="{% static 'img/icon-diamond.png' %}" alt="">
-                            <p>Приобрести</p>
-                        </div>
-                    </a>
-                </div>
-            </div>
-
-        {% else %}
-
-        {% endif %}
 
         <div class="container glass-metrics-container">
             <div class="metrics-scroll-box">
@@ -85,20 +64,12 @@
                     <span class="metric-badge"><strong>{{ passed_tests }}</strong></span>
                 </div>
                 <div class="metric-ios">
-                    <span class="metric-title">Лучший результат</span>
-                    <span class="metric-badge"><strong>{{ best_result }}</strong></span>
-                </div>
-                <div class="metric-ios">
                     <span class="metric-title">Фидбэка от ИИ</span>
                     <span class="metric-badge"><strong>{{ feedback_count }}</strong></span>
                 </div>
                 <div class="metric-ios">
                     <span class="metric-title">Создано пользователями сегодня</span>
                     <span class="metric-badge"><strong>{{ today_uploads }}</strong></span>
-                </div>
-                <div class="metric-ios">
-                    <span class="metric-title">Часто используется</span>
-                    <span class="metric-badge"><strong>{{ model_used|default:"–" }}</strong></span>
                 </div>
                 <div class="metric-ios">
                     <span class="metric-title">Всего вопросов создано</span>
@@ -160,6 +131,21 @@
             </div>
         </div>
 
+        {% if subscription_level < 1 or subscription_level == 99 %}
+            <div class="container subscription-offer locked-upload locked-upload-integrated">
+                <div class="icon-wrapper"><img src="{% static 'img/icon-locked.png' %}" alt="Замок"></div>
+                <div class="text-wrapper">
+                    <h3>Загрузка файлов — это Премиум</h3>
+                    <p>Создавайте тесты из PDF и DOCX, разблокировав все возможности.</p>
+                </div>
+                <a class="button-medium button-accent" href="{% url 'payment' %}">
+                    <div><img src="{% static 'img/icon-diamond.png' %}" alt=""><p>Улучшить</p></div>
+                </a>
+            </div>
+        {% else %}
+
+        {% endif %}
+
         <div class="container features-container">
             <div class="feature-block">
                 <img src="{% static 'img/icon-create.png' %}" alt="Генерация" class="feature-icon">
@@ -178,56 +164,51 @@
             </div>
         </div>
                 
-        <div class="container" id="faq-container">
-            {{ faq_html|safe }}
-        </div>
+        <section class="container" id="recent-history-container">
+            <h3><i class="fas fa-history"></i> Недавние тесты</h3>
+            <div id="history-content">
+                <!-- Сюда JavaScript вставит прелоадер, список тестов или сообщение о пустоте -->
+            </div>
+        </section>
         
         <div class="container" id="block-generate">
             <form id="text-form" method="post" onsubmit="event.preventDefault(); submitText();">
                 {% csrf_token %}
                 <div class="input-area">
-                    <textarea id="user-text" rows="4" cols="60" placeholder="Введите здесь свои учебные материалы, заметки или содержание статьи.
-
-Например:
-- Теорема Пифагора гласит, что в прямоугольном треугольнике квадрат длины гипотенузы
-равен сумме квадратов длины двух других сторон.
-Это можно записать как: a? + b? = c?, где c представляет длину гипотенузы..."></textarea><br>
-                    <button type="button" onclick="submitText()">
-                        <img src="{% static 'img/icon-send-m.png' %}" alt="Letychka Logo Generate">
-                    </button>
-                </div>
-
-                <div class="slider-container">
-                    <div id="char-count">0 / 32768</div>
-                    <p id="question-slider-text"><span id="slider-value">1</span> вопросов</p>
-                    <input type="range" id="question-slider" class="custom-slider" min="1" max="15" value="5" style="display: none;">
-                </div>
-
-                <div class="head-button">
-                    <div class="head-button">
-                        <a class="button-medium" href="{% url 'history' %}">
-                             <div>
-                                <img src="{% static 'img/icon-history.png' %}" alt="">
-                                <p>История</p>
-                            </div>
-                        </a>
+                    <textarea id="user-text" rows="4" cols="60" placeholder="Введите здесь свои учебные материалы..."></textarea>
+                    
+                    <div class="input-buttons-wrapper">
                         {% if subscription_level > 1 and subscription_level < 50 %}
-                            <a class="button-medium" onclick="document.getElementById('hidden-file-input').click();">
-                                <div>
-                                    <img src="{% static 'img/icon-upload-file.png' %}" alt="">
-                                    <p>Прикрепить</p>
-                                </div>
-                            </a>
-                            <input type="file" id="hidden-file-input" accept=".pdf, .doc, .docx, .txt" style="display: none;" onchange="handleFiles(this.files)">
+                            <button type="button" class="attach-button" title="Прикрепить файл" onclick="document.getElementById('hidden-file-input').click();">
+                                <i class="fas fa-paperclip"></i>
+                            </button>
                         {% endif %}
+                        <button type="button" class="send-button" title="Создать тест" onclick="submitText()">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
                     </div>
-                    <a class="button-medium" href="{% url 'payment' %}">
-                        <div>
-                            <img src="{% static 'img/icon-stars.png' %}" alt="">
-                            <p><span>{{ tests_today }}</span></p>
-                        </div>
-                    </a>
                 </div>
+
+                <div class="controls-toolbar">
+                    <div class="slider-container">
+                        <p id="question-slider-text"><span id="slider-value">5</span> вопросов</p>
+                        <input type="range" id="question-slider" class="custom-slider" min="1" max="15" value="5" style="display: none;">
+                    </div>
+                    <div id="char-count">0 / 32768</div>
+                    
+                </div>
+                <div class="toolbar-actions">
+                        <a class="button-medium" href="{% url 'history' %}" title="История генераций">
+                            <div><i class="fas fa-history"></i><p>История</p></div>
+                        </a>
+                        <a class="button-medium" href="{% url 'payment' %}" title="Ваши лимиты">
+                            <div><i class="fas fa-star"></i><p><span>{{ tests_today }}</span></p></div>
+                        </a>
+                    </div>
+                
+                {% if subscription_level > 1 and subscription_level < 50 %}
+                    <input type="file" id="hidden-file-input" accept=".pdf, .doc, .docx, .txt" style="display: none;" onchange="handleFiles(this.files)">
+                {% endif %}
             </form>
         </div>
 
