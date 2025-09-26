@@ -226,7 +226,6 @@
 
         .card-header {
             padding-bottom: 16px;
-            margin-bottom: 16px;
             border-bottom: 1px solid var(--stroke);
         }
         .card-header h3 {
@@ -248,8 +247,8 @@
             margin: 0;
             display: flex;
             flex-direction: column;
-            gap: 16px;
-            flex-grow: 1; /* Чтобы карточки были одной высоты */
+            gap: 8px;
+            flex-grow: 1;
         }
 
         .card-features li {
@@ -261,7 +260,7 @@
         }
 
         .card-features li::before {
-            content: '✓'; /* Иконка-галочка */
+            content: '✓';
             position: absolute;
             left: 0;
             top: 2px;
@@ -283,11 +282,11 @@
             color: var(--text);
         }
         .card-features .premium-feature::before {
-            content: '★'; /* Иконка-звезда для премиума */
+            content: '★';
             color: var(--accent);
         }
         .card-features .premium-feature strong {
-            display: block; /* Заголовок фичи на новой строке */
+            display: block;
             color: var(--text);
             font-weight: 600;
         }
@@ -439,15 +438,17 @@
           </div>
 
           <div class="trust-card">
-              <img src="{% static 'img/icon-support.png' %}" alt="Иконка Поддержки" class="trust-icon">
-              <div class="trust-title">Поддержка 24/7</div>
-              <div class="trust-text">Отвечаем быстро — в течение часа в рабочее время. Пишите на <a href="mailto:support@letychka.ru">support@letychka.ru</a>, если что-то пошло не так.</div>
+              <img src="{% static 'img/icon-quality.png' %}" alt="Иконка Быстро и Качественно" class="trust-icon">
+              <div class="trust-title">Гарантии Летучки</div>
+              <div class="trust-text">Более 10 000 тестов уже созданы через платформу. <br><br>
+                Если в&nbsp;течение 7&nbsp;дней после покупки вы&nbsp;решите, что наш сервис&nbsp;&mdash; шляпа полная, и&nbsp;не&nbsp;сэкономил Вам ни&nbsp;минуты времени, просто напишите мне на&nbsp;личную почту <a href="mailto:kozak187er@yandex.ru">kozak187er@yandex.ru</a>. <br><br>
+                Я верну Вам все деньги. <br>Без вопросов.</div>
           </div>
 
           <div class="trust-card">
-              <img src="{% static 'img/icon-quality.png' %}" alt="Иконка Быстро и Качественно" class="trust-icon">
-              <div class="trust-title">Быстро и качественно</div>
-              <div class="trust-text">Более 10 000 тестов уже созданы через платформу. Убедитесь в возможностях на <a href="/available-plans/">странице тарифов</a>.</div>
+              <img src="{% static 'img/icon-support.png' %}" alt="Иконка Поддержки" class="trust-icon">
+              <div class="trust-title">Поддержка 24/7</div>
+              <div class="trust-text">Отвечаем быстро — в течение часа в рабочее время. Пишите на <a href="mailto:support@letychka.ru">support@letychka.ru</a>, если что-то пошло не так.</div>
           </div>
       </div>
   </div>
