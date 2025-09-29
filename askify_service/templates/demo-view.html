@@ -129,7 +129,7 @@
                             
                             <div class="flex justify-end rounded-3xl">
                                 <a href="{% url 'preview_test_result' survey_id %}" class="text-sm text-[var(--color-text-secondary)] hover:text-white transition-colors duration-200">
-                                    К просмотру аналитики <i class="fas fa-arrow-right mr-2"></i>
+                                    К аналитике <i class="fas fa-arrow-right mr-2"></i>
                                 </a>
                             </div>
                         </div>
@@ -152,7 +152,7 @@
             {% if is_creator %}
                 {% if username != 0 %}
                     <div class="mt-8 question-card flex justify-center rounded-3xl pt-4 animate-fadeIn">
-                        <button data-action="share" class="group w-full transition-transform hover:scale-[1.03] flex items-center justify-center text-center p-4 bg-[var(--color-accent-secondary)] rounded-2xl border border-transparent hover:border-[var(--color-border)] transition-colors">
+                        <button data-action="share" class="group w-full transition-transform hover:scale-[1.03] flex items-center justify-center text-center p-4 bg-[var(--color-accent-secondary)] rounded-3xl border border-transparent hover:border-[var(--color-border)] transition-colors">
                             <div class="flex items-center gap-4">
                                 <i class="fas fa-share-alt text-[var(--color-bg)] transition-colors"></i>
                                 <span class="font-semibold text-[var(--color-bg)]">Поделиться</span>

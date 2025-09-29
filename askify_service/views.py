@@ -183,6 +183,7 @@ def page_create_survey(request):
         'tests_today': max(diff_tests_count_limit, 0),
         'username': get_username(request),
         'subscription_level': subscription_level,
+        'subscription_status': subs.status,
         "total_tests": total_tests,
         "passed_tests": stats['passed_tests'],
         "feedback_count": feedback_agg['feedback_count'] or 0,
@@ -1504,7 +1505,7 @@ def submit_answers(request, survey_id):
             score=score,
             total_questions=total_questions
         )
-        tracer_l.warning(f'USER {student_name} take {survey.title}')
+        tracer_l.info(f'USER {student_name} take {survey.title}')
 
         return JsonResponse({'success': True, 'score': score, 'total': total_questions})
 
@@ -1544,7 +1545,7 @@ def preview_test(request, survey_id):
         survey_creator_id_staff = current_user_id_staff
 
     is_creator = False
-    if current_user_id_staff and current_user_id_staff == survey_creator_id_staff:
+    if current_user_id_staff == survey_creator_id_staff:
         is_creator = True
 
     can_generate = True

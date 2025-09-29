@@ -12,7 +12,7 @@
     <link rel="shortcut icon" href="{% static 'img/logo.png' %}" type="image/png">
     
     {% include 'components/linker.html' %}
-    <link rel="stylesheet" href="{% static 'css/upload-styles.css' %}?v=1.1">
+    <link rel="stylesheet" href="{% static 'css/upload-styles.css' %}?v=1.2">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- Yandex.Metrika counter -->
@@ -131,7 +131,24 @@
             </div>
         </div>
 
-        {% if subscription_level < 1 or subscription_level == 99 %}
+        {% if subscription_status != 'active' %}
+            <div class="container notice-banner deactivated">
+                <div class="icon-wrapper">
+                    <i class="fas fa-bolt"></i>
+                </div>
+                <div class="text-wrapper">
+                    <h3>Ваши Премиум-возможности отключены</h3>
+                    <p>
+                        Активируйте подписку, чтобы снова <strong>превращать Ваши учебные материалы и&nbsp;документы в&nbsp;тесты за&nbsp;считанные секунды</strong>, получать фидбэк от&nbsp;ИИ, а&nbsp;также работать без оглядки на&nbsp;лимиты.
+                    </p>
+                </div>
+                <a class="button-medium button-accent" href="{% url 'payment' %}">
+                    <div><i class="fas fa-rocket"></i> <p>Оформить Премиум</p></div>
+                </a>
+            </div>
+        {% endif %}
+
+        {% if subscription_level < 2 %}
             <div class="container locked-upload-integrated">
                 <div class="icon-wrapper">
                     <i class="fas fa-gift text-6xl text-[var(--secondary-color)]"></i>
@@ -149,23 +166,119 @@
 
         {% endif %}
 
+        <style>
+            .features-container {
+                margin-top: 20px;
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Адаптивность */
+                gap: 24px;
+            }
+            .feature-block {
+                position: relative;
+                overflow: hidden;
+                background: rgba(93, 86, 110, 0.12);
+                border-radius: 18px;
+                padding: 24px;
+                text-align: center;
+                transition: all 0.25s ease;
+                text-decoration: none; /* Для ссылок */
+            }
+            .feature-block:hover {
+                transform: translateY(-4px);
+                background: rgba(93, 86, 110, 0.2);
+            }
+            .feature-icon {
+                width: 48px;
+                height: 48px;
+                margin: 0 auto 16px; /* Авто-отступ для центрирования */
+            }
+            .feature-block h3 {
+                font-size: 16px;
+                font-weight: 600;
+                margin-bottom: 8px;
+                color: #ffffff;
+            }
+            .feature-block p {
+                font-size: 13px;
+                color: #c0c0c0;
+                line-height: 1.6;
+                margin: 0;
+            }
+
+            /* СТИЛИ ДЛЯ ПРЕМИУМ-ЗАГЛУШЕК (ДЛЯ СТАРТОВЫХ) */
+            .feature-badge {
+                position: absolute;
+                top: 12px;
+                right: -40px;
+                background-color: var(--color-accent-primary);
+                color: white;
+                padding: 4px 40px;
+                font-size: 10px;
+                font-weight: 700;
+                text-transform: uppercase;
+                transform: rotate(45deg);
+                box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            }
+            .feature-block.premium-feature {
+                opacity: 0.7;
+            }
+            .feature-block.premium-feature:hover {
+                opacity: 1;
+            }
+
+            .feature-block.quick-link h3 {
+                color: var(--secondary-color);
+            }
+            .feature-block.quick-link .accent {
+                color: var(--primary-color);
+            }
+        </style>
+
         <div class="container features-container">
-            <div class="feature-block">
+
+        {% if subscription_level >= 2 %}
+            <div class="feature-block quick-link">
+                <img src="{% static 'img/icon-create.png' %}" alt="Генерация" class="feature-icon">
+                <h3>Создать из файла</h3>
+                <p>Загружайте файлы PDF/Word, из&nbsp;которых&nbsp;ИИ создаст тест за&nbsp;считанные секунды (скрепка рядом с&nbsp;полем ввода).</p>
+            </div>
+            <a href="{% url 'history' %}" class="feature-block quick-link">
+                <img src="{% static 'img/icon-analytics.png' %}" alt="Анализ" class="feature-icon">
+                <h3>Мои результаты</h3>
+                <p>Проходите тесты и&nbsp;получайте персональный фидбэк от&nbsp;ИИ</p>
+                <p class="accent">Нажмите, чтобы перейти</p>
+            </a>
+            <a href="{% url 'create' %}" class="feature-block quick-link">
+                <img src="{% static 'img/icon-link.png' %}" alt="Поделиться" class="feature-icon">
+                <h3>Делитесь</h3>
+                <p>Делитесь своими тестами и&nbsp;просматривайте аналитику по&nbsp;прохождениям.</p>
+                <p class="accent">Нажмите, чтобы выбрать тест и поделиться им</p>
+            </a>
+        {% else %}
+            <div class="feature-block premium-feature">
+                <div class="feature-badge">ПРЕМИУМ</div>
                 <img src="{% static 'img/icon-create.png' %}" alt="Генерация" class="feature-icon">
                 <h3>Контент → Тест</h3>
-                <p>PDF, Word или простой текст — Летучка создаст тест за считанные секунды</p>
+                <p class="accent">Загружайте файлы PDF/Word, из&nbsp;которых&nbsp;ИИ создаст тест за&nbsp;секунды.</p>
+                <a href="/payment">Открыть возможности</a>
             </div>
-            <div class="feature-block">
+            
+            <div class="feature-block premium-feature">
+                <div class="feature-badge">ПРЕМИУМ</div>
                 <img src="{% static 'img/icon-analytics.png' %}" alt="Анализ" class="feature-icon">
                 <h3>Умная аналитика</h3>
-                <p>Получай детальный разбор ошибок и персональные рекомендации</p>
+                <p class="accent">Получайте детальный разбор ошибок от ИИ.</p>
+                <a href="/payment">Разблокировать фидбэк от ИИ</a>
             </div>
+            
             <div class="feature-block">
                 <img src="{% static 'img/icon-link.png' %}" alt="Поделиться" class="feature-icon">
                 <h3>Быстрый обмен</h3>
-                <p>Делись ссылкой на тест в PDF с коллегами — легко скачать и распечатать</p>
+                <p>Делитесь ссылкой на тест или скачивайте готовый к печати PDF.</p>
             </div>
-        </div>
+
+        {% endif %}
+    </div>
                 
         <section class="container" id="recent-history-container">
             <h3><i class="fas fa-history"></i> Недавние тесты</h3>
@@ -178,7 +291,7 @@
             <form id="text-form" method="post" onsubmit="event.preventDefault(); submitText();">
                 {% csrf_token %}
                 <div class="input-area">
-                    <textarea id="user-text" rows="4" cols="60" placeholder="Введите здесь свои учебные материалы..."></textarea>
+                    <textarea id="user-text" rows="4" cols="60" placeholder="Введите здесь тему, содержание статьи или текст из методички..."></textarea>
                     
                     <div class="input-buttons-wrapper">
                         {% if subscription_level > 1 and subscription_level < 50 %}
