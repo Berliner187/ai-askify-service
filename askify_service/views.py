@@ -149,6 +149,7 @@ def page_create_survey(request):
     week_ago = date.today() - timedelta(days=7)
     today = date.today()
 
+    all_surveys = Survey.objects.filter().only('survey_id', 'updated_at')
     user_surveys = Survey.objects.filter(id_staff=current_id_staff).only('survey_id', 'questions', 'title', 'updated_at')
     user_answers = UserAnswers.objects.filter(id_staff=current_id_staff)
     feedbacks = FeedbackFromAI.objects.filter(id_staff=current_id_staff)
@@ -162,7 +163,7 @@ def page_create_survey(request):
         unique_models=Count('model_name', distinct=True),
     )
 
-    today_uploads = user_surveys.filter(updated_at__date=today).count()
+    today_uploads = all_surveys.filter(updated_at__date=today).count()
     tests_this_month = user_surveys.filter(updated_at__gte=start_month).count()
     feedback_last_week = feedbacks.filter(created_at__gte=week_ago).count()
 
@@ -2645,6 +2646,8 @@ class PaymentInitiateView(View):
             'Лайтовый': 99,
             'Стандартный': 420,
             'Премиум': 590,
+            'Стандартный 3 мес': 840,
+            'Премиум 3 мес': 1180,
             'Ультра': 990,
             'Стандартный Год': 2640,
             'Премиум Год': 4800
@@ -2720,6 +2723,16 @@ class PaymentInitiateView(View):
                     end_date=datetime.now(),
                     status='inactive',
                     billing_cycle='yearly',
+                    discount=0.00
+                )
+                subscription.save()
+            elif description == 'Премиум 3 мес' or description == 'Стандартный 3 мес':
+                subscription = Subscription.objects.create(
+                    staff_id=get_staff_id(request),
+                    plan_name=description,
+                    end_date=datetime.now(),
+                    status='inactive',
+                    billing_cycle='monthly3',
                     discount=0.00
                 )
                 subscription.save()
@@ -2825,6 +2838,8 @@ class PaymentSuccessView(View):
 
                     if subscription.billing_cycle == 'yearly':
                         subscription.end_date = datetime.now() + timedelta(days=365)
+                    elif subscription.billing_cycle == 'monthly3':
+                        subscription.end_date = datetime.now() + timedelta(days=92)
                     else:
                         subscription.end_date = datetime.now() + timedelta(days=45)
 
