@@ -181,27 +181,28 @@
     </main>
 
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <script>
-        function getCookie(name) {
-            let cookieValue = null;
-            if (document.cookie && document.cookie !== '') {
-                const cookies = document.cookie.split(';');
-                for (let i = 0; i < cookies.length; i++) {
-                    const cookie = cookies[i].trim();
-                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
+        $(document).ready(function() {
+            function getCookie(name) {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
                     }
                 }
+                return cookieValue;
             }
-            return cookieValue;
-        }
 
-        $(document).ready(function() {
             const csrftoken = getCookie('csrftoken');
-            const currentUrl = window.location.pathname; // Это /stats2975/
+            const currentUrl = window.location.pathname;
 
-            // --- Обработчик для AJAX-форм (Бан, Права) ---
             $('.ajax-form').on('submit', function(event) {
                 event.preventDefault();
                 const form = $(this);
@@ -210,126 +211,114 @@
 
                 $.ajax({
                     type: 'POST',
-                    url: currentUrl, // Отправляем на ту же страницу
+                    url: currentUrl,
                     headers: { 'X-CSRFToken': csrftoken },
                     data: form.serialize(),
-                    beforeSend: function() {
-                        submitBtn.prop('disabled', true).text('...');
-                    },
-                    success: function(response) {
-                        alert(response.message); // Простое уведомление
-                    },
-                    error: function(xhr) {
-                        alert('Ошибка: ' + (xhr.responseJSON ? xhr.responseJSON.message : 'Сервер не отвечает'));
-                    },
-                    complete: function() {
+                    beforeSend: () => submitBtn.prop('disabled', true).text('...'),
+                    success: (response) => alert(response.message),
+                    error: (xhr) => alert('Ошибка: ' + (xhr.responseJSON ? xhr.responseJSON.message : 'Сервер не отвечает')),
+                    complete: () => {
                         submitBtn.prop('disabled', false).html(originalBtnText);
                         form.trigger('reset');
                     }
                 });
             });
 
-            // --- Обработчик для активации ключей ---
             $('.activate-key-form').on('submit', function(event) {
                 event.preventDefault();
                 const form = $(this);
-                const submitBtn = form.find('button[type="submit"]');
-
                 $.ajax({
                     type: 'POST',
                     url: currentUrl,
                     headers: { 'X-CSRFToken': csrftoken },
                     data: form.serialize(),
-                    beforeSend: function() {
-                        submitBtn.prop('disabled', true).text('...');
+                    beforeSend: () => form.find('button[type="submit"]').prop('disabled', true).text('...'),
+                    success: (response) => {
+                        if (response.status) window.location.reload();
+                        else alert('Ошибка: ' + response.message);
                     },
-                    success: function(response) {
-                        if (response.status) {
-                            window.location.reload(); // Перезагружаем для обновления статусов
-                        } else {
-                             alert('Ошибка: ' + response.message);
-                        }
-                    },
-                    error: function(xhr) {
-                         alert('Ошибка сети');
-                    },
+                    error: () => alert('Ошибка сети')
                 });
             });
-        });
 
-        document.addEventListener('DOMContentLoaded', function() {
+
             {% if chart_data %}
-                const chartData = JSON.parse('{{ chart_data|safe }}');
-                const accentPrimary = 'rgba(97, 109, 240, 1)';
-                const accentSecondary = 'rgba(121, 239, 102, 1)';
-                const borderColor = 'rgba(97, 109, 240, 0.2)';
-                const textColor = 'rgba(160, 160, 176, 1)';
+                try {
+                    const chartData = JSON.parse('{{ chart_data|escapejs }}');
+                    const accentPrimary = 'rgba(97, 109, 240, 1)';
+                    const accentSecondary = 'rgba(121, 239, 102, 1)';
+                    const borderColor = 'rgba(97, 109, 240, 0.2)';
+                    const textColor = 'rgba(160, 160, 176, 1)';
 
-                // Хелпер для создания градиента
-                function createGradient(ctx, color) {
-                    const gradient = ctx.createLinearGradient(0, 0, 0, ctx.canvas.height);
-                    gradient.addColorStop(0, color.replace('1)', '0.5)'));
-                    gradient.addColorStop(1, color.replace('1)', '0)'));
-                    return gradient;
+                    function createGradient(ctx, color) {
+                        const chart = ctx.canvas.getContext('2d');
+                        const gradient = chart.createLinearGradient(0, 0, 0, ctx.canvas.height);
+                        gradient.addColorStop(0, color.replace('1)', '0.5)'));
+                        gradient.addColorStop(1, color.replace('1)', '0)'));
+                        return gradient;
+                    }
+
+                    const userChartCanvas = document.getElementById('userChart');
+                    if (userChartCanvas) {
+                        new Chart(userChartCanvas.getContext('2d'), {
+                            type: 'line',
+                            data: {
+                                labels: chartData.labels,
+                                datasets: [{
+                                    label: 'Новые пользователи',
+                                    data: chartData.user_counts,
+                                    borderColor: accentPrimary,
+                                    backgroundColor: (context) => createGradient(context.chart, accentPrimary),
+                                    fill: true,
+                                    tension: 0.4,
+                                    pointBackgroundColor: accentPrimary,
+                                    pointBorderColor: '#fff',
+                                    pointHoverRadius: 6
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: { legend: { display: false } },
+                                scales: {
+                                    x: { ticks: { color: textColor }, grid: { color: borderColor } },
+                                    y: { ticks: { color: textColor, beginAtZero: true, precision: 0 }, grid: { color: borderColor } }
+                                }
+                            }
+                        });
+                    }
+
+                    const apiChartCanvas = document.getElementById('apiChart');
+                    if (apiChartCanvas) {
+                        new Chart(apiChartCanvas.getContext('2d'), {
+                            type: 'bar',
+                            data: {
+                                labels: chartData.labels,
+                                datasets: [{
+                                    label: 'Вызовы API',
+                                    data: chartData.api_counts,
+                                    backgroundColor: accentSecondary.replace('1)', '0.7)'),
+                                    borderColor: accentSecondary,
+                                    borderWidth: 1,
+                                    borderRadius: 4
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: { legend: { display: false } },
+                                scales: {
+                                    x: { ticks: { color: textColor }, grid: { display: false } },
+                                    y: { ticks: { color: textColor, beginAtZero: true, precision: 0 }, grid: { color: borderColor } }
+                                }
+                            }
+                        });
+                    }
+                } catch (e) {
+                    console.error("Ошибка при отрисовке графиков:", e);
                 }
-
-                // 1. График регистраций
-                const userCtx = document.getElementById('userChart').getContext('2d');
-                new Chart(userCtx, {
-                    type: 'line',
-                    data: {
-                        labels: chartData.labels,
-                        datasets: [{
-                            label: 'Новые пользователи',
-                            data: chartData.user_counts,
-                            borderColor: accentPrimary,
-                            backgroundColor: createGradient(userCtx, accentPrimary),
-                            fill: true,
-                            tension: 0.4,
-                            pointBackgroundColor: accentPrimary,
-                            pointBorderColor: '#fff',
-                            pointHoverRadius: 6
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
-                        scales: {
-                            x: { ticks: { color: textColor }, grid: { color: borderColor } },
-                            y: { ticks: { color: textColor, stepSize: 1 }, grid: { color: borderColor } }
-                        }
-                    }
-                });
-
-                // 2. График использования API
-                const apiCtx = document.getElementById('apiChart').getContext('2d');
-                new Chart(apiCtx, {
-                    type: 'bar',
-                    data: {
-                        labels: chartData.labels,
-                        datasets: [{
-                            label: 'Вызовы API',
-                            data: chartData.api_counts,
-                            backgroundColor: accentSecondary.replace('1)', '0.7)'),
-                            borderColor: accentSecondary,
-                            borderWidth: 1,
-                            borderRadius: 4
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
-                        scales: {
-                            x: { ticks: { color: textColor }, grid: { display: false } },
-                            y: { ticks: { color: textColor, stepSize: 5 }, grid: { color: borderColor } }
-                        }
-                    }
-                });
             {% endif %}
         });
-
     </script>
 </body>
 </html>
