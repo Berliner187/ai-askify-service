@@ -2838,7 +2838,7 @@ class PaymentSuccessView(View):
                     elif subscription.billing_cycle == 'monthly3':
                         subscription.end_date = datetime.now() + timedelta(days=92)
                     else:
-                        subscription.end_date = datetime.now() + timedelta(days=45)
+                        subscription.end_date = datetime.now() + timedelta(days=30)
 
                     subscription.start_date = datetime.now()
                     subscription.status = 'active'

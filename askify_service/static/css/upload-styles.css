@@ -543,16 +543,25 @@ body {
 .locked-upload-integrated {
     display: flex;
     align-items: center;
-    gap: 20px;
-    background: rgba(15, 8, 24, 0.7);
-    border: 1px dashed #4b4652;
-    border-radius: 24px;
-    padding: 20px;
-    margin-bottom: 24px;
-    margin-top: 20px;
+    gap: 1.25rem;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 1.5rem;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+    margin-top: 1.25rem;
 }
+
 .locked-upload-integrated .icon-wrapper {
     flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    background-color: var(--color-bg);
+    border-radius: 50%;
+    border: 1px solid var(--color-border);
 }
 .locked-upload-integrated .icon-wrapper img {
     width: 48px;
@@ -563,13 +572,17 @@ body {
 }
 .locked-upload-integrated h3 {
     font-family: 'Unbounded Medium';
+    color: var(--text-primary);
     margin: 0 0 4px 0;
-    color: #fff;
+    font-size: 1.1rem;
 }
 .locked-upload-integrated p {
     margin: 0;
     font-size: 14px;
     color: #c0c0c0;
+}
+.locked-upload-integrated p strong {
+    color: var(--color-accent-primary);
 }
 .locked-upload-integrated .button-medium {
     flex-shrink: 0;
@@ -585,7 +598,9 @@ body {
         flex-wrap: wrap;
         justify-content: center;
     }
-    .locked-upload-integrated p {
+    .locked-upload-integrated h3,
+    .locked-upload-integrated p  {
+        text-align: center;
     }
 }
 

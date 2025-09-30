@@ -12,7 +12,7 @@
     <link rel="shortcut icon" href="{% static 'img/logo.png' %}" type="image/png">
     
     {% include 'components/linker.html' %}
-    <link rel="stylesheet" href="{% static 'css/upload-styles.css' %}?v=1.3">
+    <link rel="stylesheet" href="{% static 'css/upload-styles.css' %}?v=1.4">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- Yandex.Metrika counter -->
@@ -151,15 +151,17 @@
         {% if subscription_level < 2 %}
             <div class="container locked-upload-integrated">
                 <div class="icon-wrapper">
-                    <i class="fas fa-gift text-6xl text-[var(--secondary-color)]"></i>
+                    <img src="{% static 'img/icon-diamond.png' %}" alt="Генерация" class="feature-icon">
                 </div>
                 <div class="text-wrapper">
-                    <h3>Осенний бонус – <span style="color: var(--secondary-color);">+15 дней в&nbsp;подарок!</span></h3>
-                    <p>Получите <span style="color: var(--secondary-color);">на 50% больше времени</span> для&nbsp;творчества и&nbsp;отдыха с&nbsp;Летучкой</p><br>
-                    <p>Только <span style="color: var(--secondary-color);">до конца сентября</span> мы&nbsp;превращаем каждый купленный месяц – в&nbsp;полтора. Освободите свои вечера от&nbsp;рутины — инвестируйте в&nbsp;себя.</p>
+                    <h3>Отличный выбор для старта</h3>
+                    <p>
+                        Большинство новых пользователей выбирают <strong>квартальный абонемент</strong>. <br><br>
+                        Это выгоднее, чем платить каждый месяц. <a href="/available-plans/" rel="noopener noreferrer">Посмотрите</a>, что Вы получите.
+                    </p>
                 </div>
                 <a class="button-medium button-accent" href="{% url 'payment' %}">
-                    <div><img src="{% static 'img/icon-diamond.png' %}" alt=""> <p>Воспользоваться</p></div>
+                    <div><i class="fas fa-rocket"></i> <p>Выбрать план</p></div>
                 </a>
             </div>
         {% else %}
