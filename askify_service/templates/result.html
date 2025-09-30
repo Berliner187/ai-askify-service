@@ -58,91 +58,56 @@
                         </svg>
                         <div class="progress-text">{{ score }} из {{ total }}</div>
                     </div>
-                    
-                    <div class="container-buttons">
-                        <a class="button-medium" href="{% url 'preview_test' survey_id %}">
-                            <div>
-                                <p>Смотреть ответы</p>
-                                <img src="{% static 'img/icon-answer.png' %}" alt="">
-                            </div>
-                        </a>
-                    </div>
-
                     <div class="container-buttons">
                         <a class="button-medium button-accent" href="{% url 'survey' survey_id=survey_id %}">
                             <div>
                                 <img src="{% static 'img/icon-retry.png' %}" alt="">
                                 <p>Пройти заново</p>
                             </div>
-                        </a> 
-                        <a class="button-medium" href="{% url 'preview_test_result' survey_id %}">
-                            <div>
-                                <p>Смотреть аналитику</p>
-                                <img src="{% static 'img/icon-analytics.png' %}" alt="">
-                            </div>
                         </a>
                     </div>
-                    <a class="button-medium mt-4" href="{% url 'preview_test' survey_id %}">
-                        <div>
-                            <p>Поделиться с учениками</p>
-                            <img src="{% static 'img/icon-share.png' %}" alt="">
-                        </div>
-                    </a>
-
+                    
                 {% else %}
-
                     <div class="container-buttons">
                         <a class="button-medium button-accent" href="{% url 'survey' survey_id=survey_id %}">
                             <div>
                                 <p>Пройти тест</p>
                             </div>
                         </a>
-
-                        <a class="button-medium" href="{% url 'preview_test_result' survey_id %}">
-                            <div>
-                                <p>Смотреть аналитику</p>
-                                <img src="{% static 'img/icon-analytics.png' %}" alt="">
-                            </div>
-                        </a>
-
-                        <a class="button-medium mt-4" href="{% url 'preview_test' survey_id %}">
-                            <div>
-                                <p>Поделиться с учениками</p>
-                                <img src="{% static 'img/icon-share.png' %}" alt="">
-                            </div>
-                        </a>
-
                     </div>
                 {% endif %}
+
+                <div class="container-buttons">
+                    <a class="button-medium" href="{% url 'download-results_pdf' survey_id=survey_id %}">
+                        <div>
+                            <p>Скачать результат</p>
+                            <img src="{% static 'img/icon-download-pdf.png' %}" alt="Icon download results in PDF">
+                        </div>
+                    </a>
+                    <a class="button-medium" href="{% url 'download-survey_pdf' survey_id=survey_id %}">
+                        <div>
+                            <p>Скачать тест для печати</p>
+                            <img src="{% static 'img/icon-download.png' %}" alt="Иконка загрузки PDF">
+                        </div>
+                    </a>
+                </div>
 
                 <hr>
 
                 <div class="buttons-around">
-                    <a class="button-medium" href="{% url 'download-survey_pdf' survey_id=survey_id %}">
-                        <div>
-                            <p>Скачать тест</p>
-                            <img src="{% static 'img/icon-download.png' %}" alt="Иконка загрузки PDF">
-                        </div>
-                    </a> 
                     <button class="button-medium" id="copyShareLink" data-content="/c/{{survey_id}}">
                         <div>
-                            <img src="{% static 'img/icon-share.png' %}" alt="Иконка поделиться">
+                            <p>Поделиться с&nbsp;другими</p>
+                            <img src="{% static 'img/icon-share.png' %}" alt="">
                         </div>
                     </button>
 
-                    {% if total > 0 %}
-                        <a class="button-medium" href="{% url 'download-results_pdf' survey_id=survey_id %}">
-                            <div>
-                                <img src="{% static 'img/icon-download-pdf.png' %}" alt="Icon download results in PDF">
-                            </div>
-                        </a>
-                    {% else %}
-                        <a class="button-medium" href="{% url 'drop-survey' survey_id=survey_id %}">
-                            <div>
-                                <img src="{% static 'img/icon-delete.png' %}" alt="">
-                            </div>
-                        </a> 
-                    {% endif %}
+                    <a class="button-medium" href="{% url 'preview_test_result' survey_id %}">
+                        <div>
+                            <p>Смотреть аналитику</p>
+                            <img src="{% static 'img/icon-analytics.png' %}" alt="">
+                        </div>
+                    </a>
                 </div>
                 
             </div>
@@ -217,7 +182,7 @@
                 <div class="head-button">
                     <a class="button-medium" href="{% url 'download-results_pdf' survey_id=survey_id %}">
                         <div>
-                            <p>Экспортировать</p>
+                            <p>Скачать результат</p>
                             <img src="{% static 'img/icon-download-pdf.png' %}" alt="Icon download results in PDF">
                         </div>
                     </a>
@@ -235,10 +200,8 @@
         
         </div>
         {% include 'ui_components/bottom_menu.html' %}
-
-        {% include 'footer-s.html' %}
-        
     </div>
+    {% include 'footer-s.html' %}
 
     <script>
         document.addEventListener("DOMContentLoaded", function() {
@@ -272,6 +235,7 @@
         if (copyButton && notification) {
             copyButton.addEventListener('click', async () => {
                 const relativePath = copyButton.getAttribute('data-content');
+                console.log(`${window.location.origin}${relativePath.startsWith('/') ? '' : '/'}${relativePath}`);
                 const fullLink = `${window.location.origin}${relativePath.startsWith('/') ? '' : '/'}${relativePath}`;
                 
                 try {

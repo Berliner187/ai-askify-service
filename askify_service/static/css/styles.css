@@ -28,7 +28,7 @@
 
 body {
     font-family: "Namu Pro", Arial, sans-serif;
-    background-color: #101012;
+    background-color: #121119;
     color: #dbdae3;
     margin: 0;
     padding: 0;
@@ -45,7 +45,7 @@ body {
 }
 
 .bg-create {
-    background-color: #101012;
+    background-color: #121119;
 }
 
 html, body {
@@ -54,8 +54,6 @@ html, body {
 }
 
 #page-container {
-    min-height: 80vh;
-    height: 100%;
     flex-grow: 1;
 }
 
@@ -401,9 +399,6 @@ textarea:focus {
 .toolbar-actions .button-medium i {
     font-size: 14px;
     color: #a0a0b0;
-}
-.toolbar-actions .button-medium p {
-    font-size: 13px;
 }
 
 /* 7. Адаптивность */

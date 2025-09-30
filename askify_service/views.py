@@ -2710,44 +2710,36 @@ class PaymentInitiateView(View):
         response_data = response.json()
 
         if response_data.get('Success'):
-            subscription_obj = Subscription.objects.filter(staff_id=get_staff_id(request))
-            if subscription_obj.exists():
-                subscription_obj.delete()
-
-            # TODO: Сделать как транзакцию
-            # Инициализация тарифного плана
-            if description == 'Премиум Год' or description == 'Стандартный Год':
-                subscription = Subscription.objects.create(
-                    staff_id=get_staff_id(request),
-                    plan_name=description,
-                    end_date=datetime.now(),
-                    status='inactive',
-                    billing_cycle='yearly',
-                    discount=0.00
-                )
-                subscription.save()
-            elif description == 'Премиум 3 мес' or description == 'Стандартный 3 мес':
-                subscription = Subscription.objects.create(
-                    staff_id=get_staff_id(request),
-                    plan_name=description,
-                    end_date=datetime.now(),
-                    status='inactive',
-                    billing_cycle='monthly3',
-                    discount=0.00
-                )
-                subscription.save()
+            
+            if 'премиум' in description.lower():
+                plan_name_for_db = 'Премиум'
+            elif 'стандарт' in description.lower():
+                plan_name_for_db = 'Стандартный'
             else:
-                subscription = Subscription.objects.create(
-                    staff_id=get_staff_id(request),
-                    plan_name=description,
-                    end_date=datetime.now(),
-                    status='inactive',
-                    billing_cycle='monthly',
-                    discount=0.00
-                )
-                subscription.save()
+                plan_name_for_db = 'Премиум'
 
-            # Инициализация оплаты
+            if 'год' in description.lower():
+                billing_cycle = 'yearly'
+            elif 'мес' in description.lower():
+                billing_cycle = 'monthly3'
+            else:
+                billing_cycle = 'monthly'
+
+            try:
+                subscription, created = Subscription.objects.update_or_create(
+                    staff_id=get_staff_id(request),
+                    defaults={
+                        'plan_name': plan_name_for_db,
+                        'status': 'inactive',
+                        'billing_cycle': billing_cycle,
+                        'end_date': timezone.now()
+                    }
+                )
+
+            except Exception as e:
+                tracer_l.critical(f"НЕ СМОГ СОЗДАТЬ ПОДПИСКУ: {e}")
+                return JsonResponse({'error': 'Ошибка при создании подписки'}, status=500)
+
             new_payment = Payment.objects.create(
                 staff_id=get_staff_id(request),
                 payment_id=response_data.get('PaymentId'),
