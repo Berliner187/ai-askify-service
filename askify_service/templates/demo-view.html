@@ -46,7 +46,7 @@
             --color-text-primary: #f0f0f0;
             --color-text-secondary: #a0a0b0;
             --color-accent-primary: #616DF0;
-            --color-accent-secondary: #79EF66;
+            --color-accent-secondary: #70dd60;
         }
         body { background-color: var(--color-bg); font-family: 'Inter', sans-serif; }
         h1, h2, h3 { font-family: 'Unbounded', sans-serif; }
@@ -98,7 +98,7 @@
                     <div class="flex-grow min-w-0">
                         <h1 class="text-sm font-bold text-white truncate" title="{{ title }}">{{ title }}</h1>
                         <div class="flex items-center gap-3 text-xs text-gray-400">
-                            <span>{{ model_name }}</span>
+                            <span>Автор – {{ author }}</span>
                             <span class="text-gray-600">•</span>
                             <div class="flex items-center gap-1.5" title="{{ view_count }} просмотров">
                                 <i class="fas fa-eye"></i>
@@ -139,20 +139,26 @@
                         </div>
                     {% endif %}
                 {% else %}
-                    <div class="mt-3 text-center text-sm bg-gray-800/50 text-gray-400 p-2 rounded-lg">
+                    <div class="mt-3 text-center text-sm bg-gray-800/50 text-gray-400 p-2 rounded-xl">
                         {% if show_answers %}
                             <i class="fas fa-eye text-green-400"></i> Автор разрешил просмотр ответов.
                         {% else %}
                             <i class="fas fa-eye-slash text-red-400"></i> Автор скрыл ответы.
                         {% endif %}
                     </div>
+                    {% if not is_creator %}
+                        <a href="{% url 'take_test' survey_id %}" class="mt-6 block w-full text-center bg-[var(--color-accent-primary)] text-white p-4 rounded-3xl transition-transform hover:scale-[1.03] shadow-lg shadow-[var(--color-accent-primary)]/20">
+                            <span class="text-lg font-bold">ПРОЙТИ ТЕСТ 🚀</span>
+                            <span class="block text-sm opacity-70">Пройдите тест, и автор увидит Ваш результат</span>
+                        </a>
+                    {% endif %}
                 {% endif %}
             </header>
 
             {% if is_creator %}
                 {% if username != 0 %}
                     <div class="mt-8 question-card flex justify-center rounded-3xl pt-4 animate-fadeIn">
-                        <button data-action="share" class="group w-full transition-transform hover:scale-[1.03] flex items-center justify-center text-center p-4 bg-[var(--color-accent-secondary)] rounded-3xl border border-transparent hover:border-[var(--color-border)] transition-colors">
+                        <button data-action="share" class="group w-full transition-transform hover:scale-[1.03] active:scale-[.97] flex items-center justify-center text-center p-4 bg-[var(--color-accent-secondary)] rounded-3xl border border-transparent hover:border-[var(--color-border)] transition-colors">
                             <div class="flex items-center gap-4">
                                 <i class="fas fa-share-alt text-[var(--color-bg)] transition-colors"></i>
                                 <span class="font-semibold text-[var(--color-bg)]">Поделиться</span>
@@ -160,19 +166,13 @@
                         </button>
                     </div>
                     <div class="text-center question-card flex justify-center rounded-3xl p-5 animate-fadeIn">
-                        <span class="block text-sm text-white">Поделитесь, чтобы следить за прогрессом учеников</span>
+                        <span class="block text-sm text-[#a8aabe]">Поделитесь тестом, увидеть результаты прохождения учеников</span>
                     </div>
                 {% else %}
                     <div class="mt-3 text-center text-sm bg-red-300/10 text-red-400 p-2 rounded-2xl border border-red-500/20">
                         <button data-trigger-modal="register" class="font-bold hover:underline">Создайте аккаунт</button>, чтобы поделиться тестом и увидеть статистику прохождений
                     </div>
                 {% endif %}
-                
-            {% else %}
-                <a href="{% url 'take_test' survey_id %}" class="mt-6 block w-full text-center bg-[var(--color-accent-primary)] text-white p-5 rounded-2xl transition-transform hover:scale-[1.03] shadow-lg shadow-[var(--color-accent-primary)]/20">
-                    <span class="text-lg font-bold">ПРОЙТИ ТЕСТ 🚀</span>
-                    <span class="block text-sm opacity-70">Пройдите тест, и автор увидит Ваш результат</span>
-                </a>
             {% endif %}
 
             <!-- СПИСОК ВОПРОСОВ -->
@@ -206,11 +206,19 @@
                 </div>
                 {% endfor %}
             </div>
+
+            {% if is_creator %}
+                <a href="{% url 'take_test' survey_id %}" class="mt-6 block w-full text-center bg-[var(--color-accent-primary)] text-white p-4 rounded-3xl transition-transform hover:scale-[1.03] active:scale-[.97] shadow-lg shadow-[var(--color-accent-primary)]/20">
+                    <span class="text-lg font-bold">ПРОЙТИ ТЕСТ 🚀</span>
+                    <span class="block text-sm opacity-70">Пройдите созданный Вами тест!</span>
+                </a>
+            {% endif %}
+            
         </div>
 
         <footer class="mt-16 sm:mt-24">
             <div class="max-w-3xl mx-auto px-4 sm:px-8">
-                <div class="bg-[var(--color-surface)] p-6 sm:p-8 rounded-3xl border border-[var(--color-border)]">
+                <div class="bg-[var(--color-surface)] p-5 sm:p-8 rounded-3xl border border-[var(--color-border)]">
                         {% if username == 0 %}
 
                             {% if can_generate %}
@@ -219,7 +227,7 @@
                                     <span class="block text-sm opacity-70">Вернуться на главную и попробовать снова</span>
                                 </a>
                             {% else %}
-                                <div class="mt-8 text-center bg-gradient-to-r from-[#211a32] to-[var(--color-surface)] p-8 rounded-3xl border border-[var(--color-border)]">
+                                <div class="text-center bg-gradient-to-r from-[#211a32] to-[var(--color-surface)] p-8 rounded-3xl border border-[var(--color-border)]">
                                     <div class="flex justify-center mb-4">
                                         <div class="flex items-center justify-center h-16 w-16 rounded-full bg-red-500/10 border border-red-500/30">
                                             <i class="fas fa-lock text-3xl text-red-400"></i>
@@ -231,7 +239,7 @@
                                         Вы использовали все бесплатные генерации. Но это только начало.
                                     </p>
                                     
-                                    <div class="mt-6 bg-black/20 p-4 rounded-xl">
+                                    <div class="mt-6 bg-black/20 p-4 rounded-3xl">
                                         <p class="text-lg font-semibold text-white">
                                             Зарегистрируйтесь и получите <span class="text-[var(--color-accent-secondary)]">еще 10 тестов в подарок.</span>
                                         </p>
@@ -245,9 +253,9 @@
                         
                         {% else %}
                             {% if is_creator %}
-                            <a href="{% url 'preview_test_result' survey_id %}" class="mt-6 block w-full text-center bg-[var(--color-accent-primary)] text-white p-5 rounded-2xl transition-transform hover:scale-[1.03] shadow-lg shadow-[var(--color-accent-primary)]/20">
-                                <span class="text-lg font-bold">Смотреть аналитику</span>
-                                <span class="block text-sm opacity-70">Просматривайте результаты тех, кому Вы отправили тест</span>
+                            <a href="{% url 'preview_test_result' survey_id %}" class="mt-6 block w-full text-center bg-[var(--color-accent-secondary)] text-white p-5 rounded-3xl transition-transform hover:scale-[1.03] active:scale-[.97] shadow-lg shadow-[var(--color-accent-primary)]/20">
+                                <span class="text-lg font-bold text-[var(--color-bg)]">ПЕРЕЙТИ К АНАЛИТИКЕ</span>
+                                <span class="block text-sm opacity-70 text-[var(--color-bg)]">Просматривайте результаты тех, кому Вы отправили тест</span>
                             </a>
                             {% else %}
                             <a href="{% url 'take_test' survey_id %}" class="mt-6 block w-full text-center bg-[var(--color-accent-primary)] text-white p-5 rounded-2xl transition-transform hover:scale-[1.03] shadow-lg shadow-[var(--color-accent-primary)]/20">
@@ -345,8 +353,9 @@
                 const message = $('<div/>', {
                     text: 'Ссылка скопирована!',
                     css: {
-                        position: 'fixed', top: '20px', left: '50%', transform: 'translateX(-50%)',
-                        background: 'rgba(30, 24, 48, 0.9)', backdropFilter: 'blur(10px)',
+                        position: 'fixed', top: '20px', width: '290px', textAlign: 'center', 
+                        left: '50%', transform: 'translateX(-50%)',
+                        background: 'var(--color-accent-primary)', backdropFilter: 'blur(10px)',
                         color: 'white', padding: '12px 24px', borderRadius: '9999px',
                         border: '1px solid var(--color-border)', zIndex: '1000',
                         opacity: '0', transition: 'opacity 0.3s ease'

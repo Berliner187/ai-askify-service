@@ -48,15 +48,43 @@
         
         <div id="landing-view" class="w-full max-w-lg text-center">
             <div class="bg-[var(--color-surface)] p-8 rounded-3xl border border-[var(--color-border)] animate-fadeIn shadow-2xl shadow-black/50">
-                <p class="text-sm text-[var(--color-text-secondary)]">Тест от «Летучка»</p>
-                <h1 class="mt-2 text-3xl font-bold text-white">{{ survey.title }}</h1>
+
+                <div class="flex justify-center my-4">
+                    <a href="/">
+                        <img src="{% static 'img/logo-header.webp' %}" alt="Летучка Логотип" class="w-40 h-auto">
+                    </a>
+                </div>
+
+                <p class="text-sm text-[var(--color-text-secondary)]">Тест от {{ author }}</p>
+                <h1 class="mt-2 text-2xl font-bold text-white">{{ survey.title }}</h1>
                 <p class="mt-4 text-[var(--color-text-secondary)] max-w-md mx-auto">
                     Вам предстоит ответить на <strong>{{ survey.get_questions|length }}</strong> вопросов.
                 </p>
-
-                <form id="start-test-form" class="mt-8 flex flex-col sm:flex-row gap-3">
-                    <input type="text" id="student-name" class="flex-grow w-full p-4 bg-[var(--color-bg)] border-2 border-[var(--color-border)] rounded-full text-center text-lg text-white focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)] placeholder:text-gray-600 transition-colors" placeholder="Имя" required>
-                    <button type="submit" class="w-full sm:w-auto bg-[var(--color-accent-primary)] text-white px-8 py-4 font-bold rounded-full text-lg transition-transform hover:scale-105 shadow-lg shadow-[var(--color-accent-primary)]/20">Начать</button>
+                
+                <form id="start-test-form" class="mt-8 flex flex-col">
+                    <input 
+                        type="text" 
+                        id="student-name" 
+                        class="flex-grow w-full p-4 bg-[var(--color-bg)] border-2 border-[var(--color-border)] rounded-full text-center text-lg text-white focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)] placeholder:text-gray-600 transition-colors" 
+                        placeholder="Имя" 
+                        required
+                    >
+                    <span class="text-xs mt-2 text-gray-400">Его увидит автор, гадости не пишите :)</span>
+                    <button 
+                        type="submit" 
+                        id="start-button"  
+                        disabled 
+                        class="w-full sm:w-auto bg-gray-500 text-white px-8 py-4 mt-6 font-bold rounded-full text-lg 
+                            transition-all 
+                            disabled:opacity-50 disabled:bg-gray-500 disabled:shadow-none 
+                            
+                            // Активные стили (будут применены JS при удалении disabled)
+                            enabled:bg-[var(--color-accent-primary)] 
+                            enabled:hover:scale-105 
+                            enabled:shadow-lg enabled:shadow-[var(--color-accent-primary)]/20"
+                    >
+                        Начать
+                    </button>
                 </form>
             </div>
         </div>
@@ -85,6 +113,26 @@
             </div>
         </div>
     </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const nameInput = document.getElementById('student-name');
+            const startButton = document.getElementById('start-button');
+
+            function toggleButtonState() {
+                if (nameInput.value.trim().length > 0) {
+                    startButton.removeAttribute('disabled');
+                } else {
+                    startButton.setAttribute('disabled', true);
+                }
+            }
+
+            nameInput.addEventListener('input', toggleButtonState);
+            nameInput.addEventListener('blur', toggleButtonState);
+
+            toggleButtonState(); 
+        });
+    </script>
 
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script>

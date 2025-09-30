@@ -1474,7 +1474,8 @@ def take_test(request, survey_id):
 
     context = {
         'survey': survey,
-        'questions_json': json.dumps(questions_list, ensure_ascii=False)
+        'questions_json': json.dumps(questions_list, ensure_ascii=False),
+        'author': AuthUser.objects.get(id_staff=survey.id_staff)
     }
     return render(request, 'askify_service/take_test.html', context)
 
@@ -1555,6 +1556,8 @@ def preview_test(request, survey_id):
         if total_demo_surveys_count >= 2:
             can_generate = False
 
+    print(AuthUser.objects.get(id_staff=survey.id_staff).username)
+
     if survey:
         questions = survey.get_questions()
         view_count = survey.view_count
@@ -1564,6 +1567,7 @@ def preview_test(request, survey_id):
             'title': survey.title,
             'survey_id': survey_id,
             'questions': questions,
+            'author': AuthUser.objects.get(id_staff=survey.id_staff).username,
             'username': request.user.username if request.user.is_authenticated else 0,
             'model_name': f"{'Сгенерировано ' + survey.model_name.upper().replace('O', 'o') if survey.model_name else 'Сгенерировано в Летучке'}",
             'view_count': view_count,
@@ -1689,7 +1693,8 @@ def view_results(request, survey_id):
         'easiest_question': easiest_question,
         'score_distribution': sorted(score_distribution.items()),
         'view_count': survey.view_count,
-        'username': get_username(request)
+        'username': get_username(request),
+        'author': AuthUser.objects.get(id_staff=survey.id_staff)
     }
 
     return render(request, 'askify_service/test_results.html', context)

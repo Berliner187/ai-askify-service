@@ -51,7 +51,7 @@
                 <div class="flex-grow min-w-0">
                     <h1 class="text-sm font-bold text-white truncate" title="{{ title }}">{{ survey.title }}</h1>
                     <div class="flex items-center gap-3 text-xs text-gray-400">
-                        <span>{{ username }}</span>
+                        <span>{{ author }}</span>
                         <span class="text-gray-600">•</span>
                         <div class="flex items-center gap-1.5" title="{{ view_count }} просмотров">
                             <i class="fas fa-eye"></i>
@@ -59,53 +59,59 @@
                         </div>
                     </div>
                 </div>
+                <a href="{% url 'preview_test' survey.survey_id %}" class="text-sm text-[var(--color-text-secondary)] hover:text-white transition-colors duration-200">
+                    <i class="fas fa-arrow-left mr-2"></i>Вернуться к просмотру теста
+                </a>
             </div>
         </header>
 
-        <!-- "ПАСПОРТ" ТЕСТА -->
-        <div class="bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] shadow-2xl shadow-black/50">
-            <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-                <div>
-                    <a href="{% url 'preview_test' survey.survey_id %}" class="text-sm text-[var(--color-text-secondary)] hover:text-white transition-colors duration-200">
-                        <i class="fas fa-arrow-left mr-2"></i>Вернуться к просмотру теста
-                    </a>
-                    <!-- <h1 class="mt-2 text-2xl sm:text-3xl font-bold text-white">{{ survey.title }}</h1> -->
+        <div class="mt-8 question-card flex justify-center rounded-3xl pt-4 animate-fadeIn">
+            <button 
+                data-action="share" 
+                class="group w-full transition-transform hover:scale-[1.03] active:scale-[.97] flex items-center justify-center text-center p-4 
+                    bg-[var(--color-bg)] 
+                    rounded-3xl 
+                    border border-[var(--color-accent-secondary)] 
+                    hover:border-[var(--color-accent-primary)] 
+                    transition-colors">
+                <div class="flex items-center gap-4">
+                    <i class="fas fa-share-alt text-[var(--color-accent-secondary)] transition-colors"></i>
+                    <span class="font-semibold text-[var(--color-accent-secondary)]">Поделиться</span>
                 </div>
-                <!-- <div class="flex-shrink-0">
-                    <a href="#" class="inline-block bg-[var(--color-accent-primary)] text-white px-6 py-3 text-sm font-bold rounded-full transition-transform hover:scale-105 shadow-lg shadow-[var(--color-accent-primary)]/20">
-                        <i class="fas fa-download mr-2"></i>Скачать отчет в CSV
-                    </a>
-                </div> -->
-            </div>
+            </button>
         </div>
         
+        <div class="text-center question-card flex justify-center rounded-3xl px-0 py-0 p-5 animate-fadeIn">
+            <span class="block text-sm text-[#a8aabe]">Поделитесь тестом, увидеть результаты прохождения учеников</span>
+        </div>
+
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] text-center shadow-2xl shadow-black/50">
+            <div class="bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] text-center shadow-2xl shadow-black/50">
                 <p class="text-xs text-[var(--color-text-secondary)] font-semibold uppercase tracking-wider">Всего прохождений</p>
                 <p class="text-5xl font-extrabold gradient-text mt-2">{{ total_attempts }}</p>
             </div>
             
-            <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] text-center shadow-2xl shadow-black/50">
+            <div class="bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] text-center shadow-2xl shadow-black/50">
                 <p class="text-xs text-[var(--color-text-secondary)] font-semibold uppercase tracking-wider">Средний балл</p>
                 <p class="text-5xl font-extrabold gradient-text mt-2">{{ average_score_percent|floatformat:0 }}<span class="text-3xl">%</span></p>
             </div>
             
-            <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] text-center shadow-2xl shadow-black/50">
+            <div class="bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] text-center shadow-2xl shadow-black/50">
                 <p class="text-xs text-[var(--color-text-secondary)] font-semibold uppercase tracking-wider">Медианный балл</p>
-                <p class="text-5xl font-extrabold gradient-text mt-2">{{ median_score|floatformat:0 }}<span class="text-3xl">%</span></p>
+                <p class="text-5xl font-extrabold gradient-text mt-2">{{ median_score|floatformat:0 }}<span class="text-3xl"></span></p>
             </div>
 
-            <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] text-center shadow-2xl shadow-black/50 flex flex-col justify-center">
+            <div class="bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] text-center shadow-2xl shadow-black/50 flex flex-col justify-center">
                 <p class="text-xs text-[var(--color-text-secondary)] font-semibold uppercase tracking-wider">Самый сложный вопрос</p>
                 <p class="text-lg font-bold text-white mt-2 leading-tight">{{ hardest_question|default:"Нет данных" }}</p>
             </div>
 
-            <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] text-center shadow-2xl shadow-black/50 flex flex-col justify-center">
+            <div class="bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] text-center shadow-2xl shadow-black/50 flex flex-col justify-center">
                 <p class="text-xs text-[var(--color-text-secondary)] font-semibold uppercase tracking-wider">Самый легкий вопрос</p>
                 <p class="text-lg font-bold text-white mt-2 leading-tight">{{ easiest_question|default:"Нет данных" }}</p>
             </div>
 
-            <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] text-center shadow-2xl shadow-black/50">
+            <div class="bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] text-center shadow-2xl shadow-black/50">
                 <p class="text-xs text-[var(--color-text-secondary)] font-semibold uppercase tracking-wider">Идеальные результаты</p>
                 <p class="text-5xl font-extrabold gradient-text mt-2">{{ perfect_attempts_percent|floatformat:0 }}<span class="text-3xl">%</span></p>
             </div>
@@ -120,7 +126,6 @@
                     {% for attempt in attempts %}
                     <li class="py-4 flex flex-col sm:flex-row justify-between sm:items-center gap-3 hover:bg-black/20 -mx-4 px-4 rounded-lg transition-colors duration-200">
                         <div class="flex items-center gap-4">
-                            <!-- Аватарка по первой букве имени -->
                             <div class="flex-shrink-0 flex items-center justify-center h-11 w-11 rounded-full bg-[var(--color-accent-primary)]/20 border border-[var(--color-border)]">
                                 <span class="font-bold text-lg text-white">{{ attempt.student_name|first|upper }}</span>
                             </div>
@@ -147,6 +152,48 @@
         </div>
     </main>
 
+    <script>
+        function copyLinkAndNotify() {
+            const fullURL = window.location.href;
+            const urlToCopy = fullURL.substring(0, fullURL.lastIndexOf('/', fullURL.length - 2) + 1);
+
+            navigator.clipboard.writeText(urlToCopy).then(function() {
+                const message = $('<div/>', {
+                    text: 'Ссылка скопирована!',
+                    css: {
+                        position: 'fixed', top: '20px', width: '290px', textAlign: 'center', 
+                        left: '50%', transform: 'translateX(-50%)',
+                        background: 'var(--color-accent-primary)', backdropFilter: 'blur(10px)',
+                        color: 'white', padding: '12px 24px', borderRadius: '9999px',
+                        border: '1px solid var(--color-border)', zIndex: '1000',
+                        opacity: '0', transition: 'opacity 0.3s ease'
+                    }
+                }).appendTo('body');
+                
+                setTimeout(() => message.css('opacity', '1'), 10);
+                setTimeout(() => {
+                    message.css('opacity', '0');
+                    setTimeout(() => message.remove(), 300);
+                }, 2000);
+
+            }, function(err) {
+                console.error('Ошибка копирования: ', err);
+            });
+        }
+
+        $(document).ready(function() {
+            const scrollProgress = $('#scrollProgress');
+            $(window).on('scroll', function() {
+                const winScroll = $(this).scrollTop();
+                const height = $(document).height() - $(window).height();
+                const scrolled = (winScroll / height) * 100;
+                scrollProgress.css('width', scrolled + '%');
+            });
+
+            $('button[data-action="share"]').on('click', copyLinkAndNotify);
+        });
+
+    </script>
     {% include 'footer.html' %}
 </body>
 </html>
