@@ -883,10 +883,6 @@ textarea:focus {
     border: 1px solid rgba(48, 47, 50, 0.3);
 }
 
-#block-generate {
-    border: 1px solid var(--primary-color);
-}
-
 .laod-more-btn {
     font-family: 'Namu Pro';
     font-size: .8em;
