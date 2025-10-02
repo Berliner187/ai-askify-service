@@ -12,7 +12,7 @@
     <link rel="shortcut icon" href="{% static 'img/logo.png' %}" type="image/png">
     
     {% include 'components/linker.html' %}
-    <link rel="stylesheet" href="{% static 'css/upload-styles.css' %}?v=1.4">
+    <link rel="stylesheet" href="{% static 'css/upload-styles.css' %}?v=1.5">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- Yandex.Metrika counter -->
@@ -52,6 +52,44 @@
     
     <div id="page-container" class="fade" style="display: none;">
         {% include 'header.html' %}
+
+        <div class="main-content-create">
+            {% if total_tests != 0 %}
+                <div class="onboarding-welcome">
+                    <h1 class="welcome-title">Превратите знания в тесты. Мгновенно.</h1>
+                    <p class="welcome-subtitle">
+                        Это Летучка — Ваш персональный AI-ассистент для создания тестов. <br>
+                        Просто вставьте текст из лекции или статьи в поле ниже, чтобы начать.
+                    </p>
+                    <div class="welcome-arrow">
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                </div>
+                <div class="inspiration-container">
+                    <div class="inspiration-card" data-inspiration-text="Теорема Пифагора гласит, что в прямоугольном треугольнике квадрат длины гипотенузы равен сумме квадратов длин двух других сторон. Это можно записать как: a² + b² = c², где c представляет длину гипотенузы, а a и b — длины двух других сторон, или катетов.">
+                        <h4>📚 Тест по параграфу</h4>
+                        <span>Проверьте, как усвоен материал</span>
+                    </div>
+                    <div class="inspiration-card" data-inspiration-text="Ключевые события Второй мировой войны: 1. Вторжение в Польшу (1939). 2. Битва за Британию (1940). 3. Нападение на Перл-Харбор (1941). 4. Сталинградская битва (1942-1943). 5. Высадка в Нормандии (1944). 6. Капитуляция Германии (1945).">
+                        <h4>📜 Вопросы по датам и фактам</h4>
+                        <span>Идеально для истории или литературы</span>
+                    </div>
+                    <div class="inspiration-card" data-inspiration-text="Основные принципы Agile-манифеста: 1. Люди и взаимодействие важнее процессов и инструментов. 2. Работающий продукт важнее исчерпывающей документации. 3. Сотрудничество с заказчиком важнее согласования условий контракта. 4. Готовность к изменениям важнее следования первоначальному плану.">
+                        <h4>💡 Проверка терминологии</h4>
+                        <span>Создайте тест по ключевым понятиям</span>
+                    </div>
+                    <div class="inspiration-card" data-inspiration-text="">
+                        <h4>✍️ Начать с чистого листа</h4>
+                        <span>Для ваших собственных идей</span>
+                    </div>
+                </div>
+            {% else %}
+                <div class="welcome-return">
+                    <h1 class="welcome-title">С возвращением!</h1>
+                    <p>Готовы создать новый тест?</p>
+                </div>
+            {% endif %}
+        </div>
 
         <div class="container glass-metrics-container">
             <div class="metrics-scroll-box">
@@ -259,18 +297,18 @@
         {% else %}
             <div class="feature-block premium-feature">
                 <div class="feature-badge">ПРЕМИУМ</div>
-                <img src="{% static 'img/icon-create.png' %}" alt="Генерация" class="feature-icon">
-                <h3>Контент → Тест</h3>
-                <p class="accent">Загружайте файлы PDF/Word, из&nbsp;которых&nbsp;ИИ создаст тест за&nbsp;секунды.</p>
-                <a href="/payment">Открыть возможности</a>
+                <img src="{% static 'img/icon-create.png' %}" alt="Генерация из файлов" class="feature-icon">
+                <h3>Освободите свои вечера</h3>
+                <p class="accent">Загрузите лекцию, параграф из&nbsp;учебника или методичку (PDF/Word). Летучка превратит их&nbsp;в&nbsp;тест, пока вы&nbsp;пьете кофе.</p>
+                <a href="/payment">Экономить часы на подготовке</a>
             </div>
             
             <div class="feature-block premium-feature">
                 <div class="feature-badge">ПРЕМИУМ</div>
                 <img src="{% static 'img/icon-analytics.png' %}" alt="Анализ" class="feature-icon">
-                <h3>Умная аналитика</h3>
-                <p class="accent">Получайте детальный разбор ошибок от ИИ.</p>
-                <a href="/payment">Разблокировать фидбэк от ИИ</a>
+                <h3>Видите глубже, чем просто оценки</h3>
+                <p class="accent">Наш ИИ&nbsp;не&nbsp;просто покажет ошибки. Он&nbsp;подсветит самые сложные вопросы и&nbsp;выявит слепые зоны в&nbsp;знаниях.</p>
+                <a href="/payment">Получить AI-ассистента</a>
             </div>
             
             <div class="feature-block">
@@ -312,8 +350,7 @@
                         <p id="question-slider-text"><span id="slider-value">5</span> вопросов</p>
                         <input type="range" id="question-slider" class="custom-slider" min="1" max="15" value="5" style="display: none;">
                     </div>
-                    <div id="char-count">0 / 32768</div>
-                    
+                    <div id="char-count">0 / 16384</div>
                 </div>
                 <div class="toolbar-actions">
                         <a class="button-medium" href="{% url 'history' %}" title="История генераций">
@@ -366,7 +403,7 @@
         
         textarea.addEventListener('input', function() {
             document.getElementById('char-count').textContent = 
-                this.value.length + '/32768';
+                this.value.length + '/ 16384';
         });
         
         const slider = document.getElementById('question-slider');
@@ -377,6 +414,28 @@
     });
     </script>
 
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+        const inspirationCards = document.querySelectorAll('.inspiration-card');
+        const userText = document.getElementById('user-text');
+        const textForm = document.getElementById('text-form');
+
+        inspirationCards.forEach(card => {
+                card.addEventListener('click', () => {
+                    const inspirationText = card.dataset.inspirationText;
+                    
+                    userText.value = inspirationText;
+                    
+                    userText.dispatchEvent(new Event('input', { bubbles: true }));
+                    
+                    setTimeout(() => {
+                        userText.focus();
+                    }, 500);
+                });
+            });
+        });
+    </script>
+    
     <script>
         let current = 0;
         const metrics = document.querySelectorAll('.metric-ios');

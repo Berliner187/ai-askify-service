@@ -19,7 +19,7 @@
 
 footer {
     font-family: 'Namu Pro';
-    background-color: rgba(27, 26, 32, .5);
+    background-color: transparent;
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border-top-left-radius: 20px;

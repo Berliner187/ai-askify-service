@@ -2197,16 +2197,11 @@ def admin_stats(request):
     if start_date_str and end_date_str:
         start_date = timezone.datetime.strptime(start_date_str, '%Y-%m-%d').date()
         end_date = timezone.datetime.strptime(end_date_str, '%Y-%m-%d').date()
-        
-        # Данные для карточек
+
         selected_users = AuthUser.objects.filter(date_joined__date__range=(start_date, end_date)).count()
         total_surveys = Survey.objects.filter(updated_at__date__range=(start_date, end_date)).count()
         total_answers = UserAnswers.objects.filter(created_at__date__range=(start_date, end_date)).count()
         subscriptions = Subscription.objects.filter(start_date__date__range=(start_date, end_date)).count()
-        
-        # =========================================================================
-        #                   НОВЫЙ БЛОК: СБОР ДАННЫХ ДЛЯ ГРАФИКОВ
-        # =========================================================================
         
         # 1. Собираем ежедневные регистрации
         user_counts_query = (
@@ -2241,14 +2236,12 @@ def admin_stats(request):
             user_counts.append(user_data_map.get(date_str, 0))
             api_counts.append(api_data_map.get(date_str, 0))
             current_date += timedelta(days=1)
-        
+
         chart_data = json.dumps({
             'labels': labels,
             'user_counts': user_counts,
             'api_counts': api_counts,
         })
-        # ======================= КОНЕЦ НОВОГО БЛОКА ==========================
-
     else:
         selected_users = total_surveys = subscriptions = total_answers = 0
 

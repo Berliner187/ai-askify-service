@@ -3,7 +3,7 @@ const slider = document.getElementById('question-slider');
 const sliderValue = document.getElementById('slider-value');
 const questionSliderText = document.getElementById('question-slider-text');
 const charCount = document.getElementById('char-count');
-const maxLength = 32768;
+const maxLength = 16384;
 
 text.addEventListener('input', function() {
     // this.style.height = 'auto';

@@ -271,23 +271,19 @@ button:active {
 
 #block-generate {
     position: sticky;
-    bottom: 16px; /* Отступ от края экрана */
+    bottom: 16px;
     left: 0;
     right: 0;
     z-index: 100;
-
     width: 95%;
-    max-width: 800px; /* Сделали чуть шире на десктопе */
+    max-width: 800px;
     margin: 0 auto;
-
     background: rgba(30, 29, 36, 0.6);
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 24px;
+    border-radius: 32px;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
-    
-    padding: 8px; /* Внутренний отступ поменьше */
+    padding: 8px;
     transition: all 0.3s ease-in-out;
 }
 
@@ -301,20 +297,17 @@ button:active {
 /* 3. Textarea: главный элемент */
 textarea {
     width: 100%;
-    min-height: 56px; /* Высота одной строки с отступами */
-    max-height: 50vh; /* Ограничиваем максимальную высоту */
+    min-height: 56px;
+    max-height: 50vh;
     padding: 16px;
-    padding-right: 120px; /* !!! Резервируем место для двух кнопок */
-    
-    /* Убираем собственный фон, чтобы она была частью "стекла" */
+    padding-right: 120px;
     background: transparent;
     border: none;
     box-shadow: none;
-    
     color: #e5e5f1;
     font-size: 16px;
     font-family: 'Namu Pro', sans-serif;
-    resize: vertical; /* Разрешаем менять высоту */
+    resize: vertical;
     line-height: 1.5;
 }
 
@@ -404,24 +397,24 @@ textarea:focus {
 /* 7. Адаптивность */
 @media (max-width: 768px) {
     #block-generate {
-        border-radius: 18px;
+        border-radius: 24px;
         width: calc(100% - 24px);
         bottom: 12px;
     }
     .controls-toolbar {
-        flex-wrap: wrap; /* Разрешаем перенос элементов */
+        flex-wrap: wrap;
         padding: 8px;
     }
     .slider-container {
         width: 100%;
-        order: 1; /* Слайдер всегда сверху */
+        order: 1;
         margin-bottom: 8px;
     }
-    #char-count { display: none; } /* Скрываем счетчик на мобилках для экономии места */
+    #char-count { display: none; }
     .toolbar-actions {
         width: 100%;
         order: 2;
-        justify-content: space-around; /* Равномерно распределяем кнопки */
+        justify-content: space-around;
         padding-left: 0;
     }
 }
@@ -554,62 +547,81 @@ textarea:focus {
 }
 
 /* Промо блок для купки подписки */
-.subscription-offer {
-    padding: 30px 20px;
-    transition: transform 0.3s ease, background-size 0.25s ease;
-    background: url('../img/bg-subs.webp') top/cover no-repeat;
+
+.premium-upsell-container {
+    background: linear-gradient(145deg, rgba(97, 109, 240, 0.1), rgba(121, 239, 102, 0.05));
+    border: 1px solid var(--accent);
+    border-radius: 32px;
+    padding: 40px;
+    margin-top: 50px;
     text-align: center;
 }
 
-.subscription-offer h2 {
-    color: #d5d3db;
-    margin-bottom: 25px;
-    text-align: center;
+.upsell-icon {
+    font-size: 32px;
+    color: var(--accent);
+    margin-bottom: 16px;
+}
+
+.upsell-header h2 {
+    font-family: 'Unbounded Bold';
     font-size: 2em;
+    color: #fff;
+    margin: 0 0 12px 0;
+}
+.upsell-header p {
+    font-size: 1.1em;
+    color: #bab8c1;
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.6;
 }
 
-.subscription-offer p {
-    color: #BAB8C1;
-    margin-bottom: 20px;
-    line-height: 1.2;
-    max-width: 700px;
-    margin-left: auto;
-    margin-right: auto;
-    text-align: start;
+.upsell-features {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
+    margin: 40px 0;
+    text-align: left;
 }
 
-.subscription-offer ul {
-    list-style: none;
-    padding: 0;
-    margin: 25px auto;
-    max-width: 700px;
-    text-align: start;
+.upsell-feature-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
 }
-
-.subscription-offer ul li {
-    color: #BAB8C1;
-    margin-bottom: 15px;
-    position: relative;
-    padding-left: 30px;
+.upsell-feature-item i {
+    font-size: 20px;
+    color: var(--accent-green);
+    margin-top: 4px;
+}
+.feature-text h4 {
+    font-family: 'Unbounded Medium';
+    font-size: 1.1em;
+    color: #fff;
+    margin: 0 0 6px 0;
+}
+.feature-text span {
+    font-size: 0.95em;
+    color: #bab8c1;
     line-height: 1.5;
 }
 
-.subscription-offer ul li b {
-    color: #1dd1a1;
+.upsell-cta {
+    padding: 14px 28px;
+    transform: scale(1.1);
+}
+.upsell-cta .button-medium p {
+    font-size: 1em;
 }
 
-.subscription-offer ul li::before {
-    content: '•';
-    color: #1dd1a1;
-    font-size: 1.5em;
-    position: absolute;
-    left: 0;
-    top: -3px;
-}
-
-.subscription-offer .container-buttons {
-    margin-top: 30px;
-    text-align: center;
+@media (max-width: 768px) {
+    .premium-upsell-container {
+        padding: 32px 24px;
+    }
+    .upsell-header h2 {
+        font-size: 1.8em;
+    }
 }
 
 .button-accent {
@@ -651,10 +663,6 @@ textarea:focus {
 
 .subscribe-button:hover {
     background-color: #FF4F3D;
-}
-
-.subscription-offer:hover {
-    transform: translateY(-5px);
 }
 
 .input-area {
@@ -874,6 +882,10 @@ textarea:focus {
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(48, 47, 50, 0.3);
+}
+
+#block-generate {
+    border: 1px solid var(--primary-color);
 }
 
 .laod-more-btn {
