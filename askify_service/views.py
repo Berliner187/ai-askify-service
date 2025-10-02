@@ -750,13 +750,15 @@ def get_all_surveys(request, page=1, per_page=5):
     results = {}
     time_margin = timedelta(seconds=5)
 
+    from django.db.models.functions import Abs, Extract
+
     for survey in surveys_page.object_list:
         nearby_tokens = (
             tokens_entries
             .filter(created_at__range=(survey.updated_at - time_margin, survey.updated_at + time_margin))
             .annotate(
                 time_diff=ExpressionWrapper(
-                    Abs(F('created_at') - survey.updated_at),
+                    Abs(Extract(F('created_at') - survey.updated_at, 'epoch')),
                     output_field=DurationField()
                 )
             )
@@ -1472,10 +1474,13 @@ def take_test(request, survey_id):
     questions_list = survey.get_questions()
     random.shuffle(questions_list)
 
+    author_username = AuthUser.objects.get(id_staff=survey.id_staff).username
+
     context = {
         'survey': survey,
         'questions_json': json.dumps(questions_list, ensure_ascii=False),
-        'author': AuthUser.objects.get(id_staff=survey.id_staff)
+        'author': author_username if len(author_username) < 16 else 'Аноним',
+        'page_title': survey.title
     }
     return render(request, 'askify_service/take_test.html', context)
 
@@ -1555,8 +1560,6 @@ def preview_test(request, survey_id):
         total_demo_surveys_count = Survey.objects.filter(id_staff=current_user_id_staff).count()
         if total_demo_surveys_count >= 2:
             can_generate = False
-
-    print(AuthUser.objects.get(id_staff=survey.id_staff).username)
 
     if survey:
         questions = survey.get_questions()
@@ -1684,6 +1687,8 @@ def view_results(request, survey_id):
                     score_distribution[score_bucket] = 0
                 score_distribution[score_bucket] += 1
 
+    author_username = AuthUser.objects.get(id_staff=survey.id_staff).username
+
     context = {
         'survey': survey,
         'attempts': attempts_qs,
@@ -1696,7 +1701,8 @@ def view_results(request, survey_id):
         'score_distribution': sorted(score_distribution.items()),
         'view_count': survey.view_count,
         'username': get_username(request),
-        'author': AuthUser.objects.get(id_staff=survey.id_staff)
+        'page_title': survey.title,
+        'author': author_username if len(author_username) < 16 else 'Аноним',
     }
 
     return render(request, 'askify_service/test_results.html', context)

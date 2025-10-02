@@ -109,7 +109,7 @@ def subscription_required(view_func):
         staff_id = get_staff_id(request)
 
         try:
-            subscription = Subscription.objects.get(staff_id=staff_id)
+            subscription = Subscription.objects.filter(staff_id=staff_id).first()
             print(subscription.end_date < timezone.now(), subscription.status != 'active')
 
             if subscription.end_date < timezone.now() or subscription.status != 'active':

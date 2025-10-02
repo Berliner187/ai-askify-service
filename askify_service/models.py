@@ -437,12 +437,6 @@ class TokensUsed(models.Model):
     tokens_feedback_used = models.IntegerField(blank=False, default=0, null=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
-    def save(self, *args, **kwargs):
-        if not self.id:
-            last_id = TokensUsed.objects.order_by('id').last()
-            self.id = (last_id.id + 1) if last_id else 100_000
-        super().save(*args, **kwargs)
-
     @classmethod
     def get_tokens_usage(cls, staff_id):
         """

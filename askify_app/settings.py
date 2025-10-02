@@ -108,10 +108,15 @@ WSGI_APPLICATION = 'askify_app.wsgi.application'
 # --- DATABASES
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': env('NAME_DB'),
+        'USER': env('USER_DB'),
+        'PASSWORD': env('PASSWORD_DB'),
+        'HOST': env('HOST_DB'),
+        'PORT': env('PORT_DB'),
     }
 }
+
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 

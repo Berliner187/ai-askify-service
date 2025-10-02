@@ -13,3 +13,4 @@ chardet
 textract
 tiktoken
 qrcode
+psycopg2

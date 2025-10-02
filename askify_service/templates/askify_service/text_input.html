@@ -12,7 +12,7 @@
     <link rel="shortcut icon" href="{% static 'img/logo.png' %}" type="image/png">
     
     {% include 'components/linker.html' %}
-    <link rel="stylesheet" href="{% static 'css/upload-styles.css' %}?v=1.5">
+    <link rel="stylesheet" href="{% static 'css/upload-styles.css' %}?v=1.6">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- Yandex.Metrika counter -->
@@ -91,6 +91,23 @@
             {% endif %}
         </div>
 
+        {% if subscription_status != 'active' %}
+            <div class="container notice-banner deactivated">
+                <div class="icon-wrapper">
+                    <i class="fas fa-bolt"></i>
+                </div>
+                <div class="text-wrapper">
+                    <h3>Ваши Премиум-возможности отключены</h3>
+                    <p>
+                        Активируйте подписку, чтобы снова <strong>превращать Ваши учебные материалы и&nbsp;документы в&nbsp;тесты за&nbsp;считанные секунды</strong>, получать фидбэк от&nbsp;ИИ, а&nbsp;также работать без оглядки на&nbsp;лимиты.
+                    </p>
+                </div>
+                <a class="button-medium button-accent" href="{% url 'payment' %}">
+                    <div><i class="fas fa-rocket"></i> <p>Оформить Премиум</p></div>
+                </a>
+            </div>
+        {% endif %}
+
         <div class="container glass-metrics-container">
             <div class="metrics-scroll-box">
                 <div class="metric-ios active">
@@ -168,23 +185,6 @@
                 </div>
             </div>
         </div>
-
-        {% if subscription_status != 'active' %}
-            <div class="container notice-banner deactivated">
-                <div class="icon-wrapper">
-                    <i class="fas fa-bolt"></i>
-                </div>
-                <div class="text-wrapper">
-                    <h3>Ваши Премиум-возможности отключены</h3>
-                    <p>
-                        Активируйте подписку, чтобы снова <strong>превращать Ваши учебные материалы и&nbsp;документы в&nbsp;тесты за&nbsp;считанные секунды</strong>, получать фидбэк от&nbsp;ИИ, а&nbsp;также работать без оглядки на&nbsp;лимиты.
-                    </p>
-                </div>
-                <a class="button-medium button-accent" href="{% url 'payment' %}">
-                    <div><i class="fas fa-rocket"></i> <p>Оформить Премиум</p></div>
-                </a>
-            </div>
-        {% endif %}
 
         {% if subscription_level < 2 %}
             <div class="container locked-upload-integrated">

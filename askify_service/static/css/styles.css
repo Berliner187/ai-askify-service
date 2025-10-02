@@ -410,7 +410,6 @@ textarea:focus {
         order: 1;
         margin-bottom: 8px;
     }
-    #char-count { display: none; }
     .toolbar-actions {
         width: 100%;
         order: 2;
