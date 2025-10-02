@@ -69,7 +69,7 @@
                         placeholder="Имя" 
                         required
                     >
-                    <span class="text-xs mt-2 text-gray-400">Его увидит автор, гадости не пишите :)</span>
+                    <span class="text-xs mt-2 text-gray-400">Его увидит автор (гадости не пишите)</span>
                     <button 
                         type="submit" 
                         id="start-button"  
@@ -77,10 +77,9 @@
                         class="w-full sm:w-auto bg-gray-500 text-white px-8 py-4 mt-6 font-bold rounded-full text-lg 
                             transition-all 
                             disabled:opacity-50 disabled:bg-gray-500 disabled:shadow-none 
-                            
-                            // Активные стили (будут применены JS при удалении disabled)
                             enabled:bg-[var(--color-accent-primary)] 
                             enabled:hover:scale-105 
+                            enabled:active:scale-0.95 
                             enabled:shadow-lg enabled:shadow-[var(--color-accent-primary)]/20"
                     >
                         Начать
@@ -168,11 +167,10 @@
 
                 const optionsContainer = questionBlock.find('.space-y-3');
                 q.options.forEach((option, i) => {
-                    // FIX: Генерируем гарантированно уникальный ID, чтобы избежать коллизий
                     const optionId = `q${index}_option${i}_${Math.random().toString(36).substring(2, 9)}`;
                     
                     const optionLabel = $(`
-                        <label for="${optionId}" class="block p-4 bg-[var(--color-bg)] hover:bg-black/50 rounded-xl cursor-pointer border-2 border-[var(--color-border)] has-[:checked]:border-[var(--color-accent-primary)] has-[:checked]:bg-[var(--color-accent-primary)]/10 transition-all duration-200">
+                        <label for="${optionId}" class="block p-4 bg-[var(--color-bg)] hover:bg-black/50 rounded-2xl cursor-pointer border-2 border-[var(--color-border)] has-[:checked]:border-[var(--color-accent-primary)] has-[:checked]:bg-[var(--color-accent-primary)]/10 transition-all duration-200">
                             <input type="radio" id="${optionId}" name="question_${index}" value="${option}" class="hidden">
                             <span class="text-base text-white">${option}</span>
                         </label>

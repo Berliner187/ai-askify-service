@@ -68,6 +68,7 @@
         <div class="mt-8 question-card flex justify-center rounded-3xl pt-4 animate-fadeIn">
             <button 
                 data-action="share" 
+                data-share-url="{% url 'take_test' survey.survey_id %}" 
                 class="group w-full transition-transform hover:scale-[1.03] active:scale-[.97] flex items-center justify-center text-center p-4 
                     bg-[var(--color-bg)] 
                     rounded-3xl 
@@ -154,8 +155,8 @@
 
     <script>
         function copyLinkAndNotify() {
-            const fullURL = window.location.href;
-            const urlToCopy = fullURL.substring(0, fullURL.lastIndexOf('/', fullURL.length - 2) + 1);
+            const shareUrl = $(event.currentTarget).data('share-url');
+            const urlToCopy = window.location.host + shareUrl || window.location.href;
 
             navigator.clipboard.writeText(urlToCopy).then(function() {
                 const message = $('<div/>', {
