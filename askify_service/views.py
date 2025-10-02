@@ -1562,12 +1562,14 @@ def preview_test(request, survey_id):
         questions = survey.get_questions()
         view_count = survey.view_count
 
+        author_username = AuthUser.objects.get(id_staff=survey.id_staff).username
+
         json_response = {
             'page_title': f'{survey.title} | Генератор тестов с ИИ | Создать тест в Летучке',
             'title': survey.title,
             'survey_id': survey_id,
             'questions': questions,
-            'author': AuthUser.objects.get(id_staff=survey.id_staff).username,
+            'author': author_username if len(author_username) < 16 else 'Аноним',
             'username': request.user.username if request.user.is_authenticated else 0,
             'model_name': f"{'Сгенерировано ' + survey.model_name.upper().replace('O', 'o') if survey.model_name else 'Сгенерировано в Летучке'}",
             'view_count': view_count,
