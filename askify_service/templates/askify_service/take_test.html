@@ -102,13 +102,30 @@
         </div>
 
         <div id="result-view" class="w-full max-w-lg text-center hidden">
-             <div class="bg-[var(--color-surface)] p-8 rounded-3xl border border-[var(--color-border)] animate-fadeIn shadow-2xl shadow-black/50">
-                <h1 class="text-4xl font-bold text-white">Ваш результат:</h1>
-                <p class="text-8xl font-black gradient-text my-4"><span id="score-value"></span>/<span id="total-value"></span></p>
-                <p class="text-lg text-[var(--color-text-secondary)]">Отлично! Результат отправлен автору.</p>
-                <a href="{% url 'preview_test' survey.survey_id %}" class="mt-8 inline-block bg-[var(--color-accent-primary)] text-white px-10 py-4 font-bold rounded-full transition-transform hover:scale-105 shadow-lg shadow-[var(--color-accent-primary)]/20">
-                    Посмотреть вопросы
-                </a>
+            <div class="bg-[var(--color-surface)] p-8 rounded-3xl border border-[var(--color-border)] animate-fadeIn shadow-2xl shadow-black/50">
+            <h1 class="text-4xl font-bold text-white">Ваш результат:</h1>
+            <p class="text-8xl font-black gradient-text my-4">
+                <span id="score-value"></span>/<span id="total-value"></span>
+            </p>
+            <p class="text-lg text-[var(--color-text-secondary)]">Отлично! Результат отправлен автору.</p>
+
+            <button 
+                id="challenge-friend-button"
+                class="mt-8 w-full bg-[var(--color-accent-secondary)] text-black px-10 py-4 text-lg font-bold rounded-full transition-transform hover:scale-105 shadow-lg shadow-[var(--color-accent-secondary)]/20"
+                data-base-text="Проверил(а) знания по теме «{{ survey.title|escapejs }}».
+
+Мой результат: %score%/%total% 🔥
+
+Сможешь лучше? Бросаю вызов 👇
+"
+                data-share-url="{% url 'take_test' survey.survey_id %}"
+            >
+                <i class="fas fa-fist-raised"></i> Бросить вызов другу
+            </button>
+            
+            <a href="/" class="mt-4 inline-block text-[var(--color-text-secondary)] hover:text-white text-sm">
+                Создать свой тест на Летучке
+            </a>
             </div>
         </div>
     </main>
@@ -231,6 +248,58 @@
                     alert('Произошла ошибка при отправке результатов: ' + err.message);
                 }
             }
+
+            const challengeButton = $('#challenge-friend-button');
+
+            if (challengeButton.length) {
+                challengeButton.on('click', function() {
+                    const baseTextTemplate = $(this).data('base-text');
+                    const shareUrl = $(this).data('share-url');
+                    const score = $('#score-value').text();
+                    const total = $('#total-value').text();
+
+                    // 1. Формируем сырой текст
+                    let challengeText = baseTextTemplate
+                        .replace('%score%', score)
+                        .replace('%total%', total);
+                    
+                    challengeText += '\n\n' + new URL(shareUrl, window.location.origin).href;
+
+                    // 2. ФИНАЛЬНОЕ РЕШЕНИЕ: Функция "дедентации"
+                    function dedent(text) {
+                        const lines = text.split('\n');
+                        
+                        // Находим минимальный отступ среди всех НЕПУСТЫХ строк
+                        const minIndent = lines.reduce((min, line) => {
+                            if (line.trim() === '') return min; // Игнорируем пустые строки
+                            const indent = line.match(/^\s*/)[0].length;
+                            return Math.min(min, indent);
+                        }, Infinity);
+
+                        // Если отступ найден, убираем его с каждой строки
+                        if (minIndent === Infinity) return text; // На случай, если все строки пустые
+                        
+                        return lines.map(line => line.substring(minIndent)).join('\n').trim();
+                    }
+
+                    // 3. Применяем нашу магию
+                    const cleanedText = dedent(challengeText);
+                    
+                    // 4. Копируем идеально чистый текст
+                    navigator.clipboard.writeText(cleanedText).then(() => {
+                        const originalText = $(this).html();
+                        $(this).html('<i class="fas fa-check-circle"></i> Скопировано! Отправь другу');
+
+                        setTimeout(() => {
+                            $(this).html(originalText);
+                        }, 3000);
+
+                    }).catch(err => {
+                        console.error('Ошибка копирования вызова:', err);
+                    });
+                });
+            }
+
         });
     </script>
 </body>

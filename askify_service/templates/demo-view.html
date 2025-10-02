@@ -166,7 +166,7 @@
                         </button>
                     </div>
                     <div class="text-center question-card flex justify-center rounded-3xl p-5 animate-fadeIn">
-                        <span class="block text-sm text-[#a8aabe]">Поделитесь тестом, увидеть результаты прохождения учеников</span>
+                        <span class="block text-sm text-[#a8aabe]">Поделитесь тестом с другими, увидеть их результаты!</span>
                     </div>
                 {% else %}
                     <div class="mt-3 text-center text-sm bg-red-300/10 text-red-400 p-2 rounded-2xl border border-red-500/20">
@@ -209,7 +209,7 @@
 
             {% if is_creator %}
                 <a href="{% url 'take_test' survey_id %}" class="mt-6 block w-full text-center bg-[var(--color-accent-primary)] text-white p-4 rounded-3xl transition-transform hover:scale-[1.03] active:scale-[.97] shadow-lg shadow-[var(--color-accent-primary)]/20">
-                    <span class="text-lg font-bold">ПРОЙТИ ТЕСТ 🚀</span>
+                    <span class="text-lg font-bold">⚡ ПРОЙТИ ТЕСТ ⚡</span>
                     <span class="block text-sm opacity-70">Пройдите созданный Вами тест!</span>
                 </a>
             {% endif %}
