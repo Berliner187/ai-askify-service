@@ -40,6 +40,38 @@
         .animate-fadeIn {
             animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
         }
+        .loader-animation {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            justify-content: center;
+            height: 50px;
+        }
+        .loader-animation .bar {
+            width: 12px;
+            height: 100%;
+            background-color: var(--color-accent-primary);
+            border-radius: 6px;
+            animation: bar-pulse 1.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        .loader-animation .bar:nth-child(1) {
+            animation-delay: -0.24s;
+        }
+        .loader-animation .bar:nth-child(2) {
+            animation-delay: -0.12s;
+        }
+        .loader-animation .bar:nth-child(3) {
+            animation-delay: 0s;
+        }
+        @keyframes bar-pulse {
+            50% {
+                transform: scaleY(0.3);
+                background-color: var(--color-accent-secondary);
+            }
+        }
+        #loader-text {
+            transition: opacity 0.3s ease-in-out;
+        }
     </style>
 </head>
 <body class="text-[var(--color-text-primary)]">
@@ -78,8 +110,7 @@
                             transition-all 
                             disabled:opacity-50 disabled:bg-gray-500 disabled:shadow-none 
                             enabled:bg-[var(--color-accent-primary)] 
-                            enabled:hover:scale-105 
-                            enabled:active:scale-0.95 
+                            enabled:hover:scale-[1.03] enabled:active:scale-[.97] 
                             enabled:shadow-lg enabled:shadow-[var(--color-accent-primary)]/20"
                     >
                         Начать
@@ -101,9 +132,27 @@
             </form>
         </div>
 
+        <div id="loader-view" class="fixed inset-0 bg-black/80 z-50 hidden items-center justify-center p-4 flex-col text-center" style="backdrop-filter: blur(10px);">
+            <div class="loader-animation">
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+            </div>
+            <h2 class="text-2xl font-bold text-white mt-6">Подводим итоги...</h2>
+            <p class="text-gray-400 mt-2" id="loader-text">Анализируем ваши ответы</p>
+        </div>
+            
         <div id="result-view" class="w-full max-w-lg text-center hidden">
             <div class="bg-[var(--color-surface)] p-8 rounded-3xl border border-[var(--color-border)] animate-fadeIn shadow-2xl shadow-black/50">
-            <h1 class="text-4xl font-bold text-white">Ваш результат:</h1>
+            <div class="flex justify-center my-4">
+                <a href="/">
+                    <img src="{% static 'img/logo-header.webp' %}" alt="Летучка Логотип" class="w-40 h-auto">
+                </a>
+            </div>
+
+            <p class="text-sm text-[var(--color-text-secondary)]">Тест от {{ author }}</p>
+            <h1 class="mt-2 text-2xl font-bold text-white">{{ survey.title }}</h1>
+
             <p class="text-8xl font-black gradient-text my-4">
                 <span id="score-value"></span>/<span id="total-value"></span>
             </p>
@@ -111,20 +160,25 @@
 
             <button 
                 id="challenge-friend-button"
-                class="mt-8 w-full bg-[var(--color-accent-secondary)] text-black px-10 py-4 text-lg font-bold rounded-full transition-transform hover:scale-105 shadow-lg shadow-[var(--color-accent-secondary)]/20"
-                data-base-text="Проверил(а) знания по теме «{{ survey.title|escapejs }}».
+                class="mt-8 w-full bg-[var(--color-accent-secondary)] text-black px-10 py-4 text-lg font-bold rounded-full transition-transform hover:scale-[1.03] active:scale-[.97] shadow-lg shadow-[var(--color-accent-secondary)]/20"
+                data-base-text="Тест в Летучке по теме «{{ survey.title|escapejs }}».
 
 Мой результат: %score%/%total% 🔥
 
-Сможешь лучше? Бросаю вызов 👇
+Слабо перебить? Держи ссылку 👇
 "
                 data-share-url="{% url 'take_test' survey.survey_id %}"
             >
                 <i class="fas fa-fist-raised"></i> Бросить вызов другу
             </button>
+
+            <a href="{% url 'take_test' survey.survey_id %}" class="mt-4 inline-block text-[var(--color-text-secondary)] hover:text-white text-sm">
+                Пройти заново
+            </a>
             
-            <a href="/" class="mt-4 inline-block text-[var(--color-text-secondary)] hover:text-white text-sm">
-                Создать свой тест на Летучке
+            <p class="mt-4 text-s">Понравилось? Создайте свой тест!</p>
+            <a href="{% url 'register' %}" class="mt-2 inline-block text-[var(--color-text-secondary)] hover:text-white text-sm">
+                Создать свой тест в Летучке
             </a>
             </div>
         </div>
@@ -196,7 +250,7 @@
                 });
 
                 testForm.append(questionBlock);
-                testForm.append('<button type="submit" class="w-full mt-4 inline-block bg-[var(--color-accent-primary)] text-white px-10 py-4 font-bold rounded-full transition-transform hover:scale-105 shadow-lg shadow-[var(--color-accent-primary)]/20">Ответить</button>');
+                testForm.append('<button type="submit" class="w-full mt-4 inline-block bg-[var(--color-accent-primary)] text-white px-10 py-4 font-bold rounded-full transition-transform hover:scale-[1.03] active:scale-[.97] shadow-lg shadow-[var(--color-accent-primary)]/20">Ответить</button>');
             }
             
             $('#start-test-form').on('submit', function(e) {
@@ -225,13 +279,38 @@
 
             async function submitTest() {
                 questionsView.addClass('hidden');
-                // Здесь можно добавить красивый прелоадер
                 
+                const loaderView = $('#loader-view');
+                const loaderText = $('#loader-text');
+                let textInterval;
+
                 try {
+                    loaderView.removeClass('hidden').addClass('flex');
+
+                    const loadingPhrases = [
+                        "Анализируем ваши ответы...",
+                        "Сравниваем с правильными решениями...",
+                        "Подсчитываем итоговый балл...",
+                        "AI готовит ваш вердикт...",
+                        "Почти готово!"
+                    ];
+                    let phraseIndex = 0;
+                    loaderText.text(loadingPhrases[phraseIndex]);
+
+                    textInterval = setInterval(() => {
+                        phraseIndex = (phraseIndex + 1) % loadingPhrases.length;
+                        loaderText.css('opacity', 0);
+                        setTimeout(() => {
+                            loaderText.text(loadingPhrases[phraseIndex]);
+                            loaderText.css('opacity', 1);
+                        }, 300);
+                    }, 2000);
+
                     const response = await fetch(`/api/t/{{ survey.survey_id }}/submit/`, {
                         method: 'POST',
                         headers: { 
-                            'Content-Type': 'application/json'
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': $('meta[name="csrf-token"]').attr('content')
                         },
                         body: JSON.stringify({ student_name: studentName, answers: studentAnswers })
                     });
@@ -244,8 +323,13 @@
                     } else { 
                         throw new Error(data.error || 'Unknown error'); 
                     }
+
                 } catch (err) {
                     alert('Произошла ошибка при отправке результатов: ' + err.message);
+                    window.location.reload(); 
+                } finally {
+                    clearInterval(textInterval);
+                    loaderView.addClass('hidden').removeClass('flex');
                 }
             }
 
@@ -258,34 +342,28 @@
                     const score = $('#score-value').text();
                     const total = $('#total-value').text();
 
-                    // 1. Формируем сырой текст
                     let challengeText = baseTextTemplate
                         .replace('%score%', score)
                         .replace('%total%', total);
                     
                     challengeText += '\n\n' + new URL(shareUrl, window.location.origin).href;
 
-                    // 2. ФИНАЛЬНОЕ РЕШЕНИЕ: Функция "дедентации"
                     function dedent(text) {
                         const lines = text.split('\n');
                         
-                        // Находим минимальный отступ среди всех НЕПУСТЫХ строк
                         const minIndent = lines.reduce((min, line) => {
-                            if (line.trim() === '') return min; // Игнорируем пустые строки
+                            if (line.trim() === '') return min;
                             const indent = line.match(/^\s*/)[0].length;
                             return Math.min(min, indent);
                         }, Infinity);
 
-                        // Если отступ найден, убираем его с каждой строки
-                        if (minIndent === Infinity) return text; // На случай, если все строки пустые
+                        if (minIndent === Infinity) return text;
                         
                         return lines.map(line => line.substring(minIndent)).join('\n').trim();
                     }
 
-                    // 3. Применяем нашу магию
                     const cleanedText = dedent(challengeText);
                     
-                    // 4. Копируем идеально чистый текст
                     navigator.clipboard.writeText(cleanedText).then(() => {
                         const originalText = $(this).html();
                         $(this).html('<i class="fas fa-check-circle"></i> Скопировано! Отправь другу');
