@@ -247,7 +247,7 @@ async function loadRecentHistory() {
                         <li class="history-item">
                             <a href="/result/${surveyId}">
                                 <span class="history-item-title">${surveyData.title}</span>
-                                <span class="history-item-date">${surveyData.update}</span>
+                                <span class="history-item-date">${surveyData.create}</span>
                             </a>
                         </li>
                     `).join('')}

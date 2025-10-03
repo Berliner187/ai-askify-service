@@ -354,21 +354,32 @@ def student_charts_data_api(request):
 
     user_surveys = Survey.objects.filter(id_staff=staff_id)
 
-    # --- График 1: Распределение результатов учеников (остается) ---
-    attempts_agg = TestAttempt.objects.filter(
-        survey__in=user_surveys
-    ).aggregate(
-        high_scores=Count('id', filter=Q(score__gte=80)),
-        medium_scores=Count('id', filter=Q(score__gte=50, score__lt=80)),
-        low_scores=Count('id', filter=Q(score__lt=50))
+    # --- График 1: Распределение результатов ---
+    percentage_expression = ExpressionWrapper(
+        (F('score') * 100.0) / F('total_questions'),
+        output_field=FloatField()
     )
+
+    attempts_with_percentage = TestAttempt.objects.filter(
+        survey__in=user_surveys,
+        total_questions__gt=0
+    ).annotate(
+        percentage_score=percentage_expression
+    )
+
+    attempts_agg = attempts_with_percentage.aggregate(
+        high_scores=Count('id', filter=Q(percentage_score__gte=80)),
+        medium_scores=Count('id', filter=Q(percentage_score__gte=50, percentage_score__lt=80)),
+        low_scores=Count('id', filter=Q(percentage_score__lt=50))
+    )
+
     scores_data = [
         attempts_agg.get('high_scores', 0),
         attempts_agg.get('medium_scores', 0),
         attempts_agg.get('low_scores', 0)
     ]
 
-    # --- График 2: Активность прохождений за 7 дней ---
+    # --- График 2: Активность прохождений ---
     activity_labels = []
     activity_data = []
 
@@ -843,7 +854,7 @@ def get_all_surveys(request, page=1, per_page=5):
     if staff_id is None:
         return {}
 
-    surveys_queryset = Survey.objects.filter(id_staff=staff_id).order_by('-updated_at')
+    surveys_queryset = Survey.objects.filter(id_staff=staff_id).order_by('-created_at')
 
     paginator = Paginator(surveys_queryset, per_page)
     try:
