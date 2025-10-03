@@ -76,6 +76,7 @@ urlpatterns = [
     path('api/user-profile/', user_profile_api, name='user_profile_api'),
     path('api/personal_charts/', personal_charts_data_api, name='personal_charts_api'),
     path('api/student_charts/', student_charts_data_api, name='student_charts_api'),
+    path('api/test-charts/<uuid:survey_id>/', single_test_charts_api, name='single_test_charts_api'),
 
     path('api/v1/signal-secure/', confirm_user, name='api_v1_signal_secure'),
     path('api/v2/signal-secure/', confirm_user_v2, name='api_v2_signal_secure'),

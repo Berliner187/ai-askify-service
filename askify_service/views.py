@@ -23,18 +23,15 @@ from django.utils import timezone
 from django.urls import reverse
 from django.db.models import F, ExpressionWrapper, DurationField
 from django.db.models.functions import Abs
-from django.db.models import Count, Avg
 from collections import defaultdict
 from datetime import date, timedelta
 from django.db import transaction
-from django.db.models import Count, Max, Avg, Q
-from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from datetime import timedelta
-from decimal import Decimal
+from django.db.models.functions import NthValue
+from django.utils.safestring import mark_safe
+from django.db import connection
 
 
 from io import BytesIO
@@ -92,6 +89,11 @@ import re
 import hmac
 import json
 import subprocess
+from decimal import Decimal
+
+
+if 'postgresql' in connection.vendor:
+    from django.contrib.postgres.aggregates import PercentileCont
 
 
 env = environ.Env()
@@ -403,6 +405,70 @@ def student_charts_data_api(request):
         'attempts_activity_chart': {
             'labels': activity_labels,
             'data': activity_data
+        }
+    })
+
+
+@login_required
+def single_test_charts_api(request, survey_id):
+    """
+    API-эндпоинт для графиков на странице аналитики КОНКРЕТНОГО теста.
+    """
+    staff_id = get_staff_id(request)
+    today = timezone.now().date()
+
+    # Убедимся, что пользователь имеет доступ к этому тесту
+    try:
+        survey = Survey.objects.get(survey_id=survey_id, id_staff=staff_id)
+    except Survey.DoesNotExist:
+        return JsonResponse({'error': 'Test not found or access denied'}, status=404)
+
+    # --- График 1: Активность прохождений за 7 дней ---
+    activity_labels = []
+    activity_data = []
+
+    attempts_last_week = TestAttempt.objects.filter(
+        survey=survey,
+        created_at__date__gte=today - timezone.timedelta(days=6)
+    ).values('created_at__date').annotate(count=Count('id')).order_by('created_at__date')
+
+    daily_attempts = {item['created_at__date']: item['count'] for item in attempts_last_week}
+
+    for i in range(7):
+        day = today - timezone.timedelta(days=6 - i)
+        activity_labels.append(day.strftime('%d.%m'))
+        activity_data.append(daily_attempts.get(day, 0))
+
+    # --- График 2: Распределение баллов по группам (0-25%, 26-50% и т.д.) ---
+    percentage_expression = ExpressionWrapper(
+        (F('score') * 100.0) / F('total_questions'),
+        output_field=FloatField()
+    )
+    attempts_with_percentage = TestAttempt.objects.filter(
+        survey=survey, total_questions__gt=0
+    ).annotate(percentage_score=percentage_expression)
+
+    scores_distribution = attempts_with_percentage.aggregate(
+        group1=Count('id', filter=Q(percentage_score__gte=0, percentage_score__lte=25)),
+        group2=Count('id', filter=Q(percentage_score__gt=25, percentage_score__lte=50)),
+        group3=Count('id', filter=Q(percentage_score__gt=50, percentage_score__lte=75)),
+        group4=Count('id', filter=Q(percentage_score__gt=75, percentage_score__lte=100)),
+    )
+    distribution_data = [
+        scores_distribution.get('group1', 0),
+        scores_distribution.get('group2', 0),
+        scores_distribution.get('group3', 0),
+        scores_distribution.get('group4', 0),
+    ]
+
+    return JsonResponse({
+        'attempts_activity_chart': {
+            'labels': activity_labels,
+            'data': activity_data
+        },
+        'scores_distribution_chart': {
+            'labels': ['0-25%', '26-50%', '51-75%', '76-100%'],
+            'data': distribution_data
         }
     })
 
@@ -1730,50 +1796,38 @@ def preview_test(request, survey_id):
 @login_required
 def view_results(request, survey_id):
     survey = get_object_or_404(Survey, survey_id=survey_id)
+    if survey.id_staff != get_staff_id(request):
+        return HttpResponse("Доступ запрещен", status=403)
 
-    survey_creator_id_staff = survey.id_staff
-
-    current_user_id_staff = None
-    is_authenticated = request.user.is_authenticated
-
-    client_ip = get_client_ip(request)
-    anonymous_user = AuthUser.objects.filter(hash_user_id=client_ip).first()
-    if anonymous_user:
-        current_user_id_staff = anonymous_user.id_staff
-    if survey.id_staff == get_staff_id(request):
-        survey_creator_id_staff = current_user_id_staff
-
-    is_creator = False
-    if current_user_id_staff and current_user_id_staff == survey_creator_id_staff:
-        is_creator = True
-
-    # if is_creator:
-    #     return HttpResponse("Доступ запрещен", status=403)
-
-    seven_days_ago = timezone.now() - timedelta(days=7)
-    TestAttempt.objects.filter(survey=survey, created_at__lt=seven_days_ago).delete()
-
-    # Собираем данные о всех попытках
     attempts_qs = survey.attempts.all().order_by('-created_at')
     total_attempts = attempts_qs.count()
 
+    try:
+        survey_questions_list = json.loads(survey.questions)
+        questions_map = {q['question']: q['correct_answer'] for q in survey_questions_list if isinstance(q, dict)}
+    except (json.JSONDecodeError, TypeError):
+        questions_map = {}
+
     average_score_percent = 0
     median_score = 0
-    perfect_attempts_count = 0
+    perfect_attempts_percent = 0
     hardest_question, easiest_question = "-", "-"
-    score_distribution = {}
+    success_rate = 0
 
     if total_attempts > 0:
-        # Расчет среднего балла
-        stats = attempts_qs.aggregate(
-            avg_percent=Avg(100.0 * F('score') / F('total_questions'))
-        )
-        average_score_percent = stats['avg_percent']
+        base_aggregation = {
+            'avg_percent': Avg(100.0 * F('score') / F('total_questions')),
+            'perfect_count': Count('id', filter=Q(score=F('total_questions'))),
+            'success_count': Count('id', filter=Q(score__gte=F('total_questions') * 0.5))
+        }
 
-        # Расчет медианного балла
-        scores = [attempt.score for attempt in attempts_qs]
-        if scores:
-            scores.sort()
+        if not settings.DEBUG and 'postgresql' in connection.vendor:
+            base_aggregation['median_score_agg'] = PercentileCont(0.5).within_group('score')
+            stats = attempts_qs.aggregate(**base_aggregation)
+            median_score = stats.get('median_score_agg', 0)
+        else:
+            stats = attempts_qs.aggregate(**base_aggregation)
+            scores = list(attempts_qs.values_list('score', flat=True).order_by('score'))
             count = len(scores)
             if count % 2 == 1:
                 median_score = scores[count // 2]
@@ -1782,61 +1836,75 @@ def view_results(request, survey_id):
                 mid2 = scores[count // 2]
                 median_score = (mid1 + mid2) / 2
 
-        # Считаем количество 100% результатов
-        perfect_attempts_count = attempts_qs.filter(
-            score=F('total_questions')
-        ).count()
-        perfect_attempts_percent = (perfect_attempts_count / total_attempts) * 100
+        average_score_percent = stats.get('avg_percent', 0)
+        perfect_attempts_percent = (stats.get('perfect_count', 0) / total_attempts) * 100
+        success_rate = (stats.get('success_count', 0) / total_attempts) * 100
+
+        all_answers_json = attempts_qs.values_list('answers_json', flat=True)
 
         questions_stats = {}
-        for attempt in attempts_qs:
+        for answers_str in all_answers_json:
             try:
-                answers = attempt.get_answers()
+                answers = json.loads(answers_str)
                 if isinstance(answers, dict):
                     for q_text, result in answers.items():
                         if isinstance(result, dict) and 'is_correct' in result:
-                            if q_text not in questions_stats:
-                                questions_stats[q_text] = {'correct': 0, 'incorrect': 0}
-
+                            q_stats = questions_stats.setdefault(q_text, {'correct': 0, 'total': 0})
+                            q_stats['total'] += 1
                             if result.get('is_correct'):
-                                questions_stats[q_text]['correct'] += 1
-                            else:
-                                questions_stats[q_text]['incorrect'] += 1
+                                q_stats['correct'] += 1
             except (json.JSONDecodeError, AttributeError):
                 continue
 
-        if questions_stats:
-            hardest_q = min(questions_stats, key=lambda q: questions_stats[q]['correct'])
-            easiest_q = max(questions_stats, key=lambda q: questions_stats[q]['correct'])
-            hardest_question = hardest_q
-            easiest_question = easiest_q
+    attempts_for_template = []
+    for attempt in attempts_qs:
+        percent = (attempt.score * 100 / attempt.total_questions) if attempt.total_questions > 0 else 0
+        answers_with_results = []
+        try:
+            user_answers = json.loads(attempt.answers_json)
+            if isinstance(user_answers, dict):
+                for question_text, selected_answer in user_answers.items():
+                    correct_answer = questions_map.get(question_text)
+                    is_correct = (selected_answer == correct_answer)
 
-        for attempt in attempts_qs:
-            if attempt.total_questions > 0:
-                score_percent = (attempt.score / attempt.total_questions) * 100
-                score_bucket = int(score_percent // 10) * 10
-                if score_bucket not in score_distribution:
-                    score_distribution[score_bucket] = 0
-                score_distribution[score_bucket] += 1
+                    answers_with_results.append({
+                        'question': question_text,
+                        'selected_answer': selected_answer,
+                        'correct_answer': correct_answer,
+                        'is_correct': is_correct
+                    })
+        except (json.JSONDecodeError, TypeError):
+            pass
+
+        answers_json_str = json.dumps(answers_with_results, ensure_ascii=False)
+
+        attempts_for_template.append({
+            'id': attempt.id,
+            'student_name': attempt.student_name,
+            'created_at': attempt.created_at,
+            'score': attempt.score,
+            'total_questions': attempt.total_questions,
+            'percent': round(percent),
+            'answers_json': mark_safe(answers_json_str)
+        })
 
     author_username = AuthUser.objects.get(id_staff=survey.id_staff).username
 
     context = {
         'survey': survey,
-        'attempts': attempts_qs,
+        'attempts': attempts_for_template,
         'total_attempts': total_attempts,
         'average_score_percent': average_score_percent,
         'median_score': median_score,
-        'perfect_attempts_percent': 0,
+        'perfect_attempts_percent': perfect_attempts_percent,
+        'success_rate': success_rate,
         'hardest_question': hardest_question,
         'easiest_question': easiest_question,
-        'score_distribution': sorted(score_distribution.items()),
         'view_count': survey.view_count,
         'username': get_username(request),
         'page_title': survey.title,
         'author': author_username if len(author_username) < 16 else 'Аноним',
     }
-
     return render(request, 'askify_service/test_results.html', context)
 
 
