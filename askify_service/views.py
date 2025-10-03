@@ -34,6 +34,7 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from datetime import timedelta
+from decimal import Decimal
 
 
 from io import BytesIO
@@ -2171,7 +2172,18 @@ def profile_view(request, username):
     else:
         progress_bar_class = 'progress-bar--low'
 
-    payments = Payment.objects.filter(staff_id=staff_id).order_by('-created_at')
+    payments_qs = Payment.objects.filter(staff_id=staff_id).order_by('-created_at')
+
+    payments_formatted = []
+    for payment in payments_qs:
+        amount_rubles = Decimal(payment.amount) / 100 / 100
+        payments_formatted.append({
+            'subscription': payment.subscription,
+            'order_id': payment.order_id,
+            'created_at': payment.created_at,
+            'status': payment.status,
+            'amount_display': "{:,.2f}".format(amount_rubles).replace('.', ',').replace(',', '')
+        })
 
     user_data = {
         'page_title': f'Профиль {username}',
@@ -2195,7 +2207,7 @@ def profile_view(request, username):
             'status': subscription.status
         },
         'subscription_level': get_subscription_level(request),
-        'payments': payments,
+        'payments': payments_formatted,
         'token': token_email_verification
     }
 

@@ -220,10 +220,6 @@
                     {% if payments %}
                         <div class="transaction-log">
                             {% for payment in payments %}
-                                {% comment %} 
-                                Единственно верный способ добавить класс статуса.
-                                Открываем div с нужным классом в зависимости от условия.
-                                {% endcomment %}
                                 {% if payment.status == 'completed' %}
                                     <div class="transaction-log__item --success">
                                 {% elif payment.status == 'failed' %}
@@ -236,7 +232,7 @@
                                             <p class="transaction-log__title">Покупка «{{ payment.subscription.get_human_plan }}»</p>
                                             <p class="transaction-log__subtitle">{{ payment.created_at|date:"d M Y, H:i" }} • Заказ {{ payment.order_id }}</p>
                                         </div>
-                                        <p class="transaction-log__amount">{{ payment.amount }} ₽</p>
+                                        <p class="transaction-log__amount">{{ payment.amount_display }} ₽</p>
                                     </div>
                             {% endfor %}
                         </div>
