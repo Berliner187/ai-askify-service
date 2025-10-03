@@ -92,10 +92,6 @@ import subprocess
 from decimal import Decimal
 
 
-if 'postgresql' in connection.vendor:
-    from django.contrib.postgres.aggregates import PercentileCont
-
-
 env = environ.Env()
 
 environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
@@ -1822,19 +1818,34 @@ def view_results(request, survey_id):
         }
 
         if not settings.DEBUG and 'postgresql' in connection.vendor:
-            base_aggregation['median_score_agg'] = PercentileCont(0.5).within_group('score')
-            stats = attempts_qs.aggregate(**base_aggregation)
-            median_score = stats.get('median_score_agg', 0)
+            try:
+                from django.contrib.postgres.aggregates import PercentileCont
+
+                base_aggregation['median_score_agg'] = PercentileCont(0.5).within_group('score')
+                stats = attempts_qs.aggregate(**base_aggregation)
+                median_score = stats.get('median_score_agg', 0)
+
+            except ImportError:
+                stats = attempts_qs.aggregate(**base_aggregation)
+                scores = list(attempts_qs.values_list('score', flat=True).order_by('score'))
+                count = len(scores)
+                if count % 2 == 1:
+                    median_score = scores[count // 2]
+                else:
+                    mid1 = scores[count // 2 - 1]
+                    mid2 = scores[count // 2]
+                    median_score = (mid1 + mid2) / 2
         else:
             stats = attempts_qs.aggregate(**base_aggregation)
             scores = list(attempts_qs.values_list('score', flat=True).order_by('score'))
             count = len(scores)
-            if count % 2 == 1:
-                median_score = scores[count // 2]
-            else:
-                mid1 = scores[count // 2 - 1]
-                mid2 = scores[count // 2]
-                median_score = (mid1 + mid2) / 2
+            if count > 0:
+                if count % 2 == 1:
+                    median_score = scores[count // 2]
+                else:
+                    mid1 = scores[count // 2 - 1]
+                    mid2 = scores[count // 2]
+                    median_score = (mid1 + mid2) / 2
 
         average_score_percent = stats.get('avg_percent', 0)
         perfect_attempts_percent = (stats.get('perfect_count', 0) / total_attempts) * 100
