@@ -1792,8 +1792,6 @@ def preview_test(request, survey_id):
 @login_required
 def view_results(request, survey_id):
     survey = get_object_or_404(Survey, survey_id=survey_id)
-    if survey.id_staff != get_staff_id(request):
-        return HttpResponse("Доступ запрещен", status=403)
 
     attempts_qs = survey.attempts.all().order_by('-created_at')
     total_attempts = attempts_qs.count()
@@ -2217,6 +2215,19 @@ def vk_auth_callback(request):
                 'success': False,
                 'error': str(e)
             }, status=500)
+
+
+@login_required
+def redirect_to_profile(request):
+    """
+    Эта view просто берет залогиненного пользователя
+    и перенаправляет его на его личную страницу профиля.
+    """
+    user = request.user
+    if user.is_authenticated:
+        return redirect('profile', username=user.username)
+    else:
+        return redirect('login')
 
 
 @login_required

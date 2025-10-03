@@ -42,6 +42,7 @@ urlpatterns = [
     path('stats2975/', admin_stats, name='stats2975'),
     path('admin/activate-key/', activate_api_key, name='activate_api_key'),
     path('profile/<str:username>/', profile_view, name='profile'),
+    path('profile/', redirect_to_profile, name='profile_redirect'),
     path('db_viewer/', db_viewer, name='db_viewer'),
     path('db-search/', db_search, name='db-search'),
 
