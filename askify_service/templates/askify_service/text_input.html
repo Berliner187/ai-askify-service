@@ -250,7 +250,7 @@
                 position: absolute;
                 top: 12px;
                 right: -40px;
-                background-color: var(--color-accent-primary);
+                background-color: var(--color-accent-secondary);
                 color: white;
                 padding: 4px 40px;
                 font-size: 10px;
@@ -279,42 +279,44 @@
         {% if subscription_level >= 2 %}
             <div class="feature-block quick-link">
                 <img src="{% static 'img/icon-create.png' %}" alt="Генерация" class="feature-icon">
-                <h3>Создать из файла</h3>
-                <p>Загружайте файлы PDF/Word, из&nbsp;которых&nbsp;ИИ создаст тест за&nbsp;считанные секунды (скрепка рядом с&nbsp;полем ввода).</p>
+                <h3>Генерация из файла</h3>
+                <p>Импортируйте ваши Word/PDF документы для мгновенного создания тестов.</p>
+                <p class="accent">Прикрепите файл в поле ввода</p>
             </div>
-            <a href="{% url 'history' %}" class="feature-block quick-link">
+            <a href="{% url 'profile' username %}" class="feature-block quick-link">
                 <img src="{% static 'img/icon-analytics.png' %}" alt="Анализ" class="feature-icon">
-                <h3>Мои результаты</h3>
-                <p>Проходите тесты и&nbsp;получайте персональный фидбэк от&nbsp;ИИ</p>
-                <p class="accent">Нажмите, чтобы перейти</p>
+                <div class="feature-badge">NEW</div>
+                <h3>Аналитический Хаб</h3>
+                <p>Ваш центр управления продуктивностью и успеваемостью учеников.</p>
+                <p class="accent">Открыть дашборд →</p>
             </a>
             <a href="{% url 'history' %}" class="feature-block quick-link">
                 <img src="{% static 'img/icon-link.png' %}" alt="Поделиться" class="feature-icon">
-                <h3>Делитесь</h3>
-                <p>Делитесь своими тестами и&nbsp;просматривайте аналитику по&nbsp;прохождениям.</p>
-                <p class="accent">Нажмите, чтобы выбрать тест и поделиться им</p>
+                <h3>История и Экспорт</h3>
+                <p>Управляйте созданными тестами, делитесь ссылками или скачивайте в PDF.</p>
+                <p class="accent">Перейти к моим тестам</p>
             </a>
         {% else %}
             <div class="feature-block premium-feature">
                 <div class="feature-badge">ПРЕМИУМ</div>
                 <img src="{% static 'img/icon-create.png' %}" alt="Генерация из файлов" class="feature-icon">
-                <h3>Освободите свои вечера</h3>
-                <p class="accent">Загрузите лекцию, параграф из&nbsp;учебника или методичку (PDF/Word). Летучка превратит их&nbsp;в&nbsp;тест, пока вы&nbsp;пьете кофе.</p>
-                <a href="/payment">Экономить часы на подготовке</a>
+                <h3>Экономьте часы, а не минуты</h3>
+                <p class="accent">Устали копировать текст вручную? Загрузите лекцию или параграф целиком. ИИ сделает тест за вас.</p>
+                <a href="/payment">Превратить рутину в магию</a>
             </div>
             
             <div class="feature-block premium-feature">
                 <div class="feature-badge">ПРЕМИУМ</div>
                 <img src="{% static 'img/icon-analytics.png' %}" alt="Анализ" class="feature-icon">
-                <h3>Видите глубже, чем просто оценки</h3>
-                <p class="accent">Наш ИИ&nbsp;не&nbsp;просто покажет ошибки. Он&nbsp;подсветит самые сложные вопросы и&nbsp;выявит слепые зоны в&nbsp;знаниях.</p>
-                <a href="/payment">Получить AI-ассистента</a>
+                <h3>Смотрите на то, что скрыто</h3>
+                <p class="accent">Обычные оценки лгут. Наши графики покажут, какие темы "западают" у всего класса, а не только у отдельных учеников.</p>
+                <a href="/payment">Открыть аналитику</a>
             </div>
             
             <div class="feature-block">
                 <img src="{% static 'img/icon-link.png' %}" alt="Поделиться" class="feature-icon">
-                <h3>Быстрый обмен</h3>
-                <p>Делитесь ссылкой на тест или скачивайте готовый к печати PDF.</p>
+                <h3>Делитесь мгновенно</h3>
+                <p>Отправьте ученикам ссылку на онлайн-тест или скачайте готовый к печати PDF-файл.</p>
             </div>
 
         {% endif %}

@@ -289,6 +289,112 @@ def user_stats_api(request):
     })
 
 
+@login_required
+def personal_charts_data_api(request):
+    """
+    API-эндпоинт для ЛИЧНОЙ статистики создателя тестов.
+    """
+    staff_id = get_staff_id(request)
+    today = timezone.now().date()
+
+    # --- График 1: Динамика создания тестов (остается) ---
+    activity_labels = []
+    activity_data = []
+
+    # Запрос 1: Получаем количество созданных тестов по дням за неделю
+    surveys_last_week = Survey.objects.filter(
+        id_staff=staff_id,
+        created_at__date__gte=today - timezone.timedelta(days=6)
+    ).values('created_at__date').annotate(count=Count('id')).order_by('created_at__date')
+
+    daily_counts = {item['created_at__date']: item['count'] for item in surveys_last_week}
+
+    for i in range(7):
+        day = today - timezone.timedelta(days=6 - i)
+        activity_labels.append(day.strftime('%d.%m'))
+        activity_data.append(daily_counts.get(day, 0))
+
+    # --- График 2: Уникальные просмотры тестов за неделю ---
+    views_labels = []
+    views_data = []
+
+    # Запрос 2: Расчёт количества уникальных просмотров по дням за неделю
+    views_last_week = SurveyUniqueView.objects.filter(
+        survey__id_staff=staff_id,
+        timestamp__date__gte=today - timezone.timedelta(days=6)
+    ).values('timestamp__date').annotate(count=Count('id')).order_by('timestamp__date')
+
+    daily_views = {item['timestamp__date']: item['count'] for item in views_last_week}
+
+    for i in range(7):
+        day = today - timezone.timedelta(days=6 - i)
+        views_labels.append(day.strftime('%d.%m'))
+        views_data.append(daily_views.get(day, 0))
+
+    return JsonResponse({
+        'activity_chart': {
+            'labels': activity_labels,
+            'data': activity_data
+        },
+        'views_chart': {
+            'labels': views_labels,
+            'data': views_data
+        }
+    })
+
+
+@login_required
+def student_charts_data_api(request):
+    """
+    API-эндпоинт для статистики по прохождениям тестов УЧЕНИКАМИ.
+    """
+    staff_id = get_staff_id(request)
+    today = timezone.now().date()
+
+    user_surveys = Survey.objects.filter(id_staff=staff_id)
+
+    # --- График 1: Распределение результатов учеников (остается) ---
+    attempts_agg = TestAttempt.objects.filter(
+        survey__in=user_surveys
+    ).aggregate(
+        high_scores=Count('id', filter=Q(score__gte=80)),
+        medium_scores=Count('id', filter=Q(score__gte=50, score__lt=80)),
+        low_scores=Count('id', filter=Q(score__lt=50))
+    )
+    scores_data = [
+        attempts_agg.get('high_scores', 0),
+        attempts_agg.get('medium_scores', 0),
+        attempts_agg.get('low_scores', 0)
+    ]
+
+    # --- График 2: Активность прохождений за 7 дней ---
+    activity_labels = []
+    activity_data = []
+
+    attempts_last_week = TestAttempt.objects.filter(
+        survey__in=user_surveys,
+        created_at__date__gte=today - timezone.timedelta(days=6)
+    ).values('created_at__date').annotate(count=Count('id')).order_by('created_at__date')
+
+    daily_attempts = {item['created_at__date']: item['count'] for item in attempts_last_week}
+
+    for i in range(7):
+        day = today - timezone.timedelta(days=6 - i)
+        activity_labels.append(day.strftime('%d.%m'))
+        activity_data.append(daily_attempts.get(day, 0))
+
+    return JsonResponse({
+        'scores_chart': {
+            'labels': ['Отлично (80-100%)', 'Хорошо (50-79%)', 'Плохо (<50%)'],
+            'data': scores_data
+        },
+        'attempts_activity_chart': {
+            'labels': activity_labels,
+            'data': activity_data
+        }
+    })
+
+
 def solving_tests_promo(request):
     return render(request, 'landings/solving-tests.html')
 
@@ -524,11 +630,11 @@ class ManageSurveysView(View):
             survey.save_questions(cleaned_generated_text['questions'])
             survey.save()
 
-            _tokens_used = TokensUsed(
-                id_staff=get_staff_id(request),
-                tokens_survey_used=tokens_used,
-            )
-            _tokens_used.save()
+            # _tokens_used = TokensUsed(
+            #     id_staff=get_staff_id(request),
+            #     tokens_survey_used=tokens_used,
+            # )
+            # _tokens_used.save()
 
             api_key_manage = await get_active_api_key('SURVEY')
             APIKeyUsage.objects.create(
@@ -753,18 +859,32 @@ def get_all_surveys(request, page=1, per_page=5):
     from django.db.models.functions import Abs, Extract
 
     for survey in surveys_page.object_list:
-        nearby_tokens = (
-            tokens_entries
-            .filter(created_at__range=(survey.updated_at - time_margin, survey.updated_at + time_margin))
-            .annotate(
-                time_diff=ExpressionWrapper(
-                    Abs(Extract(F('created_at') - survey.updated_at, 'epoch')),
-                    output_field=DurationField()
+        if not DEBUG:
+            nearby_tokens = (
+                tokens_entries
+                .filter(created_at__range=(survey.updated_at - time_margin, survey.updated_at + time_margin))
+                .annotate(
+                    time_diff=ExpressionWrapper(
+                        Abs(Extract(F('created_at') - survey.updated_at, 'epoch')),
+                        output_field=DurationField()
+                    )
                 )
+                .order_by('time_diff')
+                .first()
             )
-            .order_by('time_diff')
-            .first()
-        )
+        else:
+            nearby_tokens = (
+                tokens_entries
+                .filter(created_at__range=(survey.updated_at - time_margin, survey.updated_at + time_margin))
+                .annotate(
+                    time_diff=ExpressionWrapper(
+                        Abs(F('created_at') - survey.updated_at),
+                        output_field=DurationField()
+                    )
+                )
+                .order_by('time_diff')
+                .first()
+            )
 
         tokens_used = nearby_tokens.tokens_survey_used if nearby_tokens else None
 
@@ -2018,13 +2138,6 @@ def profile_view(request, username):
     date_join = get_formate_date(user.date_joined)
     date_last_login = get_formate_date(user.last_login)
 
-    tokens_usage_all_time = TokensUsed.get_tokens_usage_today(staff_id)
-
-    total_tokens_for_surveys = get_format_number(tokens_usage_all_time['tokens_survey_used'])
-    total_tokens_for_feedback = get_format_number(tokens_usage_all_time['tokens_feedback_used'])
-    _total_tokens = tokens_usage_all_time['tokens_survey_used'] + tokens_usage_all_time['tokens_feedback_used']
-    total_tokens = get_format_number(_total_tokens)
-
     subscription = get_object_or_404(Subscription, staff_id=staff_id)
     subscription_end_date_formatted = subscription.end_date.strftime('%d.%m.%Y')
 
@@ -2046,7 +2159,20 @@ def profile_view(request, username):
 
     diff_tests_count_limit = tests_count_limit - tests_used_today
 
-    # --- Формирование контекста ---
+    tests_remaining_percentage = 0
+    if tests_count_limit > 0:
+        tests_remaining_percentage = (diff_tests_count_limit / tests_count_limit) * 100.0
+
+    progress_bar_class = ''
+    if tests_remaining_percentage > 50:
+        progress_bar_class = 'progress-bar--high'
+    elif tests_remaining_percentage > 20:
+        progress_bar_class = 'progress-bar--medium'
+    else:
+        progress_bar_class = 'progress-bar--low'
+
+    payments = Payment.objects.filter(staff_id=staff_id).order_by('-created_at')
+
     user_data = {
         'page_title': f'Профиль {username}',
         'username': username,
@@ -2057,18 +2183,19 @@ def profile_view(request, username):
         'date_last_login': date_last_login,
         'statistics': statistics,
         'tokens': {
-            'surveys': total_tokens_for_surveys,
-            'feedback': total_tokens_for_feedback,
-            'total_tokens': total_tokens,
             'tests_remaining_count_limit': diff_tests_count_limit,
-            'tests_total_limit': tests_count_limit
+            'tests_total_limit': tests_count_limit,
+            'tests_usage_percentage': tests_remaining_percentage,
+            'progress_bar_class': progress_bar_class
         },
         'subscription': {
             'plan_name': human_readable_plan,
             'plan_end_date': f"{subscription_end_date_formatted}" if days_until_end > 0 else "Закончился",
             'days_until_end': days_until_end,
+            'status': subscription.status
         },
         'subscription_level': get_subscription_level(request),
+        'payments': payments,
         'token': token_email_verification
     }
 

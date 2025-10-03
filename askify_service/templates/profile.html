@@ -6,6 +6,8 @@
     <meta name="keywords" content="профиль, пользователь, {{ user.username }}">
     {% load static %}
     {% include 'components/linker.html' %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
     <script src="{% static 'js/second-loader.js' %}"></script>
@@ -15,40 +17,251 @@
         {% include 'header.html' %}
 
         <main class="profile-main">
-        <div class="container profile-container">
             <div class="profile-header">
                 <h1>{{ username }}</h1>
                 <p>Ваш личный кабинет и статистика</p>
             </div>
 
-            <div class="profile-section">
-                <h3><i class="fas fa-gem"></i> Активный план</h3>
-                <ul class="profile-list">
-                    <li>
-                        <span class="label">Тариф</span>
-                        <span class="value plan-name">{{ subscription.plan_name }}</span>
-                    </li>
-                    <li>
-                        <span class="label">Действителен до</span>
-                        <span class="value">{{ subscription.plan_end_date }}</span>
-                    </li>
-                </ul>
-                {% if subscription.days_until_end is not none and subscription.days_until_end < 3 %}
-                    <a class="button-medium button-accent section-action-button" href="{% url 'payment' %}"><div><p>Продлить 💎</p></div></a>
-                {% elif subscription_level < 2 or subscription_level == 99 %}
-                    <a href="{% url 'payment' %}" class="button-medium button-accent section-action-button"><div><p>Купить Премиум 💎</p></div></a>
+            <div class="profile-stack">
+                <!-- Модуль 1: Подписка (акцент) -->
+                {% if subscription_level == 0 %}
+                    <div class="profile-section plan-starter">
+                {% elif subscription_level == 1 %}
+                    <div class="profile-section plan-standard">
+                {% else %}
+                    <div class="profile-section plan-premium">
                 {% endif %}
+
+                <div>
+                    <div class="profile-section__header">
+                        <h3><i class="fas fa-gem"></i> Активный план</h3>
+                        {% if subscription.status == 'active' %}
+                            <span class="status-badge status-badge--active">Активен</span>
+                        {% else %}
+                            <span class="status-badge status-badge--inactive">Неактивен</span>
+                        {% endif %}
+                    </div>
+                    <div class="profile-section__body">
+                        <div class="plan-details">
+                            <h2 class="plan-title">{{ subscription.plan_name }}</h2>
+                            <p class="plan-expiration">Действителен до: {{ subscription.plan_end_date }}</p>
+                        </div>
+                        
+                        <div class="plan-highlights-grid">
+                            <div class="plan-highlights-grid">
+                                {% if subscription_level == 0 %}
+                                    <div class="highlight-card">
+                                        <div class="highlight-card__header">
+                                            <i class="fas fa-battery-quarter highlight-icon-bad"></i>
+                                            <span class="highlight-card__label">Разовый лимит</span>
+                                        </div>
+                                        <p class="highlight-card__value">10 генераций</p>
+                                    </div>
+                                    <div class="highlight-card">
+                                        <div class="highlight-card__header">
+                                            <i class="fas fa-tint highlight-icon-bad"></i>
+                                            <span class="highlight-card__label">Экспорт PDF</span>
+                                        </div>
+                                        <p class="highlight-card__value">С брендингом</p>
+                                    </div>
+                                    
+                                {% elif subscription_level == 1 %}
+                                    <div class="highlight-card">
+                                        <div class="highlight-card__header">
+                                            <i class="fas fa-bolt highlight-icon"></i>
+                                            <span class="highlight-card__label">Рабочая мощность</span>
+                                        </div>
+                                        <p class="highlight-card__value">До 50 тестов/день</p>
+                                    </div>
+                                    <div class="highlight-card">
+                                        <div class="highlight-card__header">
+                                            <i class="fas fa-brain highlight-icon"></i>
+                                            <span class="highlight-card__label">Умный ассистент</span>
+                                        </div>
+                                        <p class="highlight-card__value">Активен</p>
+                                    </div>
+                                    <div class="highlight-card">
+                                        <div class="highlight-card__header">
+                                            <i class="fas fa-file-invoice highlight-icon"></i>
+                                            <span class="highlight-card__label">Проф. экспорт</span>
+                                        </div>
+                                        <p class="highlight-card__value">Без брендинга</p>
+                                    </div>
+
+                                {% else %}
+                                    <div class="highlight-card">
+                                        <div class="highlight-card__header">
+                                            <i class="fas fa-crown highlight-icon-pro"></i>
+                                            <span class="highlight-card__label">Про-лимит</span>
+                                        </div>
+                                        <p class="highlight-card__value">До 150 тестов/день</p>
+                                    </div>
+                                    <div class="highlight-card">
+                                        <div class="highlight-card__header">
+                                            <i class="fas fa-magic highlight-icon-pro"></i>
+                                            <span class="highlight-card__label">Автоматизация</span>
+                                        </div>
+                                        <p class="highlight-card__value">Из Word и PDF</p>
+                                    </div>
+                                    <div class="highlight-card">
+                                        <div class="highlight-card__header">
+                                            <i class="fas fa-chart-pie highlight-icon-pro"></i>
+                                            <span class="highlight-card__label">Полная аналитика</span>
+                                        </div>
+                                        <p class="highlight-card__value">Активна</p>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% if subscription_level == 1 %}
+                        <div class="plan-upsell-hint">
+                            <p>Перейдите на <a href="{% url 'payment' %}">Премиум</a> для загрузки Word/PDF и лимита в 150 тестов.</p>
+                        </div>
+                        {% endif %}
+                        
+                    </div>
+                    <div class="profile-section__footer">
+                        {% if subscription.days_until_end is not none and subscription.days_until_end < 7 %}
+                            <a class="button-medium button-accent" href="{% url 'payment' %}"><div><p>Продлить подписку 🔥</p></div></a>
+                        {% elif subscription_level < 2 %}
+                            <a href="{% url 'payment' %}" class="button-medium button-accent"><div><p>Улучшить до Премиум 💎</p></div></a>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
 
-            <hr class="profile-divider">
-
+            <!-- Модуль Лимиты -->
             <div class="profile-section">
-                <h3><i class="fas fa-user-cog"></i> Аккаунт</h3>
-                <ul class="profile-list">
-                    {% if email %}<li><span class="label">E-mail</span><span class="value">{{ user.email }}</span></li>{% endif %}
-                    {% if phone != 'Телефон: Не указан' %}<li><span class="label">Телефон</span><span class="value">{{ user.phone }}</span></li>{% endif %}
-                </ul>
-                <div class="account-actions">
+                <div class="profile-section__header">
+                    <h3><i class="fas fa-sliders-h"></i> Использование</h3>
+                </div>
+
+                <div class="profile-section__body">
+                    <div class="usage-item">
+                        <div class="usage-label">
+                            <span>Доступно тестов сегодня</span>
+                            <span class="usage-value accent-color-text">{{ tokens.tests_remaining_count_limit }} / {{ tokens.tests_total_limit }}</span>
+                        </div>
+                        <div class="progress-bar {{ tokens.progress_bar_class }}">
+                            <div class="progress-bar__fill" style="width: {{ tokens.tests_usage_percentage }}%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Модуль Статистика -->
+            <div class="profile-section">
+                <div class="profile-section__header">
+                    <h3><i class="fas fa-user-chart"></i> Ваша активность</h3>
+                </div>
+                <div class="profile-section__body">
+                    <div class="stats-container">
+                        {% if subscription_level == 0 %}
+                            <div class="stats-blur-overlay">
+                                <div class="stats-upsell">
+                                    <i class="fas fa-lock"></i><h4>Расширенная аналитика</h4>
+                                    <p>Визуальные графики Вашей активности доступны на платных тарифах.</p>
+                                    <a href="{% url 'payment' %}" class="button-medium button-accent"><div><p>Разблокировать 💎</p></div></a>
+                                </div>
+                            </div>
+                        {% endif %}
+                        <div class="charts-grid">
+                            <div class="chart-card">
+                                <h4>Создано тестов</h4>
+                                <p>за 7 дней</p>
+                                <div class="chart-wrapper"><canvas id="personalActivityChart"></canvas></div>
+                            </div>
+                            <div class="chart-card">
+                                <h4>Просмотры тестов</h4>
+                                <p>за 7 дней</p>
+                                <div class="chart-wrapper"><canvas id="personalViewsChart"></canvas></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Модуль Статистика учеников -->
+            <div class="profile-section">
+                <div class="profile-section__header">
+                    <h3><i class="fas fa-users"></i> Статистика Прохождений</h3>
+                </div>
+                <div class="profile-section__body">
+                    <div class="stats-container">
+                        {% if subscription_level == 0 %}
+                            <div class="stats-blur-overlay">
+                                <div class="stats-upsell">
+                                    <i class="fas fa-lock"></i><h4>Аналитика по ответам</h4>
+                                    <p>Отслеживайте активность и качество прохождений на платных тарифах.</p>
+                                    <a href="{% url 'payment' %}" class="button-medium button-accent"><div><p>Разблокировать 💎</p></div></a>
+                                </div>
+                            </div>
+                        {% endif %}
+                        <div class="charts-grid">
+                            <div class="chart-card">
+                                <h4>Прохождений тестов за 7 дней</h4>
+                                <div class="chart-wrapper"><canvas id="studentActivityChart"></canvas></div>
+                            </div>
+                            <div class="chart-card">
+                                <h4>Распределение результатов</h4>
+                                <div class="chart-wrapper"><canvas id="studentScoresChart"></canvas></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Модуль История Транзакций -->
+            <div class="profile-section">
+                <div class="profile-section__header">
+                    <h3><i class="fas fa-receipt"></i> История платежей</h3>
+                </div>
+                <div class="profile-section__body">
+                    {% if payments %}
+                        <div class="transaction-log">
+                            {% for payment in payments %}
+                                {% comment %} 
+                                Единственно верный способ добавить класс статуса.
+                                Открываем div с нужным классом в зависимости от условия.
+                                {% endcomment %}
+                                {% if payment.status == 'completed' %}
+                                    <div class="transaction-log__item --success">
+                                {% elif payment.status == 'failed' %}
+                                    <div class="transaction-log__item --failed">
+                                {% else %}
+                                    <div class="transaction-log__item --pending">
+                                {% endif %}
+                                        <div class="transaction-log__status-dot"></div>
+                                        <div class="transaction-log__info">
+                                            <p class="transaction-log__title">Покупка «{{ payment.subscription.get_human_plan }}»</p>
+                                            <p class="transaction-log__subtitle">{{ payment.created_at|date:"d M Y, H:i" }} • Заказ {{ payment.order_id }}</p>
+                                        </div>
+                                        <p class="transaction-log__amount">{{ payment.amount }} ₽</p>
+                                    </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="no-data-message-final">
+                            <i class="fas fa-receipt"></i>
+                            <h3>Нет транзакций</h3>
+                            <p>Когда вы совершите покупку, она появится здесь.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Модуль Управление аккаунтом -->
+            <div class="profile-section">
+                <div class="profile-section__header">
+                    <h3><i class="fas fa-user-cog"></i> Аккаунт</h3>
+                </div>
+                <div class="profile-section__body">
+                    <ul class="profile-list">
+                        {% if user.email %}<li><span class="label">E-mail</span><span class="value">{{ user.email }}</span></li>{% endif %}
+                        {% if phone != 'Телефон: Не указан' %}<li><span class="label">Телефон</span><span class="value">{{ user.phone }}</span></li>{% endif %}
+                    </ul>
+                </div>
+                <div class="profile-section__footer action-buttons">
                     {% if password != '' %}
                         <form method="post" action="{% url 'password_reset' %}">
                             {% csrf_token %}
@@ -57,82 +270,244 @@
                     {% endif %}
                     <div class="button-medium button-red" id="logout-button"><div><p>Выйти из аккаунта</p></div></div>
                 </div>
-                 {% if user.is_superuser %}
+                    {% if user.is_superuser %}
                     <a class="button-medium admin-button" href="{% url 'db_viewer' %}"><div><p>Админ-панель 👑</p></div></a>
                 {% endif %}
             </div>
-            
-            <hr class="profile-divider">
-
-            <div class="profile-section">
-                <h3><i class="fas fa-chart-pie"></i> Статистика</h3>
-                <ul class="profile-list">
-                    <li>
-                        <span class="label">Создано тестов</span>
-                        <span class="value">{{ statistics.total_tests }}</span>
-                    </li>
-                    <li>
-                        <span class="label">Пройдено учениками</span>
-                        <span class="value">{{ statistics.passed_tests }}</span>
-                    </li>
-                    <li>
-                        <span class="label">Лучший результат</span>
-                        <span class="value">{{ statistics.best_result }}</span>
-                    </li>
-                </ul>
             </div>
+        </main>
+    </div>
 
-            <hr class="profile-divider">
-
-            <div class="profile-section">
-                <h3><i class="fas fa-sliders-h"></i> Лимиты и Использование</h3>
-                <ul class="profile-list">
-                    <li>
-                        <span class="label">Доступно тестов сегодня</span>
-                        <span class="value accent-color-text">{{ tokens.tests_remaining_count_limit }} / {{ tokens.tests_total_limit }}</span>
-                    </li>
-                    <li>
-                        <span class="label">Токены ИИ (тесты)</span>
-                        <span class="value">{{tokens.surveys}}</span>
-                    </li>
-                     <li>
-                        <span class="label">Токены ИИ (фидбэк)</span>
-                        <span class="value">{{tokens.feedback}}</span>
-                    </li>
-                </ul>
+    <!-- Модалка logout -->
+    <div id="logout-modal" class="action-modal">
+        <div class="action-modal__content">
+            <div class="action-modal__header">
+                <div class="action-modal__icon">
+                    <i class="fas fa-sign-out-alt"></i>
+                </div>
+                <h3>Выход из аккаунта</h3>
             </div>
-        </div>
-    </main>
-
-    <div id="modal-exit" class="modal">
-        <div class="modal-content">
-            <h3>Вы уверены?</h3>
-            <p>После подтверждения вы будете перенаправлены на страницу авторизации</p>
-            <div class="buttons-container">
-                <button id="cancel-logout" class="">Отмена</button>
-                <button id="confirm-logout"  class="button-red">Выйти</button>
+            <div class="action-modal__body">
+                <p>Вы будете перенаправлены на страницу входа. Уверены, что хотите продолжить?</p>
+            </div>
+            <div class="action-modal__footer">
+                <div id="action-modal-cancel" class="button-medium"><div><p>Отмена</p></div></div>
+                <div id="action-modal-confirm" class="button-medium button-red"><div><p>Выйти</p></div></div>
             </div>
         </div>
     </div>
 
     <script>
-        function modalWindow(elementId) {
-            document.getElementById('logout-button').addEventListener('click', function() {
-                document.getElementById(elementId).style.display = 'flex';
+        function setupActionModal(modalId, triggerId, confirmId, cancelId, confirmUrl) {
+            const modal = document.getElementById(modalId);
+            const triggerButton = document.getElementById(triggerId);
+            const confirmButton = document.getElementById(confirmId);
+            const cancelButton = document.getElementById(cancelId);
+
+            if (!modal || !triggerButton || !confirmButton || !cancelButton) {
+                console.error('Modal setup failed: one or more elements not found.');
+                return;
+            }
+
+            const showModal = () => modal.classList.add('is-visible');
+            const hideModal = () => modal.classList.remove('is-visible');
+
+            triggerButton.addEventListener('click', showModal);
+            cancelButton.addEventListener('click', hideModal);
+
+            modal.addEventListener('click', (event) => {
+                if (event.target === modal) {
+                    hideModal();
+                }
             });
-            
-            document.getElementById('cancel-logout').addEventListener('click', function() {
-                document.getElementById(elementId).style.display = 'none';
-            });
-            
-            document.getElementById('confirm-logout').addEventListener('click', function() {
-                window.location.href = "{% url 'logout' %}";
+
+            confirmButton.addEventListener('click', () => {
+                window.location.href = confirmUrl;
             });
         }
 
-        modalWindow('modal-exit-menu');
-        modalWindow('modal-exit');
+        setupActionModal(
+            'logout-modal', 
+            'logout-button',
+            'action-modal-confirm',
+            'action-modal-cancel',
+            "{% url 'logout' %}"
+        );
     </script>
+    
+    <script>
+        const chartInstances = {};
+
+        function destroyChart(chartId) {
+            if (chartInstances[chartId]) {
+                chartInstances[chartId].destroy();
+                delete chartInstances[chartId];
+            }
+        }
+
+        const barChartOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { 
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: 'rgba(18, 17, 25, 0.8)',
+                    titleFont: { family: 'Unbounded Medium' },
+                    bodyFont: { family: 'Namu Pro' },
+                    padding: 10,
+                    cornerRadius: 4
+                }
+            },
+            scales: {
+                y: { 
+                    beginAtZero: true, 
+                    ticks: { color: '#8e8d93', precision: 0 },
+                    grid: { color: 'rgba(255, 255, 255, 0.05)' }
+                },
+                x: { 
+                    ticks: { color: '#8e8d93' },
+                    grid: { display: false }
+                }
+            }
+        };
+
+        const lineChartOptions = {
+            ...barChartOptions,
+            interaction: {
+                intersect: false,
+                mode: 'index',
+            },
+        };
+
+        const doughnutChartOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '70%',
+            plugins: {
+                legend: { 
+                    display: true,
+                    position: 'bottom',
+                    labels: { 
+                        color: '#bab8c1', 
+                        boxWidth: 12, 
+                        padding: 20,
+                        font: { family: 'Namu Pro' }
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(18, 17, 25, 0.8)',
+                    titleFont: { family: 'Unbounded Medium' },
+                    bodyFont: { family: 'Namu Pro' },
+                    padding: 10,
+                    cornerRadius: 4
+                }
+            }
+        };
+
+
+        function initializeProfileCharts() {
+            const subscriptionLevel = {{ subscription_level }};
+            if (subscriptionLevel === 0) {
+                Object.keys(chartInstances).forEach(destroyChart);
+                return;
+            }
+
+            fetch("{% url 'personal_charts_api' %}")
+                .then(response => response.json())
+                .then(data => {
+                    destroyChart('personalActivityChart');
+                    destroyChart('personalViewsChart');
+                    
+                    const activityCtx = document.getElementById('personalActivityChart')?.getContext('2d');
+                    if (activityCtx) {
+                        chartInstances.personalActivityChart = new Chart(activityCtx, {
+                            type: 'bar',
+                            data: {
+                                labels: data.activity_chart.labels,
+                                datasets: [{
+                                    label: 'Создано',
+                                    data: data.activity_chart.data,
+                                    backgroundColor: 'rgba(97, 109, 240, 0.6)',
+                                    borderColor: 'rgba(97, 109, 240, 1)',
+                                    borderRadius: 4,
+                                    hoverBackgroundColor: 'rgba(97, 109, 240, 0.8)'
+                                }]
+                            },
+                            options: barChartOptions
+                        });
+                    }
+
+                    const viewsCtx = document.getElementById('personalViewsChart')?.getContext('2d');
+                    if (viewsCtx) {
+                        chartInstances.personalViewsChart = new Chart(viewsCtx, {
+                            type: 'line',
+                            data: {
+                                labels: data.views_chart.labels,
+                                datasets: [{
+                                    label: 'Просмотры',
+                                    data: data.views_chart.data,
+                                    backgroundColor: 'rgba(121, 239, 102, 0.1)',
+                                    borderColor: 'rgba(121, 239, 102, 1)',
+                                    tension: 0.3,
+                                    fill: true,
+                                    pointBackgroundColor: 'rgba(121, 239, 102, 1)',
+                                    pointBorderColor: '#fff',
+                                    pointHoverRadius: 6
+                                }]
+                            },
+                            options: lineChartOptions
+                        });
+                    }
+                }).catch(error => console.error('Personal charts error:', error));
+
+            fetch("{% url 'student_charts_api' %}")
+                .then(response => response.json())
+                .then(data => {
+                    destroyChart('studentActivityChart');
+                    destroyChart('studentScoresChart');
+
+                    const studentActivityCtx = document.getElementById('studentActivityChart')?.getContext('2d');
+                    if(studentActivityCtx) {
+                        chartInstances.studentActivityChart = new Chart(studentActivityCtx, {
+                            type: 'bar',
+                            data: {
+                                labels: data.attempts_activity_chart.labels,
+                                datasets: [{
+                                    label: 'Прохождений',
+                                    data: data.attempts_activity_chart.data,
+                                    backgroundColor: 'rgba(97, 109, 240, 0.6)',
+                                    borderColor: 'rgba(97, 109, 240, 1)',
+                                    borderRadius: 4,
+                                    hoverBackgroundColor: 'rgba(97, 109, 240, 0.8)'
+                                }]
+                            },
+                            options: barChartOptions
+                        });
+                    }
+
+                    const studentScoresCtx = document.getElementById('studentScoresChart')?.getContext('2d');
+                    if (studentScoresCtx) {
+                        chartInstances.studentScoresChart = new Chart(studentScoresCtx, {
+                            type: 'doughnut',
+                            data: {
+                                labels: data.scores_chart.labels,
+                                datasets: [{
+                                    data: data.scores_chart.data,
+                                    backgroundColor: ['rgba(121, 239, 102, 0.7)', 'rgba(255, 199, 0, 0.7)', 'rgba(231, 76, 117, 0.7)'],
+                                    borderColor: '#121119',
+                                    borderWidth: 3,
+                                    hoverOffset: 8,
+                                    hoverBorderColor: '#121119'
+                                }]
+                            },
+                            options: doughnutChartOptions
+                        });
+                    }
+                }).catch(error => console.error('Student charts error:', error));
+        }
+
+        document.addEventListener('DOMContentLoaded', initializeProfileCharts);
+        </script>
 
 </body>
 </html>

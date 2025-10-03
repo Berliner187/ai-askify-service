@@ -431,7 +431,7 @@ def is_user_subscribed_and_has_tokens(user_id):
 
 
 class TokensUsed(models.Model):
-    id = models.IntegerField(primary_key=True)
+    id = models.BigAutoField(primary_key=True)
     id_staff = models.UUIDField(blank=False, null=False)
     tokens_survey_used = models.IntegerField(blank=False, default=0, null=False)
     tokens_feedback_used = models.IntegerField(blank=False, default=0, null=False)
