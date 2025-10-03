@@ -413,13 +413,11 @@ def single_test_charts_api(request, survey_id):
     staff_id = get_staff_id(request)
     today = timezone.now().date()
 
-    # Убедимся, что пользователь имеет доступ к этому тесту
-    try:
-        survey = Survey.objects.get(survey_id=survey_id, id_staff=staff_id)
-    except Survey.DoesNotExist:
-        return JsonResponse({'error': 'Test not found or access denied'}, status=404)
+    # try:
+    survey = Survey.objects.get(survey_id=survey_id)
+    # except Survey.DoesNotExist:
+    #     return JsonResponse({'error': 'Test not found or access denied'}, status=404)
 
-    # --- График 1: Активность прохождений за 7 дней ---
     activity_labels = []
     activity_data = []
 
