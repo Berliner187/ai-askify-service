@@ -903,6 +903,7 @@ def get_all_surveys(request, page=1, per_page=5):
         results[str(survey.survey_id)] = {
             'title': survey.title if len(survey.title) < 32 else survey.title[:32] + '...',
             'update': survey.updated_at.strftime('%d.%m.%Y'),
+            'create': survey.created_at.strftime('%d.%m.%Y'),
             'tokens': tokens_used
         }
 
@@ -911,7 +912,6 @@ def get_all_surveys(request, page=1, per_page=5):
         'paginator': paginator,
         'page_obj': surveys_page
     }
-
 
 
 # @method_decorator(login_required, name='dispatch')
