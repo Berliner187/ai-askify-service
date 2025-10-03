@@ -156,6 +156,18 @@
             </header>
 
             {% if is_creator %}
+                <div id="privacy-notice" class="mt-8 flex items-start gap-4 bg-[var(--color-surface)] rounded-3xl border border-[var(--color-border)] p-5 animate-fadeIn">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-globe-americas text-xl text-[var(--color-accent-primary)] mt-1"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-white">Тест доступен по ссылке</h4>
+                        <p class="mt-1 text-sm text-[var(--color-text-secondary)] leading-relaxed">
+                            Этот тест является публичным. Любой, у кого есть ссылка, сможет его просмотреть и пройти.
+                            <span class="block mt-2 opacity-70">Приватные тесты для внутреннего использования появятся в будущих обновлениях.</span>
+                        </p>
+                    </div>
+                </div>
                 {% if username != 0 %}
                     <div class="mt-8 question-card flex justify-center rounded-3xl pt-4 animate-fadeIn">
                         <button data-action="share" data-share-url="{% url 'take_test' survey_id %}" class="group w-full transition-transform hover:scale-[1.03] active:scale-[.97] flex items-center justify-center text-center p-4 bg-[var(--color-accent-secondary)] rounded-3xl border border-transparent hover:border-[var(--color-border)] transition-colors">

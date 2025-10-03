@@ -487,6 +487,56 @@
         </section>
 
         <!-- ====================================================== -->
+        <!--         THE "FROM CREATION TO INSIGHT" BLOCK           -->
+        <!-- ====================================================== -->
+        <section id="analytics-reveal" class="py-16 sm:py-24">
+            <div class="max-w-5xl mx-auto px-4 sm:px-8">
+                <div class="text-center">
+                    <h2 class="text-3xl sm:text-4xl font-extrabold text-white">
+                        Перестаньте гадать. <br> Начните <span class="gradient-text">видеть.</span>
+                    </h2>
+                    <p class="mt-4 text-lg text-[var(--color-text-secondary)] max-w-3xl mx-auto">
+                        Создать тест&nbsp;&mdash; это лишь половина дела. Летучка дает Вам инструменты, чтобы по-настоящему понять, что знают Ваши респонденты.
+                    </p>
+                </div>
+
+                <div class="mt-16 relative">
+                    <div class="absolute -inset-8 bg-gradient-to-r from-[var(--color-accent-primary)] to-[var(--color-accent-secondary)] opacity-10 blur-3xl"></div>
+                    <img src="{% static 'blog_img/analys1.png' %}" 
+                        alt="Дашборд аналитики тестов в Летучке" 
+                        class="relative w-full rounded-3xl border-2 border-[var(--color-border)] shadow-2xl shadow-black/50">
+                </div>
+
+                <div class="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8 text-left">
+                    <div class="flex items-start gap-4">
+                        <i class="fas fa-eye text-2xl text-[var(--color-accent-primary)] mt-1"></i>
+                        <div>
+                            <h3 class="font-bold text-white">Визуальный контроль</h3>
+                            <p class="mt-1 text-sm text-gray-400">Вся статистика по&nbsp;прохождениям собрана на&nbsp;одном экране. Наглядно, просто и&nbsp;в&nbsp;реальном времени.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-4">
+                        <i class="fas fa-bullseye text-2xl text-[var(--color-accent-primary)] mt-1"></i>
+                        <div>
+                            <h3 class="font-bold text-white">Общая картина успеваемости</h3>
+                            <p class="mt-1 text-sm text-gray-400">Мгновенно оцените, какой процент аудитории справляется на&nbsp;&laquo;отлично&raquo;, а&nbsp;кому требуется дополнительное внимание.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-4">
+                        <i class="fas fa-tachometer-alt text-2xl text-[var(--color-accent-primary)] mt-1"></i>
+                        <div>
+                            <h3 class="font-bold text-white">Все данные на&nbsp;одном экране</h3>
+                            <p class="mt-1 text-sm text-gray-400">Получите полный обзор вашей активности и&nbsp;вовлеченности аудитории. Вся статистика в&nbsp;реальном времени, без ручного сведения таблиц.</p>
+                        </div>
+                    </div>
+                </div>
+                <button data-trigger-modal="register" class="mt-8 block w-full text-center bg-[var(--color-accent-primary)] text-white font-bold text-m py-4 rounded-full transition hover:opacity-90 active:opacity-70 transition-transform active:scale-[.97] shadow-lg shadow-[var(--color-accent-primary)]/30">
+                    Открыть полный доступ к аналитике
+                </button>
+            </div>
+        </section>
+        
+        <!-- ====================================================== -->
         <!--         HOW IT WORKS V3: VISUAL MANIFESTO              -->
         <!-- ====================================================== -->
         <section id="transformation-engine" class="py-16 sm:py-24">
@@ -546,7 +596,6 @@
                     </div>
                 </div>
 
-                <!-- Видео как доказательство -->
                 <div class="mt-16 w-full rounded-2xl border-2 border-[var(--color-border)] shadow-2xl shadow-black/50 overflow-hidden">
                     <video autoplay loop muted playsinline preload="metadata" class="w-full h-auto">
                         <source src="{% static 'blog_img/0313-text.mp4' %}" type="video/mp4">
@@ -556,53 +605,6 @@
             </div>
         </section>
 
-        <!-- ====================================================== -->
-        <!--         THE "FROM CREATION TO INSIGHT" BLOCK           -->
-        <!-- ====================================================== -->
-        <section id="analytics-reveal" class="py-16 sm:py-24">
-            <div class="max-w-6xl mx-auto px-4 sm:px-8">
-                <div class="text-center">
-                    <h2 class="text-3xl sm:text-5xl font-extrabold text-white">
-                        Хватит, блять, гадать. <br> Начинай, сука, <span class="gradient-text">видеть.</span>
-                    </h2>
-                    <p class="mt-4 text-lg text-[var(--color-text-secondary)] max-w-3xl mx-auto">
-                        Создать тест — это, нахуй, половина дела. «Летучка» дает вам инструменты, чтобы **понять, блять, что на самом деле знают** ваши ученики.
-                    </p>
-                </div>
-
-                <!-- ТВОЙ, БЛЯТЬ, СКРИНШОТ - КАК ГЛАВНЫЙ, СУКА, ГЕРОЙ -->
-                <div class="mt-16 relative">
-                    <div class="absolute -inset-8 bg-gradient-to-r from-[var(--color-accent-primary)] to-[var(--color-accent-secondary)] opacity-10 blur-3xl"></div>
-                    <img src="{% static 'blog_img/.png' %}" 
-                        alt="Дашборд аналитики тестов в Летучке" 
-                        class="relative w-full rounded-2xl border-2 border-[var(--color-border)] shadow-2xl shadow-black/50">
-                </div>
-
-                <div class="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8 text-left">
-                    <div class="flex items-start gap-4">
-                        <i class="fas fa-chart-pie text-2xl text-[var(--color-accent-primary)] mt-1"></i>
-                        <div>
-                            <h3 class="font-bold text-white">Аналитика в реальном времени</h3>
-                            <p class="mt-1 text-sm text-gray-400">Смотрите, кто, как и когда прошел ваш тест. Никаких, блять, таблиц в Excel.</p>
-                        </div>
-                    </div>
-                    <div class="flex items-start gap-4">
-                        <i class="fas fa-search-plus text-2xl text-[var(--color-accent-primary)] mt-1"></i>
-                        <div>
-                            <h3 class="font-bold text-white">Находите слабые места</h3>
-                            <p class="mt-1 text-sm text-gray-400">Наш дашборд покажет, на каком вопросе, блять, **спотыкается весь класс**.</p>
-                        </div>
-                    </div>
-                    <div class="flex items-start gap-4">
-                        <i class="fas fa-file-export text-2xl text-[var(--color-accent-primary)] mt-1"></i>
-                        <div>
-                            <h3 class="font-bold text-white">Профессиональные отчеты</h3>
-                            <p class="mt-1 text-sm text-gray-400">Скачивайте все результаты в CSV для своей отчетности. В один, сука, клик.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
 <!-- 
         <section id="how-it-works" class="py-16 sm:py-24">
             <div class="max-w-4xl mx-auto px-4 sm:px-8">
@@ -822,7 +824,7 @@
                         Мы&nbsp;убрали самый бесячий этап&nbsp;&mdash; регистрацию и&nbsp;запоминание паролей. Ваш аккаунт&nbsp;&mdash; это Ваш Telegram. Безопасно, мгновенно и&nbsp;всегда под рукой.
                     </p>
                     <div class="mt-8">
-                        <a href="https://t.me/LetychkaRobot" target="_blank" class="inline-block bg-[var(--color-accent-primary)] text-white px-8 py-3 font-semibold rounded-full transition hover:opacity-90">Попробовать вход в 1 клик →</a>
+                        <a href="https://t.me/LetychkaRobot" target="_blank" class="inline-block bg-[var(--color-accent-primary)] text-white px-8 py-3 font-semibold rounded-full transition hover:opacity-90 active:opacity-70 transition-transform active:scale-[.97]">Попробовать вход в 1 клик →</a>
                     </div>
                 </div>
             </div>
@@ -908,7 +910,7 @@
                         <li class="flex items-start"><i class="fas fa-check text-[var(--color-accent-secondary)] w-5 text-center mr-2 mt-1"></i> <span><strong>PDF без вотермарок</strong></span></li>
                         <li class="flex items-start"><i class="fas fa-check text-[var(--color-accent-secondary)] w-5 text-center mr-2 mt-1"></i> <span>AI-фидбэк</span></li>
                     </ul>
-                    <a href="/payment/" class="mt-8 block w-full text-center bg-white/10 hover:bg-white/20 text-white font-semibold py-3 rounded-full transition-colors">Выбрать Стандарт</a>
+                    <a href="/payment/" class="mt-8 block w-full text-center bg-white/10 hover:bg-white/20 text-white font-semibold py-3 rounded-full transition-colors active:opacity-80 transition-transform active:scale-[.97]">Выбрать Стандарт</a>
                 </div>
 
                 <!-- КАРТОЧКА: ПРЕМИУМ (ГЛАВНЫЙ АКЦЕНТ) -->
@@ -933,7 +935,7 @@
                             <p class="text-4xl font-black gradient-text my-2">&lt; 4 ₽</p>
                             <p class="text-sm text-[var(--color-text-secondary)]">Дешевле, чем распечатать его в&nbsp;копицентре</p>
                         </div>
-                        <button data-trigger-modal="register" class="mt-8 block w-full text-center bg-[var(--color-accent-primary)] text-white font-bold text-m py-4 rounded-full transition hover:opacity-90 shadow-lg shadow-[var(--color-accent-primary)]/30">
+                        <button data-trigger-modal="register" class="mt-8 block w-full text-center bg-[var(--color-accent-primary)] text-white font-bold text-m py-4 rounded-full transition hover:opacity-90 active:opacity-80 transition-transform active:scale-[.97] shadow-lg shadow-[var(--color-accent-primary)]/30">
                             Перейти на Премиум
                         </button>
                     </div>
@@ -951,7 +953,7 @@
                         <li class="flex items-start"><i class="fas fa-check text-[var(--color-accent-secondary)] w-5 text-center mr-2 mt-1"></i> <span><strong>10 бесплатных</strong> генераций</span></li>
                         <li class="flex items-start"><i class="fas fa-check text-[var(--color-accent-secondary)] w-5 text-center mr-2 mt-1"></i> <span>Создание из текста</span></li>
                     </ul>
-                    <a href="/register" class="mt-8 block w-full text-center bg-white/10 hover:bg-white/20 text-white font-semibold py-3 rounded-full transition-colors">Начать бесплатно</a>
+                    <a href="/register" class="mt-8 block w-full text-center bg-white/10 hover:bg-white/20 text-white font-semibold py-3 rounded-full transition transition-colors active:opacity-80 transition-transform active:scale-[.97]">Начать бесплатно</a>
                 </div>
             </div>
 
@@ -1011,7 +1013,7 @@
                         </div>
                         <div class="text-center">
                             <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-                                <button id="open-register-modal-btn" class="w-full sm:w-auto bg-[var(--color-accent-primary)] text-white px-10 py-4 font-bold rounded-full transition-transform hover:scale-105">
+                                <button id="open-register-modal-btn" class="w-full sm:w-auto bg-[var(--color-accent-primary)] text-white px-10 py-4 font-bold rounded-full transition-transform hover:opacity-90 active:opacity-80 transition-transform active:scale-[.97]">
                                     Перейти на Премиум
                                 </button>
                                 <a href="/register" class="w-full sm:w-auto text-sm text-gray-400 hover:text-white">или попробовать бесплатно</a>
