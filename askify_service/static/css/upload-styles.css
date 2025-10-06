@@ -228,6 +228,7 @@ body {
 .onboarding-welcome {
     animation: fadeInWelcome 1s cubic-bezier(0.2, 0.8, 0.4, 1) forwards;
     opacity: 0;
+    margin-top: 120px;
 }
 
 @keyframes fadeInWelcome {

@@ -144,6 +144,10 @@
     .header {
         width: 80%;
     }
+
+    .onboarding-welcome {
+        margin-top: 120px;
+    }
 }
 
 @media (max-width: 1024px) {

@@ -12,7 +12,7 @@
     <link rel="shortcut icon" href="{% static 'img/logo.png' %}" type="image/png">
     
     {% include 'components/linker.html' %}
-    <link rel="stylesheet" href="{% static 'css/upload-styles.css' %}?v=1.6">
+    <link rel="stylesheet" href="{% static 'css/upload-styles.css' %}?v=1.7">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- Yandex.Metrika counter -->
@@ -358,6 +358,10 @@
                             <button type="button" class="attach-button" title="Прикрепить файл" onclick="document.getElementById('hidden-file-input').click();">
                                 <i class="fas fa-paperclip"></i>
                             </button>
+                        {% else %}
+                            <a href="{% url 'payment' %}" class="attach-button" title="Прикрепить файл">
+                                <i class="fas fa-paperclip"></i>
+                            </a>
                         {% endif %}
                         <button type="button" class="send-button" title="Создать тест" onclick="submitText()">
                             <i class="fas fa-paper-plane"></i>
