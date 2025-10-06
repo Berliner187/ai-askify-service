@@ -243,9 +243,40 @@
                                 <h4>Распределение результатов</h4>
                                 <div class="chart-wrapper"><canvas id="studentScoresChart"></canvas></div>
                             </div>
+                            <div class="chart-card">
+                                <h4>Активность по часам</h4>
+                                <p>за 7 дней</p>
+                                <div class="chart-wrapper"><canvas id="hourlyActivityChart"></canvas></div>
+                            </div>
+                            <div class="chart-card">
+                                <h4>Популярные тесты</h4>
+                                <p>по количеству прохождений</p>
+                                <div class="chart-wrapper"><canvas id="surveyEngagementChart"></canvas></div>
+                            </div>
                         </div>
                     </div>
                 </div>
+                {% if top_surveys %}
+                    <div class="top-surveys-container">
+                        <h4><i class="fas fa-fire"></i> Самые популярные тесты</h4>
+                        <ul class="top-surveys-list">
+                            {% for survey in top_surveys %}
+                            <li>
+                                <a href="{% url 'preview_test_result' survey.survey_id %}">
+                                    <div class="survey-info">
+                                        <span class="survey-title">{{ survey.title }}</span>
+                                        <span class="survey-meta">Создан: {{ survey.created_at }}</span>
+                                    </div>
+                                    <div class="survey-stats">
+                                        <i class="fas fa-eye"></i>
+                                        <span>{{ survey.view_count }}</span>
+                                    </div>
+                                </a>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
             </div>
 
             <!-- Модуль История Транзакций -->
@@ -573,6 +604,63 @@
                             options: doughnutChartOptions
                         });
                     }
+
+                    destroyChart('hourlyActivityChart');
+                    const hourlyActivityCtx = document.getElementById('hourlyActivityChart')?.getContext('2d');
+                    if (hourlyActivityCtx && data.hourly_activity_chart.data.length > 0) {
+                        chartInstances.hourlyActivityChart = new Chart(hourlyActivityCtx, {
+                            type: 'line',
+                            data: {
+                                labels: data.hourly_activity_chart.labels,
+                                datasets: [{
+                                    label: 'Прохождений',
+                                    data: data.hourly_activity_chart.data,
+                                    borderColor: 'rgba(255, 159, 64, 1)',
+                                    backgroundColor: 'rgba(255, 159, 64, 0.2)',
+                                    fill: true,
+                                    tension: 0.4,
+                                }]
+                            },
+                            options: lineChartOptions
+                        });
+                    }
+
+                    destroyChart('surveyEngagementChart');
+                    const surveyEngagementCtx = document.getElementById('surveyEngagementChart')?.getContext('2d');
+                    if (surveyEngagementCtx && data.survey_engagement_chart.data.length > 0) {
+                        chartInstances.surveyEngagementChart = new Chart(surveyEngagementCtx, {
+                            type: 'polarArea',
+                            data: {
+                                labels: data.survey_engagement_chart.labels,
+                                datasets: [{
+                                    label: 'Кол-во прохождений',
+                                    data: data.survey_engagement_chart.data,
+                                    backgroundColor: [
+                                        'rgba(97, 109, 240, 0.7)',
+                                        'rgba(121, 239, 102, 0.7)',
+                                        'rgba(255, 205, 86, 0.7)',
+                                        'rgba(255, 99, 132, 0.7)',
+                                        'rgba(54, 162, 235, 0.7)',
+                                        'rgba(153, 102, 255, 0.7)',
+                                        'rgba(255, 159, 64, 0.7)'
+                                    ],
+                                    borderWidth: 0
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: { legend: { display: false } },
+                                scales: {
+                                    r: {
+                                        ticks: { display: false },
+                                        grid: { color: 'rgba(255, 255, 255, 0.05)' }
+                                    }
+                                }
+                            }
+                        });
+                    }
+
                 }).catch(error => console.error('Student charts error:', error));
         }
 

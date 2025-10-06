@@ -392,8 +392,10 @@ def student_charts_data_api(request):
     """
     staff_id = get_staff_id(request)
     today = timezone.now().date()
+    start_date = today - timedelta(days=6)
 
     user_surveys = Survey.objects.filter(id_staff=staff_id)
+    all_attempts = TestAttempt.objects.filter(survey__in=user_surveys)
 
     percentage_expression = ExpressionWrapper(
         (F('score') * 100.0) / F('total_questions'),
@@ -434,6 +436,22 @@ def student_charts_data_api(request):
         activity_labels.append(day.strftime('%d.%m'))
         activity_data.append(daily_attempts.get(day, 0))
 
+    hourly_activity_qs = all_attempts.filter(
+        created_at__date__gte=start_date
+    ).values_list('created_at', flat=True)
+
+    hourly_data = {i: 0 for i in range(24)}
+
+    for dt in hourly_activity_qs:
+        hour = dt.hour
+        hourly_data[hour] += 1
+
+    survey_engagement = (
+        all_attempts.values('survey__title')
+        .annotate(attempts_count=Count('id'))
+        .order_by('-attempts_count')[:7]
+    )
+
     return JsonResponse({
         'scores_chart': {
             'labels': ['Отлично (80-100%)', 'Хорошо (50-79%)', 'Плохо (<50%)'],
@@ -442,6 +460,14 @@ def student_charts_data_api(request):
         'attempts_activity_chart': {
             'labels': activity_labels,
             'data': activity_data
+        },
+        'hourly_activity_chart': {
+            'labels': [f'{h}:00' for h in range(24)],
+            'data': list(hourly_data.values())
+        },
+        'survey_engagement_chart': {
+            'labels': [s['survey__title'] for s in survey_engagement],
+            'data': [s['attempts_count'] for s in survey_engagement]
         }
     })
 
@@ -2364,6 +2390,22 @@ def profile_view(request, username):
         'payments': payments_formatted,
         'token': token_email_verification
     }
+
+    top_3_surveys = Survey.objects.filter(
+        id_staff=staff_id,
+        view_count__gt=0
+    ).order_by('-view_count')[:3]
+
+    top_surveys_formatted = []
+    for survey in top_3_surveys:
+        top_surveys_formatted.append({
+            'title': survey.title,
+            'survey_id': survey.survey_id,
+            'view_count': survey.view_count,
+            'created_at': survey.created_at.strftime('%d.%m.%Y')
+        })
+
+    user_data['top_surveys'] = top_surveys_formatted
 
     return render(request, 'profile.html', user_data)
 

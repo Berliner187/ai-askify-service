@@ -1264,6 +1264,75 @@ hr {
 }
 
 
+/* Топ 3 публичных популярных тестов */
+.top-surveys-container {
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.top-surveys-container h4 {
+    font-family: 'Unbounded Medium';
+    font-size: 1em;
+    color: #bab8c1;
+    margin: 0 0 16px 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.top-surveys-container h4 i {
+    color: #FF9F40;
+}
+
+.top-surveys-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.top-surveys-list li a {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 12px;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+.top-surveys-list li a:hover {
+    background: rgba(255, 255, 255, 0.06);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.survey-info .survey-title {
+    display: block;
+    color: #e8e7f1;
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+.survey-info .survey-meta {
+    font-size: 0.8em;
+    color: #8e8d93;
+}
+
+.survey-stats {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #bab8c1;
+    font-weight: 500;
+    flex-shrink: 0;
+    margin-left: 16px;
+}
+.survey-stats i {
+    color: #8e8d93;
+}
+
 /* 1. ГРАДИЕНТЫ ДЛЯ КАРТЫ ТАРИФА */
 .profile-section.plan-starter,
 .profile-section.plan-standard,
@@ -1319,7 +1388,7 @@ hr {
 .plan-premium .button-accent p { color: #1a160f; }
 
 
-/* 2. НОВЫЕ ЭЛЕМЕНТЫ ВНУТРИ КАРТЫ ТАРИФА */
+/* 2. ЭЛЕМЕНТЫ ВНУТРИ КАРТЫ ТАРИФА */
 .profile-section__header {
     display: flex;
     justify-content: space-between;
@@ -1359,10 +1428,10 @@ hr {
     color: #FFD700;
 }
 
-/* 3. СТИЛИ ДЛЯ ИСТОРИИ ТРАНЗАКЦИЙ */
+/* СТИЛИ ДЛЯ ИСТОРИИ ТРАНЗАКЦИЙ */
 .transaction-log {}
 
-/* 2. Строка транзакции */
+/* Строка транзакции */
 .transaction-log__item {
     display: flex;
     align-items: center;
@@ -1378,6 +1447,7 @@ hr {
 .transaction-log div:first-of-type.transaction-log__item {
     padding-top: 0;
 }
+
 
 
 /* 3. Точка статуса - маленький, но важный сигнал */
