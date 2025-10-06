@@ -203,6 +203,16 @@
                                 <p>за 7 дней</p>
                                 <div class="chart-wrapper"><canvas id="personalViewsChart"></canvas></div>
                             </div>
+                            <div class="chart-card">
+                                <h4>Качество тестов</h4>
+                                <p>По количеству вопросов</p>
+                                <div class="chart-wrapper"><canvas id="qualityChart"></canvas></div>
+                            </div>
+                            <div class="chart-card">
+                                <h4>Типы вопросов</h4>
+                                <p>Анализ по всем вашим тестам</p>
+                                <div class="chart-wrapper"><canvas id="questionTypesChart"></canvas></div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -481,6 +491,43 @@
                             options: lineChartOptions
                         });
                     }
+
+                    destroyChart('qualityChart');
+                    const qualityCtx = document.getElementById('qualityChart')?.getContext('2d');
+                    if (qualityCtx) {
+                        chartInstances.qualityChart = new Chart(qualityCtx, {
+                            type: 'doughnut',
+                            data: {
+                                labels: data.quality_chart.labels,
+                                datasets: [{
+                                    data: data.quality_chart.data,
+                                    backgroundColor: ['rgba(231, 76, 117, 0.7)', 'rgba(121, 239, 102, 0.7)', 'rgba(255, 199, 0, 0.7)'],
+                                    borderColor: '#121119',
+                                    borderWidth: 3,
+                                }]
+                            },
+                            options: doughnutChartOptions
+                        });
+                    }
+
+                    destroyChart('questionTypesChart');
+                    const questionTypesCtx = document.getElementById('questionTypesChart')?.getContext('2d');
+                    if (questionTypesCtx && data.question_types_chart.data.length > 0) {
+                        chartInstances.questionTypesChart = new Chart(questionTypesCtx, {
+                            type: 'pie',
+                            data: {
+                                labels: data.question_types_chart.labels,
+                                datasets: [{
+                                    data: data.question_types_chart.data,
+                                    backgroundColor: ['#616DF0', '#36A2EB', '#FFCD56', '#8e8d93'],
+                                    borderColor: '#121119',
+                                    borderWidth: 3,
+                                }]
+                            },
+                            options: doughnutChartOptions
+                        });
+                    }
+
                 }).catch(error => console.error('Personal charts error:', error));
 
             fetch("{% url 'student_charts_api' %}")

@@ -289,55 +289,98 @@ def user_stats_api(request):
 
 
 @login_required
+@login_required
 def personal_charts_data_api(request):
     """
     API-эндпоинт для ЛИЧНОЙ статистики создателя тестов.
     """
     staff_id = get_staff_id(request)
     today = timezone.now().date()
+    start_date = today - timedelta(days=6)
 
-    # --- График 1: Динамика создания тестов (остается) ---
-    activity_labels = []
+    # Расчеты для Графика 1
+    surveys_last_week_qs = Survey.objects.filter(id_staff=staff_id, created_at__date__gte=start_date)
+    daily_counts = surveys_last_week_qs.values('created_at__date').annotate(count=Count('id')).order_by(
+        'created_at__date')
+    activity_map = {item['created_at__date']: item['count'] for item in daily_counts}
+
+    # Расчеты для Графика 2
+    daily_views = SurveyUniqueView.objects.filter(survey__id_staff=staff_id, timestamp__date__gte=start_date).values(
+        'timestamp__date').annotate(count=Count('id')).order_by('timestamp__date')
+    views_map = {item['timestamp__date']: item['count'] for item in daily_views}
+
+    labels = []
     activity_data = []
-
-    # Запрос 1: Получаем количество созданных тестов по дням за неделю
-    surveys_last_week = Survey.objects.filter(
-        id_staff=staff_id,
-        created_at__date__gte=today - timezone.timedelta(days=6)
-    ).values('created_at__date').annotate(count=Count('id')).order_by('created_at__date')
-
-    daily_counts = {item['created_at__date']: item['count'] for item in surveys_last_week}
-
-    for i in range(7):
-        day = today - timezone.timedelta(days=6 - i)
-        activity_labels.append(day.strftime('%d.%m'))
-        activity_data.append(daily_counts.get(day, 0))
-
-    # --- График 2: Уникальные просмотры тестов за неделю ---
-    views_labels = []
     views_data = []
-
-    # Запрос 2: Расчёт количества уникальных просмотров по дням за неделю
-    views_last_week = SurveyUniqueView.objects.filter(
-        survey__id_staff=staff_id,
-        timestamp__date__gte=today - timezone.timedelta(days=6)
-    ).values('timestamp__date').annotate(count=Count('id')).order_by('timestamp__date')
-
-    daily_views = {item['timestamp__date']: item['count'] for item in views_last_week}
-
     for i in range(7):
-        day = today - timezone.timedelta(days=6 - i)
-        views_labels.append(day.strftime('%d.%m'))
-        views_data.append(daily_views.get(day, 0))
+        day = start_date + timedelta(days=i)
+        labels.append(day.strftime('%d.%m'))
+        activity_data.append(activity_map.get(day, 0))
+        views_data.append(views_map.get(day, 0))
+
+    # --- График 3 ---
+    all_user_surveys = Survey.objects.filter(id_staff=staff_id)
+    quality_distribution = {'Короткие (1-4)': 0, 'Оптимальные (5-8)': 0, 'Длинные (9+)': 0}
+    for survey in all_user_surveys:
+        try:
+            num_questions = len(survey.get_questions())
+            if 1 <= num_questions <= 4:
+                quality_distribution['Короткие (1-4)'] += 1
+            elif 5 <= num_questions <= 8:
+                quality_distribution['Оптимальные (5-8)'] += 1
+            else:
+                quality_distribution['Длинные (9+)'] += 1
+        except (json.JSONDecodeError, TypeError):
+            continue
+
+    # --- График 4---
+    all_user_surveys = Survey.objects.filter(id_staff=staff_id)
+    question_types = {
+        'Факты (Что, Кто, Где)': 0,
+        'Анализ (Почему, Как)': 0,
+        'Классификация (Какой, Выберите)': 0,
+        'Прочее': 0
+    }
+    keyword_map = {
+        'Факты (Что, Кто, Где)': ['что', 'кто', 'где', 'когда', 'сколько', 'назовите'],
+        'Анализ (Почему, Как)': ['почему', 'как', 'объясните', 'сравните'],
+        'Классификация (Какой, Выберите)': ['какой', 'какая', 'какое', 'какие', 'выберите', 'укажите'],
+    }
+
+    for survey in all_user_surveys:
+        try:
+            questions = survey.get_questions()
+            for q_data in questions:
+                question_text = q_data.get('question', '').lower()
+                found_type = False
+                for q_type, keywords in keyword_map.items():
+                    if any(keyword in question_text for keyword in keywords):
+                        question_types[q_type] += 1
+                        found_type = True
+                        break
+                if not found_type:
+                    question_types['Прочее'] += 1
+        except (json.JSONDecodeError, TypeError):
+            continue
+
+    filtered_question_types = {k: v for k, v in question_types.items() if v > 0}
 
     return JsonResponse({
         'activity_chart': {
-            'labels': activity_labels,
+            'labels': labels,
             'data': activity_data
         },
         'views_chart': {
-            'labels': views_labels,
+            'labels': labels,
             'data': views_data
+        },
+        'quality_chart': {
+            'labels': list(quality_distribution.keys()),
+            'data': list(quality_distribution.values())
+        },
+        'question_types_chart': {
+            'labels': list(filtered_question_types.keys()),
+            'data': list(filtered_question_types.values())
         }
     })
 
@@ -352,7 +395,6 @@ def student_charts_data_api(request):
 
     user_surveys = Survey.objects.filter(id_staff=staff_id)
 
-    # --- График 1: Распределение результатов ---
     percentage_expression = ExpressionWrapper(
         (F('score') * 100.0) / F('total_questions'),
         output_field=FloatField()
@@ -377,7 +419,6 @@ def student_charts_data_api(request):
         attempts_agg.get('low_scores', 0)
     ]
 
-    # --- График 2: Активность прохождений ---
     activity_labels = []
     activity_data = []
 
