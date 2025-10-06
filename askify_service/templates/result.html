@@ -18,6 +18,7 @@
     </script>
     <noscript><div><img src="https://mc.yandex.ru/watch/98829160" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
     <!-- /Yandex.Metrika counter -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 </head>
 <body>
@@ -58,65 +59,73 @@
                         </svg>
                         <div class="progress-text">{{ score }} из {{ total }}</div>
                     </div>
-                    <div class="container-buttons">
-                        <a class="button-medium button-accent" href="{% url 'survey' survey_id=survey_id %}">
+                {% endif %}
+
+                {% if score == 0 %}
+                    <div class="main-action-wrapper">
+                        <a class="button-medium button-accent primary-action" href="{% url 'survey' survey_id=survey_id %}">
                             <div>
-                                <img src="{% static 'img/icon-retry.png' %}" alt="">
-                                <p>Пройти заново</p>
+                                <i class="fa-solid fa-circle-chevron-right"></i>
+                                <p>Пройти тест</p>
                             </div>
                         </a>
                     </div>
-                    
                 {% else %}
-                    <div class="container-buttons">
+                    <div class="main-action-wrapper">
                         <a class="button-medium button-accent" href="{% url 'survey' survey_id=survey_id %}">
                             <div>
-                                <p>Пройти тест</p>
+                                <i class="fas fa-redo-alt"></i>
+                                <p>Пройти заново</p>
                             </div>
                         </a>
                     </div>
                 {% endif %}
 
-                <div class="container-buttons">
-                    <a class="button-medium" href="{% url 'download-results_pdf' survey_id=survey_id %}">
-                        <div>
-                            <p>Скачать результат</p>
-                            <img src="{% static 'img/icon-download-pdf.png' %}" alt="Icon download results in PDF">
-                        </div>
-                    </a>
+                <div class="secondary-actions-wrapper">
                     <a class="button-medium" href="{% url 'download-survey_pdf' survey_id=survey_id %}">
                         <div>
+                            <i class="fas fa-print"></i>
                             <p>Скачать тест для печати</p>
-                            <img src="{% static 'img/icon-download.png' %}" alt="Иконка загрузки PDF">
                         </div>
                     </a>
-                </div>
-
-                <hr>
-
-                <div class="buttons-around">
-                    <button class="button-medium" id="copyShareLink" data-content="/t/{{survey_id}}">
+                    {% if score != 0 %}
+                    <a class="button-medium" href="{% url 'download-results_pdf' survey_id=survey_id %}">
                         <div>
-                            <p>Поделиться с&nbsp;другими</p>
-                            <img src="{% static 'img/icon-share.png' %}" alt="">
-                        </div>
-                    </button>
-                    <a class="button-medium" href="{% url 'preview_test_result' survey_id %}">
-                        <div>
-                            <p>Смотреть аналитику</p>
-                            <img src="{% static 'img/icon-analytics.png' %}" alt="">
+                            <i class="fas fa-file-download"></i>
+                            <p>Скачать результат</p>
                         </div>
                     </a>
-                </div>
-                <div class="buttons-around">
-                    <a class="button-medium" href="{% url 'preview_test' survey_id %}">
-                        <div>
-                            <p>Посмотреть ответы</p>
-                            <img src="{% static 'img/icon-answer.png' %}" alt="">
-                        </div>
-                    </a>
+                    {% endif %}
                 </div>
                 
+                <hr class="actions-divider">
+
+                <div class="tertiary-actions-grid">
+                    <!-- Карточка "Поделиться" -->
+                    <a class="action-card-small" id="copyShareLink" data-content="/t/{{survey_id}}">
+                        <div class="card-icon"><i class="fas fa-share-alt"></i></div>
+                        <div class="card-text">
+                            <h4>Поделиться с другими</h4>
+                            <p>Нажмите, чтобы скопировать, и отправьте ссылку другим, чтобы отслеживать их результаты в аналитике.</p>
+                        </div>
+                    </a>
+                    <!-- Карточка "Аналитика" -->
+                    <a class="action-card-small" href="{% url 'preview_test_result' survey_id %}">
+                        <div class="card-icon"><i class="fas fa-chart-pie"></i></div>
+                        <div class="card-text">
+                            <h4>Смотреть аналитику</h4>
+                            <p>Диаграммы с результатами, самые сложные и легкие вопросы.</p>
+                        </div>
+                    </a>
+                    <!-- Карточка "Ответы" -->
+                    <a class="action-card-small" href="{% url 'preview_test' survey_id %}">
+                        <div class="card-icon"><i class="fas fa-tasks"></i></div>
+                        <div class="card-text">
+                            <h4>Посмотреть тест</h4>
+                            <p>Проверьте все вопросы и правильные ответы к ним.</p>
+                        </div>
+                    </a>
+                </div>
             </div>
 
         </div>

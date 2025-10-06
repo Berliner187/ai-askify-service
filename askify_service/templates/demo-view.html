@@ -235,8 +235,8 @@
 
                             {% if can_generate %}
                                 <a href="/#create-now" class="mt-6 block w-full text-center bg-[var(--color-accent-primary)] text-white p-5 rounded-2xl transition-transform hover:scale-[1.03] shadow-lg shadow-[var(--color-accent-primary)]/20">
-                                    <span class="text-lg font-bold">Создать еще один тест</span>
-                                    <span class="block text-sm opacity-70">Вернуться на главную и попробовать снова</span>
+                                    <span class="text-lg font-bold">Создать новый тест</span>
+                                    <span class="block text-sm opacity-70">Вернуться на главную и создать новый тест</span>
                                 </a>
                             {% else %}
                                 <div class="text-center bg-gradient-to-r from-[#211a32] to-[var(--color-surface)] p-8 rounded-3xl border border-[var(--color-border)]">
@@ -276,8 +276,8 @@
                             </a>
                             {% endif %}
 
-                            <a href="/create" class="mt-6 block w-full text-center bg-black/20 text-white p-5 rounded-2xl transition-transform hover:scale-[1.03] shadow-lg shadow-[var(--color-accent-primary)]/20">
-                                <span class="text-lg font-bold">Вернуться на главную</span>
+                            <a href="{% url 'result' survey_id %}" class="mt-6 block w-full text-center bg-black/20 text-white p-5 rounded-2xl transition-transform hover:scale-[1.03] shadow-lg shadow-[var(--color-accent-primary)]/20">
+                                <span class="text-lg font-bold">Вернуться к карточке теста</span>
                             </a>
                         {% endif %}
 

@@ -43,7 +43,7 @@
                         <label>
                             <a href="/result/{{ survey_id }}">
                                 <div class="survey-block">{{ survey_data.title }}</div>
-                                <div class="survey-block small-text">{{ survey_data.update }}  •  {{ survey_data.tokens }} токенов</div>
+                                <div class="survey-block small-text">{{ survey_data.update }}</div>
                             </a>
                             <div class="button-medium button-red" style="cursor: pointer;">
                                 <div onclick="openDeleteModal('{{ survey_id }}', '{{ survey_data.title|escapejs }}')">
