@@ -44,6 +44,18 @@ async function submitText() {
                 },
                 body: JSON.stringify({ text, questions: questionCount })
             });
+            
+            if (response.status === 429) {
+                const modal = document.getElementById('limit-exceeded-modal');
+                const modalText = document.getElementById('limit-modal-text');
+                
+                if (modalText) {
+                    modalText.textContent = result.error || 'Ваш дневной лимит исчерпан.';
+                }
+                if (modal) {
+                    modal.classList.remove('hidden');
+                }
+            } 
 
             const result = await response.json();
             if (response.ok) {

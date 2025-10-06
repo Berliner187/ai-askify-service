@@ -91,6 +91,24 @@
             {% endif %}
         </div>
 
+        {% if tests_today == 0 %}
+            <div class="container notice-banner deactivated">
+                <div class="icon-wrapper">
+                    <i class="fas fa-battery-empty"></i>
+                </div>
+                <div class="text-wrapper">
+                    <h3>Вы использовали все бесплатные генерации на сегодня</h3>
+                    <p>
+                        Снимите все ограничения с тарифом <strong>Премиум</strong>: загружайте файлы,
+                        получайте глубокую аналитику и создавайте тесты без оглядки на лимиты.
+                    </p>
+                </div>
+                <a class="button-medium button-accent" href="{% url 'payment' %}">
+                    <div><i class="fas fa-unlock-alt"></i> <p>Снять ограничения</p></div>
+                </a>
+            </div>
+        {% endif %}
+
         {% if subscription_status != 'active' %}
             <div class="container notice-banner deactivated">
                 <div class="icon-wrapper">
@@ -355,13 +373,13 @@
                     <div id="char-count">0 / 16384</div>
                 </div>
                 <div class="toolbar-actions">
-                        <a class="button-medium" href="{% url 'history' %}" title="История генераций">
-                            <div><i class="fas fa-history"></i><p>История</p></div>
-                        </a>
-                        <a class="button-medium" href="{% url 'payment' %}" title="Ваши лимиты">
-                            <div><i class="fas fa-star"></i><p><span>{{ tests_today }}</span></p></div>
-                        </a>
-                    </div>
+                    <a class="button-medium" href="{% url 'history' %}" title="История генераций">
+                        <div><i class="fas fa-history"></i><p>История</p></div>
+                    </a>
+                    <a class="button-medium" href="{% url 'payment' %}" title="Ваши лимиты">
+                        <div><i class="fas fa-star"></i><p><span>{{ tests_today }}</span></p></div>
+                    </a>
+                </div>
                 
                 {% if subscription_level > 1 and subscription_level < 50 %}
                     <input type="file" id="hidden-file-input" accept=".pdf, .doc, .docx, .txt" style="display: none;" onchange="handleFiles(this.files)">
@@ -385,7 +403,29 @@
     </div>
     {% include 'footer-s.html' %}
 
-    <script src="{% static 'js/main.js' %}?v=1.1"></script>
+    <div id="limit-exceeded-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-icon">
+                <i class="fas fa-battery-empty"></i>
+            </div>
+            <h3>Лимит исчерпан</h3>
+            <p id="limit-modal-text">
+                Вы использовали все доступные генерации на тарифе «Стартовый».
+                Перейдите на Премиум, чтобы снять все ограничения.
+            </p>
+            <div class="modal-actions">
+                <button id="close-limit-modal-btn" class="button-medium">Позже</button>
+                <a href="{% url 'payment' %}" class="button-medium button-accent">
+                    <div>
+                        <i class="fas fa-rocket"></i>
+                        <p>Снять ограничения</p>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script src="{% static 'js/main.js' %}?v=1.2"></script>
     <script src="{% static 'js/auto-scroll.js' %}"></script>
 
     <script>

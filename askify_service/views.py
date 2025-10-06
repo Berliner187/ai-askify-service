@@ -655,19 +655,19 @@ class ManageSurveysView(View):
             if plan_name.lower() == 'стартовый':
                 if total_used_per_period >= tests_count_limit:
                     return JsonResponse({
-                        'error': 'Токены закончились :(\n\nОзнакомьтесь с тарифами на странице профиля.'},
-                        status=400
+                        'error': 'Ваш лимит тестов на тарифе "Стартовый" исчерпан.'},
+                        status=429
                     )
             else:
                 if total_used_per_period >= tests_count_limit:
                     return JsonResponse({
                         'error': 'Лимит по созданию тестов исчерпан :(\n\nОзнакомьтесь с тарифами на странице профиля.'
-                    }, status=400)
+                    }, status=429)
 
             if subscription_object.check_sub_status() != 'active':
                 return JsonResponse({
                     'error': 'Ваша подписка закончилась :(\n\nОзнакомьтесь с тарифами на странице профиля.'
-                }, status=400)
+                }, status=429)
 
             try:
                 tracer_l.debug(f"{request.user.username} --- GEN STAAAART")
@@ -1205,7 +1205,7 @@ class TakeSurvey(View):
         status = subscription.check_sub_status()
         tests_count_limit = get_daily_test_limit(subscription.plan_name) if status == 'active' else 0
 
-        if (status == 'active') and (tests_count_limit > 0) and (subs_level != 99):
+        if (status == 'active') and (tests_count_limit > 0) and (subs_level > 1):
             generation_models_control = GenerationModelsControl()
             ai_feedback = generation_models_control.get_feedback_001(
                 f"Список вопросов и моих ответов: {user_answers_list}.\n"
@@ -2283,9 +2283,14 @@ def profile_view(request, username):
             'amount_display': "{:,.2f}".format(amount_rubles).replace('.', ',').replace(',', '')
         })
 
+    manage_tokens_limits = ManageTokensLimits(staff_id)
+    tests_used_today = manage_tokens_limits.get_tests_used_today()
+    diff_tests_count_limit = tests_count_limit - tests_used_today
+
     user_data = {
         'page_title': f'Профиль {username}',
         'username': username,
+        'tests_today_limit': max(diff_tests_count_limit, 0),
         'email': ('E-mail: ' + user.email) if user.email else '',
         'password': f'Пароль: *********' if user.password else '',
         'phone': 'Телефон: ' + (user.phone if user.phone else 'Не указан'),

@@ -1070,6 +1070,68 @@ hr {
 }
 
 
+/* СТИЛИ ДЛЯ БЛОКА "АПГРЕЙД ПЛАНА" */
+.upgrade-prompt {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background-color: rgba(224, 49, 49, 0.1);
+    border: 1px solid rgba(255, 82, 82, 0.2);
+    border-radius: 16px;
+    padding: 16px;
+    margin-top: 20px;
+}
+
+.prompt-icon {
+    flex-shrink: 0;
+}
+.prompt-icon i {
+    font-size: 24px;
+    color: #E03131;
+}
+
+.prompt-text {
+    flex-grow: 1;
+}
+.prompt-text h4 {
+    font-family: 'Unbounded Medium';
+    color: #F0B4B4;
+    margin: 0 0 4px 0;
+    font-size: 1em;
+}
+.prompt-text p {
+    color: #C79797;
+    line-height: 1.5;
+    margin: 0;
+    font-size: 0.9em;
+}
+
+.upgrade-prompt .button-medium {
+    flex-shrink: 0;
+    background-color: #C92A2A !important; 
+    box-shadow: 0 4px 15px rgba(201, 42, 42, 0.2);
+}
+.upgrade-prompt .button-medium:hover {
+    background-color: #A61E1E !important;
+}
+.upgrade-prompt .button-medium i {
+    margin-right: 6px;
+}
+
+@media (max-width: 500px) {
+    .upgrade-prompt {
+        flex-direction: column;
+        text-align: center;
+    }
+    .upgrade-prompt .button-medium {
+        width: 100%;
+    }
+    .upgrade-prompt .button-medium div {
+        justify-content: center;
+    }
+}
+
+
 /* 1. ГРАДИЕНТЫ ДЛЯ КАРТЫ ТАРИФА */
 .profile-section.plan-starter,
 .profile-section.plan-standard,

@@ -8,6 +8,19 @@
     {% include 'components/linker.html' %}
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Yandex.Metrika counter -->
+    <script type="text/javascript">
+        (function(m,e,t,r,i,k,a){
+            m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+            m[i].l=1*new Date();
+            for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+            k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
+        })(window, document,'script','https://mc.yandex.ru/metrika/tag.js', 'ym');
+        ym(98829160, 'init', {webvisor:true, clickmap:true, accurateTrackBounce:true, trackLinks:true});
+    </script>
+    <noscript><div><img src="https://mc.yandex.ru/watch/98829160" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+    <!-- /Yandex.Metrika counter -->
 </head>
 <body>
     <script src="{% static 'js/second-loader.js' %}"></script>
@@ -127,6 +140,20 @@
                             <a href="{% url 'payment' %}" class="button-medium button-accent"><div><p>Улучшить до Премиум 💎</p></div></a>
                         {% endif %}
                     </div>
+                    {% if tests_today_limit == 0 %}
+                        <div class="upgrade-prompt">
+                            <div class="prompt-icon">
+                                <i class="fas fa-exclamation-circle"></i>
+                            </div>
+                            <div class="prompt-text">
+                                <h4>Дневной лимит исчерпан</h4>
+                                <p>Снимите ограничения и продолжайте работу, улучшив свой план.</p>
+                            </div>
+                            <a href="{% url 'payment' %}" class="button-medium button-accent">
+                                <div><i class="fas fa-arrow-up"></i><p>Апгрейд</p></div>
+                            </a>
+                        </div>
+                    {% endif %}
                 </div>
             </div>
 
