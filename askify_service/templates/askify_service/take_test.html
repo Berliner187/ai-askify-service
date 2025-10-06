@@ -169,8 +169,15 @@
 "
                 data-share-url="{% url 'take_test' survey.survey_id %}"
             >
-                <i class="fas fa-fist-raised"></i> Бросить вызов другу
+                <i class="fas fa-fist-raised"></i> Бросить вызов другим
             </button>
+            
+            {% if is_creator %}
+                <a href="{% url 'preview_test_result' survey.survey_id %}" class="mt-6 block w-full text-center bg-[var(--color-accent-secondary)] text-white p-5 rounded-3xl transition-transform hover:scale-[1.03] active:scale-[.97] shadow-lg shadow-[var(--color-accent-primary)]/20">
+                    <span class="text-lg font-bold text-[var(--color-bg)]">ПЕРЕЙТИ К АНАЛИТИКЕ</span>
+                    <span class="block text-sm opacity-70 text-[var(--color-bg)]">Просматривайте результаты на наглядных диаграммах</span>
+                </a>
+            {% endif %}
 
             <a href="{% url 'take_test' survey.survey_id %}" class="mt-4 inline-block text-[var(--color-text-secondary)] hover:text-white text-sm">
                 Пройти заново
@@ -366,7 +373,7 @@
                     
                     navigator.clipboard.writeText(cleanedText).then(() => {
                         const originalText = $(this).html();
-                        $(this).html('<i class="fas fa-check-circle"></i> Скопировано! Отправь другу');
+                        $(this).html('<i class="fas fa-check-circle"></i> Скопировано! Отправь другим');
 
                         setTimeout(() => {
                             $(this).html(originalText);
