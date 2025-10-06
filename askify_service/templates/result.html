@@ -51,7 +51,7 @@
             <div class="result-container">
                 <h2 class="result-survey-title">{{ title }}</h2>
 
-                {% if total > 0 %}
+                {% if attempt_exists %}
                     <div class="progress-container">
                         <svg class="progress-circle" width="200" height="200">
                             <circle class="progress-bg" cx="100" cy="100" r="90" />
@@ -133,7 +133,7 @@
         <div class="copy-notification">Ссылка скопирована</div>
 
         <div>
-            {% if total > 0 %}
+            {% if attempt_exists %}
 
                 {% if subscription_level < 2 or subscription_level == 99 %}
 

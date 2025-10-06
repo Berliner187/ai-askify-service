@@ -1318,6 +1318,7 @@ def result_view(request, survey_id):
         'username': request.user.username if request.user.is_authenticated else None,
         'feedback_text': feedback_text,
         'subscription_level': subscription_level,
+        'attempt_exists': last_attempt is not None,
         'model_name': f"Сгенерировано {format_model_name(model_name)}" if model_name else "",
         'subs_active': status == 'active'
     }
