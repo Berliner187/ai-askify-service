@@ -543,12 +543,11 @@ def drop_survey(request, survey_id):
     survey_obj = Survey.objects.filter(survey_id=uuid.UUID(survey_id)).first()
 
     if survey_obj and (survey_obj.id_staff == get_staff_id(request)):
-        survey_obj.delete()
-
         try:
-            survey_user_answers = get_object_or_404(UserAnswers, survey_id=uuid.UUID(survey_id))
-            survey_user_answers.delete()
-            tracer_l.info(f"{request.user.username} [ OK ]")
+            UserAnswers.objects.filter(survey_id=uuid.UUID(survey_id)).delete()
+            TestAttempt.objects.filter(survey__survey_id=uuid.UUID(survey_id)).delete()
+            survey_obj.delete()
+            tracer_l.info(f"{request.user.username} [ DELETE OK ]")
         except Exception as pass_fail:
             tracer_l.info(f"warn: {request.user.username} {pass_fail}")
         return redirect('history')
@@ -1166,10 +1165,10 @@ class TakeSurvey(View):
             }
             return render(request, 'survey.html', context)
 
-        survey_obj = UserAnswers.objects.filter(survey_id=survey_id)
+        survey_obj_user_answer = UserAnswers.objects.filter(survey_id=survey_id)
 
-        if survey_obj.exists():
-            survey_obj.delete()
+        if survey_obj_user_answer.exists():
+            survey_obj_user_answer.delete()
 
         user_answers_dict = {f'question_{i + 1}': user_answers[i] for i in range(len(user_answers))}
         user_answers_list = []

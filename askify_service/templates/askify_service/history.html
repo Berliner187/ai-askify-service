@@ -45,13 +45,9 @@
                                 <div class="survey-block">{{ survey_data.title }}</div>
                                 <div class="survey-block small-text">{{ survey_data.update }}  •  {{ survey_data.tokens }} токенов</div>
                             </a>
-                            <div class="buttons-container">
-                                <div class="button-medium ">
-                                    <a href="{% url 'drop-survey' survey_id=survey_id %}">
-                                        <div>
-                                            <img src="{% static 'img/icon-delete.png' %}" alt="">
-                                        </div>
-                                    </a> 
+                            <div class="button-medium button-red" style="cursor: pointer;">
+                                <div onclick="openDeleteModal('{{ survey_id }}', '{{ survey_data.title|escapejs }}')">
+                                    <img src="{% static 'img/icon-delete.png' %}" alt="Удалить">
                                 </div>
                             </div>
                         </label><br>
@@ -66,8 +62,59 @@
 
         </div>
         {% include 'ui_components/bottom_menu.html' %}
-    </div>
-    {% include 'footer-s.html' %}
+        </div>
+        {% include 'footer-s.html' %}
+
+        <div id="delete-modal" class="modal-overlay hidden" onclick="closeDeleteModal()">
+            <div class="modal-content" onclick="event.stopPropagation()">
+                <div class="modal-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <h3>Подтвердите удаление</h3>
+                <p>Вы уверены, что хотите удалить тест «<strong id="modal-survey-title"></strong>»? <br>Это действие необратимо.</p>
+                <div class="modal-actions">
+                    <button onclick="closeDeleteModal()" class="button-medium">Отмена</button>
+                    <a id="confirm-delete-link" href="#" class="button-medium button-red">
+                        <div>
+                            <p>Удалить безвозвратно</p>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+    <script>
+        const modal = document.getElementById('delete-modal');
+        const modalTitle = document.getElementById('modal-survey-title');
+        const confirmLink = document.getElementById('confirm-delete-link');
+
+        function openDeleteModal(surveyId, surveyTitle) {
+            console.log('Открываю модалку для:', surveyTitle);
+            if (!modal || !modalTitle || !confirmLink) {
+                console.error('Элементы модального окна не найдены!');
+                return;
+            }
+            
+            modalTitle.textContent = surveyTitle;
+            const deleteUrl = `/drop-survey/${surveyId}/`;
+            confirmLink.setAttribute('href', deleteUrl);
+            
+            modal.classList.remove('hidden');
+        }
+
+        function closeDeleteModal() {
+            console.log('Закрываю модалку');
+            if (modal) {
+                modal.classList.add('hidden');
+            }
+        }
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && modal && !modal.classList.contains('hidden')) {
+                closeDeleteModal();
+            }
+        });
+    </script>
     
     <script>
         document.getElementById('load-more').addEventListener('click', function() {
@@ -96,13 +143,9 @@
                             <div class="survey-block">${survey.title}</div>
                             <div class="survey-block small-text">${survey.update}</div>
                         </a>
-                        <div class="buttons-container">
-                            <div class="button-medium">
-                                <a href="/drop-survey/${survey.survey_id}">
-                                    <div>
-                                        <img src="{% static 'img/icon-delete.png' %}" alt="">
-                                    </div>
-                                </a>
+                        <div class="button-medium button-red" style="cursor: pointer;">
+                            <div onclick="openDeleteModal('${survey.survey_id}', '{{ survey_data.title|escapejs }}')">
+                                <img src="{% static 'img/icon-delete.png' %}" alt="Удалить">
                             </div>
                         </div>`;
 
@@ -122,9 +165,6 @@
             .catch(error => console.error('Error:', error));
         });
     </script>
-    </body>
-    </body>
-
 </body>
 
 </html>
