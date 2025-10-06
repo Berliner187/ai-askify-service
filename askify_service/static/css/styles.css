@@ -546,7 +546,6 @@ textarea:focus {
 }
 
 /* Промо блок для купки подписки */
-
 .premium-upsell-container {
     background: linear-gradient(145deg, rgba(97, 109, 240, 0.1), rgba(121, 239, 102, 0.05));
     border: 1px solid var(--accent);
@@ -557,19 +556,16 @@ textarea:focus {
 }
 
 .upsell-icon {
-    font-size: 32px;
     color: var(--accent);
     margin-bottom: 16px;
 }
 
 .upsell-header h2 {
     font-family: 'Unbounded Bold';
-    font-size: 2em;
     color: #fff;
     margin: 0 0 12px 0;
 }
 .upsell-header p {
-    font-size: 1.1em;
     color: #bab8c1;
     max-width: 600px;
     margin: 0 auto;

@@ -4,7 +4,7 @@
     {% include 'components/meta_tags.html' %}
     {% load static %}
     {% include 'components/linker.html' %}
-    <link rel="stylesheet" href="{% static 'css/results.css' %}">
+    <link rel="stylesheet" href="{% static 'css/results.css' %}?v=2.0">
 
     <!-- Yandex.Metrika counter -->
     <script type="text/javascript">
@@ -150,21 +150,31 @@
                                 <i class="fas fa-magic"></i>
                                 <div class="feature-text">
                                     <h4>Магия из Ваших документов</h4>
-                                    <span>Загружайте лекции в PDF/Word и получайте готовые тесты за секунды.</span>
+                                    <span>Загружайте лекции в&nbsp;PDF/Word и&nbsp;получайте готовые тесты за&nbsp;секунды.</span>
                                 </div>
                             </div>
                             <div class="upsell-feature-item">
                                 <i class="fas fa-user-graduate"></i>
                                 <div class="feature-text">
                                     <h4>Ваш персональный AI-репетитор</h4>
-                                    <span>Получайте детальный разбор ошибок от ИИ, чтобы понимать, ПОЧЕМУ ответ неверный, а не только КАКОЙ.</span>
+                                    <span>Получайте детальный разбор ошибок от&nbsp;ИИ, чтобы понимать, ПОЧЕМУ ответ неверный, а&nbsp;не&nbsp;только КАКОЙ.</span>
+                                </div>
+                            </div>
+                            <div class="upsell-feature-item">
+                                <i class="fas fa-chart-pie"></i>
+                                <div class="feature-text">
+                                    <h4>Полная картина успеваемости</h4>
+                                    <span>
+                                        Получите полную картину успеваемости: отслеживайте результаты <strong>каждого ученика</strong>,
+                                        находите самые <strong>сложные вопросы</strong> для всей группы и&nbsp;анализируйте динамику на&nbsp;наглядных дашбордах.
+                                    </span>
                                 </div>
                             </div>
                             <div class="upsell-feature-item">
                                 <i class="fas fa-download"></i>
                                 <div class="feature-text">
                                     <h4>Все материалы под рукой</h4>
-                                    <span>Экспортируйте результаты и сами тесты в чистом PDF для печати или оффлайн-доступа.</span>
+                                    <span>Экспортируйте результаты и&nbsp;сами тесты в&nbsp;чистом PDF для печати или оффлайн-доступа.</span>
                                 </div>
                             </div>
                         </div>
@@ -180,38 +190,48 @@
                 {% endif %}
             
             <div class="container result-full feedback-container">
-                <h2>Рекомендации</h2>
+                <div class="result-header">
+                    <h2>Рекомендации</h2>
+                    <p>Индивидуальные рекомендации от нейросети по результатам прохождения.</p>
+                </div>
                 {{ feedback_text|safe }}
                 <hr>
                 <p class="hint">{{ model_name }}</p>
             </div>
-              
+            
             <div class="container result-full">
-                <h2>Результаты теста</h2>
-                
-                <div class="questions-container">
+                <div class="result-header">
+                    <h2>Результаты теста</h2>
+                    <p>Вы верно ответили на <span class="result-score">{{ score }}</span> из <span class="result-total">{{ total }}</span> вопросов.</p>
+                </div>
+
+                <div class="questions-breakdown">
                     {% for question in questions %}
-                        <div class="question-item">
-                            <h3>{{ question.question }}</h3>
-                            <div class="options-container">
+                        <div class="question-card-result">
+                            <h3 class="question-title">{{ forloop.counter }}. {{ question.question }}</h3>
+                            <div class="options-list">
                                 {% for option in question.options %}
-                                    <div class="option-item {% if option in selected_answers %} 
-                                        {% if option == question.correct_answer %}correct{% else %}incorrect{% endif %} {% endif %}">
-                                        <p>{{ option }}</p>
+                                    
+                                    <div class="option-item-result 
+                                        {% if option == question.correct_answer %}is-correct{% endif %}
+                                        {% if option == question.user_answer and option != question.correct_answer %}is-incorrect{% endif %}
+                                    ">
+                                        
+                                        {% if option == question.correct_answer %}
+                                            <i class="fas fa-check-circle icon-correct"></i>
+                                        {% elif option == question.user_answer %}
+                                            <i class="fas fa-times-circle icon-incorrect"></i>
+                                        {% else %}
+                                            <i class="far fa-circle icon-neutral"></i>
+                                        {% endif %}
+                                        
+                                        <span>{{ option }}</span>
                                     </div>
+
                                 {% endfor %}
                             </div>
-                            {% if question.correct_answer not in selected_answers and question.correct_answer in question.options %}
-                                <div class="correct-answer-highlight">
-                                    <p>🟢 {{ question.correct_answer }}</p>
-                                </div>
-                            {% endif %}
                         </div>
                     {% endfor %}
-                </div>
-                
-                <div class="result-summary">
-                    <p>Вы верно ответили на <span class="result-score">{{ score }}</span> из <span class="result-total">{{ total }}</span> вопросов.</p>
                 </div>
                 
                 <div class="head-button">
@@ -228,7 +248,6 @@
                         </div>
                     </div>
                 </div>
-
             </div>
         
         {% endif %}

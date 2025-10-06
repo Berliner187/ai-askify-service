@@ -1260,32 +1260,41 @@ class TakeSurvey(View):
         return render(request, 'survey.html', context)
 
 
-@login_required
 # @subscription_required
+@login_required
 def result_view(request, survey_id):
-    survey = Survey.objects.filter(survey_id=survey_id).first()
+    survey = get_object_or_404(Survey, survey_id=survey_id)
 
-    if not survey:
-        return redirect('history')
+    last_attempt = UserAnswers.objects.filter(
+        survey_id=survey_id,
+        id_staff=get_staff_id(request)
+    ).order_by('-created_at').first()
 
-    user_answers = UserAnswers.objects.filter(survey_id=survey_id)
-    score = sum(answer.scored_points for answer in user_answers)
+    questions_data = survey.get_questions()
 
-    questions = survey.get_questions()
-    selected_answers = {answer.selected_answer for answer in user_answers}
-    selected_answers_list = list(user_answers.values_list('selected_answer', flat=True))
+    if not last_attempt:
+        score = 0
+        total = len(questions_data)
+        user_answers_dict = {}
+    else:
+        score = last_attempt.scored_points
+        total = last_attempt.total_points
+        user_answers_dict = last_attempt.get_user_answers()
+
+    processed_questions = []
+    for index, question in enumerate(questions_data):
+        answer_key = f"question_{index + 1}"
+        user_answer = user_answers_dict.get(answer_key)
+        question['user_answer'] = user_answer
+        processed_questions.append(question)
+
+    feedback_text = ''
     model_name = ''
-
     try:
         feedback_obj = FeedbackFromAI.objects.filter(survey_id=survey_id).first()
-
-        if feedback_obj is not None:
-            feedback_text = re.sub(r'[^a-zA-Zа-яА-Я0-9.,!?;:\s]', '', feedback_obj.feedback_data)
-            feedback_text = markdown.markdown(feedback_text)
+        if feedback_obj:
+            feedback_text = markdown.markdown(feedback_obj.feedback_data)  # Упростил
             model_name = feedback_obj.model_name
-        else:
-            feedback_text = ''
-
     except Exception as fail:
         feedback_text = 'Не удалось получить обратную связь от ИИ :('
         tracer_l.warning(f'Нет фидбэка: {request.user.username} --- {fail}')
@@ -1293,26 +1302,23 @@ def result_view(request, survey_id):
     subscription_db = Subscription.objects.get(staff_id=get_staff_id(request))
     subscription_check = SubscriptionCheck()
     subscription_level = subscription_check.get_subscription_level(subscription_db.plan_name)
-
     status = subscription_db.check_sub_status()
 
-    json_response = {
+    context = {
         'page_title': f'Результаты прохождения теста – {survey.title}',
         'title': survey.title,
         'score': score,
-        'total': len(user_answers),
+        'total': total,
         'survey_id': survey_id,
-        'questions': questions,
-        'selected_answers': selected_answers,
-        'selected_answers_list': selected_answers_list,
+        'questions': processed_questions,
         'username': request.user.username if request.user.is_authenticated else None,
         'feedback_text': feedback_text,
         'subscription_level': subscription_level,
-        'model_name': f"Сгенерировано {format_model_name(model_name)}",
-        'subs_active': True if status == 'active' else False
+        'model_name': f"Сгенерировано {format_model_name(model_name)}" if model_name else "",
+        'subs_active': status == 'active'
     }
 
-    return render(request, 'result.html', json_response)
+    return render(request, 'result.html', context)
 
 
 def download_results_pdf(request, survey_id):
