@@ -800,12 +800,14 @@ textarea:focus {
     font-size: 0.95em;
     color: #e8e7f1;
     margin: 0 0 6px 0;
+    user-select: none;
 }
 .action-card-small .card-text p {
     font-size: 0.85em;
     color: #bab8c1;
     line-height: 1.5;
     margin: 0;
+    user-select: none;
 }
 
 /* Дроп конфликтов стилей */

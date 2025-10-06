@@ -1264,29 +1264,33 @@ class TakeSurvey(View):
 @login_required
 def result_view(request, survey_id):
     survey = get_object_or_404(Survey, survey_id=survey_id)
+    questions_data = survey.get_questions()
 
     last_attempt = UserAnswers.objects.filter(
         survey_id=survey_id,
         id_staff=get_staff_id(request)
     ).order_by('-created_at').first()
 
-    questions_data = survey.get_questions()
-
     if not last_attempt:
-        score = 0
-        total = len(questions_data)
-        user_answers_dict = {}
+        selected_answers_dict = {}
     else:
-        score = last_attempt.scored_points
-        total = last_attempt.total_points
-        user_answers_dict = last_attempt.get_user_answers()
+        selected_answers_dict = last_attempt.get_user_answers()
 
     processed_questions = []
+    correct_answers_count = 0
+
     for index, question in enumerate(questions_data):
         answer_key = f"question_{index + 1}"
-        user_answer = user_answers_dict.get(answer_key)
+        user_answer = selected_answers_dict.get(answer_key)
         question['user_answer'] = user_answer
+
+        if user_answer and user_answer == question.get('correct_answer'):
+            correct_answers_count += 1
+
         processed_questions.append(question)
+
+    score = correct_answers_count
+    total = len(questions_data)
 
     feedback_text = ''
     model_name = ''
