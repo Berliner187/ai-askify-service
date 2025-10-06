@@ -213,6 +213,21 @@
 
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script>
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        
         $(document).ready(function() {
             const landingView = $('#landing-view');
             const questionsView = $('#questions-view');
@@ -259,6 +274,58 @@
                 testForm.append(questionBlock);
                 testForm.append('<button type="submit" class="w-full mt-4 inline-block bg-[var(--color-accent-primary)] text-white px-10 py-4 font-bold rounded-full transition-transform hover:scale-[1.03] active:scale-[.97] shadow-lg shadow-[var(--color-accent-primary)]/20">Ответить</button>');
             }
+
+            // Регистрация просмотров
+            async function generateVisitorHash() {
+                const uniqueString = `${navigator.userAgent}-${navigator.language}-${new Date().getTimezoneOffset()}`;
+                const encoder = new TextEncoder();
+                const data = encoder.encode(uniqueString);
+                const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            }
+
+            // --- Регистрация просмотров ---
+            async function registerView() {
+                const surveyId = '{{ survey.survey_id }}';
+                if (!surveyId) return;
+
+                try {
+                    const visitorHash = await generateVisitorHash();
+                    const csrftoken = getCookie('csrftoken');
+
+                    const response = await fetch(`/register-view/${surveyId}/`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': csrftoken
+                        },
+                        body: JSON.stringify({ hash: visitorHash })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        const counterElement = $('#view-counter-value'); 
+                        const currentCount = parseInt(counterElement.text());
+                        const newCount = data.view_count;
+
+                        if (data.new_view && newCount > currentCount) {
+                            counterElement.text(newCount);
+                            counterElement.addClass('counter-pulse');
+                            setTimeout(() => {
+                                counterElement.removeClass('counter-pulse');
+                            }, 600);
+                        } else {
+                            counterElement.text(newCount);
+                        }
+                    }
+                } catch (error) {
+                    console.error('Ошибка регистрации просмотра:', error);
+                }
+            }
+            // --- Регистрация просмотров ---
+            registerView();
             
             $('#start-test-form').on('submit', function(e) {
                 e.preventDefault();
@@ -384,47 +451,6 @@
                     });
                 });
             }
-
-            async function registerView() {
-                const surveyId = '{{ survey_id }}';
-                if (!surveyId) return;
-
-                try {
-                    const visitorHash = await generateVisitorHash();
-                    const csrftoken = getCookie('csrftoken');
-
-                    const response = await fetch(`/register-view/${surveyId}/`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRFToken': csrftoken
-                        },
-                        body: JSON.stringify({ hash: visitorHash })
-                    });
-
-                    const data = await response.json();
-
-                    if (data.success) {
-                        const counterElement = $('#view-counter-value'); 
-                        const currentCount = parseInt(counterElement.text());
-                        const newCount = data.view_count;
-
-                        if (data.new_view && newCount > currentCount) {
-                            counterElement.text(newCount);
-                            counterElement.addClass('counter-pulse');
-                            setTimeout(() => {
-                                counterElement.removeClass('counter-pulse');
-                            }, 600);
-                        } else {
-                            counterElement.text(newCount);
-                        }
-                    }
-                } catch (error) {
-                    console.error('Ошибка регистрации просмотра:', error);
-                }
-            }
-            // --- Регистрация просмотров ---
-            registerView();
 
         });
     </script>
