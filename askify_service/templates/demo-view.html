@@ -270,6 +270,10 @@
                                 <span class="text-lg font-bold text-[var(--color-bg)]">ПЕРЕЙТИ К АНАЛИТИКЕ</span>
                                 <span class="block text-sm opacity-70 text-[var(--color-bg)]">Просматривайте результаты тех, кому Вы отправили тест</span>
                             </a>
+                            <a href="{% url 'create' %}" class="mt-6 block w-full text-center bg-[var(--color-accent-primary)] text-white p-5 rounded-2xl transition-transform hover:scale-[1.03] shadow-lg shadow-[var(--color-accent-primary)]/20">
+                                <span class="text-lg font-bold">СОЗДАТЬ НОВЫЙ ТЕСТ 🚀</span>
+                                <span class="block text-sm opacity-70">Создайте новый тест, он сохранится на Вашем аккаунте</span>
+                            </a>
                             {% else %}
                             <a href="{% url 'take_test' survey_id %}" class="mt-6 block w-full text-center bg-[var(--color-accent-primary)] text-white p-5 rounded-2xl transition-transform hover:scale-[1.03] shadow-lg shadow-[var(--color-accent-primary)]/20">
                                 <span class="text-lg font-bold">ПРОЙТИ ТЕСТ 🚀</span>

@@ -358,19 +358,25 @@
                         <span id="question-count-display" class="font-bold text-lg highlight">3</span>
                     </div>
 
-                    <!-- Центральная часть: новая ссылка (видна на больших экранах) -->
                     <div class="hidden sm:block">
                         <a href="#analytics-showcase" class="text-sm text-[var(--color-text-secondary)] hover:text-white transition-colors group">
                             Увидеть <span class="group-hover:gradient-text font-semibold">аналитику</span> в действии <span class="opacity-70 group-hover:opacity-100">&rarr;</span>
                         </a>
                     </div>
                     
-                    <!-- Правая часть: кнопка -->
-                    <button id="generate-btn" data-loading-text="Генерация..." class="w-full sm:w-auto bg-[var(--color-accent-secondary)] text-black px-8 py-3 font-bold rounded-full transition-transform hover:scale-105 disabled:opacity-50">
-                        Сгенерировать тест
-                    </button>
+                    {% if username != 0 %}
+                        <div>
+                            <a href="{% url 'create' %}" class="w-full flex items-center justify-center  sm:w-auto bg-[var(--color-accent-secondary)] text-black px-8 py-3 font-bold rounded-full transition-transform hover:scale-105 active:scale-100 disabled:opacity-50">
+                                Создать и&nbsp;сохранить
+                            </a>
+                            <p class="mt-4">Создайте тест в личном кабинете, чтобы не потерять!</p>
+                        </div>
+                    {% else %}
+                        <button id="generate-btn" data-loading-text="Генерация..." class="w-full sm:w-auto bg-[var(--color-accent-secondary)] text-black px-8 py-3 font-bold rounded-full transition-transform hover:scale-105 active:scale-100 disabled:opacity-50">
+                            Сгенерировать тест
+                        </button>
+                    {% endif %}
 
-                    <!-- Центральная часть: новая ссылка (видна на маленьких экранах) -->
                     <div class="sm:hidden mt-2">
                         <a href="#analytics-showcase" class="text-sm text-[var(--color-text-secondary)] hover:text-white transition-colors group">
                             Что происходит <span class="group-hover:gradient-text font-semibold">после</span> прохождения? <span class="opacity-70 group-hover:opacity-100">&rarr;</span>
