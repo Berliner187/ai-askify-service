@@ -373,6 +373,29 @@
                 </div>
             </section>
 
+            <section class="space-y-8">
+                <h2 class="font-bold text-white text-xl">Бизнес-инсайты</h2>
+
+                <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                    <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
+                        <h3 class="font-bold text-white mb-4">Время до Первой Покупки</h3>
+                        <div class="h-80">
+                            <canvas id="timeToPaymentChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
+                        <h3 class="font-bold text-white mb-4">Матрица Ценности Пользователей (Топ-100)</h3>
+                        <div class="h-80 relative">
+                            <canvas id="userValueMatrixChart"></canvas>
+                            <div class="absolute top-2 right-2 text-xs text-yellow-400 font-bold">Звезды</div>
+                            <div class="absolute bottom-2 right-2 text-xs text-green-400 font-bold">Крупные клиенты</div>
+                            <div class="absolute top-2 left-2 text-xs text-blue-400 font-bold">Амбассадоры</div>
+                            <div class="absolute bottom-2 left-2 text-xs text-gray-500 font-bold">Потенциал</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             <!-- Когортный анализ -->
             {% if retention_data %}
             <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
@@ -397,7 +420,7 @@
                                     {% if forloop.counter0 < retention_data.headers|length %}
                                     <td class="p-0 text-center">
                                         {% if cell.percentage is not None %}
-                                        <div class="m-1 p-2 rounded" style="background-color: rgba(16, 185, 129, {{ cell.percentage }});">
+                                        <div class="m-1 p-2 rounded-xl" style="background-color: rgba(16, 185, 129, {{ cell.percentage }});">
                                             {{ cell.percentage }}%
                                             <div class="text-[10px] opacity-70">{{ cell.users }}</div>
                                         </div>
@@ -907,6 +930,75 @@
                     });
                 }
             } catch (e) { console.error("Ошибка при отрисовке графика по тарифам:", e); }
+        {% endif %}
+
+        {% if time_to_payment_data and time_to_payment_data != 'null' %}
+            try {
+                const ttpData = JSON.parse('{{ time_to_payment_data|escapejs }}');
+                const ttpCanvas = document.getElementById('timeToPaymentChart');
+                if (ttpCanvas) {
+                    new Chart(ttpCanvas.getContext('2d'), {
+                        type: 'bar',
+                        data: {
+                            labels: ttpData.labels,
+                            datasets: [{
+                                label: 'Количество пользователей',
+                                data: ttpData.data,
+                                backgroundColor: 'rgba(139, 92, 246, 0.7)',
+                                borderColor: 'rgba(139, 92, 246, 1)',
+                                borderRadius: 4
+                            }]
+                        },
+                        options: { /* ... стандартные options для bar chart ... */ }
+                    });
+                }
+            } catch (e) { console.error("Ошибка при отрисовке 'Время до покупки':", e); }
+        {% endif %}
+
+        {% if user_value_matrix_data and user_value_matrix_data != 'null' %}
+            try {
+                const matrixData = JSON.parse('{{ user_value_matrix_data|escapejs }}');
+                const matrixCanvas = document.getElementById('userValueMatrixChart');
+                if (matrixCanvas) {
+                    new Chart(matrixCanvas.getContext('2d'), {
+                        type: 'bubble',
+                        data: {
+                            datasets: [{
+                                label: 'Пользователи',
+                                data: matrixData,
+                                backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                                borderColor: 'rgba(255, 255, 255, 0.5)',
+                            }]
+                        },
+                        options: {
+                            responsive: true, maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            const d = context.raw;
+                                            return `${d.label}: ${d.x} попыток, ${d.y} ₽ доход`;
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    type: 'logarithmic', // Логарифмическая шкала для лучшей визуализации
+                                    title: { display: true, text: 'Влияние (кол-во попыток на тестах)', color: chartTextColor },
+                                    ticks: { color: chartTextColor },
+                                },
+                                y: {
+                                    type: 'logarithmic',
+                                    title: { display: true, text: 'Доход (₽)', color: chartTextColor },
+                                    ticks: { color: chartTextColor }
+                                }
+                            }
+                        }
+                    });
+                }
+            } catch (e) { console.error("Ошибка при отрисовке 'Матрицы ценности':", e); }
         {% endif %}
 
         {% if top_topics_data and top_topics_data != 'null' %}

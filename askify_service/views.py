@@ -3078,6 +3078,94 @@ def get_gauges_data():
     }
 
 
+def get_time_to_payment_data():
+    """Собирает данные для гистограммы 'Время до первой покупки'."""
+    first_payments = Payment.objects.filter(
+        status='completed'
+    ).order_by('staff_id', 'created_at').distinct('staff_id')
+
+    user_registration_dates = {
+        str(user['id_staff']): user['date_joined']
+        for user in AuthUser.objects.filter(
+            id_staff__in=first_payments.values('staff_id')
+        ).values('id_staff', 'date_joined')
+    }
+
+    if not user_registration_dates:
+        return None
+
+    time_deltas = []
+    for payment in first_payments:
+        reg_date = user_registration_dates.get(str(payment.staff_id))
+        if reg_date:
+            delta = (payment.created_at - reg_date).days
+            time_deltas.append(delta)
+
+    bins = {
+        "0-1 день": 0, "2-7 дней": 0, "8-14 дней": 0,
+        "15-30 дней": 0, "31+ дней": 0
+    }
+    for delta in time_deltas:
+        if delta <= 1:
+            bins["0-1 день"] += 1
+        elif 2 <= delta <= 7:
+            bins["2-7 дней"] += 1
+        elif 8 <= delta <= 14:
+            bins["8-14 дней"] += 1
+        elif 15 <= delta <= 30:
+            bins["15-30 дней"] += 1
+        else:
+            bins["31+ дней"] += 1
+
+    return {
+        'labels': list(bins.keys()),
+        'data': list(bins.values())
+    }
+
+
+def get_user_value_matrix_data():
+    """Собирает данные для 'Матрицы Ценности Пользователей'."""
+    real_users_qs = AuthUser.objects.annotate(username_len=Length('username')).filter(username_len__lt=20)
+
+    user_influence = defaultdict(int)
+    attempts_on_surveys = TestAttempt.objects.values(
+        'survey__id_staff'
+    ).annotate(
+        total_attempts=Count('id')
+    ).values('survey__id_staff', 'total_attempts')
+
+    for item in attempts_on_surveys:
+        user_influence[str(item['survey__id_staff'])] = item['total_attempts']
+
+    user_revenue = defaultdict(float)
+    payments_by_user = Payment.objects.filter(status='completed').values(
+        'staff_id'
+    ).annotate(
+        total_revenue=Sum('amount')
+    ).values('staff_id', 'total_revenue')
+
+    for item in payments_by_user:
+        user_revenue[str(item['staff_id'])] = float(item['total_revenue'] / 100)
+
+    matrix_data = []
+    for user in real_users_qs:
+        user_id_str = str(user.id_staff)
+        influence = user_influence.get(user_id_str, 0)
+        revenue = user_revenue.get(user_id_str, 0)
+
+        if influence > 0 or revenue > 0:
+            matrix_data.append({
+                'x': influence,
+                'y': revenue,
+                'r': 5,
+                'label': user.username
+            })
+
+    matrix_data.sort(key=lambda p: p['x'] + p['y'] * 10, reverse=True)
+
+    return matrix_data[:100]
+
+
 @login_required
 def admin_stats(request):
     if not request.user.is_superuser:
@@ -3213,9 +3301,14 @@ def admin_stats(request):
     gauges_data = get_gauges_data()
     total_api_usage_data = json.dumps(get_total_api_usage_chart_data(start_date, end_date))
 
+    time_to_payment_data = json.dumps(get_time_to_payment_data())
+    user_value_matrix_data = json.dumps(get_user_value_matrix_data())
+
     context = {
         "cockpit": cockpit_metrics,
         "gauges": gauges_data,
+        "time_to_payment_data": time_to_payment_data,
+        "user_value_matrix_data": user_value_matrix_data,
         "main_gauge": main_gauge_data,
         "daily_attempts_data": daily_attempts_data,
         "test_performance_data": test_performance_data,

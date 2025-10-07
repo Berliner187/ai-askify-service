@@ -310,7 +310,7 @@
 
     <main class="max-w-6xl mx-auto p-4 sm:px-8 space-y-24 sm:space-y-32">
         <section id="hero" class="text-center pt-20">
-            <h1 class="text-4xl md:text-6xl font-black leading-tight tracking-tighter text-[#E2D2E2]">
+            <h1 class="text-4xl md:text-6xl font-black leading-tight tracking-tighter text-[#F0E5F0]">
                 <span class="gradient-text">Создайте тест по&nbsp;тексту</span><br> онлайн с&nbsp;результатами
             </h1>
             <p class="mt-6 text-lg max-w-3xl mx-auto text-[var(--color-text-secondary)]">
@@ -318,6 +318,9 @@
             </p>
             <a href="#create-now" class="mt-8 inline-block bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] px-10 py-4 text-base font-bold rounded-full transition hover:opacity-90 shadow-lg shadow-[var(--color-accent-primary)]/20">
                 Создать тест бесплатно
+            </a>
+            <a href="#professional-manifesto" class="mt-4 block text-sm text-[var(--color-text-secondary)] hover:text-white transition-colors">
+                Для профессионального использования <span class="opacity-70">&rarr;</span>
             </a>
         </section>
 
@@ -348,14 +351,31 @@
                 </div>
 
                 <div class="mt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <!-- Левая часть: слайдер -->
                     <div class="flex items-center gap-3">
                         <label for="question-slider" class="font-semibold text-white">Вопросов:</label>
                         <input type="range" id="question-slider" min="1" max="5" value="3" class="w-32">
                         <span id="question-count-display" class="font-bold text-lg highlight">3</span>
                     </div>
+
+                    <!-- Центральная часть: новая ссылка (видна на больших экранах) -->
+                    <div class="hidden sm:block">
+                        <a href="#analytics-showcase" class="text-sm text-[var(--color-text-secondary)] hover:text-white transition-colors group">
+                            Увидеть <span class="group-hover:gradient-text font-semibold">аналитику</span> в действии <span class="opacity-70 group-hover:opacity-100">&rarr;</span>
+                        </a>
+                    </div>
+                    
+                    <!-- Правая часть: кнопка -->
                     <button id="generate-btn" data-loading-text="Генерация..." class="w-full sm:w-auto bg-[var(--color-accent-secondary)] text-black px-8 py-3 font-bold rounded-full transition-transform hover:scale-105 disabled:opacity-50">
                         Сгенерировать тест
                     </button>
+
+                    <!-- Центральная часть: новая ссылка (видна на маленьких экранах) -->
+                    <div class="sm:hidden mt-2">
+                        <a href="#analytics-showcase" class="text-sm text-[var(--color-text-secondary)] hover:text-white transition-colors group">
+                            Что происходит <span class="group-hover:gradient-text font-semibold">после</span> прохождения? <span class="opacity-70 group-hover:opacity-100">&rarr;</span>
+                        </a>
+                    </div>
                 </div>
                 
                 <div id="result-container" class="mt-8 pt-6 border-t border-dashed border-[var(--color-border)]" style="display: none;">
@@ -370,13 +390,14 @@
                         Получить 10 тестов бесплатно
                     </a>
                 </div>
+
             </div>
         </section>
 
         <!-- ====================================================== -->
         <!--         THE "FULL CYCLE" SUPER-FEATURE MANIFESTO       -->
         <!-- ====================================================== -->
-        <section id="full-cycle" class="py-16 sm:py-24">
+        <section id="professional-manifesto" class="py-16 sm:py-24">
             <div class="max-w-5xl mx-auto px-4 sm:px-8 text-center">
                 
                 <h2 class="text-3xl sm:text-4xl font-extrabold text-white">
@@ -393,7 +414,7 @@
                             <i class="fas fa-magic text-3xl text-[var(--color-accent-primary)]"></i>
                         </div>
                         <h3 class="mt-5 font-bold text-white text-xl">Создайте</h3>
-                        <p class="mt-2 text-sm text-gray-400">Загрузите свой PDF/Word или просто вставьте текст. Наш AI сделает всю грязную работу за 30 секунд.</p>
+                        <p class="mt-2 text-sm text-gray-400">Загрузите свои материалы в PDF/Word напрямую или просто вставьте текст из методички. Летучка сделает работу за Вас.</p>
                     </div>
                     
                     <div class="bg-[var(--color-surface)] p-8 rounded-3xl border border-[var(--color-border)]">
@@ -401,7 +422,7 @@
                             <i class="fas fa-share-alt text-3xl text-[var(--color-accent-primary)]"></i>
                         </div>
                         <h3 class="mt-5 font-bold text-white text-xl">Поделитесь</h3>
-                        <p class="mt-2 text-sm text-gray-400">Отправьте студентам одну простую ссылку. Никаких регистраций для них. Только тест.</p>
+                        <p class="mt-2 text-sm text-gray-400">Отправьте ученикам одну простую ссылку. Никаких регистраций для них. Только тест.</p>
                     </div>
 
                     <div class="bg-[var(--color-surface)] p-8 rounded-3xl border border-[var(--color-border)]">
@@ -409,66 +430,24 @@
                             <i class="fas fa-chart-pie text-3xl text-[var(--color-accent-primary)]"></i>
                         </div>
                         <h3 class="mt-5 font-bold text-white text-xl">Анализируйте</h3>
-                        <p class="mt-2 text-sm text-gray-400">Смотрите, кто, как и когда прошел Ваш тест. Получайте средний балл и находите самые сложные вопросы.</p>
+                        <p class="mt-2 text-sm text-gray-400">Получайте готовые, наглядные отчеты по успеваемости в реальном времени и принимайте решения на основе данных.</p>
                     </div>
 
                 </div>
 
-                <div class="mt-12">
-                    <a href="/register" class="inline-block bg-[var(--color-accent-secondary)] text-black px-10 py-4 text-base font-bold rounded-full transition-transform hover:opacity-90 active:opacity-80 transition-transform active:scale-[.97] shadow-lg shadow-[var(--color-accent-secondary)]/20">
-                        Попробовать полный цикл бесплатно
+                <div class="mt-16 text-center">
+                    <a href="/register" class="inline-block bg-[var(--color-accent-secondary)] text-black px-12 py-4 text-lg font-bold rounded-full 
+                                            transition-transform hover:scale-105 active:scale-100
+                                            shadow-lg shadow-[var(--color-accent-secondary)]/30">
+                        Открыть профессиональный доступ
+                    </a>
+                    <p class="mt-4 text-sm text-[var(--color-text-secondary)]">
+                        Начните бесплатно, чтобы оценить все возможности.
+                    </p>
+                    <a href="#analytics-showcase" class="mt-4 block text-sm text-[var(--color-text-secondary)] hover:text-white transition-colors">
+                        Что входит в аналитику? <span class="opacity-70">&rarr;</span>
                     </a>
                 </div>
-            </div>
-        </section>
-
-        <!-- ====================================================== -->
-        <!--         THE "FROM CREATION TO INSIGHT" BLOCK           -->
-        <!-- ====================================================== -->
-        <section id="analytics-reveal" class="py-16 sm:py-24">
-            <div class="max-w-5xl mx-auto px-4 sm:px-8">
-                <div class="text-center">
-                    <h2 class="text-3xl sm:text-4xl font-extrabold text-white">
-                        Перестаньте гадать. <br> Начните <span class="gradient-text">видеть.</span>
-                    </h2>
-                    <p class="mt-4 text-lg text-[var(--color-text-secondary)] max-w-3xl mx-auto">
-                        Создать тест&nbsp;&mdash; это лишь половина дела. Летучка дает Вам инструменты, чтобы по-настоящему понять, что знают Ваши респонденты.
-                    </p>
-                </div>
-
-                <div class="mt-16 relative">
-                    <div class="absolute -inset-8 bg-gradient-to-r from-[var(--color-accent-primary)] to-[var(--color-accent-secondary)] opacity-10 blur-3xl"></div>
-                    <img src="{% static 'blog_img/analys1.png' %}" 
-                        alt="Дашборд аналитики тестов в Летучке" 
-                        class="relative w-full rounded-3xl border-2 border-[var(--color-border)] shadow-2xl shadow-black/50">
-                </div>
-
-                <div class="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8 text-left">
-                    <div class="flex items-start gap-4">
-                        <i class="fas fa-eye text-2xl text-[var(--color-accent-primary)] mt-1"></i>
-                        <div>
-                            <h3 class="font-bold text-white">Визуальный контроль</h3>
-                            <p class="mt-1 text-sm text-gray-400">Вся статистика по&nbsp;прохождениям собрана на&nbsp;одном экране. Наглядно, просто и&nbsp;в&nbsp;реальном времени.</p>
-                        </div>
-                    </div>
-                    <div class="flex items-start gap-4">
-                        <i class="fas fa-bullseye text-2xl text-[var(--color-accent-primary)] mt-1"></i>
-                        <div>
-                            <h3 class="font-bold text-white">Общая картина успеваемости</h3>
-                            <p class="mt-1 text-sm text-gray-400">Мгновенно оцените, какой процент аудитории справляется на&nbsp;&laquo;отлично&raquo;, а&nbsp;кому требуется дополнительное внимание.</p>
-                        </div>
-                    </div>
-                    <div class="flex items-start gap-4">
-                        <i class="fas fa-tachometer-alt text-2xl text-[var(--color-accent-primary)] mt-1"></i>
-                        <div>
-                            <h3 class="font-bold text-white">Все данные на&nbsp;одном экране</h3>
-                            <p class="mt-1 text-sm text-gray-400">Получите полный обзор вашей активности и&nbsp;вовлеченности аудитории. Вся статистика в&nbsp;реальном времени, без ручного сведения таблиц.</p>
-                        </div>
-                    </div>
-                </div>
-                <button data-trigger-modal="register" class="mt-8 block w-full text-center bg-[var(--color-accent-primary)] text-white font-bold text-m py-4 rounded-full transition hover:opacity-90 active:opacity-70 transition-transform active:scale-[.97] shadow-lg shadow-[var(--color-accent-primary)]/30">
-                    Открыть полный доступ к аналитике
-                </button>
             </div>
         </section>
 
@@ -532,6 +511,83 @@
                         </div>
                     </div>
                 </div>
+            </div>
+        </section>
+
+        <!-- ====================================================== -->
+        <!--         THE ANALYTICS DEEP DIVE V2 (YOUR SCREENSHOTS)  -->
+        <!-- ====================================================== -->
+        <section id="analytics-showcase" class="py-16 sm:py-24">
+            <div class="max-w-5xl mx-auto px-4 sm:px-8">
+                
+                <!-- Заголовок секции -->
+                <div class="text-center mb-24">
+                    <h2 class="text-3xl sm:text-4xl font-extrabold text-white">
+                        От хаоса в данных — <br>к <span class="gradient-text">ясным решениям.</span>
+                    </h2>
+                    <p class="mt-4 text-lg text-[var(--color-text-secondary)] max-w-3xl mx-auto">
+                        Это Ваш новый центр управления, который показывает, что работает, а что требует вашего внимания.
+                    </p>
+                </div>
+
+                <div class="space-y-24">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                        <div>
+                            <img src="{% static 'blog_img/analys4.png' %}" 
+                                alt="Графики активности по часам и популярных тестов" 
+                                class="w-full rounded-3xl border-2 border-[var(--color-border)] shadow-2xl shadow-black/50">
+                        </div>
+                        <div class="text-center lg:text-left">
+                            <span class="inline-block px-3 py-1 text-xs font-semibold gradient-text bg-white/5 rounded-full mb-3">01. Пульс вашей аудитории</span>
+                            <h3 class="text-2xl sm:text-3xl font-bold text-[#F0E5F0]">Поймите, когда и что интересно</h3>
+                            <p class="mt-4 text-[var(--color-text-secondary)]">
+                                Определяйте пики активности в течение дня, чтобы понять, когда Ваши тесты наиболее востребованы. Мгновенно выявляйте — самые популярные тесты, которые вызывают наибольший отклик.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                        <div class="text-center lg:text-left lg:order-first">
+                            <span class="inline-block px-3 py-1 text-xs font-semibold gradient-text bg-white/5 rounded-full mb-3">02. Картина успеваемости</span>
+                            <h3 class="text-2xl sm:text-3xl font-bold text-[#F0E5F0]">Оценивайте знания, а не догадки</h3>
+                            <p class="mt-4 text-[var(--color-text-secondary)]">
+                                Отслеживайте динамику прохождений по дням и получайте четкое распределение результатов. Сразу видите, какой процент аудитории справляется на «отлично», а кому требуется дополнительное внимание.
+                            </p>
+                        </div>
+                        <div class="lg:order-last">
+                            <img src="{% static 'blog_img/analys3.png' %}" 
+                                alt="Графики прохождений тестов и распределения результатов" 
+                                class="w-full rounded-3xl border-2 border-[var(--color-border)] shadow-2xl shadow-black/50">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                        <div>
+                            <img src="{% static 'blog_img/analys2.png' %}" 
+                                alt="Графики созданных и просмотренных тестов" 
+                                class="w-full rounded-3xl border-2 border-[var(--color-border)] shadow-2xl shadow-black/50">
+                        </div>
+                        <div class="text-center lg:text-left">
+                            <span class="inline-block px-3 py-1 text-xs font-semibold gradient-text bg-white/5 rounded-full mb-3">03. Вовлеченность в динамике</span>
+                            <h3 class="text-2xl sm:text-3xl font-bold text-[#F0E5F0]">Свяжите создание контента с его популярностью</h3>
+                            <p class="mt-4 text-[var(--color-text-secondary)]">
+                                Сравнивайте, как создание новых тестов влияет на их просмотры. Отслеживайте, какой контент "взлетает", а какой остается незамеченным, и корректируйте свою стратегию на лету.
+                            </p>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="mt-24 text-center max-w-xl mx-auto">
+                    <h3 class="text-3xl font-extrabold text-white">Это – Ваш новый центр управления.</h3>
+                    <p class="mt-2 text-gray-400">Перестаньте гадать. Начните видеть полную картину и принимайте решения, основанные на реальных данных.</p>
+                    <div class="mt-8">
+                        <button data-trigger-modal="register" class="block w-full text-center bg-[var(--color-accent-primary)] text-white font-bold text-lg py-4 rounded-full transition hover:opacity-90 active:opacity-70 transition-transform active:scale-[.97] shadow-lg shadow-[var(--color-accent-primary)]/30">
+                            Открыть полный доступ к аналитике
+                        </button>
+                    </div>
+                </div>
+
             </div>
         </section>
 
