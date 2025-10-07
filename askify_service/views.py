@@ -4,7 +4,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, authenticate
 from django.contrib.auth import logout
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from asgiref.sync import sync_to_async
 from django.utils.decorators import method_decorator
 from django.core import signing
@@ -30,7 +30,14 @@ from django.views.decorators.csrf import csrf_exempt
 from django.db.models.functions import NthValue
 from django.utils.safestring import mark_safe
 from django.db import connection
-from django.db.models import Sum, Count, Q, F
+from django.db.models import Count, Sum, Q, F, Avg, Max
+from django.db.models.functions import TruncDate, Length
+from django.http import JsonResponse
+from django.shortcuts import render, redirect, get_object_or_404
+from django.utils import timezone
+from django.views.decorators.http import require_POST
+from django.db.models.functions import TruncMonth
+from collections import defaultdict, Counter
 
 
 from io import BytesIO
@@ -685,9 +692,9 @@ def create_api_key_usage(api_key_id, staff_id, purpose):
 
 
 # @method_decorator(login_required, name='dispatch')
+# @method_decorator(subscription_required, name='dispatch')
 @method_decorator(csrf_exempt, name='dispatch')
 @method_decorator(check_blocked, name='dispatch')
-# @method_decorator(subscription_required, name='dispatch')
 class ManageSurveysView(View):
     async def post(self, request):
         if request.method == 'POST':
@@ -983,7 +990,6 @@ def get_all_surveys(request, page=1, per_page=5):
     except (EmptyPage, PageNotAnInteger):
         surveys_page = paginator.page(1)
 
-    # Предзагружаем все токены, чтобы не лупить запросы по одному
     tokens_entries = TokensUsed.objects.filter(id_staff=staff_id)
 
     results = {}
@@ -2466,248 +2472,788 @@ def get_subscription_level(request) -> int:
     return subscription_check.get_subscription_level(subscription_db.plan_name)
 
 
+def get_daily_api_usage_by_key(start_date, end_date):
+    """
+    Собирает и форматирует данные по ежедневному использованию API в разбивке по ключам.
+    ОТОБРАЖАЕТ ТОЛЬКО КЛЮЧИ С НАЗНАЧЕНИЕМ 'SURVEY'.
+    """
+    usage_data = (
+        APIKeyUsage.objects.filter(
+            timestamp__date__range=(start_date, end_date),
+            api_key__purpose='SURVEY'
+        )
+        .annotate(day=TruncDate("timestamp"))
+        .values("day", "api_key__name")
+        .annotate(count=Count("id"))
+        .order_by("day", "api_key__name")
+    )
+
+    if not usage_data:
+        return None
+
+    date_range = [start_date + timedelta(days=x) for x in range((end_date-start_date).days + 1)]
+    key_names = sorted(list(set(item["api_key__name"] for item in usage_data)))
+    data_map = {(item["day"], item["api_key__name"]): item["count"] for item in usage_data}
+
+    PALETTE = [
+        'rgba(59, 130, 246, 0.7)',   # blue-500
+        'rgba(16, 185, 129, 0.7)',   # emerald-500
+        'rgba(234, 179, 8, 0.7)',    # yellow-500
+        'rgba(139, 92, 246, 0.7)',   # violet-500
+        'rgba(244, 63, 94, 0.7)',    # rose-500
+        'rgba(249, 115, 22, 0.7)',   # orange-500
+        'rgba(20, 184, 166, 0.7)',   # teal-500
+        'rgba(217, 70, 239, 0.7)',   # fuchsia-500
+        'rgba(132, 204, 22, 0.7)',   # lime-500
+        'rgba(99, 102, 241, 0.7)'    # indigo-500
+    ]
+
+    datasets = []
+    for i, key_name in enumerate(key_names):
+        dataset = {
+            "label": key_name,
+            "data": [data_map.get((day, key_name), 0) for day in date_range],
+            "backgroundColor": PALETTE[i % len(PALETTE)],
+        }
+        datasets.append(dataset)
+
+    return {
+        "labels": [day.strftime("%d.%m") for day in date_range],
+        "datasets": datasets,
+    }
+
+
+def get_total_api_usage_chart_data(start_date, end_date):
+    """Собирает данные по ОБЩЕМУ количеству вызовов API за каждый день."""
+
+    daily_counts = (
+        APIKeyUsage.objects.filter(timestamp__date__range=(start_date, end_date))
+        .annotate(day=TruncDate('timestamp'))
+        .values('day')
+        .annotate(count=Count('id'))
+        .order_by('day')
+    )
+
+    data_map = {item['day']: item['count'] for item in daily_counts}
+    labels, data_points = [], []
+
+    current_date = start_date
+    while current_date <= end_date:
+        labels.append(current_date.strftime("%d.%m"))
+        data_points.append(data_map.get(current_date, 0))
+        current_date += timedelta(days=1)
+
+    return {
+        'labels': labels,
+        'data': data_points
+    }
+
+
+@require_POST
+@user_passes_test(lambda u: u.is_superuser)
+def block_ip_api(request):
+    try:
+        ip_to_block = request.POST.get("ip_address")
+        if not ip_to_block:
+            return JsonResponse({"status": False, "message": "IP адрес не указан"}, status=400)
+
+        if BlockedUsers.objects.filter(ip_address=ip_to_block).exists():
+            return JsonResponse({"status": True, "message": f"IP {ip_to_block} уже заблокирован"})
+
+        BlockedUsers.objects.create(ip_address=ip_to_block)
+        return JsonResponse({"status": True, "message": f"IP {ip_to_block} успешно заблокирован"})
+    except Exception as e:
+        return JsonResponse({"status": False, "message": str(e)}, status=500)
+
+
+@require_POST
+@user_passes_test(lambda u: u.is_superuser)
+def promote_user_api(request):
+    try:
+        username_to_promote = request.POST.get("username")
+        if not username_to_promote:
+            return JsonResponse({"status": False, "message": "Имя пользователя не указано"}, status=400)
+
+        user_to_promote = get_object_or_404(AuthUser, username=username_to_promote)
+
+        if user_to_promote.is_superuser:
+            return JsonResponse(
+                {"status": True, "message": f"Пользователь {username_to_promote} уже является администратором"})
+
+        user_to_promote.is_superuser = True
+        user_to_promote.save()
+        return JsonResponse(
+            {"status": True, "message": f"Пользователю {username_to_promote} выданы права администратора"})
+    except AuthUser.DoesNotExist:
+        return JsonResponse({"status": False, "message": "Пользователь не найден"}, status=404)
+    except Exception as e:
+        return JsonResponse({"status": False, "message": str(e)}, status=500)
+
+
+@require_POST
+@user_passes_test(lambda u: u.is_superuser)
+def add_api_key_api(request):
+    try:
+        APIKey.objects.create(
+            name=request.POST.get("new_api_key_name"),
+            key=request.POST.get("new_api_key_value"),
+            provider=request.POST.get("new_api_key_provider"),
+            purpose=request.POST.get("new_api_key_purpose"),
+            expires_at=request.POST.get("new_api_key_expires") or None,
+        )
+        return redirect("stats2975")
+    except Exception as e:
+        return redirect("stats2975")
+
+
+def get_api_performance_data(start_date, end_date):
+    """
+    Собирает данные по среднему времени ответа API по дням.
+    """
+    performance_data = (
+        APIKeyUsage.objects.filter(
+            timestamp__date__range=(start_date, end_date),
+            response_time_ms__isnull=False
+        )
+        .annotate(day=TruncDate("timestamp"))
+        .values("day")
+        .annotate(avg_response=Avg('response_time_ms'))
+        .order_by("day")
+    )
+
+    if not performance_data:
+        return None
+
+    data_map = {item['day']: item['avg_response'] for item in performance_data}
+
+    labels, avg_responses = [], []
+    current_date = start_date
+    while current_date <= end_date:
+        labels.append(current_date.strftime("%d.%m"))
+        avg_responses.append(data_map.get(current_date, 0))
+        current_date += timedelta(days=1)
+
+    return {
+        'labels': labels,
+        'datasets': [{
+            'label': 'Среднее время ответа (ms)',
+            'data': avg_responses,
+        }]
+    }
+
+
+@require_POST
+@user_passes_test(lambda u: u.is_superuser)
+def activate_api_key_api(request):
+    key_id_to_activate = request.POST.get("activate_api_key_id")
+    key_purpose = request.POST.get("key_purpose")
+
+    if not key_id_to_activate or not key_purpose:
+        return JsonResponse({"status": False, "message": "Недостаточно данных"}, status=400)
+
+    try:
+        APIKey.objects.filter(purpose=key_purpose).update(is_active=False)
+        key_to_activate = get_object_or_404(APIKey, id=key_id_to_activate, purpose=key_purpose)
+        key_to_activate.is_active = True
+        key_to_activate.save()
+        return JsonResponse({"status": True, "message": f"Ключ для {key_purpose} активирован"})
+    except APIKey.DoesNotExist:
+        return JsonResponse({"status": False, "message": "Ключ не найден"}, status=404)
+    except Exception as e:
+        return JsonResponse({"status": False, "message": f"Ошибка: {str(e)}"}, status=500)
+
+
+def get_retention_data():
+    """
+    Собирает данные для когортного анализа удержания пользователей.
+    Анализирует когорты за последние 6 месяцев.
+    Активностью считается любой вход в систему (last_login).
+    """
+    today = timezone.now().date()
+    six_months_ago = (today - timedelta(days=180)).replace(day=1)
+
+    users = AuthUser.objects.annotate(
+        username_len=Length('username')
+    ).filter(
+        date_joined__gte=six_months_ago,
+        username_len__lt=20
+    ).annotate(
+        cohort=TruncMonth('date_joined')
+    ).values('id', 'cohort', 'last_login')
+
+    if not users: return None
+
+    cohort_sizes = (users.values('cohort').annotate(total=Count('id', distinct=True)).order_by('cohort'))
+    cohort_size_map = {c['cohort'].date(): c['total'] for c in cohort_sizes}
+    retention_matrix = defaultdict(lambda: defaultdict(int))
+    for user in users:
+        if user['last_login']:
+            month_diff = (user['last_login'].year - user['cohort'].year) * 12 + (
+                        user['last_login'].month - user['cohort'].month)
+            retention_matrix[user['cohort'].date()][month_diff] += 1
+
+    cohorts_data, max_month_diff = [], 0
+    for cohort_date in sorted(cohort_size_map.keys(), reverse=True):
+        size, retention_row = cohort_size_map[cohort_date], []
+        for month in range(12):
+            active_users = retention_matrix[cohort_date].get(month, 0)
+            if active_users > 0:
+                max_month_diff = max(max_month_diff, month)
+                percentage = round((active_users / size) * 100)
+                retention_row.append({'percentage': percentage, 'users': active_users})
+            else:
+                retention_row.append({'percentage': None, 'users': 0})
+        cohorts_data.append({'cohort_name': cohort_date.strftime("%B %Y"), 'size': size, 'values': retention_row})
+
+    return {'headers': [f'Месяц {i}' for i in range(max_month_diff + 1)], 'cohorts': cohorts_data}
+
+
+def get_user_activity_distribution():
+    """
+    Считает распределение пользователей по количеству созданных тестов.
+    """
+    real_users_ids = AuthUser.objects.annotate(
+        username_len=Length('username')
+    ).filter(username_len__lt=20).values_list('id_staff', flat=True)
+
+    user_test_counts = list(
+        Survey.objects.filter(id_staff__in=real_users_ids)
+        .values('id_staff').annotate(test_count=Count('id'))
+        .values_list('test_count', flat=True)
+    )
+    if not user_test_counts: return None
+
+    bins = {"1 тест": 0, "2-3 теста": 0, "4-5 тестов": 0, "6-10 тестов": 0, "11+ тестов": 0}
+    for count in user_test_counts:
+        if count == 1:
+            bins["1 тест"] += 1
+        elif 2 <= count <= 3:
+            bins["2-3 теста"] += 1
+        elif 4 <= count <= 5:
+            bins["4-5 тестов"] += 1
+        elif 6 <= count <= 10:
+            bins["6-10 тестов"] += 1
+        elif count > 10:
+            bins["11+ тестов"] += 1
+
+    return {'labels': list(bins.keys()), 'data': list(bins.values())}
+
+
+def get_usage_by_subscription():
+    """
+    Считает среднее количество созданных тестов на пользователя по каждому тарифу.
+    """
+    active_subscriptions = Subscription.objects.filter(status='active').values('plan_name', 'staff_id')
+
+    if not active_subscriptions:
+        return None
+
+    usage_by_plan = defaultdict(lambda: {'user_count': 0, 'test_count': 0})
+
+    for sub in active_subscriptions:
+        usage_by_plan[sub['plan_name']]['user_count'] += 1
+
+    user_test_counts = Survey.objects.values('id_staff').annotate(count=Count('id'))
+    user_count_map = {str(item['id_staff']): item['count'] for item in user_test_counts}
+
+    for sub in active_subscriptions:
+        usage_by_plan[sub['plan_name']]['test_count'] += user_count_map.get(str(sub['staff_id']), 0)
+
+    result = defaultdict(float)
+    for plan, data in usage_by_plan.items():
+        if data['user_count'] > 0:
+            result[plan] = round(data['test_count'] / data['user_count'], 1)
+
+    sorted_result = dict(sorted(result.items(), key=lambda item: item[1], reverse=True))
+
+    return {
+        'labels': list(sorted_result.keys()),
+        'data': list(sorted_result.values())
+    }
+
+
+def get_top_test_topics():
+    """
+    Анализирует заголовки тестов для определения популярных тем.
+    """
+    real_users_ids = AuthUser.objects.annotate(
+        username_len=Length('username')
+    ).filter(username_len__lt=20).values_list('id_staff', flat=True)
+
+    titles = Survey.objects.filter(id_staff__in=real_users_ids).values_list('title', flat=True).order_by('-created_at')[
+             :1000]
+    if not titles: return None
+    stop_words = set(
+        "и в во не что он на я с со как а то все она так его но да ты к у же вы за бы по только еще или от о из".split())
+    words = []
+    for title in titles:
+        cleaned_title = re.sub(r'[^\w\s]', '', title.lower())
+        for word in cleaned_title.split():
+            if word not in stop_words and len(word) > 3:
+                words.append(word)
+    top_words = Counter(words).most_common(10)
+    if not top_words: return None
+    return {'labels': [word for word, count in top_words], 'data': [count for word, count in top_words]}
+
+
+def get_user_journey_funnel_data(period_days):
+    """
+    Собирает данные для воронки: Регистрация -> Создание теста -> Получение попытки.
+    """
+    start_date = timezone.now() - timedelta(days=period_days)
+
+    registered_users_qs = AuthUser.objects.annotate(
+        username_len=Length('username')
+    ).filter(
+        date_joined__gte=start_date,
+        username_len__lt=20
+    )
+    registered_count = registered_users_qs.count()
+    if registered_count == 0:
+        return None
+
+    creators_count = registered_users_qs.filter(
+        id_staff__in=Survey.objects.values('id_staff')
+    ).distinct().count()
+
+    surveys_from_cohort = Survey.objects.filter(
+        id_staff__in=registered_users_qs.values('id_staff')
+    )
+    successful_creators_count = TestAttempt.objects.filter(
+        survey__in=surveys_from_cohort
+    ).values('survey__id_staff').distinct().count()
+
+    creator_percent = round(creators_count / registered_count * 100) if registered_count > 0 else 0
+    successful_creator_percent = round(
+        successful_creators_count / registered_count * 100) if registered_count > 0 else 0
+
+    return {
+        'labels': [
+            f'Реальные регистрации ({registered_count})',
+            f'Создали тест ({creators_count})',
+            f'Тест прошли ({successful_creators_count})'  # Более понятное название
+        ],
+        'data': [100, creator_percent, successful_creator_percent],
+        'raw_counts': [registered_count, creators_count, successful_creators_count]
+    }
+
+
+def get_daily_attempts_chart_data():
+    """Собирает данные по количеству прохождений тестов за последние 7 дней."""
+    today = timezone.now().date()
+    seven_days_ago = today - timedelta(days=6)
+
+    daily_counts = (
+        TestAttempt.objects.filter(created_at__date__gte=seven_days_ago)
+        .annotate(day=TruncDate('created_at'))
+        .values('day')
+        .annotate(count=Count('id'))
+        .order_by('day')
+    )
+
+    data_map = {item['day']: item['count'] for item in daily_counts}
+    labels, data_points = [], []
+    for i in range(7):
+        current_date = seven_days_ago + timedelta(days=i)
+        labels.append(current_date.strftime("%d.%m"))
+        data_points.append(data_map.get(current_date, 0))
+
+    return {
+        'labels': labels,
+        'data': data_points
+    }
+
+
+def get_test_performance_scatter_data():
+    """Собирает данные для scatter-графика эффективности тестов (топ-20)."""
+    seven_days_ago = timezone.now() - timedelta(days=6)
+
+    performance_data = (
+        TestAttempt.objects.filter(created_at__date__gte=seven_days_ago)
+        .values('survey__title')
+        .annotate(
+            attempts=Count('id'),
+            avg_score=Avg(F('score') * 100.0 / F('total_questions')),
+            unique_students=Count('student_name', distinct=True)
+        )
+        .order_by('-attempts')[:20]
+    )
+
+    if not performance_data:
+        return None
+
+    chart_data = []
+    for test in performance_data:
+        chart_data.append({
+            'x': round(test['avg_score'], 1) if test['avg_score'] else 0,
+            'y': test['attempts'],
+            'r': test['unique_students'] * 2 + 4,
+            'label': test['survey__title']
+        })
+
+    return chart_data
+
+
+def get_cockpit_metrics():
+    """Собирает все мелкие метрики для дашборда."""
+    global total_revenue, completed_count
+
+    today = timezone.now().date()
+    yesterday = today - timedelta(days=1)
+    start_of_week = today - timedelta(days=today.weekday())
+    start_of_month = today.replace(day=1)
+
+    real_users_qs = AuthUser.objects.annotate(username_len=Length('username')).filter(username_len__lt=20)
+
+    # --- 1 ---
+    dau = real_users_qs.filter(last_login__date=today).count()
+    wau = real_users_qs.filter(last_login__date__gte=start_of_week).count()
+    mau = real_users_qs.filter(last_login__date__gte=start_of_month).count()
+
+    # --- 2 ---
+    tests_created_today = Survey.objects.filter(created_at__date=today).count()
+    tests_created_yesterday = Survey.objects.filter(created_at__date=yesterday).count()
+
+    attempts_today = TestAttempt.objects.filter(created_at__date=today).count()
+    attempts_yesterday = TestAttempt.objects.filter(created_at__date=yesterday).count()
+
+    all_surveys_questions = Survey.objects.values_list('questions', flat=True)
+    question_counts = []
+    for q_json in all_surveys_questions:
+        try:
+            question_list = json.loads(q_json)
+            if isinstance(question_list, list):
+                question_counts.append(len(question_list))
+        except (json.JSONDecodeError, TypeError):
+            continue
+
+    avg_questions_per_survey = round(sum(question_counts) / len(question_counts), 1) if question_counts else 0
+
+    # --- 3 ---
+    revenue_today = Payment.objects.filter(status='completed', created_at__date=today).aggregate(sum=Sum('amount'))[
+                        'sum'] or 0
+    revenue_month = \
+    Payment.objects.filter(status='completed', created_at__date__gte=start_of_month).aggregate(sum=Sum('amount'))[
+        'sum'] or 0
+
+    new_subs_today = Subscription.objects.filter(start_date__date=today).count()
+
+    # --- 4 ---
+    api_calls_today = APIKeyUsage.objects.filter(timestamp__date=today).count()
+    api_calls_yesterday = APIKeyUsage.objects.filter(timestamp__date=yesterday).count()
+
+    active_survey_key = APIKey.objects.filter(purpose='SURVEY', is_active=True).first()
+    active_key_usage = 0
+    if active_survey_key:
+        active_key_usage = APIKeyUsage.objects.filter(api_key=active_survey_key, timestamp__date=today).count()
+
+    active_key_load = round(active_key_usage / 50 * 100) if active_survey_key else 0
+
+    if active_key_load > 90:
+        active_key_load_color = 'bg-red-600'
+    elif active_key_load > 70:
+        active_key_load_color = 'bg-orange-500'
+    elif active_key_load > 40:
+        active_key_load_color = 'bg-yellow-400'
+    else:
+        active_key_load_color = 'bg-green-500'
+
+    return {
+        'total_real_users': real_users_qs.count(),
+        'new_users_today': real_users_qs.filter(date_joined__date=today).count(),
+        'new_users_month': real_users_qs.filter(date_joined__date__gte=start_of_month).count(),
+        'dau': dau,
+        'wau': wau,
+        'mau': mau,
+        'stickiness': round(dau / mau * 100, 1) if mau > 0 else 0,
+        'activation_rate_30d': get_user_journey_funnel_data(30)['data'][1] if get_user_journey_funnel_data(30) else 0,
+        'tests_created_today': tests_created_today,
+        'tests_created_total': Survey.objects.count(),
+        'tests_vs_yesterday': tests_created_today - tests_created_yesterday,
+        'attempts_today': attempts_today,
+        'attempts_total': TestAttempt.objects.count(),
+        'attempts_vs_yesterday': attempts_today - attempts_yesterday,
+        'avg_score_30d': TestAttempt.objects.filter(created_at__gte=today - timedelta(days=30)).aggregate(
+            avg=Avg(F('score') * 100 / F('total_questions')))['avg'] or 0,
+        'avg_questions': avg_questions_per_survey,
+        'revenue_today': revenue_today / 100,
+        'revenue_month': revenue_month / 100,
+        'new_subs_today': new_subs_today,
+        'active_subs_total': Subscription.objects.filter(status='active').count(),
+        'conversion_to_paid_total': round(
+            Subscription.objects.values('staff_id').distinct().count() / real_users_qs.count() * 100,
+            2) if real_users_qs.count() > 0 else 0,
+        'avg_check_total': (total_revenue / completed_count) / 100 if completed_count > 0 else 0,
+        'failed_payments_today': Payment.objects.filter(status='failed', created_at__date=today).count(),
+        'api_calls_today': api_calls_today,
+        'api_calls_vs_yesterday': api_calls_today - api_calls_yesterday,
+        'api_success_rate_today': round(
+            APIKeyUsage.objects.filter(timestamp__date=today, success=True).count() / api_calls_today * 100,
+            1) if api_calls_today > 0 else 100,
+        'avg_response_time_today':
+            APIKeyUsage.objects.filter(timestamp__date=today, response_time_ms__isnull=False).aggregate(
+                avg=Avg('response_time_ms'))['avg'] or 0,
+        'active_key_load': round(active_key_usage / 50 * 100) if active_survey_key else 0,
+        'active_key_name': active_survey_key.name if active_survey_key else "N/A",
+        'active_key_load_color': active_key_load_color,
+    }
+
+
+def get_main_gauge_data():
+    """Собирает данные для главного спидометра."""
+    today = timezone.now().date()
+
+    real_users_qs = AuthUser.objects.annotate(username_len=Length('username')).filter(username_len__lt=20)
+
+    tests_created_today = Survey.objects.filter(created_at__date=today).count()
+    dau = real_users_qs.filter(last_login__date=today).count()
+    revenue_today = (Payment.objects.filter(status='completed', created_at__date=today).aggregate(sum=Sum('amount'))[
+                         'sum'] or 0) / 100
+
+    active_survey_key = APIKey.objects.filter(purpose='SURVEY', is_active=True).first()
+    active_key_usage = 0
+    if active_survey_key:
+        active_key_usage = APIKeyUsage.objects.filter(api_key=active_survey_key, timestamp__date=today).count()
+
+    active_key_load_percent = round(active_key_usage / 50 * 100) if active_survey_key else 0
+
+    total_tests_created = Survey.objects.count()
+
+    status_bar = {
+        'new_users_today': real_users_qs.filter(date_joined__date=today).count(),
+        'new_subs_today': Subscription.objects.filter(start_date__date=today).count(),
+        'api_calls_today': APIKeyUsage.objects.filter(timestamp__date=today).count(),
+        'avg_response_time':
+            APIKeyUsage.objects.filter(timestamp__date=today, response_time_ms__isnull=False).aggregate(
+                avg=Avg('response_time_ms'))['avg'] or 0,
+        'failed_payments_today': Payment.objects.filter(status='failed', created_at__date=today).count()
+    }
+
+    return {
+        'tests_created_today': tests_created_today,
+        'dau': dau,
+        'revenue_today': revenue_today,
+        'active_key_load_percent': active_key_load_percent,
+        'active_key_load_degrees': active_key_load_percent * 3.6,
+        'total_tests_created': total_tests_created,
+        'status_bar': status_bar
+    }
+
+
+def get_gauges_data():
+    """Собирает данные для трех главных полукруглых датчиков."""
+    today = timezone.now().date()
+    start_of_month = today.replace(day=1)
+
+    real_users_qs = AuthUser.objects.annotate(username_len=Length('username')).filter(username_len__lt=20)
+
+    users_this_month = real_users_qs.filter(date_joined__gte=start_of_month)
+    users_this_month_count = users_this_month.count()
+    activated_users_count = users_this_month.filter(id_staff__in=Survey.objects.values('id_staff')).distinct().count()
+    activation_percent = round((activated_users_count / users_this_month_count) * 100,
+                               1) if users_this_month_count > 0 else 0
+
+    MONTHLY_REVENUE_GOAL = 50000
+    revenue_this_month = (Payment.objects.filter(status='completed', created_at__gte=start_of_month).aggregate(
+        sum=Sum('amount'))['sum'] or 0) / 100
+    revenue_goal_percent = round((revenue_this_month / MONTHLY_REVENUE_GOAL) * 100,
+                                 1) if MONTHLY_REVENUE_GOAL > 0 else 0
+
+    tests_created_today = Survey.objects.filter(created_at__date=today).count()
+    DAILY_TESTS_GOAL = 100
+    tests_goal_percent = round((tests_created_today / DAILY_TESTS_GOAL) * 100, 1) if DAILY_TESTS_GOAL > 0 else 0
+
+    ARC_LENGTH = 157
+    activation_dashoffset = ARC_LENGTH * (1 - (min(activation_percent, 100) / 100))
+    tests_dashoffset = ARC_LENGTH * (1 - (min(tests_goal_percent, 100) / 100))
+    revenue_dashoffset = ARC_LENGTH * (1 - (min(revenue_goal_percent, 100) / 100))
+
+    return {
+        'activation_percent': activation_percent,
+        'activation_dashoffset': activation_dashoffset,
+        'revenue_this_month': revenue_this_month,
+        'revenue_goal_percent': revenue_goal_percent,
+        'monthly_goal': MONTHLY_REVENUE_GOAL,
+        'revenue_dashoffset': revenue_dashoffset,
+        'tests_created_today': tests_created_today,
+        'tests_goal_percent': tests_goal_percent,
+        'tests_dashoffset': tests_dashoffset
+    }
+
+
 @login_required
 def admin_stats(request):
-    staff_id = get_staff_id(request)
-    user = get_object_or_404(AuthUser, id_staff=staff_id)
+    if not request.user.is_superuser:
+        return redirect(f"/profile/{request.user.username}")
 
-    if request.method == 'POST':
-        if 'ip_address' in request.POST:
-            try:
-                ip_to_block = request.POST.get('ip_address')
-                if ip_to_block and (ip_to_block not in BlockedUsers.objects.all()):
-                    new_block = BlockedUsers.objects.create(ip_address=ip_to_block)
-                    new_block.save()
-                    return JsonResponse({'status': True, 'message': f"[  BAN  ] --- [ OK ]"})
-            except Exception as fail:
-                return JsonResponse({'status': False, 'message': f"{fail}"})
+    global total_revenue, completed_count
 
-        if 'username' in request.POST:
-            username_to_promote = request.POST.get('username')
-            try:
-                user_to_promote = AuthUser.objects.get(username=username_to_promote)
+    today = timezone.now().date()
+    start_date_str = request.GET.get("start_date")
+    end_date_str = request.GET.get("end_date")
+    start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date() if start_date_str else today - timedelta(days=29)
+    end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date() if end_date_str else today
 
-                if user_to_promote.is_superuser:
-                    return JsonResponse({'status': True, 'message': f"[  SUPERUSER  ] --- [ ALREADY ]"})
+    date_range = (start_date, end_date)
 
-                user_to_promote.is_superuser = True
-                user_to_promote.save()
-                return JsonResponse({'status': True, 'message': f"[  SUPERUSER  ] --- [ OK ]"})
-            except Exception as fail:
-                return JsonResponse({'status': False, 'message': f"{fail}"})
+    real_users_qs = AuthUser.objects.annotate(username_len=Length('username')).filter(username_len__lt=20)
 
-        if 'new_api_key_value' in request.POST:
-            APIKey.objects.create(
-                name=request.POST.get('new_api_key_name'),
-                key=request.POST.get('new_api_key_value'),
-                provider=request.POST.get('new_api_key_provider'),
-                purpose=request.POST.get('new_api_key_purpose'),
-                expires_at=request.POST.get('new_api_key_expires') or None
-            )
-            return redirect('stats2975')
+    # --- Сбор данных для карточек (за период) ---
+    users_in_period = real_users_qs.filter(date_joined__date__range=date_range).count()
+    surveys_in_period = Survey.objects.filter(updated_at__date__range=date_range,
+                                              id_staff__in=real_users_qs.values('id_staff')).count()
+    answers_in_period = UserAnswers.objects.filter(created_at__date__range=date_range).count()
+    subscriptions_in_period = Subscription.objects.filter(start_date__date__range=date_range,
+                                                          staff_id__in=real_users_qs.values('id_staff')).count()
 
-        if 'activate_api_key_id' in request.POST:
-            key_id_to_activate = request.POST.get('activate_api_key_id')
-            key_purpose = request.POST.get('key_purpose')
+    # --- Сбор финансовых метрик (за все время) ---
+    completed_payments = Payment.objects.filter(status="completed")
+    total_revenue = completed_payments.aggregate(total=Sum("amount"))["total"] or 0
+    completed_count = completed_payments.count()
+    average_check = (total_revenue / completed_count) if completed_count > 0 else 0
+    total_attempts = Payment.objects.count()
+    payment_conversion = (completed_count / total_attempts * 100) if total_attempts > 0 else 0
+    failed_count = Payment.objects.filter(status="failed").count()
 
-            if not key_id_to_activate or not key_purpose:
-                return JsonResponse({'status': False, 'message': 'Недостаточно данных'}, status=400)
+    # --- Сбор метрик по пользователям (общие) ---
+    total_users_count = AuthUser.objects.count()
+    telegram_users_count = AuthUser.objects.filter(Q(hash_user_id__isnull=True) | Q(hash_user_id__exact=""),
+                                                   email__exact="").count()
+    email_users_count = AuthUser.objects.exclude(email__exact="").count()
 
-            try:
-                APIKey.objects.filter(purpose=key_purpose).update(is_active=False)
-                APIKey.objects.filter(id=key_id_to_activate, purpose=key_purpose).update(is_active=True)
-                return JsonResponse({'status': True, 'message': f'Ключ для {key_purpose} активирован'})
+    thirty_days_ago = timezone.now() - timedelta(days=30)
+    mau_monthly_active_users = AuthUser.objects.filter(last_login__gte=thirty_days_ago).count()
+    wau_weekly_active_users = AuthUser.objects.filter(last_login__gte=timezone.now() - timedelta(days=7)).count()
+    dau_daily_active_users = AuthUser.objects.filter(last_login__date=today).count()
 
-            except Exception as e:
-                return JsonResponse({'status': False, 'message': f'Ошибка: {str(e)}'}, status=500)
-            
-    start_date_str = request.GET.get('start_date')
-    end_date_str = request.GET.get('end_date')
-    chart_data = None
+    paid_users_count = Payment.objects.filter(status="completed").values("staff_id").distinct().count()
+    conversion_rate_to_paid = (paid_users_count / total_users_count * 100) if total_users_count > 0 else 0
+    stickiness_ratio = (dau_daily_active_users / mau_monthly_active_users * 100) if mau_monthly_active_users > 0 else 0
 
-    if start_date_str and end_date_str:
-        start_date = timezone.datetime.strptime(start_date_str, '%Y-%m-%d').date()
-        end_date = timezone.datetime.strptime(end_date_str, '%Y-%m-%d').date()
+    # --- Сбор данных для графиков ---
+    user_registrations_query = (
+        AuthUser.objects.filter(date_joined__date__range=date_range)
+        .annotate(day=TruncDate("date_joined"))
+        .values("day")
+        .annotate(count=Count("id"))
+        .order_by("day")
+    )
+    user_data_map = {item["day"]: item["count"] for item in user_registrations_query}
 
-        selected_users = AuthUser.objects.filter(date_joined__date__range=(start_date, end_date)).count()
-        total_surveys = Survey.objects.filter(updated_at__date__range=(start_date, end_date)).count()
-        total_answers = UserAnswers.objects.filter(created_at__date__range=(start_date, end_date)).count()
-        subscriptions = Subscription.objects.filter(start_date__date__range=(start_date, end_date)).count()
-        
-        # 1. Собираем ежедневные регистрации
-        user_counts_query = (
-            AuthUser.objects.filter(date_joined__date__range=(start_date, end_date))
-            .annotate(day=TruncDate('date_joined'))
-            .values('day')
-            .annotate(count=Count('id'))
-            .order_by('day')
-        )
+    labels, user_counts = [], []
+    current_date = start_date
+    while current_date <= end_date:
+        labels.append(current_date.strftime("%d.%m"))
+        user_counts.append(user_data_map.get(current_date, 0))
+        current_date += timedelta(days=1)
 
-        # 2. Собираем ежедневное использование API
-        api_usage_query = (
-            APIKeyUsage.objects.filter(timestamp__date__range=(start_date, end_date))
-            .annotate(day=TruncDate('timestamp'))
-            .values('day')
-            .annotate(count=Count('id'))
-            .order_by('day')
-        )
+    user_chart_data = json.dumps({"labels": labels, "user_counts": user_counts})
+    api_chart_data = json.dumps(get_daily_api_usage_by_key(start_date, end_date))
 
-        # 3. Форматируем данные для JS, заполняя пропущенные дни нулями
-        labels = []
-        user_counts = []
-        api_counts = []
-        
-        user_data_map = {item['day'].isoformat(): item['count'] for item in user_counts_query}
-        api_data_map = {item['day'].isoformat(): item['count'] for item in api_usage_query}
+    api_performance_data = json.dumps(get_api_performance_data(start_date, end_date))
+    retention_data = get_retention_data()
+    user_activity_data = json.dumps(get_user_activity_distribution())
+    usage_by_sub_data = json.dumps(get_usage_by_subscription())
+    top_topics_data = json.dumps(get_top_test_topics())
+    user_journey_data = json.dumps(get_user_journey_funnel_data(30))
 
-        current_date = start_date
-        while current_date <= end_date:
-            date_str = current_date.isoformat()
-            labels.append(current_date.strftime('%d.%m'))
-            user_counts.append(user_data_map.get(date_str, 0))
-            api_counts.append(api_data_map.get(date_str, 0))
-            current_date += timedelta(days=1)
+    # --- Управление API ключами ---
+    api_keys = APIKey.objects.all().order_by("-created_at")
+    keys_by_purpose = defaultdict(list)
+    start_of_today = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
 
-        chart_data = json.dumps({
-            'labels': labels,
-            'user_counts': user_counts,
-            'api_counts': api_counts,
-        })
-    else:
-        selected_users = total_surveys = subscriptions = total_answers = 0
+    usage_counts_today = (
+        APIKeyUsage.objects.filter(timestamp__gte=start_of_today)
+        .values("api_key")
+        .annotate(count=Count("id"))
+    )
+    usage_map = {item["api_key"]: item["count"] for item in usage_counts_today}
 
-    all_users = AuthUser.objects.all().count()
+    for key in api_keys:
+        today_count = usage_map.get(key.id, 0)
+        max_requests = 50
+        percent = min(int((today_count / max_requests) * 100), 100)
 
-    if user.is_superuser:
-        start_date = request.GET.get('start_date')
-        end_date = request.GET.get('end_date')
+        key.usage_percent = percent
+        key.today_usage_count = today_count
+        keys_by_purpose[key.purpose].append(key)
 
-        selected_subscription = Subscription.objects.all()
+    # --- История платежей ---
+    payment_data = []
+    recent_payments = Payment.objects.select_related('subscription').order_by('-created_at')[:50]
 
-        if start_date and end_date:
-            start_date = timezone.datetime.strptime(start_date, '%Y-%m-%d')
-            end_date = timezone.datetime.strptime(end_date, '%Y-%m-%d') + timezone.timedelta(days=1)
+    staff_ids = [p.subscription.staff_id for p in recent_payments if p.subscription]
+    users_mapping = {str(u.id_staff): u.username for u in AuthUser.objects.filter(id_staff__in=staff_ids)}
 
-            selected_users = (
-                AuthUser.objects
-                .filter(date_joined__range=(start_date, end_date))
-                .annotate(username_len=Length('username'))
-                .filter(username_len__lte=30)
-                .count()
-            )
-            total_surveys = Survey.objects.filter(updated_at__range=(start_date, end_date)).count()
-            total_answers = UserAnswers.objects.filter(created_at__range=(start_date, end_date)).count()
-            subscriptions = Subscription.objects.filter(start_date__range=(start_date, end_date)).count()
-        else:
-            selected_users = total_surveys = subscriptions = total_answers = 0
+    for payment in recent_payments:
+        if payment.subscription and payment.subscription.staff_id:
+            username = users_mapping.get(str(payment.subscription.staff_id), "N/A")
+            payment_data.append({
+                "name": username,
+                "plan_name": payment.subscription.plan_name,
+                "payment_status": payment.status,
+                "amount": f"{get_format_number(payment.amount / 100)} руб.",
+                "date": get_formate_date(payment.created_at),
+            })
 
-        payment_data = []
-        for subscription in selected_subscription:
-            try:
-                user = AuthUser.objects.get(id_staff=subscription.staff_id)
-            except Exception:
-                pass
+    completed_payments = Payment.objects.filter(status="completed")
+    total_revenue = completed_payments.aggregate(total=Sum("amount"))["total"] or 0
+    completed_count = completed_payments.count()
 
-            payments = Payment.objects.filter(subscription=subscription)
+    cockpit_metrics = get_cockpit_metrics()
 
-            for payment in payments:
-                payment_data.append({
-                    'name': user.username,
-                    'plan_name': subscription.plan_name,
-                    'status': subscription.status,
-                    'payment_status': payment.status,
-                    'amount': f'{get_format_number(payment.amount / 100)} руб.',
-                    'date': get_formate_date(subscription.start_date),
-                })
+    # --- Данные для графиков и таблиц ---
+    today = timezone.now().date()
+    start_date_str = request.GET.get("start_date")
+    end_date_str = request.GET.get("end_date")
+    start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date() if start_date_str else today - timedelta(days=29)
+    end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date() if end_date_str else today
 
-        completed_payments = Payment.objects.filter(status='completed')
+    main_gauge_data = get_main_gauge_data()
+    daily_attempts_data = json.dumps(get_daily_attempts_chart_data())
+    test_performance_data = json.dumps(get_test_performance_scatter_data())
 
-        total_revenue = completed_payments.aggregate(total=Sum('amount'))['total'] / 100 or 0
-        completed_count = completed_payments.count()
+    gauges_data = get_gauges_data()
+    total_api_usage_data = json.dumps(get_total_api_usage_chart_data(start_date, end_date))
 
-        average_check = total_revenue / completed_count if completed_count > 0 else 0
+    context = {
+        "cockpit": cockpit_metrics,
+        "gauges": gauges_data,
+        "main_gauge": main_gauge_data,
+        "daily_attempts_data": daily_attempts_data,
+        "test_performance_data": test_performance_data,
+        "total_api_usage_data": total_api_usage_data,
+        "start_date": start_date.strftime("%Y-%m-%d"),
+        "end_date": end_date.strftime("%Y-%m-%d"),
+        "users_in_period": users_in_period,
+        "subscriptions_in_period": subscriptions_in_period,
+        "email_users_count": email_users_count,
+        "telegram_users_count": telegram_users_count,
+        "wau_weekly_active_users": wau_weekly_active_users,
+        "mau_monthly_active_users": mau_monthly_active_users,
+        "stickiness_ratio": stickiness_ratio,
+        "conversion_rate_to_paid": conversion_rate_to_paid,
+        "surveys_in_period": surveys_in_period,
+        "answers_in_period": answers_in_period,
+        "total_api_calls_today": sum(usage_map.values()),
+        "total_users": total_users_count,
+        "total_revenue": total_revenue / 100,
+        "average_check": average_check / 100,
+        "payment_conversion": payment_conversion,
+        "failed_payments_count": failed_count,
+        "user_chart_data": user_chart_data,
+        "api_chart_data": api_chart_data,
+        "keys_by_purpose": dict(keys_by_purpose),
+        "payment_data": payment_data,
+        "api_performance_data": api_performance_data,
+        "retention_data": retention_data,
+        "user_activity_data": user_activity_data,
+        "usage_by_sub_data": usage_by_sub_data,
+        "top_topics_data": top_topics_data,
+        "user_journey_data": user_journey_data,
+    }
 
-        total_attempts = Payment.objects.count()
-        payment_conversion = (completed_count / total_attempts) * 100 if total_attempts > 0 else 0
-
-        failed_count = Payment.objects.filter(status='failed').count()
-
-        telegram_users_count = AuthUser.objects.filter(
-            Q(hash_user_id__isnull=True) | Q(hash_user_id__exact=''),
-            email__exact=''
-        ).count()
-
-        email_users_count = AuthUser.objects.exclude(email__exact='').count()
-
-        thirty_days_ago = timezone.now() - timedelta(days=30)
-        active_users_monthly = AuthUser.objects.filter(last_login__gte=thirty_days_ago).count()
-        wau_weekly_active_users = AuthUser.objects.filter(last_login__gte=timezone.now() - timedelta(days=7)).count()
-
-        total_users_count = AuthUser.objects.all().count()
-        conversion_rate_to_paid = (Payment.objects.filter(status='completed').values(
-            'staff_id').distinct().count() / total_users_count) * 100 if total_users_count > 0 else 0
-
-        daily_active_users = AuthUser.objects.filter(last_login__gte=timezone.now() - timedelta(days=1)).count()
-        stickiness_ratio = (daily_active_users / active_users_monthly) * 100 if active_users_monthly > 0 else 0
-
-        total_api_calls_today = APIKeyUsage.objects.filter(timestamp__date=timezone.now().date()).count()
-
-        context = {
-            'username': request.user.username,
-            'selected_users': selected_users,
-            'total_users': all_users,
-            'total_surveys': total_surveys,
-            'total_answers': total_answers,
-            'subscriptions': subscriptions,
-            'selected_subscription': selected_subscription,
-            'data': payment_data,
-            'total_revenue': total_revenue,
-            'average_check': average_check,
-            'payment_conversion': payment_conversion,
-            'failed_payments_count': failed_count,
-            'telegram_users_count': telegram_users_count,
-            'email_users_count': email_users_count,
-            'active_users_monthly': active_users_monthly,
-            'wau_weekly_active_users': wau_weekly_active_users,
-            'conversion_rate_to_paid': conversion_rate_to_paid,
-            'stickiness_ratio': stickiness_ratio,
-            'total_api_calls_today': total_api_calls_today,
-            'chart_data': chart_data
-        }
-
-        api_keys = APIKey.objects.all().order_by('-created_at')
-
-        start_of_day = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-
-        def calculate_usage_percent(api_key):
-            usage_count = APIKeyUsage.objects.filter(api_key=api_key, timestamp__gte=start_of_day).count()
-            max_requests_per_day = 50
-            _percent = int((usage_count / max_requests_per_day) * 100)
-            return min(_percent, 100), usage_count
-
-        active_keys = {
-            'FEEDBACK': APIKey.objects.filter(purpose='FEEDBACK', is_active=True).first(),
-            'SURVEY': APIKey.objects.filter(purpose='SURVEY', is_active=True).first()
-        }
-
-        from collections import defaultdict
-        keys_by_purpose = defaultdict(list)
-
-        for key in api_keys:
-            percent, today_count = calculate_usage_percent(key)
-            key.usage_percent = percent
-            key.today_usage_count = today_count
-            key.is_active = (active_keys.get(key.purpose) and active_keys[key.purpose].id == key.id)
-            keys_by_purpose[key.purpose].append(key)
-
-        context.update({
-            "keys_by_purpose": dict(keys_by_purpose),
-            "active_keys": active_keys,
-        })
-
-        return render(request, 'admin.html', context)
-    else:
-        return redirect(f'/profile/{request.user.username}')
+    return render(request, "admin.html", context)
 
 
 @login_required

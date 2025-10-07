@@ -39,7 +39,13 @@ urlpatterns = [
     path('register/', register, name='register'),
     path('login/', login_view, name='login'),
     path('logout/', logout_view, name='logout'),
+
     path('stats2975/', admin_stats, name='stats2975'),
+    path('api/admin/block_ip/', block_ip_api, name='api_block_ip'),
+    path('api/admin/promote_user/', promote_user_api, name='api_promote_user'),
+    path('api/admin/add_api_key/', add_api_key_api, name='api_add_key'),
+    path('api/admin/activate_api_key/', activate_api_key_api, name='api_activate_key'),
+
     path('admin/activate-key/', activate_api_key, name='activate_api_key'),
     path('profile/<str:username>/', profile_view, name='profile'),
     path('profile/', redirect_to_profile, name='profile_redirect'),

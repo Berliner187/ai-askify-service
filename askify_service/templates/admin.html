@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Админ-панель | Летучка</title>
+    <title>Пульс Летучки | Летучка</title>
     <meta name="robots" content="noindex, nofollow" />
     {% load static %}
     <link rel="shortcut icon" href="{% static 'img/logo.png' %}" type="image/png">
@@ -21,6 +21,7 @@
             --color-text-secondary: #a0a0b0;
             --color-accent-primary: #616DF0;
             --color-accent-secondary: #79EF66;
+            --color-red: #F06161;
         }
         body { background-color: var(--color-bg); color: var(--color-text-primary); font-family: 'Inter', sans-serif; }
         h1, h2, h3 { font-family: 'Unbounded', sans-serif; }
@@ -29,69 +30,418 @@
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
         .progress-bar-fill { transition: width 0.5s ease-in-out; }
+
+        /* --- ДОБАВЬ ЭТОТ CSS В <style> --- */
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 15px 3px rgba(79, 70, 229, 0.4); }
+            50% { box-shadow: 0 0 25px 8px rgba(79, 70, 229, 0.2); }
+        }
+        .gauge-glow {
+            animation: pulse-glow 4s ease-in-out infinite;
+        }
+        .text-glow {
+            text-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
+        }
+
+        .gauge-ring {
+            transition: stroke-dashoffset 1s ease-in-out;
+        }
     </style>
 </head>
 <body class="bg-[var(--color-bg)] text-[var(--color-text-primary)]">
 
     {% include 'header.html' %}
 
-    <main class="max-w-7xl mx-auto p-4 sm:p-8 space-y-8">
+    <main class="max-w-7xl mx-auto p-4 sm:p-8 space-y-8 mt-16">
         
-        <h1 class="text-3xl font-bold text-white">Админ-панель</h1>
+        <div class="flex flex-col md:flex-row justify-between md:items-center gap-4">
+            <h1 class="text-3xl font-bold text-white">Пульс Летучки</h1>
+            <div class="bg-[var(--color-surface)] p-2 rounded-2xl border border-[var(--color-border)]">
+                <form method="get" class="flex flex-col sm:flex-row items-center gap-2">
+                    <input type="date" name="start_date" value="{{ start_date }}" class="w-full sm:w-auto p-2 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg text-sm">
+                    <span class="text-gray-500 hidden sm:block">-</span>
+                    <input type="date" name="end_date" value="{{ end_date }}" class="w-full sm:w-auto p-2 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg text-sm">
+                    <button type="submit" class="w-full sm:w-auto px-4 py-2 font-bold text-center rounded-lg bg-[var(--color-accent-primary)] text-white text-sm">Применить</button>
+                </form>
+            </div>
+        </div>
 
-        <section class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            <!-- Левая колонка: Фильтр и Админ-действия -->
-            <div class="lg:col-span-1 space-y-6">
-                <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
-                    <h2 class="font-bold text-white mb-4">Фильтр по дате</h2>
-                    <form method="get" class="space-y-4">
-                        <input type="date" name="start_date" value="{{ request.GET.start_date }}" class="w-full p-2 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg">
-                        <input type="date" name="end_date" value="{{ request.GET.end_date }}" class="w-full p-2 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg">
-                        <button type="submit" class="w-full py-2 font-bold text-center rounded-full bg-[var(--color-accent-primary)] text-white">Применить</button>
-                    </form>
+        <!-- <--- ГЛАВНЫЙ ПРИБОР -->
+        <section class="bg-black/20 p-4 sm:p-6 rounded-3xl border border-[var(--color-border)] mb-8">
+            <!-- Верхняя строка состояния -->
+            <div class="flex justify-between items-center text-xs text-[var(--color-text-secondary)] border-b border-[var(--color-border)] pb-3 mb-3">
+                <div class="flex items-center gap-4">
+                    <div title="Новые реальные пользователи сегодня"><i class="fa-solid fa-user-plus text-green-400"></i> {{ main_gauge.status_bar.new_users_today }}</div>
+                    <div title="Новые подписки сегодня"><i class="fa-solid fa-star text-yellow-400"></i> {{ main_gauge.status_bar.new_subs_today }}</div>
+                    <div title="Ошибки оплат сегодня"><i class="fa-solid fa-triangle-exclamation text-red-400"></i> {{ main_gauge.status_bar.failed_payments_today }}</div>
                 </div>
-                <!-- Сюда можно перенести карточки бана и повышения прав -->
+                <div class="flex items-center gap-4">
+                    <div title="Вызовы API сегодня"><i class="fa-solid fa-bolt"></i> {{ main_gauge.status_bar.api_calls_today }}</div>
+                    <div title="Среднее время ответа API"><i class="fa-solid fa-clock"></i> {{ main_gauge.status_bar.avg_response_time|floatformat:0 }} ms</div>
+                </div>
             </div>
 
-            <!-- Правая колонка: ВСЯ, СУКА, ТЕЛЕМЕТРИЯ -->
-            <div class="lg:col-span-3 space-y-6">
+            <!-- Основной дисплей -->
+            <div class="flex flex-col md:flex-row justify-around items-center gap-6 py-4">
                 
-                <!-- БЛОК "РОСТ" -->
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div class="bg-[var(--color-surface)] p-4 rounded-xl border border-[var(--color-border)] text-center"><p class="text-2xl font-bold gradient-text">{{ selected_users }}</p><p class="text-xs text-gray-400">Новых юзеров <span class="text-gray-600">(за период)</span></p></div>
-                    <div class="bg-[var(--color-surface)] p-4 rounded-xl border border-[var(--color-border)] text-center"><p class="text-2xl font-bold gradient-text">{{ subscriptions }}</p><p class="text-xs text-gray-400">Новых подписок <span class="text-gray-600">(за период)</span></p></div>
-                    <div class="bg-[var(--color-surface)] p-4 rounded-xl border border-[var(--color-border)] text-center"><p class="text-2xl font-bold text-white">{{ email_users_count }}</p><p class="text-xs text-gray-400">Юзеров (Email)</p></div>
-                    <div class="bg-[var(--color-surface)] p-4 rounded-xl border border-[var(--color-border)] text-center"><p class="text-2xl font-bold text-white">{{ telegram_users_count }}</p><p class="text-xs text-gray-400">Юзеров (Telegram)</p></div>
+                <!-- Левый тахометр: DAU -->
+                <div class="text-center w-48">
+                    <p class="text-5xl font-bold text-glow">{{ main_gauge.dau }}</p>
+                    <p class="text-sm text-[var(--color-text-secondary)] tracking-widest">АКТИВНЫХ ПОЛЬЗОВАТЕЛЕЙ</p>
                 </div>
 
-                <!-- БЛОК "АКТИВНОСТЬ" -->
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div class="bg-[var(--color-surface)] p-4 rounded-xl border border-[var(--color-border)] text-center"><p class="text-2xl font-bold gradient-text">{{ wau_weekly_active_users }}</p><p class="text-xs text-gray-400">Активных за неделю</p></div>
-                    <div class="bg-[var(--color-surface)] p-4 rounded-xl border border-[var(--color-border)] text-center"><p class="text-2xl font-bold gradient-text">{{ active_users_monthly }}</p><p class="text-xs text-gray-400">Активных за месяц</p></div>
-                    <div class="bg-[var(--color-surface)] p-4 rounded-xl border border-[var(--color-border)] text-center"><p class="text-2xl font-bold text-white">{{ stickiness_ratio|floatformat:1 }}%</p><p class="text-xs text-gray-400">"Липкость" (DAU/MAU)</p></div>
-                    <div class="bg-[var(--color-surface)] p-4 rounded-xl border border-[var(--color-border)] text-center"><p class="text-2xl font-bold text-white">{{ conversion_rate_to_paid|floatformat:2 }}%</p><p class="text-xs text-gray-400">Конверсия в оплату</p></div>
+                <!-- Центральный спидометр: Тестов создано -->
+                <div class="relative w-52 h-52 flex items-center justify-center">
+                    <!-- Дуга мощности -->
+                    <div class="absolute inset-0 rounded-full gauge-glow"
+                        style="background: conic-gradient(
+                            rgba(79, 70, 229, 1) {{ main_gauge.active_key_load_degrees }}deg, 
+                            rgba(31, 41, 55, 0.5) {{ main_gauge.active_key_load_degrees }}deg
+                        );">
+                    </div>
+                    <!-- Внутренний круг -->
+                    <div class="relative w-[85%] h-[85%] bg-[var(--color-bg)] rounded-full flex flex-col items-center justify-center text-center">
+                        <p class="text-6xl font-bold text-glow">{{ main_gauge.tests_created_today }}</p>
+                        <p class="text-sm text-[var(--color-text-secondary)] tracking-widest">ТЕСТОВ СЕГОДНЯ</p>
+                    </div>
                 </div>
 
-                <!-- БЛОК "ПРОДУКТ" -->
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div class="bg-[var(--color-surface)] p-4 rounded-xl border border-[var(--color-border)] text-center"><p class="text-2xl font-bold gradient-text">{{ total_surveys }}</p><p class="text-xs text-gray-400">Тестов создано <span class="text-gray-600">(за период)</span></p></div>
-                    <div class="bg-[var(--color-surface)] p-4 rounded-xl border border-[var(--color-border)] text-center"><p class="text-2xl font-bold gradient-text">{{ total_answers }}</p><p class="text-xs text-gray-400">Ответов дано <span class="text-gray-600">(за период)</span></p></div>
-                    <div class="bg-[var(--color-surface)] p-4 rounded-xl border border-[var(--color-border)] text-center"><p class="text-2xl font-bold text-white">{{ total_api_calls_today }}</p><p class="text-xs text-gray-400">Вызовов API <span class="text-gray-600">(сегодня)</span></p></div>
-                    <div class="bg-[var(--color-surface)] p-4 rounded-xl border border-[var(--color-border)] text-center"><p class="text-2xl font-bold text-white">{{ total_users }}</p><p class="text-xs text-gray-400">Всего юзеров</p></div>
+                <!-- Правый навигатор: Доход -->
+                <div class="text-center w-48">
+                    <p class="text-5xl font-bold text-glow">{{ main_gauge.revenue_today|floatformat:2 }}<span class="text-3xl text-green-400">&nbsp;₽</span></p>
+                    <p class="text-sm text-[var(--color-text-secondary)] tracking-widest">ЗАРАБОТАНО СЕГОДНЯ</p>
+                </div>
+            </div>
+
+            <!-- Одометр -->
+            <div class="text-center text-lg text-[var(--color-text-secondary)] border-t border-[var(--color-border)] pt-3 mt-3">
+                <span class="font-mono tracking-widest">{{ main_gauge.total_tests_created }}</span>
+                <span class="text-xs ml-1">ВСЕГО СОЗДАНО</span>
+            </div>
+        </section>
+
+        <!-- 3 СУПЕР ВАЖНЫХ ДАТЧИКА -->
+        <section class="mb-8">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 text-center">
+                
+                <!-- Датчик Активации -->
+                <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] flex flex-col justify-center items-center">
+                    <div class="relative w-48 h-24 overflow-hidden">
+                        <svg viewBox="0 0 120 65" class="w-full h-full">
+                            <!-- Трек -->
+                            <path d="M 10 60 A 50 50 0 0 1 110 60" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="12" stroke-linecap="round"/>
+                            <!-- Прогресс -->
+                            <path d="M 10 60 A 50 50 0 0 1 110 60" fill="none" stroke="#10B981" stroke-width="12" stroke-linecap="round"
+                                class="gauge-ring"
+                                stroke-dasharray="157"
+                                stroke-dashoffset="{{ gauges.activation_dashoffset }}"/>
+                        </svg>
+                        <div class="absolute bottom-0 left-0 right-0">
+                            <span class="text-4xl font-bold text-glow">{{ gauges.activation_percent }}%</span>
+                        </div>
+                    </div>
+                    <p class="mt-3 text-sm font-semibold text-white">Активация в 1-й тест</p>
+                    <p class="text-xs text-[var(--color-text-secondary)]">новые юзеры за месяц</p>
+                </div>
+
+                <!-- Центральный Дисплей: Доход к цели -->
+                <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] flex flex-col justify-center items-center">
+                    <div class="relative w-48 h-24 overflow-hidden">
+                        <svg viewBox="0 0 120 65" class="w-full h-full">
+                            <!-- Трек -->
+                            <path d="M 10 60 A 50 50 0 0 1 110 60" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="12" stroke-linecap="round"/>
+                            <!-- Прогресс -->
+                            <path d="M 10 60 A 50 50 0 0 1 110 60" fill="none" stroke="#8B5CF6" stroke-width="12" stroke-linecap="round"
+                                class="gauge-ring"
+                                stroke-dasharray="157"
+                                stroke-dashoffset="{{ gauges.revenue_dashoffset }}"/>
+                        </svg>
+                        <div class="absolute bottom-0 left-0 right-0">
+                            <span class="text-4xl font-bold text-glow">{{ gauges.revenue_this_month|floatformat:0 }}<span class="text-2xl opacity-80"> ₽</span></span>
+                        </div>
+                    </div>
+                    <p class="mt-3 text-sm font-semibold text-white">Доход за месяц</p>
+                    <p class="text-xs text-[var(--color-text-secondary)]">Цель: {{ gauges.monthly_goal }} ₽ ({{ gauges.revenue_goal_percent }}%)</p>
+                </div>
+
+                <!-- Датчик Мощности -->
+                <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] flex flex-col justify-center items-center">
+                    <div class="relative w-48 h-24 overflow-hidden">
+                        <svg viewBox="0 0 120 65" class="w-full h-full">
+                            <path d="M 10 60 A 50 50 0 0 1 110 60" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="12" stroke-linecap="round"/>
+                            <path d="M 10 60 A 50 50 0 0 1 110 60" fill="none" stroke="#3B82F6" stroke-width="12" stroke-linecap="round"
+                                class="gauge-ring"
+                                stroke-dasharray="157"
+                                stroke-dashoffset="{{ gauges.tests_dashoffset }}"/>
+                        </svg>
+                        <div class="absolute bottom-0 left-0 right-0">
+                            <span class="text-4xl font-bold text-glow">{{ gauges.tests_created_today }}</span>
+                        </div>
+                    </div>
+                    <p class="mt-3 text-sm font-semibold text-white">Тестов создано сегодня</p>
+                    <p class="text-xs text-[var(--color-text-secondary)]">нелегалами и легальными</p>
                 </div>
 
             </div>
         </section>
 
-        <section class="grid grid-cols-2 md:grid-cols-4 gap-6">
-            <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]"><h3 class="font-bold text-white">Общий доход</h3><p class="text-3xl font-bold text-[var(--color-accent-secondary)] mt-2">{{ total_revenue|floatformat:2 }} ₽</p></div>
-            <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]"><h3 class="font-bold text-white">Средний чек</h3><p class="text-3xl font-bold text-white mt-2">{{ average_check|floatformat:2 }} ₽</p></div>
-            <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]"><h3 class="font-bold text-white">Конверсия в оплату</h3><p class="text-3xl font-bold text-white mt-2">{{ payment_conversion|floatformat:1 }}%</p></div>
-            <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]"><h3 class="font-bold text-white">Ошибок оплаты</h3><p class="text-3xl font-bold text-red-500 mt-2">{{ failed_payments_count }}</p></div>
+        <!-- КЛЮЧЕВЫЕ ПОКАЗАТЕЛИ -->
+        <section>
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+
+                <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] space-y-4">
+                    <h2 class="font-bold text-white text-lg border-b border-b-[var(--color-border)] pb-2">Показатели</h2>
+                    
+                    <div class="text-center">
+                        <p class="text-xs text-[var(--color-text-secondary)]">Всего реальных юзеров</p>
+                        <p class="text-4xl font-bold gradient-text">{{ cockpit.total_real_users }}</p>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 text-center">
+                        <div>
+                            <p class="text-xs text-[var(--color-text-secondary)]">Новых сегодня</p>
+                            <p class="text-2xl font-semibold">{{ cockpit.new_users_today }}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-[var(--color-text-secondary)]">Новых за месяц</p>
+                            <p class="text-2xl font-semibold">{{ cockpit.new_users_month }}</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-2 text-center pt-2 border-t border-t-[var(--color-border)]">
+                        <div><p class="font-bold text-lg">{{ cockpit.dau }}</p><p class="text-[10px] text-[var(--color-text-secondary)]">DAU</p></div>
+                        <div><p class="font-bold text-lg">{{ cockpit.wau }}</p><p class="text-[10px] text-[var(--color-text-secondary)]">WAU</p></div>
+                        <div><p class="font-bold text-lg">{{ cockpit.mau }}</p><p class="text-[10px] text-[var(--color-text-secondary)]">MAU</p></div>
+                    </div>
+
+                    <div>
+                        <p class="text-xs text-[var(--color-text-secondary)]">Липкость (DAU/MAU)</p>
+                        <div class="w-full bg-black/20 rounded-full h-2.5 mt-1"><div class="bg-[var(--color-accent-primary)] h-2.5 rounded-full" style="width: {{ cockpit.stickiness }}%"></div></div>
+                    </div>
+                    <div>
+                        <p class="text-xs text-[var(--color-text-secondary)]">Активация в 1-й тест (за 30д)</p>
+                        <div class="w-full bg-black/20 rounded-full h-2.5 mt-1"><div class="bg-[var(--color-accent-primary)] h-2.5 rounded-full" style="width: {{ cockpit.activation_rate_30d }}%"></div></div>
+                    </div>
+                </div>
+
+                <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] space-y-4">
+                    <h2 class="font-bold text-white text-lg border-b border-b-[var(--color-border)] pb-2">Тесты</h2>
+                    
+                    <div class="grid grid-cols-2 gap-4 text-center">
+                        <div>
+                            <p class="text-xs text-[var(--color-text-secondary)]">Тестов создано сегодня</p>
+                            <p class="text-3xl font-bold">{{ cockpit.tests_created_today }}</p>
+                            <p class="text-xs {% if cockpit.tests_vs_yesterday >= 0 %}text-green-400{% else %}text-red-400{% endif %}">
+                                {% if cockpit.tests_vs_yesterday >= 0 %}+{% endif %}{{ cockpit.tests_vs_yesterday }} к вчера
+                            </p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-[var(--color-text-secondary)]">Попыток прохождения</p>
+                            <p class="text-3xl font-bold">{{ cockpit.attempts_today }}</p>
+                            <p class="text-xs {% if cockpit.attempts_vs_yesterday >= 0 %}text-green-400{% else %}text-red-400{% endif %}">
+                                {% if cockpit.attempts_vs_yesterday >= 0 %}+{% endif %}{{ cockpit.attempts_vs_yesterday }} к вчера
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 text-center pt-2 border-t border-t-[var(--color-border)]">
+                        <div>
+                            <p class="text-xs text-[var(--color-text-secondary)]">Всего тестов</p>
+                            <p class="text-xl font-semibold">{{ cockpit.tests_created_total }}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-[var(--color-text-secondary)]">Всего попыток</p>
+                            <p class="text-xl font-semibold">{{ cockpit.attempts_total }}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center">
+                        <p class="text-xs text-[var(--color-text-secondary)]">Средний балл за 30 дней</p>
+                        <p class="text-2xl font-bold text-[var(--color-accent-secondary)]">{{ cockpit.avg_score_30d|floatformat:1 }}%</p>
+                    </div>
+                </div>
+                
+                <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] space-y-4">
+                    <h2 class="font-bold text-white text-lg border-b border-b-[var(--color-border)] pb-2">Экономика</h2>
+                    
+                    <div class="text-center">
+                        <p class="text-xs text-[var(--color-text-secondary)]">Доход сегодня</p>
+                        <p class="text-4xl font-bold text-[var(--color-accent-secondary)]">{{ cockpit.revenue_today|floatformat:2 }} ₽</p>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4 text-center">
+                        <div>
+                            <p class="text-xs text-[var(--color-text-secondary)]">Доход за месяц</p>
+                            <p class="text-xl font-semibold">{{ cockpit.revenue_month|floatformat:2 }} ₽</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-[var(--color-text-secondary)]">Новых подписок сегодня</p>
+                            <p class="text-xl font-semibold">{{ cockpit.new_subs_today }}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-[var(--color-text-secondary)]">Активных подписок</p>
+                            <p class="text-xl font-semibold">{{ cockpit.active_subs_total }}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-[var(--color-text-secondary)]">Средний чек</p>
+                            <p class="text-xl font-semibold">{{ cockpit.avg_check_total|floatformat:2 }} ₽</p>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center pt-2 border-t border-t-[var(--color-border)]">
+                        <p class="text-xs text-[var(--color-text-secondary)]">Конверсия в оплату (общая)</p>
+                        <p class="text-2xl font-bold">{{ cockpit.conversion_to_paid_total }}%</p>
+                    </div>
+                </div>
+
+                <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] space-y-4">
+                    <h2 class="font-bold text-white text-lg border-b border-b-[var(--color-border)] pb-2">Поставщики</h2>
+
+                    <div class="text-center">
+                        <p class="text-xs text-[var(--color-text-secondary)]">Вызовов API сегодня</p>
+                        <p class="text-4xl font-bold">{{ cockpit.api_calls_today }}</p>
+                        <p class="text-xs {% if cockpit.api_calls_vs_yesterday >= 0 %}text-green-400{% else %}text-red-400{% endif %}">
+                            {% if cockpit.api_calls_vs_yesterday >= 0 %}+{% endif %}{{ cockpit.api_calls_vs_yesterday }} к вчера
+                        </p>
+                    </div>
+
+                    <div>
+                        <p class="text-xs text-[var(--color-text-secondary)]">Загрузка активного SURVEY ключа ({{ cockpit.active_key_name }})</p>
+                        <div class="w-full bg-black/20 rounded-full h-4 mt-1 flex items-center justify-center relative">
+                            <div class="{{ cockpit.active_key_load_color }} h-4 rounded-full transition-all duration-500" style="width: {{ cockpit.active_key_load }}%"></div>
+                            <span class="absolute text-xs font-bold text-white mix-blend-difference">{{ cockpit.active_key_load }}%</span>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4 text-center pt-2 border-t border-t-[var(--color-border)]">
+                        <div>
+                            <p class="text-xs text-[var(--color-text-secondary)]">Успешность API</p>
+                            <p class="text-xl font-semibold text-green-400">{{ cockpit.api_success_rate_today }}%</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-[var(--color-text-secondary)]">Ср. ответ API</p>
+                            <p class="text-xl font-semibold">{{ cockpit.avg_response_time_today|floatformat:0 }} ms</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </section>
 
+        <section class="space-y-8">
+            <h2 class="font-bold text-white text-xl">Аналитика публичных тестов (последние 7 дней)</h2>
+
+            <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                <!-- Пульс Активности -->
+                <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
+                    <h3 class="font-bold text-white mb-4">Пульс Активности</h3>
+                    <div class="h-80">
+                        <canvas id="dailyAttemptsChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Карта Эффективности Тестов -->
+                <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
+                    <h3 class="font-bold text-white mb-4">Карта Эффективности Тестов (Топ-20)</h3>
+                    <div class="h-80">
+                        <canvas id="testPerformanceChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="space-y-8">
+            <h2 class="font-bold text-white text-xl">Анализ продукта и поведения пользователей</h2>
+
+            <section class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                {% if user_chart_data %}
+                <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
+                    <h2 class="font-bold text-white mb-4">Динамика регистраций</h2>
+                    <div class="h-64"><canvas id="userChart"></canvas></div>
+                </div>
+                {% endif %}
+                
+                <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
+                    <h2 class="font-bold text-white mb-4">Воронка активации пользователей (30 дней)</h2>
+                    <div class="h-64">
+                        <canvas id="userJourneyChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
+                    <h3 class="font-bold text-white mb-4">Популярные темы тестов</h3>
+                    <div class="h-80"><canvas id="topTopicsChart"></canvas></div>
+                </div>
+            </section>
+
+            <!-- Когортный анализ -->
+            {% if retention_data %}
+            <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
+                <h3 class="font-bold text-white mb-4">Удержание пользователей (Когортный анализ)</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs text-left">
+                        <thead class="text-[var(--color-text-secondary)]">
+                            <tr>
+                                <th class="p-2 bg-[#111827]/50 rounded-tl-lg">Когорта</th>
+                                <th class="p-2 bg-[#111827]/50">Юзеров</th>
+                                {% for header in retention_data.headers %}
+                                    <th class="p-2 bg-[#111827]/50 text-center {% if forloop.last %}rounded-tr-lg{% endif %}">{{ header }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cohort in retention_data.cohorts %}
+                            <tr class="border-b border-[var(--color-border)]">
+                                <td class="p-2 font-semibold">{{ cohort.cohort_name }}</td>
+                                <td class="p-2">{{ cohort.size }}</td>
+                                {% for cell in cohort.values %}
+                                    {% if forloop.counter0 < retention_data.headers|length %}
+                                    <td class="p-0 text-center">
+                                        {% if cell.percentage is not None %}
+                                        <div class="m-1 p-2 rounded" style="background-color: rgba(16, 185, 129, {{ cell.percentage }});">
+                                            {{ cell.percentage }}%
+                                            <div class="text-[10px] opacity-70">{{ cell.users }}</div>
+                                        </div>
+                                        {% endif %}
+                                    </td>
+                                    {% endif %}
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Новая строка графиков -->
+            <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
+                    <h3 class="font-bold text-white mb-4">Распределение активности пользователей</h3>
+                    <div class="h-64"><canvas id="userActivityChart"></canvas></div>
+                </div>
+                <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
+                    <h3 class="font-bold text-white mb-4">Использование продукта по тарифам</h3>
+                    <div class="h-64"><canvas id="usageBySubChart"></canvas></div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- УПРАВЛЕНИЕ API -->
         <section class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
-            <h2 class="font-bold text-white mb-4">Управление API ключами</h2>
+            <h2 class="font-bold text-white mb-4 text-xl">Управление API ключами</h2>
+            <section class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                {% if api_chart_data %}
+                <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
+                    <h2 class="font-bold text-white mb-4">Использование API по ключам</h2>
+                    <div class="h-64"><canvas id="apiUsageChart"></canvas></div>
+                </div>
+                {% endif %}
+                <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
+                    <h2 class="font-bold text-white mb-4">Общее использование API</h2>
+                    <div class="h-64"><canvas id="totalApiUsageChart"></canvas></div>
+                </div>
+            </section>
+
             {% for purpose, keys in keys_by_purpose.items %}
                 <h3 class="text-sm font-semibold text-gray-400 uppercase mt-4 mb-2">{{ purpose }}</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -103,7 +453,7 @@
                             <div class="flex justify-between items-center mt-2">
                                 <span class="text-xs text-gray-400">{{ key.today_usage_count }} / 50 сегодня</span>
                                 {% if not key.is_active %}
-                                    <form method="post" class="activate-key-form">
+                                    <form method="post" class="activate-key-form" data-action="{% url 'api_activate_key' %}">
                                         <input type="hidden" name="activate_api_key_id" value="{{ key.id }}">
                                         <input type="hidden" name="key_purpose" value="{{ key.purpose }}">
                                         <button type="submit" class="text-xs font-bold text-[var(--color-accent-primary)] hover:text-white">Активировать</button>
@@ -117,7 +467,7 @@
             
             <div class="mt-6 pt-6 border-t border-[var(--color-border)]">
                 <h3 class="font-bold text-white mb-4">Добавить новый ключ</h3>
-                <form method="post" class="space-y-4">
+                <form method="post" action="{% url 'api_add_key' %}" class="space-y-4">
                     {% csrf_token %}
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <input type="text" name="new_api_key_name" class="p-2 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg" placeholder="Название" required>
@@ -131,35 +481,24 @@
                     </div>
                 </form>
             </div>
+
+            <section class="gap-8 mt-6">
+                <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
+                    <h2 class="font-bold text-white mb-4">Среднее время ответа API</h2>
+                    <div class="h-64"><canvas id="apiPerformanceChart"></canvas></div>
+                </div>
+            </section>
+            
         </section>
 
-        {% if chart_data %}
+        <!-- ИСТОРИЯ ПЛАТЕЖЕЙ -->
         <section class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
-            <h2 class="font-bold text-white mb-4">Аналитика за период</h2>
-            <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                <div>
-                    <h3 class="font-semibold text-gray-300 mb-2">Динамика регистраций</h3>
-                    <div class="h-64">
-                        <canvas id="userChart"></canvas>
-                    </div>
-                </div>
-                <div>
-                    <h3 class="font-semibold text-gray-300 mb-2">Использование API</h3>
-                    <div class="h-64">
-                        <canvas id="apiChart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </section>
-        {% endif %}
-        
-        <section class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
-             <h2 class="font-bold text-white mb-4">История платежей</h2>
+             <h2 class="font-bold text-white mb-4">Последние платежи</h2>
              <div class="overflow-x-auto">
                 <table class="w-full text-sm text-left">
                     <thead class="text-xs text-gray-400 uppercase"><tr><th class="p-2">Пользователь</th><th class="p-2">План</th><th class="p-2">Статус</th><th class="p-2">Сумма</th><th class="p-2">Дата</th></tr></thead>
                     <tbody>
-                        {% for item in data %}
+                        {% for item in payment_data %}
                         <tr class="border-b border-[var(--color-border)]"><td class="p-2">{{ item.name }}</td><td class="p-2">{{ item.plan_name }}</td><td class="p-2"><span class="px-2 py-1 rounded-full text-xs {% if item.payment_status == 'completed' %}bg-green-500/10 text-green-400{% else %}bg-red-500/10 text-red-400{% endif %}">{{ item.payment_status }}</span></td><td class="p-2">{{ item.amount }}</td><td class="p-2">{{ item.date }}</td></tr>
                         {% endfor %}
                     </tbody>
@@ -167,14 +506,21 @@
              </div>
         </section>
 
+        <!-- АДМИН-ДЕЙСТВИЯ -->
         <section class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
                 <h2 class="font-bold text-white mb-4">Бан по IP</h2>
-                <form method="post" class="ajax-form flex gap-2"><input type="text" name="ip_address" class="w-full p-2 bg-[var(--color-bg)] rounded-lg"><button type="submit" class="bg-red-800/80 hover:bg-red-700/80 px-4 rounded-lg font-bold">Ban</button></form>
+                <form method="post" class="ajax-form flex gap-2" data-action="{% url 'api_block_ip' %}">
+                    <input type="text" name="ip_address" class="w-full p-2 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg" placeholder="192.168.1.1">
+                    <button type="submit" class="bg-red-800/80 hover:bg-red-700/80 px-4 rounded-lg font-bold">Ban</button>
+                </form>
             </div>
             <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
                  <h2 class="font-bold text-white mb-4">Дать права админа</h2>
-                <form method="post" class="ajax-form flex gap-2"><input type="text" name="username" class="w-full p-2 bg-[var(--color-bg)] rounded-lg"><button type="submit" class="bg-green-800/80 hover:bg-green-700/80 px-4 rounded-lg font-bold">Promote</button></form>
+                <form method="post" class="ajax-form flex gap-2" data-action="{% url 'api_promote_user' %}">
+                    <input type="text" name="username" class="w-full p-2 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg" placeholder="Имя пользователя">
+                    <button type="submit" class="bg-green-800/80 hover:bg-green-700/80 px-4 rounded-lg font-bold">Promote</button>
+                </form>
             </div>
         </section>
 
@@ -201,17 +547,18 @@
             }
 
             const csrftoken = getCookie('csrftoken');
-            const currentUrl = window.location.pathname;
 
+            // Универсальный обработчик для AJAX форм
             $('.ajax-form').on('submit', function(event) {
                 event.preventDefault();
                 const form = $(this);
                 const submitBtn = form.find('button[type="submit"]');
                 const originalBtnText = submitBtn.html();
+                const actionUrl = form.data('action');
 
                 $.ajax({
                     type: 'POST',
-                    url: currentUrl,
+                    url: actionUrl,
                     headers: { 'X-CSRFToken': csrftoken },
                     data: form.serialize(),
                     beforeSend: () => submitBtn.prop('disabled', true).text('...'),
@@ -224,100 +571,411 @@
                 });
             });
 
+            // Обработчик для активации ключей
             $('.activate-key-form').on('submit', function(event) {
                 event.preventDefault();
                 const form = $(this);
+                const actionUrl = form.data('action');
                 $.ajax({
                     type: 'POST',
-                    url: currentUrl,
+                    url: actionUrl,
                     headers: { 'X-CSRFToken': csrftoken },
                     data: form.serialize(),
                     beforeSend: () => form.find('button[type="submit"]').prop('disabled', true).text('...'),
                     success: (response) => {
-                        if (response.status) window.location.reload();
-                        else alert('Ошибка: ' + response.message);
+                        if (response.status) {
+                            window.location.reload();
+                        } else {
+                            alert('Ошибка: ' + response.message);
+                        }
                     },
                     error: () => alert('Ошибка сети')
                 });
             });
 
+            // --- ОТРИСОВКА ГРАФИКОВ ---
+            const chartBorderColor = 'rgba(97, 109, 240, 0.2)';
+            const chartTextColor = 'rgba(160, 160, 176, 1)';
 
-            {% if chart_data %}
+            {% if total_api_usage_data %}
                 try {
-                    const chartData = JSON.parse('{{ chart_data|escapejs }}');
-                    const accentPrimary = 'rgba(97, 109, 240, 1)';
-                    const accentSecondary = 'rgba(121, 239, 102, 1)';
-                    const borderColor = 'rgba(97, 109, 240, 0.2)';
-                    const textColor = 'rgba(160, 160, 176, 1)';
+                    const totalApiData = JSON.parse('{{ total_api_usage_data|escapejs }}');
+                    const totalApiCanvas = document.getElementById('totalApiUsageChart');
+                    if (totalApiCanvas) {
+                        const accentSecondary = 'rgba(16, 185, 129, 1)'; // Emerald Green
+                        const ctx = totalApiCanvas.getContext('2d');
+                        const gradient = ctx.createLinearGradient(0, 0, 0, totalApiCanvas.height);
+                        gradient.addColorStop(0, accentSecondary.replace('1)', '0.5)'));
+                        gradient.addColorStop(1, accentSecondary.replace('1)', '0)'));
 
-                    function createGradient(ctx, color) {
-                        const chart = ctx.canvas.getContext('2d');
-                        const gradient = chart.createLinearGradient(0, 0, 0, ctx.canvas.height);
-                        gradient.addColorStop(0, color.replace('1)', '0.5)'));
-                        gradient.addColorStop(1, color.replace('1)', '0)'));
-                        return gradient;
-                    }
-
-                    const userChartCanvas = document.getElementById('userChart');
-                    if (userChartCanvas) {
-                        new Chart(userChartCanvas.getContext('2d'), {
+                        new Chart(ctx, {
                             type: 'line',
                             data: {
-                                labels: chartData.labels,
+                                labels: totalApiData.labels,
                                 datasets: [{
-                                    label: 'Новые пользователи',
-                                    data: chartData.user_counts,
-                                    borderColor: accentPrimary,
-                                    backgroundColor: (context) => createGradient(context.chart, accentPrimary),
+                                    label: 'Всего вызовов API',
+                                    data: totalApiData.data,
+                                    borderColor: accentSecondary,
+                                    backgroundColor: gradient,
                                     fill: true,
                                     tension: 0.4,
-                                    pointBackgroundColor: accentPrimary,
+                                    pointBackgroundColor: accentSecondary,
                                     pointBorderColor: '#fff',
                                     pointHoverRadius: 6
                                 }]
                             },
                             options: {
-                                responsive: true,
-                                maintainAspectRatio: false,
+                                responsive: true, maintainAspectRatio: false,
                                 plugins: { legend: { display: false } },
                                 scales: {
-                                    x: { ticks: { color: textColor }, grid: { color: borderColor } },
-                                    y: { ticks: { color: textColor, beginAtZero: true, precision: 0 }, grid: { color: borderColor } }
+                                    x: { ticks: { color: chartTextColor }, grid: { color: chartBorderColor } },
+                                    y: { ticks: { color: chartTextColor, beginAtZero: true, precision: 0 }, grid: { color: chartBorderColor } }
                                 }
                             }
                         });
                     }
+                } catch (e) { console.error("Ошибка при отрисовке общего графика API:", e); }
+            {% endif %}
 
-                    const apiChartCanvas = document.getElementById('apiChart');
+            {% if daily_attempts_data %}
+                try {
+                    const dailyAttemptsData = JSON.parse('{{ daily_attempts_data|escapejs }}');
+                    const dailyAttemptsCanvas = document.getElementById('dailyAttemptsChart');
+                    if (dailyAttemptsCanvas) {
+                        const ctx = dailyAttemptsCanvas.getContext('2d');
+                        const gradient = ctx.createLinearGradient(0, 0, 0, 320);
+                        gradient.addColorStop(0, 'rgba(16, 185, 129, 0.5)');
+                        gradient.addColorStop(1, 'rgba(16, 185, 129, 0)');
+
+                        new Chart(ctx, {
+                            type: 'line',
+                            data: {
+                                labels: dailyAttemptsData.labels,
+                                datasets: [{
+                                    label: 'Прохождений в день',
+                                    data: dailyAttemptsData.data,
+                                    borderColor: '#10B981',
+                                    backgroundColor: gradient,
+                                    fill: true,
+                                    tension: 0.4,
+                                }]
+                            },
+                            options: {
+                                responsive: true, maintainAspectRatio: false,
+                                plugins: { legend: { display: false } },
+                                scales: {
+                                    x: { ticks: { color: chartTextColor }, grid: { color: chartBorderColor } },
+                                    y: { ticks: { color: chartTextColor, beginAtZero: true, precision: 0 }, grid: { color: chartBorderColor } }
+                                }
+                            }
+                        });
+                    }
+                } catch (e) { console.error("Ошибка при отрисовке графика пульса:", e); }
+            {% endif %}
+
+            {% if test_performance_data and test_performance_data != 'null' %}
+                try {
+                    const performanceData = JSON.parse('{{ test_performance_data|escapejs }}');
+                    const performanceCanvas = document.getElementById('testPerformanceChart');
+                    if (performanceCanvas) {
+                        new Chart(performanceCanvas.getContext('2d'), {
+                            type: 'bubble',
+                            data: {
+                                datasets: [{
+                                    label: 'Тесты',
+                                    data: performanceData,
+                                    backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                                    borderColor: 'rgba(54, 162, 235, 1)',
+                                }]
+                            },
+                            options: {
+                                responsive: true, maintainAspectRatio: false,
+                                plugins: {
+                                    legend: { display: false },
+                                    tooltip: {
+                                        callbacks: {
+                                            label: function(context) {
+                                                const d = context.raw;
+                                                return `${d.label}: ${d.y} попыток, ${d.x}% средний балл`;
+                                            }
+                                        }
+                                    }
+                                },
+                                scales: {
+                                    x: {
+                                        title: { display: true, text: 'Средний балл (%)', color: chartTextColor },
+                                        ticks: { color: chartTextColor },
+                                        grid: { color: chartBorderColor }
+                                    },
+                                    y: {
+                                        title: { display: true, text: 'Количество попыток', color: chartTextColor },
+                                        ticks: { color: chartTextColor },
+                                        grid: { color: chartBorderColor }
+                                    }
+                                }
+                            }
+                        });
+                    }
+                } catch (e) { console.error("Ошибка при отрисовке карты эффективности:", e); }
+            {% endif %}
+
+            {% if user_chart_data %}
+                try {
+                    const userChartData = JSON.parse('{{ user_chart_data|escapejs }}');
+                    const userChartCanvas = document.getElementById('userChart');
+                    if (userChartCanvas) {
+                        const accentPrimary = 'rgba(97, 109, 240, 1)';
+                        const ctx = userChartCanvas.getContext('2d');
+                        const gradient = ctx.createLinearGradient(0, 0, 0, userChartCanvas.height);
+                        gradient.addColorStop(0, accentPrimary.replace('1)', '0.5)'));
+                        gradient.addColorStop(1, accentPrimary.replace('1)', '0)'));
+
+                        new Chart(ctx, {
+                            type: 'line',
+                            data: {
+                                labels: userChartData.labels,
+                                datasets: [{
+                                    label: 'Новые пользователи',
+                                    data: userChartData.user_counts,
+                                    borderColor: accentPrimary,
+                                    backgroundColor: gradient,
+                                    fill: true,
+                                    tension: 0.4,
+                                }]
+                            },
+                            options: {
+                                responsive: true, maintainAspectRatio: false,
+                                plugins: { legend: { display: false } },
+                                scales: {
+                                    x: { ticks: { color: chartTextColor }, grid: { color: chartBorderColor } },
+                                    y: { ticks: { color: chartTextColor, beginAtZero: true, precision: 0 }, grid: { color: chartBorderColor } }
+                                }
+                            }
+                        });
+                    }
+                } catch (e) { console.error("Ошибка при отрисовке графика регистраций:", e); }
+            {% endif %}
+
+            {% if api_chart_data and api_chart_data != 'null' %}
+                try {
+                    const apiChartData = JSON.parse('{{ api_chart_data|escapejs }}');
+                    const apiChartCanvas = document.getElementById('apiUsageChart');
                     if (apiChartCanvas) {
                         new Chart(apiChartCanvas.getContext('2d'), {
                             type: 'bar',
                             data: {
-                                labels: chartData.labels,
-                                datasets: [{
-                                    label: 'Вызовы API',
-                                    data: chartData.api_counts,
-                                    backgroundColor: accentSecondary.replace('1)', '0.7)'),
-                                    borderColor: accentSecondary,
-                                    borderWidth: 1,
-                                    borderRadius: 4
-                                }]
+                                labels: apiChartData.labels,
+                                datasets: apiChartData.datasets
                             },
                             options: {
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                plugins: { legend: { display: false } },
+                                responsive: true, maintainAspectRatio: false,
+                                plugins: {
+                                    legend: { position: 'bottom', labels: { color: chartTextColor, boxWidth: 15, padding: 20 } },
+                                    tooltip: { mode: 'index', intersect: false }
+                                },
                                 scales: {
-                                    x: { ticks: { color: textColor }, grid: { display: false } },
-                                    y: { ticks: { color: textColor, beginAtZero: true, precision: 0 }, grid: { color: borderColor } }
+                                    x: { stacked: true, ticks: { color: chartTextColor }, grid: { display: false } },
+                                    y: { stacked: true, ticks: { color: chartTextColor, beginAtZero: true, precision: 0 }, grid: { color: chartBorderColor } }
                                 }
                             }
                         });
                     }
-                } catch (e) {
-                    console.error("Ошибка при отрисовке графиков:", e);
-                }
+                } catch (e) { console.error("Ошибка при отрисовке графика API:", e); }
             {% endif %}
+        
+            {% if user_activity_data and user_activity_data != 'null' %}
+            try {
+                const userActivityData = JSON.parse('{{ user_activity_data|escapejs }}');
+                const userActivityCanvas = document.getElementById('userActivityChart');
+                if (userActivityCanvas) {
+                    new Chart(userActivityCanvas.getContext('2d'), {
+                        type: 'bar',
+                        data: {
+                            labels: userActivityData.labels,
+                            datasets: [{
+                                label: 'Количество пользователей',
+                                data: userActivityData.data,
+                                backgroundColor: 'rgba(79, 70, 229, 0.8)',
+                                borderColor: 'rgba(79, 70, 229, 1)',
+                                borderWidth: 1,
+                                borderRadius: 4,
+                            }]
+                        },
+                        options: {
+                                responsive: true, maintainAspectRatio: false,
+                                plugins: {
+                                    legend: { position: 'bottom', labels: { color: chartTextColor, boxWidth: 15, padding: 20 } },
+                                    tooltip: { mode: 'index', intersect: false }
+                                },
+                                scales: {
+                                    x: { stacked: true, ticks: { color: chartTextColor }, grid: { display: false } },
+                                    y: { stacked: true, ticks: { color: chartTextColor, beginAtZero: true, precision: 0 }, grid: { color: chartBorderColor } }
+                                }
+                            }
+                    });
+                }
+            } catch (e) { console.error("Ошибка при отрисовке графика активности:", e); }
+        {% endif %}
+
+        {% if user_journey_data and user_journey_data != 'null' %}
+            try {
+                const journeyData = JSON.parse('{{ user_journey_data|escapejs }}');
+                const journeyCanvas = document.getElementById('userJourneyChart');
+                if (journeyCanvas) {
+                    new Chart(journeyCanvas.getContext('2d'), {
+                        type: 'bar',
+                        data: {
+                            labels: journeyData.labels,
+                            datasets: [{
+                                data: journeyData.data,
+                                backgroundColor: [
+                                    'rgba(79, 70, 229, 0.8)', // Indigo
+                                    'rgba(16, 185, 129, 0.8)', // Emerald
+                                    'rgba(245, 158, 11, 0.8)'  // Amber
+                                ],
+                                borderWidth: 0,
+                                borderRadius: 4,
+                                barPercentage: 0.6,
+                            }]
+                        },
+                        options: {
+                            indexAxis: 'y',
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            const rawValue = journeyData.raw_counts[context.dataIndex];
+                                            const percentage = context.raw;
+                                            return ` ${rawValue} пользователей (${percentage}%)`;
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    grid: { color: chartBorderColor },
+                                    ticks: { 
+                                        color: chartTextColor,
+                                        callback: value => value + '%'
+                                    },
+                                    max: 100,
+                                    beginAtZero: true
+                                },
+                                y: {
+                                    grid: { display: false },
+                                    ticks: { color: chartTextColor }
+                                }
+                            }
+                        }
+                    });
+                }
+            } catch (e) { console.error("Ошибка при отрисовке воронки:", e); }
+        {% endif %}
+
+        {% if usage_by_sub_data and usage_by_sub_data != 'null' %}
+            try {
+                const usageBySubData = JSON.parse('{{ usage_by_sub_data|escapejs }}');
+                const usageBySubCanvas = document.getElementById('usageBySubChart');
+                if (usageBySubCanvas) {
+                    new Chart(usageBySubCanvas.getContext('2d'), {
+                        type: 'bar',
+                        data: {
+                            labels: usageBySubData.labels,
+                            datasets: [{
+                                label: 'Среднее кол-во тестов на юзера',
+                                data: usageBySubData.data,
+                                backgroundColor: 'rgba(16, 185, 129, 0.8)',
+                                borderColor: 'rgba(16, 185, 129, 1)',
+                                borderWidth: 1,
+                                borderRadius: 4,
+                            }]
+                        },
+                        options: {
+                                responsive: true, maintainAspectRatio: false,
+                                plugins: {
+                                    legend: { position: 'bottom', labels: { color: chartTextColor, boxWidth: 15, padding: 20 } },
+                                    tooltip: { mode: 'index', intersect: false }
+                                },
+                                scales: {
+                                    x: { stacked: true, ticks: { color: chartTextColor }, grid: { display: false } },
+                                    y: { stacked: true, ticks: { color: chartTextColor, beginAtZero: true, precision: 0 }, grid: { color: chartBorderColor } }
+                                }
+                            }
+                    });
+                }
+            } catch (e) { console.error("Ошибка при отрисовке графика по тарифам:", e); }
+        {% endif %}
+
+        {% if top_topics_data and top_topics_data != 'null' %}
+            try {
+                const topTopicsData = JSON.parse('{{ top_topics_data|escapejs }}');
+                const topTopicsCanvas = document.getElementById('topTopicsChart');
+                if (topTopicsCanvas) {
+                    new Chart(topTopicsCanvas.getContext('2d'), {
+                        type: 'bar',
+                        data: {
+                            labels: topTopicsData.labels,
+                            datasets: [{
+                                label: 'Частота упоминаний',
+                                data: topTopicsData.data,
+                                backgroundColor: ['#36A2EB', '#FF6384', '#4BC0C0', '#FF9F40', '#9966FF', '#FFCD56', '#C9CBCF'],
+                            }]
+                        },
+                        options: {
+                            indexAxis: 'y', // <-- Делает гистограмму горизонтальной
+                            responsive: true, maintainAspectRatio: false,
+                            plugins: { legend: { display: false } },
+                            scales: { y: { ticks: { color: chartTextColor } } }
+                        }
+                    });
+                }
+            } catch (e) { console.error("Ошибка при отрисовке графика тем:", e); }
+        {% endif %}
+
+        {% if api_performance_data and api_performance_data != 'null' %}
+            try {
+                const apiPerfData = JSON.parse('{{ api_performance_data|escapejs }}');
+                const apiPerfCanvas = document.getElementById('apiPerformanceChart');
+                if (apiPerfCanvas) {
+                    const accentColor = '#4F46E5'; // Indigo
+                    const ctx = apiPerfCanvas.getContext('2d');
+                    const gradient = ctx.createLinearGradient(0, 0, 0, apiPerfCanvas.height);
+                    gradient.addColorStop(0, accentColor.replace('1)', '0.5)'));
+                    gradient.addColorStop(1, accentColor.replace('1)', '0)'));
+
+                    new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                           labels: apiPerfData.labels,
+                           datasets: [{
+                               ...apiPerfData.datasets[0],
+                               borderColor: accentColor,
+                               backgroundColor: gradient,
+                               fill: true,
+                               tension: 0.4,
+                               pointBackgroundColor: accentColor,
+                               pointBorderColor: '#fff',
+                               pointHoverRadius: 6
+                           }]
+                        },
+                        options: {
+                            responsive: true, maintainAspectRatio: false,
+                            plugins: { legend: { display: false } },
+                            scales: {
+                                x: { ticks: { color: chartTextColor }, grid: { color: chartBorderColor } },
+                                y: { 
+                                    ticks: { color: chartTextColor, beginAtZero: true, callback: value => value + ' ms' }, 
+                                    grid: { color: chartBorderColor }
+                                }
+                            }
+                        }
+                    });
+                }
+            } catch (e) { console.error("Ошибка при отрисовке графика производительности API:", e); }
+        {% endif %}
         });
     </script>
 </body>
