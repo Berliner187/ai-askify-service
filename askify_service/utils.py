@@ -12,9 +12,10 @@ import hashlib
 import logging
 from urllib.parse import urlparse
 
+from django.core.cache import cache
 from django.http import JsonResponse
 
-from openai import OpenAI
+from openai import OpenAI, APIStatusError
 import requests
 import httpx
 import asyncio
@@ -75,6 +76,90 @@ class ManageGenerationSurveys:
             print("Detected forbidden words")
             return True
         return False
+
+    async def _attempt_generation(self, client):
+        """Одна попытка вызова API с асинхронным клиентом."""
+        completion = await asyncio.to_thread(
+            client.chat.completions.create,
+            messages=[
+                {"role": "system", "content": f"{self.__get_confidential_key('system_prompt')}{self.count_questions}"},
+                {"role": "user", "content": f"{self.data}{self.__get_confidential_key('user_prompt')}"},
+            ],
+            model="gpt-4o",
+            temperature=0.3,
+            max_tokens=2048,
+            top_p=1,
+            timeout=45.0,
+        )
+
+        generated_text = completion.choices[0].message.content
+        cleaned_generated_text = generated_text.replace("json", "").replace("`", "")
+        tokens_used = completion.usage.total_tokens
+
+        return {
+            'success': True,
+            'generated_text': json.loads(cleaned_generated_text),
+            'tokens_used': tokens_used,
+            'model_used': 'gpt-4o'
+        }
+
+    async def generate_with_failover(self):
+        """
+        Главный метод. Реализует логику пула ключей и повторных попыток.
+        """
+        from askify_service.models import APIKey
+
+        available_keys = await sync_to_async(list)(
+            APIKey.objects.filter(purpose='SURVEY', is_active=True).order_by('?')
+        )
+        if not available_keys:
+            return {'success': False, 'error': 'Нет доступных API ключей для генерации.'}
+
+        max_total_retries = 3
+        delay = 5.0
+
+        for attempt in range(max_total_retries):
+            for api_key in available_keys:
+
+                cache_key = f"api_key_throttled_{api_key.id}"
+                if cache.get(cache_key):
+                    continue
+
+                try:
+                    client = OpenAI(
+                        base_url="https://models.inference.ai.azure.com",
+                        api_key=api_key.key,
+                    )
+
+                    result = await self._attempt_generation(client)
+
+                    result['api_key_used'] = api_key
+                    return result
+
+                except APIStatusError as e:
+                    if e.status_code == 429:
+                        tracer_l.warning(f"Key {api_key.name} hit rate limit. Throttling for 60s.")
+                        cache.set(cache_key, True, timeout=60)
+                        continue
+                    else:
+                        tracer_l.error(f"API Error with key {api_key.name}: {e.status_code} - {e.response.text}")
+                        continue
+
+                except json.JSONDecodeError as e:
+                    tracer_l.error(f"JSON Decode Error with key {api_key.name}: {e}. API returned invalid JSON.")
+                    break
+
+                except Exception as e:
+                    tracer_l.error(f"Unexpected error with key {api_key.name}: {e}")
+                    continue
+
+            if attempt < max_total_retries - 1:
+                tracer_l.info(f"All keys failed. Retrying entire process in {delay} seconds...")
+                await asyncio.sleep(delay)
+                delay *= 2
+
+        return {'success': False,
+                'error': 'Сервер перегружен, все API ключи временно недоступны. Попробуйте снова через минуту.'}
 
     def log_warning(self, message):
         print(message)
@@ -253,6 +338,9 @@ def get_formate_date(date):
     date_obj = datetime.fromisoformat(date_str)
 
     return date_obj.strftime("%-d %B, в %H:%M")
+
+
+from asgiref.sync import sync_to_async
 
 
 class GenerationModelsControl:

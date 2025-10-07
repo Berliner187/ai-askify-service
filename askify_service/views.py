@@ -742,57 +742,54 @@ class ManageSurveysView(View):
                 tracer_l.debug(f"{request.user.username} --- GEN STAAAART")
                 start_time = time.perf_counter()
 
-                manage_generate_surveys_text = ManageGenerationSurveys(request, text_from_user, question_count)
-                generated_text = await manage_generate_surveys_text.github_gpt(await get_active_api_key('SURVEY'))
+                manage_generate_surveys = ManageGenerationSurveys(request, text_from_user, question_count)
+                generated_data = await manage_generate_surveys.generate_with_failover()
 
-                if generated_text.get('success'):
-                    tokens_used = generated_text.get('tokens_used')
-                    cleaned_generated_text = generated_text.get('generated_text')
-                    tracer_l.debug(f"{request.user.username} --- generated_text: {generated_text}")
-                    end_time = time.perf_counter()
-                    response_time_ms = int((end_time - start_time) * 1000)
-                else:
-                    return JsonResponse({'error': f'Произошла ошибка :( {generated_text}'}, status=429)
+                if not generated_data.get('success'):
+                    error_message = generated_data.get('error',
+                                                       'Не удалось составить тест, попробуйте снова чуть позже...')
+                    return JsonResponse({'error': error_message}, status=429)
+
+                cleaned_generated_text = generated_data.get('generated_text')
+                tokens_used = generated_data.get('tokens_used')
+                api_key_used = generated_data.get('api_key_used')
+
+                tracer_l.debug(f"{request.user.username} --- generated_text: {cleaned_generated_text}")
+                end_time = time.perf_counter()
+                response_time_ms = int((end_time - start_time) * 1000)
+
+                new_survey_id = uuid.uuid4()
+
+                survey = Survey(
+                    survey_id=new_survey_id,
+                    title=cleaned_generated_text['title'],
+                    id_staff=get_staff_id(request),
+                    model_name=generated_data.get('model_used', '')
+                )
+                survey.save_questions(cleaned_generated_text['questions'])
+                survey.save()
 
             except Exception as fail:
                 tracer_l.error(f"{request.user.username} --- {fail}")
                 return JsonResponse({'error': 'Опаньки :(\n\nК сожалению, не удалось составить тест'}, status=400)
 
-            # try:
-            new_survey_id = uuid.uuid4()
-
-            survey = Survey(
-                survey_id=new_survey_id,
-                title=cleaned_generated_text['title'],
-                id_staff=get_staff_id(request),
-                model_name=generated_text.get('model_used', '')
-            )
-            survey.save_questions(cleaned_generated_text['questions'])
-            survey.save()
-
-            # _tokens_used = TokensUsed(
-            #     id_staff=get_staff_id(request),
-            #     tokens_survey_used=tokens_used,
-            # )
-            # _tokens_used.save()
-
-            api_key_manage = await get_active_api_key('SURVEY')
             APIKeyUsage.objects.create(
-                api_key=api_key_manage,
+                api_key=api_key_used,
                 success=True,
                 response_time_ms=response_time_ms
             )
 
-            tracer_l.info(f'{request.user.username} --- success save to DB')
+            try:
+                _tokens_used = TokensUsed(
+                    id_staff=get_staff_id(request),
+                    tokens_survey_used=tokens_used,
+                )
+                _tokens_used.save()
+            except Exception as fail:
+                tracer_l.warning(f'{request.user.username} --- чут чут фейл: {fail}')
 
+            tracer_l.info(f'{request.user.username} --- success save to DB')
             return JsonResponse({'survey': cleaned_generated_text, 'survey_id': f"{new_survey_id}"}, status=200)
-            # except Exception as fail:
-            #     user = await sync_to_async(str)(request.user.username)
-            #     tracer_l.tracer_charge(
-            #         'INFO', user, ManageSurveysView.post.__name__,
-            #         "error in save to DB", f"{fail}")
-            #     return JsonResponse(
-            #         {'error': 'Ошибочка :(\n\nПожалуйста, попробуйте позже'}, status=400)
 
         tracer_l.warning(f'{request.user.username} --- Invalid request method: code 400')
         return JsonResponse({'error': 'Invalid request method'}, status=400)
@@ -3251,6 +3248,7 @@ def admin_stats(request):
         "usage_by_sub_data": usage_by_sub_data,
         "top_topics_data": top_topics_data,
         "user_journey_data": user_journey_data,
+        'username': get_username(request)
     }
 
     return render(request, "admin.html", context)
