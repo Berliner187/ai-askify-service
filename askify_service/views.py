@@ -14,8 +14,7 @@ from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.http import HttpResponseForbidden, HttpResponse
 from django.db.models import Q
-from django.db.models.functions import Length
-from django.shortcuts import render, redirect
+from django.db.models.functions import Length, TruncDate
 from django.views import View
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
@@ -26,12 +25,12 @@ from django.db.models.functions import Abs
 from collections import defaultdict
 from datetime import date, timedelta
 from django.db import transaction
-from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.views.decorators.csrf import csrf_exempt
 from django.db.models.functions import NthValue
 from django.utils.safestring import mark_safe
 from django.db import connection
+from django.db.models import Sum, Count, Q, F
 
 
 from io import BytesIO
@@ -109,14 +108,10 @@ crypto_b = Quant()
 
 @check_legal_process
 def index(request):
-    start_date = "01.01.2025"
-
     context = {
         'username': request.user.username if request.user.is_authenticated else 0,
-        'total_users': calculate_total_users(start_date, 1200),
         'debug': DEBUG
     }
-
     return render(request, 'askify_service/index.html', context)
 
 
@@ -720,7 +715,7 @@ class ManageSurveysView(View):
             tracer_l.debug(f"{request.user.username} --- total_used_per_period: {total_used_per_period}")
 
             if plan_name.lower() == 'стартовый':
-                if total_used_per_period >= tests_count_limit:
+                if (total_used_per_period >= tests_count_limit):
                     return JsonResponse({
                         'error': 'Ваш лимит тестов на тарифе "Стартовый" исчерпан.'},
                         status=429
@@ -733,7 +728,7 @@ class ManageSurveysView(View):
 
             if subscription_object.check_sub_status() != 'active':
                 return JsonResponse({
-                    'error': 'Ваша подписка закончилась :(\n\nОзнакомьтесь с тарифами на странице профиля.'
+                    'error': 'Ваша подписка закончилась :( Ознакомьтесь с тарифами на странице профиля.'
                 }, status=429)
 
             try:
@@ -2470,13 +2465,6 @@ def get_subscription_level(request) -> int:
     subscription_check = SubscriptionCheck()
     return subscription_check.get_subscription_level(subscription_db.plan_name)
 
-from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse, HttpResponse
-from django.db.models import Sum, Count, Q, F
-from django.db.models.functions import Length, TruncDate
-from django.utils import timezone
-from datetime import timedelta, datetime
 
 @login_required
 def admin_stats(request):

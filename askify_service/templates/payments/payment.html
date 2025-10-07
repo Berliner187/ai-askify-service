@@ -279,37 +279,6 @@
             </div>
         </div>
 
-        <p class="plan-desc" style="text-align: center;">Выберите оптимальный План для себя</p>
-
-        <div class="final-value-summary comparison-grid">
-            <div class="summary-item standard-tier">
-                <i class="fas fa-bolt"></i>
-                <div class="summary-text">
-                    <h4>СТАНДАРТ</h4>
-                    <p>Ваша новая реальность. Скорость, простота и мгновенный результат.</p>
-                    <ul class="plan-desc">
-                        <li><strong>Создавайте за секунды.</strong> Превращайте любой текст в готовый тест.</li>
-                        <li><strong>Никакого трения.</strong> Ваша аудитория проходит тест БЕЗ РЕГИСТРАЦИИ, просто введя имя.</li>
-                        <li><strong>Смотрите на главное.</strong> Получайте детальную аналитику по каждому отдельному тесту в реальном времени.</li>
-                    </ul>
-                </div>
-            </div>
-            <div class="summary-item premium-tier">
-                <i class="fas fa-crown" style="color: var(--accent-color);"></i> 
-                <div class="summary-text">
-                    <h4>ПРЕМИУМ</h4>
-                    <p>Для тех, кто работает вдолгую и принимает решения на основе данных.</p>
-                    <ul class="plan-desc">
-                        <li class="premium-plus"><strong>Все возможности «Стандартного», плюс:</strong></li>
-                        <li class="premium-feature">
-                            <strong style="color: var(--accent-green);">Полная автоматизация.</strong>
-                            Хватит копировать. Загружайте тесты напрямую из ваших PDF и Word документов.
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-
         <div class="payment-banner fade-in">
             <svg class="payment-icon" width="24" height="24" viewBox="0 0 24 24" fill="none">
               <path d="M12 1C5.93 1 1 5.93 1 12s4.93 11 11 11 11-4.93 11-11S18.07 1 12 1Zm0 20c-4.96 0-9-4.04-9-9s4.04-9 9-9 9 4.04 9 9-4.04 9-9 9Z" fill="#79EF66"/>
@@ -328,7 +297,7 @@
                 <div class="plan-desc">Ваше секретное оружие на весь учебный год.</div>
                 <div class="plan-price">400 ₽ <span class="price-period">/ в месяц</span></div>
                 <div class="yearly-bonus">4800 ₽ в год • <strong>Экономия 38%</strong></div>
-                <div class="yearly-bonus change">ВЫБРАТЬ ПРЕМИУМ</div>
+                <!-- <div class="yearly-bonus change">ВЫБРАТЬ ПРЕМИУМ</div> -->
             </div>
             <!-- Standard Year -->
             <div class="plan" data-plan="standard-year" data-price="2640" data-desc="Стандартный Год">
@@ -336,7 +305,7 @@
                 <div class="plan-desc">Надежный помощник для максимальной экономии.</div>
                 <div class="plan-price">220 ₽ <span class="price-period">/ в месяц</span></div>
                 <div class="yearly-bonus">2640 ₽ в год • <strong>Экономия 48%</strong></div>
-                <div class="yearly-bonus change">ВЫБРАТЬ СТАНДАРТНЫЙ</div>
+                <!-- <div class="yearly-bonus change">ВЫБРАТЬ СТАНДАРТНЫЙ</div> -->
             </div>
             <!-- Premium Month -->
             <div class="plan popular" data-plan="premium-month-plus" data-price="590" data-desc="Премиум">
@@ -344,14 +313,14 @@
                 <div class="plan-title">Премиум • Месяц</div>
                 <div class="plan-desc">Максимум возможностей для интенсивной работы.</div>
                 <div class="plan-price">590 ₽ <span class="price-period">/ в месяц</span></div>
-                <div class="yearly-bonus change">ВЫБРАТЬ ПРЕМИУМ</div>
+                <!-- <div class="yearly-bonus change">ВЫБРАТЬ ПРЕМИУМ</div> -->
             </div>
             <!-- Standard Month -->
             <div class="plan" data-plan="standard-month-plus" data-price="420" data-desc="Стандартный">
                 <div class="plan-title">Стандартный • Месяц</div>
                 <div class="plan-desc">Идеально для регулярной проверки знаний.</div>
                 <div class="plan-price">420 ₽ <span class="price-period">/ в месяц</span></div>
-                <div class="yearly-bonus change">ВЫБРАТЬ СТАНДАРТНЫЙ</div>
+                <!-- <div class="yearly-bonus change">ВЫБРАТЬ СТАНДАРТНЫЙ</div> -->
             </div>
             <!-- Premium 3 Month -->
             <div class="plan" data-plan="premium-month-plus" data-price="1180" data-desc="Премиум 3 мес">
@@ -360,7 +329,7 @@
                 <div class="plan-desc">Платите за&nbsp;2&nbsp;месяца, а&nbsp;получите&nbsp;&mdash; 3&nbsp;месяца!</div>
                 <div class="plan-price">395 ₽ <span class="price-period">/ в месяц</span></div>
                 <div class="yearly-bonus"><strong>1180 руб и МЕСЯЦ В ПОДАРОК</strong></div>
-                <div class="yearly-bonus change">ВЫБРАТЬ ПРЕМИУМ</div>
+                <!-- <div class="yearly-bonus change">ВЫБРАТЬ ПРЕМИУМ</div> -->
             </div>
             <!-- Standard 3 Month -->
             <div class="plan" data-plan="standard-month-plus" data-price="840" data-desc="Стандартный 3 мес">
@@ -368,28 +337,59 @@
                 <div class="plan-desc">Платите за&nbsp;2&nbsp;месяца, а&nbsp;получите&nbsp;&mdash; 3&nbsp;месяца!</div>
                 <div class="plan-price">280 ₽ <span class="price-period">/ в месяц</span></div>
                 <div class="yearly-bonus"><strong>840 руб и МЕСЯЦ В ПОДАРОК</strong></div>
-                <div class="yearly-bonus change">ВЫБРАТЬ СТАНДАРТНЫЙ</div>
+                <!-- <div class="yearly-bonus change">ВЫБРАТЬ СТАНДАРТНЫЙ</div> -->
             </div>
         </div>
 
-      <form name="payform-tbank" id="payform-tbank">
-        {% csrf_token %}
-        <input type="hidden" name="amount" id="amount_price" />
-        <input type="hidden" name="order" value="{{order_id}}" />
-        <input type="hidden" name="description" id="description_order" />
+    <form name="payform-tbank" id="payform-tbank">
+    {% csrf_token %}
+    <input type="hidden" name="amount" id="amount_price" />
+    <input type="hidden" name="order" value="{{order_id}}" />
+    <input type="hidden" name="description" id="description_order" />
 
-        <div class="contact-container">
-          <input class="contact" placeholder="E‑mail для чека" name="email" value="{{email}}" required/>
-          <input class="contact" placeholder="Телефон" name="phone" value="{{phone}}" type="hidden"/>
+    <div class="contact-container">
+        <input class="contact" placeholder="E‑mail для чека" name="email" value="{{email}}" required/>
+        <input class="contact" placeholder="Телефон" name="phone" value="{{phone}}" type="hidden"/>
+    </div>
+    
+    <button class="payment-button disabled" id="payment-button" type="submit" disabled>Выберите тариф</button>
+    </form>
+
+    <p class="trust-text" style="text-align: center; color: #829085">
+        Нажимая «Оплатить», Вы соглашаетесь с 
+        <a href="/docs/public-offer" target="_blank">условиями оферты</a>.
+    </p>
+
+    <p class="plan-desc" style="text-align: center;">Выберите оптимальный План для себя</p>
+
+    <div class="final-value-summary comparison-grid">
+        <div class="summary-item standard-tier">
+            <i class="fas fa-bolt"></i>
+            <div class="summary-text">
+                <h4>СТАНДАРТ</h4>
+                <p>Ваша новая реальность. Скорость, простота и мгновенный результат.</p>
+                <ul class="plan-desc">
+                    <li><strong>Создавайте за секунды.</strong> Превращайте любой текст в готовый тест.</li>
+                    <li><strong>Никакого трения.</strong> Ваша аудитория проходит тест БЕЗ РЕГИСТРАЦИИ, просто введя имя.</li>
+                    <li><strong>Смотрите на главное.</strong> Получайте детальную аналитику по каждому отдельному тесту в реальном времени.</li>
+                </ul>
+            </div>
         </div>
-        
-        <button class="payment-button disabled" id="payment-button" type="submit" disabled>Выберите тариф</button>
-      </form>
-
-      <p class="trust-text" style="text-align: center; color: #829085">
-          Нажимая «Оплатить», Вы соглашаетесь с 
-          <a href="/docs/public-offer" target="_blank">условиями оферты</a>.
-      </p>
+        <div class="summary-item premium-tier">
+            <i class="fas fa-crown" style="color: var(--accent-color);"></i> 
+            <div class="summary-text">
+                <h4>ПРЕМИУМ</h4>
+                <p>Для тех, кто работает вдолгую и принимает решения на основе данных.</p>
+                <ul class="plan-desc">
+                    <li class="premium-plus"><strong>Все возможности «Стандартного», плюс:</strong></li>
+                    <li class="premium-feature">
+                        <strong style="color: var(--accent-green);">Полная автоматизация.</strong>
+                        Хватит копировать. Загружайте тесты напрямую из ваших PDF и Word документов.
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
 
       <div class="trust-section">
           <div class="trust-card">

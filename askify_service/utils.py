@@ -646,21 +646,6 @@ def is_allowed_email(email):
     return domain in ALLOWED_DOMAINS
 
 
-def calculate_total_users(start_date_str: str, initial_users: int = 0) -> int:
-    try:
-        start_date = datetime.strptime(start_date_str, "%d.%m.%Y")
-    except ValueError:
-        raise ValueError("Используйте формат 'dd.mm.yyyy'")
-
-    current_date = datetime.now()
-
-    if current_date < start_date:
-        return initial_users
-
-    delta = current_date - start_date
-    return initial_users + delta.days * 323
-
-
 def hash_data(data):
     data_string = json.dumps(data, sort_keys=True).encode()
     return hashlib.sha256(data_string).hexdigest()
