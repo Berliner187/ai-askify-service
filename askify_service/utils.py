@@ -106,21 +106,21 @@ class ManageGenerationSurveys:
     async def generate_with_failover(self):
         """
         Главный метод. Реализует логику пула ключей и повторных попыток.
+        Новая логика: сначала пробуем все ключи, потом ждем.
         """
         from askify_service.models import APIKey
 
         available_keys = await sync_to_async(list)(
-            APIKey.objects.filter(purpose='SURVEY', is_active=True).order_by('?')
+            APIKey.objects.filter(purpose='SURVEY').order_by('-is_active', '-created_at')
         )
         if not available_keys:
             return {'success': False, 'error': 'Нет доступных API ключей для генерации.'}
 
-        max_total_retries = 3
-        delay = 5.0
+        max_backoff_retries = 3
+        delay = 10.0
 
-        for attempt in range(max_total_retries):
+        for attempt in range(max_backoff_retries):
             for api_key in available_keys:
-
                 cache_key = f"api_key_throttled_{api_key.id}"
                 if cache.get(cache_key):
                     continue
@@ -134,29 +134,38 @@ class ManageGenerationSurveys:
                     result = await self._attempt_generation(client)
 
                     result['api_key_used'] = api_key
+
+                    if not api_key.is_active:
+                        tracer_l.info(f"Key {api_key.name} was successful. Promoting to active.")
+                        await sync_to_async(APIKey.objects.filter(purpose='SURVEY').update)(is_active=False)
+                        api_key.is_active = True
+                        await sync_to_async(api_key.save)(update_fields=['is_active'])
+
                     return result
 
                 except APIStatusError as e:
                     if e.status_code == 429:
-                        tracer_l.warning(f"Key {api_key.name} hit rate limit. Throttling for 60s.")
+                        tracer_l.info(f"Key {api_key.name} hit rate limit. Throttling for 60s.")
                         cache.set(cache_key, True, timeout=60)
                         continue
+
+                    elif e.status_code == 401:
+                        tracer_l.warning(f"Key {api_key.name} is INVALID (401 Unauthorized). Deactivating.")
+                        api_key.is_active = False
+                        await sync_to_async(api_key.save)()
+                        continue
+
                     else:
                         tracer_l.error(f"API Error with key {api_key.name}: {e.status_code} - {e.response.text}")
                         continue
-
-                except json.JSONDecodeError as e:
-                    tracer_l.error(f"JSON Decode Error with key {api_key.name}: {e}. API returned invalid JSON.")
-                    break
 
                 except Exception as e:
                     tracer_l.error(f"Unexpected error with key {api_key.name}: {e}")
                     continue
 
-            if attempt < max_total_retries - 1:
-                tracer_l.info(f"All keys failed. Retrying entire process in {delay} seconds...")
+            if attempt < max_backoff_retries - 1:
+                tracer_l.info(f"All keys are throttled. Retrying entire process in {delay} seconds...")
                 await asyncio.sleep(delay)
-                delay *= 2
 
         return {'success': False,
                 'error': 'Сервер перегружен, все API ключи временно недоступны. Попробуйте снова через минуту.'}
