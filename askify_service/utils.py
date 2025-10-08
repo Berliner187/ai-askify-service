@@ -78,35 +78,43 @@ class ManageGenerationSurveys:
         return False
 
     async def _attempt_generation(self, client):
-        """Одна попытка вызова API с асинхронным клиентом."""
-        completion = await asyncio.to_thread(
-            client.chat.completions.create,
-            messages=[
-                {"role": "system", "content": f"{self.__get_confidential_key('system_prompt')}{self.count_questions}"},
-                {"role": "user", "content": f"{self.data}{self.__get_confidential_key('user_prompt')}"},
-            ],
-            model="gpt-4o",
-            temperature=0.3,
-            max_tokens=2048,
-            top_p=1,
-            timeout=45.0,
-        )
+        """
+        Одна попытка вызова API с ВНУТРЕННИМИ повторами при ошибке JSON.
+        """
+        max_json_retries = 2
 
-        generated_text = completion.choices[0].message.content
-        cleaned_generated_text = generated_text.replace("json", "").replace("`", "")
-        tokens_used = completion.usage.total_tokens
+        for attempt in range(max_json_retries):
+            completion = await asyncio.to_thread(
+                client.chat.completions.create,
+                messages=[
+                    {"role": "system",
+                     "content": f"{self.__get_confidential_key('system_prompt')}{self.count_questions}"},
+                    {"role": "user", "content": f"{self.data}{self.__get_confidential_key('user_prompt')}"},
+                ],
+                model="gpt-4o", temperature=0.5, max_tokens=2048, top_p=1, timeout=45.0
+            )
 
-        return {
-            'success': True,
-            'generated_text': json.loads(cleaned_generated_text),
-            'tokens_used': tokens_used,
-            'model_used': 'gpt-4o'
-        }
+            generated_text = completion.choices[0].message.content
+            tokens_used = completion.usage.total_tokens
+
+            try:
+                cleaned_generated_text = generated_text.replace("json", "").replace("`", "")
+                parsed_json = json.loads(cleaned_generated_text)
+
+                return {
+                    'success': True, 'generated_text': parsed_json, 'tokens_used': tokens_used, 'model_used': 'gpt-4o'
+                }
+            except json.JSONDecodeError as e:
+                tracer_l.warning(
+                    f"JSONDecodeError from API: {e}. Retrying generation (attempt {attempt + 1}/{max_json_retries})...")
+                if attempt == max_json_retries - 1:
+                    raise e
+
+        raise json.JSONDecodeError("Failed to get valid JSON from API after multiple retries.", "", 0)
 
     async def generate_with_failover(self):
         """
-        Главный метод. Реализует логику пула ключей и повторных попыток.
-        Новая логика: сначала пробуем все ключи, потом ждем.
+        Главный метод генерации теста, с обработкой ошибки парсинга JSON.
         """
         from askify_service.models import APIKey
 
@@ -127,48 +135,47 @@ class ManageGenerationSurveys:
 
                 try:
                     client = OpenAI(
-                        base_url="https://models.inference.ai.azure.com",
-                        api_key=api_key.key,
+                        base_url="https://models.inference.ai.azure.com", api_key=api_key.key
                     )
 
                     result = await self._attempt_generation(client)
 
                     result['api_key_used'] = api_key
-
                     if not api_key.is_active:
                         tracer_l.info(f"Key {api_key.name} was successful. Promoting to active.")
                         await sync_to_async(APIKey.objects.filter(purpose='SURVEY').update)(is_active=False)
                         api_key.is_active = True
                         await sync_to_async(api_key.save)(update_fields=['is_active'])
-
                     return result
 
                 except APIStatusError as e:
                     if e.status_code == 429:
-                        tracer_l.info(f"Key {api_key.name} hit rate limit. Throttling for 60s.")
+                        tracer_l.warning(f"Key {api_key.name} hit rate limit. Throttling for 60s.")
                         cache.set(cache_key, True, timeout=60)
                         continue
-
                     elif e.status_code == 401:
-                        tracer_l.warning(f"Key {api_key.name} is INVALID (401 Unauthorized). Deactivating.")
+                        tracer_l.critical(f"Key {api_key.name} is INVALID (401 Unauthorized). Deactivating.")
                         api_key.is_active = False
                         await sync_to_async(api_key.save)()
                         continue
-
                     else:
                         tracer_l.error(f"API Error with key {api_key.name}: {e.status_code} - {e.response.text}")
                         continue
 
+                except json.JSONDecodeError as e:
+                    tracer_l.error(f"FATAL: Key {api_key.name} failed to get valid JSON after all retries: {e}")
+                    break
+
                 except Exception as e:
-                    tracer_l.error(f"Unexpected error with key {api_key.name}: {e}")
+                    tracer_l.error(f"CRITICAL Unexpected error with key {api_key.name}: {e}")
                     continue
 
             if attempt < max_backoff_retries - 1:
-                tracer_l.info(f"All keys are throttled. Retrying entire process in {delay} seconds...")
+                tracer_l.info(f"All keys/attempts failed for this cycle. Retrying entire process in {delay} seconds...")
                 await asyncio.sleep(delay)
 
         return {'success': False,
-                'error': 'Сервер перегружен, все API ключи временно недоступны. Попробуйте снова через минуту.'}
+                'error': 'Сервер перегружен или API возвращает некорректные данные. Попробуйте снова через минуту.'}
 
     def log_warning(self, message):
         print(message)
