@@ -91,7 +91,7 @@ class ManageGenerationSurveys:
                      "content": f"{self.__get_confidential_key('system_prompt')}{self.count_questions}"},
                     {"role": "user", "content": f"{self.data}{self.__get_confidential_key('user_prompt')}"},
                 ],
-                model="gpt-4o", temperature=0.5, max_tokens=2048, top_p=1, timeout=45.0
+                model="gpt-4o", temperature=0.3, max_tokens=2048, top_p=1, timeout=45.0
             )
 
             generated_text = completion.choices[0].message.content
