@@ -278,8 +278,9 @@
                 </a>
 
                 <nav class="main-nav hidden lg:flex items-center gap-6">
-                    <a href="#transformation" class="nav-link text-sm text-[var(--color-text-secondary)] font-semibold hover:text-white">Возможности</a>
-                    <a href="#pricing" class="nav-link text-sm text-[var(--color-text-secondary)] font-semibold hover:text-white">Тарифы</a>
+                    <a href="#transformation-engine" class="nav-link text-sm text-[var(--color-text-secondary)] font-semibold hover:text-white">Начать</a>
+                    <a href="#use-cases" class="nav-link text-sm text-[var(--color-text-secondary)] font-semibold hover:text-white">Кейсы</a>
+                    <a href="#analytics-showcase" class="nav-link text-sm text-[var(--color-text-secondary)] font-semibold hover:text-white">Аналитика</a>
                     <a href="#faq" class="nav-link text-sm text-[var(--color-text-secondary)] font-semibold hover:text-white">FAQ</a>
                 </nav>
 
@@ -297,8 +298,9 @@
             
             <div id="mobile-menu" class="w-64 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/80 backdrop-blur-xl shadow-2xl shadow-black/50">
                 <nav class="flex flex-col p-4 space-y-2">
-                    <a href="#transformation" class="px-4 py-3 text-base text-white font-semibold rounded-lg hover:bg-black/20">Возможности</a>
-                    <a href="#pricing" class="px-4 py-3 text-base text-white font-semibold rounded-lg hover:bg-black/20">Тарифы</a>
+                    <a href="#transformation-engine" class="px-4 py-3 text-base text-white font-semibold rounded-lg hover:bg-black/20">Начать</a>
+                    <a href="#use-cases" class="px-4 py-3 text-base text-white font-semibold rounded-lg hover:bg-black/20">Кейсы</a>
+                    <a href="#analytics-showcase" class="px-4 py-3 text-base text-white font-semibold rounded-lg hover:bg-black/20">Аналитика</a>
                     <a href="#faq" class="px-4 py-3 text-base text-white font-semibold rounded-lg hover:bg-black/20">FAQ</a>
                     <hr class="border-t border-[var(--color-border)] !my-3">
                     <a href="/login" class="px-4 py-3 text-base text-white font-semibold rounded-lg hover:bg-black/20">Вход</a>
@@ -316,10 +318,10 @@
             <p class="mt-6 text-lg max-w-3xl mx-auto text-[var(--color-text-secondary)]">
                 Хватит тратить часы в&nbsp;Word. Загрузите свои материалы и&nbsp;получите готовый тест с&nbsp;ответами. Прямо сейчас. Бесплатно.
             </p>
-            <a href="#create-now" class="mt-8 inline-block bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] px-10 py-4 text-base font-bold rounded-full transition hover:opacity-90 shadow-lg shadow-[var(--color-accent-primary)]/20">
+            <a href="#create-now" class="mt-8 inline-block bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] px-10 py-4 text-base font-bold rounded-full transition hover:opacity-90 hover:scale-105 active:scale-100 shadow-lg shadow-[var(--color-accent-primary)]/20">
                 Создать тест бесплатно
             </a>
-            <a href="#professional-manifesto" class="mt-4 block text-sm text-[var(--color-text-secondary)] hover:text-white transition-colors">
+            <a href="#professional-manifesto" class="mt-4 block text-sm text-[var(--color-text-secondary)] transition-scale hover:text-white hover:scale-102 active:scale-95 transition-colors">
                 Для профессионального использования <span class="opacity-70">&rarr;</span>
             </a>
         </section>
@@ -328,6 +330,8 @@
 
             <div class="mt-8 bg-[var(--color-surface)] p-4 sm:p-8 rounded-3xl border border-[var(--color-border)] shadow-2xl shadow-black/40">
                 
+                {% if username == 0 %}
+
                 <div class="text-center mt-12">
                     <h2 class="text-xl sm:text-3xl font-bold text-white min-h-[128px] sm:min-h-[82px]">
                         <span>Создайте тест по</span><br class="sm:hidden">
@@ -335,6 +339,8 @@
                         <span id="animated-headline-cursor" class="text-[var(--color-text-secondary)] font-light">|</span>
                     </h2>
                 </div>
+
+                {% endif %}
 
                 {% if username == 0 %}
 
@@ -412,10 +418,10 @@
                         </a>
                     {% else %}
                         <h3 class="text-2xl font-bold text-white">
-                            <span class="gradient-text">{{ user.username }}</span>, добро пожаловать!
+                            <span class="gradient-text">{{ user.username }}</span>
                         </h3>
                         <p class="mt-2 text-gray-400">
-                            Вы уже в системе. Все созданные тесты автоматически сохраняются в вашем личном кабинете.
+                            Вы уже в системе. Все созданные тесты автоматически сохраняются в Вашем личном кабинете.
                         </p>
                         
                         <div class="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -423,9 +429,9 @@
                                 <i class="fas fa-user-circle mr-2"></i>
                                 Мой кабинет
                             </a>
-                            <a href="/payment/" class="block bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] px-6 py-3 font-bold rounded-full transition-transform hover:scale-105">
-                                <i class="fas fa-crown mr-2"></i>
-                                Открыть Премиум
+                            <a href="{% url 'create' %}" class="block bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] px-6 py-3 font-bold rounded-full transition-transform hover:opacity-90 hover:scale-105 active:scale-100">
+                                <i class="fa-solid fa-arrow-right"></i>
+                                Создать новый тест
                             </a>
                         </div>
                     {% endif %}
@@ -1376,6 +1382,7 @@
                         <a href="https://productradar.ru/product/letuchka/" target="_blank" rel="noopener noreferrer" class="text-[var(--color-text-secondary)] hover:text-white transition-colors">Product Radar</a>
                         <a href="https://www.behance.net/gallery/217116137/Letychka-letuchka-AI-servis-dlja-generacii-testov/" target="_blank" rel="noopener noreferrer" class="text-[var(--color-text-secondary)] hover:text-white transition-colors">Кейс на Behance</a>
                         <a href="https://rutube.ru/video/05833232f69b6dd32e4ccd0e9ec63c4b/?r=wd" target="_blank" rel="noopener noreferrer" class="text-[var(--color-text-secondary)] hover:text-white transition-colors">Промо на Rutube</a>
+                        <a href="https://www.uchportal.ru/" target="_blank"><img border="0" src="https://www.uchportal.ru/banners/baner3.gif" width="200" height="100" alt="Учительский портал " class="text-[var(--color-text-secondary)] hover:text-white transition-colors">Учительский портал</a>
                     </div>
                 </div>
 

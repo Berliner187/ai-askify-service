@@ -356,7 +356,7 @@
     <script>
         function copyLinkAndNotify() {
             const shareUrl = $(event.currentTarget).data('share-url');
-            const urlToCopy = window.location.host + shareUrl || window.location.href;
+            const urlToCopy = 'https://' + window.location.host + shareUrl || window.location.href;
 
             navigator.clipboard.writeText(urlToCopy).then(function() {
                 const message = $('<div/>', {
