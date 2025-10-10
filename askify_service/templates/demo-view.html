@@ -408,7 +408,6 @@
                 style="background-color: var(--color-accent-secondary); color: var(--color-bg);"
                 title="Перейти к аналитике">
                     <i class="fas fa-chart-pie"></i>
-                    <span class="tooltip">Аналитика</span>
                 </a>
             {% endif %}
 
@@ -427,15 +426,11 @@
             {% endif %}
 
             {% if username != 0 %}
-                <a href="/create" style="background-color: rgba(255, 255, 255, 0.1); color: white;"
+                <a href="/create" class="copy-btn" style="background-color: rgba(255, 255, 255, 0.1); color: white;"
                 title="Создать новый тест">
                     <i class="fas fa-plus"></i>
-                    <span class="tooltip">Создать новый</span>
                 </a>
             {% endif %}
-                <button data-action="share" data-share-url="{% url 'take_test' survey_id %}" style="background-color: rgba(255, 255, 255, 0.1); color: white;" class="copy-btn transition-transform hover:scale-[1.03] active:scale-[.97] flex items-center justify-center text-center p-4 gap-3 rounded-full border border-transparent transition-colors">
-                    <i class="fas fa-share-alt"></i>
-                </button>
         {% else %}
             <a href="{% url 'take_test' survey_id %}" 
             style="background-color: var(--color-accent-primary); color: white;"
