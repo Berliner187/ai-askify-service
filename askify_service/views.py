@@ -1836,6 +1836,13 @@ def preview_test(request, survey_id):
         author_username = AuthUser.objects.get(id_staff=survey.id_staff).username
         is_short_enough = len(author_username) < 20
 
+        try:
+            subscription_db = Subscription.objects.get(staff_id=get_staff_id(request))
+            subscription_check = SubscriptionCheck()
+            subscription_level = subscription_check.get_subscription_level(subscription_db.plan_name)
+        except Exception:
+            subscription_level = 0
+
         json_response = {
             'page_title': f'{survey.title} | Генератор тестов с ИИ | Создать тест в Летучке',
             'title': survey.title,
@@ -1849,7 +1856,8 @@ def preview_test(request, survey_id):
             'show_answers': survey.show_answers,
             'can_generate': can_generate,
             'is_short_enough': is_short_enough,
-            'debug': DEBUG
+            'debug': DEBUG,
+            'subscription_level': subscription_level
         }
 
         return render(request, 'demo-view.html', json_response)

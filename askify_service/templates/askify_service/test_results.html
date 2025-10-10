@@ -117,6 +117,50 @@
         body.modal-open {
             overflow: hidden;
         }
+
+        .floating-action-bar {
+            position: fixed;
+            bottom: 1.5rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 0.75rem;
+            padding: 0.25rem;
+            background: rgba(30, 24, 48, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--color-border);
+            border-radius: 9999px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            z-index: 50;
+            transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+        }
+
+        .floating-action-bar .copy-btn {
+            height: 3.5rem;
+            width: 3.5rem;
+        }
+
+        .floating-action-bar a, .trigger-register-take-test {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1.5rem;
+            border-radius: 9999px;
+            font-size: 1rem;
+            font-weight: 700;
+            text-decoration: none;
+            white-space: nowrap;
+            transition: transform 0.2s ease, background-color 0.2s ease;
+        }
+        .floating-action-bar a:hover, .floating-action-bar button:hover {
+            transform: scale(1.05);
+            opacity: .9;
+        }
+        .floating-action-bar a:active {
+            transform: scale(0.98);
+        }
     </style>
 </head>
 <body class="text-[var(--color-text-primary)]">
@@ -265,57 +309,6 @@
             </div>
         </div>
 
-        <div class="mt-8 bg-[#1a1625] p-8 rounded-3xl border border-[var(--color-border)] shadow-2xl shadow-black/50">
-            <div class="text-center mb-6">
-                <h3 class="text-2xl font-bold text-white">Куда дальше?</h3>
-                <p class="mt-2 text-[var(--color-text-secondary)] max-w-lg mx-auto">
-                    Анализ — это только начало. Управляйте своими тестами, отслеживайте прогресс или создавайте новые шедевры.
-                </p>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                
-                <a href="{% url 'profile_redirect' %}" 
-                class="group bg-black/20 p-6 rounded-2xl border border-transparent flex flex-col items-center text-center transition-all duration-300 hover:transform hover:-translate-y-1 hover:border-[var(--color-accent-primary)] hover:shadow-2xl hover:shadow-black/70">
-                    
-                    <div class="mb-4 text-3xl text-[var(--color-text-secondary)] transition-colors duration-300 group-hover:text-white">
-                        <i class="fas fa-user-circle"></i>
-                    </div>
-                    <div class="card-text">
-                        <h4 class="font-bold text-white text-lg mb-1">Ваш Профиль</h4>
-                        <p class="text-sm text-[var(--color-text-secondary)] leading-relaxed">Общая статистика, управление подпиской и лимитами.</p>
-                    </div>
-                </a>
-
-                <a href="{% url 'history' %}" 
-                class="group bg-black/20 p-6 rounded-2xl border border-transparent flex flex-col items-center text-center transition-all duration-300 hover:transform hover:-translate-y-1 hover:border-[var(--color-accent-primary)] hover:shadow-2xl hover:shadow-black/70">
-                    
-                    <div class="mb-4 text-3xl text-[var(--color-text-secondary)] transition-colors duration-300 group-hover:text-white">
-                        <i class="fas fa-history"></i>
-                    </div>
-                    <div class="card-text">
-                        <h4 class="font-bold text-white text-lg mb-1">История тестов</h4>
-                        <p class="text-sm text-[var(--color-text-secondary)] leading-relaxed">Доступ ко всем созданным тестам и их результатам.</p>
-                    </div>
-                </a>
-
-                <a href="{% url 'create' %}" 
-                class="group bg-[var(--color-accent-primary)]/10 p-6 rounded-2xl border border-transparent flex flex-col items-center text-center transition-all duration-300 
-                        hover:transform hover:-translate-y-1 hover:border-[var(--color-accent-primary)]/50 hover:shadow-2xl hover:shadow-black/70 
-                        text-[var(--color-accent-primary)]">
-                    
-                    <div class="mb-4 text-3xl text-[var(--color-accent-primary)] transition-colors duration-300">
-                        <i class="fas fa-plus-circle"></i>
-                    </div>
-                    <div class="card-text">
-                        <h4 class="font-bold text-white text-lg mb-1">Создать новый тест</h4>
-                        <p class="text-sm text-[var(--color-text-secondary)] leading-relaxed">Превратите свежие идеи в следующий интерактивный тест.</p>
-                    </div>
-                </a>
-
-            </div>
-        </div>
-        
         <div class="mt-8 text-center bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] shadow-2xl shadow-black/50">
             <div class="flex justify-center mb-4">
                 <i class="fas fa-rocket text-3xl gradient-text"></i>
@@ -351,6 +344,27 @@
                 <p class="text-lg text-[var(--color-text-secondary)]">Итоговый балл: <span id="modal-attempt-score" class="font-bold text-2xl text-white"></span></p>
             </div>
         </div>
+    </div>
+
+    <div class="floating-action-bar">
+        <a href="{% url 'profile_redirect' %}" 
+        style="background-color: var(--color-accent-secondary); color: var(--color-bg);"
+        title="Профиль">
+            <i class="fas fa-user-circle"></i>
+            <span class="tooltip">Больше аналитики</span>
+        </a>
+
+        <a href="{% url 'history' %}" 
+        style="background-color: var(--color-accent-primary); color: white;"
+        title="Пройти тест">
+            <i class="fas fa-history"></i> 
+            <span class="tooltip">История</span>
+        </a>
+
+        <a href="/create" class="copy-btn" style="background-color: rgba(255, 255, 255, 0.1); color: white;"
+        title="Создать новый тест">
+            <i class="fas fa-plus"></i>
+        </a>
     </div>
 
     <script>
