@@ -551,9 +551,7 @@ def medicine_promo(request):
 @login_required
 def page_history_surveys(request):
     try:
-        page_number = request.GET.get('page', 1)
-
-        surveys_data = get_all_surveys(request, page=page_number)
+        surveys_data = get_all_surveys(request, page=1)
 
         context = {
             'page_title': 'Предыдущие тесты',
@@ -561,7 +559,7 @@ def page_history_surveys(request):
             'username': get_username(request),
             'page_obj': surveys_data['page_obj'],
         }
-        tracer_l.info(f"{request.user.username} --- loaded surveys page {page_number}")
+        tracer_l.info(f"{request.user.username} --- loaded surveys page 1")
 
     except Exception as fatal:
         context = {

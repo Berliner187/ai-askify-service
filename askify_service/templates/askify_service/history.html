@@ -55,7 +55,9 @@
                 </div>
                 
                 <div class="center-button" id="load-more-button">
-                    <button class="button-medium laod-more-btn" id="load-more" data-page="2">Загрузить еще</button>
+                    {% if page_obj.has_next %}
+                        <button class="button-medium laod-more-btn" id="load-more" data-page="1">Загрузить еще</button>
+                    {% endif %}
                 </div>
                 
             </div>
@@ -119,7 +121,7 @@
     <script>
         document.getElementById('load-more').addEventListener('click', function() {
             var button = this;
-            var page = button.getAttribute('data-page'); 
+            var page = parseInt(button.getAttribute('data-page')) + 1;
 
             fetch(`/load-more-surveys/?page=${page}`, {
                 method: 'GET',
@@ -164,7 +166,6 @@
             })
             .catch(error => console.error('Error:', error));
         });
-
     </script>
 </body>
 
