@@ -85,17 +85,17 @@
             transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
         }
 
-        .floating-action-bar button {
+        .floating-action-bar .copy-btn {
             height: 3.5rem;
             width: 3.5rem;
         }
 
-        .floating-action-bar a {
+        .floating-action-bar a, .trigger-register-take-test {
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 0.5rem;
-            padding: 0.1rem 1.5rem;
+            padding: 0.5rem 1.5rem;
             border-radius: 9999px;
             font-size: 1rem;
             font-weight: 700;
@@ -103,8 +103,9 @@
             white-space: nowrap;
             transition: transform 0.2s ease, background-color 0.2s ease;
         }
-        .floating-action-bar a:hover {
+        .floating-action-bar a:hover, .floating-action-bar button:hover {
             transform: scale(1.05);
+            opacity: .9;
         }
         .floating-action-bar a:active {
             transform: scale(0.98);
@@ -245,13 +246,6 @@
             </div>
 
             {% if is_creator %}
-                <a href="{% url 'take_test' survey_id %}" class="mt-6 block w-full text-center bg-[var(--color-accent-primary)] text-white p-4 rounded-3xl transition-transform hover:scale-[1.03] active:scale-[.97] shadow-lg shadow-[var(--color-accent-primary)]/20">
-                    <span class="text-lg font-bold">⚡ ПРОЙТИ ТЕСТ ⚡</span>
-                    <span class="block text-sm opacity-70">Пройдите созданный Вами тест!</span>
-                </a>
-            {% endif %}
-
-            {% if is_creator %}
                 <div id="privacy-notice" class="mt-8 flex items-start gap-4 bg-[var(--color-surface)] rounded-3xl border border-[var(--color-border)] p-5 animate-fadeIn">
                     <div class="flex-shrink-0">
                         <i class="fas fa-globe-americas text-xl text-[var(--color-accent-primary)] mt-1"></i>
@@ -303,20 +297,24 @@
                         
                         {% else %}
                             {% if is_creator %}
-                            <a href="{% url 'create' %}" class="mt-6 block w-full text-center bg-[var(--color-accent-primary)] text-white p-5 rounded-3xl transition-transform hover:scale-[1.03] shadow-lg shadow-[var(--color-accent-primary)]/20">
-                                <span class="text-lg font-bold">СОЗДАТЬ НОВЫЙ ТЕСТ 🚀</span>
-                                <span class="block text-sm opacity-70">Создайте новый тест, он сохранится на Вашем аккаунте</span>
-                            </a>
+                                <a href="{% url 'create' %}" class="mt-6 block w-full text-center bg-[var(--color-accent-primary)] text-white p-5 rounded-3xl transition-transform hover:scale-[1.03] shadow-lg shadow-[var(--color-accent-primary)]/20">
+                                    <span class="text-lg font-bold">СОЗДАТЬ НОВЫЙ ТЕСТ 🚀</span>
+                                    <span class="block text-sm opacity-70">Создайте новый тест, он сохранится на Вашем аккаунте</span>
+                                </a>
                             {% else %}
-                            <a href="{% url 'take_test' survey_id %}" class="mt-6 block w-full text-center bg-[var(--color-accent-primary)] text-white p-5 rounded-2xl transition-transform hover:scale-[1.03] shadow-lg shadow-[var(--color-accent-primary)]/20">
-                                <span class="text-lg font-bold">ПРОЙТИ ТЕСТ 🚀</span>
-                                <span class="block text-sm opacity-70">Пройдите тест, и автор увидит Ваш результат</span>
-                            </a>
+                                <a href="{% url 'take_test' survey_id %}" class="mt-6 block w-full text-center bg-[var(--color-accent-primary)] text-white p-5 rounded-2xl transition-transform hover:scale-[1.03] shadow-lg shadow-[var(--color-accent-primary)]/20">
+                                    <span class="text-lg font-bold">ПРОЙТИ ТЕСТ 🚀</span>
+                                    <span class="block text-sm opacity-70">Пройдите тест, и автор увидит Ваш результат</span>
+                                </a>
                             {% endif %}
 
+                            {% if is_short_enough %}
                             <a href="{% url 'result' survey_id %}" class="mt-6 block w-full text-center bg-black/20 text-white p-5 rounded-2xl transition-transform hover:scale-[1.03] shadow-lg shadow-[var(--color-accent-primary)]/20">
                                 <span class="text-lg font-bold">Вернуться к карточке теста</span>
                             </a>
+                            {% else %}
+                            {% endif %}
+
                         {% endif %}
 
                         <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -399,12 +397,35 @@
     <div class="floating-action-bar">
 
         {% if is_creator %}
-            <a href="{% url 'preview_test_result' survey_id %}" 
-            style="background-color: var(--color-accent-secondary); color: var(--color-bg);"
-            title="Перейти к аналитике">
-                <i class="fas fa-chart-pie"></i>
-                <span class="tooltip">Аналитика</span>
-            </a>
+
+            {% if username == 0 %}
+                <button data-trigger-modal="register" class="trigger-register-take-test bg-[var(--color-accent-secondary)] text-black">
+                    <i class="fas fa-chart-pie"></i> 
+                    <span class="tooltip">Аналитика</span>
+                </button>
+            {% else %}
+                <a href="{% url 'preview_test_result' survey_id %}" 
+                style="background-color: var(--color-accent-secondary); color: var(--color-bg);"
+                title="Перейти к аналитике">
+                    <i class="fas fa-chart-pie"></i>
+                    <span class="tooltip">Аналитика</span>
+                </a>
+            {% endif %}
+
+            {% if username == 0 %}
+                <button data-trigger-modal="register" class="trigger-register-take-test bg-[var(--color-accent-primary)] text-white">
+                    <i class="fas fa-play"></i> 
+                    <span class="tooltip">Пройти тест</span>
+                </button>
+            {% else %}
+                <a href="{% url 'take_test' survey_id %}" 
+                style="background-color: var(--color-accent-primary); color: white;"
+                title="Пройти тест">
+                    <i class="fas fa-play"></i> 
+                    <span class="tooltip">Пройти тест</span>
+                </a>
+            {% endif %}
+
             {% if username != 0 %}
                 <a href="/create" style="background-color: rgba(255, 255, 255, 0.1); color: white;"
                 title="Создать новый тест">
@@ -412,9 +433,9 @@
                     <span class="tooltip">Создать новый</span>
                 </a>
             {% endif %}
-            <button data-action="share" data-share-url="{% url 'take_test' survey_id %}" style="background-color: rgba(255, 255, 255, 0.1); color: white;" class="transition-transform hover:scale-[1.03] active:scale-[.97] flex items-center justify-center text-center p-4 gap-3 rounded-full border border-transparent transition-colors">
-                <i class="fas fa-share-alt"></i>
-            </button>
+                <button data-action="share" data-share-url="{% url 'take_test' survey_id %}" style="background-color: rgba(255, 255, 255, 0.1); color: white;" class="copy-btn transition-transform hover:scale-[1.03] active:scale-[.97] flex items-center justify-center text-center p-4 gap-3 rounded-full border border-transparent transition-colors">
+                    <i class="fas fa-share-alt"></i>
+                </button>
         {% else %}
             <a href="{% url 'take_test' survey_id %}" 
             style="background-color: var(--color-accent-primary); color: white;"
@@ -422,6 +443,7 @@
                 <i class="fas fa-play"></i> 
                 <span class="tooltip">Пройти тест</span>
             </a>
+
             {% if username == 0 %}
                 <a href="/#create-now" style="background-color: rgba(255, 255, 255, 0.1); color: white;"
                 title="Создать свой">
@@ -429,6 +451,7 @@
                     <span class="tooltip">Создать свой</span>
                 </a>
             {% endif %}
+
         {% endif %}
 
     </div>

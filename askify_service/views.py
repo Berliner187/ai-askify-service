@@ -1834,6 +1834,7 @@ def preview_test(request, survey_id):
         view_count = survey.view_count
 
         author_username = AuthUser.objects.get(id_staff=survey.id_staff).username
+        is_short_enough = len(author_username) < 20
 
         json_response = {
             'page_title': f'{survey.title} | Генератор тестов с ИИ | Создать тест в Летучке',
@@ -1847,6 +1848,7 @@ def preview_test(request, survey_id):
             'is_creator': is_creator,
             'show_answers': survey.show_answers,
             'can_generate': can_generate,
+            'is_short_enough': is_short_enough,
             'debug': DEBUG
         }
 
@@ -3111,6 +3113,24 @@ def get_cockpit_metrics():
 def get_main_gauge_data():
     """Собирает данные для главного спидометра."""
     today = timezone.now().date()
+    yesterday = today - timedelta(days=1)
+
+    tests_today = Survey.objects.filter(created_at__date=today).count()
+    tests_yesterday = Survey.objects.filter(created_at__date=yesterday).count()
+
+    last_7_days_counts = [Survey.objects.filter(created_at__date=today - timedelta(days=i)).count() for i in range(7)]
+    record_7_days = max(last_7_days_counts) if max(last_7_days_counts) > 0 else 50
+
+    ARC_LENGTH = 141.3
+
+    percent_filled = min(tests_today / record_7_days, 1) if record_7_days > 0 else 0
+    final_dashoffset = ARC_LENGTH * (1 - percent_filled)
+
+    real_users_qs = AuthUser.objects.annotate(username_len=Length('username')).filter(username_len__lt=20)
+    dau = real_users_qs.filter(last_login__date=today).count()
+    revenue_today = (Payment.objects.filter(status='completed', created_at__date=today).aggregate(sum=Sum('amount'))[
+                         'sum'] or 0) / 100
+
 
     real_users_qs = AuthUser.objects.annotate(username_len=Length('username')).filter(username_len__lt=20)
 
@@ -3145,7 +3165,42 @@ def get_main_gauge_data():
         'active_key_load_percent': active_key_load_percent,
         'active_key_load_degrees': active_key_load_percent * 3.6,
         'total_tests_created': total_tests_created,
-        'status_bar': status_bar
+        'status_bar': status_bar,
+        'tests_today': tests_today,
+        'tests_yesterday': tests_yesterday,
+        'record_7_days': record_7_days,
+        'arc_length': ARC_LENGTH,
+        'final_dashoffset': final_dashoffset,
+    }
+
+
+def get_daily_creation_dynamics_data(start_date, end_date):
+    """Собирает данные по количеству созданных тестов за каждый день."""
+    all_users_ids = AuthUser.objects.annotate().filter().values_list('id_staff', flat=True)
+
+    daily_counts = (
+        Survey.objects.filter(
+            id_staff__in=all_users_ids,
+            created_at__date__range=(start_date, end_date)
+        )
+        .annotate(day=TruncDate('created_at'))
+        .values('day')
+        .annotate(count=Count('id'))
+        .order_by('day')
+    )
+
+    data_map = {item['day']: item['count'] for item in daily_counts}
+    labels, data_points = [], []
+
+    current_date = start_date
+    while current_date <= end_date:
+        labels.append(current_date.strftime("%d.%m"))
+        data_points.append(data_map.get(current_date, 0))
+        current_date += timedelta(days=1)
+
+    return {
+        'labels': labels,
+        'data': data_points
     }
 
 
@@ -3616,6 +3671,8 @@ def admin_stats(request):
     revenue_source_data = json.dumps(get_revenue_source_data(start_date, end_date))
     cohort_revenue_data = json.dumps(get_cohort_revenue_data())
 
+    daily_creation_data = json.dumps(get_daily_creation_dynamics_data(start_date, end_date))
+
     context = {
         "cockpit": cockpit_metrics,
         "gauges": gauges_data,
@@ -3659,6 +3716,7 @@ def admin_stats(request):
         "usage_by_sub_data": usage_by_sub_data,
         "top_topics_data": top_topics_data,
         "user_journey_data": user_journey_data,
+        "daily_creation_data": daily_creation_data,
         "daily_token_usage_data": daily_token_usage_data,
         'username': get_username(request)
     }
