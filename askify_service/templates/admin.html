@@ -346,6 +346,24 @@
                         <canvas id="testPerformanceChart"></canvas>
                     </div>
                 </div>
+
+                 <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
+                    <h3 class="font-bold text-white mb-4">Спектр Успеваемости</h3>
+                    <div class="h-80 flex justify-center items-center">
+                        <canvas id="scoreDistributionChart" style="max-height: 300px;"></canvas>
+                    </div>
+                </div>
+
+                <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
+                    <h3 class="font-bold text-white mb-4">Матрица Ценности Пользователей (Топ-100)</h3>
+                    <div class="h-80 relative">
+                        <canvas id="userValueMatrixChart"></canvas>
+                        <div class="absolute top-2 right-2 text-xs text-yellow-400 font-bold">Звезды</div>
+                        <div class="absolute bottom-2 right-2 text-xs text-green-400 font-bold">Крупные клиенты</div>
+                        <div class="absolute top-2 left-2 text-xs text-blue-400 font-bold">Амбассадоры</div>
+                        <div class="absolute bottom-2 left-2 text-xs text-gray-500 font-bold">Потенциал</div>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -390,16 +408,7 @@
                             <canvas id="timeToPaymentChart"></canvas>
                         </div>
                     </div>
-                    <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
-                        <h3 class="font-bold text-white mb-4">Матрица Ценности Пользователей (Топ-100)</h3>
-                        <div class="h-80 relative">
-                            <canvas id="userValueMatrixChart"></canvas>
-                            <div class="absolute top-2 right-2 text-xs text-yellow-400 font-bold">Звезды</div>
-                            <div class="absolute bottom-2 right-2 text-xs text-green-400 font-bold">Крупные клиенты</div>
-                            <div class="absolute top-2 left-2 text-xs text-blue-400 font-bold">Амбассадоры</div>
-                            <div class="absolute bottom-2 left-2 text-xs text-gray-500 font-bold">Потенциал</div>
-                        </div>
-                    </div>
+                    
                 </div>
             </section>
 
@@ -860,6 +869,7 @@
                     const dailyAttemptsCanvas = document.getElementById('dailyAttemptsChart');
                     if (dailyAttemptsCanvas) {
                         const ctx = dailyAttemptsCanvas.getContext('2d');
+                        
                         const gradient = ctx.createLinearGradient(0, 0, 0, 320);
                         gradient.addColorStop(0, 'rgba(16, 185, 129, 0.5)');
                         gradient.addColorStop(1, 'rgba(16, 185, 129, 0)');
@@ -868,18 +878,37 @@
                             type: 'line',
                             data: {
                                 labels: dailyAttemptsData.labels,
-                                datasets: [{
-                                    label: 'Прохождений в день',
-                                    data: dailyAttemptsData.data,
+                                datasets: [
+                                {
+                                    label: 'Предыдущие 7 дней',
+                                    data: dailyAttemptsData.previous_period_data,
+                                    borderColor: 'rgba(75, 85, 99, 0.5)',
+                                    backgroundColor: 'transparent',
+                                    fill: false,
+                                    borderDash: [5, 5],
+                                    tension: 0.4,
+                                    pointRadius: 0,
+                                },
+                                {
+                                    label: 'Последние 7 дней',
+                                    data: dailyAttemptsData.current_period_data,
                                     borderColor: '#10B981',
                                     backgroundColor: gradient,
                                     fill: true,
                                     tension: 0.4,
+                                    pointBackgroundColor: '#10B981',
+                                    pointBorderColor: '#fff',
+                                    pointHoverRadius: 6
                                 }]
                             },
                             options: {
-                                responsive: true, maintainAspectRatio: false,
-                                plugins: { legend: { display: false } },
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                interaction: { mode: 'index', intersect: false },
+                                plugins: {
+                                    legend: { position: 'bottom', labels: { color: chartTextColor } },
+                                    tooltip: { backgroundColor: 'rgba(0, 0, 0, 0.8)' }
+                                },
                                 scales: {
                                     x: { ticks: { color: chartTextColor }, grid: { color: chartBorderColor } },
                                     y: { ticks: { color: chartTextColor, beginAtZero: true, precision: 0 }, grid: { color: chartBorderColor } }
@@ -888,6 +917,62 @@
                         });
                     }
                 } catch (e) { console.error("Ошибка при отрисовке графика пульса:", e); }
+            {% endif %}
+
+            {% if score_distribution_data and score_distribution_data != 'null' %}
+                try {
+                    const scoreData = JSON.parse('{{ score_distribution_data|escapejs }}');
+                    const scoreCanvas = document.getElementById('scoreDistributionChart');
+                    if (scoreCanvas) {
+                        new Chart(scoreCanvas.getContext('2d'), {
+                            type: 'doughnut',
+                            data: {
+                                labels: scoreData.labels,
+                                datasets: [{
+                                    label: 'Количество прохождений',
+                                    data: scoreData.data,
+                                    backgroundColor: [
+                                        'rgba(16, 185, 129, 0.7)',
+                                        'rgba(234, 179, 8, 0.7)',
+                                        'rgba(239, 68, 68, 0.7)'
+                                    ],
+                                    borderColor: 'var(--color-surface)',
+                                    borderWidth: 4,
+                                    hoverOffset: 8
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                cutout: '70%',
+                                plugins: {
+                                    legend: {
+                                        position: 'bottom',
+                                        labels: {
+                                            color: chartTextColor,
+                                            boxWidth: 15,
+                                            padding: 20
+                                        }
+                                    },
+                                    tooltip: {
+                                        callbacks: {
+                                            label: function(context) {
+                                                let label = context.dataset.label || '';
+                                                if (label) {
+                                                    label += ': ';
+                                                }
+                                                if (context.raw !== null) {
+                                                    label += context.raw;
+                                                }
+                                                return label;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    }
+                } catch (e) { console.error("Ошибка при отрисовке Спектра успеваемости:", e); }
             {% endif %}
 
             {% if test_performance_data and test_performance_data != 'null' %}

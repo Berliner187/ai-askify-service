@@ -2847,21 +2847,30 @@ def get_daily_token_usage_chart_data(start_date, end_date):
     }
 
 
-def get_user_journey_funnel_data(period_days):
+def get_user_journey_funnel_data(start_date, end_date):
     """
     Собирает данные для воронки: Регистрация -> Создание теста -> Получение попытки.
+    ЗА ВЫБРАННЫЙ ПЕРИОД.
     """
-    start_date = timezone.now() - timedelta(days=period_days)
 
     registered_users_qs = AuthUser.objects.annotate(
         username_len=Length('username')
     ).filter(
-        date_joined__gte=start_date,
+        date_joined__date__range=(start_date, end_date),
         username_len__lt=20
     )
     registered_count = registered_users_qs.count()
+
     if registered_count == 0:
-        return None
+        return {
+            'labels': [
+                f'Реальные регистрации (0)',
+                f'Создали тест (0)',
+                f'Тест прошли (0)'
+            ],
+            'data': [0, 0, 0],
+            'raw_counts': [0, 0, 0]
+        }
 
     creators_count = registered_users_qs.filter(
         id_staff__in=Survey.objects.values('id_staff')
@@ -2890,12 +2899,18 @@ def get_user_journey_funnel_data(period_days):
 
 
 def get_daily_attempts_chart_data():
-    """Собирает данные по количеству прохождений тестов за последние 7 дней."""
+    """
+    Собирает данные по количеству прохождений тестов за последние 7 дней
+    И ЗА ПРЕДЫДУЩИЕ 7 ДНЕЙ для сравнения.
+    """
     today = timezone.now().date()
-    seven_days_ago = today - timedelta(days=6)
+
+    current_period_start = today - timedelta(days=6)
+    previous_period_start = today - timedelta(days=13)
+    previous_period_end = today - timedelta(days=7)
 
     daily_counts = (
-        TestAttempt.objects.filter(created_at__date__gte=seven_days_ago)
+        TestAttempt.objects.filter(created_at__date__gte=previous_period_start)
         .annotate(day=TruncDate('created_at'))
         .values('day')
         .annotate(count=Count('id'))
@@ -2903,15 +2918,24 @@ def get_daily_attempts_chart_data():
     )
 
     data_map = {item['day']: item['count'] for item in daily_counts}
-    labels, data_points = [], []
+
+    current_period_data = []
+    previous_period_data = []
+    labels = []
+
     for i in range(7):
-        current_date = seven_days_ago + timedelta(days=i)
-        labels.append(current_date.strftime("%d.%m"))
-        data_points.append(data_map.get(current_date, 0))
+        current_date = current_period_start + timedelta(days=i)
+        current_period_data.append(data_map.get(current_date, 0))
+
+        previous_date = previous_period_start + timedelta(days=i)
+        previous_period_data.append(data_map.get(previous_date, 0))
+
+        labels.append(current_date.strftime("%a"))
 
     return {
         'labels': labels,
-        'data': data_points
+        'current_period_data': current_period_data,
+        'previous_period_data': previous_period_data
     }
 
 
@@ -2943,6 +2967,36 @@ def get_test_performance_scatter_data():
         })
 
     return chart_data
+
+
+def get_score_distribution_data():
+    """Собирает данные по распределению результатов тестов за последние 7 дней."""
+    seven_days_ago = timezone.now().date() - timedelta(days=6)
+
+    attempts = TestAttempt.objects.filter(created_at__date__gte=seven_days_ago)
+    if not attempts.exists():
+        return None
+
+    bins = {
+        "Отлично (80-100%)": 0,
+        "Хорошо (50-79%)": 0,
+        "Плохо (<50%)": 0
+    }
+
+    for attempt in attempts:
+        if attempt.total_questions > 0:
+            score_percent = (attempt.score / attempt.total_questions) * 100
+            if score_percent >= 80:
+                bins["Отлично (80-100%)"] += 1
+            elif 50 <= score_percent < 80:
+                bins["Хорошо (50-79%)"] += 1
+            else:
+                bins["Плохо (<50%)"] += 1
+
+    return {
+        'labels': list(bins.keys()),
+        'data': list(bins.values())
+    }
 
 
 def get_cockpit_metrics():
@@ -3009,6 +3063,10 @@ def get_cockpit_metrics():
     else:
         active_key_load_color = 'bg-green-500'
 
+    today = timezone.now().date()
+    start_of_current_month = today.replace(day=1)
+    funnel_data_for_cockpit = get_user_journey_funnel_data(start_of_current_month, today)
+
     return {
         'total_real_users': real_users_qs.count(),
         'new_users_today': real_users_qs.filter(date_joined__date=today).count(),
@@ -3017,7 +3075,7 @@ def get_cockpit_metrics():
         'wau': wau,
         'mau': mau,
         'stickiness': round(dau / mau * 100, 1) if mau > 0 else 0,
-        'activation_rate_30d': get_user_journey_funnel_data(30)['data'][1] if get_user_journey_funnel_data(30) else 0,
+        'activation_rate_30d': funnel_data_for_cockpit['data'][1] if funnel_data_for_cockpit else 0,
         'tests_created_today': tests_created_today,
         'tests_created_total': Survey.objects.count(),
         'tests_vs_yesterday': tests_created_today - tests_created_yesterday,
@@ -3430,7 +3488,7 @@ def admin_stats(request):
     user_activity_data = json.dumps(get_user_activity_distribution())
     usage_by_sub_data = json.dumps(get_usage_by_subscription(start_date, end_date))
     top_topics_data = json.dumps(get_top_test_topics(start_date, end_date))
-    user_journey_data = json.dumps(get_user_journey_funnel_data(30))
+    user_journey_data = json.dumps(get_user_journey_funnel_data(start_date, end_date))
 
     # --- Управление API ключами ---
     api_keys = APIKey.objects.all().order_by("-created_at")
@@ -3543,6 +3601,7 @@ def admin_stats(request):
     main_gauge_data = get_main_gauge_data()
     daily_attempts_data = json.dumps(get_daily_attempts_chart_data())
     test_performance_data = json.dumps(get_test_performance_scatter_data())
+    score_distribution_data = json.dumps(get_score_distribution_data())
 
     gauges_data = get_gauges_data()
     total_api_usage_data = json.dumps(get_total_api_usage_chart_data(start_date, end_date))
@@ -3569,6 +3628,7 @@ def admin_stats(request):
         "user_value_matrix_data": user_value_matrix_data,
         "main_gauge": main_gauge_data,
         "daily_attempts_data": daily_attempts_data,
+        "score_distribution_data": score_distribution_data,
         "test_performance_data": test_performance_data,
         "total_api_usage_data": total_api_usage_data,
         "start_date": start_date.strftime("%Y-%m-%d"),
