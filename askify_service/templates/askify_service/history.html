@@ -119,7 +119,7 @@
     <script>
         document.getElementById('load-more').addEventListener('click', function() {
             var button = this;
-            var page = parseInt(button.getAttribute('data-page')) + 1;
+            var page = button.getAttribute('data-page'); 
 
             fetch(`/load-more-surveys/?page=${page}`, {
                 method: 'GET',
@@ -164,6 +164,7 @@
             })
             .catch(error => console.error('Error:', error));
         });
+
     </script>
 </body>
 

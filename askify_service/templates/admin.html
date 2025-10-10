@@ -371,6 +371,13 @@
                     <h3 class="font-bold text-white mb-4">Популярные темы тестов</h3>
                     <div class="h-80"><canvas id="topTopicsChart"></canvas></div>
                 </div>
+
+                <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
+                    <h3 class="font-bold text-white mb-4">Расход токенов</h3>
+                    <div class="h-80">
+                        <canvas id="dailyTokenUsageChart"></canvas>
+                    </div>
+                </div>
             </section>
 
             <section class="space-y-8">
@@ -436,7 +443,7 @@
             </div>
             {% endif %}
 
-            <!-- Новая строка графиков -->
+            <!-- Чарты с распределением юзеров -->
             <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
                 <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
                     <h3 class="font-bold text-white mb-4">Распределение активности пользователей</h3>
@@ -445,6 +452,55 @@
                 <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
                     <h3 class="font-bold text-white mb-4">Использование продукта по тарифам</h3>
                     <div class="h-64"><canvas id="usageBySubChart"></canvas></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Чарты с экономикой вкратце -->
+        <section id="financial-briefing" class="mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
+                    <h3 class="text-sm font-semibold text-gray-400">Выручка за период</h3>
+                    <p class="mt-2 text-4xl font-black text-white text-glow">
+                        {{ financial_briefing.revenue|floatformat:0 }} <span class="text-2xl opacity-70">₽</span>
+                    </p>
+                </div>
+                <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
+                    <h3 class="text-sm font-semibold text-gray-400">Текущий MRR за период</h3>
+                    <p class="mt-2 text-4xl font-black text-white text-glow">
+                        {{ financial_briefing.new_mrr|floatformat:0 }} <span class="text-2xl opacity-70">₽</span>
+                    </p>
+                </div>
+                <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
+                    <h3 class="text-sm font-semibold text-gray-400">Средний Чек (ARPU)</h3>
+                    <p class="mt-2 text-4xl font-black text-white text-glow">
+                        {{ financial_briefing.arpu|floatformat:0 }} <span class="text-2xl opacity-70">₽</span>
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Чарты с финансовым командным центром -->
+        <section id="financial-command-center" class="space-y-8">
+            <h2 class="font-bold text-white text-xl">Финансовый командный центр</h2>
+
+            <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
+                    <h3 class="font-bold text-white mb-4">Денежный Поток (за период)</h3>
+                    <div class="h-80"><canvas id="dailyRevenueChart"></canvas></div>
+                </div>
+                <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
+                    <h3 class="font-bold text-white mb-4">Динамика Среднего Чека (за период)</h3>
+                    <div class="h-80"><canvas id="arpuDynamicsChart"></canvas></div>
+                </div>
+                <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
+                    <h3 class="font-bold text-white mb-4">Источник Дохода: Новые vs. Старые</h3>
+                    <div class="h-80"><canvas id="revenueSourceChart"></canvas></div>
+                </div>
+                <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
+                    <h3 class="font-bold text-white mb-4">Жизненный Цикл Дохода по Когортам (LTV)</h3>
+                    <div class="h-80"><canvas id="cohortRevenueChart"></canvas></div>
                 </div>
             </div>
         </section>
@@ -515,19 +571,57 @@
         </section>
 
         <!-- ИСТОРИЯ ПЛАТЕЖЕЙ -->
-        <section class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
-             <h2 class="font-bold text-white mb-4">Последние платежи</h2>
-             <div class="overflow-x-auto">
-                <table class="w-full text-sm text-left">
-                    <thead class="text-xs text-gray-400 uppercase"><tr><th class="p-2">Пользователь</th><th class="p-2">План</th><th class="p-2">Статус</th><th class="p-2">Сумма</th><th class="p-2">Дата</th></tr></thead>
-                    <tbody>
-                        {% for item in payment_data %}
-                        <tr class="border-b border-[var(--color-border)]"><td class="p-2">{{ item.name }}</td><td class="p-2">{{ item.plan_name }}</td><td class="p-2"><span class="px-2 py-1 rounded-full text-xs {% if item.payment_status == 'completed' %}bg-green-500/10 text-green-400{% else %}bg-red-500/10 text-red-400{% endif %}">{{ item.payment_status }}</span></td><td class="p-2">{{ item.amount }}</td><td class="p-2">{{ item.date }}</td></tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-             </div>
-        </section>
+         {% for item in payment_data %}
+            <button class="js-payment-card w-full text-left bg-[var(--color-bg)] p-2 rounded-2xl border border-[var(--color-border)] 
+                         transition-all duration-300"
+                    data-name="{{ item.name }}"
+                    data-plan-name="{{ item.plan_name }}"
+                    data-amount="{{ item.amount }}"
+                    data-date="{{ item.date|date:'d M Y, H:i' }}"
+                    data-payment-type="{{ item.payment_type }}"
+                    data-payment-status="{{ item.payment_status }}"
+                    data-user-status="{{ item.user_status }}"
+                    data-user-status-days="{{ item.user_status_days }}"
+                    data-tests-created="{{ item.total_tests_created }}"
+                    data-order-id="{{ item.order_id }}">
+                
+                <div class="flex flex-col sm:flex-row sm:items-center gap-4 pointer-events-none">
+                    <div class="flex-shrink-0 w-full sm:w-28 text-center">
+                        {% if item.payment_status == 'completed' %}
+                            <p class="text-lg font-bold text-green-400"><i class="fas fa-plus-circle mr-2"></i>Успех</p>
+                            <p class="text-xs font-semibold {% if item.payment_type == 'Первая' %}text-yellow-400{% else %}text-blue-400{% endif %}">
+                                {{ item.payment_type }}
+                            </p>
+                        {% else %}
+                            <p class="text-lg font-bold text-red-500"><i class="fas fa-exclamation-triangle mr-2"></i>Сбой</p>
+                            <p class="text-xs text-gray-500">{{ item.payment_type }}</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- ОСНОВНАЯ ИНФА -->
+                    <div class="flex-grow">
+                        <div class="flex justify-between items-baseline">
+                            <p class="font-bold text-white text-lg truncate pr-4">{{ item.name }}</p>
+                            <p class="font-mono font-bold text-xl 
+                                    {% if item.payment_status == 'completed' %}
+                                        bg-gradient-to-r from-green-400 to-emerald-500 bg-clip-text text-transparent
+                                    {% else %}text-red-500 line-through{% endif %}">
+                                +{{ item.amount }}
+                            </p>
+                        </div>
+                        <p class="text-xs text-gray-400 -mt-1">{{ item.plan_name }}</p>
+                    </div>
+
+                    <!-- ДАТА -->
+                    <div class="flex-shrink-0 w-full sm:w-24 text-left sm:text-right">
+                        <p class="text-sm font-medium text-white">{{ item.date|date:"d M" }}</p>
+                        <p class="text-xs text-gray-500">{{ item.date|date:"H:i" }}</p>
+                    </div>
+                </div>
+            </button>
+        {% empty %}
+            <p class="text-center text-gray-500 py-8">Пока нет данных о платежах.</p>
+        {% endfor %}
 
         <!-- АДМИН-ДЕЙСТВИЯ -->
         <section class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -548,6 +642,22 @@
         </section>
 
     </main>
+
+    <div id="payment-details-modal" class="fixed inset-0 bg-black/80 z-50 hidden items-center justify-center p-4">
+        <div id="payment-modal-content" class="bg-[var(--color-surface)] w-full max-w-lg p-8 rounded-3xl border border-[var(--color-border)] 
+                                            transform scale-95 opacity-0 transition-all duration-300 backdrop-blur-xl">
+            
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-white">Детали транзакции</h3>
+                <button id="close-payment-modal-btn" class="text-gray-500 hover:text-white text-3xl">&times;</button>
+            </div>
+            
+            <!-- Контент, который будет заполняться динамически -->
+            <div id="modal-body-content" class="space-y-4">
+                <!-- Сюда будет вставляться контент через JS -->
+            </div>
+        </div>
+    </div>
 
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -614,6 +724,90 @@
                     },
                     error: () => alert('Ошибка сети')
                 });
+            });
+
+            // Модалка деталей платежа
+            const paymentModal = $('#payment-details-modal');
+            const paymentModalContent = $('#payment-modal-content');
+            const closeModalPaymentBtn = $('#close-payment-modal-btn');
+            const modalBody = $('#modal-body-content');
+
+            const openPaymentModal = (data) => {
+                const statusColor = data.paymentStatus === 'completed' ? 'text-green-400' : 'text-red-500';
+                const typeColor = data.paymentType === 'Первая' ? 'text-yellow-400' : 'text-blue-400';
+
+                const contentHTML = `
+                    <div class="grid grid-cols-2 gap-x-6 gap-y-4">
+                        <div class="col-span-2 sm:col-span-1">
+                            <p class="text-sm text-gray-400">Пользователь</p>
+                            <p class="text-lg font-bold text-white">${data.name}</p>
+                        </div>
+                        <div class="col-span-2 sm:col-span-1 sm:text-right">
+                            <p class="text-sm text-gray-400">Сумма</p>
+                            <p class="text-lg font-bold ${statusColor}">${data.amount}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 pt-4 border-t border-[var(--color-border)] grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+                        <div>
+                            <p class="font-bold text-lg ${typeColor}">${data.paymentType}</p>
+                            <p class="text-xs text-gray-500">Тип платежа</p>
+                        </div>
+                        <div>
+                            <p class="font-bold text-lg text-white">${data.userStatus}</p>
+                            <p class="text-xs text-gray-500">Статус (${data.userStatusDays} д.)</p>
+                        </div>
+                        <div>
+                            <p class="font-bold text-lg text-white">${data.testsCreated}</p>
+                            <p class="text-xs text-gray-500">Тестов создано</p>
+                        </div>
+                        <div>
+                            <p class="font-bold text-lg text-white">#${data.orderId.slice(0, 8)}</p>
+                            <p class="text-xs text-gray-500">ID Заказа</p>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 text-center text-xs text-gray-600">
+                        ${data.date}
+                    </div>
+                `;
+                modalBody.html(contentHTML);
+
+                paymentModal.removeClass('hidden').addClass('flex');
+                setTimeout(() => {
+                    paymentModalContent.removeClass('scale-95 opacity-0').addClass('scale-100 opacity-100');
+                }, 10);
+            };
+
+            const closePaymentModal = () => {
+                paymentModalContent.addClass('scale-95 opacity-0').removeClass('scale-100 opacity-100');
+                setTimeout(() => {
+                    paymentModal.addClass('hidden').removeClass('flex');
+                }, 300);
+            };
+
+            $(document).on('click', '.js-payment-card', function() {
+                const card = $(this);
+                const paymentData = {
+                    name: card.data('name'),
+                    planName: card.data('plan-name'),
+                    amount: card.data('amount'),
+                    date: card.data('date'),
+                    paymentType: card.data('payment-type'),
+                    paymentStatus: card.data('payment-status'),
+                    userStatus: card.data('user-status'),
+                    userStatusDays: card.data('user-status-days'),
+                    testsCreated: card.data('tests-created'),
+                    orderId: card.data('order-id')
+                };
+                openPaymentModal(paymentData);
+            });
+
+            closeModalPaymentBtn.on('click', closePaymentModal);
+            paymentModal.on('click', function(e) {
+                if (e.target === this) {
+                    closePaymentModal();
+                }
             });
 
             // --- ОТРИСОВКА ГРАФИКОВ ---
@@ -744,39 +938,62 @@
 
             {% if user_chart_data %}
                 try {
-                    const userChartData = JSON.parse('{{ user_chart_data|escapejs }}');
-                    const userChartCanvas = document.getElementById('userChart');
-                    if (userChartCanvas) {
-                        const accentPrimary = 'rgba(97, 109, 240, 1)';
-                        const ctx = userChartCanvas.getContext('2d');
-                        const gradient = ctx.createLinearGradient(0, 0, 0, userChartCanvas.height);
-                        gradient.addColorStop(0, accentPrimary.replace('1)', '0.5)'));
-                        gradient.addColorStop(1, accentPrimary.replace('1)', '0)'));
+                    const regData = JSON.parse('{{ user_chart_data|escapejs }}');
+                    const userCanvas = document.getElementById('userChart');
+                    if (userCanvas) {
+                        const ctx = userCanvas.getContext('2d');
+                        
+                        const emailGradient = ctx.createLinearGradient(0, 0, 0, 256);
+                        emailGradient.addColorStop(0, 'rgba(79, 70, 229, 0.5)');
+                        emailGradient.addColorStop(1, 'rgba(79, 70, 229, 0)');
+
+                        const telegramGradient = ctx.createLinearGradient(0, 0, 0, 256);
+                        telegramGradient.addColorStop(0, 'rgba(16, 185, 129, 0.6)');
+                        telegramGradient.addColorStop(1, 'rgba(16, 185, 129, 0)');
 
                         new Chart(ctx, {
                             type: 'line',
                             data: {
-                                labels: userChartData.labels,
-                                datasets: [{
-                                    label: 'Новые пользователи',
-                                    data: userChartData.user_counts,
-                                    borderColor: accentPrimary,
-                                    backgroundColor: gradient,
-                                    fill: true,
-                                    tension: 0.4,
-                                }]
+                                labels: regData.labels,
+                                datasets: [
+                                    {
+                                        label: 'Telegram',
+                                        data: regData.telegram_data,
+                                        borderColor: 'rgba(16, 185, 129, 1)',
+                                        backgroundColor: telegramGradient,
+                                        fill: true,
+                                        tension: 0.4
+                                    },
+                                    {
+                                        label: 'Email',
+                                        data: regData.email_data,
+                                        borderColor: 'rgba(79, 70, 229, 1)',
+                                        backgroundColor: emailGradient,
+                                        fill: true,
+                                        tension: 0.4
+                                    }
+                                ]
                             },
                             options: {
-                                responsive: true, maintainAspectRatio: false,
-                                plugins: { legend: { display: false } },
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                interaction: { mode: 'index', intersect: false },
+                                plugins: {
+                                    legend: { position: 'bottom', labels: { color: chartTextColor } },
+                                    tooltip: { backgroundColor: 'rgba(0, 0, 0, 0.8)', padding: 10, cornerRadius: 8 }
+                                },
                                 scales: {
-                                    x: { ticks: { color: chartTextColor }, grid: { color: chartBorderColor } },
-                                    y: { ticks: { color: chartTextColor, beginAtZero: true, precision: 0 }, grid: { color: chartBorderColor } }
+                                    x: { grid: { display: false }, ticks: { color: chartTextColor } },
+                                    y: { 
+                                        grid: { color: chartBorderColor.replace('0.2', '0.1') },
+                                        ticks: { color: chartTextColor, precision: 0 },
+                                        beginAtZero: true
+                                    }
                                 }
                             }
                         });
                     }
-                } catch (e) { console.error("Ошибка при отрисовке графика регистраций:", e); }
+                } catch (e) { console.error("Ошибка 'Динамика регистраций':", e); }
             {% endif %}
 
             {% if api_chart_data and api_chart_data != 'null' %}
@@ -839,6 +1056,189 @@
                 }
             } catch (e) { console.error("Ошибка при отрисовке графика активности:", e); }
         {% endif %}
+
+        // Отрисовка ФИНАНСОВОГО ЦЕНТРА
+        {% if daily_revenue_data and daily_revenue_data != 'null' %}
+            try {
+                const revData = JSON.parse('{{ daily_revenue_data|escapejs }}');
+                const revCanvas = document.getElementById('dailyRevenueChart');
+                if (revCanvas) {
+                    const ctx = revCanvas.getContext('2d');
+                    
+                    const gradient = ctx.createLinearGradient(0, 0, 0, 320);
+                    gradient.addColorStop(0, 'rgba(16, 185, 129, 0.8)');
+                    gradient.addColorStop(1, 'rgba(16, 185, 129, 0.1)');
+
+                    const areaGlowPlugin = {
+                        id: 'areaGlow',
+                        beforeDraw: (chart) => {
+                            const { ctx, chartArea: { left, right, top, bottom } } = chart;
+                            ctx.save();
+                            const glowGradient = ctx.createLinearGradient(0, top, 0, bottom);
+                            glowGradient.addColorStop(0, 'rgba(16, 185, 129, 0.2)');
+                            glowGradient.addColorStop(1, 'rgba(16, 185, 129, 0)');
+                            ctx.fillStyle = glowGradient;
+                            ctx.fillRect(left, top, right - left, bottom - top);
+                            ctx.restore();
+                        }
+                    };
+
+                    new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: revData.labels,
+                            datasets: [{
+                                label: 'Выручка, ₽',
+                                data: revData.data,
+                                backgroundColor: gradient,
+                                borderColor: 'rgba(16, 185, 129, 1)',
+                                borderWidth: 1,
+                                borderRadius: 4,
+                                hoverBackgroundColor: 'rgba(16, 185, 129, 1)',
+                                pointRadius: 4,
+                                pointBackgroundColor: 'rgba(16, 185, 129, 1)',
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                    titleFont: { size: 14, weight: 'bold' },
+                                    bodyFont: { size: 12 },
+                                    padding: 10,
+                                    cornerRadius: 8,
+                                    displayColors: false,
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    grid: { display: false },
+                                    ticks: { color: chartTextColor }
+                                },
+                                y: {
+                                    grid: { color: chartBorderColor.replace('0.2', '0.1') },
+                                    ticks: { 
+                                        color: chartTextColor,
+                                        callback: value => `${value} ₽`
+                                    },
+                                    beginAtZero: true
+                                }
+                            }
+                        },
+                        plugins: [areaGlowPlugin]
+                    });
+                }
+            } catch (e) { console.error("Ошибка 'Денежный Поток':", e); }
+        {% endif %}
+
+        {% if arpu_dynamics_data and arpu_dynamics_data != 'null' %}
+            try {
+                const arpuData = JSON.parse('{{ arpu_dynamics_data|escapejs }}');
+                const arpuCanvas = document.getElementById('arpuDynamicsChart');
+                if (arpuCanvas) {
+                    new Chart(arpuCanvas.getContext('2d'), {
+                        type: 'line',
+                        data: { labels: arpuData.labels, datasets: [{ label: 'Средний чек, ₽', data: arpuData.data, borderColor: '#F97316', tension: 0.3 }] },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                    });
+                }
+            } catch (e) { console.error("Ошибка 'Динамика ARPU':", e); }
+        {% endif %}
+
+        {% if revenue_source_data and revenue_source_data != 'null' %}
+            try {
+                const sourceData = JSON.parse('{{ revenue_source_data|escapejs }}');
+                const sourceCanvas = document.getElementById('revenueSourceChart');
+                if (sourceCanvas) {
+                    const ctx = sourceCanvas.getContext('2d');
+                    
+                    const newRevenueGradient = ctx.createLinearGradient(0, 0, 0, 320);
+                    newRevenueGradient.addColorStop(0, 'rgba(59, 130, 246, 0.5)');
+                    newRevenueGradient.addColorStop(1, 'rgba(59, 130, 246, 0)');
+
+                    const expansionRevenueGradient = ctx.createLinearGradient(0, 0, 0, 320);
+                    expansionRevenueGradient.addColorStop(0, 'rgba(16, 185, 129, 0.6)');
+                    expansionRevenueGradient.addColorStop(1, 'rgba(16, 185, 129, 0)');
+
+                    new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: sourceData.labels,
+                            datasets: [
+                                {
+                                    label: 'Старые клиенты',
+                                    data: sourceData.expansion_revenue,
+                                    borderColor: 'rgba(16, 185, 129, 1)',
+                                    backgroundColor: expansionRevenueGradient,
+                                    fill: true,
+                                    tension: 0.4,
+                                    pointRadius: 3,
+                                    pointBackgroundColor: 'rgba(16, 185, 129, 1)',
+                                },
+                                {
+                                    label: 'Новые клиенты',
+                                    data: sourceData.new_revenue,
+                                    borderColor: 'rgba(59, 130, 246, 1)',
+                                    backgroundColor: newRevenueGradient,
+                                    fill: true,
+                                    tension: 0.4,
+                                    pointRadius: 3,
+                                    pointBackgroundColor: 'rgba(59, 130, 246, 1)',
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            interaction: {
+                                mode: 'index',
+                                intersect: false,
+                            },
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+                                    labels: { color: chartTextColor }
+                                },
+                                tooltip: {
+                                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                    padding: 10,
+                                    cornerRadius: 8,
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    grid: { display: false },
+                                    ticks: { color: chartTextColor }
+                                },
+                                y: {
+                                    grid: { color: chartBorderColor.replace('0.2', '0.1') },
+                                    ticks: { color: chartTextColor, callback: value => `${value} ₽` },
+                                    beginAtZero: true
+                                }
+                            }
+                        }
+                    });
+                }
+            } catch (e) { console.error("Ошибка 'Источник Дохода':", e); }
+        {% endif %}
+
+        {% if cohort_revenue_data and cohort_revenue_data != 'null' %}
+            try {
+                const cohortData = JSON.parse('{{ cohort_revenue_data|escapejs }}');
+                const cohortCanvas = document.getElementById('cohortRevenueChart');
+                if (cohortCanvas) {
+                    new Chart(cohortCanvas.getContext('2d'), {
+                        type: 'line',
+                        data: { labels: cohortData.labels, datasets: cohortData.datasets },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+                    });
+                }
+            } catch (e) { console.error("Ошибка 'Когорты Дохода':", e); }
+        {% endif %}
+        // END Отрисовка ФИНАНСОВОГО ЦЕНТРА
 
         {% if user_journey_data and user_journey_data != 'null' %}
             try {
@@ -1017,7 +1417,7 @@
                             }]
                         },
                         options: {
-                            indexAxis: 'y', // <-- Делает гистограмму горизонтальной
+                            indexAxis: 'y',
                             responsive: true, maintainAspectRatio: false,
                             plugins: { legend: { display: false } },
                             scales: { y: { ticks: { color: chartTextColor } } }
@@ -1025,6 +1425,48 @@
                     });
                 }
             } catch (e) { console.error("Ошибка при отрисовке графика тем:", e); }
+        {% endif %}
+
+        {% if daily_token_usage_data %}
+            try {
+                const tokenUsageData = JSON.parse('{{ daily_token_usage_data|escapejs }}');
+                const tokenUsageCanvas = document.getElementById('dailyTokenUsageChart');
+                if (tokenUsageCanvas) {
+                    const accentColor = 'rgba(234, 179, 8, 1)';
+                    const ctx = tokenUsageCanvas.getContext('2d');
+                    const gradient = ctx.createLinearGradient(0, 0, 0, 320);
+                    gradient.addColorStop(0, accentColor.replace('1)', '0.5)'));
+                    gradient.addColorStop(1, accentColor.replace('1)', '0)'));
+
+                    new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: tokenUsageData.labels,
+                            datasets: [{
+                                label: 'Сгенерировано токенов',
+                                data: tokenUsageData.data,
+                                borderColor: accentColor,
+                                backgroundColor: gradient,
+                                fill: true,
+                                tension: 0.4,
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { display: false } },
+                            scales: {
+                                x: { ticks: { color: chartTextColor }, grid: { color: chartBorderColor } },
+                                y: { 
+                                    title: { display: true, text: 'Токены', color: chartTextColor },
+                                    ticks: { color: chartTextColor, beginAtZero: true }, 
+                                    grid: { color: chartBorderColor }
+                                }
+                            }
+                        }
+                    });
+                }
+            } catch (e) { console.error("Ошибка при отрисовке графика токенов:", e); }
         {% endif %}
 
         {% if api_performance_data and api_performance_data != 'null' %}

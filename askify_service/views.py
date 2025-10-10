@@ -551,15 +551,17 @@ def medicine_promo(request):
 @login_required
 def page_history_surveys(request):
     try:
-        surveys_data = get_all_surveys(request, page=1)
+        page_number = request.GET.get('page', 1)
+
+        surveys_data = get_all_surveys(request, page=page_number)
 
         context = {
             'page_title': 'Предыдущие тесты',
             'surveys_data': surveys_data['results'],
             'username': get_username(request),
-            'paginator': surveys_data['paginator'],
+            'page_obj': surveys_data['page_obj'],
         }
-        tracer_l.info(f"{request.user.username} --- loaded surveys page 1")
+        tracer_l.info(f"{request.user.username} --- loaded surveys page {page_number}")
 
     except Exception as fatal:
         context = {
@@ -809,6 +811,8 @@ class GenerationSurveysView(View):
 
             client_ip = get_client_ip(request)
             hashed_ip = hash_data(client_ip)
+
+            tracer_l.debug(f"{request.user.username} --- client_ip: {client_ip} text_from_user: {text_from_user}")
 
             # !!! ИСПРАВЛЕНИЕ: Обертываем синхронную ORM-операцию
             existing_survey = await sync_to_async(Survey.objects.filter(title=text_from_user).first)()
@@ -2736,25 +2740,38 @@ def get_user_activity_distribution():
     return {'labels': list(bins.keys()), 'data': list(bins.values())}
 
 
-def get_usage_by_subscription():
+def get_usage_by_subscription(start_date, end_date):
     """
-    Считает среднее количество созданных тестов на пользователя по каждому тарифу.
+    Считает среднее количество созданных тестов на пользователя по каждому тарифу
+    ЗА ВЫБРАННЫЙ ПЕРИОД.
     """
-    active_subscriptions = Subscription.objects.filter(status='active').values('plan_name', 'staff_id')
+    active_subscriptions = Subscription.objects.filter(
+        status='active',
+        start_date__lte=end_date,
+        end_date__gte=start_date
+    ).values('plan_name', 'staff_id')
 
     if not active_subscriptions:
         return None
 
     usage_by_plan = defaultdict(lambda: {'user_count': 0, 'test_count': 0})
 
+    unique_users_in_plans = defaultdict(set)
     for sub in active_subscriptions:
-        usage_by_plan[sub['plan_name']]['user_count'] += 1
+        unique_users_in_plans[sub['plan_name']].add(sub['staff_id'])
 
-    user_test_counts = Survey.objects.values('id_staff').annotate(count=Count('id'))
+    for plan, users in unique_users_in_plans.items():
+        usage_by_plan[plan]['user_count'] = len(users)
+
+    user_test_counts = Survey.objects.filter(
+        created_at__date__range=(start_date, end_date)
+    ).values('id_staff').annotate(count=Count('id'))
+
     user_count_map = {str(item['id_staff']): item['count'] for item in user_test_counts}
 
-    for sub in active_subscriptions:
-        usage_by_plan[sub['plan_name']]['test_count'] += user_count_map.get(str(sub['staff_id']), 0)
+    for plan, users in unique_users_in_plans.items():
+        for user_id in users:
+            usage_by_plan[plan]['test_count'] += user_count_map.get(str(user_id), 0)
 
     result = defaultdict(float)
     for plan, data in usage_by_plan.items():
@@ -2769,19 +2786,28 @@ def get_usage_by_subscription():
     }
 
 
-def get_top_test_topics():
+def get_top_test_topics(start_date, end_date):
     """
-    Анализирует заголовки тестов для определения популярных тем.
+    Анализирует заголовки тестов для определения популярных тем
+    ЗА ВЫБРАННЫЙ ПЕРИОД.
     """
     real_users_ids = AuthUser.objects.annotate(
         username_len=Length('username')
-    ).filter(username_len__lt=20).values_list('id_staff', flat=True)
+    ).filter().values_list('id_staff', flat=True)
 
-    titles = Survey.objects.filter(id_staff__in=real_users_ids).values_list('title', flat=True).order_by('-created_at')[
-             :1000]
+    titles = Survey.objects.filter(
+        id_staff__in=real_users_ids,
+        created_at__date__range=(start_date, end_date)
+    ).values_list('title', flat=True)
+
+    if not titles:
+        return None
+
     if not titles: return None
+
     stop_words = set(
-        "и в во не что он на я с со как а то все она так его но да ты к у же вы за бы по только еще или от о из".split())
+        "и в во аналитический тест не что он на я с со как а то все она так его но да ты к у же вы за бы по только еще или от о из для за без до из к на по о от перед при через с у".split())
+
     words = []
     for title in titles:
         cleaned_title = re.sub(r'[^\w\s]', '', title.lower())
@@ -2791,6 +2817,36 @@ def get_top_test_topics():
     top_words = Counter(words).most_common(10)
     if not top_words: return None
     return {'labels': [word for word, count in top_words], 'data': [count for word, count in top_words]}
+
+
+def get_daily_token_usage_chart_data(start_date, end_date):
+    """
+    Собирает данные по суммарному расходу токенов за каждый день,
+    используя модель TokensUsed.
+    """
+    daily_token_usage = (
+        TokensUsed.objects.filter(created_at__date__range=(start_date, end_date))
+        .annotate(day=TruncDate('created_at'))
+        .values('day')
+        .annotate(
+            total_tokens=Sum('tokens_survey_used') + Sum('tokens_feedback_used')
+        )
+        .order_by('day')
+    )
+
+    data_map = {item['day']: item['total_tokens'] for item in daily_token_usage}
+
+    labels, data_points = [], []
+    current_date = start_date
+    while current_date <= end_date:
+        labels.append(current_date.strftime("%d.%m"))
+        data_points.append(data_map.get(current_date, 0))
+        current_date += timedelta(days=1)
+
+    return {
+        'labels': labels,
+        'data': data_points
+    }
 
 
 def get_user_journey_funnel_data(period_days):
@@ -2828,7 +2884,7 @@ def get_user_journey_funnel_data(period_days):
         'labels': [
             f'Реальные регистрации ({registered_count})',
             f'Создали тест ({creators_count})',
-            f'Тест прошли ({successful_creators_count})'  # Более понятное название
+            f'Тест прошли ({successful_creators_count})'
         ],
         'data': [100, creator_percent, successful_creator_percent],
         'raw_counts': [registered_count, creators_count, successful_creators_count]
@@ -3166,6 +3222,158 @@ def get_user_value_matrix_data():
     return matrix_data[:100]
 
 
+def get_daily_revenue_data(start_date, end_date):
+    """1. Денежный Поток: Cумма успешных транзакций по дням."""
+    daily_revenue = (
+        Payment.objects.filter(created_at__date__range=(start_date, end_date), status='completed')
+        .annotate(day=TruncDate('created_at'))
+        .values('day')
+        .annotate(daily_total=Sum('amount'))
+        .order_by('day')
+    )
+    data_map = {item['day']: float(item['daily_total'] / 100) for item in daily_revenue}
+    labels, data_points = [], []
+    current_date = start_date
+    while current_date <= end_date:
+        labels.append(current_date.strftime("%d.%m"))
+        data_points.append(data_map.get(current_date, 0))
+        current_date += timedelta(days=1)
+    return {'labels': labels, 'data': data_points}
+
+
+def get_arpu_dynamics_data(start_date, end_date):
+    """2. Динамика Среднего Чека по дням."""
+    payments = Payment.objects.filter(created_at__date__range=(start_date, end_date), status='completed')
+    daily_arpu = (
+        payments.annotate(day=TruncDate('created_at'))
+        .values('day')
+        .annotate(
+            daily_revenue=Sum('amount'),
+            paying_users=Count('staff_id', distinct=True)
+        )
+        .order_by('day')
+    )
+    data_map = {item['day']: float(item['daily_revenue'] / 100 / item['paying_users']) for item in daily_arpu}
+    labels, data_points = [], []
+    current_date = start_date
+    while current_date <= end_date:
+        labels.append(current_date.strftime("%d.%m"))
+        data_points.append(data_map.get(current_date, 0))
+        current_date += timedelta(days=1)
+    return {'labels': labels, 'data': data_points}
+
+
+def get_revenue_source_data(start_date, end_date):
+    """3. Источник Дохода: Новые vs. Старые."""
+    payments = Payment.objects.filter(created_at__date__range=(start_date, end_date), status='completed')
+
+    new_revenue_map, expansion_revenue_map = defaultdict(float), defaultdict(float)
+
+    for p in payments:
+        is_first_payment = not Payment.objects.filter(staff_id=p.staff_id, status='completed',
+                                                      created_at__lt=p.created_at).exists()
+        day = p.created_at.date()
+        if is_first_payment:
+            new_revenue_map[day] += float(p.amount / 100)
+        else:
+            expansion_revenue_map[day] += float(p.amount / 100)
+
+    labels, new_data, expansion_data = [], [], []
+    current_date = start_date
+    while current_date <= end_date:
+        labels.append(current_date.strftime("%d.%m"))
+        new_data.append(new_revenue_map.get(current_date, 0))
+        expansion_data.append(expansion_revenue_map.get(current_date, 0))
+        current_date += timedelta(days=1)
+
+    return {'labels': labels, 'new_revenue': new_data, 'expansion_revenue': expansion_data}
+
+
+def get_cohort_revenue_data():
+    """4. Жизненный Цикл Дохода по Когортам."""
+    six_months_ago = (timezone.now() - timedelta(days=180)).replace(day=1)
+
+    users = AuthUser.objects.annotate(username_len=Length('username')).filter(
+        username_len__lt=20, date_joined__gte=six_months_ago
+    ).annotate(cohort=TruncMonth('date_joined'))
+
+    payments = Payment.objects.filter(status='completed', staff_id__in=users.values('id_staff'))
+
+    cohort_sizes = {
+        item['cohort'].date(): item['count']
+        for item in users.values('cohort').annotate(count=Count('id')).order_by('cohort')
+    }
+
+    cohort_revenue_matrix = defaultdict(lambda: defaultdict(float))
+    for p in payments:
+        user_cohort = users.get(id_staff=p.staff_id).cohort.date()
+        month_diff = (p.created_at.year - user_cohort.year) * 12 + (p.created_at.month - user_cohort.month)
+        cohort_revenue_matrix[user_cohort][month_diff] += float(p.amount / 100)
+
+    datasets = []
+    max_months = 0
+    PALETTE = ['#3B82F6', '#10B981', '#F97316', '#8B5CF6', '#EC4899']
+
+    for i, (cohort_date, size) in enumerate(cohort_sizes.items()):
+        cumulative_revenue_per_user = 0
+        data_points = []
+        for month in range(12):  # Смотрим на год вперед
+            revenue_this_month = cohort_revenue_matrix[cohort_date].get(month, 0)
+            if revenue_this_month > 0 or cumulative_revenue_per_user > 0:
+                max_months = max(max_months, month + 1)
+            cumulative_revenue_per_user += revenue_this_month / size
+            data_points.append(round(cumulative_revenue_per_user, 2))
+
+        datasets.append({
+            'label': cohort_date.strftime("%b %Y"),
+            'data': data_points,
+            'borderColor': PALETTE[i % len(PALETTE)],
+            'tension': 0.4,
+        })
+
+    return {'labels': [f'Месяц {i}' for i in range(max_months)], 'datasets': datasets}
+
+
+def get_daily_registration_dynamics_data(start_date, end_date):
+    """
+    Собирает данные по динамике регистраций, разделяя пользователей на Email и Telegram.
+    """
+    real_users_in_period = AuthUser.objects.annotate(
+        username_len=Length('username')
+    ).filter(
+        username_len__lt=20,
+        date_joined__date__range=(start_date, end_date)
+    )
+
+    daily_regs = (
+        real_users_in_period
+        .annotate(day=TruncDate('date_joined'))
+        .values('day')
+        .annotate(
+            email_users=Count('id', filter=Q(email__isnull=False) & ~Q(email__exact='')),
+            telegram_users=Count('id', filter=Q(email__isnull=True) | Q(email__exact=''))
+        )
+        .order_by('day')
+    )
+
+    email_map = {item['day']: item['email_users'] for item in daily_regs}
+    telegram_map = {item['day']: item['telegram_users'] for item in daily_regs}
+
+    labels, email_data, telegram_data = [], [], []
+    current_date = start_date
+    while current_date <= end_date:
+        labels.append(current_date.strftime("%d.%m"))
+        email_data.append(email_map.get(current_date, 0))
+        telegram_data.append(telegram_map.get(current_date, 0))
+        current_date += timedelta(days=1)
+
+    return {
+        'labels': labels,
+        'email_data': email_data,
+        'telegram_data': telegram_data
+    }
+
+
 @login_required
 def admin_stats(request):
     if not request.user.is_superuser:
@@ -3216,30 +3424,14 @@ def admin_stats(request):
     stickiness_ratio = (dau_daily_active_users / mau_monthly_active_users * 100) if mau_monthly_active_users > 0 else 0
 
     # --- Сбор данных для графиков ---
-    user_registrations_query = (
-        AuthUser.objects.filter(date_joined__date__range=date_range)
-        .annotate(day=TruncDate("date_joined"))
-        .values("day")
-        .annotate(count=Count("id"))
-        .order_by("day")
-    )
-    user_data_map = {item["day"]: item["count"] for item in user_registrations_query}
-
-    labels, user_counts = [], []
-    current_date = start_date
-    while current_date <= end_date:
-        labels.append(current_date.strftime("%d.%m"))
-        user_counts.append(user_data_map.get(current_date, 0))
-        current_date += timedelta(days=1)
-
-    user_chart_data = json.dumps({"labels": labels, "user_counts": user_counts})
+    user_chart_data = json.dumps(get_daily_registration_dynamics_data(start_date, end_date))
     api_chart_data = json.dumps(get_daily_api_usage_by_key(start_date, end_date))
 
     api_performance_data = json.dumps(get_api_performance_data(start_date, end_date))
     retention_data = get_retention_data()
     user_activity_data = json.dumps(get_user_activity_distribution())
-    usage_by_sub_data = json.dumps(get_usage_by_subscription())
-    top_topics_data = json.dumps(get_top_test_topics())
+    usage_by_sub_data = json.dumps(get_usage_by_subscription(start_date, end_date))
+    top_topics_data = json.dumps(get_top_test_topics(start_date, end_date))
     user_journey_data = json.dumps(get_user_journey_funnel_data(30))
 
     # --- Управление API ключами ---
@@ -3263,23 +3455,79 @@ def admin_stats(request):
         key.today_usage_count = today_count
         keys_by_purpose[key.purpose].append(key)
 
+    # Расчеты для "Финансового Брифинга"
+    financial_briefing_data = {}
+
+    payments_in_period = Payment.objects.filter(created_at__date__range=date_range, status='completed')
+    revenue = payments_in_period.aggregate(total=Sum('amount'))['total'] or 0
+    financial_briefing_data['revenue'] = revenue / 100
+
+    first_time_payers_ids = []
+    new_paying_users = payments_in_period.order_by('staff_id', 'created_at').distinct('staff_id')
+
+    for payment in new_paying_users:
+        is_first_payment = not Payment.objects.filter(
+            staff_id=payment.staff_id,
+            status='completed',
+            created_at__lt=payment.created_at
+        ).exists()
+        if is_first_payment:
+            first_time_payers_ids.append(payment.id)
+
+    new_mrr_payments = payments_in_period.filter(id__in=first_time_payers_ids)
+    new_mrr = new_mrr_payments.aggregate(total=Sum('amount'))['total'] or 0
+    financial_briefing_data['new_mrr'] = new_mrr / 100
+
+    paying_users_count = payments_in_period.values('staff_id').distinct().count()
+    arpu = (revenue / 100) / paying_users_count if paying_users_count > 0 else 0
+    financial_briefing_data['arpu'] = arpu
+
     # --- История платежей ---
     payment_data = []
-    recent_payments = Payment.objects.select_related('subscription').order_by('-created_at')[:50]
+    recent_payments = Payment.objects.select_related('subscription').order_by('-created_at')[:35]
 
-    staff_ids = [p.subscription.staff_id for p in recent_payments if p.subscription]
-    users_mapping = {str(u.id_staff): u.username for u in AuthUser.objects.filter(id_staff__in=staff_ids)}
+    staff_ids_from_payments = [p.staff_id for p in recent_payments]
+
+    users_map = {
+        str(u.id_staff): u
+        for u in AuthUser.objects.filter(id_staff__in=staff_ids_from_payments)
+    }
 
     for payment in recent_payments:
-        if payment.subscription and payment.subscription.staff_id:
-            username = users_mapping.get(str(payment.subscription.staff_id), "N/A")
-            payment_data.append({
-                "name": username,
-                "plan_name": payment.subscription.plan_name,
-                "payment_status": payment.status,
-                "amount": f"{get_format_number(payment.amount / 100)} руб.",
-                "date": get_formate_date(payment.created_at),
-            })
+        user = users_map.get(str(payment.staff_id))
+        if not user:
+            continue
+
+        previous_payments_count = Payment.objects.filter(
+            staff_id=user.id_staff,
+            status='completed',
+            created_at__lt=payment.created_at
+        ).count()
+        payment_type = "Повторная" if previous_payments_count > 0 else "Первая"
+
+        total_tests_created = Survey.objects.filter(id_staff=user.id_staff).count()
+
+        days_since_reg = (payment.created_at - user.date_joined).days
+        if days_since_reg <= 1:
+            user_status = "Импульсивная"
+        elif days_since_reg <= 7:
+            user_status = "Новичок"
+        else:
+            user_status = "Ветеран"
+
+        payment_data.append({
+            "name": user.username,
+            "plan_name": payment.subscription.plan_name,
+            "payment_status": payment.status,
+            "amount_raw": payment.amount / 100,
+            "amount": f"{get_format_number(payment.amount / 100)} руб.",
+            "date": payment.created_at,
+            "payment_type": payment_type,
+            "total_tests_created": total_tests_created,
+            "user_status": user_status,
+            "user_status_days": days_since_reg,
+            "order_id": payment.order_id
+        })
 
     completed_payments = Payment.objects.filter(status="completed")
     total_revenue = completed_payments.aggregate(total=Sum("amount"))["total"] or 0
@@ -3304,9 +3552,21 @@ def admin_stats(request):
     time_to_payment_data = json.dumps(get_time_to_payment_data())
     user_value_matrix_data = json.dumps(get_user_value_matrix_data())
 
+    daily_token_usage_data = json.dumps(get_daily_token_usage_chart_data(start_date, end_date))
+
+    daily_revenue_data = json.dumps(get_daily_revenue_data(start_date, end_date))
+    arpu_dynamics_data = json.dumps(get_arpu_dynamics_data(start_date, end_date))
+    revenue_source_data = json.dumps(get_revenue_source_data(start_date, end_date))
+    cohort_revenue_data = json.dumps(get_cohort_revenue_data())
+
     context = {
         "cockpit": cockpit_metrics,
         "gauges": gauges_data,
+        "financial_briefing": financial_briefing_data,
+        "daily_revenue_data": daily_revenue_data,
+        "arpu_dynamics_data": arpu_dynamics_data,
+        "revenue_source_data": revenue_source_data,
+        "cohort_revenue_data": cohort_revenue_data,
         "time_to_payment_data": time_to_payment_data,
         "user_value_matrix_data": user_value_matrix_data,
         "main_gauge": main_gauge_data,
@@ -3341,6 +3601,7 @@ def admin_stats(request):
         "usage_by_sub_data": usage_by_sub_data,
         "top_topics_data": top_topics_data,
         "user_journey_data": user_journey_data,
+        "daily_token_usage_data": daily_token_usage_data,
         'username': get_username(request)
     }
 
@@ -3575,7 +3836,7 @@ def create_payment(request):
     user_data = get_object_or_404(AuthUser, id_staff=get_staff_id(request))
     order_id = generate_payment_id()
 
-    tracer_l.warning(f'ADMIN. {request.user.username}: VIEW PAYMENT')
+    tracer_l.info(f'ADMIN. {request.user.username}: VIEW PAYMENT')
 
     context = {
         'page_title': 'Выбор тарифного плана',
@@ -3792,7 +4053,7 @@ class PaymentSuccessView(View):
                     payment.status = 'completed'
                     payment.save()
 
-                    tracer_l.critical(f'SUCCESS BUY - {request.user.username} - {description_payment}')
+                    tracer_l.info(f'SUCCESS BUY - {request.user.username} - {description_payment}')
 
                     if subscription.billing_cycle == 'yearly':
                         subscription.end_date = datetime.now() + timedelta(days=365)
@@ -3848,7 +4109,7 @@ class PaymentSuccessView(View):
 
                         if user_data.email:
                             send_mail(
-                                '✅ Успешная оплата — тариф активирован',
+                                '✅ Спасибо за покупку! | Успешная оплата',
                                 message,
                                 'support@letychka.ru',
                                 [user_data.email],
