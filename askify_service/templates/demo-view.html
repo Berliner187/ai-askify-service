@@ -223,7 +223,7 @@
                         </a>
                         <!-- Контекстная информация (скрыта на мобильных) -->
                         <div class="hidden sm:flex flex-col items-center min-w-0">
-                            <h1 class="text-sm font-bold text-white truncate" title="{{ title }}">{{ title }}</h1>
+                            <h1 class="text-sm font-bold text-white truncate" title="{{ title }}">{{ title | truncatechars:40  }}</h1>
                             <div class="flex items-center gap-2 text-xs text-gray-400">
                                 <span>{{ author }}</span>
                                 <span class="text-gray-600">•</span>
@@ -276,11 +276,12 @@
                                 <a href="{% url 'logout' %}" class="flex items-center gap-3 px-4 py-3 text-red-400 font-semibold rounded-3xl hover:bg-white/5 transition-transform active:scale-[.97]"><i class="fas fa-sign-out-alt w-5 text-center"></i><span>Выйти</span></a>
 
                             {% else %}
-                                <a href="/#transformation-engine" class="px-4 py-3 text-white font-semibold rounded-lg hover:bg-white/10">Как начать</a>
-                                <a href="/#use-cases" class="px-4 py-3 text-white font-semibold rounded-lg hover:bg-white/10">Кейсы</a>
-                                <a href="/#analytics-showcase" class="px-4 py-3 text-white font-semibold rounded-lg hover:bg-white/10">Аналитика</a>
+                                <a href="/#transformation-engine" class="px-4 py-3 text-white font-semibold rounded-3xl hover:bg-white/5 transition-transform active:scale-[.97]">Как начать</a>
+                                <a href="/#use-cases" class="px-4 py-3 text-white font-semibold rounded-3xl hover:bg-white/5 transition-transform active:scale-[.97]">Кейсы</a>
+                                <a href="/#analytics-showcase" class="px-4 py-3 text-white font-semibold rounded-3xl hover:bg-white/5 transition-transform active:scale-[.97]">Аналитика</a>
+                                <a href="/#faq" class="px-4 py-3 text-white font-semibold rounded-3xl hover:bg-white/5 transition-transform active:scale-[.97]">FAQ</a>
                                 <hr class="border-t border-[var(--color-border)] my-1">
-                                <a href="/register" class="block text-center bg-[var(--color-accent-primary)] text-white px-5 py-3 font-bold rounded-xl mt-1">Зарегистрироваться</a>
+                                <a href="/register" class="block text-center bg-[var(--color-accent-primary)] text-white px-5 py-3 font-bold rounded-3xl mt-1">Зарегистрироваться</a>
                             {% endif %}
                         </nav>
                     </div>
@@ -317,7 +318,7 @@
                             </div>
                         </div>
                     {% else %}
-                        <div class="mt-3 text-center text-sm bg-red-500/10 text-red-400 p-2 rounded-2xl border border-red-500/20">
+                        <div class="mt-3 text-center text-sm bg-red-500/10 text-red-400 backdrop-blur-xl p-2 rounded-2xl border border-red-500/20">
                             Чтобы видеть и управлять ответами, <button data-trigger-modal="register" class="font-bold hover:underline">зарегистрируйтесь</button>.
                         </div>
                     {% endif %}
@@ -354,6 +355,8 @@
                     </div>
                 {% endif %}
             {% endif %}
+
+            <h1 class="text-xl mt-12 sm:text-xl font-bold text-white text-center">{{ title }}</h1>
 
             <!-- СПИСОК ВОПРОСОВ -->
             <div class="mt-8 space-y-4 select-none">
@@ -474,17 +477,6 @@
                             </div>
                         
                         {% else %}
-                            {% if is_creator %}
-                                <a href="{% url 'create' %}" class="mt-6 block w-full text-center bg-[var(--color-accent-primary)] text-white p-5 rounded-3xl transition-transform hover:scale-[1.03] shadow-lg shadow-[var(--color-accent-primary)]/20">
-                                    <span class="text-lg font-bold">СОЗДАТЬ НОВЫЙ ТЕСТ 🚀</span>
-                                    <span class="block text-sm opacity-70">Создайте новый тест, он сохранится на Вашем аккаунте</span>
-                                </a>
-                            {% else %}
-                                <a href="{% url 'take_test' survey_id %}" class="mt-6 block w-full text-center bg-[var(--color-accent-primary)] text-white p-5 rounded-2xl transition-transform hover:scale-[1.03] shadow-lg shadow-[var(--color-accent-primary)]/20">
-                                    <span class="text-lg font-bold">ПРОЙТИ ТЕСТ 🚀</span>
-                                    <span class="block text-sm opacity-70">Пройдите тест, и автор увидит Ваш результат</span>
-                                </a>
-                            {% endif %}
 
                             {% if is_short_enough %}
                                 <a href="{% url 'result' survey_id %}" class="mt-6 block w-full text-center bg-black/20 text-white p-5 rounded-2xl transition-transform hover:scale-[1.03] shadow-lg shadow-[var(--color-accent-primary)]/20">
@@ -584,26 +576,13 @@
             <!-- Кнопка "Аналитика" -->
             {% if username == 0 %}
                 <button data-trigger-modal="register" class="trigger-register-take-test">
-                    <i class="fas fa-chart-pie"></i> 
-                    <span class="text-sm">Аналитика</span>
+                    <i class="fas fa-play"></i> 
+                    <span class="text-sm">Начать тестирование</span>
                 </button>
             {% else %}
                 <a href="{% url 'preview_test_result' survey_id %}" title="Перейти к аналитике"  style="background-color: rgba(255, 255, 255, 0.1); color: white;">
-                    <i class="fas fa-chart-pie"></i>
-                    <span class="text-sm">Аналитика</span>
-                </a>
-            {% endif %}
-
-            <!-- Кнопка "Пройти тест" -->
-            {% if username == 0 %}
-                <button data-trigger-modal="register" class="trigger-register-take-test">
-                    <i class="fas fa-play"></i> 
-                    <span class="text-sm">Пройти</span>
-                </button>
-            {% else %}
-                <a href="{% url 'take_test' survey_id %}" title="Пройти тест" style="background-color: rgba(255, 255, 255, 0.1); color: white;">
-                    <i class="fas fa-play"></i> 
-                    <span class="text-sm">Пройти</span>
+                    <i class="fas fa-play"></i>
+                    <span class="text-sm">Начать тестирование</span>
                 </a>
             {% endif %}
             
