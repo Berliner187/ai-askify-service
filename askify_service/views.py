@@ -1982,6 +1982,7 @@ def view_results(request, survey_id):
         })
 
     author_username = AuthUser.objects.get(id_staff=survey.id_staff).username
+    is_short_enough = len(author_username) < 20
 
     context = {
         'survey': survey,
@@ -1997,6 +1998,7 @@ def view_results(request, survey_id):
         'username': get_username(request),
         'page_title': survey.title,
         'author': author_username if len(author_username) < 16 else 'Аноним',
+        'is_short_enough': is_short_enough
     }
     return render(request, 'askify_service/test_results.html', context)
 

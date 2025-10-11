@@ -70,13 +70,13 @@
 
         .floating-action-bar {
             position: fixed;
-            bottom: 1.5rem;
+            bottom: 1.25rem;
             left: 50%;
             transform: translateX(-50%);
             display: flex;
             gap: 0.5rem;
             padding: 0.5rem;
-            background: linear-gradient(135deg, rgba(30, 24, 48, 0.6), rgba(30, 24, 48, 0.4));
+            background: linear-gradient(135deg, rgba(30, 24, 48, 0.4), rgba(30, 24, 48, 0.2));
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
             border-radius: 9999px;
@@ -387,10 +387,9 @@
                             {% endif %}
 
                             {% if is_short_enough %}
-                            <a href="{% url 'result' survey_id %}" class="mt-6 block w-full text-center bg-black/20 text-white p-5 rounded-2xl transition-transform hover:scale-[1.03] shadow-lg shadow-[var(--color-accent-primary)]/20">
-                                <span class="text-lg font-bold">Вернуться к карточке теста</span>
-                            </a>
-                            {% else %}
+                                <a href="{% url 'result' survey_id %}" class="mt-6 block w-full text-center bg-black/20 text-white p-5 rounded-2xl transition-transform hover:scale-[1.03] shadow-lg shadow-[var(--color-accent-primary)]/20">
+                                    <span class="text-lg font-bold">Вернуться к карточке теста</span>
+                                </a>
                             {% endif %}
 
                         {% endif %}
@@ -475,6 +474,12 @@
     <div class="floating-action-bar">
 
         {% if is_creator %}
+
+            {% if is_short_enough %}
+                <a href="{% url 'result' survey_id %}" title="Вернуться к тесту" class="copy-btn">
+                    <i class="fas fa-circle-chevron-left"></i>
+                </a>
+            {% endif %}
             
             <!-- Кнопка "Аналитика" -->
             {% if username == 0 %}
@@ -483,7 +488,7 @@
                     <span>Аналитика</span>
                 </button>
             {% else %}
-                <a href="{% url 'preview_test_result' survey_id %}" title="Перейти к аналитике">
+                <a href="{% url 'preview_test_result' survey_id %}" title="Перейти к аналитике"  style="background-color: rgba(255, 255, 255, 0.1); color: white;">
                     <i class="fas fa-chart-pie"></i>
                     <span>Аналитика</span>
                 </a>
@@ -496,7 +501,7 @@
                     <span>Пройти</span>
                 </button>
             {% else %}
-                <a href="{% url 'take_test' survey_id %}" title="Пройти тест">
+                <a href="{% url 'take_test' survey_id %}" title="Пройти тест" style="background-color: rgba(255, 255, 255, 0.1); color: white;">
                     <i class="fas fa-play"></i> 
                     <span>Пройти</span>
                 </a>
@@ -513,7 +518,7 @@
             <!-- Для участника теста -->
             
             <!-- Кнопка "Пройти тест" -->
-            <a href="{% url 'take_test' survey_id %}" title="Пройти тест">
+            <a href="{% url 'take_test' survey_id %}" title="Пройти тест" style="background-color: rgba(255, 255, 255, 0.1); color: white;">
                 <i class="fas fa-play"></i> 
                 <span>Пройти тест</span>
             </a>
