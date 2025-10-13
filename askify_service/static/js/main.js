@@ -44,6 +44,7 @@ async function submitText() {
                 },
                 body: JSON.stringify({ text, questions: questionCount })
             });
+            const result = await response.json();
             
             if (response.status === 429) {
                 const modal = document.getElementById('limit-exceeded-modal');
@@ -57,7 +58,6 @@ async function submitText() {
                 }
             } 
 
-            const result = await response.json();
             if (response.ok) {
                 window.location.href = `/result/${result.survey_id}`;
             } else {

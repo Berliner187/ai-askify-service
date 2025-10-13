@@ -180,6 +180,14 @@ def page_create_survey(request):
     passed_survey_ids = user_answers.values_list('survey_id', flat=True).distinct()
     tests_created_and_passed = user_surveys.filter(survey_id__in=passed_survey_ids).count()
 
+    if subscription_level == 0:
+        total_used_per_period = tests_used_today
+        tracer_l.info(
+            f"free user {request.user.username} --- total_used_per_period: {total_used_per_period} used >= 10 ")
+        if total_used_per_period >= 10:
+            diff_tests_count_limit = 0
+            tracer_l.info(f"free user {request.user.username} --- used all generations: {total_used_per_period} used >= 10 ")
+
     context = {
         "page_title": "Создать тест",
         'tests_today': max(diff_tests_count_limit, 0),
@@ -843,7 +851,7 @@ class GenerationSurveysView(View):
             surveys_count = await sync_to_async(Survey.objects.filter(id_staff=staff_id).count)()
             tracer_l.debug(f'{staff_id} --- surveys_count: {surveys_count}')
 
-            if surveys_count > 1:
+            if surveys_count > 0:
                 return JsonResponse(
                     {'error': 'Лимит исчерпан :(\n\nХочешь ещё? Зарегистрируйся, и дадим 10 тестов в подарок.'})
 
@@ -2106,36 +2114,68 @@ def register(request):
     return render(request, 'register.html', context)
 
 
+@transaction.atomic
 @check_legal_process
 def quick_register_api(request):
     if request.method != 'POST':
         return JsonResponse({'error': 'Метод не разрешен'}, status=405)
 
-    form = CustomUserCreationForm(request.POST)
-
-    if form.is_valid():
-        user = form.save()
-
-        tracer_l.warning(f'API REGISTRATION. NEW USER {user.username}')
-
-        plan_name, end_date, status, billing_cycle, discount = init_free_subscription()
-        subscription = Subscription.objects.create(
-            staff_id=user.id_staff,
-            plan_name=plan_name,
-            end_date=end_date,
-            status=status,
-            billing_cycle=billing_cycle,
-            discount=0.00
-        )
-        subscription.save()
-
-        login(request, user)
-        return JsonResponse({'redirect': '/payment'})
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0]
     else:
-        print(form.errors.as_json())
-        print("=" * 50)
-        error_message = next(iter(form.errors.values()))[0]
-        return JsonResponse({'error': error_message}, status=400)
+        ip = request.META.get('REMOTE_ADDR')
+
+    email = request.POST.get('email')
+    password = request.POST.get('password1')
+
+    temporary_user = AuthUser.objects.annotate(
+        username_len=Length('username')
+    ).filter(
+        hash_user_id=ip,
+        username_len__gt=20
+    ).first()
+
+    if temporary_user:
+        tracer_l.info(f'API REGISTRATION. CONVERTING temporary user {temporary_user.username} (IP: {ip})')
+        user = temporary_user
+
+        if AuthUser.objects.exclude(pk=user.pk).filter(email=email).exists():
+            return JsonResponse({'error': 'Этот Email уже используется.'}, status=400)
+
+        user.username = email.split('@')[0]
+        user.email = email
+        user.set_password(password)
+        user.hash_user_id = None
+        user.save()
+
+        plan_name, end_date, status, billing_cycle, _ = init_free_subscription()
+        subscription, created = Subscription.objects.update_or_create(
+            staff_id=user.id_staff,
+            defaults={
+                'plan_name': plan_name, 'end_date': end_date, 'status': status,
+                'billing_cycle': billing_cycle, 'discount': 0.00
+            }
+        )
+
+    else:
+        # --- СЦЕНАРИЙ "СОЗДАНИЯ" (стандартный) ---
+        form = CustomUserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            tracer_l.warning(f'API REGISTRATION. NEW USER {user.username}')
+
+            plan_name, end_date, status, billing_cycle, _ = init_free_subscription()
+            Subscription.objects.create(
+                staff_id=user.id_staff, plan_name=plan_name, end_date=end_date,
+                status=status, billing_cycle=billing_cycle, discount=0.00
+            )
+        else:
+            error_message = next(iter(form.errors.values()))[0]
+            return JsonResponse({'error': error_message}, status=400)
+
+    login(request, user)
+    return JsonResponse({'redirect': '/payment'})
 
 
 @check_legal_process
