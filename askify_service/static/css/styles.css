@@ -908,12 +908,12 @@ textarea:focus {
     padding: 12px 16px;
     display: flex;
     align-items: center;
-    background: var(--card-bg);
     border-radius: var(--border-radius);
     transition-duration: .2s;
+    background: transparent;
 }
 .survey-card:hover {
-    background: transparent;
+    background: var(--card-bg);
 }
 .survey-card:active {
     transform: translateY(4px);

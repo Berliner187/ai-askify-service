@@ -116,6 +116,7 @@ nav ul hr {
     right: 0;
     min-width: 220px;
     max-width: 1200px;
+    width: 98%;
     border-radius: 24px;
     border: 1px solid rgba(255, 255, 255, 0.12);
     background: rgba(60, 57, 72, 0.2);
@@ -681,7 +682,6 @@ nav ul hr {
 
     .vision-nav-item {
         padding: 12px 16px;
-        width: 80%;
     }
 
     .nav-title {
@@ -694,7 +694,7 @@ nav ul hr {
 
     .nav-icon {
         font-size: 1.4rem;
-        width: 28px;
+        height: 28px;
     }
 
     .content-header {
