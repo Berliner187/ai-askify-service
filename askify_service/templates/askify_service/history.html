@@ -17,6 +17,16 @@
     </script>
     <noscript><div><img src="https://mc.yandex.ru/watch/98829160" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
     <!-- /Yandex.Metrika counter -->
+
+    {% if debug %}
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    {% else %}
+        <script src="{% static 'vendor/tailwind.full.min.js' %}"></script>
+        <script src="{% static 'vendor/jquery.min.js' %}"></script>
+    {% endif %}
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
     <script src="{% static 'js/second-loader.js' %}"></script>
@@ -25,10 +35,10 @@
     <div id="page-container" class="fade" style="display: none;">
         {% include 'header.html' %}
         
-        <div class="container question" id="saved-survey-container">
+        <div class="container question mx-auto max-w-4xl px-4 py-8">
             <div class="head-button">
-                <h2>История</h2>
-                <a class="button-medium" href="{% url 'create' %}">
+                <h2 class="history-title">История</h2>
+                <a class="button-medium" href="{% url 'create' %}"> 
                     <div>
                         <p>Создать новый</p>
                         <img src="{% static 'img/icon-new.png' %}" alt="">
@@ -36,54 +46,55 @@
                 </a>
             </div>
 
-            <div id="surveys-container">
-                <div id="surveys-list">
-                    
-                    {% for survey_id, survey_data in surveys_data.items %}
-                        <label>
-                            <a href="/result/{{ survey_id }}">
-                                <div class="survey-block">{{ survey_data.title }}</div>
-                                <div class="survey-block small-text">{{ survey_data.create }}</div>
-                            </a>
-                            <div class="button-medium button-red" style="cursor: pointer;">
-                                <div onclick="openDeleteModal('{{ survey_id }}', '{{ survey_data.title|escapejs }}')">
-                                    <img src="{% static 'img/icon-delete.png' %}" alt="Удалить">
-                                </div>
-                            </div>
-                        </label><br>
-                    {% endfor %}
-                </div>
-                
-                <div class="center-button" id="load-more-button">
-                    {% if page_obj.has_next %}
-                        <button class="button-medium laod-more-btn" id="load-more" data-page="1">Загрузить еще</button>
-                    {% endif %}
-                </div>
-                
+            <div style="display: flex; flex-direction: column; margin: 12px 0">
+                <p>Всего {{ total_surveys }}</p>
+            </div>
+            
+            <div class="relative mb-8 mt-4">
+                <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></i>
+                <input type="text" id="history-search-input" placeholder="Поиск по названию..."
+                    class="w-full bg-transparent border border-[var(--color-border)] rounded-2xl py-3 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]">
             </div>
 
+            <div id="surveys-list-container" class="space-y-8">
+                <!-- Сгруппированные тесты здесь -->
+            </div>
+            
+            <div class="text-center mt-12" id="load-more-container">
+                {% if page_obj.has_next %}
+                    <button id="load-more" data-page="1" 
+                            class="bg-white/10 hover:bg-white/20 text-white font-semibold py-3 px-6 rounded-full transition-colors">
+                        Загрузить еще
+                    </button>
+                {% endif %}
+            </div>
         </div>
+
         {% include 'ui_components/bottom_menu.html' %}
-        </div>
-        {% include 'footer-s.html' %}
+    </div>
+    {% include 'footer-s.html' %}
 
-        <div id="delete-modal" class="modal-overlay hidden" onclick="closeDeleteModal()">
-            <div class="modal-content" onclick="event.stopPropagation()">
-                <div class="modal-icon">
-                    <i class="fas fa-exclamation-triangle"></i>
-                </div>
-                <h3>Подтвердите удаление</h3>
-                <p>Вы уверены, что хотите удалить тест «<strong id="modal-survey-title"></strong>»? <br>Это действие необратимо.</p>
-                <div class="modal-actions">
-                    <button onclick="closeDeleteModal()" class="button-medium">Отмена</button>
-                    <a id="confirm-delete-link" href="#" class="button-medium button-red">
-                        <div>
-                            <p>Удалить безвозвратно</p>
-                        </div>
-                    </a>
-                </div>
+    <div id="delete-modal" class="modal-overlay hidden" onclick="closeDeleteModal()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <h3>Подтвердите удаление</h3>
+            <p>Вы уверены, что хотите удалить тест <br> «<strong id="modal-survey-title"></strong>»? <br>Это действие необратимо.</p>
+            <div class="modal-actions">
+                <button onclick="closeDeleteModal()" class="button-medium">
+                    <div>
+                        <p>Отмена</p>
+                    </div>
+                </button>
+                <a id="confirm-delete-link" href="#" class="button-medium button-red">
+                    <div>
+                        <p>Удалить безвозвратно</p>
+                    </div>
+                </a>
             </div>
         </div>
+    </div>
 
     <script>
         const modal = document.getElementById('delete-modal');
@@ -119,54 +130,145 @@
     </script>
     
     <script>
-        document.getElementById('load-more').addEventListener('click', function() {
-            var button = this;
-            var page = parseInt(button.getAttribute('data-page')) + 1;
-
-            fetch(`/load-more-surveys/?page=${page}`, {
-                method: 'GET',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                },
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.surveys.length > 0) {
-                    data.surveys.forEach(survey => {
-                        const surveyBlock = document.createElement('label');
-
-                        surveyBlock.innerHTML = `
-                        <a href="/result/${survey.survey_id}">
-                            <div class="survey-block">${survey.title}</div>
-                            <div class="survey-block small-text">${survey.update}</div>
-                        </a>
-                        <div class="button-medium button-red" style="cursor: pointer;">
-                            <div onclick="openDeleteModal('${survey.survey_id}', '{{ survey_data.title|escapejs }}')">
-                                <img src="{% static 'img/icon-delete.png' %}" alt="Удалить">
-                            </div>
-                        </div>`;
-
-                        const spacer = document.createElement('br');
-                        
-                        document.getElementById('surveys-list').appendChild(surveyBlock);
-                        document.getElementById('surveys-list').appendChild(spacer);
-                    });
-                    button.setAttribute('data-page', page);
-                    if (!data.has_next) {
-                        document.getElementById('load-more-button').style.display = 'none';
+        document.addEventListener('DOMContentLoaded', () => {
+            const searchInput = document.getElementById('history-search-input');
+            const loadMoreBtn = document.getElementById('load-more');
+            const surveysContainer = document.getElementById('surveys-list-container');
+            
+            const initialDataElement = document.getElementById('initial-surveys-data');
+            let allSurveys = initialDataElement ? JSON.parse(initialDataElement.textContent) : {};
+            
+            const groupSurveysByMonth = (surveys) => {
+                const grouped = {};
+                for (const [id, data] of Object.entries(surveys)) {
+                    const [day, month, year] = (data.create || data.update).split('.');
+                    const dateObj = new Date(year, month - 1);
+                    const monthKey = dateObj.toLocaleString('ru-RU', { month: 'long', year: 'numeric' });
+                    const sortKey = `${year}-${String(month - 1).padStart(2, '0')}`;
+                    
+                    if (!grouped[sortKey]) {
+                        grouped[sortKey] = { monthName: monthKey.charAt(0).toUpperCase() + monthKey.slice(1), surveys: [] };
                     }
-                } else {
-                    button.style.display = 'none';
+                    grouped[sortKey].surveys.push({ id, ...data });
                 }
-            })
-            .catch(error => console.error('Error:', error));
+                return Object.entries(grouped).sort((a, b) => b[0].localeCompare(a[0]));
+            };
+
+            const renderSurveys = (groupedSurveys) => {
+                let html = '';
+                if (groupedSurveys.length === 0) {
+                    html = '<p style="text-align: center; color: var(--color-text-secondary);">Ничего не найдено.</p>';
+                } else {
+                    for (const [sortKey, group] of groupedSurveys) {
+                        html += `<div class="month-group"><h3>${group.monthName}</h3><div class="space-y-2" style="display: flex; flex-direction: column; gap: 12px;">`;
+                        group.surveys.forEach(survey => {
+                            const titleForModal = survey.title.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                            const displayDate = survey.create;
+                            html += `
+                                <div class="survey-card">
+                                    <a href="/result/${survey.id}" class="flex-grow min-w-0" style="color: inherit; text-decoration: none;">
+                                        <p class="font-semibold truncate" style="color: var(--light-color); margin: 0 0 4px 0; font-weight: 600;">${survey.title}</p>
+                                        <div class="flex items-center gap-4 text-xs" style="color: var(--color-text-secondary); font-size: 12px;">
+                                            <span>${displayDate}</span>
+                                        </div>
+                                    </a>
+                                    <div class="survey-card__actions" style="display: flex; align-items: center; gap: 8px; margin-left: 16px;">
+                                        <div class="button-medium button-red" style="padding: 8px; width: 36px; height: 36px;" onclick="openDeleteModal('${survey.id}', '${titleForModal}')">
+                                            <div><img src="{% static 'img/icon-delete.png' %}" alt="Удалить" style="width: 16px; height: 16px;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        html += `</div></div>`;
+                    }
+                }
+                if (surveysContainer) {
+                    surveysContainer.innerHTML = html;
+                }
+            };
+
+            // --- Поиск ---
+            if (searchInput) {
+                let searchTimeout;
+                searchInput.addEventListener('input', (e) => {
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(() => {
+                        const query = e.target.value.toLowerCase();
+                        const filteredSurveys = {};
+                        for (const [id, data] of Object.entries(allSurveys)) {
+                            if (data.title.toLowerCase().includes(query)) {
+                                filteredSurveys[id] = data;
+                            }
+                        }
+                        renderSurveys(groupSurveysByMonth(filteredSurveys));
+                    }, 300);
+                });
+            }
+            
+            // --- Загрузить больше ---
+            if (loadMoreBtn) {
+                loadMoreBtn.addEventListener('click', function() {
+                    var button = this;
+                    var page_to_request = parseInt(button.getAttribute('data-page')) + 1;
+
+                    button.disabled = true;
+                    button.textContent = 'Загрузка...';
+
+                    fetch(`/load-more-surveys/?page=${page_to_request}`, {
+                        method: 'GET',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.surveys && data.surveys.length > 0) {
+                            data.surveys.forEach(s => {
+                                allSurveys[s.survey_id] = { 
+                                    title: s.title, 
+                                    create: s.create,
+                                };
+                            });
+
+                            // button.textContent = `Показать еще ${data.total_surveys}`;
+                            
+                            const currentQuery = searchInput ? searchInput.value.toLowerCase() : '';
+                            const filtered = {};
+                            for (const [id, s_data] of Object.entries(allSurveys)) {
+                                if (s_data.title.toLowerCase().includes(currentQuery)) {
+                                    filtered[id] = s_data;
+                                }
+                            }
+                            renderSurveys(groupSurveysByMonth(filtered));
+
+                            if (data.has_next) {
+                                button.setAttribute('data-page', page_to_request);
+                            } else {
+                                button.parentElement.style.display = 'none';
+                            }
+                        } else {
+                            button.parentElement.style.display = 'none';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        button.textContent = 'Ошибка загрузки';
+                    })
+                    .finally(() => {
+                        const loadMoreContainer = document.getElementById('load-more-container');
+                        if (loadMoreContainer && loadMoreContainer.style.display !== 'none') {
+                            button.disabled = false;
+                            button.textContent = 'Загрузить еще';
+                        }
+                    });
+                });
+            }
+
+            renderSurveys(groupSurveysByMonth(allSurveys));
         });
     </script>
+    {{ surveys_data|json_script:"initial-surveys-data" }}
 </body>
 
 </html>

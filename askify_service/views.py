@@ -558,30 +558,36 @@ def medicine_promo(request):
 
 @login_required
 def page_history_surveys(request):
-    try:
-        surveys_data = get_all_surveys(request, page=1)
+    surveys_data = {}
+    page_obj = None
 
-        context = {
-            'page_title': 'Предыдущие тесты',
-            'surveys_data': surveys_data['results'],
-            'username': get_username(request),
-            'page_obj': surveys_data['page_obj'],
-        }
-        tracer_l.info(f"{request.user.username} --- loaded surveys page 1")
+    # try:
+    page_number = request.GET.get('page', 1)
+    data_from_backend = get_all_surveys(request, page=page_number)
 
-    except Exception as fatal:
-        context = {
-            'page_title': 'Предыдущие тесты',
-            'username': get_username(request)
-        }
-        tracer_l.error(f"{request.user.username} --- {fatal}")
+    if data_from_backend:
+        surveys_data = data_from_backend.get('results', {})
+        page_obj = data_from_backend.get('page_obj')
+
+    tracer_l.info(f"{request.user.username} --- loaded surveys page {page_number}")
+    # except Exception as fatal:
+    #     tracer_l.error(f"{request.user.username} --- {fatal}")
+        # Мы НЕ падаем. Мы просто оставим surveys_data пустым.
+
+    context = {
+        'page_title': 'Предыдущие тесты',
+        'surveys_data': surveys_data,
+        'username': get_username(request),
+        'page_obj': page_obj,
+        'total_surveys': Survey.objects.filter(id_staff=get_staff_id(request)).count()
+    }
 
     return render(request, 'askify_service/history.html', context)
 
 
 @login_required
 def api_get_history(request):
-    surveys_data = get_all_surveys(request, page=1)
+    surveys_data = get_all_surveys(request, page=1, per_page=5)
     tracer_l.info(f"{request.user.username} --- loaded surveys page 1")
     return JsonResponse({'data': surveys_data['results']})
 
@@ -591,26 +597,37 @@ def load_more_surveys(request):
     if request.method == "GET" and request.headers.get('x-requested-with') == 'XMLHttpRequest':
         try:
             page_number = int(request.GET.get('page', 2))
+            staff_id = get_staff_id(request)
+
+            if staff_id is None:
+                return JsonResponse({'error': 'User not authenticated in API call'}, status=401)
+
             surveys_data = get_all_surveys(request, page=page_number)
+
+            if not surveys_data or 'results' not in surveys_data:
+                return JsonResponse({'surveys': [], 'has_next': False})
 
             surveys_list = [
                 {
                     'survey_id': survey_id,
-                    'title': survey['title'],
-                    'update': survey['update'],
-                    'tokens': survey['tokens']
+                    'title': survey.get('title', ''),
+                    'create': survey.get('create', ''),
+                    'tokens': survey.get('tokens')
                 }
                 for survey_id, survey in surveys_data['results'].items()
             ]
 
             has_next = surveys_data['page_obj'].has_next()
+            next_page_number = surveys_data['page_obj'].next_page_number() if has_next else None
+
             return JsonResponse({
                 'surveys': surveys_list,
                 'has_next': has_next,
-                'next_page': page_number + 1 if has_next else None,
+                'next_page': next_page_number
             })
         except Exception as e:
-            return JsonResponse({'error': str(e)}, status=400)
+            tracer_l.error(f"FATAL Error in load_more_surveys: {e} | User: {request.user.username}")
+            return JsonResponse({'error': str(e)}, status=500)
 
     return JsonResponse({'error': 'Invalid request'}, status=400)
 
@@ -984,20 +1001,19 @@ def toggle_answers(request, survey_id):
 
 
 @login_required
-def get_all_surveys(request, page=1, per_page=5):
-    staff_id = get_staff_id(request)
-    if staff_id is None:
+def get_all_surveys(request, page=1, per_page=10):
+    if request is None:
         return {}
 
-    surveys_queryset = Survey.objects.filter(id_staff=staff_id).order_by('-created_at')
+    surveys_queryset = Survey.objects.filter(id_staff=get_staff_id(request)).order_by('-created_at')
 
     paginator = Paginator(surveys_queryset, per_page)
     try:
         surveys_page = paginator.page(page)
     except (EmptyPage, PageNotAnInteger):
-        surveys_page = paginator.page(1)
+        surveys_page = paginator.page(paginator.num_pages)
 
-    tokens_entries = TokensUsed.objects.filter(id_staff=staff_id)
+    tokens_entries = TokensUsed.objects.filter(id_staff=get_staff_id(request))
 
     results = {}
     time_margin = timedelta(seconds=5)
@@ -1035,7 +1051,7 @@ def get_all_surveys(request, page=1, per_page=5):
         tokens_used = nearby_tokens.tokens_survey_used if nearby_tokens else None
 
         results[str(survey.survey_id)] = {
-            'title': survey.title if len(survey.title) < 32 else survey.title[:32] + '...',
+            'title': survey.title,
             'update': survey.updated_at.strftime('%d.%m.%Y'),
             'create': survey.created_at.strftime('%d.%m.%Y'),
             'tokens': tokens_used
@@ -1389,6 +1405,7 @@ def result_view(request, survey_id):
         'score': score,
         'total': total,
         'survey_id': survey_id,
+        'created_at': survey.created_at,
         'questions': processed_questions,
         'username': request.user.username if request.user.is_authenticated else None,
         'feedback_text': feedback_text,

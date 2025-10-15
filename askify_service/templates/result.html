@@ -233,6 +233,10 @@
                         </div>
                     {% endfor %}
                 </div>
+
+                <div class="result-header">
+                    <p>Создан {{ created_at }}</p>
+                </div>
                 
                 <div class="head-button">
                     <a class="button-medium" href="{% url 'download-results_pdf' survey_id=survey_id %}">
