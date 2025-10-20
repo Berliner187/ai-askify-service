@@ -181,9 +181,9 @@ def page_create_survey(request):
     tests_created_and_passed = user_surveys.filter(survey_id__in=passed_survey_ids).count()
 
     if subscription_level == 0:
-        total_used_per_period = tests_used_today
+        total_used_per_period = Survey.objects.filter(id_staff=current_id_staff).count()
         tracer_l.info(
-            f"free user {request.user.username} --- total_used_per_period: {total_used_per_period} used >= 10 ")
+            f"free user {request.user.username} --- total_used_per_period: {total_used_per_period} used")
         if total_used_per_period >= 10:
             diff_tests_count_limit = 0
             tracer_l.info(f"free user {request.user.username} --- used all generations: {total_used_per_period} used >= 10 ")
