@@ -359,7 +359,7 @@
                                 <i class="fas fa-paperclip"></i>
                             </button>
                         {% else %}
-                            <a href="{% url 'payment' %}" class="attach-button" title="Прикрепить файл">
+                            <a id="premium-upload-trigger" class="attach-button" title="Прикрепить файл">
                                 <i class="fas fa-paperclip"></i>
                             </a>
                         {% endif %}
@@ -431,6 +431,63 @@
 
     <script src="{% static 'js/main.js' %}?v=1.3"></script>
     <script src="{% static 'js/auto-scroll.js' %}"></script>
+
+    <!-- Модалка logout -->
+    <div id="premium-upload-modal" class="action-modal">
+        <div class="action-modal__content">
+            <div class="action-modal__header">
+                <div class="action-modal__icon">
+                    <i class="fas fa-gem"></i>
+                </div>
+                <h3>Для загрузки файлов требуется Премиум</h3>
+            </div>
+            <div class="action-modal__body">
+                <p>Расширьте свои возможности и начните работать эффективнее. <br><br>Скидка 33% при оплате за 3 месяца, и Вы получаете полный месяц бесплатно!</p>
+            </div>
+            <div class="action-modal__footer">
+                <div id="action-modal-cancel" class="button-medium"><div><p>Позже</p></div></div>
+                <div id="action-modal-confirm" class="button-medium button-accent"><div><p>Купить</p></div></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function setupActionModal(modalId, triggerId, confirmId, cancelId, confirmUrl) {
+            const modal = document.getElementById(modalId);
+            const triggerButton = document.getElementById(triggerId);
+            const confirmButton = document.getElementById(confirmId);
+            const cancelButton = document.getElementById(cancelId);
+
+            if (!modal || !triggerButton || !confirmButton || !cancelButton) {
+                console.error('Modal setup failed: one or more elements not found.');
+                return;
+            }
+
+            const showModal = () => modal.classList.add('is-visible');
+            const hideModal = () => modal.classList.remove('is-visible');
+
+            triggerButton.addEventListener('click', showModal);
+            cancelButton.addEventListener('click', hideModal);
+
+            modal.addEventListener('click', (event) => {
+                if (event.target === modal) {
+                    hideModal();
+                }
+            });
+
+            confirmButton.addEventListener('click', () => {
+                window.location.href = confirmUrl;
+            });
+        }
+
+        setupActionModal(
+            'premium-upload-modal', 
+            'premium-upload-trigger',
+            'action-modal-confirm',
+            'action-modal-cancel',
+            "{% url 'payment' %}"
+        );
+    </script>
 
     <script>
     // Фикс для iOS - предотвращение масштабирования

@@ -908,9 +908,10 @@ class GenerationSurveysView(View):
             response_time_ms = int((end_time - start_time) * 1000)
 
             new_survey_id = uuid.uuid4()
+            new_title = generated_text_data['generated_text']['title']
             survey = Survey(
                 survey_id=new_survey_id,
-                title=generated_text_data['generated_text']['title'],
+                title=new_title,
                 id_staff=staff_id,
                 model_name=generated_text_data.get('model_used', '')
             )
@@ -937,7 +938,7 @@ class GenerationSurveysView(View):
             else:
                 tracer_l.warning(f'{staff_id} --- APIKey для SURVEY не найден для логирования использования.')
 
-            tracer_l.info(f'{staff_id} --- Успешная генерация: {new_survey_id}')
+            tracer_l.info(f'{staff_id} --- success generate: {new_title}')
 
             return JsonResponse({
                 'survey': generated_text_data['generated_text'],
