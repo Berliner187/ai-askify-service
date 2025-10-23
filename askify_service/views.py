@@ -747,13 +747,17 @@ class ManageSurveysView(View):
             tracer_l.debug(f"{request.user.username} --- total_used_per_period: {total_used_per_period}")
 
             if plan_name.lower() == 'стартовый':
-                if (total_used_per_period >= tests_count_limit):
+                tracer_l.info(
+                    f"free user {request.user.username} --- total_used_per_period: {total_used_per_period} used")
+                if total_used_per_period > tests_count_limit:
+                    tracer_l.info(
+                        f"free user {request.user.username} --- USED ALL generations: {total_used_per_period} used >= {tests_count_limit}")
                     return JsonResponse({
                         'error': 'Ваш лимит тестов на тарифе "Стартовый" исчерпан.'},
                         status=429
                     )
             else:
-                if total_used_per_period >= tests_count_limit:
+                if total_used_per_period > tests_count_limit:
                     return JsonResponse({
                         'error': 'Лимит по созданию тестов исчерпан :(\n\nОзнакомьтесь с тарифами на странице профиля.'
                     }, status=429)
@@ -4055,12 +4059,12 @@ class PaymentInitiateView(View):
         plan_prices = {
             'Начальный': 0,
             'Лайтовый': 99,
-            'Стандартный': 420,
-            'Премиум': 590,
-            'Стандартный 3 мес': 840,
-            'Премиум 3 мес': 1180,
+            'Стандартный': 550,
+            'Премиум': 690,
+            'Стандартный 3 мес': 1470,
+            'Премиум 3 мес': 1860,
             'Ультра': 990,
-            'Стандартный Год': 2640,
+            'Стандартный Год': 3900,
             'Премиум Год': 4800
         }
 

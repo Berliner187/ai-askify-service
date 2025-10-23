@@ -350,13 +350,13 @@ def get_daily_test_limit(plan_name):
     Возвращает дневной лимит на количество создаваемых тестов для данного плана.
     """
     daily_test_limits = {
-        'стартовый': 10,
+        'стартовый': 5,
         'лайтовый': 15,
         'стандартный': 50,
-        'премиум': 150,
+        'премиум': 100,
         'ультра': 800,
         'стандартный год': 50,
-        'премиум год': 150,
+        'премиум год': 100,
     }
     return daily_test_limits.get(plan_name.lower(), 0)
 
@@ -528,6 +528,7 @@ class APIKey(models.Model):
     name = models.CharField(max_length=100)
     provider = models.CharField(max_length=50)
     purpose = models.CharField(max_length=20)
+    base_url = models.CharField(max_length=255, blank=True, null=True)
     key = models.TextField()
     is_active = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
