@@ -359,17 +359,42 @@
                 </div>
 
                 <div class="mt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <!-- Левая часть: слайдер -->
                     <div class="flex items-center gap-3">
                         <label for="question-slider" class="font-semibold text-white">Вопросов:</label>
-                        <input type="range" id="question-slider" min="1" max="5" value="3" class="w-32">
-                        <span id="question-count-display" class="font-bold text-lg highlight">3</span>
-                    </div>
+                        <input type="range" id="question-slider" min="1" max="3" value="2" class="w-32">
+                        <span id="question-count-display" class="font-bold text-lg highlight">2</span>
 
-                    <div class="hidden sm:block">
-                        <a href="#analytics-showcase" class="text-sm text-[var(--color-text-secondary)] hover:text-white transition-colors group">
-                            Увидеть <span class="group-hover:gradient-text font-semibold">аналитику</span> в действии <span class="opacity-70 group-hover:opacity-100">&rarr;</span>
-                        </a>
+                        <div class="relative group">
+                            <button class="w-8 h-8 flex items-center justify-center rounded-full bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-white transition-colors">
+                                <i class="fas fa-question text-sm"></i>
+                            </button>
+                            <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-72 p-4 
+                                        bg-[var(--color-surface)]/80 backdrop-blur-xl border border-[var(--color-border)] 
+                                        rounded-2xl text-sm text-[var(--color-text-secondary)]
+                                        opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10 shadow-2xl shadow-black/50">
+                                
+                                <p class="font-bold text-white mb-3">Увеличьте количество вопросов:</p>
+                                
+                                <ul class="space-y-3">
+                                    <li class="flex items-center justify-between gap-3">
+                                        <span>Без регистрации</span>
+                                        <span class="px-2 py-0.5 rounded-full bg-black/20 font-mono font-bold text-white">до 3</span>
+                                    </li>
+                                    <li class="flex items-center justify-between gap-3">
+                                        <a href="/register" class="text-[var(--color-accent-primary)] hover:underline font-semibold">Регистрация</a>
+                                        <span class="px-2 py-0.5 rounded-full bg-black/20 font-mono font-bold text-white">до 7</span>
+                                    </li>
+                                    <li class="flex items-center justify-between gap-3">
+                                        <a href="#pricing" class="gradient-text font-semibold hover:opacity-80">Премиум-доступ</a>
+                                        <span class="px-2 py-0.5 rounded-full bg-black/20 font-mono font-bold text-white">до 15</span>
+                                    </li>
+                                </ul>
+                                
+                                <div class="absolute top-full left-1/2 -translate-x-1/2 w-4 h-4 mt-[-9px]">
+                                    <div class="w-full h-full bg-[var(--color-surface)] border-b border-r border-[var(--color-border)] transform rotate-45"></div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     
                     {% if username != 0 %}
