@@ -405,6 +405,7 @@
             </div>
 
             {% if is_creator %}
+                {% if subscription_level == 0 %}
                 {% if username == 0 %}
                     <div id="guest-progress-banner" class="mt-16 bg-gray-800/50 backdrop-blur-sm border border-purple-500/30 rounded-3xl p-6 animate-fadeIn">
                         <div class="flex justify-between items-center">
@@ -481,6 +482,7 @@
                         </p>
                     </div>
                 </div>
+            {% endif %}
             {% endif %}
 
             <!-- ДЕМО -->
