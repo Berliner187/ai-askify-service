@@ -218,7 +218,7 @@
                                 p-3 sm:p-4 shadow-2xl shadow-black/50">
                         <!-- Логотип -->
                         <a href="/" class="flex-shrink-0">
-                            <img src="{% static 'img/logo-header.webp' %}" alt="Летучка Логотип" class="w-24 h-auto">
+                            <img src="{% static 'img/askify-logo-02-m1__prod__no-bg.png' %}" alt="Летучка Логотип" class="w-8 h-auto">
                         </a>
                         <!-- Контекстная информация (скрыта на мобильных) -->
                         <div class="hidden sm:flex flex-col items-center min-w-0">
@@ -235,7 +235,7 @@
                         <!-- "Кнопка Действий" (Action Button) -->
                         <div class="flex-shrink-0">
                             <button id="action-menu-btn" class="h-10 w-10 flex items-center justify-center bg-black/20 rounded-full hover:bg-black/40 transition-colors transition-transform active:scale-[.95]">
-                                <i class="fas fa-ellipsis-h text-gray-300"></i>
+                                <i class="fas fa-ellipsis-h text-[var(--color-accent-primary)]"></i>
                             </button>
                         </div>
                     </div>
@@ -312,7 +312,7 @@
                             
                             <div class="flex justify-end rounded-3xl">
                                 <a href="{% url 'preview_test_result' survey_id %}" class="text-sm text-[var(--color-text-secondary)] hover:text-white transition-colors duration-200">
-                                    Аналитика <i class="fas fa-arrow-right mr-2"></i>
+                                    Результаты <i class="fas fa-arrow-right mr-2"></i>
                                 </a>
                             </div>
                         </div>
@@ -389,7 +389,87 @@
                 {% endfor %}
             </div>
 
+            <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <a href="{% url 'download-survey_pdf' survey_id %}" class="group flex items-center justify-center text-center p-4 bg-black/20 rounded-3xl border border-transparent hover:border-[var(--color-border)] transition-colors transition-transform hover:scale-105 active:scale-100">
+                    <div class="flex items-center gap-3">
+                        <i class="fas fa-download text-lg text-gray-400 group-hover:text-[var(--color-accent-primary)] transition-colors"></i>
+                        <span class="font-semibold text-white">Скачать в PDF</span>
+                    </div>
+                </a>
+                <button data-action="share" data-share-url="{% url 'take_test' survey_id %}" class="group flex items-center justify-center text-center p-4 bg-black/20 rounded-3xl border border-transparent hover:border-[var(--color-border)] transition-colors transition-transform hover:scale-105 active:scale-100">
+                    <div class="flex items-center gap-3">
+                        <i class="fas fa-share-alt text-lg text-gray-400 group-hover:text-[var(--color-accent-primary)] transition-colors"></i>
+                        <span class="font-semibold text-white">Поделиться</span>
+                    </div>
+                </button>
+            </div>
+
             {% if is_creator %}
+                {% if username == 0 %}
+                    <div id="guest-progress-banner" class="mt-16 bg-gray-800/50 backdrop-blur-sm border border-purple-500/30 rounded-3xl p-6 animate-fadeIn">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-lg font-bold text-white">
+                                Это демо
+                            </h3>
+                            <div class="flex items-center gap-2 text-sm font-medium text-purple-300">
+                                <i class="fas fa-eye"></i>
+                                <span>Только просмотр</span>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <div class="flex justify-between text-xs font-medium text-gray-400 mb-2">
+                                {% comment %} Замени 3 и 15 на свои переменные {% endcomment %}
+                                <span class="font-bold text-white">Доступно 3 вопроса</span>
+                                <span class="opacity-70">Максимум 15</span>
+                            </div>
+                            <div class="w-full bg-gray-700/50 rounded-full h-2.5 overflow-hidden">
+                                {% comment %} 3 из 15 = 20% {% endcomment %}
+                                <div class="bg-gradient-to-r from-indigo-500 to-purple-600 h-2.5 rounded-full" style="width: 20%;"></div>
+                            </div>
+                        </div>
+
+                        <p class="mt-4 text-sm text-gray-400 leading-relaxed">
+                            Это сокращенная версия. <button data-trigger-modal="register" class="font-bold text-indigo-300 hover:underline">Зарегистрируйтесь бесплатно</button>, чтобы <span class="text-[var(--color-accent-secondary)]">сохранить</span> этот тест, создавать тесты до&nbsp;<span class="text-[var(--color-accent-secondary)]">7&nbsp;вопросов</span> и&nbsp;заберите ещё <span class="text-[var(--color-accent-secondary)]">5&nbsp;генераций тестов</span> в&nbsp;подарок!
+                        </p>
+                        <button data-trigger-modal="register" class="mt-6 inline-block w-full bg-[var(--color-accent-secondary)] text-black px-10 py-4 text-base font-bold rounded-full transition-transform hover:scale-[1.03] active:scale-[.97] shadow-lg shadow-[var(--color-accent-secondary)]/20">
+                            Зарегистрироваться и забрать подарок
+                        </button>
+                    </div>
+                {% else %}
+                    <div id="free-user-progress-banner" class="mt-16 bg-gray-800/50 backdrop-blur-sm border border-indigo-500/30 rounded-3xl p-6 animate-fadeIn">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-lg font-bold text-white">
+                                Стартовый план
+                            </h3>
+                            <a href="{% url 'payment' %}" class="flex items-center gap-2 text-sm font-medium text-indigo-300 hover:underline">
+                                <i class="fas fa-arrow-up-right-from-square"></i>
+                                <span>Апгрейд</span>
+                            </a>
+                        </div>
+
+                        <div class="mt-4">
+                            <div class="flex justify-between text-xs font-medium text-gray-400 mb-2">
+                                {% comment %} Замени 7 и 15 на свои переменные {% endcomment %}
+                                <span class="font-bold text-white">Лимит 7 вопросов</span>
+                                <span class="opacity-70">Максимум 15</span>
+                            </div>
+                            <div class="w-full bg-gray-700/50 rounded-full h-2.5 overflow-hidden">
+                                {% comment %} 7 из 15 = ~47% {% endcomment %}
+                                <div class="bg-gradient-to-r from-indigo-500 to-purple-600 h-2.5 rounded-full" style="width: 47%;"></div>
+                            </div>
+                        </div>
+
+                        <p class="mt-4 text-sm text-gray-400 leading-relaxed">
+                            Перейдите на <a href="{% url 'payment' %}" class="font-bold text-indigo-300 hover:underline">Премиум</a>, чтобы разблокировать генерацию до 15 вопросов, просматривать аналитику по результатам прохождения, создавать до 50 тестов в день.
+                        </p>
+
+                        <a href="{% url 'payment' %}" class="mt-6 inline-block w-full bg-[var(--color-accent-primary)] text-white/90 text-center px-10 py-4 font-bold rounded-full transition-transform hover:scale-[1.03] active:scale-[.97] shadow-lg shadow-[var(--color-accent-secondary)]/20">
+                            Разблокировать все функции
+                        </a>
+                    </div>
+                {% endif %}
+                
                 <div id="privacy-notice" class="mt-8 flex items-start gap-4 bg-[var(--color-surface)] rounded-3xl border border-[var(--color-border)] p-5 animate-fadeIn">
                     <div class="flex-shrink-0">
                         <i class="fas fa-globe-americas text-xl text-[var(--color-accent-primary)] mt-1"></i>
@@ -406,101 +486,70 @@
             <!-- ДЕМО -->
             {% if is_creator and subscription_level == 0 %}
                 <div class="mt-16 animate-fadeIn">
-                    <h3 class="text-xl font-bold text-white mb-4">Аналитика по этому тесту</h3>
+                    <h2 class="text-3xl font-bold text-white mb-2 text-center">Ваш центр аналитики</h2>
+                    <p class="text-center text-gray-400 max-w-2xl mx-auto mb-8">
+                        Принимайте решения на основе данных. Узнайте, какие тесты популярнее, и как ваша аудитория справляется с заданиями.
+                    </p>
 
                     <div class="relative">
                         
-                        <div class="bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)]">
-                            <div class="grid grid-cols-2 gap-6 opacity-40">
-                                <div>
-                                    <h4 class="text-sm font-semibold text-gray-400 mb-3">Результаты</h4>
-                                    <div class="space-y-3">
-                                        <div class="h-5 w-3/4 bg-gray-700 rounded-full"></div>
-                                        <div class="h-5 w-full bg-gray-700 rounded-full"></div>
-                                        <div class="h-5 w-1/2 bg-gray-700 rounded-full"></div>
-                                    </div>
+                        <!-- ЗАБЛЮРЕННЫЙ ФОН: НАМЕК НА ДАШБОРДУ -->
+                        <div class="bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] opacity-30">
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <!-- KPI-Карточка 1 -->
+                                <div class="bg-gray-800/50 p-4 rounded-xl">
+                                    <h4 class="text-sm font-semibold text-gray-400 mb-3">Всего прохождений</h4>
+                                    <div class="h-8 w-1/2 bg-gray-700 rounded-lg"></div>
                                 </div>
-                                <div class="flex justify-center items-center">
-                                    <div class="w-28 h-28 rounded-full border-[12px] border-gray-700"></div>
+                                <!-- KPI-Карточка 2 -->
+                                <div class="bg-gray-800/50 p-4 rounded-xl">
+                                    <h4 class="text-sm font-semibold text-gray-400 mb-3">Средний балл</h4>
+                                    <div class="h-8 w-1/3 bg-gray-700 rounded-lg"></div>
+                                </div>
+                                <!-- KPI-Карточка 3 -->
+                                <div class="bg-gray-800/50 p-4 rounded-xl">
+                                    <h4 class="text-sm font-semibold text-gray-400 mb-3">Новых прохождений (7 дн)</h4>
+                                    <div class="h-8 w-1/4 bg-gray-700 rounded-lg"></div>
+                                </div>
+                            </div>
+                            <!-- Имитация графика -->
+                            <div class="mt-6 bg-gray-800/50 p-4 rounded-xl">
+                                <h4 class="text-sm font-semibold text-gray-400 mb-4">Динамика прохождений</h4>
+                                <div class="flex items-end gap-2 h-32">
+                                    <div class="w-full h-1/4 bg-gray-700 rounded-t-lg"></div>
+                                    <div class="w-full h-1/2 bg-gray-700 rounded-t-lg"></div>
+                                    <div class="w-full h-3/4 bg-gray-700 rounded-t-lg"></div>
+                                    <div class="w-full h-1/3 bg-gray-700 rounded-t-lg"></div>
+                                    <div class="w-full h-2/3 bg-gray-700 rounded-t-lg"></div>
+                                    <div class="w-full h-1/2 bg-gray-700 rounded-t-lg"></div>
+                                    <div class="w-full h-5/6 bg-gray-700 rounded-t-lg"></div>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="absolute inset-0 bg-black/20 backdrop-blur-md rounded-3xl
+                        <!-- ПРОДАЮЩИЙ ОВЕРЛЕЙ -->
+                        <div class="absolute inset-0 bg-black/40 backdrop-blur-lg rounded-3xl
                                     flex flex-col items-center justify-center text-center p-4">
                             
-                            <div class="flex items-center justify-center h-16 w-16 rounded-full bg-yellow-400/10 border-2 border-yellow-400/30 mb-4">
-                                <i class="fas fa-lock text-3xl text-yellow-400"></i>
+                            <div class="flex items-center justify-center h-16 w-16 rounded-full bg-indigo-500/10 border-2 border-indigo-500/30 mb-4">
+                                <i class="fas fa-chart-line text-3xl text-indigo-400"></i>
                             </div>
                             
-                            <h3 class="text-2xl font-bold text-white">Разблокируйте полную аналитику</h3>
+                            <h3 class="text-2xl font-bold text-white">Аналитика — ваш ключ к росту</h3>
                             <p class="mt-2 text-gray-300 max-w-sm">
-                                Перейдите на платный тариф, чтобы видеть результаты прохождений в реальном времени.
+                                Получите доступ ко всем данным: отслеживайте популярность тестов, средний балл и динамику прохождений.
                             </p>
-                            <a href="/payment" class="mt-6 inline-block bg-[var(--color-accent-primary)] text-white px-8 py-3 font-bold rounded-full transition-transform hover:scale-105 shadow-lg shadow-[var(--color-accent-primary)]/30">
-                                Открыть Премиум
-                            </a>
+                            <button data-trigger-modal="register" class="mt-6 inline-block bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-8 py-3 font-bold rounded-full transition-transform transition-transform hover:scale-[1.03] active:scale-[.97] shadow-lg shadow-indigo-500/30">
+                                Разблокировать аналитику
+                            </button>
                         </div>
                     </div>
                 </div>
-            {% endif %}
-            
+                {% endif %}
         </div>
 
         <footer class="mt-16 sm:mt-24">
             <div class="max-w-3xl mx-auto px-4 sm:px-8">
-                <div class="bg-[var(--color-surface)] p-5 sm:p-8 rounded-3xl border border-[var(--color-border)]">
-                        {% if username == 0 %}
-
-                            <div class="text-center bg-gradient-to-r from-[#211a32] to-[var(--color-surface)] p-8 rounded-3xl border border-[var(--color-border)]">
-                                <div class="flex justify-center mb-4">
-                                    <div class="flex items-center justify-center h-16 w-16 rounded-full bg-red-500/10 border border-red-500/30">
-                                        <i class="fas fa-lock text-3xl text-red-400"></i>
-                                    </div>
-                                </div>
-                                
-                                <h3 class="text-2xl font-bold text-white">Демо-лимит исчерпан</h3>
-                                <p class="mt-2 text-gray-400 max-w-md mx-auto">
-                                    Вы использовали все бесплатные генерации. Но это только начало.
-                                </p>
-                                
-                                <div class="mt-6 bg-black/20 p-4 rounded-3xl">
-                                    <p class="text-lg font-semibold text-white">
-                                        Зарегистрируйтесь и получите <span class="text-[var(--color-accent-secondary)]">еще 10 тестов в подарок.</span>
-                                    </p>
-                                </div>
-                                
-                                <button data-trigger-modal="register" class="mt-6 inline-block w-full sm:w-auto bg-[var(--color-accent-secondary)] text-black px-10 py-4 text-base font-bold rounded-full transition-transform hover:scale-105 shadow-lg shadow-[var(--color-accent-secondary)]/20">
-                                    Зарегистрироваться и забрать подарок
-                                </button>
-                            </div>
-                        
-                        {% else %}
-
-                            {% if is_short_enough %}
-                                <a href="{% url 'result' survey_id %}" class="mt-6 block w-full text-center bg-black/20 text-white p-5 rounded-2xl transition-transform hover:scale-[1.03] shadow-lg shadow-[var(--color-accent-primary)]/20">
-                                    <span class="text-lg font-bold">Вернуться к карточке теста</span>
-                                </a>
-                            {% endif %}
-
-                        {% endif %}
-
-                        <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <a href="{% url 'download-survey_pdf' survey_id %}" class="group flex items-center justify-center text-center p-4 bg-black/20 rounded-2xl border border-transparent hover:border-[var(--color-border)] transition-colors">
-                                <div class="flex items-center gap-3">
-                                    <i class="fas fa-download text-lg text-gray-400 group-hover:text-[var(--color-accent-primary)] transition-colors"></i>
-                                    <span class="font-semibold text-white">Скачать в PDF</span>
-                                </div>
-                            </a>
-                            <button data-action="share" data-share-url="{% url 'take_test' survey_id %}" class="group flex items-center justify-center text-center p-4 bg-black/20 rounded-2xl border border-transparent hover:border-[var(--color-border)] transition-colors">
-                                <div class="flex items-center gap-3">
-                                    <i class="fas fa-share-alt text-lg text-gray-400 group-hover:text-[var(--color-accent-primary)] transition-colors"></i>
-                                    <span class="font-semibold text-white">Поделиться</span>
-                                </div>
-                            </button>
-                        </div>
-                    </div>
-
                 <div class="mt-8 mb-4 pt-8 border-t border-[var(--color-border)] flex flex-col sm:flex-row justify-between items-center text-xs text-gray-600 text-center">
                     <p>2024-2025 Летучка AI. Design & Development <a class="text-gray-500 hover:text-[var(--color-accent-primary)]" rel='nofollow' href="https://dprofile.ru/kozak_developer" target="_blank">by Kozak</a></p>
                     <div class="mt-2 sm:mt-0">
@@ -511,12 +560,12 @@
                 </div>
             </div>
         </footer>
-        
+
         <!-- ====================================================== -->
         <!--         THE MODAL. THE WHOLE FUCKING THING.            -->
         <!-- ====================================================== -->
         <div id="register-modal" class="fixed inset-0 bg-black/80 z-50 hidden items-center justify-center p-4">
-            <div id="modal-content" class="bg-[var(--color-surface)] w-full max-w-md p-8 rounded-3xl border border-[var(--color-border)] transform scale-95 opacity-0 transition-all duration-300 backdrop-blur-xl">
+            <div id="modal-content" class="bg-[var(--color-surface)] w-full max-w-md p-6 rounded-3xl border border-[var(--color-border)] transform scale-95 opacity-0 transition-all duration-300 backdrop-blur-xl">
                 <div class="flex justify-between items-center">
                     <h3 class="text-2xl font-bold text-white">Регистрация</h3>
                     <button id="close-modal-btn" class="text-gray-500 hover:text-white text-2xl">&times;</button>
@@ -527,15 +576,15 @@
                     {% csrf_token %}
                     <div>
                         <label for="id_email" class="text-sm font-semibold text-gray-300">Ваш Email</label>
-                        <input type="email" name="email" id="id_email" required class="mt-1 w-full p-3 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]">
+                        <input type="email" name="email" id="id_email" required class="mt-1 w-full p-3 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]">
                     </div>
                     <div>
                         <label for="id_password1" class="text-sm font-semibold text-gray-300">Придумайте пароль</label>
-                        <input type="password" name="password1" id="id_password1" required class="mt-1 w-full p-3 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]">
+                        <input type="password" name="password1" id="id_password1" required class="mt-1 w-full p-3 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]">
                     </div>
                     <div>
                         <label for="id_password2" class="text-sm font-semibold text-gray-300">Повторите пароль</label>
-                        <input type="password" name="password2" id="id_password2" required class="mt-1 w-full p-3 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]">
+                        <input type="password" name="password2" id="id_password2" required class="mt-1 w-full p-3 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]">
                     </div>
 
                     <div class="pt-2">
@@ -576,12 +625,15 @@
             {% if username == 0 %}
                 <button data-trigger-modal="register" class="trigger-register-take-test">
                     <i class="fas fa-play"></i> 
-                    <span class="text-sm">Начать тестирование</span>
+                    <span class="text-sm">Открыть ответы</span>
                 </button>
             {% else %}
                 <a href="{% url 'preview_test_result' survey_id %}" title="Перейти к аналитике"  style="background-color: rgba(255, 255, 255, 0.1); color: white;">
+                    <i class="fas fa-chart-simple"></i>
+                    <span class="text-sm">Результаты</span>
+                </a>
+                <a href="{% url 'take_test' survey_id %}" title="Пройти тест"  style="background-color: rgba(255, 255, 255, 0.1); color: white;">
                     <i class="fas fa-play"></i>
-                    <span class="text-sm">Начать тестирование</span>
                 </a>
             {% endif %}
             

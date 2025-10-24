@@ -874,7 +874,7 @@ class GenerationSurveysView(View):
 
             if surveys_count > 0:
                 return JsonResponse(
-                    {'error': 'Лимит исчерпан :(\n\nХочешь ещё? Зарегистрируйся, и дадим 10 тестов в подарок.'})
+                    {'error': 'Лимит исчерпан :(\n\nХочешь ещё? Зарегистрируйся, и дадим 5 тестов в подарок.'})
 
             manage_generate_surveys_text = ManageGenerationSurveys(request, text_from_user, question_count)
             start_time = time.perf_counter()
