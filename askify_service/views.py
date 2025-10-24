@@ -1882,6 +1882,7 @@ def preview_test(request, survey_id):
             'username': request.user.username if request.user.is_authenticated else 0,
             'model_name': f"{'Сгенерировано ' + survey.model_name.upper().replace('O', 'o') if survey.model_name else 'Сгенерировано в Летучке'}",
             'view_count': view_count,
+            'date_create': survey.created_at.strftime('%d.%m.%Y'),
             'is_creator': is_creator,
             'show_answers': survey.show_answers,
             'can_generate': can_generate,
@@ -2028,7 +2029,8 @@ def view_results(request, survey_id):
         'username': get_username(request),
         'page_title': survey.title,
         'author': author_username if len(author_username) < 16 else 'Аноним',
-        'is_short_enough': is_short_enough
+        'is_short_enough': is_short_enough,
+        'date_create': survey.created_at.strftime('%d.%m.%Y'),
     }
     return render(request, 'askify_service/test_results.html', context)
 

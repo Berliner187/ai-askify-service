@@ -224,6 +224,8 @@
                         <div class="hidden sm:flex flex-col items-center min-w-0">
                             <h1 class="text-sm font-bold text-white truncate" title="{{ title }}">{{ title | truncatechars:40  }}</h1>
                             <div class="flex items-center gap-2 text-xs text-gray-400">
+                                <span>{{ date_create }}</span>
+                                <span class="text-gray-600">•</span>
                                 <span>{{ author }}</span>
                                 <span class="text-gray-600">•</span>
                                 <div class="flex items-center gap-1.5" title="{{ view_count }} просмотров">
@@ -462,7 +464,7 @@
                         </div>
 
                         <p class="mt-4 text-sm text-gray-400 leading-relaxed">
-                            Перейдите на <a href="{% url 'payment' %}" class="font-bold text-indigo-300 hover:underline">Премиум</a>, чтобы разблокировать генерацию до 15 вопросов, просматривать аналитику по результатам прохождения, создавать до 50 тестов в день.
+                            Перейдите на <a href="{% url 'payment' %}" class="font-bold text-indigo-300 hover:underline">Премиум</a>, чтобы разблокировать генерацию до 15 вопросов в тесте, просматривать аналитику по результатам прохождения, создавать до 50 тестов в сутки.
                         </p>
 
                         <a href="{% url 'payment' %}" class="mt-6 inline-block w-full bg-[var(--color-accent-primary)] text-white/90 text-center px-10 py-4 font-bold rounded-full transition-transform hover:scale-[1.03] active:scale-[.97] shadow-lg shadow-[var(--color-accent-secondary)]/20">
