@@ -1817,6 +1817,36 @@ def submit_answers(request, survey_id):
     return JsonResponse({'error': 'Invalid request'}, status=400)
 
 
+def get_question_insights(questions_stats):
+    if not questions_stats:
+        return {"hardest": None, "easiest": None}
+
+    hardest_q, easiest_q = None, None
+    min_rate, max_rate = 101, -1
+
+    for q_text, stats in questions_stats.items():
+        correct = stats.get('correct', 0)
+        total = stats.get('total', 0)
+
+        if total > 0:
+            rate = (correct / total) * 100
+
+            if rate < min_rate:
+                min_rate = rate
+                hardest_q = {"text": q_text, "rate": rate, "stats": f"{correct}/{total}"}
+
+            if rate > max_rate:
+                max_rate = rate
+                easiest_q = {"text": q_text, "rate": rate, "stats": f"{correct}/{total}"}
+
+    if hardest_q and not easiest_q:
+        easiest_q = hardest_q
+    if easiest_q and not hardest_q:
+        hardest_q = easiest_q
+
+    return {"hardest": hardest_q, "easiest": easiest_q}
+
+
 def preview_test(request, survey_id):
     if not is_valid_uuid(survey_id):
         context = {
@@ -1920,8 +1950,10 @@ def view_results(request, survey_id):
     average_score_percent = 0
     median_score = 0
     perfect_attempts_percent = 0
-    hardest_question, easiest_question = "-", "-"
     success_rate = 0
+    question_insights = {"hardest": None, "easiest": None}
+    leaderboard_attempts = []
+    questions_breakdown = []
 
     if total_attempts > 0:
         base_aggregation = {
@@ -1962,23 +1994,48 @@ def view_results(request, survey_id):
 
         average_score_percent = stats.get('avg_percent', 0)
         perfect_attempts_percent = (stats.get('perfect_count', 0) / total_attempts) * 100
-        success_rate = (stats.get('success_count', 0) / total_attempts) * 100
-
-        all_answers_json = attempts_qs.values_list('answers_json', flat=True)
+        success_rate = round((stats.get('success_count', 0) / total_attempts) * 100)
 
         questions_stats = {}
+        all_answers_json = attempts_qs.values_list('answers_json', flat=True)
+
         for answers_str in all_answers_json:
             try:
-                answers = json.loads(answers_str)
-                if isinstance(answers, dict):
-                    for q_text, result in answers.items():
-                        if isinstance(result, dict) and 'is_correct' in result:
+                student_answers = json.loads(answers_str)
+                if isinstance(student_answers, dict):
+                    for q_text, student_answer in student_answers.items():
+                        if q_text in questions_map:
                             q_stats = questions_stats.setdefault(q_text, {'correct': 0, 'total': 0})
                             q_stats['total'] += 1
-                            if result.get('is_correct'):
+                            if student_answer == questions_map[q_text]:
                                 q_stats['correct'] += 1
             except (json.JSONDecodeError, AttributeError):
                 continue
+
+        question_insights = get_question_insights(questions_stats)
+
+        leaderboard_attempts = attempts_qs.order_by('-score', 'created_at')[:5]
+
+        questions_breakdown = []
+        if questions_stats:
+            sorted_stats = sorted(questions_stats.items(), key=lambda item: (
+                (item[1].get('correct', 0) / item[1].get('total', 1))
+            ))
+            for q_text, stats in sorted_stats:
+                correct = stats.get('correct', 0)
+                total = stats.get('total', 0)
+                if total > 0:
+                    rate = (correct / total) * 100
+                    if rate < 33:
+                        color = '#EF4444'
+                    elif rate < 66:
+                        color = '#F59E0B'
+                    else:
+                        color = '#10B981'
+                    questions_breakdown.append({
+                        "text": q_text, "rate": rate,
+                        "stats": f"{correct}/{total}", "color": color
+                    })
 
     attempts_for_template = []
     for attempt in attempts_qs:
@@ -2015,6 +2072,14 @@ def view_results(request, survey_id):
     author_username = AuthUser.objects.get(id_staff=survey.id_staff).username
     is_short_enough = len(author_username) < 20
 
+    conversion_rate = (total_attempts / survey.view_count) * 100 if survey.view_count > 0 else 0
+
+    success_rate_color = '#EF4444'
+    if success_rate >= 75:
+        success_rate_color = '#10B981'
+    elif success_rate >= 40:
+        success_rate_color = '#F59E0B'
+
     context = {
         'survey': survey,
         'attempts': attempts_for_template,
@@ -2023,9 +2088,12 @@ def view_results(request, survey_id):
         'median_score': median_score,
         'perfect_attempts_percent': perfect_attempts_percent,
         'success_rate': success_rate,
-        'hardest_question': hardest_question,
-        'easiest_question': easiest_question,
+        'success_rate_color': success_rate_color,
+        'question_insights': question_insights,
+        'leaderboard_attempts': leaderboard_attempts,
+        'questions_breakdown': questions_breakdown,
         'view_count': survey.view_count,
+        'conversion_rate': conversion_rate,
         'username': get_username(request),
         'page_title': survey.title,
         'author': author_username if len(author_username) < 16 else 'Аноним',

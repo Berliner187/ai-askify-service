@@ -5,7 +5,6 @@
     <meta name="csrf-token" content="{{ csrf_token }}">
     {% load static %}
     <link rel="icon" href="{% static 'img/favicon.ico' %}" type="image/ico">
-    <link rel="stylesheet" href="{% static 'css/footer.css' %}">
 
     {% if debug %}
         <script src="https://cdn.tailwindcss.com"></script>
@@ -234,6 +233,16 @@
             font-size: 1.1rem;
             color: #EF4444;
         }
+
+        .radial-progress {
+            display: inline-grid; place-content: center; position: relative;
+            background: conic-gradient(var(--color-accent-primary) calc(var(--value) * 1%), #40404055 0);
+            border-radius: 50%; width: 100%; height: 100%;
+        }
+        .radial-progress::before {
+            content: ""; position: absolute; border-radius: 50%;
+            inset: 15%; background: var(--color-surface);
+        }
     </style>
 </head>
 <body class="text-[var(--color-text-primary)]">
@@ -255,8 +264,6 @@
                     <!-- Контекстная информация: КЛЮЧЕВЫЕ МЕТРИКИ -->
                     <div class="flex items-center gap-6 text-sm">
                         <div class="flex items-center gap-2" title="{{ view_count }} уникальных просмотров">
-                            <span>{{ date_create }}</span>
-                            <span class="text-gray-600">•</span>
                             <i class="fas fa-eye text-[var(--color-text-secondary)]"></i>
                             <span class="font-semibold text-white">{{ view_count }}</span>
                             <span class="hidden md:inline text-[var(--color-text-secondary)]"></span>
@@ -289,18 +296,6 @@
                             <span>К вопросам</span>
                         </a>
                         <hr class="border-t border-[var(--color-border)] my-1">
-
-                        <button data-action="share" data-share-url="{% url 'take_test' survey.survey_id %}" class="flex items-center gap-3 px-4 py-3 text-white font-semibold rounded-3xl hover:bg-white/5 transition-transform active:scale-[.97]">
-                            <i class="fas fa-share-alt w-5 text-center text-gray-400"></i>
-                            <span>Поделиться тестом</span>
-                        </button>
-                        
-                        <a href="{% url 'download-survey_pdf' survey.survey_id %}" class="flex items-center gap-3 px-4 py-3 text-white font-semibold rounded-3xl hover:bg-white/5 transition-transform active:scale-[.97]">
-                            <i class="fas fa-download w-5 text-center text-gray-400"></i>
-                            <span>Скачать исходный PDF</span>
-                        </a>
-                        
-                        <hr class="border-t border-[var(--color-border)] my-1">
                         
                         <a href="{% url 'profile_redirect' %}" class="flex items-center gap-3 px-4 py-3 text-white font-semibold rounded-3xl hover:bg-white/5 transition-transform active:scale-[.97]"><i class="fas fa-user-circle w-5 text-center text-gray-400"></i><span>Мой профиль</span></a>
                         <a href="{% url 'history' %}" class="flex items-center gap-3 px-4 py-3 text-white font-semibold rounded-3xl hover:bg-white/5 transition-transform active:scale-[.97]"><i class="fas fa-history w-5 text-center text-gray-400"></i><span>История тестов</span></a>
@@ -331,7 +326,7 @@
                             rounded-full transition-transform hover:scale-105 active:scale-100
                             shadow-lg shadow-[var(--color-accent-secondary)]/20">
                         <i class="fas fa-share-alt"></i>
-                        <span>Поделиться тестом</span>
+                        <span>Поделиться</span>
                     </button>
                 </div>
 
@@ -342,40 +337,161 @@
             </div>
         </div>
         
-        <h1 class="text-xl sm:text-xl font-bold text-white text-center">{{ survey.title }}</h1>
+        <div>
+            <span class="text-xs flex justify-center mt-0 p-0 text-white/75">{{ date_create }}</span>
+            <h1 class="text-xl sm:text-xl font-bold text-white text-center">{{ survey.title }}</h1>
+        </div>
 
         <div class="space-y-6">
-            <!-- ТРИ ГЛАВНЫХ KPI -->
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                <div class="bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] text-center shadow-2xl shadow-black/50">
-                    <p class="text-xs text-[var(--color-text-secondary)] font-semibold uppercase tracking-wider">Всего прохождений</p>
-                    <p class="text-5xl font-extrabold gradient-text mt-2">{{ total_attempts }}</p>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                <!-- КАРТОЧКА 1: ОБЩАЯ СВОДКА -->
+                <div class="bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] shadow-2xl shadow-black/50">
+                    <h3 class="text-base font-bold text-white mb-4">Общая сводка</h3>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-baseline">
+                            <p class="text-gray-400">Всего прохождений</p>
+                            <p class="text-3xl font-extrabold text-white">{{ total_attempts }}</p>
+                        </div>
+                        <div class="flex justify-between items-baseline">
+                            <p class="text-gray-400">Просмотры теста</p>
+                            <p class="text-3xl font-extrabold text-white">{{ view_count }}</p>
+                        </div>
+                        <div class="flex justify-between items-baseline border-t border-[var(--color-border)] pt-3">
+                            <p class="text-gray-400">Идеальные попытки</p>
+                            <p class="text-3xl font-extrabold text-amber-400">{{ perfect_attempts_percent|floatformat:0 }}%</p>
+                        </div>
+                    </div>
                 </div>
-                
-                <div class="bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] text-center shadow-2xl shadow-black/50">
-                    <p class="text-xs text-[var(--color-text-secondary)] font-semibold uppercase tracking-wider">Средний балл</p>
-                    <p class="text-5xl font-extrabold gradient-text mt-2">{{ average_score_percent|floatformat:0 }}<span class="text-3xl">%</span></p>
+
+                <!-- КАРТОЧКА 2: СРЕДНИЙ БАЛЛ -->
+                <div class="bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] shadow-2xl shadow-black/50 flex flex-col justify-center items-center">
+                    <h3 class="text-base font-bold text-white mb-4">Средний балл</h3>
+                    <div class="relative w-36 h-36 flex items-center justify-center">
+                        <div style="--value:{{ average_score_percent|floatformat:0 }};" class="radial-progress gradient-text text-lg" role="progressbar">
+                            <span class="text-white font-extrabold text-5xl">{{ average_score_percent|floatformat:0 }}<span class="text-3xl opacity-50">%</span></span>
+                        </div>
+                    </div>
+                    <p class="text-sm text-gray-400 text-center mt-3">Медианный балл: <span class="font-bold text-white">{{ median_score|floatformat:0 }}</span></p>
                 </div>
-                
-                <div class="bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] text-center shadow-2xl shadow-black/50">
-                    <p class="text-xs text-[var(--color-text-secondary)] font-semibold uppercase tracking-wider">Процент успеха</p>
-                    <p class="text-5xl font-extrabold gradient-text mt-2">{{ success_rate|floatformat:0 }}<span class="text-3xl">%</span></p>
+
+                <!-- КАРТОЧКА 3: ПРОЦЕНТ УСПЕХА -->
+                <div class="bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] shadow-2xl shadow-black/50 flex flex-col">
+                    <div>
+                        <h3 class="text-base font-bold text-white">
+                            Процент успеха
+                        </h3>
+                    </div>
+                    <div class="flex-grow flex items-center justify-center my-4">
+                        <p class="text-8xl font-extrabold" style="color: {{ success_rate_color }};">
+                            {{ success_rate|floatformat:0 }}
+                        </p>
+                    </div>
+                    <div class="w-full bg-black/30 rounded-full h-4">
+                        <div class="h-4 rounded-full" 
+                            style="width: {{ success_rate }}%; background-color: {{ success_rate_color }};">
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- ДВА ГРАФИКА -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] shadow-2xl shadow-black/50">
-                    <h3 class="text-base font-bold text-white text-center mb-4">Активность за 7 дней</h3>
+            <!-- ВТОРОЙ РЯД: ГРАФИКИ -->
+            <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+                <div class="lg:col-span-3 bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] shadow-2xl shadow-black/50">
+                    <h3 class="text-base font-bold text-white mb-4">Активность за 7 дней</h3>
                     <div class="chart-wrapper h-64">
                         <canvas id="activityChart"></canvas>
                     </div>
                 </div>
-                <div class="bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] shadow-2xl shadow-black/50">
-                    <h3 class="text-base font-bold text-white text-center mb-4">Распределение баллов</h3>
+                <div class="lg:col-span-2 bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] shadow-2xl shadow-black/50">
+                    <h3 class="text-base font-bold text-white mb-4">Распределение баллов</h3>
                     <div class="chart-wrapper h-64">
                         <canvas id="scoresDistributionChart"></canvas>
                     </div>
+                </div>
+            </div>
+
+            <!-- ТРЕТИЙ РЯД: ИНСАЙТЫ ПО ВОПРОСАМ -->
+            <div class="bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] shadow-2xl shadow-black/50">
+                <h3 class="text-base font-bold text-white mb-4">Анализ вопросов</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    
+                    <div class="bg-black/20 p-4 rounded-xl flex items-start gap-4">
+                        <i class="fas fa-brain text-xl text-red-400 pt-1"></i>
+                        <div class="min-w-0">
+                            <p class="text-sm font-semibold text-red-400">Самый сложный вопрос</p>
+                            {% if question_insights.hardest %}
+                                <p class="text-sm text-gray-300" title="{{ question_insights.hardest.text }}">{{ question_insights.hardest.text }}</p>
+                                <p class="text-lg font-bold text-white">{{ question_insights.hardest.rate|floatformat:0 }}% <span class="text-xs text-gray-500">верно ({{ question_insights.hardest.stats }})</span></p>
+                            {% else %}
+                                <p class="text-sm text-gray-500 mt-1">Недостаточно данных</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="bg-black/20 p-4 rounded-xl flex items-start gap-4">
+                        <i class="fas fa-star text-xl text-green-400 pt-1"></i>
+                        <div class="min-w-0">
+                            <p class="text-sm font-semibold text-green-400">Самый легкий вопрос</p>
+                            {% if question_insights.easiest %}
+                                <p class="text-sm text-gray-300" title="{{ question_insights.easiest.text }}">{{ question_insights.easiest.text }}</p>
+                                <p class="text-lg font-bold text-white">{{ question_insights.easiest.rate|floatformat:0 }}% <span class="text-xs text-gray-500">верно ({{ question_insights.easiest.stats }})</span></p>
+                            {% else %}
+                                <p class="text-sm text-gray-500 mt-1">Недостаточно данных</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+            <!-- ВИДЖЕТ 1: ТАБЛИЦА ЛИДЕРОВ -->
+            <div class="bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] shadow-2xl shadow-black/50">
+                <h3 class="text-base font-bold text-white mb-4 flex items-center gap-2">
+                    <i class="fas fa-trophy text-amber-400"></i>
+                    Таблица лидеров
+                </h3>
+                <ul class="space-y-3">
+                    {% for attempt in leaderboard_attempts %}
+                    <li class="flex items-center gap-4">
+                        <div class="font-bold text-lg w-6 text-center {% if forloop.counter == 1 %}text-amber-400{% elif forloop.counter == 2 %}text-gray-300{% elif forloop.counter == 3 %}text-yellow-700{% else %}text-gray-500{% endif %}">
+                            {{ forloop.counter }}
+                        </div>
+                        <div class="flex-grow min-w-0">
+                            <p class="text-white font-semibold truncate">{{ attempt.student_name }}</p>
+                            <p class="text-xs text-gray-500">{{ attempt.created_at|date:"d M Y" }}</p>
+                        </div>
+                        <div class="flex-shrink-0 font-bold text-white bg-black/20 px-3 py-1 rounded-lg">
+                            {{ attempt.score }}/{{ attempt.total_questions }}
+                        </div>
+                    </li>
+                    {% empty %}
+                    <li class="text-center text-gray-500 py-8">Пока нет лидеров</li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <!-- ВИДЖЕТ 2: КАРТА ВОПРОСОВ -->
+            <div class="bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] shadow-2xl shadow-black/50">
+                <h3 class="text-base font-bold text-white mb-4 flex items-center gap-2">
+                    <i class="fas fa-map text-cyan-400"></i>
+                    Карта вопросов
+                </h3>
+                <div class="space-y-3 max-h-60 overflow-y-auto pr-2">
+                    {% for q in questions_breakdown %}
+                    <div>
+                        <div class="flex justify-between items-center text-xs text-gray-400 mb-1">
+                            <p class="pr-4" title="{{ q.text }}">{{ q.text }}</p>
+                            <p class="font-bold text-white flex-shrink-0">{{ q.rate|floatformat:0 }}%</p>
+                        </div>
+                        <div class="w-full bg-gray-700/50 rounded-full h-1.5">
+                            <div class="h-1.5 rounded-full" style="width: {{ q.rate }}%; background-color: {{ q.color }};"></div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center text-gray-500 py-8">Нет данных для анализа</div>
+                    {% endfor %}
                 </div>
             </div>
         </div>
@@ -461,6 +577,19 @@
         </div>
     </div>
 
+    <footer class="mt-16 sm:mt-24">
+        <div class="max-w-3xl mx-auto px-4 sm:px-8">
+            <div class="mt-8 mb-4 pt-8 border-t border-[var(--color-border)] flex flex-col sm:flex-row justify-between items-center text-xs text-gray-600 text-center">
+                <p>2024-2025 Летучка AI. Design & Development <a class="text-gray-500 hover:text-[var(--color-accent-primary)]" rel='nofollow' href="https://dprofile.ru/kozak_developer" target="_blank">by Kozak</a></p>
+                <div class="mt-2 sm:mt-0">
+                    <a href="/docs/public-offer" class="hover:text-gray-400">Публичная оферта</a>
+                    <span class="mx-2">|</span>
+                    <a href="/docs/privacy-policy" class="hover:text-gray-400">Политика конфиденциальности</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
     <div class="floating-action-bar">
         {% if is_short_enough %}
             <a href="{% url 'result' survey.survey_id %}" title="Вернуться к тесту" class="copy-btn">
@@ -470,14 +599,13 @@
         
         <a href="{% url 'profile_redirect' %}" title="Аналитика в профиле"
         style="background-color: rgba(255, 255, 255, 0.1); color: white;">
-            <i class="fa-solid fa-chart-simple"></i>
+            <i class="fa-solid fa-user"></i>
         </a>
 
         <a href="{% url 'history' %}" 
         style="background-color: rgba(255, 255, 255, 0.1); color: white;"
         title="Предыдущие тесты">
             <i class="fas fa-history"></i> 
-            <span class="tooltip">История</span>
         </a>
 
         <a href="{% url 'preview_test' survey.survey_id %}" title="Посмотреть вопросы" class="copy-btn">
@@ -666,7 +794,7 @@
         $(document).on('keydown', function(e) { if (e.key === "Escape" && isModalOpen) closeModal(); });
 
     </script>
-    {% include 'footer.html' %}
+    
     <script>
         const chartInstances = {};
 
