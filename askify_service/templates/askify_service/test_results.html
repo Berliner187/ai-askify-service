@@ -496,6 +496,26 @@
             </div>
         </div>
 
+        <div class="flex flex-col p-2 sm:flex-row justify-between sm:items-center mb-4">
+            <div>
+                <h2 class="text-xl font-bold text-white">Результат в Excel</h2>
+                <p class="text-gray-400 text-sm">Забудьте о ручном копировании. Вся статистика уже готова к скачиванию.</p>
+            </div>
+            
+            {% if subscription_level > 0 %}
+                <a href="{% url 'export_results_to_excel' survey.survey_id %}" 
+                    class="mt-3 sm:mt-0 inline-flex items-center gap-2 bg-emerald-600/20 text-emerald-300 px-4 py-2 rounded-xl font-semibold text-sm border border-emerald-500/30 hover:bg-emerald-600/40 transition-colors">
+                    <i class="fas fa-file-excel"></i>
+                    Экспорт в Excel
+                </a>
+            {% else %}
+                <button type="button" id="export-trigger-button"
+                    class="mt-3 sm:mt-0 inline-flex items-center gap-2 bg-emerald-600/20 text-emerald-300 px-4 py-2 rounded-xl font-semibold text-sm border border-emerald-500/30 hover:bg-emerald-600/40 transition-colors">
+                    <i class="fas fa-file-excel"></i> Экспорт в Excel
+                </button>
+            {% endif %}
+        </div>
+
         <!-- СПИСОК РЕЗУЛЬТАТОВ -->
         <div class="bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] shadow-2xl shadow-black/50">
             <h2 class="text-xl font-bold text-white">Последние попытки</h2>
@@ -589,6 +609,32 @@
             </div>
         </div>
     </footer>
+
+    <div id="export-paywall-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50
+                                    flex items-center justify-center p-4 hidden">
+
+        <div class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-3xl
+                    w-full max-w-md text-center p-8 shadow-2xl shadow-black/50
+                    transform transition-all opacity-0 scale-95"
+            id="export-paywall-panel">
+
+            <div class="flex items-center justify-center h-16 w-16 rounded-full bg-indigo-500/10 border-2 border-indigo-500/30 mb-4 mx-auto">
+                <i class="fas fa-file-excel text-3xl text-indigo-400"></i>
+            </div>
+            
+            <h3 class="text-2xl font-bold text-white">Доступно на платном тарифе</h3>
+            <p class="mt-2 text-gray-300">
+                Получите полный доступ к экспорту данных в Excel, чтобы анализировать результаты и делиться ими с коллегами.
+            </p>
+            <a href="{% url 'payment' %}" class="mt-6 inline-block bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-8 py-3 font-bold rounded-full transition-transform hover:scale-105 active:scale-[.95] shadow-lg shadow-indigo-500/30">
+                Выбрать тариф
+            </a>
+            
+            <button id="close-paywall-modal" class="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+    </div>
 
     <div class="floating-action-bar">
         {% if is_short_enough %}
@@ -905,8 +951,48 @@
                 .catch(error => console.error('Error fetching test chart data:', error));
         }
 
-
         document.addEventListener('DOMContentLoaded', initializeTestAnalyticsCharts);
+        </script>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const paywallModal = document.getElementById('export-paywall-modal');
+                const paywallPanel = document.getElementById('export-paywall-panel');
+                const exportTrigger = document.getElementById('export-trigger-button');
+                const closeModalButton = document.getElementById('close-paywall-modal');
+
+                function openModal() {
+                    paywallModal.classList.remove('hidden');
+                    setTimeout(() => {
+                        paywallPanel.classList.remove('opacity-0', 'scale-95');
+                    }, 10); 
+                }
+
+                function closeModal() {
+                    paywallPanel.classList.add('opacity-0', 'scale-95');
+                    setTimeout(() => {
+                        paywallModal.classList.add('hidden');
+                    }, 200);
+                }
+
+                if (exportTrigger) {
+                    exportTrigger.addEventListener('click', function(event) {
+                        event.preventDefault();
+                        openModal();
+                    });
+                }
+
+                if (closeModalButton) {
+                    closeModalButton.addEventListener('click', closeModal);
+                }
+                if (paywallModal) {
+                    paywallModal.addEventListener('click', function(event) {
+                        if (event.target === paywallModal) {
+                            closeModal();
+                        }
+                    });
+                }
+            });
         </script>
 </body>
 </html>

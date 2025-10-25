@@ -70,6 +70,11 @@ from tempfile import NamedTemporaryFile
 import textract
 from bs4 import BeautifulSoup
 import environ
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill
+import re
+import io
+from urllib.parse import quote
 
 
 from reportlab.lib import colors
@@ -2096,11 +2101,77 @@ def view_results(request, survey_id):
         'conversion_rate': conversion_rate,
         'username': get_username(request),
         'page_title': survey.title,
+        'subscription_level': get_subscription_level(request),
         'author': author_username if len(author_username) < 16 else 'Аноним',
         'is_short_enough': is_short_enough,
         'date_create': survey.created_at.strftime('%d.%m.%Y'),
     }
     return render(request, 'askify_service/test_results.html', context)
+
+
+@login_required
+def export_results_to_excel(request, survey_id):
+    survey = get_object_or_404(Survey, survey_id=survey_id)
+
+    if survey.id_staff != get_staff_id(request):
+        return HttpResponse("Доступ запрещен", status=403)
+
+    attempts_qs = survey.attempts.all().order_by('-created_at')
+
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = f'Результаты - {survey.title[:20]}'
+
+    questions_list = survey.get_questions()
+    question_headers = [q['question'] for q in questions_list]
+
+    headers = [
+                  'Имя участника', 'Дата прохождения', 'Балл', 'Всего вопросов', 'Процент верных'
+              ] + question_headers
+
+    sheet.append(headers)
+
+    header_font = Font(bold=True, color="FFFFFF")
+    header_fill = PatternFill(start_color="4F46E5", end_color="4F46E5", fill_type="solid")
+
+    for cell in sheet[1]:
+        cell.font = header_font
+        cell.fill = header_fill
+
+    for attempt in attempts_qs:
+        student_answers = attempt.get_answers()
+        percent = (attempt.score * 100 / attempt.total_questions) if attempt.total_questions > 0 else 0
+
+        row_data = [
+            attempt.student_name,
+            attempt.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            attempt.score,
+            attempt.total_questions,
+            f"{percent:.1f}%"
+        ]
+
+        for q_text in question_headers:
+            row_data.append(student_answers.get(q_text, 'Н/Д'))
+
+        sheet.append(row_data)
+
+    buffer = io.BytesIO()
+    workbook.save(buffer)
+    buffer.seek(0)
+
+    response = HttpResponse(
+        buffer.getvalue(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    )
+
+    filename = f"Результаты_{survey.title}.xlsx"
+
+    ascii_filename = 'results.xlsx'
+    utf8_filename = quote(filename)
+
+    response['Content-Disposition'] = f'attachment; filename="{ascii_filename}"; filename*="UTF-8\'\'{utf8_filename}"'
+
+    return response
 
 
 @csrf_exempt
