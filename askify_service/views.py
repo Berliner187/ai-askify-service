@@ -189,9 +189,6 @@ def page_create_survey(request):
         total_used_per_period = Survey.objects.filter(id_staff=current_id_staff).count()
         tracer_l.info(
             f"free user {request.user.username} --- total_used_per_period: {total_used_per_period} used")
-        if total_used_per_period >= 10:
-            diff_tests_count_limit = 0
-            tracer_l.info(f"free user {request.user.username} --- used all generations: {total_used_per_period} used >= 10 ")
 
     context = {
         "page_title": "Создать тест",
@@ -673,19 +670,16 @@ class ManageTokensLimits:
         _total_used = (total_used['total_survey_tokens'] or 0) + (
                 total_used['total_feedback_tokens'] or 0)
 
-        if plan_name.lower() == 'стартовый':
-            return _total_used
-        else:
-            today = timezone.now().date()
-            tokens_used_today = TokensUsed.objects.filter(id_staff=staff_id, created_at__date=today).aggregate(
-                total_survey_tokens=Sum('tokens_survey_used'),
-                total_feedback_tokens=Sum('tokens_feedback_used')
-            )
+        today = timezone.now().date()
+        tokens_used_today = TokensUsed.objects.filter(id_staff=staff_id, created_at__date=today).aggregate(
+            total_survey_tokens=Sum('tokens_survey_used'),
+            total_feedback_tokens=Sum('tokens_feedback_used')
+        )
 
-            total_used_today = (tokens_used_today['total_survey_tokens'] or 0) + (
-                    tokens_used_today['total_feedback_tokens'] or 0)
+        total_used_today = (tokens_used_today['total_survey_tokens'] or 0) + (
+                tokens_used_today['total_feedback_tokens'] or 0)
 
-            return total_used_today
+        return total_used_today
 
     def get_tests_used_today(self) -> int:
         """
@@ -2644,12 +2638,8 @@ def user_profile_api(request):
     end_date = subscription.end_date.date()
     days_until_end = (end_date - timezone.now().date()).days
 
-    # Токены
-    usage = TokensUsed.get_tokens_usage_today(staff_id)
-    survey_tokens = usage['tokens_survey_used']
-    feedback_tokens = usage['tokens_feedback_used']
-    total_used = survey_tokens + feedback_tokens
-    percent_used = (total_used / token_limit * 100) if token_limit > 0 else 0
+    percent_used = (used_today / tests_limit * 100) if tests_limit > 0 else 0
+    print(percent_used)
 
     return JsonResponse({
         "username": user.username,
@@ -2659,12 +2649,9 @@ def user_profile_api(request):
         "date_last_login": user.last_login.strftime("%d.%m.%Y") if user.last_login else None,
         "statistics": statistics,
         "tokens": {
-            "surveys": survey_tokens,
-            "feedback": feedback_tokens,
-            "total": total_used,
             "limit": token_limit,
             "token_limit": token_limit,
-            "remaining": max(0, token_limit - total_used),
+            "remaining": max(0, tests_limit - used_today),
             "used_percent": round(percent_used),
             "tests_remaining_today": tests_remaining,
             "tests_daily_limit": tests_limit
@@ -4174,6 +4161,7 @@ def create_payment(request):
         'phone': '' if user_data.phone is None else user_data.phone,
         'order_id': order_id,
         'fullname': user_data.username,
+        'debug': DEBUG
     }
 
     return render(request, 'payments/payment.html', context)
@@ -4203,10 +4191,11 @@ class PaymentInitiateView(View):
             'Стандартный': 550,
             'Премиум': 690,
             'Стандартный 3 мес': 1470,
-            'Премиум 3 мес': 1860,
+            'Премиум 3 мес': 1440,
             'Ультра': 990,
             'Стандартный Год': 3900,
-            'Премиум Год': 4800
+            'Премиум Год': 4800,
+            'Премиум неделя': 290
         }
 
         print(int(amount), description, plan_prices.get(description))
@@ -4271,6 +4260,8 @@ class PaymentInitiateView(View):
                 plan_name_for_db = 'Премиум'
             elif 'стандарт' in description.lower():
                 plan_name_for_db = 'Стандартный'
+            elif 'премиум неделя' in description.lower():
+                plan_name_for_db = 'Премиум'
             else:
                 plan_name_for_db = 'Премиум'
 
@@ -4278,6 +4269,8 @@ class PaymentInitiateView(View):
                 billing_cycle = 'yearly'
             elif 'мес' in description.lower():
                 billing_cycle = 'monthly3'
+            elif 'неделя' in description.lower():
+                billing_cycle = 'weekly'
             else:
                 billing_cycle = 'monthly'
 
@@ -4388,6 +4381,8 @@ class PaymentSuccessView(View):
                         subscription.end_date = datetime.now() + timedelta(days=365)
                     elif subscription.billing_cycle == 'monthly3':
                         subscription.end_date = datetime.now() + timedelta(days=92)
+                    elif subscription.billing_cycle == 'weekly':
+                        subscription.end_date = datetime.now() + timedelta(days=7)
                     else:
                         subscription.end_date = datetime.now() + timedelta(days=30)
 

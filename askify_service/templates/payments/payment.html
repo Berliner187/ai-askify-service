@@ -5,11 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Безопасная оплата | Летучка</title>
     {% load static %}
-    <link rel="shortcut icon" href="{% static 'img/favicon.ico' %}" type="image/png" />
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <link rel="shortcut icon" href="{% static 'img/logo.png' %}" type="image/png" />
     <script src="https://securepay.tinkoff.ru/html/payForm/js/tinkoff_v2.js"></script>
     <link rel="stylesheet" href="{% static 'css/footer.css' %}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    {% if debug %}
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    {% else %}
+        <script src="{% static 'vendor/tailwind.full.min.js' %}"></script>
+        <script src="{% static 'vendor/jquery.min.js' %}"></script>
+    {% endif %}
 
     <!-- Yandex.Metrika counter -->
     <script type="text/javascript">
@@ -27,442 +34,283 @@
 
     <style>
         :root {
-          --bg:rgba(15, 8, 24, 1);
-          --card-bg:rgba(36, 31, 47, 0.2);
-          --stroke:rgba(2, 2, 2, 0.12);
-          --accent:#616DF0;
-          --accent-green:#79EF66;
-          --text:#ffffff;
-          --text-dim:rgba(255,255,255,0.6);
-          --radius: 16px;
+            --bg: #0F0818;
+            --surface: rgba(30, 24, 48, 0.5);
+            --border: rgba(97, 109, 240, 0.2);
+            --text: #f0f0f0;
+            --text-dim: #a0a0b0;
+            --accent: #616DF0;
+            --color-accent-primary: #616DF0;
+            --color-text-secondary: #79EF66;
+            --radius-lg: 1.5rem;
+            --radius-md: 1rem;
+            --color-border: rgba(97, 109, 240, 0.2);
         }
-        @font-face {
-            font-family: 'Namu Pro';
-            src: url(../fonts/NAMU-Pro.woff2);
-        }
-        html,body{
-            margin:0; padding:0;
-            color:var(--text);
-            font-family: 'Namu Pro', Roboto,Arial,sans-serif;-webkit-font-smoothing: antialiased;
-        }
-        html {
+        html, body {
+            margin: 0; padding: 0;
+            color: var(--text);
+            font-family: 'Namu Pro', sans-serif;
             background-color: var(--bg);
-            background-image: url(../../static/img/bg-gradient-0907.svg);
         }
-        *,*:before,*:after{box-sizing:border-box}
-        a{color:var(--accent-green);text-decoration:none}
-        .fade-in{animation:fade 0.4s ease forwards}
-        @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-        .container{
-            width: 92%; min-width: 600px; max-width: 1000px;
-            padding: 16px 16px;margin: 100px auto;
-            display:flex;flex-direction:column;gap:20px; 
-            background-color: var(--card-bg);border-radius: 32px;
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-        }
-        @font-face {
-            font-family: 'Unbounded Medium';
-            src: url(../../static/fonts/Unbounded-Medium.ttf);
-        }
-        h2.product-title{
-            font-family: 'Unbounded Medium'; font-size:1.4rem;font-weight:700;
-        }
-        .plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px}
-        .plan{position:relative;padding:24px;border:1px solid var(--stroke);border-radius:var(--radius);background:var(--card-bg);backdrop-filter:blur(24px);cursor:pointer;transition:all 0.25s ease}
-        .plan:hover{transform:translateY(-4px);box-shadow:0 8px 16px rgba(40, 38, 43, 0.2)}
-        .plan:active{transform:translateY(2px);}
-        .plan.selected{border-color:var(--accent-green);box-shadow:0 0 0 2px var(--accent-green)}
-        .plan-title{font-weight:600;font-size:1.1rem;margin-bottom:6px;color:var(--accent-green)}
-        .plan-desc{font-size:0.88rem;color:var(--text-dim);line-height:1.4;margin:6px 0}
-        .plan-price{font-family: 'Unbounded Medium'; font-size:1.6rem;font-weight:700;color:var(--accent-green);margin-top:12px}
-        .yearly-label{font-size:0.75rem;color:var(--text-dim)}
-        .agreement{display:flex;align-items:center;font-size:0.8rem;gap:8px;margin-top:8px}
-        .agreement input{accent-color:var(--accent-green)}
-        .agreement{display:flex;align-items:center;font-size:0.8rem;gap:8px;position:relative} .agreement input[type="checkbox"]{position:absolute;opacity:0;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);margin:0;padding:0} .agreement label{position:relative;padding-left:28px;cursor:pointer;color:var(--text)} .agreement label::before{content:"";position:absolute;top:50%;left:0;width:18px;height:18px;border:2px solid var(--stroke);border-radius:var(--radius);background:var(--card-bg);transform:translateY(-50%);transition:border-color .2s,background .2s;box-sizing:border-box} .agreement label::after{content:"";position:absolute;top:50%;left:4px;width:6px;height:10px;border:solid var(--card-bg);border-width:0 2px 2px 0;transform:translateY(-50%) rotate(45deg) scale(0);transition:transform .15s ease-in-out} .agreement input[type="checkbox"]:checked+label::before{background:var(--accent-green);border-color:var(--accent-green)} .agreement input[type="checkbox"]:checked+label::after{transform:translateY(-50%) rotate(45deg) scale(1)} .agreement input[type="checkbox"]:focus+label::before,.agreement label:hover::before{border-color:var(--accent-green)} .agreement a{color:var(--accent-green);text-decoration:none} .agreement a:hover{text-decoration:underline}
-        .contact-container{display:flex;flex-wrap:wrap;gap:12px;margin-top:16px}
-        .contact{flex:1 1 260px;padding:12px 14px;border:1px solid var(--stroke);border-radius:var(--radius);background:transparent;color:var(--text)}
-        .contact::placeholder{color:var(--text-dim)}
-        .payment-button{width:100%;margin-top:24px;padding:14px 0;border:none;border-radius:var(--radius);font-size:1rem;font-weight:600;background:var(--accent);color:#fff;cursor:pointer;transition:background 0.25s ease}
-        .payment-button:hover{background:var(--accent-green)}
-        hr{border:none;height:1px;background:var(--stroke);margin:28px 0}
-        .trust-section{display:flex;flex-wrap:wrap;gap:20px;margin:0 auto;max-width:1000px;padding:20px;justify-content:space-between}.trust-card{flex:1 1 280px;background-color:var(--card-bg);border:1px solid var(--stroke);border-radius:var(--radius);padding:24px;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);color:var(--text-dim);display:flex;flex-direction:column;gap:12px;text-align:left}.trust-icon{width:36px;height:36px;opacity:0.8}.trust-title{font-weight:600;font-size:1rem;color:var(--accent-green)}.trust-text{font-size:0.88rem;line-height:1.5}.trust-text a{color:var(--accent-green);text-decoration:none}.trust-text a:hover{text-decoration:underline}
-        .payment-button.disabled {
-            background: var(--stroke);
-            color: var(--text-dim);
-            cursor: not-allowed;
-        }
-        .payment-banner {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 16px 20px;
-            background-color: var(--card-bg);
-            border: 1px solid var(--stroke);
-            border-radius: 20px;
-            color: var(--text);
-            font-size: 0.95rem;
-            line-height: 1.5;
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            margin-bottom: 20px;
-        }
-        .payment-icon {
-            flex-shrink: 0;
-            opacity: 0.9;
-        }
-        .payment-text strong {
-            color: var(--accent-green);
-        }
-        .bottom-banner {
-            position: fixed;
-            bottom: 16px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: fit-content;
-            border-radius: 32px;
-            padding: 2px 16px;
-            background-color: var(--card-bg);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            border-top: 1px solid var(--stroke);
-            z-index: 9999;
-            text-align: center;
-            color: var(--text-dim);
-            font-size: 0.72rem;
-        }
-        .bottom-content {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 6px;
-            flex-wrap: nowrap;
-        }
-        .divider {
-            color: var(--stroke);
-            font-size: 0.8rem;
-        }
-        footer {
-          margin-bottom: 100px;
-        }
-        @media(max-width:600px) {
-            .plans{
-                grid-template-columns:1fr
-            }
-            .plan{padding:20px}
-            .container {
-                width: 92%; min-width: 100px; max-width: 580px;
-            }
-            body {
-                background-size: 300%;
-            }
-            html {
-                background-position: center;
-            }
-            .bottom-banner {
-              font-size: .68em;
-            }
-            .trust-section {
-                flex-direction: column;
-                padding: 16px;
-            }
+        @keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+        .animate-fadeIn{animation:fade 0.5s ease-out forwards}
+
+        /* ФИКС ШИРИНЫ НА ДЕСКТОПЕ */
+        @media (min-width: 768px) {
+            main.max-w-xl { max-width: 42rem; }
+            footer .max-w-xl { max-width: 42rem; }
         }
 
-        /* Акцент на годовых тарифах */
-        .yearly-bonus {
-            font-size: 0.8rem;
-            color: var(--accent);
-            background-color: rgba(97, 109, 240, 0.1);
-            padding: 6px 10px;
-            border-radius: 12px;
-            text-align: center;
-            margin-top: 8px;
+        /* Карточки тарифов */
+        .plan-card {
+            position: relative; padding: 12px;
+            border: 2px solid var(--surface);
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            text-align: center; cursor: pointer;
+            transition: all 0.2s ease-in-out;
         }
-        .change {
-            margin-top: 24px;
-            margin-bottom: 12px;
-            font-size: 1.1rem;
-            color: var(--accent-green);
+        .plan-card:hover {
+            transform: translateY(-4px); border-color: var(--accent);
         }
-        .plan.popular {
-            transform: scale(1.05);
-            border-color: var(--accent);
-            background: linear-gradient(145deg, rgba(48, 47, 50, 0.5), rgba(97, 109, 240,0.18));
+        .plan-card.selected {
+            border-color: var(--accent); background: var(--accent);
         }
-        .plan.popular:hover { transform: scale(1.07) translateY(-4px); }
+        .plan-card.selected .text-lg, .plan-card.selected .text-sm { color: white; }
         .plan-badge {
-            position: absolute;
-            top: -12px;
-            right: 16px;
-            background: var(--accent);
-            color: #fff;
-            padding: 4px 12px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            border-radius: 16px;
-            box-shadow: 0 4px 10px rgba(97, 109, 240, 0.3);
+            position: absolute; top: -12px; left: 50%;
+            transform: translateX(-50%); background: var(--accent);
+            color: white; padding: 4px 10px; font-size: 0.7rem;
+            font-weight: 600; border-radius: 9999px; white-space: nowrap;
+        }
+        .plan-card.selected .plan-badge { background: white; color: var(--accent); }
+
+        /* Список фич */
+        .feature-item {
+            display: flex; align-items: center; gap: 16px;
+            padding: 12px; background: var(--surface); border-radius: var(--radius-md);
+        }
+        .feature-icon {
+            flex-shrink: 0; width: 36px; height: 36px;
+            display: flex; align-items: center; justify-content: center;
+            background: var(--accent); border-radius: 50%; font-size: 1rem;
+            animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            animation-delay: var(--delay);
+        }
+        .feature-text { font-size: 0.9rem; line-height: 1.4; color: var(--text-dim); }
+        .feature-text strong { color: var(--text); font-weight: 600; }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
         }
 
-        .final-value-summary {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 20px;
-            margin-bottom: 24px;
-        }
-
-        .summary-item {
-            display: flex;
-            align-items: flex-start;
-            gap: 16px;
-            background: var(--card-bg);
+        .plan-card.long-term {
+            text-align: left;
             padding: 20px;
-            border-radius: var(--radius);
-            border: 1px solid var(--stroke);
-        }
-
-        .summary-item i {
-            font-size: 20px;
-            color: var(--accent);
-            margin-top: 4px;
-            width: 24px;
-            text-align: center;
-        }
-
-        .summary-text h4 {
-            font-family: 'Unbounded Medium';
-            font-size: 1.05em;
-            color: var(--text);
-            margin: 0 0 6px 0;
-        }
-
-        .summary-text p {
-            font-size: 0.9em;
-            color: var(--text-dim);
-            margin: 0;
-            line-height: 1.5;
-        }
-
-        /* Удаляем старые стили, чтобы не было конфликтов */
-        .universal-feature-promo, .value-proposition {
-            display: none !important;
         }
     </style>
 </head>
-<body>
+
+<body class="bg-[var(--bg)] text-[var(--text)] font-['Namu_Pro']">
     {% include 'header.html' %}
-    <div class="container fade-in">
-        <h2 class="product-title">Инвестируйте в свое время. Освободите его для главного.</h2>
-        <p class="plan-desc" style="text-align: center;">При покупке ЛЮБОГО тарифа, Вы гарантированно получаете:</p>
 
-        <div class="final-value-summary">
-            <div class="summary-item">
-                <i class="fas fa-magic"></i>
-                <div class="summary-text">
-                    <h4>Мгновенная Генерация</h4>
-                    <p>Превращайте лекции, статьи и любой текст в тесты за секунды.</p>
+    <!-- ГЛАВНЫЙ КОНТЕЙНЕР СТРАНИЦЫ -->
+    <main class="max-w-3xl mx-auto px-4 pt-24 pb-48">
+
+        <div class="max-w-lg mx-auto flex justify-center px-4 mt-12 mb-6">
+            <img src="{% static 'img/logo.png' %}" alt="Логотип Летучка" class="w-24 h-auto">
+        </div>
+        
+        <!-- ЗАГОЛОВОК -->
+        <div class="text-center mb-8 animate-fadeIn">
+            <div class="flex justify-center items-center gap-3 mb-2">
+                <h1 class="text-2xl font-['Unbounded_Medium'] font-bold text-white">Летучка <span class="gradient-text">Premium</span></h1>
+            </div>
+            <p class="mt-2 text-[var(--text-dim)] pricing-subtitle">Прекратите тратить вечера на рутину и освободите время для себя.</p>
+        </div>
+
+        <!-- ТРИ ГОРЯЧИХ ТАРИФА -->
+        <div class="grid grid-cols-3 gap-2 mb-8 animate-fadeIn" style="animation-delay: 0.1s;" id="plans-container">
+            <!-- НЕДЕЛЯ PREMIUM -->
+            <div class="plan-card" data-plan="premium-week" data-price="290" data-desc="Премиум неделя">
+                <div class="plan-badge">Базовый</div>
+                <p class="sm:text-sm text-xs font-semibold">Неделя</s-p>
+                <p class="text-lg sm:text-2xl font-bold">290 р</p>
+                <p class="text-sm font-semibold text-white/60">290 р / неделя</p>
+            </div>
+            <!-- МЕСЯЦ PREMIUM -->
+            <div class="plan-card" data-plan="premium-month" data-price="690" data-desc="Премиум">
+                <div class="plan-badge">Выгода 44%</div>
+                <p class="sm:text-sm text-xs font-semibold">Месяц</p>
+                <p class="text-lg sm:text-3xl font-bold">690 р</p>
+                <p class="text-sm font-semibold text-white/60">~172 р / неделя</p>
+            </div>
+            <!-- 3 МЕСЯЦА PREMIUM -->
+            <div class="plan-card popular" data-plan="premium-quarter" data-price="1440" data-desc="Премиум 3 мес">
+                <div class="plan-badge">Выгода 61%</div>
+                <p class="sm: text-sm text-xs font-semibold">3 месяца</p>
+                <p class="text-lg sm:text-2xl font-bold">1440 р</p>
+                <p class="text-sm font-semibold text-white/60">~120 р / неделя</p>
+            </div>
+        </div>
+
+        <!-- СПИСОК ФИЧ PREMIUM -->
+        <div class="space-y-3 animate-fadeIn">
+            <div class="feature-item">
+                <div class="feature-icon animate-fadeIn" style="animation-delay: 80ms;"><i class="fas fa-magic"></i></div>
+                <p class="feature-text text-sm sm:text-base"><strong>Полная автоматизация.</strong> Создавайте тесты напрямую из PDF и Word.</p>
+            </div>
+
+            <div class="feature-item">
+                <div class="feature-icon animate-fadeIn" style="animation-delay: 160ms;"><i class="fas fa-tachometer-alt"></i></div>
+                <p class="feature-text text-sm sm:text-base"><strong>Аналитика на дашбордах.</strong> Отслеживайте прогресс учеников, сравнивайте тесты и смотрите детальную карту ошибок, а также просматривайте аналитику по всем тестам в профиле.</p>
+            </div>
+
+            <div class="feature-item">
+                <div class="feature-icon animate-fadeIn" style="animation-delay: 240ms;"><i class="fas fa-file-excel"></i></div>
+                <p class="feature-text text-sm sm:text-base"><strong>Экспорт в Excel.</strong> Выгружайте результаты своих участников для отчётности и архива в один клик.</p>
+            </div>
+
+            <div class="feature-item">
+                <div class="feature-icon animate-fadeIn" style="animation-delay: 320ms;"><i class="fas fa-bolt"></i></div>
+                <p class="feature-text"><strong>Максимальные лимиты.</strong> Создавайте до 50 тестов в сутки (до 15 вопросов в каждом).</p>
+            </div>
+            
+            <div class="feature-item">
+                <div class="feature-icon animate-fadeIn" style="animation-delay: 480ms;"><i class="fas fa-print"></i></div>
+                <p class="feature-text"><strong>Тесты без водяных знаков.</strong> Скачивайте тесты, которые сразу готовы к печати.</p>
+            </div>
+
+            <div class="feature-item">
+                <div class="feature-icon animate-fadeIn" style="animation-delay: 480ms;"><i class="fas fa-user-check"></i></div>
+                <p class="feature-text">
+                    <strong>Самопроверка.</strong> Проходите тесты прямо на платформе, чтобы быстро проверить свои знания или убедиться в качестве сгенерированных вопросов.
+                </p>
+            </div>
+        </div>
+
+        <div class="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- КАРТОЧКА 1: БЕЗОПАСНОСТЬ -->
+            <div class="bg-[var(--surface)] p-6 rounded-3xl border border-[var(--color-border)] flex flex-col gap-3">
+                <div class="flex items-center justify-center h-12 w-12 rounded-full bg-[var(--color-accent-primary)]/10 border border-[var(--color-border)]">
+                    <i class="fas fa-shield-alt text-xl text-[var(--color-accent-primary)]"></i>
+                </div>
+                <div>
+                    <h4 class="font-['Unbounded_Medium'] font-bold text-white/90">Безопасно</h4>
+                    <p class="mt-1 text-sm text-white/75 leading-relaxed">
+                        Платежи защищены TLS-шифрованием. Мы не храним данные карты — они передаются банку напрямую.
+                    </p>
                 </div>
             </div>
-            <div class="summary-item">
-                <i class="fas fa-chart-pie"></i>
-                <div class="summary-text">
-                    <h4>Аналитика</h4>
-                    <p>Отслеживайте свою продуктивность и успеваемость аудитории на графиках.</p>
+
+            <!-- КАРТОЧКА 2: КОНТРОЛЬ -->
+            <div class="bg-[var(--surface)] p-6 rounded-3xl border border-[var(--color-border)] flex flex-col gap-3">
+                <div class="flex items-center justify-center h-12 w-12 rounded-full bg-[var(--color-accent-primary)]/10 border border-[var(--color-border)]">
+                    <i class="fas fa-undo-alt text-xl text-[var(--color-accent-primary)]"></i>
+                </div>
+                <div>
+                    <h4 class="font-['Unbounded_Medium'] font-bold text-white/90">Контроль</h4>
+                    <p class="mt-1 text-sm text-white/75 leading-relaxed">
+                        Мы ценим Ваш комфорт: Оплата разовая. Подписка не продлится автоматически, пока Вы не решите ее обновить сами.
+                    </p>
                 </div>
             </div>
-            <div class="summary-item">
-                <i class="fas fa-file-invoice"></i>
-                <div class="summary-text">
-                    <h4>Профессиональный Экспорт</h4>
-                    <p>Делитесь чистыми онлайн-тестами или скачивайте PDF без нашего брендинга.</p>
+
+            <!-- КАРТОЧКА 3: ПОДДЕРЖКА -->
+            <div class="bg-[var(--surface)] p-6 rounded-3xl border border-[var(--color-border)] flex flex-col gap-3">
+                <div class="flex items-center justify-center h-12 w-12 rounded-full bg-[var(--color-accent-primary)]/10 border border-[var(--color-border)]">
+                    <i class="fas fa-headset text-xl text-[var(--color-accent-primary)]"></i>
+                </div>
+                <div>
+                    <h4 class="font-['Unbounded_Medium'] font-bold text-white/90">Поддержка 24/7</h4>
+                    <p class="mt-1 text-sm text-white/75 leading-relaxed">
+                        Отвечаем быстро — в течение часа в рабочее время. Пишите, если что-то пошло не так.
+                    </p>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="max-w-3xl mx-auto px-4 sm:px-8">
+            <div class="mt-8 mb-4 pt-8 border-t border-[var(--color-border)] flex flex-col sm:flex-row justify-between items-center text-xs text-gray-600 text-center">
+                <p>2024-2025 Летучка AI. Design & Development <a class="text-gray-500 hover:text-[var(--color-accent-primary)]" rel='nofollow' href="https://dprofile.ru/kozak_developer" target="_blank">by Kozak</a></p>
+                <div class="mt-2 sm:mt-0">
+                    <a href="/docs/public-offer" class="hover:text-gray-400">Публичная оферта</a>
+                    <span class="mx-2">|</span>
+                    <a href="/docs/privacy-policy" class="hover:text-gray-400">Политика конфиденциальности</a>
                 </div>
             </div>
         </div>
 
-        <div class="payment-banner fade-in">
-            <svg class="payment-icon" width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <path d="M12 1C5.93 1 1 5.93 1 12s4.93 11 11 11 11-4.93 11-11S18.07 1 12 1Zm0 20c-4.96 0-9-4.04-9-9s4.04-9 9-9 9 4.04 9 9-4.04 9-9 9Z" fill="#79EF66"/>
-              <path d="M17 9.5 10.5 16 7 12.5" stroke="#79EF66" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            <div class="payment-text">
-                <strong>Платите, как удобно:</strong> российские карты, <strong>СБП</strong>, <strong>SberPay</strong> и&nbsp;<strong>T-Pay</strong>&nbsp;&mdash; быстро и&nbsp;безопасно.
-            </div>
-        </div>
-
-        <div class="plans" id="planSelector">
-            <div class="plan popular" data-plan="premium-year" data-price="4800" data-desc="Премиум Год">
-                <div class="plan-badge">Максимум выгоды! (42% скидка)</div>
-                <div class="plan-title">Премиум • Годовой</div>
-                <div class="plan-desc">Ваше секретное оружие на весь учебный год.</div>
-                <div class="plan-price">400 ₽ <span class="price-period">/ в месяц</span></div>
-                <div class="yearly-bonus">4800 ₽ в год • Экономия 3360 ₽</div>
-            </div>
-
-            <div class="plan" data-plan="standard-year" data-price="3900" data-desc="Стандартный Год">
-                <div class="plan-title">Стандартный • Годовой</div>
-                <div class="plan-desc">Надежный помощник для максимальной экономии.</div>
-                <div class="plan-price">325 ₽ <span class="price-period">/ в месяц</span></div>
-                <div class="yearly-bonus">3900 ₽ в год • Экономия 2700 ₽</div>
-            </div>
-            
-            <div class="plan" data-plan="premium-month-plus" data-price="690" data-desc="Премиум">
-                <div class="plan-badge">Хит продаж</div>
-                <div class="plan-title">Премиум • Месяц</div>
-                <div class="plan-desc">Максимум возможностей для интенсивной работы.</div>
-                <div class="plan-price">690 ₽ <span class="price-period">/ в месяц</span></div>
-            </div>
-            
-            <div class="plan" data-plan="standard-month-plus" data-price="550" data-desc="Стандартный">
-                <div class="plan-title">Стандартный • Месяц</div>
-                <div class="plan-desc">Идеально для регулярной проверки знаний.</div>
-                <div class="plan-price">550 ₽ <span class="price-period">/ в месяц</span></div>
-            </div>
-
-            <div class="plan" data-plan="premium-3-month" data-price="1860" data-desc="Премиум 3 мес">
-                <div class="plan-badge">Выгодно!</div>
-                <div class="plan-title">Премиум • 3 Месяца</div>
-                <div class="plan-desc">Платите меньше, работайте дольше. Скидка 10%!</div>
-                <div class="plan-price">620 ₽ <span class="price-period">/ в месяц</span></div>
-                <div class="yearly-bonus">1860 ₽ за 3 месяца • Экономия 210 ₽</div>
-            </div>
-            
-            <div class="plan" data-plan="standard-3-month" data-price="1470" data-desc="Стандартный 3 мес">
-                <div class="plan-title">Стандартный • 3 Месяца</div>
-                <div class="plan-desc">Идеально для подготовки к сессии. Скидка 10%!</div>
-                <div class="plan-price">490 ₽ <span class="price-period">/ в месяц</span></div>
-                <div class="yearly-bonus">1470 ₽ за 3 месяца • Экономия 180 ₽</div>
-            </div>
-        </div>
+    </main>
     
-        <p class="trust-text" style="text-align: center; color: #829085">🔒 Разовая защищенная оплата. Без автопродления</p>
-    <form name="payform-tbank" id="payform-tbank">
-    {% csrf_token %}
-    <input type="hidden" name="amount" id="amount_price" />
-    <input type="hidden" name="order" value="{{order_id}}" />
-    <input type="hidden" name="description" id="description_order" />
+    <!-- ПРИЛИПАЮЩИЙ ФУТЕР С ОПЛАТОЙ -->
+    <footer class="fixed bottom-0 left-0 right-0 z-50 p-4 bg-gradient-to-t from-[var(--bg)] via-[var(--bg)] to-transparent">
+        <div class="max-w-xl mx-auto">
+            <form name="payform-tbank" id="payform-tbank">
+                {% csrf_token %}
+                <input type="hidden" name="amount" id="amount_price" />
+                <input type="hidden" name="order" value="{{order_id}}" />
+                <input type="hidden" name="description" id="description_order" />
+                <input type="hidden" name="email" value="{{email}}" />
+                <input type="hidden" name="phone" value="{{phone}}" />
 
-    <div class="contact-container">
-        <input class="contact" placeholder="E‑mail для чека" name="email" value="{{email}}" required/>
-        <input class="contact" placeholder="Телефон" name="phone" value="{{phone}}" type="hidden"/>
-    </div>
-    
-    <button class="payment-button disabled" id="payment-button" type="submit" disabled>Выберите тариф</button>
-    </form>
-
-    <p class="trust-text" style="text-align: center; color: #829085">
-        Нажимая «Оплатить», Вы соглашаетесь с 
-        <a href="/docs/public-offer" target="_blank">условиями оферты</a>.
-    </p>
-
-    <p class="plan-desc" style="text-align: center;">Выберите оптимальный План для себя</p>
-
-    <div class="final-value-summary comparison-grid">
-        <div class="summary-item standard-tier">
-            <i class="fas fa-bolt"></i>
-            <div class="summary-text">
-                <h4>СТАНДАРТ</h4>
-                <p>Скорость, простота и мгновенный результат.</p>
-                <ul class="plan-desc">
-                    <li>Превращайте любой текст в готовый тест. Создавайте до 20 тестов в сутки.</li>
-                    <li>Ваша аудитория проходит тест БЕЗ РЕГИСТРАЦИИ, просто введя имя.</li>
-                    <li>Получайте детальную аналитику по каждому отдельному тесту в реальном времени.</li>
-                </ul>
-            </div>
+                <input class="w-full p-2 mb-2 bg-[var(--surface)] border border-[var(--border)] rounded-xl text-white placeholder-[var(--text-dim)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]" 
+                       placeholder="E‑mail для чека" name="email" value="{{email}}" required/>
+                
+                <button class="w-full py-4 font-bold text-center rounded-3xl bg-[var(--accent)] text-white sm:text-lg text-base transition-transform hover:scale-105 active:scale-95 shadow-lg shadow-[var(--accent)]/30" id="payment-button" type="submit">
+                    <!-- Заполняется через JS -->
+                </button>
+            </form>
+            <p class="text-xs text-center text-[var(--text-dim)] mt-3">
+                Разовая оплата. Без автопродления. Нажимая кнопку, вы соглашаетесь с <a href="/docs/public-offer" target="_blank" class="underline">офертой</a>.
+            </p>
         </div>
-        <div class="summary-item premium-tier">
-            <i class="fas fa-crown" style="color: var(--accent);"></i> 
-            <div class="summary-text">
-                <h4>ПРЕМИУМ</h4>
-                <p>Для тех, кто работает вдолгую и принимает решения на основе данных.</p>
-                <ul class="plan-desc">
-                    <li class="premium-plus"><strong>Все возможности «Стандартного», плюс:</strong></li>
-                    <li class="premium-feature">
-                        <strong style="color: var(--accent-green);">Загружайте материалы напрямую.</strong>
-                        Создавайте тесты из Ваших PDF и Word документов.
-                    </li>
-                    <li>Создавайте до 50 тестов в сутки.</li>
-                </ul>
-            </div>
-        </div>
-    </div>
-
-      <div class="trust-section">
-          <div class="trust-card">
-              <img src="{% static 'img/icon-secure-bank.png' %}" alt="Иконка TLS" class="trust-icon">
-              <div class="trust-title">Безопасная оплата</div>
-              <div class="trust-text">Платежи защищены <strong>TLS</strong>-протоколом. Мы не храним данные карты — они передаются банку напрямую.</div>
-          </div>
-
-          <div class="trust-card">
-              <img src="{% static 'img/icon-quality.png' %}" alt="Иконка Быстро и Качественно" class="trust-icon">
-              <div class="trust-title">Гарантии Летучки</div>
-              <div class="trust-text">Более 23 000 тестов уже созданы через платформу. <br><br>
-                Если в&nbsp;течение 7&nbsp;дней после покупки вы&nbsp;решите, что наш сервис&nbsp;&mdash; шляпа полная, и&nbsp;не&nbsp;сэкономил Вам ни&nbsp;минуты времени, просто напишите мне на&nbsp;личную почту <a href="mailto:kozak187er@yandex.ru">kozak187er@yandex.ru</a>. <br><br>
-                Я верну Вам все деньги. <br>Без вопросов.</div>
-          </div>
-
-          <div class="trust-card">
-              <img src="{% static 'img/icon-support.png' %}" alt="Иконка Поддержки" class="trust-icon">
-              <div class="trust-title">Поддержка 24/7</div>
-              <div class="trust-text">Отвечаем быстро — в течение часа в рабочее время. Пишите на <a href="mailto:support@letychka.ru">support@letychka.ru</a>, если что-то пошло не так.</div>
-          </div>
-      </div>
-  </div>
-  
-    {% include 'components/made_in_russia.html' %}
+    </footer>
 
   <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const planSelector = document.getElementById('planSelector');
+        const plansContainer = document.querySelector('main');
+        const featuresList = document.getElementById('features-list');
         const amountInput = document.getElementById('amount_price');
         const descInput = document.getElementById('description_order');
         const paymentButton = document.getElementById('payment-button');
-        const agreementCheckbox = document.getElementById('agreement-checkbox');
         const payForm = document.getElementById('payform-tbank');
-        
-        let selectedPlan = null;
 
-        // --- Логика выбора тарифа ---
-        planSelector.addEventListener('click', (e) => {
-            const planCard = e.target.closest('.plan');
+        function selectPlan(planCard) {
             if (!planCard) return;
 
-            // Снимаем выделение со всех карточек
-            planSelector.querySelectorAll('.plan').forEach(c => c.classList.remove('selected'));
-            
-            // Выделяем нажатую
+            document.querySelectorAll('.plan-card, .long-term-plan').forEach(c => c.classList.remove('selected'));
             planCard.classList.add('selected');
             
-            selectedPlan = {
-                price: planCard.dataset.price,
-                desc: planCard.dataset.desc
-            };
-
-            // Обновляем скрытые поля формы
-            amountInput.value = selectedPlan.price;
-            descInput.value = selectedPlan.desc;
+            const price = planCard.dataset.price;
+            const desc = planCard.dataset.desc;
             
-            updateButtonState();
-        });
+            amountInput.value = price;
+            descInput.value = desc;
+            
+            const periodText = planCard.querySelector('.text-sm').textContent;
+            let ctaText = `Перейти к оплате`;
 
-        // --- Логика состояния кнопки ---
-        //agreementCheckbox.addEventListener('change', updateButtonState);
-
-        function updateButtonState() {
-            if (selectedPlan) {
-                paymentButton.disabled = false;
-                paymentButton.classList.remove('disabled');
-                paymentButton.textContent = `Оплатить ${selectedPlan.price} руб`;
+            if (periodText.includes('3 месяца')) {
+                ctaText = `Оплатить ${price} руб за 3 месяца`;
+            } else if (periodText.includes('Месяц')) {
+                ctaText = `Оплатить ${price} руб за месяц`;
             } else {
-                paymentButton.disabled = true;
-                paymentButton.classList.add('disabled');
-                if (!selectedPlan) {
-                    paymentButton.textContent = 'Выберите тариф';
-                } else {
-                    paymentButton.textContent = 'Примите условия оферты';
-                }
+                ctaText = `Оплатить ${price} руб за неделю`;
             }
+            paymentButton.textContent = ctaText;
+            paymentButton.disabled = false;
         }
+
+        // --- Обработчик кликов ---
+        plansContainer.addEventListener('click', (e) => {
+            const planCard = e.target.closest('.plan-card');
+            if (planCard) {
+                selectPlan(planCard);
+            }
+        });
         
         // --- Логика отправки платежа (твоя оригинальная, но обернутая) ---
         payForm.addEventListener('submit', function(e) {
@@ -521,8 +369,14 @@
             .catch(() => alert('Ошибка сети. Пожалуйста, попробуйте еще раз.'));
         });
 
-        // Инициализируем состояние кнопки при загрузке
-        updateButtonState();
+        // --- Инициализация: предвыбираем Премиум ---
+        const defaultPlan = document.querySelector('.plan-card[data-plan="premium-month"]');
+        if (defaultPlan) {
+            selectPlan(defaultPlan);
+        } else {
+            const firstPlan = document.querySelector('.plan-card');
+            if(firstPlan) selectPlan(firstPlan);
+        }
     });
   </script>
 

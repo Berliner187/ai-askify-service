@@ -312,7 +312,7 @@
 
     <main class="max-w-6xl mx-auto p-4 sm:px-8 space-y-24 sm:space-y-32">
         <section id="hero" class="text-center pt-20">
-            <h1 class="text-4xl md:text-6xl font-black leading-tight tracking-tighter text-[#F0E5F0]">
+            <h1 class="text-3xl md:text-6xl font-black leading-tight tracking-tighter text-[#F0E5F0]">
                 <span class="gradient-text">Создайте тест по&nbsp;тексту</span><br> онлайн с&nbsp;результатами
             </h1>
             <p class="mt-6 text-lg max-w-3xl mx-auto text-[var(--color-text-secondary)]">
@@ -446,13 +446,13 @@
                             <span class="gradient-text">{{ user.username }}</span>
                         </h3>
                         <p class="mt-2 text-gray-400">
-                            Вы уже в системе. Все созданные тесты автоматически сохраняются в Вашем личном кабинете.
+                            Вы уже в системе. Все созданные тесты автоматически на Вашем аккаунте.
                         </p>
                         
                         <div class="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <a href="{% url 'profile_redirect' %}" class="block bg-white/10 hover:bg-white/20 text-white px-6 py-3 font-bold rounded-full transition-colors">
-                                <i class="fas fa-user-circle mr-2"></i>
-                                Мой кабинет
+                            <a href="{% url 'history' %}" class="block bg-white/10 hover:bg-white/20 text-white px-6 py-3 font-bold rounded-full transition-colors">
+                                <i class="fas fa-history mr-2"></i>
+                                История тестов
                             </a>
                             <a href="{% url 'create' %}" class="block bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] px-6 py-3 font-bold rounded-full transition-transform hover:opacity-90 hover:scale-105 active:scale-100">
                                 <i class="fa-solid fa-arrow-right"></i>
@@ -721,13 +721,6 @@
                         </div>
                     </div>
                 </div>
-
-                <div class="mt-16 w-full rounded-2xl border-2 border-[var(--color-border)] shadow-2xl shadow-black/50 overflow-hidden">
-                    <video autoplay loop muted playsinline preload="metadata" class="w-full h-auto">
-                        <source src="{% static 'blog_img/0313-text.mp4' %}" type="video/mp4">
-                        Ваш браузер не поддерживает видео. Суть в том, что вы загружаете текст и мгновенно получаете готовый тест.
-                    </video>
-                </div>
             </div>
         </section>
 
@@ -949,149 +942,178 @@
 
         <section id="pricing" class="py-16 sm:py-24">
             <div class="max-w-4xl mx-auto text-center px-4">
-                <h2 class="text-3xl sm:text-4xl font-extrabold text-white">Для начала нужен <span class="gradient-text">план.</span></h2>
-                <p class="mt-4 text-lg text-[var(--color-text-secondary)]">Выберите годовой план, чтобы получить лучшую цену.</p>
+                <h2 class="text-3xl sm:text-4xl font-extrabold text-white">Для начала нужен <span class="gradient-text">План.</span></h2>
+                <p class="mt-4 text-lg text-[var(--color-text-secondary)]">Выберите удобный срок доступа ко всем возможностям Летучки.</p>
+            </div>
 
-                <!-- ПЕРЕКЛЮЧАТЕЛЬ -->
-                <div class="mt-12 flex items-center justify-center space-x-4">
-                    <span class="font-semibold text-white transition-opacity duration-300" id="monthly-label">Ежемесячный</span>
-                    <input type="checkbox" id="pricing-toggle" class="hidden">
-                    <label for="pricing-toggle" class="cursor-pointer">
-                        <div class="w-14 h-8 flex items-center bg-[var(--color-accent-primary)] rounded-full p-1 toggler transition-colors">
-                            <div class="w-6 h-6 bg-white rounded-full shadow-md transform transition-transform translate-x-full dot"></div>
+            <div class="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto items-center px-4">
+
+                <div class="bg-[var(--color-surface)] p-8 rounded-3xl border border-[var(--color-border)] flex flex-col h-full text-center">
+                    <!-- flex-grow заставляет этот блок растянуться и прижать кнопку к низу -->
+                    <div class="flex-grow">
+                        <h3 class="font-bold text-white text-xl">Неделя</h3>
+                        <p class="mt-1 text-sm text-[var(--color-text-secondary)]">Тест-драйв всех функций</p>
+                        <div class="my-6">
+                            <p class="text-5xl font-extrabold text-white">290 <span class="text-xl font-medium text-gray-400">₽</span></p>
+                            <p class="text-white/80 m-2">290 ₽ / неделя</p>
+                            <p class="text-sm text-gray-400">абонемент, не подписка</p>
                         </div>
-                    </label>
-                    <span class="font-semibold text-white transition-opacity duration-300 opacity-50" id="yearly-label">Годовой</span>
+                    </div>
+                    <button data-trigger-modal="register" class="mt-8 block w-full text-center bg-[var(--color-accent-primary)] text-white font-bold text-m py-4 rounded-full transition hover:opacity-90 active:opacity-80 transition-transform active:scale-[.97] shadow-lg shadow-[var(--color-accent-primary)]/30">
+                        Выбрать на неделю
+                    </button>
+                </div>
+
+                <!-- КАРТОЧКА: 3 МЕСЯЦА (ГЛАВНАЯ) -->
+                <div class="relative p-8 rounded-3xl bg-[var(--color-surface)] border-2 border-[var(--color-accent-primary)] flex flex-col h-full text-center transform scale-105 shadow-2xl shadow-[var(--color-accent-primary)]/20">
+                    <div class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2">
+                        <div class="bg-[var(--color-accent-primary)] text-white text-sm font-bold px-4 py-1.5 rounded-full uppercase tracking-wider">Максимум выгоды</div>
+                    </div>
+                    <!-- flex-grow здесь тоже! -->
+                    <div class="flex-grow">
+                        <h3 class="font-bold text-white text-2xl">3 Месяца</h3>
+                        <p class="mt-1 text-sm text-[var(--color-text-secondary)]">Для регулярной работы</p>
+                        <div class="my-6">
+                            <p class="text-2xl text-gray-400 line-through">2070 ₽</p>
+                            <p class="text-6xl font-extrabold text-white">1440<span class="text-2xl font-medium text-gray-400"> ₽</span></p>
+                            <p class="text-white/80 m-2">~120 ₽ / неделя</p>
+                            <p class="text-sm text-gray-400">абонемент, не подписка</p>
+                            <p class="mt-2 text-lg font-bold text-[var(--color-accent-secondary)]">Экономия 61%</p>
+                        </div>
+                    </div>
+                    <button data-trigger-modal="register" class="mt-8 block w-full text-center bg-[var(--color-accent-primary)] text-white font-bold text-m py-4 rounded-full transition hover:opacity-90 active:opacity-80 transition-transform active:scale-[.97] shadow-lg shadow-[var(--color-accent-primary)]/30">
+                        Выбрать на 3 месяца
+                    </button>
+                </div>
+                
+                <!-- КАРТОЧКА: МЕСЯЦ -->
+                <div class="bg-[var(--color-surface)] p-8 rounded-3xl border border-[var(--color-border)] flex flex-col h-full text-center">
+                    <!-- и здесь flex-grow -->
+                    <div class="flex-grow">
+                        <h3 class="font-bold text-white text-xl">Месяц</h3>
+                        <p class="mt-1 text-sm text-[var(--color-text-secondary)]">Полный доступ</p>
+                        <div class="my-6">
+                            <p class="text-5xl font-extrabold text-white">690 <span class="text-xl font-medium text-gray-400">₽</span></p>
+                            <p class="text-white/80 m-2">~172 ₽ / неделя</p>
+                            <p class="text-sm text-gray-400">абонемент, не подписка</p>
+                            <p class="mt-2 text-lg font-bold text-[var(--color-accent-secondary)]">Экономия 44%</p>
+                        </div>
+                    </div>
+                    <button data-trigger-modal="register" class="mt-8 block w-full text-center bg-[var(--color-accent-primary)] text-white font-bold text-m py-4 rounded-full transition hover:opacity-90 active:opacity-80 transition-transform active:scale-[.97] shadow-lg shadow-[var(--color-accent-primary)]/30">
+                        Выбрать на месяц
+                    </button>
                 </div>
             </div>
 
-            <!-- КОНТЕЙНЕР ДЛЯ КАРТОЧЕК -->
-            <div id="pricing-cards-container" class="mt-12 grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-6xl mx-auto items-center px-4">
-                
-                <!-- КАРТОЧКА: СТАНДАРТ -->
-                <div class="bg-[var(--color-surface)] p-8 rounded-3xl border border-[var(--color-border)] flex flex-col h-full">
-                    <h3 class="font-bold text-white text-xl">Стандарт</h3>
-                    <p class="mt-1 text-sm text-[var(--color-text-secondary)]">Для регулярных задач</p>
-                    <div data-pricing="standard" class="my-6">
-                        <!-- Контент меняется через JS -->
+            <!-- НОВЫЙ БЛОК-ВИТРИНА С ФИЧАМИ -->
+            <div class="max-w-4xl mx-auto mt-16 text-center">
+                <h3 class="text-lg font-semibold text-white"><span class="gradient-text">Все тарифы включают</span></h3>
+                <!-- СЕТКА С ФИЧАМИ -->
+                <div class="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- ФИЧА 1: Автоматизация -->
+                    <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] text-left hover:border-[var(--color-accent-primary)] hover:-translate-y-1 transition-all duration-300">
+                        <i class="fas fa-magic text-2xl text-[var(--color-accent-primary)] mb-3"></i>
+                        <h3 class="font-bold text-white">Полная автоматизация</h3>
+                        <p class="text-sm text-[var(--color-text-secondary)] mt-1">Создавайте тесты напрямую из&nbsp;ваших PDF и&nbsp;Word файлов. Экономьте часы работы.</p>
                     </div>
-                    <ul class="space-y-3 text-sm text-[var(--color-text-secondary)] flex-grow">
-                        <li class="flex items-start"><i class="fas fa-check text-[var(--color-accent-secondary)] w-5 text-center mr-2 mt-1"></i> <span><strong>20 тестов в день</strong></span></li>
-                        <li class="flex items-start"><i class="fas fa-check text-[var(--color-accent-secondary)] w-5 text-center mr-2 mt-1"></i> <span><strong>PDF без вотермарок</strong></span></li>
-                        <li class="flex items-start"><i class="fas fa-check text-[var(--color-accent-secondary)] w-5 text-center mr-2 mt-1"></i> <span>AI-фидбэк</span></li>
-                    </ul>
-                    <a href="/payment/" class="mt-8 block w-full text-center bg-white/10 hover:bg-white/20 text-white font-semibold py-3 rounded-full transition-colors active:opacity-80 transition-transform active:scale-[.97]">Выбрать Стандарт</a>
-                </div>
-
-                <!-- КАРТОЧКА: ПРЕМИУМ (ГЛАВНЫЙ АКЦЕНТ) -->
-                <div class="premium-card p-8 rounded-3xl border-2 border-[var(--color-accent-primary)] flex flex-col h-full transform scale-105 shadow-2xl shadow-[var(--color-accent-primary)]/20">
-                    <div class="premium-card-content">
-                        <div class="flex justify-between items-center">
-                            <h3 class="font-bold text-white text-2xl">Премиум</h3>
-                            <div class="bg-[var(--color-accent-primary)] text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">Лучший&nbsp;выбор</div>
-                        </div>
-                        <p class="mt-1 text-sm text-[var(--color-text-secondary)]">Для профессионалов</p>
-                        <div data-pricing="premium" class="my-6">
-                            <!-- Контент меняется через JS -->
-                        </div>
-                        <ul class="space-y-3 text-sm text-[var(--color-text-secondary)] flex-grow">
-                            <li class="flex items-start"><i class="fas fa-check text-[var(--color-accent-secondary)] w-5 text-center mr-2 mt-1"></i> <span><strong>50 тестов в день</strong></span></li>
-                            <li class="flex items-start"><i class="fas fa-check text-[var(--color-accent-secondary)] w-5 text-center mr-2 mt-1"></i> <span><strong>Загрузка файлов (PDF, Word)</strong></span></li>
-                            <li class="flex items-start"><i class="fas fa-check text-[var(--color-accent-secondary)] w-5 text-center mr-2 mt-1"></i> <span>Экспорт результатов</span></li>
-                            <li class="flex items-start"><i class="fas fa-check text-[var(--color-accent-secondary)] w-5 text-center mr-2 mt-1"></i> <span>Приоритетная поддержка</span></li>
-                        </ul>
-                        <div class="my-4 text-center bg-[var(--color-bg)] p-6 rounded-2xl border border-[var(--color-border)]">
-                            <p class="text-sm text-[var(--color-text-secondary)]">Стоимость одного теста</p>
-                            <p class="text-4xl font-black gradient-text my-2">&lt; 4 ₽</p>
-                            <p class="text-sm text-[var(--color-text-secondary)]">Дешевле, чем распечатать его в&nbsp;копицентре</p>
-                        </div>
-                        <button data-trigger-modal="register" class="mt-8 block w-full text-center bg-[var(--color-accent-primary)] text-white font-bold text-m py-4 rounded-full transition hover:opacity-90 active:opacity-80 transition-transform active:scale-[.97] shadow-lg shadow-[var(--color-accent-primary)]/30">
-                            Перейти на Премиум
-                        </button>
+                    <!-- ФИЧА 2: Аналитика -->
+                    <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] text-left hover:border-[var(--color-accent-primary)] hover:-translate-y-1 transition-all duration-300">
+                        <i class="fas fa-chart-pie text-2xl text-[var(--color-accent-primary)] mb-3"></i>
+                        <h3 class="font-bold text-white">Аналитика на&nbsp;дашбордах</h3>
+                        <p class="text-sm text-[var(--color-text-secondary)] mt-1">Отслеживайте прогресс учеников и&nbsp;смотрите детальную карту ошибок по&nbsp;всем тестам.</p>
                     </div>
-                </div>
-                
-                <!-- КАРТОЧКА: СТАРТОВЫЙ -->
-                <div class="bg-[var(--color-surface)] p-8 rounded-3xl border border-[var(--color-border)] flex flex-col h-full">
-                    <h3 class="font-bold text-white text-xl">Стартовый</h3>
-                    <p class="mt-1 text-sm text-[var(--color-text-secondary)]">Чтобы попробовать</p>
-                    <div class="my-6">
-                        <p class="text-6xl font-extrabold text-white">0 ₽</p>
-                        <p class="text-sm text-gray-400">&nbsp;</p>
+                    <!-- ФИЧА 3: Экспорт -->
+                    <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] text-left hover:border-[var(--color-accent-primary)] hover:-translate-y-1 transition-all duration-300">
+                        <i class="fas fa-file-excel text-2xl text-[var(--color-accent-primary)] mb-3"></i>
+                        <h3 class="font-bold text-white">Экспорт в Excel</h3>
+                        <p class="text-sm text-[var(--color-text-secondary)] mt-1">Выгружайте результаты для отчётности и&nbsp;архива в&nbsp;один клик.</p>
                     </div>
-                    <ul class="space-y-3 text-sm text-[var(--color-text-secondary)] flex-grow">
-                        <li class="flex items-start"><i class="fas fa-check text-[var(--color-accent-secondary)] w-5 text-center mr-2 mt-1"></i> <span><strong>10 бесплатных</strong> генераций</span></li>
-                        <li class="flex items-start"><i class="fas fa-check text-[var(--color-accent-secondary)] w-5 text-center mr-2 mt-1"></i> <span>Создание из текста</span></li>
-                    </ul>
-                    <a href="/register" class="mt-8 block w-full text-center bg-white/10 hover:bg-white/20 text-white font-semibold py-3 rounded-full transition transition-colors active:opacity-80 transition-transform active:scale-[.97]">Начать бесплатно</a>
+                    <!-- ФИЧА 4: Лимиты -->
+                    <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] text-left hover:border-[var(--color-accent-primary)] hover:-translate-y-1 transition-all duration-300">
+                        <i class="fas fa-infinity text-2xl text-[var(--color-accent-primary)] mb-3"></i>
+                        <h3 class="font-bold text-white">Максимальные лимиты</h3>
+                        <p class="text-sm text-[var(--color-text-secondary)] mt-1">Создавайте до&nbsp;50&nbsp;тестов в&nbsp;сутки (до&nbsp;15&nbsp;вопросов в&nbsp;каждом).</p>
+                    </div>
+                    <!-- ФИЧА 5: Без водяных знаков -->
+                    <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] text-left hover:border-[var(--color-accent-primary)] hover:-translate-y-1 transition-all duration-300">
+                        <i class="fas fa-print text-2xl text-[var(--color-accent-primary)] mb-3"></i>
+                        <h3 class="font-bold text-white">Тесты без водяных знаков</h3>
+                        <p class="text-sm text-[var(--color-text-secondary)] mt-1">Скачивайте тесты, которые сразу готовы к&nbsp;печати. Чисто и&nbsp;профессионально.</p>
+                    </div>
+                    <!-- ФИЧА 6: Самопроверка -->
+                    <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] text-left hover:border-[var(--color-accent-primary)] hover:-translate-y-1 transition-all duration-300">
+                        <i class="fas fa-user-check text-2xl text-[var(--color-accent-primary)] mb-3"></i>
+                        <h3 class="font-bold text-white">Самопроверка</h3>
+                        <p class="text-sm text-[var(--color-text-secondary)] mt-1">Проходите тесты прямо на&nbsp;платформе, чтобы убедиться в&nbsp;качестве вопросов.</p>
+                    </div>
                 </div>
             </div>
+        </section>
 
-            <!-- БЛОК: ОПЛАТА ДОЛЯМИ -->
-            <section id="security" class="py-16 sm:py-24">
-                <div class="max-w-4xl mx-auto px-4 sm:px-8">
+        <!-- БЛОК: ОПЛАТА ДОЛЯМИ -->
+        <section id="security" class="py-16 sm:py-24">
+            <div class="max-w-4xl mx-auto px-4 sm:px-8">
+                <div class="text-center">
+                    <h2 class="text-3xl sm:text-4xl font-extrabold text-white"><span class="gradient-text">Безопасность</span> — это <span class="gradient-text">фундамент.</span></h2>
+                    <p class="mt-4 text-lg text-[var(--color-text-secondary)]">Оплата в одно касание через проверенные сервисы. Быстро, привычно и на 100% безопасно.</p>
+                </div>
+
+                <!-- ГАРАНТИИ БЕЗОПАСНОСТИ -->
+                <div class="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+                    
+                    <div class="bg-[var(--color-surface)] p-4 rounded-3xl border border-[var(--color-border)]">
+                        <div class="flex items-center justify-center h-16 w-16 rounded-full bg-black/30 mx-auto">
+                            <i class="fas fa-wand-magic-sparkles text-3xl text-[var(--color-accent-secondary)]"></i>
+                        </div>
+                        <h3 class="mt-5 font-bold text-white text-lg">Платите как удобно</h3>
+                        <p class="mt-2 text-sm text-gray-400">Забудьте о&nbsp;неудобных формах. Оплачивайте подписку в&nbsp;одно касание картой, через SberPay, T-Pay или СБП. Быстро и&nbsp;безопасно.</p>
+                    </div>
+                    
+                    <div class="bg-[var(--color-surface)] p-4 rounded-3xl border border-[var(--color-border)]">
+                        <div class="flex items-center justify-center h-16 w-16 rounded-full bg-black/30 mx-auto">
+                            <i class="fas fa-shield-halved text-3xl text-[var(--color-accent-secondary)]"></i>
+                        </div>
+                        <h3 class="mt-5 font-bold text-white text-lg">Банковский уровень защиты</h3>
+                        <p class="mt-2 text-sm text-gray-400">Все платежи обрабатываются АО&nbsp;&laquo;Т-Банк&raquo; по&nbsp;стандарту PCI&nbsp;DSS. Это высший стандарт безопасности, гарантирующий, что Ваша транзакция защищена.</p>
+                    </div>
+
+                    <div class="bg-[var(--color-surface)] p-4 rounded-3xl border border-[var(--color-border)]">
+                        <div class="flex items-center justify-center h-16 w-16 rounded-full bg-black/30 mx-auto">
+                            <i class="fas fa-user-secret text-3xl text-[var(--color-accent-secondary)]"></i>
+                        </div>
+                        <h3 class="mt-5 font-bold text-white text-lg">Ваши данные&nbsp;&mdash; не&nbsp;наш бизнес</h3>
+                        <p class="mt-2 text-sm text-gray-400">Мы&nbsp;не&nbsp;видим и&nbsp;тем более не&nbsp;храним полные данные вашей карты. Они отправляются напрямую, в&nbsp;зашифрованный банковский шлюз.</p>
+                    </div>
+
+                </div>
+
+                <!-- БЛОК "ДОЛЯМИ" -->
+                <div class="mt-12">
+                    <div class="bg-gradient-to-r from-[#211a32] to-[var(--color-surface)] p-8 rounded-3xl border border-[var(--color-border)]">
+                        <div class="flex flex-col md:flex-row items-center gap-8 text-center md:text-left">
+                            <div class="flex-shrink-0 text-center">
+                                <!-- SVG логотипы для идеального отображения -->
+                                <div class="flex-shrink-0">
+                                    <img width="300" height="48" src="{% static 'img/dolyami.png' %}" alt="Летучка: Оплата Долями">
+                                </div>
+                                <p class="text-xs text-gray-500 mt-2">Официальный партнер</p>
+                            </div>
+                            <div>
+                                <h4 class="text-xl font-bold text-white">Платите, как Вам удобно.</h4>
+                                <p class="text-[var(--color-text-secondary)] mt-1">Разделите годовую подписку на&nbsp;4&nbsp;равных платежа &laquo;Долями&raquo;. Первый платеж&nbsp;&mdash; сегодня, остальные&nbsp;&mdash; потом.</p>
+                            </div>
+                        </div>
+                    </div>
                     <div class="text-center">
-                        <h2 class="text-3xl sm:text-4xl font-extrabold text-white"><span class="gradient-text">Безопасность</span> — это <span class="gradient-text">фундамент.</span></h2>
-                        <p class="mt-4 text-lg text-[var(--color-text-secondary)]">Оплата в одно касание через проверенные сервисы. Быстро, привычно и на 100% безопасно.</p>
-                    </div>
-
-                    <!-- ГАРАНТИИ БЕЗОПАСНОСТИ -->
-                    <div class="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
-                        
-                        <div class="bg-[var(--color-surface)] p-4 rounded-3xl border border-[var(--color-border)]">
-                            <div class="flex items-center justify-center h-16 w-16 rounded-full bg-black/30 mx-auto">
-                                <i class="fas fa-wand-magic-sparkles text-3xl text-[var(--color-accent-secondary)]"></i>
-                            </div>
-                            <h3 class="mt-5 font-bold text-white text-lg">Платите как удобно</h3>
-                            <p class="mt-2 text-sm text-gray-400">Забудьте о&nbsp;неудобных формах. Оплачивайте подписку в&nbsp;одно касание картой, через SberPay, T-Pay или СБП. Быстро и&nbsp;безопасно.</p>
-                        </div>
-                        
-                        <div class="bg-[var(--color-surface)] p-4 rounded-3xl border border-[var(--color-border)]">
-                            <div class="flex items-center justify-center h-16 w-16 rounded-full bg-black/30 mx-auto">
-                                <i class="fas fa-shield-halved text-3xl text-[var(--color-accent-secondary)]"></i>
-                            </div>
-                            <h3 class="mt-5 font-bold text-white text-lg">Банковский уровень защиты</h3>
-                            <p class="mt-2 text-sm text-gray-400">Все платежи обрабатываются АО&nbsp;&laquo;Т-Банк&raquo; по&nbsp;стандарту PCI&nbsp;DSS. Это высший стандарт безопасности, гарантирующий, что Ваша транзакция защищена.</p>
-                        </div>
-
-                        <div class="bg-[var(--color-surface)] p-4 rounded-3xl border border-[var(--color-border)]">
-                            <div class="flex items-center justify-center h-16 w-16 rounded-full bg-black/30 mx-auto">
-                                <i class="fas fa-user-secret text-3xl text-[var(--color-accent-secondary)]"></i>
-                            </div>
-                            <h3 class="mt-5 font-bold text-white text-lg">Ваши данные&nbsp;&mdash; не&nbsp;наш бизнес</h3>
-                            <p class="mt-2 text-sm text-gray-400">Мы&nbsp;не&nbsp;видим и&nbsp;тем более не&nbsp;храним полные данные вашей карты. Они отправляются напрямую, в&nbsp;зашифрованный банковский шлюз.</p>
-                        </div>
-
-                    </div>
-
-                    <!-- БЛОК "ДОЛЯМИ" -->
-                    <div class="mt-12">
-                        <div class="bg-gradient-to-r from-[#211a32] to-[var(--color-surface)] p-8 rounded-3xl border border-[var(--color-border)]">
-                            <div class="flex flex-col md:flex-row items-center gap-8 text-center md:text-left">
-                                <div class="flex-shrink-0 text-center">
-                                    <!-- SVG логотипы для идеального отображения -->
-                                    <div class="flex-shrink-0">
-                                        <img width="300" height="48" src="{% static 'img/dolyami.png' %}" alt="Летучка: Оплата Долями">
-                                    </div>
-                                    <p class="text-xs text-gray-500 mt-2">Официальный партнер</p>
-                                </div>
-                                <div>
-                                    <h4 class="text-xl font-bold text-white">Платите, как Вам удобно.</h4>
-                                    <p class="text-[var(--color-text-secondary)] mt-1">Разделите годовую подписку на&nbsp;4&nbsp;равных платежа &laquo;Долями&raquo;. Первый платеж&nbsp;&mdash; сегодня, остальные&nbsp;&mdash; потом.</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="text-center">
-                            <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-                                <button id="open-register-modal-btn" class="w-full sm:w-auto bg-[var(--color-accent-primary)] text-white px-10 py-4 font-bold rounded-full transition-transform hover:opacity-90 active:opacity-80 transition-transform active:scale-[.97]">
-                                    Перейти на Премиум
-                                </button>
-                                <a href="/register" class="w-full sm:w-auto text-sm text-gray-400 hover:text-white">или попробовать бесплатно</a>
-                            </div>
+                        <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+                            <button id="open-register-modal-btn" class="w-full sm:w-auto bg-[var(--color-accent-primary)] text-white px-10 py-4 font-bold rounded-full transition-transform hover:opacity-90 active:opacity-80 transition-transform active:scale-[.97]">
+                                Перейти на Премиум
+                            </button>
+                            <a href="/register" class="w-full sm:w-auto text-sm text-gray-400 hover:text-white">или попробовать бесплатно</a>
                         </div>
                     </div>
                 </div>
-            </section>
+            </div>
         </section>
 
         <!-- ====================================================== -->
@@ -1328,7 +1350,7 @@
                         <img src="{% static 'img/logo-header.webp' %}" alt="Летучка Логотип" class="w-40 h-auto">
                     </a>
                     <p class="mt-4 text-sm text-[var(--color-text-secondary)]">
-                        AI-сервис для создания тестов
+                        AI-сервис для создания тестов и&nbsp;тестирования
                     </p>
                 </div>
 
@@ -1390,67 +1412,6 @@
         <p class="glass-alert__message"></p>
         <button class="glass-alert__close" aria-label="Закрыть">×</button>
     </div>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const toggle = document.getElementById('pricing-toggle');
-            const monthlyLabel = document.getElementById('monthly-label');
-            const yearlyLabel = document.getElementById('yearly-label');
-            const standardPriceEl = document.querySelector('[data-pricing="standard"]');
-            const premiumPriceEl = document.querySelector('[data-pricing="premium"]');
-
-            const prices = {
-                standard: { monthly: 550, yearly: 3900 },
-                premium:  { monthly: 690, yearly: 4800 }
-            };
-
-            const updatePrices = () => {
-                const isMonthly = toggle.checked;
-                
-                monthlyLabel.style.opacity = isMonthly ? '1' : '0.5';
-                yearlyLabel.style.opacity = isMonthly ? '0.5' : '1';
-                const toggler = toggle.nextElementSibling.firstElementChild;
-                const dot = toggler.firstElementChild;
-                if (isMonthly) {
-                    toggler.style.backgroundColor = 'var(--color-bg)';
-                    dot.style.transform = 'translateX(0)';
-                } else {
-                    toggler.style.backgroundColor = 'var(--color-accent-primary)';
-                    dot.style.transform = 'translateX(100%)';
-                }
-
-                if (isMonthly) {
-                    standardPriceEl.innerHTML = `
-                        <p class="text-6xl font-extrabold text-white">${prices.standard.monthly}<span class="text-2xl font-medium text-gray-400"> ₽/мес</span></p>
-                        <p class="text-sm text-gray-400">&nbsp;</p>
-                    `;
-                } else {
-                    const yearlyEquivalent = Math.round(prices.standard.yearly / 12);
-                    standardPriceEl.innerHTML = `
-                        <p class="text-6xl font-extrabold text-white">${yearlyEquivalent}<span class="text-2xl font-medium text-gray-400"> ₽/мес</span></p>
-                        <p class="text-sm text-gray-400">При оплате за год – ${prices.standard.yearly} ₽</p>
-                    `;
-                }
-                
-                if (isMonthly) {
-                    premiumPriceEl.innerHTML = `
-                        <p class="text-6xl font-extrabold text-white">${prices.premium.monthly}<span class="text-2xl font-medium text-gray-400"> ₽/мес</span></p>
-                        <p class="text-sm text-gray-400">&nbsp;</p>
-                    `;
-                } else {
-                    const yearlyEquivalent = Math.round(prices.premium.yearly / 12);
-                    premiumPriceEl.innerHTML = `
-                        <p class="text-6xl font-extrabold text-white">${yearlyEquivalent}<span class="text-2xl font-medium text-gray-400"> ₽/мес</span></p>
-                        <p class="text-sm text-gray-400">При оплате за год – ${prices.premium.yearly} ₽</p>
-                    `;
-                }
-            };
-            
-            toggle.checked = false; 
-            toggle.addEventListener('change', updatePrices);
-            updatePrices();
-        });
-    </script>
 
     <script>
         function getCookie(name) {

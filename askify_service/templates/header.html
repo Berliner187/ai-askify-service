@@ -354,10 +354,7 @@
                             <div class="content-card" id="tokens-card">
                                 <div class="card-title">🧪 Лимиты сегодня</div>
                                 <ul>
-                                    <li><strong>Токенов на тесты:</strong> <span data-prof="tokens_surveys">–</span></li>
-                                    <li><strong>Токенов на фидбэк:</strong> <span data-prof="tokens_feedback">–</span></li>
-                                    <li><strong>Всего использовано:</strong> <span data-prof="tokens_total">–</span></li>
-                                    <li><strong>Доступно:</strong> <span data-prof="tokens_remaining">–</span></li>
+                                    <li><strong>Доступно сегодня:</strong> <span data-prof="tests_remaining_today">–</span></li>
                                     <li><strong>Дневной лимит:</strong> <span data-prof="tokens_limit">–</span></li>
                                 </ul>
 
@@ -563,11 +560,8 @@
                     'days_until_end': data.subscription.days_until_end,
                     'tests_remaining_today': data.tokens.tests_remaining_today,
                     'tests_daily_limit': data.tokens.tests_daily_limit,
-                    'tokens_surveys': formatWithSpaces(data.tokens.surveys),
-                    'tokens_feedback': formatWithSpaces(data.tokens.feedback),
-                    'tokens_total': formatWithSpaces(data.tokens.total),
-                    'tokens_limit': formatWithSpaces(data.tokens.limit),
-                    'tokens_remaining': formatWithSpaces(data.tokens.remaining),
+                    'tokens_limit': data.tokens.tests_daily_limit,
+                    'tokens_remaining': data.tokens.tests_remaining_today,
                     'tokens_used_percent': data.tokens.used_percent
                 };
 
