@@ -636,29 +636,6 @@
         </div>
     </div>
 
-    <div class="floating-action-bar">
-        {% if is_short_enough %}
-            <a href="{% url 'result' survey.survey_id %}" title="Вернуться к тесту" class="copy-btn">
-                <i class="fas fa-circle-chevron-left"></i>
-            </a>
-        {% endif %}
-        
-        <a href="{% url 'profile_redirect' %}" title="Аналитика в профиле"
-        style="background-color: rgba(255, 255, 255, 0.1); color: white;">
-            <i class="fa-solid fa-user"></i>
-        </a>
-
-        <a href="{% url 'history' %}" 
-        style="background-color: rgba(255, 255, 255, 0.1); color: white;"
-        title="Предыдущие тесты">
-            <i class="fas fa-history"></i> 
-        </a>
-
-        <a href="{% url 'preview_test' survey.survey_id %}" title="Посмотреть вопросы" class="copy-btn">
-            <i class="fa-solid fa-list-ul"></i>
-        </a>
-    </div>
-
     <script>
         function copyLinkAndNotify(event) {
             const shareUrl = $(event.currentTarget).data('share-url');

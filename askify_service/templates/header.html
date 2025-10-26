@@ -1,53 +1,128 @@
 {% load static %}
 <head>
-    <link rel="stylesheet" href="{% static 'css/nav.css' %}?v=1.1">
+    <link rel="stylesheet" href="{% static 'css/nav.css' %}?v=2.0">
+    {% if debug %}
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    {% else %}
+        <script src="{% static 'vendor/tailwind.full.min.js' %}"></script>
+        <script src="{% static 'vendor/jquery.min.js' %}"></script>
+    {% endif %}
 </head>
 
-<header class="header">
-    <div class="logo-header" id="pulse-trigger">
-        <a href="{% url 'create' %}">
-            <img src="{% static 'img/logo-header-alt-pulse.png' %}" alt="">
-        </a>
-    </div>
-    <div class="menu-container" id="nav-trigger"  style="position: relative;">
-        {% if username %}
-            <div id="burger">
-                <img src="{% static 'img/icon-dots.png' %}" class="icon" alt="">
-            </div>
-        {% else %}
-            <div id="burger">
-                <img src="{% static 'img/icon-dots.png' %}" class="icon" alt="">
-            </div>
-        {% endif %}
-        <!-- <div class="burger" id="burger">
-            <div class="line"></div>
-            <div class="line"></div>
-            <div class="line"></div>
-        </div> -->
-        <nav id="nav">
-            {% if username %}
-                <ul>
-                    {% if subscription_level < 1 or subscription_level == 99 %}
-                        <li><a href="{% url 'payment' %}"><img src="{% static 'img/icon-diamond.png' %}" alt="" class="icon profile"> Купить премиум</a></li>
-                    {% endif %}
-                    <li><a href="/profile/{{ username }}"><img src="{% static 'img/icon-pro.png' %}" alt="" class="icon profile"> Перейти в профиль</a></li>
-                    <li><a href="{% url 'history' %}"><img src="{% static 'img/icon-history.png' %}" alt="" class="icon"> История тестов</a></li>
-                    <li><a href="{% url 'create' %}"><img src="{% static 'img/icon-new.png' %}" alt="" class="icon"> Создать тест</a></li>
-                    <hr>
-                    <li><a href="{% url 'logout' %}" class="danger"><img src="{% static 'img/icon-logout.png' %}" alt="" class="icon"> Выйти</a></li>
-                </ul>
-            {% else %}
-                <ul>
-                    <li><a href="/docs/public-offer">Публичная оферта</a></li>
-                    <li><a href="/docs/privacy-policy">Политика конфиденциальности</a></li>
-                    <hr>
-                    <li><a href="/">На главную</a></li>
-                </ul>
-            {% endif %}
-        </nav>
+<style>
+    :root {
+        --color-bg: #0F0818;
+        --color-surface: rgba(30, 24, 48, 0.5);
+        --color-border: rgba(97, 109, 240, 0.2);
+        --color-text-primary: #f0f0f0;
+        --color-text-secondary: #a0a0b0;
+        --color-accent-primary: #616DF0;
+        --color-accent-secondary: #70dd60;
+        --border-radius: 32px;
+    }
+</style>
 
+<header class="sticky top-4 z-40 max-w-3xl sm:max-w-[80%] mx-auto">
+    <div class="relative">
+        
+        <!-- Основная панель хедера -->
+        <div class="flex items-center justify-between gap-4 
+                    bg-[var(--color-surface)]/80 backdrop-blur-xl 
+                    rounded-[var(--border-radius-xl)] border border-[var(--color-border)] 
+                    p-3 sm:p-4 shadow-2xl shadow-black/50">
+            
+            <!-- Логотип -->
+           <div class="logo-header w-32 h-auto transition-opacity duration-150 hover:opacity-75" id="pulse-trigger">
+                <a href="{% url 'create' %}">
+                    <img src="{% static 'img/logo-header-alt-pulse.png' %}" alt="">
+                </a>
+            </div>
+            
+            <!-- Кнопка вызова меню -->
+            <div class="flex-shrink-0">
+                <button id="action-menu-btn" 
+                        class="h-12 w-12 flex items-center justify-center bg-black/20 rounded-full 
+                               hover:bg-black/40 transition-colors transition-transform active:scale-[.95]">
+                    <i class="fas fa-ellipsis-h text-[var(--color-accent-primary)]"></i>
+                </button>
+            </div>
+        </div>
+
+        <div id="action-menu" class="hidden absolute top-full right-0 mt-2 w-64
+                                    bg-[var(--color-surface)]/90 backdrop-blur-xl 
+                                    rounded-3xl border border-[var(--color-border)]
+                                    p-2 shadow-2xl shadow-black/50
+                                    origin-top-right transition-all duration-200 ease-out 
+                                    transform opacity-0 scale-95 z-50">
+            <nav class="flex flex-col">
+                {% if username %}
+                    <a href="{% url 'create' %}" class="menu-item">
+                        <i class="fas fa-plus w-5 text-center"></i>
+                        <span>Создать тест</span>
+                    </a>
+                    <a href="{% url 'history' %}" class="menu-item">
+                        <i class="fas fa-history w-5 text-center"></i>
+                        <span>История тестов</span>
+                    </a>
+                    <a href="{% url 'profile_redirect' %}" class="menu-item">
+                        <i class="fas fa-user-circle w-5 text-center"></i>
+                        <span>Мой профиль</span>
+                    </a>
+
+                    {% if subscription_level < 1 or subscription_level == 99 %}
+                        <hr class="border-t border-[var(--color-border)] my-1">
+                        <a href="{% url 'payment' %}" class="menu-item text-[var(--color-accent-secondary)] font-bold">
+                            <i class="fas fa-gem w-5 text-center"></i>
+                            <span>Купить Премиум</span>
+                        </a>
+                    {% endif %}
+
+                    <hr class="border-t border-[var(--color-border)] my-1">
+                    <a href="{% url 'logout' %}" class="menu-item text-red-400">
+                        <i class="fas fa-sign-out-alt w-5 text-center"></i>
+                        <span>Выйти</span>
+                    </a>
+
+                {% else %}
+                    <!-- Это блок для незалогиненных юзеров, если хедер будет и для них -->
+                    <a href="/" class="menu-item"><i class="fas fa-home w-5 text-center"></i><span>На главную</span></a>
+                    <a href="{% url 'login' %}" class="block text-center bg-[var(--color-accent-primary)] text-white px-5 py-3 font-bold rounded-3xl mt-1">
+                        Войти
+                    </a>
+                {% endif %}
+            </nav>
+        </div>
     </div>
-    <script src="{% static 'js/nav.js' %}"></script>
+    <!-- <script src="{% static 'js/nav.js' %}"></script> -->
+     <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const menuButton = document.getElementById('action-menu-btn');
+            const menu = document.getElementById('action-menu');
+
+            if (menuButton && menu) {
+                menuButton.addEventListener('click', function (event) {
+                    event.stopPropagation();
+                    menu.classList.toggle('hidden');
+                    // Плавное появление
+                    setTimeout(() => {
+                        menu.classList.toggle('opacity-0');
+                        menu.classList.toggle('scale-95');
+                    }, 10);
+                });
+
+                // Закрытие меню по клику вне его
+                document.addEventListener('click', function (event) {
+                    if (!menu.contains(event.target) && !menuButton.contains(event.target)) {
+                        if (!menu.classList.contains('hidden')) {
+                            menu.classList.add('opacity-0', 'scale-95');
+                            setTimeout(() => menu.classList.add('hidden'), 200);
+                        }
+                    }
+                });
+            }
+        });
+     </script>
 </header>
 
 <div class="vision-modal" id="vision-modal">

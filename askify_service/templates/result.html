@@ -100,31 +100,43 @@
                 
                 <hr class="actions-divider">
 
-                <div class="tertiary-actions-grid">
-                    <!-- Карточка "Поделиться" -->
-                    <a class="action-card-small" id="copyShareLink" data-content="/t/{{survey_id}}">
-                        <div class="card-icon"><i class="fas fa-share-alt"></i></div>
-                        <div class="card-text">
-                            <h4>Поделиться с другими</h4>
-                            <p>Нажмите, чтобы скопировать, и&nbsp;отправьте ссылку другим, чтобы отслеживать их&nbsp;результаты в&nbsp;аналитике.</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto mt-8">
+                    <a href="{% url 'preview_test_result' survey_id %}"
+                    class="group bg-gray-800/50 backdrop-blur-sm border border-gray-700/80 rounded-3xl p-6
+                            flex items-start gap-5
+                            transition-all duration-300
+                            hover:border-[var(--color-accent-primary)] hover:-translate-y-1">
+                        <div class="flex-shrink-0 mt-1">
+                            <i class="fas fa-chart-pie text-2xl text-gray-500 transition-colors duration-300 group-hover:text-[var(--color-accent-primary)]"></i>
+                        </div>
+                        <div class="flex-grow">
+                            <h3 class="font-bold text-white transition-colors duration-300 group-hover:text-[var(--color-accent-primary)]">
+                                Смотреть аналитику
+                            </h3>
+                            <p class="mt-1 text-sm text-gray-400 leading-relaxed">
+                                Диаграммы с результатами, динамика прохождений и детальный анализ каждого респондента.
+                            </p>
                         </div>
                     </a>
-                    <!-- Карточка "Аналитика" -->
-                    <a class="action-card-small" href="{% url 'preview_test_result' survey_id %}">
-                        <div class="card-icon"><i class="fas fa-chart-pie"></i></div>
-                        <div class="card-text">
-                            <h4>Смотреть аналитику</h4>
-                            <p>Диаграммы с&nbsp;результатами, с&nbsp;динамикой прохождений по&nbsp;дням и&nbsp;детальной аналитикой каждого респондента.</p>
+                    <a href="{% url 'preview_test' survey_id %}"
+                    class="group bg-gray-800/50 backdrop-blur-sm border border-gray-700/80 rounded-3xl p-6
+                            flex items-start gap-5
+                            transition-all duration-300
+                            hover:border-[var(--color-accent-primary)] hover:-translate-y-1">
+                        
+                        <div class="flex-shrink-0 mt-1">
+                            <i class="fas fa-tasks text-2xl text-gray-500 transition-colors duration-300 group-hover:text-[var(--color-accent-primary)]"></i>
+                        </div>
+                        <div class="flex-grow">
+                            <h3 class="font-bold text-white transition-colors duration-300 group-hover:text-[var(--color-accent-primary)]">
+                                Посмотреть тест
+                            </h3>
+                            <p class="mt-1 text-sm text-gray-400 leading-relaxed">
+                                Проверьте все вопросы и правильные ответы к ним, чтобы убедиться в качестве.
+                            </p>
                         </div>
                     </a>
-                    <!-- Карточка "Ответы" -->
-                    <a class="action-card-small" href="{% url 'preview_test' survey_id %}">
-                        <div class="card-icon"><i class="fas fa-tasks"></i></div>
-                        <div class="card-text">
-                            <h4>Посмотреть тест</h4>
-                            <p>Проверьте все вопросы и&nbsp;правильные ответы к&nbsp;ним.</p>
-                        </div>
-                    </a>
+
                 </div>
             </div>
 
@@ -258,6 +270,24 @@
         
         </div>
     </div>
+
+    <div class="floating-action-bar">
+        <button title="Скопировать" id="copyShareLink" data-content="/t/{{survey_id}}"
+        style="background-color: rgba(255, 255, 255, 0.1); color: white;">
+            <i class="fa fa-share-alt"></i>
+        </button>
+
+        <a href="{% url 'history' %}" 
+        style="background-color: rgba(255, 255, 255, 0.1); color: white;"
+        title="Предыдущие тесты">
+            <i class="fas fa-history"></i> 
+        </a>
+
+        <a href="{% url 'preview_test' survey_id %}" title="Посмотреть вопросы" class="copy-btn">
+            <i class="fa-solid fa-list-ul"></i>
+        </a>
+    </div>
+
     {% include 'footer-s.html' %}
 
     <div id="delete-modal" class="modal-overlay hidden" onclick="closeDeleteModal()">

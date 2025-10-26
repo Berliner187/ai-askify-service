@@ -351,7 +351,12 @@
             <form id="text-form" method="post" onsubmit="event.preventDefault(); submitText();">
                 {% csrf_token %}
                 <div class="input-area">
-                    <textarea id="user-text" rows="4" cols="60" placeholder="Введите здесь тему, содержание статьи или текст из методички..."></textarea>
+                    <textarea id="user-text" 
+                            rows="4" 
+                            placeholder="Введите здесь тему, содержание статьи или текст из методички..."
+                            class="w-full rounded-2xl p-4 pr-28 resize-none 
+                                    transition-all duration-300 ease-in-out 
+                                    h-24 max-h-96 custom-scrollbar"></textarea>
                     
                     <div class="input-buttons-wrapper">
                         {% if subscription_level > 1 and subscription_level < 50 %}
@@ -520,14 +525,21 @@
         });
     });
     </script>
-
+    
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-        const inspirationCards = document.querySelectorAll('.inspiration-card');
-        const userText = document.getElementById('user-text');
-        const textForm = document.getElementById('text-form');
+            const inspirationCards = document.querySelectorAll('.inspiration-card');
+            const userText = document.getElementById('user-text');
+            const textForm = document.getElementById('text-form');
 
-        inspirationCards.forEach(card => {
+            if (userText) {
+                userText.addEventListener('input', function() {
+                    this.style.height = 'auto';
+                    this.style.height = `${this.scrollHeight}px`;
+                });
+            }
+
+            inspirationCards.forEach(card => {
                 card.addEventListener('click', () => {
                     const inspirationText = card.dataset.inspirationText;
                     

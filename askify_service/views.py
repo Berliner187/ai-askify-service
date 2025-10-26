@@ -209,6 +209,7 @@ def page_create_survey(request):
         "feedback_last_week": feedback_last_week,
         "percent_with_feedback": f"{percent_with_feedback:.1f}%" if total_tests else "0%",
         "tests_created_and_passed": tests_created_and_passed,
+        'debug': DEBUG
     }
 
     return render(request, 'askify_service/text_input.html', context)
@@ -1334,6 +1335,7 @@ class TakeSurvey(View):
             'score': correct_count, 'total': user_answers, 'survey_id': survey_id,
             'subscription_level': get_subscription_level(request),
             'username': get_username(request),
+            'debug': DEBUG
         }
 
         return render(request, 'result.html', context)
@@ -1416,7 +1418,8 @@ def result_view(request, survey_id):
         'subscription_level': subscription_level,
         'attempt_exists': last_attempt is not None,
         'model_name': f"Сгенерировано {format_model_name(model_name)}" if model_name else "",
-        'subs_active': status == 'active'
+        'subs_active': status == 'active',
+        'debug': DEBUG
     }
 
     return render(request, 'result.html', context)
