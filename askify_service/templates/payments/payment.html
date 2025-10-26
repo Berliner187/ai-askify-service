@@ -290,8 +290,10 @@
             amountInput.value = price;
             descInput.value = desc;
             
-            const periodText = planCard.querySelector('.text-sm').textContent;
+            const periodText = planCard.querySelector('.text-xs').textContent;
             let ctaText = `Перейти к оплате`;
+
+            console.log(periodText);
 
             if (periodText.includes('3 месяца')) {
                 ctaText = `Оплатить ${price} руб за 3 месяца`;
