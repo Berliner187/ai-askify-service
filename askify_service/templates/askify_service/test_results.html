@@ -596,6 +596,21 @@
             </div>
         </div>
     </div>
+    
+    <div class="floating-action-bar">
+        <a href="{% url 'result' survey.survey_id %}" title="Вернуться к тесту" class="copy-btn">
+            <i class="fas fa-circle-chevron-left"></i>
+        </a>
+
+        <button title="Скопировать" data-action="share" data-content="/t/{{survey_id}}"
+        style="background-color: rgba(255, 255, 255, 0.1); color: white;">
+            <i class="fa fa-share-alt"></i>
+        </button>
+
+        <a href="{% url 'preview_test' survey.survey_id %}" title="Посмотреть вопросы" class="copy-btn">
+            <i class="fa-solid fa-tasks"></i>
+        </a>
+    </div>
 
     <footer class="mt-16 sm:mt-24">
         <div class="max-w-3xl mx-auto px-4 sm:px-8">
