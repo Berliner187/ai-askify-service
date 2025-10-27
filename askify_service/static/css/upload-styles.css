@@ -698,9 +698,7 @@ body {
     justify-content: center;
     width: 56px;
     height: 56px;
-    background-color: var(--color-bg);
     border-radius: 50%;
-    border: 1px solid var(--color-border);
 }
 .locked-upload-integrated .icon-wrapper img {
     width: 48px;
