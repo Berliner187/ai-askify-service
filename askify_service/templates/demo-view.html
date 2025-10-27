@@ -361,7 +361,7 @@
             </div>
 
             <!-- СПИСОК ВОПРОСОВ -->
-            <div class="mt-8 space-y-4 {% if subscription_level == 0 %}select-none{% endif %}">
+            <div class="mt-8 space-y-4 {% if is_creator == 0 %}select-none{% endif %}">
                 {% for question in questions %}
                 <div class="question-card bg-[var(--color-surface)] rounded-3xl border border-[var(--color-border)] p-5 animate-fadeIn">
                     <div class="flex items-center gap-3 mb-3">
@@ -471,6 +471,26 @@
                         </a>
                     </div>
                 {% endif %}
+
+                <div class="mt-6 bg-gray-800/40 backdrop-blur-sm border border-gray-700/60 rounded-3xl p-6">
+                    <a href="https://golosok.space/?utm_referrer=letychka.ru" target="_blank" rel="noopener noreferrer" class="group flex items-center gap-5">
+                        <div class="flex-shrink-0">
+                            <img src="https://golosok.space/static/img/golosok-favicon.png" alt="Логотип Голосок" 
+                                class="w-12 h-12 rounded-xl transition-transform duration-300 group-hover:scale-110">
+                        </div>
+                        <div class="flex-grow text-left">
+                            <h3 class="font-semibold text-white">
+                                Есть лекция в аудио или видео?
+                            </h3>
+                            <p class="text-sm text-gray-400 leading-relaxed">
+                                Превратите ее в текст с помощью <span class="font-bold text-cyan-300">Голоска</span> и создайте тест в Летучке еще быстрее.
+                            </p>
+                        </div>
+                        <div class="flex-shrink-0 text-xl text-gray-600 transition-colors duration-300 group-hover:text-cyan-400">
+                            <i class="fas fa-external-link-alt"></i>
+                        </div>
+                    </a>
+                </div>
                 
                 <div id="privacy-notice" class="mt-8 flex items-start gap-4 bg-[var(--color-surface)] rounded-3xl border border-[var(--color-border)] p-5 animate-fadeIn">
                     <div class="flex-shrink-0">
