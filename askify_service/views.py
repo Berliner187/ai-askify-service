@@ -185,11 +185,6 @@ def page_create_survey(request):
     passed_survey_ids = user_answers.values_list('survey_id', flat=True).distinct()
     tests_created_and_passed = user_surveys.filter(survey_id__in=passed_survey_ids).count()
 
-    if subscription_level == 0:
-        total_used_per_period = Survey.objects.filter(id_staff=current_id_staff).count()
-        tracer_l.info(
-            f"free user {request.user.username} --- total_used_per_period: {total_used_per_period} used")
-
     context = {
         "page_title": "Создать тест",
         'tests_today': max(diff_tests_count_limit, 0),
@@ -769,6 +764,7 @@ class ManageSurveysView(View):
 
             try:
                 tracer_l.debug(f"{request.user.username} --- GEN STAAAART")
+                await asyncio.sleep(900)
                 start_time = time.perf_counter()
 
                 manage_generate_surveys = ManageGenerationSurveys(request, text_from_user, question_count)
@@ -3711,6 +3707,49 @@ def get_daily_registration_dynamics_data(start_date, end_date):
         'email_data': email_data,
         'telegram_data': telegram_data
     }
+
+
+@login_required
+def api_admin_live_stats(request):
+    if not request.user.is_superuser:
+        return JsonResponse({"error": "Forbidden"}, status=403)
+
+    SUDO_PATH = '/usr/bin/sudo'
+    SYSTEMCTL_PATH = '/bin/systemctl'
+    TAIL_PATH = '/usr/bin/tail'
+    JOURNALCTL_PATH = '/usr/bin/journalctl'
+
+    services = ['gunicorn.service', 'gunicorn-golosok.service', 'golosok-queue-worker.service']
+    statuses = {}
+    for service in services:
+        try:
+            result = subprocess.run(
+                [SUDO_PATH, SYSTEMCTL_PATH, 'status', service],
+                capture_output=True, text=True, timeout=5
+            )
+            if result.returncode in [0, 3] and result.stdout:
+                statuses[service] = result.stdout
+            else:
+                statuses[service] = f"Error: Failed.\nCode: {result.returncode}\nStderr: {result.stderr}"
+        except Exception as e:
+            statuses[service] = f"Critical Error: {e}"
+
+    logs = {}
+    try:
+        log_path = '/var/www/letychka.ru/app.log'
+        log_result = subprocess.run([TAIL_PATH, '-n', '50', log_path], capture_output=True, text=True, timeout=5)
+        logs[
+            'app_log'] = log_result.stdout if log_result.returncode == 0 else f"Error reading app.log: {log_result.stderr}"
+
+        gunicorn_log_result = subprocess.run(
+            [SUDO_PATH, JOURNALCTL_PATH, '-u', 'gunicorn.service', '-n', '50', '--no-pager'], capture_output=True,
+            text=True, timeout=5)
+        logs[
+            'gunicorn_log'] = gunicorn_log_result.stdout if gunicorn_log_result.returncode == 0 else f"Error reading journalctl: {gunicorn_log_result.stderr}"
+    except Exception as e:
+        logs['error'] = f"Critical Error fetching logs: {e}"
+
+    return JsonResponse({'service_statuses': statuses, 'logs': logs})
 
 
 @login_required

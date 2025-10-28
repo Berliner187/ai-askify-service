@@ -111,6 +111,40 @@
         .final-pulse-animation {
             animation: final-pulse 1s cubic-bezier(0.6, 0, 0.4, 1);
         }
+
+        .log-tab {
+            padding: 4px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #9CA3AF; 
+            background-color: transparent;
+            transition: all 0.2s ease;
+        }
+        .log-tab:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        .log-tab.active {
+            color: white;
+            background-color: #4F46E5;
+        }
+
+        .log-content {
+            position: absolute;
+            inset: 0;
+            overflow-y: auto;
+            text-xs: 12px;
+            color: #D1D5DB;
+            font-family: monospace;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+            white-space: pre-wrap;
+        }
+        .log-content.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
     </style>
 </head>
 <body class="bg-[var(--color-bg)] text-[var(--color-text-primary)]">
@@ -607,6 +641,29 @@
                 </div>
             </div>
         </section>
+
+        <div class="lg:col-span-2 bg-[var(--color-surface)] p-4 mb-4 rounded-xl border border-[var(--color-border)] h-80 flex flex-col">
+            <div class="lg:col-span-1">
+                <h3 class="font-bold text-white mb-4">Статус систем</h3>
+                <div id="service-status-container" class="space-y-4">
+                    <!-- Сюда JS будет вставлять статусы -->
+                </div>
+            </div>
+            <div class="flex-shrink-0 flex items-center gap-2 mb-2 border-b border-gray-700/60 pb-2">
+                <button data-log-target="app-log-content" class="log-tab active">app.log</button>
+                <button data-log-target="gunicorn-log-content" class="log-tab">gunicorn.log</button>
+                
+                <span class="ml-auto text-xs text-gray-400 font-mono">/var/www/letychka.ru</span>
+            </div>
+            <div class="flex-grow relative overflow-hidden">
+                <pre id="app-log-content" class="log-content active">
+                    <!-- Сюда JS будет вставлять app.log -->
+                </pre>
+                <pre id="gunicorn-log-content" class="log-content">
+                    <!-- Сюда JS будет вставлять gunicorn.log -->
+                </pre>
+            </div>
+        </div>
         
         <!-- УПРАВЛЕНИЕ API -->
         <section class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
@@ -1754,74 +1811,131 @@
         });
     </script>
     
-    <!-- ... (твой основной <script> с jQuery) ... -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const statusContainer = document.getElementById('service-status-container');
+            const logsContainer = document.getElementById('logs-container');
 
-<!-- <--- ДОБАВЬ ЭТОТ СКРИПТ В КОНЕЦ BODY -->
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const reactorContainer = document.getElementById('reactor-container');
-        const sparkArc = document.getElementById('spark-arc');
-        const trailArc = document.getElementById('trail-arc');
-        const fillArc = document.getElementById('fill-arc');
-        const counter = document.getElementById('tests-today-counter');
-        const reactorText = document.getElementById('reactor-text');
-        
-        if (reactorContainer) {
-            const arcLength = parseFloat('{{ main_gauge.arc_length }}');
-            const finalOffset = parseFloat('{{ main_gauge.final_dashoffset }}');
-            const finalValue = parseInt('{{ main_gauge.tests_today }}');
+            const appLogContainer = document.getElementById('app-log-content');
+            const gunicornLogContainer = document.getElementById('gunicorn-log-content');
+            const logTabs = document.querySelectorAll('.log-tab');
 
-            // Анимация счетчика
-            const animateCounter = () => {
-                let start = null;
-                const duration = 1500;
-                const step = (timestamp) => {
-                    if (!start) start = timestamp;
-                    const progress = Math.min((timestamp - start) / duration, 1);
-                    counter.innerText = Math.floor(progress * finalValue);
-                    if (progress < 1) window.requestAnimationFrame(step);
-                };
-                window.requestAnimationFrame(step);
-            };
+            // --- ЛОГИКА ТАБОВ ---
+            logTabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    logTabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
 
-            // ФАЗА 1: Инициализация (делается через CSS)
+                    document.querySelectorAll('.log-content').forEach(content => {
+                        content.classList.remove('active');
+                    });
+                    
+                    const targetId = tab.dataset.logTarget;
+                    document.getElementById(targetId).classList.add('active');
+                });
+            });
+
+            async function fetchLiveStats() {
+                try {
+                    const response = await fetch("{% url 'api_admin_live_stats' %}");
+                    if (!response.ok) return;
+
+                    const data = await response.json();
+
+                    // --- ОБНОВЛЕНИЕ СТАТУСОВ СЕРВИСОВ ---
+                    if (data.service_statuses && statusContainer) {
+                        let statusHTML = '';
+                        for (const [service, statusText] of Object.entries(data.service_statuses)) {
+                            const isActive = statusText.includes('active (running)');
+                            const colorClass = isActive ? 'text-green-400' : 'text-red-400';
+                            const icon = isActive ? '<i class="fas fa-check-circle"></i>' : '<i class="fas fa-exclamation-triangle"></i>';
+                            
+                            statusHTML += `
+                                <div class="flex items-center gap-3 text-sm">
+                                    <span class="${colorClass}">${icon}</span>
+                                    <span class="font-semibold text-white">${service}</span>
+                                    <span class="ml-auto text-xs ${colorClass}">${isActive ? 'Active' : 'Inactive'}</span>
+                                </div>
+                            `;
+                        }
+                        statusContainer.innerHTML = statusHTML;
+                    }
+                    
+                    // --- ОБНОВЛЕНИЕ ЛОГОВ ---
+                    if (data.logs) {
+                        if (appLogContainer) {
+                            appLogContainer.textContent = data.logs.app_log || 'app.log пуст или не найден.';
+                            appLogContainer.scrollTop = appLogContainer.scrollHeight;
+                        }
+                        if (gunicornLogContainer) {
+                            gunicornLogContainer.textContent = data.logs.gunicorn_log || 'gunicorn.log пуст или не найден.';
+                            gunicornLogContainer.scrollTop = gunicornLogContainer.scrollHeight;
+                        }
+                    }
+
+                } catch (error) {
+                    console.error("Error fetching live stats:", error);
+                }
+            }
+
+            fetchLiveStats();
+            setInterval(fetchLiveStats, 5000);
+        });
+
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const reactorContainer = document.getElementById('reactor-container');
+            const sparkArc = document.getElementById('spark-arc');
+            const trailArc = document.getElementById('trail-arc');
+            const fillArc = document.getElementById('fill-arc');
+            const counter = document.getElementById('tests-today-counter');
+            const reactorText = document.getElementById('reactor-text');
             
-            // ФАЗА 2: Энергетический импульс
-            setTimeout(() => {
-                // Запускаем искру
-                sparkArc.style.transition = 'stroke-dashoffset 1s cubic-bezier(0.8, 0, 0.2, 1)';
-                sparkArc.style.strokeDashoffset = -arcLength;
+            if (reactorContainer) {
+                const arcLength = parseFloat('{{ main_gauge.arc_length }}');
+                const finalOffset = parseFloat('{{ main_gauge.final_dashoffset }}');
+                const finalValue = parseInt('{{ main_gauge.tests_today }}');
 
-                // Запускаем световой след чуть сзади
-                trailArc.style.transition = 'stroke-dashoffset 1.2s cubic-bezier(0.8, 0, 0.2, 1)';
-                trailArc.style.strokeDashoffset = -arcLength;
-            }, 1000); // Начинаем через 1 секунду после загрузки
+                const animateCounter = () => {
+                    let start = null;
+                    const duration = 1500;
+                    const step = (timestamp) => {
+                        if (!start) start = timestamp;
+                        const progress = Math.min((timestamp - start) / duration, 1);
+                        counter.innerText = Math.floor(progress * finalValue);
+                        if (progress < 1) window.requestAnimationFrame(step);
+                    };
+                    window.requestAnimationFrame(step);
+                };
 
-            // ФАЗА 3: Стабилизация ядра
-            setTimeout(() => {
-                // Прячем искру и след
-                sparkArc.style.opacity = 0;
-                trailArc.style.transition = 'opacity 0.5s ease';
-                trailArc.style.opacity = 0;
+                setTimeout(() => {
+                    sparkArc.style.transition = 'stroke-dashoffset 1s cubic-bezier(0.8, 0, 0.2, 1)';
+                    sparkArc.style.strokeDashoffset = -arcLength;
 
-                // Показываем текст
-                reactorText.style.opacity = 1;
-                reactorText.style.transform = 'scale(1)';
+                    trailArc.style.transition = 'stroke-dashoffset 1.2s cubic-bezier(0.8, 0, 0.2, 1)';
+                    trailArc.style.strokeDashoffset = -arcLength;
+                }, 1000);
 
-                // Плавно заполняем основную дугу
-                fillArc.style.strokeDashoffset = finalOffset;
-                
-                // Запускаем счетчик
-                animateCounter();
+                setTimeout(() => {
+                    sparkArc.style.opacity = 0;
+                    trailArc.style.transition = 'opacity 0.5s ease';
+                    trailArc.style.opacity = 0;
 
-            }, 2500); // Начинаем через 2.5 секунды
+                    reactorText.style.opacity = 1;
+                    reactorText.style.transform = 'scale(1)';
 
-            // Финальная пульсация
-            setTimeout(() => {
-                reactorContainer.classList.add('final-pulse-animation');
-            }, 4000); // Через 4 секунды
-        }
-    });
-</script>
+                    fillArc.style.strokeDashoffset = finalOffset;
+                    
+                    animateCounter();
+
+                }, 2500);
+
+                setTimeout(() => {
+                    reactorContainer.classList.add('final-pulse-animation');
+                }, 4000);
+            }
+        });
+    </script>
 </body>
 </html>
