@@ -764,7 +764,6 @@ class ManageSurveysView(View):
 
             try:
                 tracer_l.debug(f"{request.user.username} --- GEN STAAAART")
-                await asyncio.sleep(900)
                 start_time = time.perf_counter()
 
                 manage_generate_surveys = ManageGenerationSurveys(request, text_from_user, question_count)
