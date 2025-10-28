@@ -4,7 +4,7 @@
     {% include 'components/meta_tags.html' %}
     {% load static %}
     {% include 'components/linker.html' %}
-    <link rel="stylesheet" href="{% static 'css/results.css' %}?v=2.0">
+    <link rel="stylesheet" href="{% static 'css/results.css' %}?v=2.1">
 
     <!-- Yandex.Metrika counter -->
     <script type="text/javascript">
@@ -19,7 +19,6 @@
     <noscript><div><img src="https://mc.yandex.ru/watch/98829160" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
     <!-- /Yandex.Metrika counter -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
 </head>
 <body>
     <script src="{% static 'js/second-loader.js' %}"></script>
@@ -52,13 +51,19 @@
                 <h2 class="result-survey-title">{{ title }}</h2>
 
                 {% if attempt_exists %}
-                    <div class="progress-container">
-                        <svg class="progress-circle" width="200" height="200">
-                            <circle class="progress-bg" cx="100" cy="100" r="90" />
-                            <circle class="progress-fill" cx="100" cy="100" r="90" />
-                        </svg>
-                        <div class="progress-text">{{ score }} из {{ total }}</div>
+                <div class="w-full max-w-sm mx-auto mb-8 text-center">
+                    <p id="result-percentage" class="text-8xl font-extrabold {{ result_color_class.text }}">
+                        0<span class="text-6xl opacity-50">%</span>
+                    </p>
+                    <p class="mt-2 text-lg font-bold text-white">{{ result_verdict }}</p>
+                    <p class="text-sm text-gray-400">{{ score }} из {{ total }} правильных ответов</p>
+                    <div class="w-full bg-black/30 rounded-full h-2 mt-6">
+                        <div id="result-progress-bar" 
+                            class="h-2 rounded-full {{ result_color_class.bg }} transition-all duration-1000 ease-out" 
+                            style="width: 0%;">
+                        </div>
                     </div>
+                </div>
                 {% endif %}
 
                 {% if score == 0 %}
@@ -100,7 +105,7 @@
                 
                 <hr class="actions-divider">
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto mt-8">
+                <div class="flex gap-6 max-w-xl mx-auto mt-8">
                     <a href="{% url 'preview_test_result' survey_id %}"
                     class="group bg-gray-800/50 backdrop-blur-sm border border-gray-700/80 rounded-3xl p-6
                             flex items-start gap-5
@@ -111,28 +116,10 @@
                         </div>
                         <div class="flex-grow">
                             <h3 class="font-bold text-white transition-colors duration-300 group-hover:text-[var(--color-accent-primary)]">
-                                Смотреть аналитику
+                                Управление тестом
                             </h3>
                             <p class="mt-1 text-sm text-gray-400 leading-relaxed">
                                 Диаграммы с результатами, динамика прохождений и детальный анализ каждого респондента.
-                            </p>
-                        </div>
-                    </a>
-                    <a href="{% url 'preview_test' survey_id %}"
-                    class="group bg-gray-800/50 backdrop-blur-sm border border-gray-700/80 rounded-3xl p-6
-                            flex items-start gap-5
-                            transition-all duration-300
-                            hover:border-[var(--color-accent-primary)] hover:-translate-y-1">
-                        
-                        <div class="flex-shrink-0 mt-1">
-                            <i class="fas fa-tasks text-2xl text-gray-500 transition-colors duration-300 group-hover:text-[var(--color-accent-primary)]"></i>
-                        </div>
-                        <div class="flex-grow">
-                            <h3 class="font-bold text-white transition-colors duration-300 group-hover:text-[var(--color-accent-primary)]">
-                                Посмотреть тест
-                            </h3>
-                            <p class="mt-1 text-sm text-gray-400 leading-relaxed">
-                                Проверьте все вопросы и правильные ответы к ним, чтобы убедиться в качестве.
                             </p>
                         </div>
                     </a>
@@ -145,62 +132,7 @@
         <div class="copy-notification">Ссылка скопирована</div>
 
         <div>
-            {% if attempt_exists %}
-
-                {% if subscription_level < 2 or subscription_level == 99 %}
-
-                    <div class="container result-full premium-upsell-container">
-                        <div class="upsell-icon">
-                            <i class="fas fa-rocket"></i>
-                        </div>
-                        <div class="upsell-header">
-                            <h2>Перейдите на новый уровень подготовки</h2>
-                            <p>Превратите стандартную зубрежку в увлекательный и эффективный процесс с инструментами Премиума.</p>
-                        </div>
-                        <div class="upsell-features">
-                            <div class="upsell-feature-item">
-                                <i class="fas fa-magic"></i>
-                                <div class="feature-text">
-                                    <h4>Магия из Ваших документов</h4>
-                                    <span>Загружайте лекции в&nbsp;PDF/Word и&nbsp;получайте готовые тесты за&nbsp;секунды.</span>
-                                </div>
-                            </div>
-                            <div class="upsell-feature-item">
-                                <i class="fas fa-user-graduate"></i>
-                                <div class="feature-text">
-                                    <h4>Ваш персональный AI-репетитор</h4>
-                                    <span>Получайте детальный разбор ошибок от&nbsp;ИИ, чтобы понимать, ПОЧЕМУ ответ неверный, а&nbsp;не&nbsp;только КАКОЙ.</span>
-                                </div>
-                            </div>
-                            <div class="upsell-feature-item">
-                                <i class="fas fa-chart-pie"></i>
-                                <div class="feature-text">
-                                    <h4>Полная картина успеваемости</h4>
-                                    <span>
-                                        Получите полную картину успеваемости: отслеживайте результаты <strong>каждого ученика</strong>,
-                                        находите самые <strong>сложные вопросы</strong> для всей группы и&nbsp;анализируйте динамику на&nbsp;наглядных дашбордах.
-                                    </span>
-                                </div>
-                            </div>
-                            <div class="upsell-feature-item">
-                                <i class="fas fa-download"></i>
-                                <div class="feature-text">
-                                    <h4>Все материалы под рукой</h4>
-                                    <span>Экспортируйте результаты и&nbsp;сами тесты в&nbsp;чистом PDF для печати или оффлайн-доступа.</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="upsell-cta">
-                            <a class="button-medium button-accent" href="{% url 'payment' %}">
-                                <div>
-                                    <p>💎 Открыть Премиум</p>
-                                </div>
-                            </a>
-                        </div>
-                    </div>
-                    
-                {% endif %}
-            
+            {% if feedback_text %}
             <div class="container result-full feedback-container">
                 <div class="result-header">
                     <h2>Рекомендации</h2>
@@ -210,11 +142,11 @@
                 <hr>
                 <p class="hint">{{ model_name }}</p>
             </div>
-            
+            {% endif %}
             <div class="container result-full">
                 <div class="result-header">
-                    <h2>Результаты теста</h2>
-                    <p>Вы верно ответили на <span class="result-score">{{ score }}</span> из <span class="result-total">{{ total }}</span> вопросов.</p>
+                    <h2>{% if attempt_exists %}Результаты теста{% else %}Вопросы к тесту{% endif %}</h2>
+                    <!-- <p>Вы верно ответили на <span class="result-score">{{ score }}</span> из <span class="result-total">{{ total }}</span> вопросов.</p> -->
                 </div>
 
                 <div class="questions-breakdown">
@@ -250,7 +182,7 @@
                     <p>Создан {{ created_at }}</p>
                 </div>
                 
-                <div class="head-button">
+                <div class="head-button mt-2">
                     <a class="button-medium" href="{% url 'download-results_pdf' survey_id=survey_id %}">
                         <div>
                             <p>Скачать результат</p>
@@ -265,26 +197,125 @@
                     </div>
                 </div>
             </div>
-        
+
+        {% if subscription_level < 2 or subscription_level == 99 %}
+            <div class="max-w-4xl mx-auto p-6 md:p-8 mt-24 rounded-3xl shadow-2xl 
+            bg-gradient-to-br from-gray-900 via-gray-900 to-indigo-900/40 
+            border border-indigo-500/30 text-white">
+
+                <div class="flex flex-col items-center text-center mb-6 gap-3">
+                    <div class="flex items-center justify-center h-14 w-14 rounded-full bg-indigo-500/10 border border-indigo-500/40 shadow-inner">
+                        <i class="fas fa-rocket text-2xl text-indigo-400"></i>
+                    </div>
+                    
+                    <div class="max-w-lg">
+                        <h2 class="text-2xl md:text-3xl font-['Unbounded_Bold'] font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white to-indigo-300">
+                            Перейдите на новый уровень подготовки
+                        </h2>
+                        <p class="mt-1 text-gray-300 text-base leading-relaxed">
+                            Превратите стандартную зубрежку в увлекательный и эффективный процесс с инструментами Премиума.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                    
+                    <div class="flex items-start gap-3 p-3 rounded-xl hover:bg-white/5 transition duration-200">
+                        <div class="flex-shrink-0 mt-1">
+                            <i class="fas fa-magic text-lg text-indigo-400"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-lg font-bold">Магия из Ваших документов</h4>
+                            <span class="mt-1 text-gray-400 text-sm">Загружайте лекции в&nbsp;PDF/Word и&nbsp;получайте готовые тесты за&nbsp;секунды.</span>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start gap-3 p-3 rounded-xl hover:bg-white/5 transition duration-200">
+                        <div class="flex-shrink-0 mt-1">
+                            <i class="fas fa-user-graduate text-lg text-indigo-400"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-lg font-bold">Ваш персональный AI-репетитор</h4>
+                            <span class="mt-1 text-gray-400 text-sm">Получайте детальный разбор ошибок от&nbsp;ИИ, чтобы понимать, <strong class="text-indigo-300">ПОЧЕМУ</strong> ответ неверный.</span>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-start gap-3 p-3 rounded-xl hover:bg-white/5 transition duration-200">
+                        <div class="flex-shrink-0 mt-1">
+                            <i class="fas fa-chart-pie text-lg text-indigo-400"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-lg font-bold">Полная картина успеваемости</h4>
+                            <span class="mt-1 text-gray-400 text-sm">
+                                Отслеживайте результаты <strong class="text-indigo-300">каждого ученика</strong>, находите самые <strong class="text-indigo-300">сложные вопросы</strong>.
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-start gap-3 p-3 rounded-xl hover:bg-white/5 transition duration-200">
+                        <div class="flex-shrink-0 mt-1">
+                            <i class="fas fa-download text-lg text-indigo-400"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-lg font-bold">Все материалы под рукой</h4>
+                            <span class="mt-1 text-gray-400 text-sm">Экспортируйте результаты в&nbsp;<strong class="text-indigo-300">Excel</strong> и&nbsp;сами тесты в&nbsp;чистом PDF для печати.</span>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="mt-8 text-center">
+                    <a class="inline-flex items-center justify-center py-3 px-8 text-lg font-bold 
+                            rounded-full shadow-2xl 
+                            bg-indigo-600 hover:bg-indigo-700 active:scale-95 transition-all duration-300 
+                            transform hover:translate-y-[-2px] focus:outline-none focus:ring-4 focus:ring-indigo-500/50" 
+                    href="{% url 'payment' %}">
+                        <i class="fas fa-gem mr-2"></i> Открыть Премиум
+                    </a>
+                    <p class="mt-2 text-xs text-gray-500">
+                        Откройте для себя все возможности Летучки
+                    </p>
+                </div>
+            </div>
         {% endif %}
         
         </div>
     </div>
 
-    <div class="floating-action-bar">
-        <button title="Скопировать" id="copyShareLink" data-content="/t/{{survey_id}}"
-        style="background-color: rgba(255, 255, 255, 0.1); color: white;">
-            <i class="fa fa-share-alt"></i>
+    <div class="fixed bottom-5 left-1/2 -translate-x-1/2 flex space-x-2 p-2 rounded-full 
+                bg-black/40 backdrop-blur-lg 
+                border border-gray-700/60 
+                shadow-lg shadow-[0_0_20px_rgba(139,92,246,0.2)] z-50">
+        <button title="Скопировать ссылку" id="copyShareLink" data-content="/t/{{survey_id}}"
+            class="group flex items-center h-12 rounded-full text-gray-400 transition-all duration-300 overflow-hidden 
+                bg-gray-800/50 hover:bg-gray-700/70 hover:scale-[1.05] active:scale-[0.98]">
+            
+            <i class="fa fa-share-alt h-12 w-12 flex items-center justify-center flex-shrink-0 transition-colors group-hover:text-white"></i>
+            
+            <span class="max-w-0 group-hover:max-w-xs opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out pr-0 group-hover:pr-4 whitespace-nowrap text-sm font-semibold text-white">
+                Скопировать
+            </span>
         </button>
-
-        <a href="{% url 'preview_test_result' survey_id %}" 
-        style="background-color: rgba(255, 255, 255, 0.1); color: white;"
-        title="Аналитика по тесту">
-            <i class="fas fa-chart-simple"></i> 
+        <a href="{% url 'preview_test_result' survey_id %}" title="Аналитика по тесту"
+            class="group flex items-center h-12 rounded-full text-white font-bold transition-all duration-300 overflow-hidden 
+                bg-indigo-500 
+                hover:opacity-90 hover:scale-[1.05] active:scale-[0.98] shadow-lg shadow-indigo-500/30">
+            
+            <i class="fas fa-chart-simple h-12 w-12 flex items-center justify-center flex-shrink-0"></i>
+            
+            <span class="max-w-0 group-hover:max-w-xs opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out pr-0 group-hover:pr-4 whitespace-nowrap text-sm">
+                Аналитика
+            </span>
         </a>
-
-        <a href="{% url 'preview_test' survey_id %}" title="Посмотреть вопросы" class="copy-btn">
-            <i class="fa-solid fa-tasks"></i>
+        <a href="{% url 'preview_test' survey_id %}" title="Посмотреть вопросы"
+            class="group flex items-center h-12 rounded-full text-gray-400 transition-all duration-300 overflow-hidden 
+                bg-gray-800/50 hover:bg-gray-700/70 hover:scale-[1.05] active:scale-[0.98]">
+            
+            <i class="fa-solid fa-tasks h-12 w-12 flex items-center justify-center flex-shrink-0 transition-colors group-hover:text-white"></i>
+            
+            <span class="max-w-0 group-hover:max-w-xs opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out pr-0 group-hover:pr-4 whitespace-nowrap text-sm font-semibold text-white">
+                Вопросы к тесту
+            </span>
         </a>
     </div>
 
@@ -307,6 +338,36 @@
             </div>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const percentageElement = document.getElementById('result-percentage');
+            const progressBarElement = document.getElementById('result-progress-bar');
+            
+            const finalPercentage = {{ percentage }};
+            if (percentageElement && progressBarElement) {
+                setTimeout(() => {
+                    progressBarElement.style.width = `${finalPercentage}%`;
+                }, 100);
+                let startTimestamp = null;
+                const duration = 2000;
+                const step = (timestamp) => {
+                    if (!startTimestamp) startTimestamp = timestamp;
+                    const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                    
+                    const currentValue = Math.floor(progress * finalPercentage);
+                    
+                    percentageElement.innerHTML = `${currentValue}<span class="text-6xl opacity-50">%</span>`;
+
+                    if (progress < 1) {
+                        window.requestAnimationFrame(step);
+                    }
+                };
+                window.requestAnimationFrame(step);
+            }
+        });
+
+    </script>
 
     <script>
         const modal = document.getElementById('delete-modal');

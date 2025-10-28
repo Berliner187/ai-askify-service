@@ -634,39 +634,74 @@
         </div>
     {% endif %}
 
-    <div class="floating-action-bar z-30">
+    <div class="fixed bottom-5 left-1/2 -translate-x-1/2 flex space-x-2 p-2 rounded-full 
+             bg-black/40 backdrop-blur-lg 
+             border border-gray-700/60 
+             shadow-lg shadow-[0_0_20px_rgba(139,92,246,0.2)] z-30">
 
         {% if is_creator %}
 
             {% if is_short_enough %}
-                <a href="{% url 'result' survey_id %}" title="Вернуться к тесту" class="copy-btn">
-                    <i class="fas fa-circle-chevron-left"></i>
+                <a href="{% url 'result' survey_id %}" title="Вернуться к тесту"
+                    class="group flex items-center h-12 rounded-full text-gray-400 transition-all duration-300 overflow-hidden 
+                        bg-gray-800/50 hover:bg-gray-700/70 hover:scale-[1.05] active:scale-[0.98]">
+                    
+                    <i class="fas fa-circle-chevron-left h-12 w-12 flex items-center justify-center flex-shrink-0 transition-colors group-hover:text-white"></i>
+                    
+                    <span class="max-w-0 group-hover:max-w-xs opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out pr-0 group-hover:pr-4 whitespace-nowrap text-sm font-semibold text-white">
+                        Назад
+                    </span>
                 </a>
             {% endif %}
             
-            <!-- Кнопка "Аналитика" -->
             {% if username == 0 %}
-                <button data-trigger-modal="register" class="trigger-register-take-test">
-                    <i class="fas fa-play"></i> 
-                    <span class="text-sm">Открыть ответы</span>
+                <button data-trigger-modal="register" 
+                    class="group flex items-center h-12 rounded-full text-white font-bold transition-all duration-300 overflow-hidden 
+                        bg-indigo-600 
+                        hover:opacity-90 hover:scale-[1.05] active:scale-[0.98] shadow-lg shadow-indigo-500/30">
+                    
+                    <i class="fas fa-play h-12 w-12 flex items-center justify-center flex-shrink-0"></i> 
+                    
+                    <span class="max-w-0 group-hover:max-w-xs opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out pr-0 group-hover:pr-4 whitespace-nowrap text-sm">
+                        Открыть ответы
+                    </span>
                 </button>
             {% else %}
-                <a href="{% url 'preview_test_result' survey_id %}" title="Перейти к аналитике"  style="background-color: rgba(255, 255, 255, 0.1); color: white;">
-                    <i class="fas fa-chart-simple"></i>
-                    <span class="text-sm">Результаты</span>
+                <a href="{% url 'preview_test_result' survey_id %}" title="Перейти к аналитике"
+                    class="group flex items-center h-12 rounded-full text-gray-400 transition-all duration-300 overflow-hidden 
+                        bg-gray-800/50 hover:bg-gray-700/70 hover:scale-[1.05] active:scale-[0.98]">
+                    
+                    <i class="fas fa-chart-simple h-12 w-12 flex items-center justify-center flex-shrink-0 transition-colors group-hover:text-white"></i>
+                    
+                    <span class="max-w-0 group-hover:max-w-xs opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out pr-0 group-hover:pr-4 whitespace-nowrap text-sm font-semibold text-white">
+                        Результаты
+                    </span>
                 </a>
-                <a href="{% url 'take_test' survey_id %}" title="Пройти тест"  style="background-color: rgba(255, 255, 255, 0.1); color: white;">
-                    <i class="fas fa-play"></i>
+
+                <a href="{% url 'take_test' survey_id %}" title="Пройти тест" 
+                    class="group flex items-center h-12 rounded-full text-white font-bold transition-all duration-300 overflow-hidden 
+                        bg-gray-800/50 
+                        hover:opacity-90 hover:scale-[1.05] active:scale-[0.98]">
+                    
+                    <i class="fas fa-play h-12 w-12 flex items-center justify-center flex-shrink-0"></i>
+                    
+                    <span class="max-w-0 group-hover:max-w-xs opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out pr-0 group-hover:pr-4 whitespace-nowrap text-sm">
+                        Пройти
+                    </span>
                 </a>
             {% endif %}
-            
+                
         {% else %}
-            <!-- Для участника теста -->
-            
-            <!-- Кнопка "Пройти тест" -->
-            <a href="{% url 'take_test' survey_id %}" title="Пройти тест" style="background-color: rgba(255, 255, 255, 0.1); color: white;">
-                <i class="fas fa-play"></i> 
-                <span class="text-sm">Пройти тест</span>
+            <a href="{% url 'take_test' survey_id %}" title="Пройти тест"
+                class="group flex items-center h-12 rounded-full text-white font-bold transition-all duration-300 overflow-hidden 
+                    bg-indigo-600 
+                    hover:opacity-90 hover:scale-[1.05] active:scale-[0.98] shadow-lg shadow-indigo-500/30">
+                
+                <i class="fas fa-play h-12 w-12 flex items-center justify-center flex-shrink-0"></i> 
+                
+                <span class="max-w-0 group-hover:max-w-xs opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out pr-0 group-hover:pr-4 whitespace-nowrap text-sm">
+                    Пройти тест
+                </span>
             </a>
 
         {% endif %}

@@ -596,19 +596,44 @@
             </div>
         </div>
     </div>
-    
-    <div class="floating-action-bar">
-        <a href="{% url 'result' survey.survey_id %}" title="Вернуться к тесту" class="copy-btn">
-            <i class="fas fa-circle-chevron-left"></i>
+
+    <div class="fixed bottom-5 left-1/2 -translate-x-1/2 flex space-x-2 p-2 rounded-full 
+                bg-black/40 backdrop-blur-lg 
+                border border-gray-700/60 
+                shadow-lg shadow-[0_0_20px_rgba(139,92,246,0.2)] z-50">
+        
+        <a href="{% url 'result' survey.survey_id %}" title="Вернуться к тесту"
+            class="group flex items-center h-12 rounded-full text-gray-400 transition-all duration-300 overflow-hidden 
+                bg-gray-800/50 hover:bg-gray-700/70 hover:scale-[1.05] active:scale-[0.98]">
+            
+            <i class="fas fa-circle-chevron-left h-12 w-12 flex items-center justify-center flex-shrink-0 transition-colors group-hover:text-white"></i>
+            
+            <span class="max-w-0 group-hover:max-w-xs opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out pr-0 group-hover:pr-4 whitespace-nowrap text-sm font-semibold text-white">
+                К результатам
+            </span>
         </a>
 
-        <button title="Скопировать" data-action="share" data-content="/t/{{survey_id}}"
-        style="background-color: rgba(255, 255, 255, 0.1); color: white;">
-            <i class="fa fa-share-alt"></i>
+        <button title="Скопировать ссылку" data-action="share" data-content="/t/{{survey.survey_id}}"
+            class="group flex items-center h-12 rounded-full text-white font-bold transition-all duration-300 overflow-hidden 
+                bg-indigo-600 
+                hover:opacity-90 hover:scale-[1.05] active:scale-[0.98] shadow-lg shadow-indigo-500/30">
+            
+            <i class="fa fa-share-alt h-12 w-12 flex items-center justify-center flex-shrink-0"></i>
+            
+            <span class="max-w-0 group-hover:max-w-xs opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out pr-0 group-hover:pr-4 whitespace-nowrap text-sm">
+                Поделиться тестом
+            </span>
         </button>
-
-        <a href="{% url 'preview_test' survey.survey_id %}" title="Посмотреть вопросы" class="copy-btn">
-            <i class="fa-solid fa-tasks"></i>
+        
+        <a href="{% url 'preview_test' survey.survey_id %}" title="Посмотреть вопросы"
+            class="group flex items-center h-12 rounded-full text-gray-400 transition-all duration-300 overflow-hidden 
+                bg-gray-800/50 hover:bg-gray-700/70 hover:scale-[1.05] active:scale-[0.98]">
+            
+            <i class="fa-solid fa-tasks h-12 w-12 flex items-center justify-center flex-shrink-0 transition-colors group-hover:text-white"></i>
+            
+            <span class="max-w-0 group-hover:max-w-xs opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out pr-0 group-hover:pr-4 whitespace-nowrap text-sm font-semibold text-white">
+                Вопросы
+            </span>
         </a>
     </div>
 

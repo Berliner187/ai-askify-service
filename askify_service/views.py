@@ -1405,11 +1405,41 @@ def result_view(request, survey_id):
     subscription_level = subscription_check.get_subscription_level(subscription_db.plan_name)
     status = subscription_db.check_sub_status()
 
+    percentage = round((score * 100 / total) if total > 0 else 0)
+
+    result_verdict = "Стоит подучить"
+    result_color_class = {
+        "text": "text-red-500",
+        "bg": "bg-red-500"
+    }
+
+    if percentage >= 75:
+        result_verdict = "Отлично!"
+        result_color_class = {
+            "text": "text-green-400",
+            "bg": "bg-green-400"
+        }
+    elif percentage >= 40:
+        result_verdict = "Неплохо!"
+        result_color_class = {
+            "text": "text-amber-400",
+            "bg": "bg-amber-400"
+        }
+    if percentage == 100:
+        result_verdict = "Идеально!"
+        result_color_class = {
+            "text": "gradient-text",
+            "bg": "bg-gradient-to-r from-indigo-500 to-purple-600"
+        }
+
     context = {
         'page_title': f'Результаты прохождения теста – {survey.title}',
         'title': survey.title,
         'score': score,
         'total': total,
+        'percentage': percentage,
+        'result_verdict': result_verdict,
+        'result_color_class': result_color_class,
         'survey_id': survey_id,
         'created_at': survey.created_at,
         'questions': processed_questions,
