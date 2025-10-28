@@ -12,8 +12,8 @@
     padding: 24px 0;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
-.result-header h2 { font-family: 'Unbounded Bold'; font-size: 1.8em; margin: 0 0 12px 0; }
-.result-header p { font-size: 1.1em; color: #bab8c1; margin: 0; }
+.result-header h2 { font-family: 'Unbounded Bold'; margin: 0 0 12px 0; }
+.result-header p { font-size: .6em; color: #bab8c1; margin: 0; }
 .result-header .result-score { color: var(--accent-green); font-weight: bold; }
 
 .questions-breakdown {
@@ -30,7 +30,7 @@
 }
 .question-title {
     font-family: 'Unbounded Medium';
-    font-size: 1.1em;
+    font-size: .8em;
     color: #e8e7f1;
     margin: 0 0 20px 0;
     line-height: 1.5;
@@ -48,7 +48,7 @@
     padding: 12px 16px;
     border: 1px solid transparent;
     border-radius: 12px;
-    font-size: 16px;
+    font-size: 14px;
     transition: all 0.2s ease;
     color: #a0a0b0;
     background: rgba(255, 255, 255, 0.03);

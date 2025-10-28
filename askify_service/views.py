@@ -3309,7 +3309,8 @@ def get_cockpit_metrics():
         'dau': dau,
         'wau': wau,
         'mau': mau,
-        'stickiness': round(dau / mau * 100, 1) if mau > 0 else 0,
+        'stickiness': round(dau / mau * 100) if mau > 0 else 0,
+        'stickiness_wau': round(wau / mau * 100) if mau > 0 else 0,
         'activation_rate_30d': funnel_data_for_cockpit['data'][1] if funnel_data_for_cockpit else 0,
         'tests_created_today': tests_created_today,
         'tests_created_total': Survey.objects.count(),
@@ -3359,13 +3360,7 @@ def get_main_gauge_data():
     percent_filled = min(tests_today / record_7_days, 1) if record_7_days > 0 else 0
     final_dashoffset = ARC_LENGTH * (1 - percent_filled)
 
-    real_users_qs = AuthUser.objects.annotate(username_len=Length('username')).filter(username_len__lt=20)
-    dau = real_users_qs.filter(last_login__date=today).count()
-    revenue_today = (Payment.objects.filter(status='completed', created_at__date=today).aggregate(sum=Sum('amount'))[
-                         'sum'] or 0) / 100
-
-
-    real_users_qs = AuthUser.objects.annotate(username_len=Length('username')).filter(username_len__lt=20)
+    real_users_qs = AuthUser.objects.annotate(username_len=Length('username')).filter(username_len__lt=40)
 
     tests_created_today = Survey.objects.filter(created_at__date=today).count()
     dau = real_users_qs.filter(last_login__date=today).count()
@@ -3685,7 +3680,7 @@ def get_daily_registration_dynamics_data(start_date, end_date):
     real_users_in_period = AuthUser.objects.annotate(
         username_len=Length('username')
     ).filter(
-        username_len__lt=20,
+        username_len__lt=40,
         date_joined__date__range=(start_date, end_date)
     )
 

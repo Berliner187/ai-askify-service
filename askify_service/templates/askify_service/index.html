@@ -1635,6 +1635,17 @@
                     return;
                 }
 
+                const lowerCaseText = text.toLowerCase();
+                if (lowerCaseText.startsWith('c:\\') ||
+                    lowerCaseText.startsWith('d:\\') ||
+                    lowerCaseText.startsWith('file:///') ||
+                    lowerCaseText.includes('\\users\\') ||
+                    lowerCaseText.includes('/users/'))
+                {
+                    glassAlert.show('Похоже, вы вставили путь к файлу. Пожалуйста, вставьте в это поле содержимое файла, а не ссылку на него.');
+                    return;
+                }
+
                 toggleLoading(true);
                 try {
                     const response = await fetch('/api-non-auth/create-survey/', {
