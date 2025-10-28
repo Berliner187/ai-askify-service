@@ -70,8 +70,6 @@ async function submitText() {
             } 
 
             if (response.ok) {
-                step3.classList.remove('active');
-                step3.classList.add('done');
                 setTimeout(() => {
                     window.location.href = `/result/${result.survey_id}`;
             }, 500);
