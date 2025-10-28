@@ -1,7 +1,5 @@
 const dropArea = document.getElementById('drop-area');
 
-const overlay = document.getElementById('overlay');
-
 async function submitText() {
     const text = document.getElementById('user-text').value.trim();
     const questionCount = document.getElementById('question-slider').value;
@@ -12,8 +10,21 @@ async function submitText() {
         return;
     }
 
-    document.getElementById('overlay').style.display = 'block';
+    if (text.startsWith('c:\\') ||
+        text.startsWith('d:\\') ||
+        text.startsWith('file:///'))
+    {
+        showToast('Похоже, вы вставили путь к файлу. Пожалуйста, вставьте в это поле содержимое файла, а не ссылку на него.');
+        return;
+    }
 
+    const overlay = document.getElementById('overlay');
+    overlay.style.display = 'flex';
+    overlay.classList.remove('hidden');
+    overlay.classList.add('flex');
+    startMatrixAnimation();
+    startTextAnimation();
+    
     try {
         if (selectedFile) {
             const formData = new FormData();
@@ -59,14 +70,23 @@ async function submitText() {
             } 
 
             if (response.ok) {
-                window.location.href = `/result/${result.survey_id}`;
-            } else {
-                showToast(result.error || 'Не удалось создать тест');
-            }
+                step3.classList.remove('active');
+                step3.classList.add('done');
+                setTimeout(() => {
+                    window.location.href = `/result/${result.survey_id}`;
+            }, 500);
+        } else {
+             throw new Error(result.error || 'Не удалось создать тест');
+        }
         }
     } catch (err) {
-        console.error(err);
+        console.error(err.message);
         showToast('Произошла ошибка');
+        showToast(err.message || 'Произошла ошибка');
+        stopMatrixAnimation();
+        stopTextAnimation();
+        overlay.classList.add('hidden');
+        overlay.classList.remove('flex');
     } finally {
         document.getElementById('overlay').style.display = 'none';
     }
@@ -289,3 +309,78 @@ async function loadRecentHistory() {
 }
 
 loadRecentHistory();
+
+
+// --- АНИМАЦИЯ МАТРИЦЫ ---
+let matrixInterval;
+function startMatrixAnimation() {
+    const canvas = document.getElementById('matrix-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const chars = "ЛЕТУЧКААBCDEFGHIJKLMNOPQRSTUVWXYZ123456789@#$%^&*()*&^%";
+    const charsArr = chars.split('');
+    const fontSize = 14;
+    const columns = canvas.width / fontSize;
+    const drops = [];
+
+    for (let x = 0; x < columns; x++) {
+        drops[x] = 1;
+    }
+
+    function draw() {
+        ctx.fillStyle = 'rgba(12, 12, 22, 0.05)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.fillStyle = '#4F46E5';
+        ctx.font = `${fontSize}px monospace`;
+
+        for (let i = 0; i < drops.length; i++) {
+            const text = charsArr[Math.floor(Math.random() * charsArr.length)];
+            ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+            if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                drops[i] = 0;
+            }
+            drops[i]++;
+        }
+    }
+    matrixInterval = setInterval(draw, 33);
+}
+
+function stopMatrixAnimation() {
+    clearInterval(matrixInterval);
+}
+
+
+// --- АНИМАЦИЯ СМЕНЫ МЫСЛЕЙ ---
+let textInterval;
+function startTextAnimation() {
+    const textElement = document.getElementById('loader-text');
+    if (!textElement) return;
+
+    const phrases = [
+        "Анализ текста...",
+        "Построение нейронных связей...",
+        "Генерация вопросов...",
+        "Консультируемся с нейросетью...",
+        "Проверка на адекватность...",
+        "Финальная калибровка..."
+    ];
+    let currentIndex = 0;
+
+    const updateText = () => {
+        textElement.textContent = phrases[currentIndex];
+        currentIndex = (currentIndex + 1) % phrases.length;
+    };
+
+    updateText();
+    textInterval = setInterval(updateText, 2500);
+}
+
+function stopTextAnimation() {
+    clearInterval(textInterval);
+}

@@ -1909,12 +1909,12 @@ hr {
     transform: translateX(-50%) translateY(120px);
 }
 
-.apple-toast .icon-success {
+.copy-notification .icon-success {
     font-size: 1.1rem;
     color: var(--color-accent-secondary);
 }
 
-.apple-toast .icon-error {
+.copy-notification .icon-error {
     font-size: 1.1rem;
     color: #EF4444;
 }
