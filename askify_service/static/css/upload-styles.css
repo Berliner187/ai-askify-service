@@ -61,13 +61,19 @@ body {
     justify-content: space-between;
     align-items: center;
     padding: 16px 12px;
-    border-radius: 12px;
+    border-radius: 16px;
     text-decoration: none;
     transition: background-color 0.2s ease;
+    transition: all 0.2s ease;
 }
 .history-item a:hover {
     background-color: rgba(255, 255, 255, 0.03);
+    transform: translateY(-2px);
 }
+.history-item a:active {
+    transform: translateY(2px);
+}
+
 .history-item-title {
     color: #e5e5f1;
     font-size: 15px;

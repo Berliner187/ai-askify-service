@@ -20,12 +20,13 @@ urlpatterns = [
 
     path('c/<str:survey_id>/', preview_test, name='preview_test'),
     path('t/<str:survey_id>/', take_test, name='take_test'),
-    path('api/t/<str:survey_id>/submit/', submit_answers, name='submit_answers'),
-    path('c/<str:survey_id>/result/', view_results, name='preview_test_result'),
-    path('api/c/<uuid:survey_id>/result/export/excel/', export_results_to_excel, name='export_results_to_excel'),
+    path('c/<str:survey_id>/result/', redirect_to_dashboard, name='preview_test_inside'),
+    path('c/<str:survey_id>/dashboard/', view_results, name='preview_test_result'),
 
     path('register-view/<str:survey_id>/', register_survey_view, name='register_survey_view'),
     path('api/surveys/<uuid:survey_id>/toggle-answers/', toggle_answers, name='toggle-answers'),
+    path('api/t/<str:survey_id>/submit/', submit_answers, name='submit_answers'),
+    path('api/c/<uuid:survey_id>/result/export/excel/', export_results_to_excel, name='export_results_to_excel'),
 
     path('solving-tests/', solving_tests_promo, name='solving_tests_promo'),
     path('for-teachers/', teachers_promo, name='teachers_promo'),
@@ -46,12 +47,12 @@ urlpatterns = [
     path('api/admin/promote_user/', promote_user_api, name='api_promote_user'),
     path('api/admin/add_api_key/', add_api_key_api, name='api_add_key'),
     path('api/admin/activate_api_key/', activate_api_key_api, name='api_activate_key'),
-
     path('admin/activate-key/', activate_api_key, name='activate_api_key'),
-    path('profile/<str:username>/', profile_view, name='profile'),
-    path('profile/', redirect_to_profile, name='profile_redirect'),
     path('db_viewer/', db_viewer, name='db_viewer'),
     path('db-search/', db_search, name='db-search'),
+
+    path('profile/<str:username>/', profile_view, name='profile'),
+    path('profile/', redirect_to_profile, name='profile_redirect'),
 
     path('blocked_view/', blocked_view, name='blocked_view'),
 

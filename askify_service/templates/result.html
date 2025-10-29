@@ -189,12 +189,14 @@
                             <img src="{% static 'img/icon-download-pdf.png' %}" alt="Icon download results in PDF">
                         </div>
                     </a>
+                    {% if subscription_level > 0 %}
                     <div class="button-medium button-red" style="cursor: pointer;" onclick="openDeleteModal('{{ survey_id }}', '{{ title|escapejs }}')">
                         <div >
                             <img src="{% static 'img/icon-delete.png' %}" alt="Удалить">
                             <p>Удалить тест</p>
                         </div>
                     </div>
+                    {% endif %}
                 </div>
             </div>
 

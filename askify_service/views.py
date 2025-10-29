@@ -567,7 +567,7 @@ def page_history_surveys(request):
         surveys_data = data_from_backend.get('results', {})
         page_obj = data_from_backend.get('page_obj')
 
-    tracer_l.info(f"{request.user.username} --- loaded surveys page {page_number}")
+    tracer_l.info(f"{request.user.username} --- history page {page_number} [ LOADED ]")
     # except Exception as fatal:
     #     tracer_l.error(f"{request.user.username} --- {fatal}")
         # Мы НЕ падаем. Мы просто оставим surveys_data пустым.
@@ -809,14 +809,47 @@ class ManageSurveysView(View):
                     tokens_survey_used=tokens_used,
                 )
                 _tokens_used.save()
+                await notify_admin_by_limit()
             except Exception as fail:
                 tracer_l.warning(f'{request.user.username} --- чут чут фейл: {fail}')
 
-            tracer_l.info(f'{request.user.username} --- success save to DB')
+            tracer_l.info(f'{request.user.username} --- {Survey.objects.get(survey_id=new_survey_id).title} [ SAVED ]')
             return JsonResponse({'survey': cleaned_generated_text, 'survey_id': f"{new_survey_id}"}, status=200)
 
         tracer_l.warning(f'{request.user.username} --- Invalid request method: code 400')
         return JsonResponse({'error': 'Invalid request method'}, status=400)
+
+
+async def notify_admin_by_limit():
+    active_api_key = APIKey.objects.filter(is_active=True).first()
+    if active_api_key:
+        start_of_today = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        usage_count_for_active_key = (
+            APIKeyUsage.objects.filter(
+                api_key=active_api_key,
+                timestamp__gte=start_of_today
+            )
+            .aggregate(count=Count('id'))
+        )
+        count_today = usage_count_for_active_key.get('count', 0)
+
+        LIMIT = 40
+        if count_today > LIMIT:
+            tracer_l.info(
+                f"--- [ RESET counter active key ] ---"
+            )
+            tracer_l.info(
+                f"API [ FULL UP ] count_today: {count_today}"
+            )
+            tracer_l.info(
+                f"Key: {active_api_key.name} ({active_api_key.provider}), "
+                f"Limit: {LIMIT} responses."
+            )
+        elif count_today > 0:
+            tracer_l.info(
+                f"Active key [ STATUS ]: {active_api_key.name}, "
+                f"Responses/day: {count_today} < {LIMIT}"
+            )
 
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -833,8 +866,6 @@ class GenerationSurveysView(View):
 
             client_ip = get_client_ip(request)
             hashed_ip = hash_data(client_ip)
-
-            tracer_l.debug(f"{request.user.username} --- client_ip: {client_ip} text_from_user: {text_from_user}")
 
             # !!! ИСПРАВЛЕНИЕ: Обертываем синхронную ORM-операцию
             existing_survey = await sync_to_async(Survey.objects.filter(title=text_from_user).first)()
@@ -855,21 +886,20 @@ class GenerationSurveysView(View):
                 )
 
             staff_id = auth_user.id_staff
+            tracer_l.debug(f"НЕЛЕГАЛ {staff_id} --- IP: {client_ip}, TEXT: {text_from_user}")
 
             try:
                 subscription_object = await sync_to_async(Subscription.objects.filter(staff_id=staff_id).first)()
                 if subscription_object:
                     plan_name = subscription_object.plan_name
-                    token_limit = get_token_limit(plan_name)
             except Exception as sub_e:
                 tracer_l.warning(f'{staff_id} --- Could not retrieve subscription details: {sub_e}')
 
             surveys_count = await sync_to_async(Survey.objects.filter(id_staff=staff_id).count)()
-            tracer_l.debug(f'{staff_id} --- surveys_count: {surveys_count}')
 
             if surveys_count > 0:
                 return JsonResponse(
-                    {'error': 'Лимит исчерпан :(\n\nХочешь ещё? Зарегистрируйся, и дадим 5 тестов в подарок.'})
+                    {'error': 'Лимит исчерпан :(\n\nХочешь ещё? Зарегистрируйся, и забери свои 5 тестов!'})
 
             manage_generate_surveys_text = ManageGenerationSurveys(request, text_from_user, question_count)
             start_time = time.perf_counter()
@@ -923,6 +953,7 @@ class GenerationSurveysView(View):
                 tokens_survey_used=generated_text_data['tokens_used']
             )
             await sync_to_async(_tokens_used.save)()
+            await notify_admin_by_limit()
 
             # !!! ИСПРАВЛЕНИЕ: Обертываем синхронную ORM-операцию
             api_key_manage = await sync_to_async(APIKey.objects.filter(purpose='SURVEY', is_active=True).first)()
@@ -937,7 +968,7 @@ class GenerationSurveysView(View):
             else:
                 tracer_l.warning(f'{staff_id} --- APIKey для SURVEY не найден для логирования использования.')
 
-            tracer_l.info(f'{staff_id} --- success generate: {new_title}')
+            tracer_l.info(f'Нелегал {staff_id} --- {new_title} [ SAVED ]')
 
             return JsonResponse({
                 'survey': generated_text_data['generated_text'],
@@ -1157,6 +1188,7 @@ class FileUploadView(View):
                     tokens_survey_used=tokens_used
                 )
                 await sync_to_async(_tokens_used.save)()
+                await notify_admin_by_limit()
 
                 api_key_manage = await sync_to_async(APIKey.objects.filter(purpose='SURVEY', is_active=True).first)()
                 if api_key_manage:
@@ -1837,7 +1869,7 @@ def submit_answers(request, survey_id):
             score=score,
             total_questions=total_questions
         )
-        tracer_l.info(f'USER {student_name} take {survey.title}')
+        tracer_l.info(f'GUEST {student_name} take {survey.title}')
 
         return JsonResponse({'success': True, 'score': score, 'total': total_questions})
 
@@ -1930,6 +1962,8 @@ def preview_test(request, survey_id):
         except Exception:
             subscription_level = 0
 
+        tracer_l.info(f'{request.user.username} --- preview {survey.title}')
+
         json_response = {
             'page_title': f'{survey.title} | Генератор тестов с ИИ | Создать тест в Летучке',
             'title': survey.title,
@@ -1959,6 +1993,15 @@ def preview_test(request, survey_id):
     }
 
     return render(request, 'demo-view.html', context)
+
+
+@login_required
+def redirect_to_dashboard(request, survey_id):
+    user = request.user
+    if user.is_authenticated:
+        return redirect('preview_test_result', survey_id=survey_id)
+    else:
+        return redirect('login')
 
 
 @login_required
@@ -2099,6 +2142,8 @@ def view_results(request, survey_id):
     author_username = AuthUser.objects.get(id_staff=survey.id_staff).username
     is_short_enough = len(author_username) < 20
 
+    tracer_l.info(f'{request.user.username} --- dashboard {survey.title}')
+
     conversion_rate = (total_attempts / survey.view_count) * 100 if survey.view_count > 0 else 0
 
     success_rate_color = '#EF4444'
@@ -2191,6 +2236,8 @@ def export_results_to_excel(request, survey_id):
     ascii_filename = 'results.xlsx'
     utf8_filename = quote(filename)
 
+    tracer_l.info(f'{request.user.username} --- download results {survey.title}')
+
     response['Content-Disposition'] = f'attachment; filename="{ascii_filename}"; filename*="UTF-8\'\'{utf8_filename}"'
 
     return response
@@ -2236,7 +2283,6 @@ def register_survey_view(request, survey_id):
 def download_survey_pdf(request, survey_id):
     try:
         survey = get_object_or_404(Survey, survey_id=uuid.UUID(survey_id))
-        tracer_l.info(f'{request.user.username} --- View survey in PDF')
 
         try:
             subscription_db = Subscription.objects.get(staff_id=get_staff_id(request))
@@ -2245,7 +2291,7 @@ def download_survey_pdf(request, survey_id):
         except Exception:
             subscription_level = 0
 
-        tracer_l.info(f'{request.user.id} --- success view: subscription_level {subscription_level}')
+        tracer_l.info(f'{request.user.username} --- PDF [ VIEW ], sub {subscription_level}')
         return survey.generate_pdf(subscription_level)
     except Exception as fatal:
         tracer_l.critical(f'{request.user.username} --- FATAL with View survey in PDF: {fatal}')
@@ -2322,7 +2368,7 @@ def quick_register_api(request):
     ).first()
 
     if temporary_user:
-        tracer_l.info(f'API REGISTRATION. CONVERTING temporary user {temporary_user.username} (IP: {ip})')
+        tracer_l.info(f'API REGISTRATION [ OK ]')
         user = temporary_user
 
         if AuthUser.objects.exclude(pk=user.pk).filter(email=email).exists():
@@ -2632,6 +2678,8 @@ def profile_view(request, username):
         id_staff=staff_id,
         view_count__gt=0
     ).order_by('-view_count')[:3]
+
+    tracer_l.info(f'{request.user.username} --- profile [ LOADED ]]')
 
     top_surveys_formatted = []
     for survey in top_3_surveys:
@@ -3238,7 +3286,7 @@ def get_cockpit_metrics():
     start_of_week = today - timedelta(days=today.weekday())
     start_of_month = today.replace(day=1)
 
-    real_users_qs = AuthUser.objects.annotate(username_len=Length('username')).filter(username_len__lt=20)
+    real_users_qs = AuthUser.objects.annotate(username_len=Length('username')).filter(username_len__lt=40)
 
     # --- 1 ---
     dau = real_users_qs.filter(last_login__date=today).count()
