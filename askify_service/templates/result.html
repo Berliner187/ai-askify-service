@@ -143,6 +143,8 @@
                 <p class="hint">{{ model_name }}</p>
             </div>
             {% endif %}
+
+            {% if attempt_exists %}
             <div class="container result-full">
                 <div class="result-header">
                     <h2>{% if attempt_exists %}Результаты теста{% else %}Вопросы к тесту{% endif %}</h2>
@@ -199,6 +201,18 @@
                     {% endif %}
                 </div>
             </div>
+            {% else %}
+            <div class="container result-full">
+                <div class="result-header">
+                    <h2>{% if attempt_exists %}Результаты теста{% else %}Вопросы к тесту{% endif %}</h2>
+                    <p>Пройдите тест, чтобы увидеть все вопросы и результаты прохождения.</p>
+                </div>
+
+                <div class="result-header">
+                    <p>Создан {{ created_at }}</p>
+                </div>
+            </div>
+            {% endif %}
 
         {% if subscription_level < 2 or subscription_level == 99 %}
             <div class="max-w-4xl mx-auto p-6 md:p-8 mt-24 rounded-3xl shadow-2xl 
