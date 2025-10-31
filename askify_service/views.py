@@ -4309,7 +4309,7 @@ class PaymentInitiateView(View):
             'Ультра': 990,
             'Стандартный Год': 3900,
             'Премиум Год': 4800,
-            'Премиум неделя': 290
+            'Премиум неделя': 390
         }
 
         print(int(amount), description, plan_prices.get(description))
