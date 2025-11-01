@@ -639,7 +639,7 @@ def drop_survey(request, survey_id):
             UserAnswers.objects.filter(survey_id=uuid.UUID(survey_id)).delete()
             TestAttempt.objects.filter(survey__survey_id=uuid.UUID(survey_id)).delete()
             survey_obj.delete()
-            tracer_l.info(f"{request.user.username} [ DELETE OK ]")
+            tracer_l.info(f"{request.user.username} drop_survey {survey_id} [ DELETE OK ]")
         except Exception as pass_fail:
             tracer_l.info(f"warn: {request.user.username} {pass_fail}")
         return redirect('history')
@@ -744,7 +744,7 @@ class ManageSurveysView(View):
             if plan_name.lower() == 'стартовый':
                 tracer_l.info(
                     f"free user {request.user.username} --- total_used_per_period: {total_used_per_period} used")
-                if total_used_per_period > tests_count_limit:
+                if total_used_per_period >= tests_count_limit:
                     tracer_l.info(
                         f"free user {request.user.username} --- USED ALL generations: {total_used_per_period} used >= {tests_count_limit}")
                     return JsonResponse({
@@ -752,7 +752,7 @@ class ManageSurveysView(View):
                         status=429
                     )
             else:
-                if total_used_per_period > tests_count_limit:
+                if total_used_per_period >= tests_count_limit:
                     return JsonResponse({
                         'error': 'Лимит по созданию тестов исчерпан :(\n\nОзнакомьтесь с тарифами на странице профиля.'
                     }, status=429)
@@ -1962,7 +1962,8 @@ def preview_test(request, survey_id):
         except Exception:
             subscription_level = 0
 
-        tracer_l.info(f'{request.user.username} --- preview {survey.title}')
+        client_ip = get_client_ip(request)
+        tracer_l.info(f'{request.user.username} {client_ip} --- preview {survey.title}')
 
         json_response = {
             'page_title': f'{survey.title} | Генератор тестов с ИИ | Создать тест в Летучке',

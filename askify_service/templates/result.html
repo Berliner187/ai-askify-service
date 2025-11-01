@@ -27,6 +27,26 @@
     <div id="page-container" class="fade" style="display: none;">
         {% include 'header.html' %}
 
+        <div id="smart-header" 
+            class="fixed top-4 left-1/2 -translate-x-1/2 z-50 
+                    flex items-center justify-center 
+                    h-12 px-4 rounded-full
+                    bg-black/50 backdrop-blur-xl 
+                    border border-gray-700/80
+                    shadow-2xl shadow-black/50
+                    opacity-0 scale-95 transition-all duration-500 ease-in-out">
+            <div id="smart-header-progress" 
+                class="absolute top-0 left-0 h-full rounded-full 
+                        bg-gradient-to-r from-indigo-500 to-indigo-600
+                        transition-width duration-300" 
+                style="width: 0%;">
+            </div>
+            <span id="smart-header-text" 
+                class="relative z-10 text-white text-sm font-bold 
+                        transition-opacity duration-300 whitespace-nowrap">
+            </span>
+        </div>
+
         <div class="container result-section">
 
             <div class="head-button">
@@ -47,12 +67,14 @@
 
             </div>
             
-            <div class="result-container">
+            <div class="result-container" id="results-block">
                 <h2 class="result-survey-title">{{ title }}</h2>
 
                 {% if attempt_exists %}
                 <div class="w-full max-w-sm mx-auto mb-8 text-center">
-                    <p id="result-percentage" class="text-8xl font-extrabold {{ result_color_class.text }}">
+                    <p id="result-percentage" 
+                    class="text-8xl font-extrabold {{ result_color_class.text }}" 
+                    data-final-percentage="{{ percentage }}">
                         0<span class="text-6xl opacity-50">%</span>
                     </p>
                     <p class="mt-2 text-lg font-bold text-white">{{ result_verdict }}</p>
@@ -105,25 +127,30 @@
                 
                 <hr class="actions-divider">
 
-                <div class="flex gap-6 max-w-xl mx-auto mt-8">
+                <div class="max-w-xl mx-auto mt-8">
                     <a href="{% url 'preview_test_result' survey_id %}"
-                    class="group bg-gray-800/50 backdrop-blur-sm border border-gray-700/80 rounded-3xl p-6
-                            flex items-start gap-5
+                    class="group bg-gray-800/50 backdrop-blur-sm border border-gray-700/80 rounded-2xl p-4
+                            flex items-center gap-4
                             transition-all duration-300
-                            hover:border-[var(--color-accent-primary)] hover:-translate-y-1">
-                        <div class="flex-shrink-0 mt-1">
-                            <i class="fas fa-chart-pie text-2xl text-gray-500 transition-colors duration-300 group-hover:text-[var(--color-accent-primary)]"></i>
+                            hover:border-[var(--color-accent-primary)] hover:-translate-y-1 active:-translate-y-2">
+                        
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-chart-pie text-xl text-gray-500 transition-colors duration-300 group-hover:text-[var(--color-accent-primary)]"></i>
                         </div>
+                        
                         <div class="flex-grow">
-                            <h3 class="font-bold text-white transition-colors duration-300 group-hover:text-[var(--color-accent-primary)]">
+                            <h4 class="font-bold text-white transition-colors duration-300 group-hover:text-[var(--color-accent-primary)]">
                                 Управление тестом
-                            </h3>
-                            <p class="mt-1 text-sm text-gray-400 leading-relaxed">
-                                Диаграммы с результатами, динамика прохождений и детальный анализ каждого респондента.
+                            </h4>
+                            <p class="mt-0.5 text-sm text-gray-400">
+                                Анализ результатов и динамика прохождений
                             </p>
                         </div>
-                    </a>
 
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-chevron-right text-gray-600 transition-colors duration-300 group-hover:text-gray-400"></i>
+                        </div>
+                    </a>
                 </div>
             </div>
 
@@ -133,7 +160,7 @@
 
         <div>
             {% if feedback_text %}
-            <div class="container result-full feedback-container">
+            <div class="container result-full feedback-container" id="feedback-block">
                 <div class="result-header">
                     <h2>Рекомендации</h2>
                     <p>Индивидуальные рекомендации от нейросети по результатам прохождения.</p>
@@ -145,7 +172,7 @@
             {% endif %}
 
             {% if attempt_exists %}
-            <div class="container result-full">
+            <div class="container result-full" id="breakdown-block">
                 <div class="result-header">
                     <h2>{% if attempt_exists %}Результаты теста{% else %}Вопросы к тесту{% endif %}</h2>
                     <!-- <p>Вы верно ответили на <span class="result-score">{{ score }}</span> из <span class="result-total">{{ total }}</span> вопросов.</p> -->
@@ -420,23 +447,6 @@
 
     <script>
         document.addEventListener("DOMContentLoaded", function() {
-            const score = parseInt(document.querySelector('.result-score').textContent);
-            const total = parseInt(document.querySelector('.result-total').textContent);
-            const percentage = (score / total) * 100;
-            const progressFill = document.querySelector('.progress-fill');
-            
-            const radius = 90;
-            const circumference = 2 * Math.PI * radius;
-        
-            progressFill.style.strokeDasharray = `${circumference} ${circumference}`;
-            progressFill.style.strokeDashoffset = `${circumference}`;
-        
-            setTimeout(() => {
-                progressFill.style.strokeDashoffset = `${circumference - (percentage / 100 * circumference)}`;
-            }, 100);
-        });
-        
-        document.addEventListener("DOMContentLoaded", function() {
             const container = document.querySelector('.container');
         
             setTimeout(() => {
@@ -486,33 +496,142 @@
     </script>
 
     <script>
-        function getColor(averageScore) {
-            averageScore = Math.max(0, Math.min(5, averageScore));
+        document.addEventListener('DOMContentLoaded', function() {
+            const smartHeader = document.getElementById('smart-header');
+            const smartHeaderProgress = document.getElementById('smart-header-progress');
+            const smartHeaderText = document.getElementById('smart-header-text');
 
-            let red, green;
+            const sections = [
+                { id: 'results-block', text: 'Результат теста' },
+                { id: 'feedback-block', text: 'Фидбэк и рекомендации' },
+                { id: 'breakdown-block', text: 'Разбор ошибок по тесту' },
+                { id: 'upsell-block', text: 'Ещё возможности Летучки' }
+            ];
 
-            if (averageScore <= 3) {
-                red = 255;
-                green = Math.round(255 * (averageScore / 5));
-            } else if (averageScore <= 3.8) {
-                red = 255;
-                green = 255;
-            } else if (averageScore <= 4.2) {
-                red = Math.round(255 * (1 - (averageScore - 3) / 1.5));
-                green = 255;
-            } else {
-                red = 0;
-                green = 255;
+            const availableSections = sections.map(sec => ({
+                ...sec,
+                element: document.getElementById(sec.id)
+            })).filter(sec => sec.element);
+            
+            let isHeaderVisible = false;
+
+            function handleScroll() {
+                if (!smartHeader || !smartHeaderProgress || !smartHeaderText) return;
+
+                const scrollY = window.scrollY;
+                const windowHeight = window.innerHeight;
+                const docHeight = document.documentElement.scrollHeight;
+
+                if (scrollY > 0 && !isHeaderVisible) {
+                    isHeaderVisible = true;
+                    smartHeader.classList.remove('opacity-0', 'scale-95');
+                } else if (scrollY <= 300 && isHeaderVisible) {
+                    isHeaderVisible = false;
+                    smartHeader.classList.add('opacity-0', 'scale-95');
+                }
+
+                const totalScrollable = docHeight - windowHeight;
+                const scrollPercentage = totalScrollable > 0 ? (scrollY / totalScrollable) * 100 : 0;
+                smartHeaderProgress.style.width = `${scrollPercentage}%`;
+
+                let currentSectionText = '';
+                for (let i = availableSections.length - 1; i >= 0; i--) {
+                    const section = availableSections[i];
+                    const rect = section.element.getBoundingClientRect();
+                    if (rect.top < windowHeight / 2) {
+                        currentSectionText = section.text;
+                        break;
+                    }
+                }
+                
+                if (smartHeaderText.textContent !== currentSectionText) {
+                    smartHeader.style.width = '';
+                    smartHeaderText.classList.add('opacity-0');
+                    
+                    setTimeout(() => {
+                        smartHeaderText.textContent = currentSectionText;
+                        smartHeaderText.classList.remove('opacity-0');
+                        const currentWidth = smartHeader.offsetWidth;
+                        smartHeader.style.width = `${currentWidth}px`;
+                    }, 300);
+                }
             }
-        
-            return `rgb(${red}, ${green}, 0)`;
-        }
-        
-        const averageScore = {{ score }};
-        const color = getColor(averageScore);
-        
-        const scoreElement = document.querySelector('.progress-text');
-        scoreElement.style.color = color;
+
+            window.addEventListener('scroll', handleScroll, { passive: true });
+
+            const percentageElement = document.getElementById('result-percentage');
+            const progressBarElement = document.getElementById('result-progress-bar');
+            
+            if (percentageElement && progressBarElement) {
+                const finalPercentage = parseFloat(percentageElement.dataset.finalPercentage || '0');
+
+                setTimeout(() => {
+                    progressBarElement.style.width = `${finalPercentage}%`;
+                }, 100);
+
+                let startTimestamp = null;
+                const duration = 1500;
+
+                const step = (timestamp) => {
+                    if (!startTimestamp) startTimestamp = timestamp;
+                    const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                    const currentValue = Math.floor(progress * finalPercentage);
+                    
+                    percentageElement.innerHTML = `${currentValue}<span class="text-6xl opacity-50">%</span>`;
+
+                    if (progress < 1) {
+                        window.requestAnimationFrame(step);
+                    }
+                };
+                window.requestAnimationFrame(step);
+            }
+
+            const modal = document.getElementById('delete-modal');
+            const modalTitle = document.getElementById('modal-survey-title');
+            const confirmLink = document.getElementById('confirm-delete-link');
+
+            window.openDeleteModal = function(surveyId, surveyTitle) {
+                if (!modal || !modalTitle || !confirmLink) return;
+                modalTitle.textContent = surveyTitle;
+                confirmLink.setAttribute('href', `/drop-survey/${surveyId}/`);
+                modal.classList.remove('hidden');
+            }
+
+            window.closeDeleteModal = function() {
+                if (modal) modal.classList.add('hidden');
+            }
+
+            if(modal) {
+                modal.addEventListener('click', (event) => {
+                    if(event.target === modal) closeDeleteModal();
+                });
+            }
+
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape' && modal && !modal.classList.contains('hidden')) {
+                    closeDeleteModal();
+                }
+            });
+
+            const copyButton = document.getElementById('copyShareLink');
+            const notification = document.querySelector('.copy-notification');
+
+            if (copyButton && notification) {
+                copyButton.addEventListener('click', async () => {
+                    const relativePath = copyButton.getAttribute('data-content');
+                    const fullLink = `${window.location.origin}${relativePath.startsWith('/') ? '' : '/'}${relativePath}`;
+                    try {
+                        await navigator.clipboard.writeText(fullLink);
+                        notification.classList.add('show');
+                        setTimeout(() => {
+                            notification.classList.remove('show');
+                        }, 3000);
+                    } catch (err) {
+                        console.error('Failed to copy: ', err);
+                    }
+                });
+            }
+        });
     </script>
 
 </body>
