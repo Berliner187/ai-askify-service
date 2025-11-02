@@ -1835,7 +1835,7 @@ def take_test(request, survey_id):
     context = {
         'survey': survey,
         'questions_json': json.dumps(questions_list, ensure_ascii=False),
-        'author': author_username if len(author_username) < 16 else 'Аноним',
+        'author': author_username if len(author_username) < 40 else 'Аноним',
         'page_title': survey.title,
         'is_creator': get_is_creator(request, survey)
     }
@@ -1952,8 +1952,15 @@ def preview_test(request, survey_id):
         questions = survey.get_questions()
         view_count = survey.view_count
 
-        author_username = AuthUser.objects.get(id_staff=survey.id_staff).username
-        is_short_enough = len(author_username) < 20
+        author_username = AuthUser.objects.filter(id_staff=survey.id_staff).first()
+        print(author_username)
+
+        if author_username:
+            author_username = author_username.username
+            is_short_enough = len(author_username) < 40
+        else:
+            author_username = 'Аноним'
+            is_short_enough = False
 
         try:
             subscription_db = Subscription.objects.get(staff_id=get_staff_id(request))
@@ -1970,7 +1977,7 @@ def preview_test(request, survey_id):
             'title': survey.title,
             'survey_id': survey_id,
             'questions': questions,
-            'author': author_username if len(author_username) < 16 else 'Аноним',
+            'author': author_username if len(author_username) < 40 else 'Аноним',
             'username': request.user.username if request.user.is_authenticated else 0,
             'model_name': f"{'Сгенерировано ' + survey.model_name.upper().replace('O', 'o') if survey.model_name else 'Сгенерировано в Летучке'}",
             'view_count': view_count,
@@ -2170,7 +2177,7 @@ def view_results(request, survey_id):
         'username': get_username(request),
         'page_title': survey.title,
         'subscription_level': get_subscription_level(request),
-        'author': author_username if len(author_username) < 16 else 'Аноним',
+        'author': author_username if len(author_username) < 40 else 'Аноним',
         'is_short_enough': is_short_enough,
         'date_create': survey.created_at.strftime('%d.%m.%Y'),
     }
@@ -2278,6 +2285,122 @@ def register_survey_view(request, survey_id):
             return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
     return JsonResponse({'success': False, 'error': 'Invalid request'}, status=400)
+
+
+def arena_view(request):
+    profile, _ = ArenaProfile.objects.get_or_create(user=request.user)
+
+    accuracy = (profile.questions_correct * 100 / profile.questions_answered) if profile.questions_answered > 0 else 0
+
+    initial_stats = {
+        'score': profile.total_score,
+        'streak': profile.current_streak,
+        'accuracy': f"{accuracy:.0f}%",
+        'max_streak': profile.max_streak,
+        'answered': profile.questions_answered,
+        'percentile': '-%'
+    }
+
+    context = {
+        'initial_stats_json': json.dumps(initial_stats)
+    }
+
+    return render(request, 'askify_service/arena.html', context)
+
+
+def get_next_question(request):
+    user = request.user
+
+    seen_question_ids = request.GET.getlist('seen[]', [])
+    next_question = None
+
+    if user.is_authenticated:
+        try:
+            profile = user.arena_profile
+            if profile.interests:
+                top_tags = sorted(profile.interests.items(), key=lambda item: item[1], reverse=True)[:3]
+                top_tag_names = [tag[0] for tag in top_tags]
+
+                if top_tag_names:
+                    next_question = Question.objects.select_related('survey').filter(
+                        survey__tags__name__in=top_tag_names
+                    ).exclude(id__in=seen_question_ids).order_by('?').first()
+        except ArenaProfile.DoesNotExist:
+            pass
+
+    if not next_question:
+        next_question = Question.objects.select_related('survey').exclude(id__in=seen_question_ids).order_by(
+            '?').first()
+
+    if not next_question:
+        next_question = Question.objects.select_related('survey').order_by('?').first()
+        if not next_question:
+            return JsonResponse({'error': 'All questions answered'}, status=404)
+
+    is_displaying_correct = random.choice([True, False])
+    if is_displaying_correct:
+        displayed_answer = next_question.correct_answer
+    else:
+        incorrect_options = [opt for opt in next_question.options if opt != next_question.correct_answer]
+        if not incorrect_options:
+            displayed_answer = next_question.correct_answer
+            is_displaying_correct = True
+        else:
+            displayed_answer = random.choice(incorrect_options)
+
+    return JsonResponse({
+        'question_id': next_question.id,
+        'question_text': next_question.text,
+        'displayed_answer': displayed_answer,
+        'is_correct_answer_displayed': is_displaying_correct,
+        'survey_title': next_question.survey.title,
+        'survey_id': next_question.survey.survey_id,
+    })
+
+
+@csrf_exempt
+def submit_arena_answer(request):
+    if not request.user.is_authenticated:
+        data = json.loads(request.body)
+        question = Question.objects.get(id=data.get('question_id'))
+        is_correct = (data.get('user_answer') == question.correct_answer)
+        return JsonResponse({'is_correct': is_correct, 'correct_answer': question.correct_answer})
+
+    profile, _ = ArenaProfile.objects.get_or_create(user=request.user)
+    data = json.loads(request.body)
+    question = Question.objects.get(id=data.get('question_id'))
+    is_correct = (data.get('user_answer') == question.correct_answer)
+
+    profile.questions_answered += 1
+    if is_correct:
+        profile.total_score += 2
+        profile.current_streak += 1
+        profile.questions_correct += 1
+        if profile.current_streak > profile.max_streak:
+            profile.max_streak = profile.current_streak
+
+        for tag in question.survey.tags.all():
+            profile.interests[tag.name] = profile.interests.get(tag.name, 0) + 1
+    else:
+        profile.current_streak = 0
+        profile.total_score -= 1
+
+    profile.save()
+
+    accuracy = (profile.questions_correct * 100 / profile.questions_answered) if profile.questions_answered > 0 else 0
+
+    return JsonResponse({
+        'is_correct': is_correct,
+        'correct_answer': question.correct_answer,
+        'updated_stats': {
+            'score': profile.total_score,
+            'streak': profile.current_streak,
+            'accuracy': f"{accuracy:.0f}%",
+            'max_streak': profile.max_streak,
+            'answered': profile.questions_answered,
+            # 'percentile': ... (тут заглушка)
+        }
+    })
 
 
 # @login_required

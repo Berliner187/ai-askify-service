@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    {% include 'components/meta_tags.html' %} 
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    {% load static %}
+    <link rel="icon" href="{% static 'img/favicon.ico' %}" type="image/ico">
+    
+    {% if debug %}
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    {% else %}
+        <script src="{% static 'vendor/tailwind.full.min.js' %}"></script>
+        <script src="{% static 'vendor/jquery.min.js' %}"></script>
+    {% endif %}
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=Unbounded:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Yandex.Metrika counter -->
+    <script type="text/javascript" >
+        setTimeout(function() {
+            (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+            m[i].l=1*new Date();
+            for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+            k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+            (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+        
+            ym(98823704, "init", {
+                clickmap:true,
+                trackLinks:true,
+                accurateTrackBounce:true,
+                webvisor:true
+            });
+        }, 1000);
+    </script>
+    <noscript><div><img src="https://mc.yandex.ru/watch/98823704" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+    <!-- /Yandex.Metrika counter -->
+
+    <style>
+        :root {
+            --color-bg: #0F0818;
+            --color-surface: rgba(30, 24, 48, 0.5);
+            --color-border: rgba(97, 109, 240, 0.2);
+            --color-text-primary: #f0f0f0;
+            --color-text-secondary: #a0a0b0;
+            --color-accent-primary: #616DF0;
+            --color-accent-secondary: #70dd60;
+        }
+        body { background-color: var(--color-bg); font-family: 'Inter', sans-serif; }
+        h1, h2, h3 { font-family: 'Unbounded', sans-serif; }
+        .gradient-text {
+            background: linear-gradient(45deg, var(--color-accent-primary), var(--color-accent-secondary));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+
+        .toggle-switch input:checked + .slider { background-color: var(--color-accent-secondary); }
+        .toggle-switch input:checked + .slider:before { transform: translateX(26px); }
+        .toggle-switch input:disabled + .slider { opacity: 0.5; cursor: not-allowed; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeIn {
+            animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+
+        .floating-action-bar {
+            position: fixed;
+            bottom: 1.25rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            background: linear-gradient(135deg, rgba(30, 24, 48, 0.4), rgba(30, 24, 48, 0.2));
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 9999px;
+            border: 1px solid transparent;
+            background-clip: padding-box;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), 
+                        inset 0 1px 1px rgba(255, 255, 255, 0.05);
+            z-index: 50;
+            transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+        }
+
+        .floating-action-bar a, .floating-action-bar button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            height: 3rem;
+            padding: 0 1.25rem;
+            border: none;
+            border-radius: 9999px;
+            font-size: 1rem;
+            font-weight: 600;
+            text-decoration: none;
+            white-space: nowrap;
+            cursor: pointer;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .floating-action-bar .copy-btn,
+        .floating-action-bar a[title="Создать свой"] {
+            width: 3rem;
+            padding: 0;
+        }
+
+        .floating-action-bar a:hover, 
+        .floating-action-bar button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .floating-action-bar a:active,
+        .floating-action-bar button:active {
+            transform: translateY(-1px) scale(0.98);
+        }
+
+        .floating-action-bar a[href*="take_test"],
+        .floating-action-bar button.bg-\[\--color-accent-primary\] {
+            background-color: var(--color-accent-primary);
+            color: white;
+        }
+
+        .floating-action-bar a[href*="preview_test_result"],
+        .floating-action-bar button.bg-\[\--color-accent-secondary\] {
+            background-color: var(--color-accent-secondary);
+            color: var(--color-bg);
+        }
+
+        .floating-action-bar a.copy-btn,
+        .floating-action-bar a[title="Создать свой"] {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        .floating-action-bar a.copy-btn:hover,
+        .floating-action-bar a[title="Создать свой"]:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .apple-toast {
+            position: fixed;
+            top: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            background: linear-gradient(135deg, rgba(40, 35, 60, 0.7), rgba(30, 24, 48, 0.6));
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            color: white;
+            font-weight: 600;
+            font-size: 0.9rem;
+            border-radius: 9999px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4),
+                        inset 0 1px 1px rgba(255, 255, 255, 0.05);
+            z-index: 1000;
+            transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+            width: max-content;
+        }
+
+        .apple-toast--visible {
+            transform: translateX(-50%) translateY(120px);
+        }
+
+        .apple-toast .icon-success {
+            font-size: 1.1rem;
+            color: var(--color-accent-secondary);
+        }
+
+        .apple-toast .icon-error {
+            font-size: 1.1rem;
+            color: #EF4444;
+        }
+        #arena-card {
+            transition: transform 0.5s ease-in-out, opacity 0.5s ease-in-out;
+            cursor: grab;
+        }
+        #arena-card.is-swiping {
+            transition: none;
+        }
+        #arena-card.exit-left {
+            transform: translateX(-150%) rotate(-30deg) !important;
+            opacity: 0;
+        }
+        #arena-card.exit-right {
+            transform: translateX(150%) rotate(30deg) !important;
+            opacity: 0;
+        }
+        .answer-btn.correct { border-color: var(--color-correct); box-shadow: 0 0 20px var(--color-correct); }
+        .answer-btn.incorrect { border-color: var(--color-incorrect); box-shadow: 0 0 20px var(--color-incorrect); }
+    </style>
+</head>
+<body class="bg-create flex flex-col items-center justify-center p-4">
+
+    <header class="sticky top-4 z-40 rounded-3xl pt-2 pb-2 mb-12 mt-2">
+        <div class="relative max-w-3xl mx-auto">
+            <!-- Основная панель хедера -->
+            <div class="flex items-center justify-between gap-4 bg-[var(--color-surface)]/80 backdrop-blur-xl rounded-full border border-[var(--color-border)] p-2 shadow-2xl">
+                <a href="/" class="flex-shrink-0 p-2"><img src="{% static 'img/logo.png' %}" alt="Лого" class="w-8 h-auto"></a>
+                
+                <div class="flex items-center gap-6 text-white font-bold text-lg">
+                    <div class="flex items-center gap-2"><i class="fas fa-star text-yellow-400"></i> <span id="score">0</span></div>
+                    <div class="flex items-center gap-2"><i class="fas fa-fire text-orange-500"></i> <span id="streak">0</span></div>
+                </div>
+                
+                <div class="flex-shrink-0"><button id="action-menu-btn" class="h-12 w-12 flex items-center justify-center bg-black/20 rounded-full hover:bg-black/40 transition-colors"><i class="fas fa-ellipsis-h text-[var(--color-accent-primary)]"></i></button></div>
+            </div>
+            <!-- Выпадающее меню -->
+            <div id="action-menu" class="hidden absolute top-full right-0 mt-2 w-64
+                                        bg-[var(--color-surface)]/90 backdrop-blur-xl 
+                                        rounded-3xl border border-[var(--color-border)]
+                                        p-2 shadow-2xl shadow-black/50
+                                        origin-top-right transition-all duration-200 ease-out 
+                                        transform opacity-0 scale-95 z-50">
+                <nav class="flex flex-col">
+                    {% if username != 0 %}
+
+                        {% if is_creator %}
+                            <a href="{% url 'preview_test_result' survey_id %}" class="flex items-center gap-3 px-4 py-3 text-[var(--color-accent-secondary)] font-bold rounded-3xl hover:bg-white/5 transition-transform active:scale-[.97]"><i class="fas fa-chart-pie w-5 text-center"></i><span>Аналитика теста</span></a>
+                            <hr class="border-t border-[var(--color-border)] my-1">
+                        {% endif %}
+                        
+                        <a href="{% url 'profile_redirect' %}" class="flex items-center gap-3 px-4 py-3 text-white font-semibold rounded-3xl hover:bg-white/5 transition-transform active:scale-[.97]"><i class="fas fa-user-circle w-5 text-center text-gray-400"></i><span>Мой профиль</span></a>
+                        <a href="{% url 'history' %}" class="flex items-center gap-3 px-4 py-3 text-white font-semibold rounded-3xl hover:bg-white/5 transition-transform active:scale-[.97]"><i class="fas fa-history w-5 text-center text-gray-400"></i><span>История тестов</span></a>
+                        <a href="{% url 'create' %}" class="flex items-center gap-3 px-4 py-3 text-white font-semibold rounded-3xl hover:bg-white/5 transition-transform active:scale-[.97]"><i class="fas fa-plus w-5 text-center text-gray-400"></i><span>Создать новый</span></a>
+                        
+                        <hr class="border-t border-[var(--color-border)] my-1">
+                        <a href="{% url 'logout' %}" class="flex items-center gap-3 px-4 py-3 text-red-400 font-semibold rounded-3xl hover:bg-white/5 transition-transform active:scale-[.97]"><i class="fas fa-sign-out-alt w-5 text-center"></i><span>Выйти</span></a>
+
+                    {% else %}
+                        <a href="{% url 'arena' %}" class="px-4 py-3 text-white font-semibold rounded-3xl hover:bg-white/5 transition-transform active:scale-[.97]">Сразиться на Арене!</a>
+                        <hr class="border-t border-[var(--color-border)] my-1">
+                        <a href="/#transformation-engine" class="px-4 py-3 text-white font-semibold rounded-3xl hover:bg-white/5 transition-transform active:scale-[.97]">Как начать</a>
+                        <a href="/#use-cases" class="px-4 py-3 text-white font-semibold rounded-3xl hover:bg-white/5 transition-transform active:scale-[.97]">Кейсы</a>
+                        <a href="/#analytics-showcase" class="px-4 py-3 text-white font-semibold rounded-3xl hover:bg-white/5 transition-transform active:scale-[.97]">Аналитика</a>
+                        <a href="/#faq" class="px-4 py-3 text-white font-semibold rounded-3xl hover:bg-white/5 transition-transform active:scale-[.97]">FAQ</a>
+                        <hr class="border-t border-[var(--color-border)] my-1">
+                        <a href="/register" class="block text-center bg-[var(--color-accent-primary)] text-white px-5 py-3 font-bold rounded-3xl mt-1">Зарегистрироваться</a>
+                    {% endif %}
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- КОНТЕЙНЕР ДЛЯ КАРТОЧЕК -->
+    <div id="arena-card-container" class="relative w-full max-w-xl h-96">
+        <!-- Сюда JS будет вставлять карточки -->
+    </div>
+
+    <main class="flex-grow flex flex-col items-center justify-center p-4">
+
+        <div id="survey-title-container" class="text-center h-10">
+            <a href="#" id="survey-title-link" class="text-sm text-gray-500 hover:text-white transition-colors truncate">
+                <!-- Сюда JS вставит название теста -->
+            </a>
+        </div>
+        <div id="arena-card-container" class="relative w-full max-w-lg h-4">
+            <!-- Карточка теперь будет создаваться полностью в JS -->
+        </div>
+        <div class="mt-8 flex gap-6">
+            <button id="no-btn" class="control-btn bg-red-500/80"><i class="fas fa-times"></i></button>
+            <button id="skip-btn" title="Пропустить" class="control-btn bg-gray-700/60 w-16 h-16 text-2xl"><i class="fas fa-forward"></i></button>
+            <button id="yes-btn" class="control-btn bg-green-500/80"><i class="fas fa-check"></i></button>
+        </div>
+    </main>
+
+    <!-- НИЖНИЙ ДОК -->
+    <footer class="sticky bottom-4 z-40 flex justify-center">
+        <button id="stats-modal-trigger" class="flex items-center gap-2 h-12 px-5 rounded-full bg-black/50 backdrop-blur-xl border border-gray-700/80 shadow-lg hover:bg-black/70 transition-colors">
+            <i class="fas fa-chart-bar text-gray-400"></i>
+            <span class="text-white font-semibold text-sm">Статистика</span>
+        </button>
+    </footer>
+
+    <div id="stats-modal" class="fixed inset-0 bg-black/80 z-50 hidden items-center justify-center p-4">
+        <div id="stats-modal-content" class="bg-[var(--color-surface)] w-full max-w-md p-6 rounded-3xl border border-[var(--color-border)] transform scale-95 opacity-0 transition-all duration-300 backdrop-blur-xl">
+            <div class="flex justify-between items-center">
+                <h3 class="text-2xl font-bold text-white">Ваша статистика</h3>
+                <button id="close-stats-modal-btn" class="text-gray-500 hover:text-white text-2xl">&times;</button>
+            </div>
+            <div id="stats-body" class="mt-6 space-y-4">
+                <div class="stat-item"><span class="text-gray-400">Точность</span> <span id="accuracy-stat" class="font-bold text-white text-lg">-%</span></div>
+                <div class="stat-item"><span class="text-gray-400">Рекордный страйк</span> <span id="max-streak-stat" class="font-bold text-white text-lg">0</span></div>
+                <div class="stat-item"><span class="text-gray-400">Ответов дано</span> <span id="answered-stat" class="font-bold text-white text-lg">0</span></div>
+                <div class="stat-item"><span class="text-gray-400">Вы лучше, чем</span> <span id="percentile-stat" class="font-bold text-white text-lg">-%</span> Вопросов отвечено</div>
+            </div>
+        </div>
+    </div>
+
+    <style>.control-btn { width: 5rem; height: 5rem; border-radius: 9999px; font-size: 2rem; color: white; box-shadow: 0 10px 20px rgba(0,0,0,0.3); transition: transform 0.2s ease; } .control-btn:active { transform: scale(0.9); }</style>
+    <style>.stat-item { display: flex; justify-content: space-between; align-items: baseline; padding: 0.75rem 0; border-bottom: 1px solid var(--color-border); } .control-btn { width: 5rem; height: 5rem; border-radius: 9999px; font-size: 2rem; color: white; box-shadow: 0 10px 20px rgba(0,0,0,0.3); transition: transform 0.2s ease; } .control-btn:active { transform: scale(0.9); }</style>
+    
+    <!-- JS -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // --- ЭЛЕМЕНТЫ ---
+            const cardContainer = document.getElementById('arena-card-container');
+            const scoreDisplay = document.getElementById('score');
+            const streakDisplay = document.getElementById('streak');
+            const yesBtn = document.getElementById('yes-btn');
+            const noBtn = document.getElementById('no-btn');
+            const skipBtn = document.getElementById('skip-btn');
+            const surveyTitleLink = document.getElementById('survey-title-link');
+            
+            // --- ЭЛЕМЕНТЫ МОДАЛКИ ---
+            const statsModal = document.getElementById('stats-modal');
+            const statsModalContent = document.getElementById('stats-modal-content');
+            const statsTrigger = document.getElementById('stats-modal-trigger');
+            const closeStatsBtn = document.getElementById('close-stats-modal-btn');
+            const statsBody = document.getElementById('stats-body');
+            
+            const accuracyStat = document.getElementById('accuracy-stat');
+            const maxStreakStat = document.getElementById('max-streak-stat');
+            const answeredStat = document.getElementById('answered-stat');
+            const percentileStat = document.getElementById('percentile-stat');
+            
+            // --- СОСТОЯНИЕ ИГРЫ ---
+            let currentQuestion = null;
+            let score = 0;
+            let streak = 0;
+            let isInteractable = true;
+            let questionsAnswered = 0;
+            let questionsCorrect = 0;
+            let maxStreak = 0;
+
+            // --- ФУНКЦИИ ---
+            const createCard = (questionData) => {
+                const card = document.createElement('div');
+                card.id = `question-${questionData.question_id}`;
+                card.className = "absolute inset-0 bg-[var(--color-surface)] rounded-3xl border border-[var(--color-border)] p-8 shadow-2xl text-center flex flex-col justify-between card-enter-from";
+                card.innerHTML = `<p class="text-xl font-semibold text-white">${questionData.question_text}</p><div class="answer-block my-6 p-4 rounded-2xl border-2 border-dashed border-gray-700 bg-black/20"><p class="text-lg font-medium text-gray-300">${questionData.displayed_answer}</p></div>`;
+                return card;
+            };
+
+            const fetchNextQuestion = async () => {
+                isInteractable = false;
+                
+                try {
+                    const response = await fetch("{% url 'api_get_next_question' %}");
+                    currentQuestion = await response.json();
+                    
+                    const newCard = createCard(currentQuestion);
+                    cardContainer.innerHTML = '';
+                    cardContainer.appendChild(newCard);
+
+                    if (surveyTitleLink && currentQuestion.survey_title) {
+                        surveyTitleLink.textContent = `Из теста: "${currentQuestion.survey_title}"`;
+                        surveyTitleLink.href = `/c/${currentQuestion.survey_id}/`;
+                    }
+
+                    requestAnimationFrame(() => {
+                        newCard.classList.add('card-enter-active');
+                        newCard.classList.remove('card-enter-from');
+                    });
+                    
+                    isInteractable = true;
+                } catch (error) {
+                    console.error("Failed to fetch next question:", error);
+                    // TODO: Показать юзеру ошибку
+                }
+            };
+
+            const handleChoice = async (userChoseYes) => {
+                if (!isInteractable || !currentQuestion) return;
+                isInteractable = false;
+                
+                const card = document.getElementById(`question-${currentQuestion.question_id}`);
+                const answerBlock = card.querySelector('.answer-block');
+
+                animateCardExit(card, userChoseYes ? 'right' : 'left');
+
+                try {
+                    const response = await fetch("{% url 'api_submit_arena_answer' %}", {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+                        body: JSON.stringify({
+                            question_id: currentQuestion.question_id,
+                            user_answer: currentQuestion.displayed_answer
+                        })
+                    });
+                    const result = await response.json();
+                    
+                    answerBlock.className = `my-6 p-4 rounded-2xl border-2 ${result.is_correct ? 'border-[var(--color-correct)] bg-green-500/10' : 'border-[var(--color-incorrect)] bg-red-500/10'}`;
+                    
+                    if (result.updated_stats) {
+                        updateStats(result.updated_stats);
+                    }
+                    
+                    setTimeout(fetchNextQuestion, 500);
+
+                } catch (error) {
+                    console.error("Failed to submit answer:", error);
+                    isInteractable = true;
+                }
+            };
+            
+            function updateStats(stats) {
+                const scoreDisplay = document.getElementById('score');
+                const streakDisplay = document.getElementById('streak');
+                const statsBody = document.getElementById('stats-body');
+                
+                if (scoreDisplay) {
+                    scoreDisplay.textContent = stats.score;
+                }
+                if (streakDisplay) {
+                    streakDisplay.textContent = stats.streak;
+                }
+                
+                if (statsBody) {
+                    statsBody.innerHTML = `
+                        <div class="stat-item"><span class="text-gray-400">Точность</span> <span class="font-bold text-white text-lg">${stats.accuracy}</span></div>
+                        <div class="stat-item"><span class="text-gray-400">Рекордный страйк</span> <span class="font-bold text-white text-lg">${stats.max_streak}</span></div>
+                        <div class="stat-item"><span class="text-gray-400">Ответов дано</span> <span class="font-bold text-white text-lg">${stats.answered}</span></div>
+                        <div class="stat-item"><span class="text-gray-400">Вы лучше, чем</span> <span class="font-bold text-white text-lg">${stats.percentile || '-%'}</span></div>
+                    `;
+                }
+            }
+
+            function animateCardExit(card, direction) {
+                card.classList.add('card-exit-active');
+                if (direction === 'right') card.classList.add('card-exit-to-right');
+                else if (direction === 'left') card.classList.add('card-exit-to-left');
+                else { // <-- НАШ СКИП
+                    card.style.transition = 'transform 0.3s ease-in, opacity 0.3s ease-in';
+                    card.style.transform = 'translateY(150%) scale(0.5)';
+                    card.style.opacity = '0';
+                }
+                setTimeout(() => card.remove(), 300);
+            }
+            
+            // --- ЛОГИКА МОДАЛКИ ---
+            const openStatsModal = () => {
+                statsModal.classList.remove('hidden');
+                statsModal.classList.add('flex');
+                setTimeout(() => {
+                    statsModalContent.classList.remove('scale-95', 'opacity-0');
+                }, 10);
+            };
+            const closeStatsModal = () => {
+                statsModalContent.classList.add('scale-95', 'opacity-0');
+                setTimeout(() => {
+                    statsModal.classList.add('hidden');
+                    statsModal.classList.remove('flex');
+                }, 300);
+            };
+
+            // --- ОБРАБОТЧИКИ ---
+            yesBtn.onclick = () => handleChoice(true);
+            noBtn.onclick = () => handleChoice(false);
+            skipBtn.onclick = () => {
+                if (isInteractable) {
+                    animateCardExit(document.getElementById(`question-${currentQuestion.question_id}`), 'skip');
+                    setTimeout(fetchNextQuestion, 300);
+                }
+            };
+
+            statsTrigger.onclick = openStatsModal;
+            closeStatsBtn.onclick = closeStatsModal;
+            statsModal.onclick = (e) => { if(e.target === statsModal) closeStatsModal(); };
+            document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !statsModal.classList.contains('hidden')) closeStatsModal(); });
+            
+            const initialStatsRaw = '{{ initial_stats_json|safe }}';
+            if (initialStatsRaw) {
+                try {
+                    const initialStats = JSON.parse(initialStatsRaw);
+                    updateStats(initialStats);
+                } catch (e) {
+                    console.error("Failed to parse initial stats", e);
+                }
+            }
+            
+            // --- СТАРТ! ---
+            fetchNextQuestion();
+        });
+    </script>
+    
+    <script>
+        $(document).ready(function() {
+            // Выпадающее меню в хедере
+            const actionMenuBtn = $('#action-menu-btn');
+            const actionMenu = $('#action-menu');
+
+            actionMenuBtn.on('click', function(e) {
+                e.stopPropagation();
+                
+                if (actionMenu.hasClass('hidden')) {
+                    actionMenu.removeClass('hidden');
+                    setTimeout(() => {
+                        actionMenu.removeClass('opacity-0 scale-95').addClass('opacity-100 scale-100');
+                    }, 10);
+                } else {
+                    actionMenu.removeClass('opacity-100 scale-100').addClass('opacity-0 scale-95');
+                    setTimeout(() => {
+                        actionMenu.addClass('hidden');
+                    }, 200);
+                }
+            });
+
+            $(document).on('click', function(e) {
+                if (!actionMenu.hasClass('hidden') && !actionMenu.is(e.target) && actionMenu.has(e.target).length === 0) {
+                    actionMenuBtn.click()
+                }
+            });
+
+        });
+    </script>
+</body>
+</html>

@@ -7,6 +7,9 @@ from django.utils import timezone
 from django.db.models import Sum
 from django.db.models import Sum, F, Value, FloatField
 from django.db.models.functions import Coalesce
+from django.conf import settings
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 from datetime import timedelta, datetime
 import json
@@ -15,6 +18,13 @@ import hashlib
 import random
 
 from .converter_pdf import *
+
+
+class Tag(models.Model):
+    name = models.CharField(max_length=50, unique=True)
+
+    def __str__(self):
+        return self.name
 
 
 class Survey(models.Model):
@@ -29,6 +39,8 @@ class Survey(models.Model):
     show_answers = models.BooleanField(default=False)
     view_count = models.PositiveIntegerField(default=0)
     description = models.CharField(max_length=255, blank=True, null=True)
+    is_private = models.BooleanField(default=False)
+    tags = models.ManyToManyField(Tag, blank=True, related_name='surveys')
 
     def get_questions(self):
         return json.loads(self.questions)
@@ -571,3 +583,32 @@ class TestAttempt(models.Model):
 
     def get_answers(self):
         return json.loads(self.answers_json)
+
+
+class Question(models.Model):
+    survey = models.ForeignKey(Survey, on_delete=models.CASCADE, related_name='individual_questions')
+    text = models.TextField()
+    options = models.JSONField()
+    correct_answer = models.CharField(max_length=500)
+
+    def __str__(self):
+        return self.text[:50]
+
+
+class ArenaProfile(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='arena_profile')
+    total_score = models.PositiveIntegerField(default=0)
+    current_streak = models.PositiveIntegerField(default=0)
+    max_streak = models.PositiveIntegerField(default=0)
+    questions_answered = models.PositiveIntegerField(default=0)
+    questions_correct = models.PositiveIntegerField(default=0)
+    interests = models.JSONField(default=dict, blank=True)
+
+    def __str__(self):
+        return f"Arena profile for {self.user.username}"
+
+
+@receiver(post_save, sender=settings.AUTH_USER_MODEL)
+def create_arena_profile(sender, instance, created, **kwargs):
+    if created:
+        ArenaProfile.objects.create(user=instance)

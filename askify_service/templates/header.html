@@ -69,6 +69,11 @@
                         <i class="fas fa-user-circle w-5 text-center"></i>
                         <span>Мой профиль</span>
                     </a>
+                    <hr class="border-t border-[var(--color-border)] my-1">
+                    <a href="{% url 'arena' %}" class="menu-item">
+                        <i class="fa-solid fa-jet-fighter-up w-5 text-center"></i>
+                        <span>Сразиться на Арене!</span>
+                    </a>
 
                     {% if subscription_level < 1 or subscription_level == 99 %}
                         <hr class="border-t border-[var(--color-border)] my-1">

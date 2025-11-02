@@ -23,6 +23,10 @@ urlpatterns = [
     path('c/<str:survey_id>/result/', redirect_to_dashboard, name='preview_test_inside'),
     path('c/<str:survey_id>/dashboard/', view_results, name='preview_test_result'),
 
+    path('arena/', arena_view, name='arena'),
+    path('api/arena/next-question/', get_next_question, name='api_get_next_question'),
+    path('api/arena/submit-answer/', submit_arena_answer, name='api_submit_arena_answer'),
+
     path('register-view/<str:survey_id>/', register_survey_view, name='register_survey_view'),
     path('api/surveys/<uuid:survey_id>/toggle-answers/', toggle_answers, name='toggle-answers'),
     path('api/t/<str:survey_id>/submit/', submit_answers, name='submit_answers'),
