@@ -798,3 +798,36 @@ def is_valid_uuid(value):
         return True
     except ValueError:
         return False
+
+
+def clean_text_for_llm(raw_text: str) -> str:
+    """
+        Очищает и готовит текст для отправки в LLM.
+    """
+    if not raw_text:
+        return ""
+
+    text = re.sub(r'\s+', ' ', raw_text)
+    text = text.strip()
+
+    lines = text.splitlines()
+    cleaned_lines = []
+    for line in lines:
+        line = line.strip()
+        if line.isdigit():
+            continue
+        if len(line.split()) < 3:
+            continue
+        cleaned_lines.append(line)
+
+    text = "\n".join(cleaned_lines)
+
+    text = re.sub(r'([.,!?])\1+', r'\1', text)
+
+    prepared_text = (
+        "--- ТЕКСТ ДОКУМЕНТА ---\n"
+        f"{text}\n"
+        "--- КОНЕЦ ТЕКСТА ДОКУМЕНТА ---"
+    )
+
+    return prepared_text

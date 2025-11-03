@@ -1128,9 +1128,9 @@ class FileUploadView(View):
             return JsonResponse({'error': 'Файл слишком большой. Максимальный размер: 5 МБ'}, status=400)
 
         data = self.read_file_data(uploaded_file)
-        if data == -1:
-            tracer_l.error('Файл не является допустимым документом')
-            return JsonResponse({'error': 'Файл не является допустимым документом'})
+        if not data or data == -1:
+            tracer_l.error('Файл пуст или не удалось прочитать')
+            return JsonResponse({'error': 'Файл пуст или содержит недопустимые данные.'})
 
         subscription_object = await sync_to_async(Subscription.objects.filter(staff_id=staff_id).first)()
         if subscription_object.check_sub_status() != 'active':
@@ -1140,7 +1140,8 @@ class FileUploadView(View):
 
         try:
             prompts_tokens = 479
-            num_tokens = count_tokens(data) + prompts_tokens
+            cleaned_data_for_llm = clean_text_for_llm(data)
+            num_tokens = count_tokens(cleaned_data_for_llm) + prompts_tokens
             tracer_l.info(f"Кол-во токенов в файле: {num_tokens}")
             if num_tokens > 8000:
                 tracer_l.error(f'Слишком большой объем текста в файле ({num_tokens} токенов). ')
@@ -1157,7 +1158,7 @@ class FileUploadView(View):
         tracer_l.debug("--- ТЕСТ ГЕНЕРИРУЕТСЯ ---")
         try:
             tracer_l.debug("Начало генерации")
-            manage_generate_surveys_text = ManageGenerationSurveys(request, data, f'{question_count}')
+            manage_generate_surveys_text = ManageGenerationSurveys(request, cleaned_data_for_llm, f'{question_count}')
             generated_text = await manage_generate_surveys_text.github_gpt(await get_active_api_key('SURVEY'))
             tracer_l.debug("Завершение генерации")
 
