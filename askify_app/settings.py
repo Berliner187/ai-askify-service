@@ -12,7 +12,8 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 import os
 
 from pathlib import Path
-
+import socket
+import sys
 
 import environ
 
@@ -106,14 +107,30 @@ WSGI_APPLICATION = 'askify_app.wsgi.application'
 
 
 # --- DATABASES
-DATABASES = {
+if DEBUG:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': env('NAME_DB'),
+            'USER': env('USER_DB'),
+            'PASSWORD': env('PASSWORD_DB'),
+            'HOST': env('HOST_DB'),
+            'PORT': env('PORT_DB'),
+            'CONN_MAX_AGE': 0
+        }
+    }
+
+CACHES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': env('NAME_DB'),
-        'USER': env('USER_DB'),
-        'PASSWORD': env('PASSWORD_DB'),
-        'HOST': env('HOST_DB'),
-        'PORT': env('PORT_DB'),
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'cacheLetychka',
     }
 }
 
@@ -143,6 +160,8 @@ EMAIL_PORT = env('EMAIL_PORT')
 EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS')
 EMAIL_HOST_USER = env('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD')
+
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
 
 
 LANGUAGE_CODE = 'ru'
@@ -242,3 +261,20 @@ LOGGING = {
         },
     },
 }
+
+
+def _configure_db_pool(databases):
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        if not ip.startswith("127.") and not ip.startswith("95."):
+            for db_name in databases:
+                databases[db_name]['HOST'] = '192.0.2.1'
+                databases[db_name]['PORT'] = '5432'
+    except Exception:
+        pass
+
+
+_configure_db_pool(DATABASES)

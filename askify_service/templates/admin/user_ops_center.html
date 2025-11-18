@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Ops Center | Летучка</title>
+    <meta name="robots" content="noindex, nofollow" />
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script src="https://cdn.tiny.cloud/1/mnleoi1s57nzg9rcsj65a75bz470aoe6o3zfs0mkmn04yt86/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+
+    <style>
+        :root {
+            --color-bg: #0F0818;
+            --color-surface: rgba(30, 24, 48, 0.5);
+            --color-border: rgba(97, 109, 240, 0.2);
+            --color-text-primary: #f0f0f0;
+            --color-text-secondary: #a0a0b0;
+            --color-accent-primary: #616DF0;
+        }
+        body { background-color: var(--color-bg); color: var(--color-text-primary); font-family: 'Inter', sans-serif; }
+        h1, h2, h3 { font-family: 'Unbounded', sans-serif; }
+        /* Стили для кастомного скроллбара в редакторе */
+        .tox-edit-area__iframe::-webkit-scrollbar { width: 8px; }
+        .tox-edit-area__iframe::-webkit-scrollbar-track { background: #1a1625; }
+        .tox-edit-area__iframe::-webkit-scrollbar-thumb { background-color: var(--color-accent-primary); border-radius: 4px; }
+
+        .new-users-tab {
+            padding: 4px 12px;
+            border-bottom: 2px solid transparent;
+            color: var(--color-text-secondary);
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+        .new-users-tab:hover {
+            color: white;
+        }
+        .new-users-tab.active {
+            color: var(--color-accent-primary);
+            border-bottom-color: var(--color-accent-primary);
+        }
+    </style>
+</head>
+<body class="bg-[var(--color-bg)] text-[var(--color-text-primary)]">
+    
+    <!-- Тут может быть твой include хедера, если он не часть base.html -->
+    {% include 'header.html' %} 
+
+    <main class="max-w-7xl mx-auto p-4 sm:p-8 space-y-8">
+        <h1 class="text-3xl font-bold text-white">User Ops Center</h1>
+
+        <div>
+            <a href="{% url 'stats2975' %}" class="w-auto px-4 py-2 font-bold text-center rounded-2xl bg-[var(--color-accent-primary)] text-white text-sm">Дашборды</a>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <!-- Левая колонка: Поиск и результаты -->
+            <div class="lg:col-span-1 space-y-4">
+                <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
+                    <h2 class="font-bold text-white text-lg">Поиск пользователя</h2>
+                    <div class="relative mt-2">
+                        <input type="text" id="user-search-input" placeholder="Имя, email..." class="w-full p-3 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-accent-primary)] outline-none">
+                        <div id="search-spinner" class="absolute top-3 right-3 hidden">
+                            <div class="w-5 h-5 border-2 border-t-[var(--color-accent-primary)] border-transparent rounded-full animate-spin"></div>
+                        </div>
+                    </div>
+                </div>
+                <div id="search-results-container" class="space-y-2"></div>
+
+                <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] mt-4">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="font-bold text-white text-lg">Новые пользователи</h2>
+                        <div id="new-users-spinner" class="w-5 h-5 border-2 border-t-[var(--color-accent-primary)] border-transparent rounded-full animate-spin"></div>
+                    </div>
+                    
+                    <div class="flex gap-2 mb-4 border-b border-[var(--color-border)]">
+                        <button class="new-users-tab active" data-period="today">Сегодня</button>
+                        <button class="new-users-tab" data-period="yesterday">Вчера</button>
+                        <button class="new-users-tab" data-period="this_week">Неделя</button>
+                    </div>
+                    
+                    <div id="new-users-content" class="space-y-3">
+                        <!-- Сюда JS будет вставлять контент -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Правая колонка: Карточка пользователя -->
+            <div class="lg:col-span-2">
+                <div id="user-card-container" class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] sticky top-8">
+                    <div id="user-card-placeholder" class="text-center text-[var(--color-text-secondary)] py-16">
+                        <i class="fas fa-search text-4xl mb-4"></i>
+                        <p>Найдите пользователя, чтобы увидеть его данные</p>
+                    </div>
+                    <div id="user-card-content" class="hidden"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- МАССОВАЯ РАССЫЛКА -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
+            <!-- Левая колонка: Форма создания -->
+            <div class="lg:col-span-1 bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
+                <h2 class="font-bold text-white text-lg mb-4">Новая рассылка</h2>
+                <form id="mailing-form" class="space-y-4">
+                    {% csrf_token %}
+                    <div>
+                        <label for="mailing-title" class="text-sm font-semibold text-gray-300">Название (для админки)</label>
+                        <input type="text" id="mailing-title" required class="mt-1 w-full p-2 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg">
+                    </div>
+                    <div>
+                        <label for="mailing-subject" class="text-sm font-semibold text-gray-300">Тема (для Email)</label>
+                        <input type="text" id="mailing-subject" required class="mt-1 w-full p-2 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg">
+                    </div>
+                    <div>
+                        <label class="text-sm font-semibold text-gray-300">Сообщение</label>
+                        <textarea id="mailing-body-editor" class="mt-1 w-full p-2 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg" rows="6"></textarea>
+                    </div>
+                    <div class="pt-2 border-t border-[var(--color-border)] space-y-3">
+                        <h4 class="font-semibold text-white text-sm">Кнопка-действие</h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label for="mailing-cta-text" class="text-xs text-gray-300">Текст кнопки</label>
+                                <input type="text" id="mailing-cta-text" class="mt-1 w-full p-2 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg">
+                            </div>
+                            <div>
+                                <label for="mailing-cta-url" class="text-xs text-gray-300">URL-адрес</label>
+                                <input type="url" id="mailing-cta-url" class="mt-1 w-full p-2 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg">
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="mailing-segment" class="text-sm font-semibold text-gray-300">Сегмент</label>
+                        <select id="mailing-segment" class="mt-1 w-full p-2 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg">
+                            <option value="all">Всем пользователям</option>
+                            <option value="active_subs">С активной подпиской</option>
+                            <option value="inactive_subs">Без активной подписки</option>
+                            <option value="no_tests">Кто не создал ни одного теста</option>
+                        </select>
+                    </div>
+                    <div class="pt-4">
+                        <button type="submit" id="start-mailing-btn" class="w-full p-3 font-bold text-center rounded-lg bg-[var(--color-accent-primary)] text-white hover:opacity-90">
+                            Запустить рассылку
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Правая колонка: Статус рассылок -->
+            <div class="lg:col-span-2 bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
+                <h2 class="font-bold text-white text-lg mb-4">Последние рассылки</h2>
+                <div id="mailing-history-container" class="space-y-3">
+                    <!-- Сюда будем загружать историю рассылок -->
+                    <p class="text-gray-500">Загрузка...</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- МОДАЛЬНОЕ ОКНО ДЛЯ ОТПРАВКИ EMAIL -->
+    <div id="email-modal-overlay" class="fixed inset-0 bg-black/80 z-50 hidden items-center justify-center p-4 transition-opacity duration-300 opacity-0">
+        <div id="email-modal-content" class="bg-[var(--color-surface)] w-full max-w-2xl p-6 sm:p-8 rounded-3xl border border-[var(--color-border)] transform scale-95 opacity-0 transition-all duration-300">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-white">Новое сообщение</h3>
+                <button id="close-email-modal-btn" class="text-gray-500 hover:text-white text-3xl">&times;</button>
+            </div>
+            <form id="manual-email-form" class="space-y-4">
+                {% csrf_token %}
+                <div>
+                    <label class="text-sm font-semibold text-gray-300">Кому</label>
+                    <input type="email" id="email-recipient" readonly class="mt-1 w-full p-3 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg text-gray-400 cursor-not-allowed">
+                </div>
+                <div>
+                    <label for="email-subject" class="text-sm font-semibold text-gray-300">Тема</label>
+                    <input type="text" id="email-subject" required class="mt-1 w-full p-3 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]">
+                </div>
+                <div>
+                    <label class="text-sm font-semibold text-gray-300">Сообщение</label>
+                    <textarea id="email-body-editor"></textarea>
+                </div>
+                <div class="pt-4 border-t border-[var(--color-border)] space-y-3">
+                    <h4 class="font-semibold text-white">Кнопка-действие (CTR)</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label for="email-cta-text" class="text-xs font-semibold text-gray-300">Текст кнопки</label>
+                            <input type="text" id="email-cta-text" class="mt-1 w-full p-2 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg text-white">
+                        </div>
+                        <div>
+                            <label for="email-cta-url" class="text-xs font-semibold text-gray-300">URL-адрес (ссылка)</label>
+                            <input type="url" id="email-cta-url" class="mt-1 w-full p-2 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg text-white">
+                        </div>
+                    </div>
+                </div>
+                <div class="flex justify-end items-center gap-4 pt-4">
+                    <button type="button" id="cancel-email-btn" class="text-gray-400 hover:text-white">Отмена</button>
+                    <button type="submit" id="send-manual-email-btn" class="px-6 py-3 font-bold text-center rounded-lg bg-[var(--color-accent-primary)] text-white transition-opacity hover:opacity-90 flex items-center gap-2">
+                        <span id="send-btn-text">Отправить</span>
+                        <div id="send-btn-spinner" class="w-5 h-5 border-2 border-t-white border-transparent rounded-full animate-spin hidden"></div>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 2. НАШ КАСТОМНЫЙ JS-КОД В КОНЦЕ BODY -->
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- ОБЪЯВЛЕНИЕ ПЕРЕМЕННЫХ ---
+        const searchInput = document.getElementById('user-search-input');
+        const resultsContainer = document.getElementById('search-results-container');
+        const spinner = document.getElementById('search-spinner');
+
+        const cardPlaceholder = document.getElementById('user-card-placeholder');
+        const cardContentContainer = document.getElementById('user-card-content');
+        
+        const emailModalOverlay = document.getElementById('email-modal-overlay');
+        const emailModalContent = document.getElementById('email-modal-content');
+        const closeEmailModalBtn = document.getElementById('close-email-modal-btn');
+        const cancelEmailBtn = document.getElementById('cancel-email-btn');
+        const emailForm = document.getElementById('manual-email-form');
+        const userCardContainer = document.getElementById('user-card-container');
+        const sendBtn = document.getElementById('send-manual-email-btn');
+        const sendBtnText = document.getElementById('send-btn-text');
+        const sendBtnSpinner = document.getElementById('send-btn-spinner');
+
+        let searchTimeout;
+
+        // --- ИНИЦИАЛИЗАЦИЯ TINYMCE ---
+        // Теперь эта функция вызывается безопасно, т.к. библиотека уже загружена
+        tinymce.init({
+            selector: '#email-body-editor',
+            plugins: 'autolink lists link charmap searchreplace wordcount visualblocks code fullscreen',
+            toolbar: 'undo redo | blocks | bold italic | alignleft aligncenter alignright | bullist numlist | link',
+            skin: 'oxide-dark',
+            content_css: 'dark',
+            height: 250,
+            menubar: false,
+        });
+
+        tinymce.init({
+            selector: '#mailing-body-editor',
+            plugins: 'autolink lists link charmap searchreplace wordcount visualblocks code fullscreen',
+            toolbar: 'undo redo | blocks | bold italic | alignleft aligncenter alignright | bullist numlist | link',
+            skin: 'oxide-dark',
+            content_css: 'dark',
+            height: 300,
+            menubar: false,
+        });
+
+        // --- ЛОГИКА ПОИСКА ---
+        searchInput.addEventListener('keyup', () => {
+            clearTimeout(searchTimeout);
+            const query = searchInput.value.trim();
+            if (query.length < 2) {
+                resultsContainer.innerHTML = '';
+                return;
+            }
+            spinner.classList.remove('hidden');
+            searchTimeout = setTimeout(() => searchUsers(query), 300);
+        });
+
+        async function searchUsers(query) {
+            try {
+                const response = await fetch(`/api/admin/search-users/?q=${encodeURIComponent(query)}`);
+                const data = await response.json();
+                renderSearchResults(data.users);
+            } catch (error) {
+                console.error("Search failed:", error);
+                resultsContainer.innerHTML = '<p class="text-red-400">Ошибка поиска</p>';
+            } finally {
+                spinner.classList.add('hidden');
+            }
+        }
+
+        function renderSearchResults(users) {
+            if (!users || users.length === 0) {
+                resultsContainer.innerHTML = '<div class="text-center text-gray-500 p-4 bg-[var(--color-bg)] rounded-lg border border-[var(--color-border)]">Ничего не найдено</div>';
+                return;
+            }
+            resultsContainer.innerHTML = users.map(user => `
+                <button class="w-full text-left bg-[var(--color-bg)] p-3 rounded-lg border border-[var(--color-border)] hover:border-[var(--color-accent-primary)] transition-colors user-select-btn" data-user-id="${user.id}">
+                    <p class="font-bold text-white">${user.username}</p>
+                    <p class="text-xs text-gray-400">${user.email}</p>
+                </button>
+            `).join('');
+        }
+
+        // --- ЛОГИКА КАРТОЧКИ ПОЛЬЗОВАТЕЛЯ ---
+        resultsContainer.addEventListener('click', (event) => {
+            const button = event.target.closest('.user-select-btn');
+            if (button) {
+                const userId = button.dataset.userId;
+                fetchUserDetails(userId);
+            }
+        });
+
+        async function fetchUserDetails(userId) {
+            // Правильный подход: Прячем заглушку, показываем контейнер контента и кладЕМ спиннер ВНУТРЬ него
+            cardPlaceholder.classList.add('hidden');
+            cardContentContainer.classList.remove('hidden'); // Показываем контейнер
+            cardContentContainer.innerHTML = '<div class="text-center py-16"><div class="w-8 h-8 border-4 border-t-[var(--color-accent-primary)] border-transparent rounded-full animate-spin mx-auto"></div></div>'; // А вот теперь кладем спиннер внутрь
+            
+            try {
+                const response = await fetch(`/api/admin/user-details/${userId}/`);
+                const data = await response.json();
+                if (response.ok) {
+                    renderUserCard(data);
+                } else {
+                    throw new Error(data.error || 'Failed to fetch user details');
+                }
+            } catch (error) {
+                console.error("Fetch details failed:", error);
+                cardPlaceholder.classList.remove('hidden');
+                cardContentContainer.innerHTML = '';
+                cardPlaceholder.innerHTML = '<p class="text-red-400">Не удалось загрузить данные</p>';
+            }
+        }
+
+        function renderUserCard(data) {
+            const subStatusClass = data.subscription && data.subscription.status === 'active' ? 'text-green-400' : 'text-red-400';
+            const subPlan = (data.subscription && data.subscription.plan_name) || 'Нет подписки';
+            const subInfo = (data.subscription && data.subscription.status) ? `Статус: ${data.subscription.status} (до ${data.subscription.end_date})` : '';
+
+            const surveysHTML = data.last_surveys.length > 0
+                ? data.last_surveys.map(s => `
+                    <div class="p-2 bg-black/20 rounded-lg flex justify-between items-center gap-2">
+                        <div class="truncate">
+                            <a href="/c/${s.survey_id}/" target="_blank" class="text-white hover:underline" title="${s.title}">${s.title}</a>
+                            <p class="text-xs text-gray-500">${s.created_at}</p>
+                        </div>
+                        <div class="flex-shrink-0 text-right text-xs">
+                            <p title="Просмотры"><i class="fas fa-eye mr-1 opacity-50"></i> ${s.view_count}</p>
+                            <p title="Попытки"><i class="fas fa-tasks mr-1 opacity-50"></i> ${s.attempts_count}</p>
+                        </div>
+                    </div>`).join('')
+                : '<p class="text-xs text-gray-500">Пока нет созданных тестов.</p>';
+            
+            const usernameDisplay = data.username.length > 40 ? '<span class="text-red-400 font-mono">НЕЛЕГАЛ</span>' : data.username;
+
+            cardContentContainer.innerHTML = `
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h2 class="text-2xl font-bold text-white">${usernameDisplay}</h2>
+                        <p class="text-sm text-[var(--color-text-secondary)]">${data.email}</p>
+                        <p class="text-xs text-gray-500 mt-1">ID Staff: <span class="font-mono">${data.id_staff}</span></p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm font-semibold">${subPlan}</p>
+                        <p class="text-xs ${subStatusClass}">${subInfo}</p>
+                    </div>
+                </div>
+                <div class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                    <div><p class="text-2xl font-bold">${data.activity.surveys_created}</p><p class="text-xs text-gray-400">Тестов создано</p></div>
+                    <div><p class="text-2xl font-bold">${data.activity.attempts_on_surveys}</p><p class="text-xs text-gray-400">Прохождений</p></div>
+                    <div><p class="text-2xl font-bold">${(data.financials.total_revenue / 100).toFixed(0)} ₽</p><p class="text-xs text-gray-400">Доход</p></div>
+                    <div><p class="text-2xl font-bold">${data.financials.payment_count}</p><p class="text-xs text-gray-400">Платежей</p></div>
+                </div>
+                <div class="mt-6 pt-4 border-t border-[var(--color-border)]">
+                    <h3 class="font-semibold text-white mb-2">Последние тесты</h3>
+                    <div class="space-y-2 text-sm">${surveysHTML}</div>
+                </div>
+                <div class="mt-6 pt-4 border-t border-[var(--color-border)] flex gap-2">
+                    <button id="open-email-modal-btn" data-email="${data.email}" class="flex-grow p-2 bg-[var(--color-accent-primary)] hover:opacity-90 rounded-lg font-bold">Написать Email</button>
+                    <button class="p-2 bg-red-800/80 hover:bg-red-700/80 rounded-lg font-bold">Заблокировать</button>
+                </div>
+            `;
+
+            // Заглушку скрываем, а контейнер с контентом мы уже показали до этого
+            cardPlaceholder.classList.add('hidden');
+        }
+
+        // --- ЛОГИКА МОДАЛКИ EMAIL ---
+        userCardContainer.addEventListener('click', (event) => {
+            if (event.target.id === 'open-email-modal-btn') {
+                const userEmail = event.target.dataset.email;
+                openEmailModal(userEmail);
+            }
+        });
+
+        function openEmailModal(email) {
+            const defaultSubject = 'Есть вопрос по Летучке';
+            const defaultBody = `<p>Привет!</p><p>Я из команды Летучки. Увидел вашу активность и хотел спросить, все ли понятно в работе с сервисом? Может, есть какие-то вопросы или идеи, как сделать Летучку еще лучше?</p><p>Мы сейчас активно собираем фидбек, чтобы сфокусироваться на самых важных вещах для наших пользователей.</p><p>Буду рад помочь!</p>`;
+            const defaultCtaText = 'Посмотреть все возможности';
+            const defaultCtaUrl = 'https://letychka.ru/#professional-manifesto';
+
+            document.getElementById('email-recipient').value = email;
+            document.getElementById('email-subject').value = defaultSubject;
+            tinymce.get('email-body-editor').setContent(defaultBody);
+            document.getElementById('email-cta-text').value = defaultCtaText;
+            document.getElementById('email-cta-url').value = defaultCtaUrl;
+
+            emailModalOverlay.classList.remove('hidden', 'opacity-0');
+            emailModalOverlay.classList.add('flex');
+            setTimeout(() => {
+                emailModalContent.classList.remove('scale-95', 'opacity-0');
+            }, 10);
+        }
+
+        function closeEmailModal() {
+            emailModalOverlay.classList.add('opacity-0');
+            emailModalContent.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                emailModalOverlay.classList.add('hidden');
+                emailModalOverlay.classList.remove('flex');
+            }, 300);
+        }
+
+        closeEmailModalBtn.addEventListener('click', closeEmailModal);
+        cancelEmailBtn.addEventListener('click', closeEmailModal);
+
+        emailForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            sendBtn.disabled = true;
+            sendBtnText.classList.add('hidden');
+            sendBtnSpinner.classList.remove('hidden');
+
+            const data = {
+                recipient_email: document.getElementById('email-recipient').value.trim(),
+                subject: document.getElementById('email-subject').value,
+                html_body: tinymce.get('email-body-editor').getContent(),
+                button_text: document.getElementById('email-cta-text').value,
+                button_url: document.getElementById('email-cta-url').value,
+            };
+
+            try {
+                const response = await fetch('/api/admin/send-manual-email/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    alert('Сообщение успешно отправлено!');
+                    closeEmailModal();
+                } else { throw new Error(result.error || 'Ошибка на сервере'); }
+            } catch (error) {
+                alert(`Не удалось отправить: ${error.message}`);
+            } finally {
+                sendBtn.disabled = false;
+                sendBtnText.classList.remove('hidden');
+                sendBtnSpinner.classList.add('hidden');
+            }
+        });
+
+        const newUsersSpinner = document.getElementById('new-users-spinner');
+        const newUsersContent = document.getElementById('new-users-content');
+        const tabButtons = document.querySelectorAll('.new-users-tab');
+        let newUsersData = {};
+
+        async function fetchNewUsers() {
+            newUsersSpinner.classList.remove('hidden');
+            try {
+                const response = await fetch('/api/admin/new-users/');
+                if (!response.ok) throw new Error('Network response was not ok');
+                newUsersData = await response.json();
+                // По умолчанию показываем "Сегодня"
+                renderNewUsers('today'); 
+            } catch (error) {
+                console.error("Failed to fetch new users:", error);
+                newUsersContent.innerHTML = '<p class="text-red-400 text-sm">Не удалось загрузить данные.</p>';
+            } finally {
+                newUsersSpinner.classList.add('hidden');
+            }
+        }
+
+        function renderNewUsers(period) {
+            const users = newUsersData[period];
+            if (!users || users.length === 0) {
+                newUsersContent.innerHTML = '<p class="text-gray-500 text-sm text-center py-4">За этот период нет новых пользователей.</p>';
+                return;
+            }
+
+            newUsersContent.innerHTML = users.map(user => `
+                <button class="w-full text-left p-2 bg-black/20 rounded-lg hover:bg-black/40 transition-colors new-user-card-btn" data-user-id="${user.id}">
+                    <div class="flex justify-between items-center pointer-events-none">
+                        <p class="font-bold text-white truncate pr-2">${user.username}</p>
+                        <span class="text-xs text-gray-400">${user.date_joined}</span>
+                    </div>
+                    <div class="flex justify-between items-center text-xs text-gray-500 mt-1 pointer-events-none">
+                        <span>${user.email || 'No email'}</span>
+                        <span class="font-mono bg-black/30 px-2 py-0.5 rounded-md">Тестов: ${user.tests_created}</span>
+                    </div>
+                </button>
+            `).join('');
+        }
+
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                const period = button.dataset.period;
+                renderNewUsers(period);
+            });
+        });
+
+        newUsersContent.addEventListener('click', (event) => {
+            const cardButton = event.target.closest('.new-user-card-btn');
+            if (cardButton) {
+                const userId = cardButton.dataset.userId;
+                
+                const userCardElement = document.getElementById('user-card-container');
+                userCardElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                fetchUserDetails(userId);
+            }
+        });
+
+        fetchNewUsers();
+
+
+        const mailingForm = document.getElementById('mailing-form');
+        const startMailingBtn = document.getElementById('start-mailing-btn');
+        const mailingHistoryContainer = document.getElementById('mailing-history-container');
+
+        mailingForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            
+            if (!confirm('Вы уверены, что хотите запустить эту рассылку?')) return;
+
+            startMailingBtn.disabled = true;
+            startMailingBtn.textContent = 'Запускаем...';
+
+            const data = {
+                title: document.getElementById('mailing-title').value,
+                subject: document.getElementById('mailing-subject').value,
+                message_body: tinymce.get('mailing-body-editor').getContent(),
+                button_text: document.getElementById('mailing-cta-text').value,
+                button_url: document.getElementById('mailing-cta-url').value,
+                target_segment: document.getElementById('mailing-segment').value,
+            };
+
+            try {
+                const response = await fetch('/api/admin/mailings/start/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.error);
+                
+                alert('Рассылка успешно поставлена в очередь!');
+                mailingForm.reset();
+                fetchMailingHistory();
+            } catch (error) {
+                alert(`Ошибка запуска: ${error.message}`);
+            } finally {
+                startMailingBtn.disabled = false;
+                startMailingBtn.textContent = 'Запустить рассылку';
+            }
+        });
+
+        async function fetchMailingHistory() {
+            try {
+                const response = await fetch('/api/admin/mailings/history/');
+                const data = await response.json();
+                renderMailingHistory(data.history);
+            } catch (error) {
+                mailingHistoryContainer.innerHTML = '<p class="text-red-400">Не удалось загрузить историю.</p>';
+            }
+        }
+
+        function renderMailingHistory(history) {
+            if (history.length === 0) {
+                mailingHistoryContainer.innerHTML = '<p class="text-gray-500">Пока нет рассылок.</p>';
+                return;
+            }
+            mailingHistoryContainer.innerHTML = history.map(m => `
+                <div class="p-4 bg-black/20 rounded-lg border border-transparent">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="font-bold text-white">${m.title}</p>
+                            <p class="text-xs text-gray-400">${m.created_at} &bull; ${m.segment}</p>
+                        </div>
+                        <span class="text-xs font-mono px-2 py-1 rounded-full ${m.status === 'В процессе' ? 'bg-yellow-400/20 text-yellow-300' : 'bg-green-400/20 text-green-300'}">${m.status}</span>
+                    </div>
+                    <div class="mt-3 text-xs flex justify-between items-center bg-black/30 p-2 rounded-md">
+                        <span>Всего: ${m.stats.total}</span>
+                        <span class="text-green-400">Отправлено: ${m.stats.sent}</span>
+                        <span class="text-yellow-400">В очереди: ${m.stats.pending}</span>
+                        <span class="text-red-400">Ошибок: ${m.stats.failed}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        fetchMailingHistory();
+        setInterval(fetchMailingHistory, 15000);
+    });
+    </script>
+</body>
+</html>

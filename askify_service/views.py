@@ -1,5 +1,4 @@
 from django.contrib.auth.models import User
-from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, authenticate
@@ -32,12 +31,22 @@ from django.utils.safestring import mark_safe
 from django.db import connection
 from django.db.models import Count, Sum, Q, F, Avg, Max
 from django.db.models.functions import TruncDate, Length
-from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 from django.db.models.functions import TruncMonth
-from collections import defaultdict, Counter
+from django.http import JsonResponse, HttpResponseBadRequest
+from django.contrib.admin.views.decorators import staff_member_required
+from django.db.models import OuterRef, Subquery
+from django.contrib.admin.views.decorators import staff_member_required
+from django.shortcuts import render
+from django.core.signing import Signer, BadSignature
+
+
+from .tasks import send_manual_email_task, start_mailing_task
+from smtplib import SMTPException
+
+from askify_app.settings import EMAIL_HOST_USER
 
 
 from io import BytesIO
@@ -89,6 +98,8 @@ from reportlab.lib.enums import TA_LEFT, TA_RIGHT
 
 from datetime import datetime, timedelta, time
 import datetime as only_datetime
+from collections import defaultdict, Counter
+from decimal import Decimal
 import base64
 import asyncio
 import time
@@ -100,7 +111,7 @@ import re
 import hmac
 import json
 import subprocess
-from decimal import Decimal
+import traceback
 
 
 env = environ.Env()
@@ -116,6 +127,8 @@ os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
 
 tracer_l = logging.getLogger('askify_app')
 crypto_b = Quant()
+
+signer = Signer()
 
 
 @check_legal_process
@@ -968,7 +981,7 @@ class GenerationSurveysView(View):
             else:
                 tracer_l.warning(f'{staff_id} --- APIKey для SURVEY не найден для логирования использования.')
 
-            tracer_l.info(f'Нелегал {staff_id} --- {new_title} [ SAVED ]')
+            tracer_l.info(f'НЕЛЕГАЛ {staff_id} --- {new_title} [ SAVED ]')
 
             return JsonResponse({
                 'survey': generated_text_data['generated_text'],
@@ -2409,17 +2422,29 @@ def download_survey_pdf(request, survey_id):
     try:
         survey = get_object_or_404(Survey, survey_id=uuid.UUID(survey_id))
 
+        subscription_level = 0
         try:
             subscription_db = Subscription.objects.get(staff_id=get_staff_id(request))
             subscription_check = SubscriptionCheck()
             subscription_level = subscription_check.get_subscription_level(subscription_db.plan_name)
-        except Exception:
-            subscription_level = 0
+        except Subscription.DoesNotExist:
+            pass
+        except Exception as e:
+            tracer_l.warning(f"Error getting subscription for user {request.user.username}: {e}")
 
         tracer_l.info(f'{request.user.username} --- PDF [ VIEW ], sub {subscription_level}')
-        return survey.generate_pdf(subscription_level)
+
+        response = survey.generate_pdf(subscription_level)
+
+        if not isinstance(response, HttpResponse):
+            raise ValueError("generate_pdf did not return an HttpResponse object.")
+
+        return response
+
     except Exception as fatal:
-        tracer_l.critical(f'{request.user.username} --- FATAL with View survey in PDF: {fatal}')
+        return HttpResponse(
+            "Произошла внутренняя ошибка при генерации PDF. Пожалуйста, попробуйте позже или обратитесь в поддержку.",
+            status=500)
 
 
 def generate_username(email):
@@ -2449,7 +2474,7 @@ def register(request):
             else:
                 user = form.save()
 
-                tracer_l.warning(f'ADMIN. NEW USER {user.username}')
+                tracer_l.info(f'ADMIN. NEW USER {user.username}')
 
                 plan_name, end_date, status, billing_cycle, discount = init_free_subscription()
                 Subscription.objects.create(
@@ -2515,7 +2540,6 @@ def quick_register_api(request):
         )
 
     else:
-        # --- СЦЕНАРИЙ "СОЗДАНИЯ" (стандартный) ---
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
@@ -2564,7 +2588,7 @@ def login_view(request):
             login(request, user)
             request.session['user_id'] = user.id
 
-            tracer_l.warning(f'ADMIN. LOGGED IN {user.username}')
+            tracer_l.info(f'ADMIN. LOGGED IN {user.username}')
 
             next_url = request.POST.get('next', '/create')
             safe_next = next_url if is_safe_url(next_url) else '/create'
@@ -2574,13 +2598,14 @@ def login_view(request):
             return render(request, 'login.html', context, status=400)
 
     context['next_url'] = request.GET.get('next', '/create')
-    context['debug'] =  DEBUG
+    context['debug'] = DEBUG
     return render(request, 'login.html', context)
 
 
 def logout_view(request):
     logout(request)
     request.session.flush()
+    tracer_l.info(f'ADMIN. LOGOUT {request.user.username}')
     return redirect('login')
 
 
@@ -3630,14 +3655,14 @@ def get_gauges_data():
 
     return {
         'activation_percent': activation_percent,
-        'activation_dashoffset': activation_dashoffset,
+        'activation_dashoffset': round(activation_dashoffset),
         'revenue_this_month': revenue_this_month,
         'revenue_goal_percent': revenue_goal_percent,
         'monthly_goal': MONTHLY_REVENUE_GOAL,
-        'revenue_dashoffset': revenue_dashoffset,
+        'revenue_dashoffset': round(revenue_dashoffset),
         'tests_created_today': tests_created_today,
         'tests_goal_percent': tests_goal_percent,
-        'tests_dashoffset': tests_dashoffset
+        'tests_dashoffset': round(tests_dashoffset)
     }
 
 
@@ -5492,6 +5517,292 @@ def password_reset_email(request):
         'page_title': 'Сброс пароля'
     }
     return render(request, 'confirmed_data/password_message_reset_email.html', context)
+
+
+@staff_member_required
+def user_ops_center_view(request):
+    tiny_api = env('TINY_API')
+    return render(request, 'admin/user_ops_center.html', context={'tiny_api': tiny_api})
+
+
+@staff_member_required
+def search_users_api(request):
+    """
+    API для поиска пользователей.
+    """
+    query = request.GET.get('q', '').strip()
+    if len(query) < 2:
+        return JsonResponse({'users': []})
+
+    users = AuthUser.objects.filter(
+        Q(username__icontains=query) | Q(email__icontains=query)
+    ).values('id', 'username', 'email', 'date_joined')[:10]
+
+    user_list = [
+        {
+            'id': user['id'],
+            'username': user['username'],
+            'email': user['email'],
+            'date_joined': user['date_joined'].strftime('%d.%m.%Y')
+        } for user in users
+    ]
+    return JsonResponse({'users': user_list})
+
+
+@staff_member_required
+def get_user_details_api(request, user_id):
+    """
+    API для получения полной информации о конкретном пользователе.
+    """
+    try:
+        user = AuthUser.objects.get(id=user_id)
+    except AuthUser.DoesNotExist:
+        return JsonResponse({'error': 'User not found'}, status=404)
+
+    subscription_data = {}
+    sub = Subscription.objects.filter(staff_id=user.id_staff).first()
+    if sub:
+        subscription_data = {
+            'plan_name': sub.get_human_plan(),
+            'status': sub.status,
+            'end_date': sub.end_date.strftime('%d.%m.%Y') if sub.end_date else 'N/A'
+        }
+
+    payments = Payment.objects.filter(staff_id=user.id_staff, status='completed')
+    financial_data = payments.aggregate(
+        total_revenue=Sum('amount'),
+        payment_count=Count('id')
+    )
+
+    surveys_created = Survey.objects.filter(id_staff=user.id_staff).count()
+    attempts_on_surveys = TestAttempt.objects.filter(survey__id_staff=user.id_staff).count()
+
+    last_surveys = Survey.objects.filter(id_staff=user.id_staff).order_by('-created_at')[:5]
+
+    response_data = {
+        'id': user.id,
+        'username': user.username,
+        'email': user.email,
+        'id_staff': user.id_staff,
+        'date_joined': user.date_joined.strftime('%d.%m.%Y %H:%M'),
+        'is_staff': user.is_staff,
+        'subscription': subscription_data,
+        'financials': {
+            'total_revenue': float(financial_data['total_revenue'] or 0),
+            'payment_count': financial_data['payment_count']
+        },
+        'activity': {
+            'surveys_created': surveys_created,
+            'attempts_on_surveys': attempts_on_surveys
+        },
+        'last_surveys': [
+            {
+                'title': s.title,
+                'survey_id': s.survey_id,
+                'created_at': s.created_at.strftime('%d.%m.%Y'),
+                'view_count': s.view_count,
+                'attempts_count': TestAttempt.objects.filter(survey=s).count()
+            }
+            for s in last_surveys
+        ]
+    }
+
+    return JsonResponse(response_data)
+
+
+@staff_member_required
+def send_manual_email_api(request):
+    """
+    (СИНХРОННАЯ ВЕРСИЯ)
+    API-эндпоинт для ПРЯМОЙ отправки email из админки.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Only POST method is allowed'}, status=405)
+
+    try:
+        data = json.loads(request.body)
+
+        recipient_email = data.get('recipient_email', '').strip()
+        subject = data.get('subject', '').strip()
+        html_body = data.get('html_body', '').strip()
+        button_text = data.get('button_text', '').strip()
+        button_url = data.get('button_url', '').strip()
+
+        if not all([recipient_email, subject, html_body]):
+            additional_info = AuthAdditionalUser.objects.filter(user=user).first()
+            if additional_info and additional_info.id_telegram:
+                try:
+                    import re
+
+                    h = html2text.HTML2Text()
+                    h.body_width = 0
+                    text_body = h.handle(mailing.message_body)
+
+                    message = f"*{mailing.subject}*\n\n{text_body}"
+                    if mailing.button_text and mailing.button_url:
+                        message += f"\n\n[{mailing.button_text}]({mailing.button_url})"
+
+                        bot_token = TELEGRAM_BOT_TOKEN
+                        url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+
+                        payload = {
+                            'chat_id': additional_info.id_telegram,
+                            'text': message,
+                            'parse_mode': 'Markdown'
+                        }
+
+                        requests.post(url, json=payload)
+
+                    channel = 'telegram'
+                except Exception as e:
+                    raise e
+            return JsonResponse({'error': 'Missing required fields'}, status=400)
+
+        user = AuthUser.objects.filter(email=recipient_email).first()
+        context = {
+            'user': user,
+            'subject': subject,
+            'main_content': html_body,
+            'button_text': button_text,
+            'button_url': button_url,
+        }
+        final_html_message = render_to_string('emails/manual_dispatch.html', context)
+
+        send_mail(
+            subject=subject,
+            message='',
+            from_email=EMAIL_HOST_USER,
+            recipient_list=[recipient_email],
+            fail_silently=False,
+            html_message=final_html_message
+        )
+
+        return JsonResponse({
+            'status': 'success',
+            'message': f'Email for {recipient_email} has been sent successfully.'
+        })
+
+    except SMTPException as e:
+        return JsonResponse({'error': f"SMTP Error: {e}"}, status=500)
+
+    except Exception as e:
+        error_traceback = traceback.format_exc()
+        print(f"!!! ERROR in SYNC send_manual_email_api: {error_traceback}")
+        return JsonResponse({'error': f'An unexpected error occurred: {e}'}, status=500)
+
+
+@staff_member_required
+def get_new_users_api(request):
+    """
+    API для получения списков новых пользователей.
+    """
+    tz = timezone.get_current_timezone()
+    now = timezone.now().astimezone(tz)
+
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    yesterday_start = today_start - timedelta(days=1)
+    week_start = today_start - timedelta(days=today_start.weekday())
+
+    def get_formatted_top_users(start_date, end_date):
+        new_users = list(AuthUser.objects.filter(
+            date_joined__gte=start_date,
+            date_joined__lt=end_date,
+            is_staff=False
+        ).order_by('-date_joined'))
+
+        if not new_users:
+            return []
+
+        user_staff_ids = [user.id_staff for user in new_users]
+
+        survey_counts = Survey.objects.filter(
+            id_staff__in=user_staff_ids
+        ).values('id_staff').annotate(count=Count('id'))
+
+        counts_map = {item['id_staff']: item['count'] for item in survey_counts}
+
+        results = []
+        for user in new_users:
+            username_display = user.username
+            if len(user.username) > 40:
+                username_display = "НЕЛЕГАЛ"
+                continue
+
+            results.append({
+                'id': user.id,
+                'username': username_display,
+                'email': user.email,
+                'date_joined': user.date_joined.astimezone(tz).strftime('%d.%m %H:%M'),
+                'tests_created': counts_map.get(user.id_staff, 0)
+            })
+
+        sorted_results = sorted(results, key=lambda u: u['date_joined'], reverse=True)
+        return sorted_results[:50]
+
+    data = {
+        'today': get_formatted_top_users(today_start, now),
+        'yesterday': get_formatted_top_users(yesterday_start, today_start),
+        'this_week': get_formatted_top_users(week_start, now)
+    }
+
+    return JsonResponse(data)
+
+
+@staff_member_required
+def start_mailing_api(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST only'}, status=405)
+
+    try:
+        data = json.loads(request.body)
+        mailing = Mailing.objects.create(
+            title=data.get('title'),
+            subject=data.get('subject'),
+            message_body=data.get('message_body'),
+            button_text=data.get('button_text'),
+            button_url=data.get('button_url'),
+            target_segment=data.get('target_segment')
+        )
+
+        start_mailing_task.delay(mailing.id)
+        return JsonResponse({'status': 'success', 'message': 'Mailing has been queued.'})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@staff_member_required
+def get_mailing_history_api(request):
+    mailings = Mailing.objects.order_by('-created_at')[:10]
+    history = []
+    for m in mailings:
+        total = m.recipients.count()
+        sent = m.recipients.filter(status='sent').count()
+        failed = m.recipients.filter(status='failed').count()
+        history.append({
+            'id': m.id,
+            'title': m.title,
+            'created_at': m.created_at.strftime('%d.%m.%Y %H:%M'),
+            'status': m.get_status_display(),
+            'segment': m.get_target_segment_display(),
+            'stats': {
+                'total': total,
+                'sent': sent,
+                'failed': failed,
+                'pending': total - sent - failed,
+            }
+        })
+    return JsonResponse({'history': history})
+
+
+def unsubscribe_view(request, signed_user_id):
+    try:
+        user_id = signer.unsign(signed_user_id)
+        user = get_object_or_404(AuthUser, pk=user_id)
+        user.is_subscribed = False
+        user.save()
+        return HttpResponse("Вы успешно отписались от рассылок.")
+    except (BadSignature, AuthUser.DoesNotExist):
+        return HttpResponse("Неверная или устаревшая ссылка для отписки.", status=400)
 
 
 def black_ops_launch(request, secret):

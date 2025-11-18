@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ subject }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-[#0F0818] text-[#f0f0f0] p-4 sm:p-8" style="background-color: #0F0818; color: #f0f0f0; padding: 2rem; font-family: sans-serif;">
+
+    <div class="max-w-2xl mx-auto bg-[#1E1830] border border-[#3a3059] rounded-2xl p-6 sm:p-10" style="max-width: 42rem; margin: auto; background-color: #1E1830; border: 1px solid #3a3059; border-radius: 1.25rem; padding: 2.5rem;">
+
+        <div class="text-center mb-8" style="text-align: center; margin-bottom: 2rem;">
+            <img src="https://letychka.ru/static/img/apple-touch-icon.png" alt="Летучка Логотип" class="w-32 h-auto mx-auto" style="width: 10rem; height: auto; margin: auto;">
+        </div>
+
+        <div class="text-base text-white leading-relaxed" style="color: #ffffff; line-height: 1.6;">
+            {{ main_content|safe }}
+        </div>
+
+        {% if button_url and button_text %}
+        <div class="mt-8 text-center" style="margin-top: 2rem; text-align: center;">
+            <a href="{{ button_url }}" target="_blank" class="inline-block bg-[#616DF0] text-white text-base font-bold px-10 py-4 rounded-full" style="display: inline-block; background-color: #616DF0; color: white; font-size: 1rem; font-weight: bold; padding: 1rem 2.5rem; border-radius: 9999px; text-decoration: none;">
+                {{ button_text }}
+            </a>
+        </div>
+        {% endif %}
+
+        <div class="mt-10 pt-6 border-t border-[#3a3059] text-center text-xs text-[#a0a0b0]" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 1px solid #3a3059; text-align: center; font-size: 0.75rem; color: #a0a0b0;">
+            <p>Это персональное сообщение от команды Летучки.</p>
+            <p class="mt-2">Отписаться от рассылки? <a href="{{ unsubscribe_url }}" target="_blank" class="text-[#8c94ff] underline">Отписаться</a>.</p>
+            <p>&copy; {% now "Y" %} Летучка AI.</p>
+        </div>
+
+    </div>
+
+</body>
+</html>

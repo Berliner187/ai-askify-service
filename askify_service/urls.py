@@ -110,6 +110,16 @@ urlpatterns = [
     path('password_reset_done/', password_reset_email, name='password_reset_done'),
     path('password_reset_complete/', password_reset_complete, name='password_reset_complete'),
 
+    path('stats2975/crm/', user_ops_center_view, name='user_ops_center'),
+    path('api/admin/search-users/', search_users_api, name='api_search_users'),
+    path('api/admin/user-details/<int:user_id>/', get_user_details_api, name='api_get_user_details'),
+    path('api/admin/new-users/', get_new_users_api, name='api_get_new_users'),
+    path('api/admin/send-manual-email/', send_manual_email_api, name='api_send_manual_email'),
+    path('unsubscribe/<str:signed_user_id>/', unsubscribe_view, name='unsubscribe'),
+
+    path('api/admin/mailings/start/', start_mailing_api, name='api_start_mailing'),
+    path('api/admin/mailings/history/', get_mailing_history_api, name='api_get_mailing_history'),
+
     path('secure/api/v1/ops/black-ops-launch/<str:secret>/', black_ops_launch, name='deploy_webhook'),
     path('healthz/', health_check_view, name='health_check'),
 

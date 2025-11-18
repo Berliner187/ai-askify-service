@@ -1,10 +1,11 @@
 from django.contrib.staticfiles import finders
 
-from reportlab.lib import colors
-from reportlab.lib.pagesizes import letter
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.pdfgen import canvas
+from io import BytesIO
+from django.template.loader import get_template
+from django.contrib.staticfiles import finders
+from xhtml2pdf import pisa
+from django.http import HttpResponse
+
 from reportlab.lib.utils import ImageReader
 
 from .utils import get_year_now
@@ -26,128 +27,41 @@ def generate_qr_code(url):
     return ImageReader(stream)
 
 
-class ConverterPDF:
+class PDFGenerator:
     @staticmethod
-    def get_survey_in_pdf(response, title, questions, sub_level=0, survey_id=None):
-        p = canvas.Canvas(response, pagesize=letter)
+    def render_to_pdf(template_path, context_dict={}):
+        template = get_template(template_path)
 
-        p.setTitle(title[:30])
-        p.setAuthor("letychka.ru")
-        p.setSubject("Автоматически сгенерированный тест")
-        p.setKeywords(f"{title[:30]}, создать тест, создать тест по тексту онлайн, ИИ для создания тестов бесплатно, составить тест по тексту онлайн, создать тест онлайн, летучка создать тест, по тексту онлайн, pdf")
+        context_dict['font_path_medium'] = finders.find('fonts/Manrope-Medium.ttf')
+        context_dict['font_path_bold'] = finders.find('fonts/Manrope-ExtraBold.ttf')
+        context_dict['font_path_signature'] = finders.find('fonts/Unbounded-Medium.ttf')
 
-        font_path_medium = finders.find('fonts/Manrope-Medium.ttf')
-        font_path_bold = finders.find('fonts/Manrope-ExtraBold.ttf')
-        font_signature = finders.find('fonts/Unbounded-Medium.ttf')
+        html = template.render(context_dict)
+        result = BytesIO()
 
-        pdfmetrics.registerFont(TTFont('Manrope Medium', font_path_medium))
-        pdfmetrics.registerFont(TTFont('Manrope Bold', font_path_bold))
-        pdfmetrics.registerFont(TTFont('Unbounded Medium', font_signature))
+        pdf = pisa.pisaDocument(BytesIO(html.encode("UTF-8")), result)
 
-        y = 700
-        max_width = 400
+        if not pdf.err:
+            return result.getvalue()
+        return None
 
-        watermark_text = "Создано бесплатно на letychka.ru" if sub_level < 1 else None
-        watermark_font = ("Manrope Bold", 16)
-        watermark_color = colors.Color(0.7, 0.7, 0.7, alpha=0.2)
-        watermark_rotation = 30
-        watermark_spacing = 300
+    @staticmethod
+    def generate_from_survey(survey, subscription_level):
+        context = {
+            'title': survey.title,
+            'questions': survey.get_questions(),
+            'watermark': subscription_level < 1,
+            'creation_date': survey.created_at.strftime('%d.%m.%Y'),
+            'survey_id': survey.survey_id,
+        }
 
-        def draw_watermark(canvas):
-            """Функция для рисования водяных знаков"""
-            qr_img = generate_qr_code(f"https://letychka.ru/c/{survey_id}?utm_source=from_self_pdf_{survey_id}")
-            canvas.drawImage(qr_img, x=520, y=700, width=64, height=64, preserveAspectRatio=True, mask='auto')
+        pdf_data = PDFGenerator.render_to_pdf('test_template.html', context)
 
-            canvas.saveState()
-            canvas.setFillColor(watermark_color)
-            canvas.setFont(*watermark_font)
+        if pdf_data:
+            response = HttpResponse(pdf_data, content_type='application/pdf')
+            safe_title = "".join(c for c in survey.title if c.isalnum() or c in (" ", "_")).rstrip()
+            response['Content-Disposition'] = f'attachment; filename="{safe_title}.pdf"'
+            return response
 
-            # Рисуем знаки под углом по всей странице
-            canvas.rotate(random.randint(watermark_rotation-10, watermark_rotation+10))
-            text_width = canvas.stringWidth(watermark_text, *watermark_font)
-
-            # Рассчитываем позиции для сетки водяных знаков
-            for x in range(-600, 1200, watermark_spacing):
-                for y in range(-400, 1200, 100+random.randint(0, 50)):
-                    canvas.drawCentredString(x, y, watermark_text)
-
-            canvas.restoreState()
-
-        if watermark_text:
-            draw_watermark(p)
-
-        def check_new_page():
-            nonlocal y
-            if y < 50:
-                p.showPage()
-                p.setFont('Manrope Medium', 11)
-                y = 700
-
-                if watermark_text:
-                    draw_watermark(p)
-
-        p.setFont('Manrope Bold', 14)
-        text_object = p.beginText(60, y+40)
-        p.setFont('Manrope Medium', 11)
-
-        for line in title.splitlines():
-            words = line.split(' ')
-            current_line = ''
-            for word in words:
-                if p.stringWidth(current_line + word + ' ', 'Manrope Bold', 16) < max_width:
-                    current_line += word + ' '
-                else:
-                    text_object.textLine(current_line)
-                    current_line = word + ' '
-                    y -= 15
-                    check_new_page()
-            text_object.textLine(current_line)
-
-        p.drawText(text_object)
-        y -= 20
-
-        cnt_q_title = 0
-        for question in questions:
-            question_text = question['question']
-            options = question['options']
-
-            text_object = p.beginText(60, y)
-            text_object.setFont('Manrope Medium', 12)
-
-            cnt_q_title += 1
-
-            for line in question_text.splitlines():
-                words = line.split(' ')
-                current_line = f"{cnt_q_title}. " + ''
-                for word in words:
-                    if p.stringWidth(current_line + word + ' ', 'Manrope Medium', 11) < max_width:
-                        current_line += word + ' '
-                    else:
-                        text_object.textLine(current_line)
-                        current_line = word + ' '
-                        y -= 15
-                        check_new_page()
-                text_object.textLine(current_line)
-
-            p.drawText(text_object)
-            y -= 20
-
-            count = 1
-            for option in options:
-                p.drawString(60, y, f"{count}) {option}")
-                y -= 15
-                count += 1
-                check_new_page()
-
-            y -= 10
-
-        if sub_level < 1:
-            p.setFont('Unbounded Medium', 10)
-            p.drawString(60, 40, f"Сгенерировано в Летучке • {get_year_now()}")
-            p.setFont('Manrope Medium', 10)
-            p.drawString(60, 20, f"Сгенерировано автоматически. Подробнее: https://letychka.ru")
-
-        p.showPage()
-        p.save()
-        return response
+        return HttpResponse("Ошибка генерации PDF", status=500)
 

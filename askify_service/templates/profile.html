@@ -336,6 +336,7 @@
                 </div>
                     {% if user.is_superuser %}
                     <a class="button-medium admin-button" href="{% url 'db_viewer' %}"><div><p>Админ-панель 👑</p></div></a>
+                    <a class="button-medium admin-button" href="{% url 'user_ops_center' %}"><div><p>CRM-машина</p></div></a>
                 {% endif %}
             </div>
             </div>

@@ -74,15 +74,7 @@ class Survey(models.Model):
         self.questions = json.dumps(shuffled_questions, ensure_ascii=False)
 
     def generate_pdf(self, subscription_level):
-        response = HttpResponse(content_type='application/pdf')
-        safe_title = "".join(c for c in self.title if c.isalnum() or c in (" ", "_")).rstrip()
-        response['Content-Disposition'] = f'attachment; filename="{safe_title}.pdf"'
-
-        converter_pdf = ConverterPDF()
-        response = converter_pdf.get_survey_in_pdf(
-            response, self.title, self.get_questions(), subscription_level, self.survey_id)
-
-        return response
+        return PDFGenerator.generate_from_survey(self, subscription_level)
 
 
 class SurveyUniqueView(models.Model):
@@ -181,6 +173,7 @@ class AuthUser(AbstractUser):
     name = models.CharField(max_length=255, unique=False, null=True, blank=True)
     phone = models.CharField(max_length=20, null=True, blank=True)
     email = models.EmailField(unique=True, null=True, blank=True)
+    is_subscribed = models.BooleanField(default=True, help_text="Согласен ли пользователь получать рассылки")
 
     def __str__(self):
         return self.username
@@ -612,3 +605,51 @@ class ArenaProfile(models.Model):
 def create_arena_profile(sender, instance, created, **kwargs):
     if created:
         ArenaProfile.objects.create(user=instance)
+
+
+class Mailing(models.Model):
+    """Модель для хранения самой рассылки."""
+
+    SEGMENT_CHOICES = [
+        ('all', 'Всем пользователям'),
+        ('active_subs', 'С активной подпиской'),
+        ('inactive_subs', 'Без активной подписки'),
+        ('no_tests', 'Кто не создал ни одного теста'),
+    ]
+
+    title = models.CharField(max_length=255, help_text="Внутреннее название для админки")
+    subject = models.CharField(max_length=255, help_text="Тема письма для Email")
+    message_body = models.TextField(help_text="Основной текст сообщения (HTML для Email, Markdown для Telegram)")
+
+    button_text = models.CharField(max_length=100, blank=True, null=True)
+    button_url = models.URLField(max_length=500, blank=True, null=True)
+
+    target_segment = models.CharField(max_length=50, choices=SEGMENT_CHOICES, default='all')
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    sent_at = models.DateTimeField(blank=True, null=True, help_text="Время начала фактической отправки")
+
+    status = models.CharField(
+        max_length=20,
+        default='draft',
+        choices=[('draft', 'Черновик'), ('processing', 'В процессе'), ('completed', 'Завершена')])
+
+    def __str__(self):
+        return self.title
+
+
+class MailingRecipient(models.Model):
+    """Модель для отслеживания статуса доставки для каждого получателя."""
+    mailing = models.ForeignKey(Mailing, on_delete=models.CASCADE, related_name='recipients')
+    user = models.ForeignKey(AuthUser, on_delete=models.CASCADE)
+
+    channel = models.CharField(max_length=10, choices=[('email', 'Email'), ('telegram', 'Telegram')])
+
+    status = models.CharField(max_length=20, default='pending',
+                              choices=[('pending', 'В очереди'), ('sent', 'Отправлено'), ('failed', 'Ошибка')])
+
+    sent_at = models.DateTimeField(blank=True, null=True)
+    error_message = models.TextField(blank=True, null=True)
+
+    class Meta:
+        unique_together = ('mailing', 'user')
