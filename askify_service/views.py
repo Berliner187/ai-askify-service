@@ -39,8 +39,12 @@ from django.http import JsonResponse, HttpResponseBadRequest
 from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import OuterRef, Subquery
 from django.contrib.admin.views.decorators import staff_member_required
-from django.shortcuts import render
 from django.core.signing import Signer, BadSignature
+from django.contrib import messages
+from django.views.decorators.csrf import csrf_exempt
+from django.core.cache import cache
+from django.utils.crypto import get_random_string
+from django.conf import settings
 
 
 from .tasks import send_manual_email_task, start_mailing_task
@@ -2474,7 +2478,7 @@ def register(request):
             else:
                 user = form.save()
 
-                tracer_l.info(f'ADMIN. NEW USER {user.username}')
+                tracer_l.info(f'USER. NEW USER {user.username}')
 
                 plan_name, end_date, status, billing_cycle, discount = init_free_subscription()
                 Subscription.objects.create(
@@ -2588,7 +2592,7 @@ def login_view(request):
             login(request, user)
             request.session['user_id'] = user.id
 
-            tracer_l.info(f'ADMIN. LOGGED IN {user.username}')
+            tracer_l.info(f'USER. LOGGED IN {user.username}')
 
             next_url = request.POST.get('next', '/create')
             safe_next = next_url if is_safe_url(next_url) else '/create'
@@ -2605,7 +2609,7 @@ def login_view(request):
 def logout_view(request):
     logout(request)
     request.session.flush()
-    tracer_l.info(f'ADMIN. LOGOUT {request.user.username}')
+    tracer_l.info(f'USER. LOGOUT {request.user.username}')
     return redirect('login')
 
 
@@ -2623,7 +2627,7 @@ def vk_auth(request):
     if not request.session.session_key:
         request.session.create()
 
-    tracer_l.warning(f'ADMIN. VK_AUTH START. Session: {request.session.session_key}')
+    tracer_l.warning(f'USER. VK_AUTH START. Session: {request.session.session_key}')
 
     auth_url = (
         f"https://oauth.vk.com/authorize?"
@@ -2635,7 +2639,7 @@ def vk_auth(request):
         f"state={request.session.session_key}&"
         f"scope=email"
     )
-    tracer_l.warning(f'ADMIN. VK AUTH URL: {auth_url}')
+    tracer_l.warning(f'USER. VK AUTH URL: {auth_url}')
     return redirect(auth_url)
 
 
@@ -4416,7 +4420,7 @@ def create_payment(request):
     user_data = get_object_or_404(AuthUser, id_staff=get_staff_id(request))
     order_id = generate_payment_id()
 
-    tracer_l.info(f'ADMIN. {request.user.username}: VIEW PAYMENT')
+    tracer_l.info(f'USER. {request.user.username}: VIEW PAYMENT')
 
     context = {
         'page_title': 'Выбор тарифного плана',
@@ -5112,39 +5116,9 @@ def exchange_keys(request):
 
 @csrf_exempt
 def phone_number_view(request):
-    if request.method == 'POST':
-        form = PhoneNumberForm(request.POST)
-
-        if form.is_valid():
-            phone_number = form.cleaned_data['phone_number']
-
-            user = AuthUser.objects.filter(phone=phone_number).first()
-            new_auth_telegram = AuthAdditionalUser.objects.filter(user=user).first()
-
-            if new_auth_telegram and (user.confirmed_user is True):
-                code = random.randint(10000, 99999)
-                user_verify_code[user.phone] = code
-
-                telegram_message_manager = ManageTelegramMessages()
-                telegram_message_manager.send_code_to_user(new_auth_telegram.id_telegram, code)
-
-                tracer_l.debug(f'phone_number_view. Код отправлен: {user.id}')
-
-                request.session['phone_number'] = phone_number
-                return JsonResponse({'status': 'success', 'message': 'Код отправлен'})
-            else:
-                referral_link = f"https://t.me/LetychkaRobot?start=login"
-
-                return JsonResponse({
-                    'status': 'success',
-                    'message': 'phone init',
-                    'referral_link': referral_link,
-                })
-
-    else:
-        form = PhoneNumberForm()
-
-    return render(request, 'phone_number_form.html', {'form': form, 'code_form': False})
+    if request.user.is_authenticated:
+        return redirect('create')
+    return render(request, 'phone_number_form.html')
 
 
 @csrf_exempt
@@ -5429,7 +5403,7 @@ def terminate_session(request):
 def send_verification_email(user):
     token = signing.dumps(user.pk, salt='email-verification')
     verification_link = reverse('verify_email', kwargs={'token': token})
-    full_link = f'http://letychka.ru{verification_link}'
+    full_link = f'https://letychka.ru{verification_link}'
 
     html_message = f"""
     <html>
@@ -5838,3 +5812,149 @@ def handler404(request, exception=None):
 
 def handler500(request):
     return render(request, 'askify_service/errors/500.html', status=500)
+
+
+def telegram_magic_auth(request, token):
+    """
+    Magic Link Auth
+    """
+    if request.user.is_authenticated:
+        return redirect('create')
+
+    user_data = cache.get(f"magic_token:{token}")
+
+    if not user_data:
+        return render(request, 'error.html', {'error_message': 'Ссылка устарела или недействительна'})
+
+    cache.delete(f"magic_token:{token}")
+
+    from .tg_auth import get_or_create_telegram_user
+    user = get_or_create_telegram_user(user_data)
+
+    tracer_l.warning(f'USER. MGL LOGGED IN {user}')
+
+    login(request, user)
+    return redirect('create')
+
+
+def telegram_code_auth(request):
+    """
+    TgCA
+    """
+    if request.user.is_authenticated:
+        return redirect('create')
+
+    if request.method == 'POST':
+        code = request.POST.get('code', '').replace(' ', '').strip()
+
+        user_data = cache.get(f"auth_code:{code}")
+
+        if user_data:
+            cache.delete(f"auth_code:{code}")
+
+            from .tg_auth import get_or_create_telegram_user
+            user = get_or_create_telegram_user(user_data)
+
+            tracer_l.warning(f'USER. TgCA LOGGED IN {user}')
+
+            login(request, user)
+            return redirect('create')
+        else:
+            messages.error(request, "Неверный код или срок действия истек")
+
+    return render(request, 'phone_number_form.html')
+
+
+def check_bot_secret(request):
+    return request.headers.get('X-Bot-Secret') == settings.DEPLOY_WEBHOOK_SECRET
+
+
+@csrf_exempt
+def bot_generate_code(request):
+    """
+    TgCA Generate
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+    if not check_bot_secret(request):
+        return JsonResponse({'error': 'Forbidden: Invalid Secret'}, status=403)
+
+    try:
+        data = json.loads(request.body)
+        tg_id = data.get('telegram_id')
+        username = data.get('username')
+        fullname = data.get('fullname')
+
+        if not tg_id:
+            return JsonResponse({'error': 'No telegram_id provided'}, status=400)
+
+        code = get_random_string(length=6, allowed_chars='0123456789')
+
+        user_cache_data = {
+            'id': tg_id,
+            'username': username,
+            'fullname': fullname
+        }
+
+        cache.set(f"auth_code:{code}", user_cache_data, timeout=120)
+
+        formatted_code = f"{code[:3]} {code[3:]}"
+
+        return JsonResponse({
+            'success': True,
+            'code': formatted_code,
+            'ttl': 2
+        })
+
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@csrf_exempt
+def bot_generate_link(request):
+    """
+    Magic Link Generate
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+    if not check_bot_secret(request):
+        return JsonResponse({'error': 'Forbidden: Invalid Secret'}, status=403)
+
+    try:
+        data = json.loads(request.body)
+        tg_id = data.get('telegram_id')
+        username = data.get('username')
+        fullname = data.get('fullname')
+
+        if not tg_id:
+            return JsonResponse({'error': 'No telegram_id provided'}, status=400)
+
+        token = get_random_string(length=32)
+
+        user_cache_data = {
+            'id': tg_id,
+            'username': username,
+            'fullname': fullname
+        }
+
+        cache.set(f"magic_token:{token}", user_cache_data, timeout=300)
+
+        domain = "https://letychka.ru"
+        if DEBUG:
+            domain = "http://127.0.0.1:8000"
+
+        link = f"{domain}/auth/telegram/callback/{token}/"
+
+        return JsonResponse({
+            'success': True,
+            'link': link
+        })
+
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)

@@ -1,8 +1,11 @@
+from django.urls import re_path
 from django.urls import path
 from django.views.generic import TemplateView
 
 from .views import *
 from askify_app.settings import DEBUG
+
+from askify_service.views import telegram_magic_auth, telegram_code_auth, bot_generate_code, bot_generate_link
 
 
 urlpatterns = [
@@ -81,8 +84,6 @@ urlpatterns = [
     path('login/telegram/', phone_number_view, name='auth_telegram'),
     path('verify-code/', verify_code_view, name='verify_code'),
 
-    path('auth/telegram/', TelegramAuthView.as_view(), name='telegram_auth'),
-
     path('api/ghost_disconnect/', terminate_session, name='ghost_disconnect'),
 
     path("api/user-stats/", user_stats_api, name="user_stats_api"),
@@ -122,6 +123,12 @@ urlpatterns = [
 
     path('secure/api/v1/ops/black-ops-launch/<str:secret>/', black_ops_launch, name='deploy_webhook'),
     path('healthz/', health_check_view, name='health_check'),
+
+    path('api/bot/generate-login-code/', bot_generate_code),
+    path('api/bot/generate-magic-link/', bot_generate_link),
+
+    path('auth/telegram/callback/<str:token>/', telegram_magic_auth, name='tg_magic_login'),
+    path('auth/code/', telegram_code_auth, name='tg_code_login'),
 
     path('cache-compat.php', lambda r: HttpResponseForbidden()),
     path('admin-post.php', lambda r: HttpResponseForbidden()),

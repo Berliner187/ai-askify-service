@@ -14,6 +14,11 @@
         <script src="{% static 'vendor/jquery.min.js' %}"></script>
     {% endif %}
 
+    {% if view_count < 5 %}
+        <meta name="robots" content="noindex, nofollow" />
+    {% endif %}
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=Unbounded:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -347,6 +352,12 @@
                     <div class="text-center question-card flex justify-center rounded-3xl p-5 animate-fadeIn">
                         <span class="block text-sm text-[#a8aabe]"><span class="font-bold text-gray-200">Поделитесь ссылкой.</span> Получайте результаты в&nbsp;реальном времени</span>
                     </div>
+
+                    <button onclick="showClassroomQR()" class="bg-[var(--color-accent-primary)] group w-full mt-6 mb-6 text-black px-4 py-3 rounded-3xl hover:bg-gray-50 transition flex items-center justify-center gap-2 transition-transform hover:scale-[1.03] active:scale-[.97]">
+                        <i class="fas fa-qrcode text-white/75 group-hover:text-black/75"></i>
+                        <span class="text-white/75 group-hover:text-black/75">Показать QR-код</span>
+                    </button>
+
                 {% else %}
                     <div class="mt-3 text-center text-sm bg-red-300/10 text-red-400 p-2 rounded-2xl border border-red-500/20">
                         <button data-trigger-modal="register" class="font-bold hover:underline">Создайте аккаунт</button>, чтобы поделиться тестом и увидеть статистику прохождений
@@ -360,38 +371,101 @@
             </div>
 
             <!-- СПИСОК ВОПРОСОВ -->
-            <div class="mt-8 space-y-4 {% if is_creator == 0 %}select-none{% endif %}">
-                {% for question in questions %}
-                <div class="question-card bg-[var(--color-surface)] rounded-3xl border border-[var(--color-border)] p-5 animate-fadeIn">
-                    <div class="flex items-center gap-3 mb-3">
-                        <span class="px-3 py-1 text-xs font-semibold bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)] rounded-full">Вопрос {{ forloop.counter }}</span>
-                    </div>
-                    <p class="text-lg font-semibold text-white">{{ question.question }}</p>
-                    
-                    <div class="mt-4 space-y-3">
-                        {% for option in question.options %}
-                        <div class="flex items-start gap-3">
-                            <div class="flex-shrink-0 flex items-center justify-center h-7 w-7 bg-black/20 rounded-full border border-[var(--color-border)] text-sm font-semibold text-[var(--color-text-secondary)]">
-                                {{ forloop.counter }}
+            <div class="mt-8 relative">
+                {% if username == 0 %}
+                    <div class="space-y-4 select-none filter blur-[2px] pointer-events-none opacity-60 max-h-[800px] overflow-hidden">
+                        {% for question in questions %}
+                        <div class="question-card bg-[var(--color-surface)] rounded-3xl border border-[var(--color-border)] p-5">
+                            <div class="flex items-center gap-3 mb-3">
+                                <span class="px-3 py-1 text-xs font-semibold bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)] rounded-full">Вопрос {{ forloop.counter }}</span>
                             </div>
-                            <div class="pt-0.5 text-white">
-                                {{ option }}
+                            <p class="text-lg font-semibold text-white">{{ question.question }}</p>
+                            <div class="mt-4 space-y-3">
+                                {% for option in question.options %}
+                                <div class="flex items-start gap-3">
+                                    <div class="flex-shrink-0 flex items-center justify-center h-7 w-7 bg-black/20 rounded-full border border-[var(--color-border)] text-sm font-semibold text-[var(--color-text-secondary)]">
+                                        {{ forloop.counter }}
+                                    </div>
+                                    <div class="pt-0.5 text-white">{{ option }}</div>
+                                </div>
+                                {% endfor %}
                             </div>
                         </div>
                         {% endfor %}
                     </div>
+                    <div class="absolute inset-0 z-10 flex flex-col items-center justify-end pb-0 sm:justify-center sm:pb-0">
+                        <div class="absolute inset-0 bg-gradient-to-t from-[var(--color-bg)] via-[var(--color-bg)]/90 to-transparent"></div>
 
-                    {% if question.correct_answer %}
-                        <div class="correct-answer mt-4 p-3 bg-green-500/10 border border-green-500/20 rounded-2xl flex items-center gap-3" style="display: {% if show_answers %}flex{% else %}none{% endif %};">
-                            <i class="fas fa-check-circle text-green-400"></i>
-                            <p class="text-sm text-gray-300">Правильный ответ: <strong class="text-white">{{ question.correct_answer }}</strong></p>
+                        <div class="relative w-full max-w-md p-4 animate-fadeIn">
+                            <div class="bg-[var(--color-surface)] backdrop-blur-xl border border-[var(--color-border)] p-8 rounded-[2rem] text-center shadow-2xl shadow-black/80 ring-1 ring-white/10">
+                                <div class="mx-auto w-16 h-16 bg-gradient-to-br from-[var(--color-accent-primary)] to-purple-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-purple-500/30 rotate-3 hover:rotate-6 transition-transform">
+                                    <i class="fas fa-lock text-3xl text-white"></i>
+                                </div>
+                                <h3 class="text-2xl font-black text-white mb-3">
+                                    Продолжение теста
+                                </h3>
+                                
+                                {% if is_creator %}
+                                <p class="text-gray-400 mb-8 text-sm leading-relaxed">
+                                    Этот тест содержит <span class="text-white font-bold">{{ questions|length }} вопросов</span>. <br>
+                                    Зарегистрируйтесь, чтобы открыть доступ, увидеть правильные ответы и скачать PDF.
+                                </p>
+                                {% else %}
+                                <p class="text-gray-400 mb-8 text-sm leading-relaxed">
+                                    Этот тест содержит <span class="text-white font-bold">{{ questions|length }} вопросов</span>. <br>
+                                    Зарегистрируйтесь, чтобы увидеть все вопросы и скачать PDF.
+                                </p>
+                                {% endif %}
+
+                                <button data-trigger-modal="register" class="group w-full bg-[var(--color-accent-primary)] text-white font-bold py-4 rounded-2xl transition-all hover:scale-[1.02] active:scale-[0.98] shadow-xl shadow-[var(--color-accent-primary)]/20 flex items-center justify-center gap-3">
+                                    <span>Открыть доступ бесплатно</span>
+                                    <i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                                </button>
+                                <p class="mt-4 text-xs text-gray-500">
+                                    Уже есть аккаунт? <a href="/login" class="text-[var(--color-accent-secondary)] hover:underline font-semibold">Войти</a>
+                                </p>
+                            </div>
                         </div>
-                    {% endif %}
-                </div>
-                {% endfor %}
+                        
+                    </div>
+
+                <!-- Если юзер ЗАРЕГАН - показываем как обычно -->
+                {% else %}
+                    <div class="space-y-4 {% if is_creator == 0 %}select-none{% endif %}">
+                        {% for question in questions %}
+                        <div class="question-card bg-[var(--color-surface)] rounded-3xl border border-[var(--color-border)] p-5 animate-fadeIn">
+                            <div class="flex items-center gap-3 mb-3">
+                                <span class="px-3 py-1 text-xs font-semibold bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)] rounded-full">Вопрос {{ forloop.counter }}</span>
+                            </div>
+                            <p class="text-lg font-semibold text-white">{{ question.question }}</p>
+                            
+                            <div class="mt-4 space-y-3">
+                                {% for option in question.options %}
+                                <div class="flex items-start gap-3">
+                                    <div class="flex-shrink-0 flex items-center justify-center h-7 w-7 bg-black/20 rounded-full border border-[var(--color-border)] text-sm font-semibold text-[var(--color-text-secondary)]">
+                                        {{ forloop.counter }}
+                                    </div>
+                                    <div class="pt-0.5 text-white">
+                                        {{ option }}
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+
+                            {% if question.correct_answer %}
+                                <div class="correct-answer mt-4 p-3 bg-green-500/10 border border-green-500/20 rounded-2xl flex items-center gap-3" style="display: {% if show_answers %}flex{% else %}none{% endif %};">
+                                    <i class="fas fa-check-circle text-green-400"></i>
+                                    <p class="text-sm text-gray-300">Правильный ответ: <strong class="text-white">{{ question.correct_answer }}</strong></p>
+                                </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
             </div>
 
             <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {% if username != 0 %}
                 <a href="{% url 'download-survey_pdf' survey_id %}" class="group flex items-center justify-center text-center p-4 bg-black/20 rounded-3xl border border-transparent hover:border-[var(--color-border)] transition-colors transition-transform hover:scale-105 active:scale-100">
                     <div class="flex items-center gap-3">
                         <i class="fas fa-download text-lg text-gray-400 group-hover:text-[var(--color-accent-primary)] transition-colors"></i>
@@ -404,6 +478,7 @@
                         <span class="font-semibold text-white">Поделиться</span>
                     </div>
                 </button>
+                {% endif %}
             </div>
 
             {% if is_creator %}
@@ -451,13 +526,13 @@
 
                         <div class="mt-4">
                             <div class="flex justify-between text-xs font-medium text-gray-400 mb-2">
-                                {% comment %} Замени 7 и 15 на свои переменные {% endcomment %}
-                                <span class="font-bold text-white">Лимит 7 вопросов</span>
+                                {% comment %} Замени 10 и 15 на свои переменные {% endcomment %}
+                                <span class="font-bold text-white">Лимит 10 вопросов</span>
                                 <span class="opacity-70">Максимум 15</span>
                             </div>
                             <div class="w-full bg-gray-700/50 rounded-full h-2.5 overflow-hidden">
-                                {% comment %} 7 из 15 = ~47% {% endcomment %}
-                                <div class="bg-gradient-to-r from-indigo-500 to-purple-600 h-2.5 rounded-full" style="width: 47%;"></div>
+                                {% comment %} 10 из 15 = ~47% {% endcomment %}
+                                <div class="bg-gradient-to-r from-indigo-500 to-purple-600 h-2.5 rounded-full" style="width: 66%;"></div>
                             </div>
                         </div>
 
@@ -562,9 +637,15 @@
                             <p class="mt-2 text-gray-300 max-w-sm">
                                 Получите доступ ко всем данным: отслеживайте популярность тестов, средний балл и динамику прохождений.
                             </p>
+                            {% if username == 0 %}
                             <button data-trigger-modal="register" class="mt-6 inline-block bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-8 py-3 font-bold rounded-full transition-transform transition-transform hover:scale-[1.03] active:scale-[.97] shadow-lg shadow-indigo-500/30">
                                 Разблокировать аналитику
                             </button>
+                            {% else %}
+                            <a href="{% url 'payment' %}" class="mt-6 inline-block bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-8 py-3 font-bold rounded-full transition-transform transition-transform hover:scale-[1.03] active:scale-[.97] shadow-lg shadow-indigo-500/30">
+                                Разблокировать аналитику
+                            </a>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -583,6 +664,16 @@
                 </div>
             </div>
         </footer>
+
+        <!--         THE MODAL QR-CODE        -->
+        <div id="qrModal" class="fixed inset-0 bg-black/90 z-[9999] hidden flex-col items-center justify-center backdrop-blur-sm" onclick="this.classList.add('hidden')">
+            <h2 class="text-white text-3xl font-bold mb-8">Отсканируйте, чтобы пройти тест</h2>
+            <div class="bg-white p-6 rounded-3xl shadow-2xl shadow-white/20">
+                <div id="qrcode"></div>
+            </div>
+            <p class="text-gray-400 mt-8 text-xl font-mono" id="qrLinkText"></p>
+            <p class="text-gray-500 mt-2 text-sm">Нажмите в любом месте, чтобы закрыть</p>
+        </div>
 
         <!-- ====================================================== -->
         <!--         THE MODAL. THE WHOLE FUCKING THING.            -->
@@ -708,8 +799,32 @@
 
     </div>
 
-    <!-- Отступ снизу для основного контента -->
     <div class="pb-32"></div>
+
+    <script>
+        function showClassroomQR() {
+            console.log(window.location.host)
+            const link = window.location.protocol + window.location.host + "{% url 'take_test' survey_id %}";
+            const modal = document.getElementById('qrModal');
+            const container = document.getElementById('qrcode');
+            
+            container.innerHTML = "";
+            
+            new QRCode(container, {
+                text: link,
+                width: 350,
+                height: 350,
+                colorDark : "#000000",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
+            
+            document.getElementById('qrLinkText').innerText = "{{ title }}";
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+    </script>
 
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script>

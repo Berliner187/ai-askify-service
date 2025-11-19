@@ -127,8 +127,12 @@ else:
 
 CACHES = {
     'default': {
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-        'LOCATION': 'cacheLetychka',
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': env('REDIS_URL', default='redis://127.0.0.1:6379/1'),
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'IGNORE_EXCEPTIONS': True,
+        }
     }
 }
 
@@ -172,7 +176,7 @@ USE_TZ = True
 
 AUTH_USER_MODEL = 'askify_service.AuthUser'
 
-SESSION_COOKIE_AGE = 1_209_600
+SESSION_COOKIE_AGE = 5_000_000
 
 
 # --- STATIC FILES & CONST
@@ -185,6 +189,9 @@ LOGIN_URL = '/login/'
 
 TELEGRAM_BOT_TOKEN = env('TELEGRAM_BOT_TOKEN')
 TELEGRAM_CHAT_ID = env('TELEGRAM_CHAT_ID')
+
+
+BOT_API_SECRET = env('BOT_API_SECRET', default='8130433852:AAGxUwVk1ADbn5OKUvq27qxvsFkIcbxeNZc')
 
 
 # --- SECRET webhook
