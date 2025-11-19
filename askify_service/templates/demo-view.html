@@ -259,16 +259,17 @@
                                     <hr class="border-t border-[var(--color-border)] my-1">
                                 {% endif %}
 
+                                {% if username != 0 %}
                                 <button data-action="share" data-share-url="{% url 'take_test' survey_id %}" class="flex items-center gap-3 px-4 py-3 text-white font-semibold rounded-3xl hover:bg-white/5 transition-transform active:scale-[.97]">
                                     <i class="fas fa-share-alt w-5 text-center text-gray-400"></i>
                                     <span>Поделиться тестом</span>
                                 </button>
-                                
                                 <a href="{% url 'download-survey_pdf' survey_id %}" class="flex items-center gap-3 px-4 py-3 text-white font-semibold rounded-3xl hover:bg-white/5 transition-transform active:scale-[.97]">
                                     <i class="fas fa-download w-5 text-center text-gray-400"></i>
                                     <span>Скачать тест в PDF</span>
                                 </a>
-                                
+                                {% endif %}
+
                                 <hr class="border-t border-[var(--color-border)] my-1">
                                 
                                 <a href="{% url 'profile_redirect' %}" class="flex items-center gap-3 px-4 py-3 text-white font-semibold rounded-3xl hover:bg-white/5 transition-transform active:scale-[.97]"><i class="fas fa-user-circle w-5 text-center text-gray-400"></i><span>Мой профиль</span></a>
