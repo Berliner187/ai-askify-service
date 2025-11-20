@@ -35,7 +35,7 @@ environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 DEBUG = env.bool('DEBUG')
 SECRET_KEY = env('SECRET_KEY')
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS')
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS') + ['127.0.0.1', 'localhost']
 CSRF_TRUSTED_ORIGINS = ['https://letychka.ru', 'https://www.letychka.ru']
 
 
@@ -105,25 +105,17 @@ WSGI_APPLICATION = 'askify_app.wsgi.application'
 
 
 # --- DATABASES
-if DEBUG:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': env('NAME_DB'),
+        'USER': env('USER_DB'),
+        'PASSWORD': env('PASSWORD_DB'),
+        'HOST': env('HOST_DB'),
+        'PORT': env('PORT_DB'),
+        'CONN_MAX_AGE': 0
     }
-else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': env('NAME_DB'),
-            'USER': env('USER_DB'),
-            'PASSWORD': env('PASSWORD_DB'),
-            'HOST': env('HOST_DB'),
-            'PORT': env('PORT_DB'),
-            'CONN_MAX_AGE': 0
-        }
-    }
+}
 
 CACHES = {
     'default': {
@@ -135,6 +127,7 @@ CACHES = {
         }
     }
 }
+CELERY_BROKER_URL = 'redis://127.0.0.1:6379/1'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
@@ -162,8 +155,6 @@ EMAIL_PORT = env('EMAIL_PORT')
 EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS')
 EMAIL_HOST_USER = env('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD')
-
-CELERY_BROKER_URL = 'redis://localhost:6379/0'
 
 
 LANGUAGE_CODE = 'ru'

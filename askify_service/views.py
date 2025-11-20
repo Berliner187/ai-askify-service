@@ -47,7 +47,6 @@ from django.utils.crypto import get_random_string
 from django.conf import settings
 
 
-from .tasks import send_manual_email_task, start_mailing_task
 from smtplib import SMTPException
 
 from askify_app.settings import EMAIL_HOST_USER
@@ -60,7 +59,7 @@ from .models import *
 from .forms import *
 from .constants import *
 from .tracer import *
-from .quant import Quant
+# from .quant import Quant
 
 
 from askify_app.settings import DEBUG, BASE_DIR, ALLOWED_HOSTS
@@ -74,13 +73,12 @@ import markdown
 import requests
 import aiofiles
 import PyPDF2
-from Crypto.PublicKey import ECC
+# from Crypto.PublicKey import ECC
 import vk_api
 import chardet
 import docx
 import PyPDF2
 from tempfile import NamedTemporaryFile
-import textract
 from bs4 import BeautifulSoup
 import environ
 from openpyxl import Workbook
@@ -130,7 +128,7 @@ os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
 
 
 tracer_l = logging.getLogger('askify_app')
-crypto_b = Quant()
+# crypto_b = Quant()
 
 signer = Signer()
 
@@ -1274,16 +1272,34 @@ class FileUploadView(View):
 
     def extract_text_from_word(self, file_path):
         """ Извлечение текста из Word документов """
-        try:
-            if file_path.endswith('.docx'):
+        if file_path.endswith('.docx'):
+            try:
                 doc = docx.Document(file_path)
                 return "\n".join([para.text for para in doc.paragraphs])
+            except Exception as e:
+                print(f".docx extraction error: {e}")
+                return ""
+        elif file_path.endswith('.doc'):
+            try:
+                process = subprocess.run(
+                    ['antiword', file_path],
+                    capture_output=True,
+                    text=True,
+                    check=True
+                )
+                return process.stdout
+            except FileNotFoundError:
+                print("ERROR: 'antiword' command not found. Please install it using 'sudo apt-get install antiword'")
+                return "Ошибка: не найден обработчик для .doc файлов."
+            except subprocess.CalledProcessError as e:
+                print(f".doc extraction error with antiword: {e}")
+                print(f"Antiword stderr: {e.stderr}")
+                return ""
+            except Exception as e:
+                print(f"Generic .doc extraction error: {e}")
+                return ""
 
-            elif file_path.endswith('.doc'):
-                return textract.process(file_path).decode('utf-8', 'ignore')
-        except Exception as e:
-            print(f"Word extraction error: {e}")
-            return ""
+        return ""
 
 
 @method_decorator(login_required, name='dispatch')
@@ -5723,25 +5739,28 @@ def get_new_users_api(request):
 
 
 @staff_member_required
+@csrf_exempt
 def start_mailing_api(request):
     if request.method != 'POST':
         return JsonResponse({'error': 'POST only'}, status=405)
 
-    try:
-        data = json.loads(request.body)
-        mailing = Mailing.objects.create(
-            title=data.get('title'),
-            subject=data.get('subject'),
-            message_body=data.get('message_body'),
-            button_text=data.get('button_text'),
-            button_url=data.get('button_url'),
-            target_segment=data.get('target_segment')
-        )
+    from .tasks import start_mailing_task
 
-        start_mailing_task.delay(mailing.id)
-        return JsonResponse({'status': 'success', 'message': 'Mailing has been queued.'})
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+    # try:
+    data = json.loads(request.body)
+    mailing = Mailing.objects.create(
+        title=data.get('title'),
+        subject=data.get('subject'),
+        message_body=data.get('message_body'),
+        button_text=data.get('button_text'),
+        button_url=data.get('button_url'),
+        target_segment=data.get('target_segment')
+    )
+
+    start_mailing_task.delay(mailing.id)
+    return JsonResponse({'status': 'success', 'message': 'Mailing has been queued.'})
+    # except Exception as e:
+    #     return JsonResponse({'error': str(e)}, status=500)
 
 
 @staff_member_required
