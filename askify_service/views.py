@@ -2591,10 +2591,27 @@ def quick_register_api(request):
     return JsonResponse({'redirect': '/payment'})
 
 
+MAX_LOGIN_ATTEMPTS = 5
+LOCKOUT_TIME = 60 * 30
+
+
 @check_legal_process
 def login_view(request):
     if request.user.is_authenticated:
         return redirect('/create')
+
+    client_ip = get_client_ip(request)
+
+    cache_key = f'login_attempts_{client_ip}'
+
+    attempt_count = cache.get(cache_key, 0)
+    if attempt_count >= MAX_LOGIN_ATTEMPTS:
+        tracer_l.warning(f"IP {client_ip} is locked out from login.")
+        context = {
+            'error': f'Слишком много неудачных попыток. Пожалуйста, подождите 30 минут.',
+            'is_locked': True
+        }
+        return render(request, 'login.html', context, status=429)
 
     context = {}
 
@@ -2627,7 +2644,20 @@ def login_view(request):
             safe_next = next_url if is_safe_url(next_url) else '/create'
             return redirect(safe_next)
         else:
-            context['error'] = 'Неверный email или пароль. Попробуйте снова.'
+            cache.delete(cache_key)
+            new_attempt_count = attempt_count + 1
+            cache.set(cache_key, new_attempt_count, timeout=LOCKOUT_TIME)
+
+            remaining_attempts = MAX_LOGIN_ATTEMPTS - new_attempt_count
+
+            error_message = 'Неверный email или пароль. Попробуйте снова.'
+            if remaining_attempts > 0:
+                error_message += f' Осталось попыток: {remaining_attempts}.'
+            else:
+                tracer_l.error(f"IP {client_ip} has been locked out after {new_attempt_count} failed attempts.")
+                error_message = f'Слишком много неудачных попыток. Пожалуйста, подождите 30 минут.'
+
+            context['error'] = error_message
             return render(request, 'login.html', context, status=400)
 
     context['next_url'] = request.GET.get('next', '/create')
