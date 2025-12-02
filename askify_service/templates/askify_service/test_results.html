@@ -344,8 +344,7 @@
 
         <div class="space-y-6">
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-                <!-- КАРТОЧКА 1: ОБЩАЯ СВОДКА -->
+                <!-- КАРТОЧКА 1 -->
                 <div class="bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] shadow-2xl shadow-black/50">
                     <h3 class="text-base font-bold text-white mb-4">Общая сводка</h3>
                     <div class="space-y-4">
@@ -364,7 +363,7 @@
                     </div>
                 </div>
 
-                <!-- КАРТОЧКА 2: СРЕДНИЙ БАЛЛ -->
+                <!-- КАРТОЧКА 2 -->
                 <div class="bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] shadow-2xl shadow-black/50 flex flex-col justify-center items-center">
                     <h3 class="text-base font-bold text-white mb-4">Средний балл</h3>
                     <div class="relative w-36 h-36 flex items-center justify-center">
@@ -375,203 +374,230 @@
                     <p class="text-sm text-gray-400 text-center mt-3">Медианный балл: <span class="font-bold text-white">{{ median_score|floatformat:0 }}</span></p>
                 </div>
 
-                <!-- КАРТОЧКА 3: ПРОЦЕНТ УСПЕХА -->
+                <!-- КАРТОЧКА 3 -->
                 <div class="bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] shadow-2xl shadow-black/50 flex flex-col">
-                    <div>
-                        <h3 class="text-base font-bold text-white">
-                            Процент успеха
-                        </h3>
-                    </div>
+                    <div><h3 class="text-base font-bold text-white">Процент успеха</h3></div>
                     <div class="flex-grow flex items-center justify-center my-4">
-                        <p class="text-8xl font-extrabold" style="color: {{ success_rate_color }};">
-                            {{ success_rate|floatformat:0 }}
-                        </p>
+                        <p class="text-8xl font-extrabold" style="color: {{ success_rate_color }};">{{ success_rate|floatformat:0 }}</p>
                     </div>
                     <div class="w-full bg-black/30 rounded-full h-4">
-                        <div class="h-4 rounded-full" 
-                            style="width: {{ success_rate }}%; background-color: {{ success_rate_color }};">
-                        </div>
+                        <div class="h-4 rounded-full" style="width: {{ success_rate }}%; background-color: {{ success_rate_color }};"></div>
                     </div>
                 </div>
             </div>
 
-            <!-- ВТОРОЙ РЯД: ГРАФИКИ -->
-            <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
-                <div class="lg:col-span-3 bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] shadow-2xl shadow-black/50">
-                    <h3 class="text-base font-bold text-white mb-4">Активность за 7 дней</h3>
-                    <div class="chart-wrapper h-64">
-                        <canvas id="activityChart"></canvas>
-                    </div>
-                </div>
-                <div class="lg:col-span-2 bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] shadow-2xl shadow-black/50">
-                    <h3 class="text-base font-bold text-white mb-4">Распределение баллов</h3>
-                    <div class="chart-wrapper h-64">
-                        <canvas id="scoresDistributionChart"></canvas>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ТРЕТИЙ РЯД: ИНСАЙТЫ ПО ВОПРОСАМ -->
-            <div class="bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] shadow-2xl shadow-black/50">
-                <h3 class="text-base font-bold text-white mb-4">Анализ вопросов</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- БЛОК ПЛАТНОЙ АНАЛИТИКИ -->
+            <div class="relative">
+                <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 transition-all duration-500 
+                    {% if subscription_level == 0 %}filter blur-lg opacity-40 pointer-events-none select-none{% endif %}">
                     
-                    <div class="bg-black/20 p-4 rounded-xl flex items-start gap-4">
-                        <i class="fas fa-brain text-xl text-red-400 pt-1"></i>
-                        <div class="min-w-0">
-                            <p class="text-sm font-semibold text-red-400">Самый сложный вопрос</p>
-                            {% if question_insights.hardest %}
-                                <p class="text-sm text-gray-300" title="{{ question_insights.hardest.text }}">{{ question_insights.hardest.text }}</p>
-                                <p class="text-lg font-bold text-white">{{ question_insights.hardest.rate|floatformat:0 }}% <span class="text-xs text-gray-500">верно ({{ question_insights.hardest.stats }})</span></p>
-                            {% else %}
-                                <p class="text-sm text-gray-500 mt-1">Недостаточно данных</p>
-                            {% endif %}
+                    <div class="lg:col-span-3 bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] shadow-2xl shadow-black/50">
+                        <h3 class="text-base font-bold text-white mb-4">Активность за 7 дней</h3>
+                        <div class="chart-wrapper h-64"><canvas id="activityChart"></canvas></div>
+                    </div>
+                    <div class="lg:col-span-2 bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] shadow-2xl shadow-black/50">
+                        <h3 class="text-base font-bold text-white mb-4">Распределение баллов</h3>
+                        <div class="chart-wrapper h-64"><canvas id="scoresDistributionChart"></canvas></div>
+                    </div>
+                    <div class="lg:col-span-5 bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] shadow-2xl shadow-black/50">
+                        <h3 class="text-base font-bold text-white mb-4">Анализ вопросов</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="bg-black/20 p-4 rounded-xl flex items-start gap-4">
+                                <i class="fas fa-brain text-xl text-red-400 pt-1"></i>
+                                <div class="min-w-0">
+                                    <p class="text-sm font-semibold text-red-400">Самый сложный вопрос</p>
+                                    {% if question_insights.hardest %}
+                                        <p class="text-sm text-gray-300 truncate">{{ question_insights.hardest.text }}</p>
+                                        <p class="text-lg font-bold text-white">{{ question_insights.hardest.rate|floatformat:0 }}% <span class="text-xs text-gray-500">верно</span></p>
+                                    {% else %}<p class="text-sm text-gray-500 mt-1">Недостаточно данных</p>{% endif %}
+                                </div>
+                            </div>
+                            <div class="bg-black/20 p-4 rounded-xl flex items-start gap-4">
+                                <i class="fas fa-star text-xl text-green-400 pt-1"></i>
+                                <div class="min-w-0">
+                                    <p class="text-sm font-semibold text-green-400">Самый легкий вопрос</p>
+                                    {% if question_insights.easiest %}
+                                        <p class="text-sm text-gray-300 truncate">{{ question_insights.easiest.text }}</p>
+                                        <p class="text-lg font-bold text-white">{{ question_insights.easiest.rate|floatformat:0 }}% <span class="text-xs text-gray-500">верно</span></p>
+                                    {% else %}<p class="text-sm text-gray-500 mt-1">Недостаточно данных</p>{% endif %}
+                                </div>
+                            </div>
                         </div>
                     </div>
+                    <div class="lg:col-span-5 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                         
+                         <div class="bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] shadow-2xl shadow-black/50">
+                            <h3 class="text-base font-bold text-white mb-4 flex items-center gap-2">
+                                <i class="fas fa-trophy text-amber-400"></i>
+                                Таблица лидеров
+                            </h3>
+                            <ul class="space-y-3">
+                                {% for attempt in leaderboard_attempts|slice:":5" %}
+                                <li class="flex items-center gap-4">
+                                    <div class="font-bold text-lg w-6 text-center {% if forloop.counter == 1 %}text-amber-400{% elif forloop.counter == 2 %}text-gray-300{% elif forloop.counter == 3 %}text-yellow-700{% else %}text-gray-500{% endif %}">
+                                        {{ forloop.counter }}
+                                    </div>
+                                    <div class="flex-grow min-w-0">
+                                        <p class="text-white font-semibold truncate">{{ attempt.student_name }}</p>
+                                        <p class="text-xs text-gray-500">{{ attempt.created_at|date:"d M Y" }}</p>
+                                    </div>
+                                    <div class="flex-shrink-0 font-bold text-white bg-black/20 px-3 py-1 rounded-lg">
+                                        {{ attempt.score }}/{{ attempt.total_questions }}
+                                    </div>
+                                </li>
+                                {% empty %}
+                                <li class="text-center text-gray-500 py-8">Данные собираются...</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
 
-                    <div class="bg-black/20 p-4 rounded-xl flex items-start gap-4">
-                        <i class="fas fa-star text-xl text-green-400 pt-1"></i>
-                        <div class="min-w-0">
-                            <p class="text-sm font-semibold text-green-400">Самый легкий вопрос</p>
-                            {% if question_insights.easiest %}
-                                <p class="text-sm text-gray-300" title="{{ question_insights.easiest.text }}">{{ question_insights.easiest.text }}</p>
-                                <p class="text-lg font-bold text-white">{{ question_insights.easiest.rate|floatformat:0 }}% <span class="text-xs text-gray-500">верно ({{ question_insights.easiest.stats }})</span></p>
-                            {% else %}
-                                <p class="text-sm text-gray-500 mt-1">Недостаточно данных</p>
-                            {% endif %}
+                        <div class="bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] shadow-2xl shadow-black/50">
+                            <h3 class="text-base font-bold text-white mb-4 flex items-center gap-2">
+                                <i class="fas fa-map text-cyan-400"></i>
+                                Карта вопросов
+                            </h3>
+                            <div class="space-y-3 max-h-60 overflow-hidden">
+                                {% for q in questions_breakdown|slice:":5" %}
+                                <div>
+                                    <div class="flex justify-between items-center text-xs text-gray-400 mb-1">
+                                        <p class="pr-4 truncate" title="{{ q.text }}">{{ q.text }}</p>
+                                        <p class="font-bold text-white flex-shrink-0">{{ q.rate|floatformat:0 }}%</p>
+                                    </div>
+                                    <div class="w-full bg-gray-700/50 rounded-full h-1.5">
+                                        <div class="h-1.5 rounded-full" style="width: {{ q.rate }}%; background-color: {{ q.color }};"></div>
+                                    </div>
+                                </div>
+                                {% empty %}
+                                <div class="text-center text-gray-500 py-8">Данные собираются...</div>
+                                {% endfor %}
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-            <!-- ВИДЖЕТ 1: ТАБЛИЦА ЛИДЕРОВ -->
-            <div class="bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] shadow-2xl shadow-black/50">
-                <h3 class="text-base font-bold text-white mb-4 flex items-center gap-2">
-                    <i class="fas fa-trophy text-amber-400"></i>
-                    Таблица лидеров
-                </h3>
-                <ul class="space-y-3">
-                    {% for attempt in leaderboard_attempts %}
-                    <li class="flex items-center gap-4">
-                        <div class="font-bold text-lg w-6 text-center {% if forloop.counter == 1 %}text-amber-400{% elif forloop.counter == 2 %}text-gray-300{% elif forloop.counter == 3 %}text-yellow-700{% else %}text-gray-500{% endif %}">
-                            {{ forloop.counter }}
+                {% if subscription_level == 0 %}
+                <div class="absolute inset-0 z-10 flex flex-col items-center justify-center">
+                    <div class="bg-[var(--color-surface)]/95 backdrop-blur-xl border border-[var(--color-border)] p-8 rounded-[2rem] text-center shadow-2xl shadow-black/80 ring-1 ring-white/10 max-w-md mx-4">
+                        <div class="mx-auto w-16 h-16 bg-indigo-500/10 border-2 border-indigo-500/30 rounded-full flex items-center justify-center mb-6">
+                            <i class="fas fa-chart-pie text-3xl text-indigo-400"></i>
                         </div>
-                        <div class="flex-grow min-w-0">
-                            <p class="text-white font-semibold truncate">{{ attempt.student_name }}</p>
-                            <p class="text-xs text-gray-500">{{ attempt.created_at|date:"d M Y" }}</p>
-                        </div>
-                        <div class="flex-shrink-0 font-bold text-white bg-black/20 px-3 py-1 rounded-lg">
-                            {{ attempt.score }}/{{ attempt.total_questions }}
-                        </div>
-                    </li>
-                    {% empty %}
-                    <li class="text-center text-gray-500 py-8">Пока нет лидеров</li>
-                    {% endfor %}
-                </ul>
-            </div>
+                        <h3 class="text-2xl font-bold text-white mb-4">Откройте полную картину</h3>
+                        <div class="text-left space-y-3 mb-6 max-w-sm mx-auto">
+                            
+                            <div class="flex items-center gap-3 p-2 rounded-lg bg-white/5 border border-white/10">
+                                <div class="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center text-red-400">
+                                    <i class="fas fa-brain"></i>
+                                </div>
+                                <div class="text-sm text-gray-300">
+                                    <span class="block text-white font-bold">Сложные вопросы</span>
+                                    Где ошибаются чаще всего?
+                                </div>
+                            </div>
 
-            <!-- ВИДЖЕТ 2: КАРТА ВОПРОСОВ -->
-            <div class="bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] shadow-2xl shadow-black/50">
-                <h3 class="text-base font-bold text-white mb-4 flex items-center gap-2">
-                    <i class="fas fa-map text-cyan-400"></i>
-                    Карта вопросов
-                </h3>
-                <div class="space-y-3 max-h-60 overflow-y-auto pr-2">
-                    {% for q in questions_breakdown %}
-                    <div>
-                        <div class="flex justify-between items-center text-xs text-gray-400 mb-1">
-                            <p class="pr-4" title="{{ q.text }}">{{ q.text }}</p>
-                            <p class="font-bold text-white flex-shrink-0">{{ q.rate|floatformat:0 }}%</p>
+                            <div class="flex items-center gap-3 p-2 rounded-lg bg-white/5 border border-white/10">
+                                <div class="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400">
+                                    <i class="fas fa-trophy"></i>
+                                </div>
+                                <div class="text-sm text-gray-300">
+                                    <span class="block text-white font-bold">Таблица лидеров</span>
+                                    Ранжирование учеников по баллам.
+                                </div>
+                            </div>
+
+                            <div class="flex items-center gap-3 p-2 rounded-lg bg-white/5 border border-white/10">
+                                <div class="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400">
+                                    <i class="fas fa-chart-bar"></i>
+                                </div>
+                                <div class="text-sm text-gray-300">
+                                    <span class="block text-white font-bold">Распределение оценок</span>
+                                    Общая успеваемость группы.
+                                </div>
+                            </div>
+
                         </div>
-                        <div class="w-full bg-gray-700/50 rounded-full h-1.5">
-                            <div class="h-1.5 rounded-full" style="width: {{ q.rate }}%; background-color: {{ q.color }};"></div>
-                        </div>
+                        <a href="{% url 'payment' %}" class="block w-full bg-[var(--color-accent-primary)] text-white font-bold py-3 rounded-xl transition-transform hover:scale-[1.02] shadow-lg shadow-indigo-500/20">
+                            Открыть аналитику
+                        </a>
                     </div>
-                    {% empty %}
-                    <div class="text-center text-gray-500 py-8">Нет данных для анализа</div>
-                    {% endfor %}
                 </div>
+                {% endif %}
             </div>
         </div>
 
-        <div class="flex flex-col p-2 sm:flex-row justify-between sm:items-center mb-4">
+        <!-- БЛОК ЭКСПОРТА -->
+        <div class="flex flex-col p-2 sm:flex-row justify-between sm:items-center mt-8 mb-4">
             <div>
                 <h2 class="text-xl font-bold text-white">Результат в Excel</h2>
                 <p class="text-gray-400 text-sm">Забудьте о ручном копировании. Вся статистика уже готова к скачиванию.</p>
             </div>
             
             {% if subscription_level > 0 %}
-                <a href="{% url 'export_results_to_excel' survey.survey_id %}" 
-                    class="mt-3 sm:mt-0 inline-flex items-center gap-2 bg-emerald-600/20 text-emerald-300 px-4 py-2 rounded-xl font-semibold text-sm border border-emerald-500/30 hover:bg-emerald-600/40 transition-colors">
-                    <i class="fas fa-file-excel"></i>
-                    Экспорт в Excel
+                <a href="{% url 'export_results_to_excel' survey.survey_id %}" class="mt-3 sm:mt-0 inline-flex items-center gap-2 bg-emerald-600/20 text-emerald-300 px-4 py-2 rounded-xl font-semibold text-sm border border-emerald-500/30 hover:bg-emerald-600/40 transition-colors">
+                    <i class="fas fa-file-excel"></i> Экспорт в Excel
                 </a>
             {% else %}
-                <button type="button" id="export-trigger-button"
-                    class="mt-3 sm:mt-0 inline-flex items-center gap-2 bg-emerald-600/20 text-emerald-300 px-4 py-2 rounded-xl font-semibold text-sm border border-emerald-500/30 hover:bg-emerald-600/40 transition-colors">
-                    <i class="fas fa-file-excel"></i> Экспорт в Excel
+                <button type="button" id="export-trigger-button" class="mt-3 sm:mt-0 inline-flex items-center gap-2 bg-emerald-600/20 text-emerald-300 px-4 py-2 rounded-xl font-semibold text-sm border border-emerald-500/30 hover:bg-emerald-600/40 transition-colors">
+                    <i class="fas fa-lock mr-1 text-xs"></i> <i class="fas fa-file-excel"></i> Экспорт в Excel
                 </button>
             {% endif %}
         </div>
 
-        <!-- СПИСОК РЕЗУЛЬТАТОВ -->
-        <div class="bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] shadow-2xl shadow-black/50">
-            <h2 class="text-xl font-bold text-white">Последние попытки</h2>
-            <p class="text-gray-400 mb-4">Нажмите на карточку респондента, чтобы увидеть его результат</p>
+        <!-- СПИСОК РЕЗУЛЬТАТОВ (PAYWALL) -->
+        <div class="relative bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] shadow-2xl shadow-black/50">
+            <h2 class="text-xl font-bold text-white mb-4">Последние попытки</h2>
             
-            <div class="flow-root">
+            <div class="flow-root {% if subscription_level == 0 %}filter blur-md opacity-40 pointer-events-none select-none min-h-[300px]{% endif %}">
                 <ul class="-my-3 divide-y divide-[var(--color-border)]">
                     {% for attempt in attempts %}
-                    <li class="py-4 flex flex-col sm:flex-row justify-between sm:items-center gap-3 hover:bg-black/20 -mx-4 px-4 rounded-2xl transition-colors duration-200 cursor-pointer"
-                            data-action="show-attempt-details">
-                            
-                            <div class="flex items-center gap-4">
-                                <div class="flex-shrink-0 flex items-center justify-center h-11 w-11 rounded-full bg-[var(--color-accent-primary)]/20 border border-[var(--color-border)]">
-                                    <span class="font-bold text-lg text-white">{{ attempt.student_name|first|upper }}</span>
-                                </div>
-                                <div>
-                                    <p class="font-semibold text-white">{{ attempt.student_name }}</p>
-                                    <p class="text-xs text-[var(--color-text-secondary)]">{{ attempt.created_at|date:"d M Y в H:i" }}</p>
-                                </div>
+                    <li class="py-4 flex flex-col sm:flex-row justify-between sm:items-center gap-3 hover:bg-black/20 -mx-4 px-4 rounded-2xl transition-colors duration-200 cursor-pointer" data-action="show-attempt-details">
+                        <div class="flex items-center gap-4">
+                            <div class="flex-shrink-0 flex items-center justify-center h-11 w-11 rounded-full bg-[var(--color-accent-primary)]/20 border border-[var(--color-border)]">
+                                <span class="font-bold text-lg text-white">{{ attempt.student_name|first|upper }}</span>
                             </div>
-                            <div class="text-right mt-2 sm:mt-0 flex-shrink-0">
-                                <p class="font-bold text-lg {% if attempt.percent == 100 %}text-[var(--color-accent-secondary)]{% else %}text-white{% endif %}">
-                                    {{ attempt.score }} / {{ attempt.total_questions }}
-                                </p>
+                            <div>
+                                <p class="font-semibold text-white">{{ attempt.student_name }}</p>
+                                <p class="text-xs text-[var(--color-text-secondary)]">{{ attempt.created_at|date:"d M Y в H:i" }}</p>
                             </div>
-
-                            <script type="application/json" class="attempt-details-json" style="display: none;">
-                                {{ attempt.answers_json }}
-                            </script>
-                            <span class="student-name" style="display: none;">{{ attempt.student_name }}</span>
-                            <span class="attempt-date" style="display: none;">{{ attempt.created_at|date:"d M Y в H:i" }}</span>
-                            <span class="attempt-score" style="display: none;">{{ attempt.score }} / {{ attempt.total_questions }}</span>
-                        </li>
-                    {% empty %}
-                    <li class="text-center text-[var(--color-text-secondary)] py-16">
-                        <i class="fas fa-ghost text-4xl mb-4 opacity-50"></i>
-                        <p class="font-semibold text-white">Здесь пока пусто</p>
-                        <p class="text-sm">Еще никто не прошел этот тест.</p>
+                        </div>
+                        <div class="text-right mt-2 sm:mt-0 flex-shrink-0">
+                            <p class="font-bold text-lg {% if attempt.percent == 100 %}text-[var(--color-accent-secondary)]{% else %}text-white{% endif %}">{{ attempt.score }} / {{ attempt.total_questions }}</p>
+                        </div>
+                        <script type="application/json" class="attempt-details-json">{{ attempt.answers_json }}</script>
+                        <span class="student-name" style="display: none;">{{ attempt.student_name }}</span>
+                        <span class="attempt-date" style="display: none;">{{ attempt.created_at|date:"d M Y в H:i" }}</span>
+                        <span class="attempt-score" style="display: none;">{{ attempt.score }} / {{ attempt.total_questions }}</span>
                     </li>
+                    {% empty %}
+                        {% if subscription_level == 0 %}
+                            <li class="py-4 flex items-center gap-4"><div class="h-11 w-11 rounded-full bg-gray-700"></div><div class="h-4 bg-gray-700 w-32 rounded"></div></li>
+                            <li class="py-4 flex items-center gap-4"><div class="h-11 w-11 rounded-full bg-gray-700"></div><div class="h-4 bg-gray-700 w-48 rounded"></div></li>
+                            <li class="py-4 flex items-center gap-4"><div class="h-11 w-11 rounded-full bg-gray-700"></div><div class="h-4 bg-gray-700 w-24 rounded"></div></li>
+                        {% else %}
+                            <li class="text-center text-[var(--color-text-secondary)] py-16"><i class="fas fa-ghost text-4xl mb-4 opacity-50"></i><p class="font-semibold text-white">Здесь пока пусто</p></li>
+                        {% endif %}
                     {% endfor %}
                 </ul>
             </div>
+
+            {% if subscription_level == 0 %}
+            <div class="absolute inset-0 z-10 flex items-center justify-center">
+                <div class="bg-[var(--color-surface)]/90 backdrop-blur-xl border border-[var(--color-border)] p-6 rounded-3xl text-center shadow-2xl max-w-sm mx-4">
+                    <i class="fas fa-lock text-2xl text-[var(--color-accent-secondary)] mb-4"></i>
+                    <h3 class="text-lg font-bold text-white mb-2">Список участников скрыт</h3>
+                    <p class="text-gray-400 text-sm mb-4">Узнайте, кто именно прошел тест и какие оценки получил.</p>
+                    <a href="{% url 'payment' %}" class="block w-full border border-[var(--color-accent-secondary)] text-[var(--color-accent-secondary)] font-bold py-2 rounded-xl hover:bg-[var(--color-accent-secondary)] hover:text-black transition-colors">
+                        Открыть список
+                    </a>
+                </div>
+            </div>
+            {% endif %}
         </div>
 
         <div class="mt-8 text-center bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] shadow-2xl shadow-black/50">
-            <div class="flex justify-center mb-4">
-                <i class="fas fa-rocket text-3xl gradient-text"></i>
-            </div>
+            <div class="flex justify-center mb-4"><i class="fas fa-rocket text-3xl gradient-text"></i></div>
             <h3 class="text-xl font-bold text-white">Данные — это топливо.</h3>
-            <p class="mt-2 text-[var(--color-text-secondary)] max-w-md mx-auto">
-                Вы только что увидели, как аналитика превращает догадки в факты. Не останавливайтесь.
-            </p>
-            <a href="{% url 'create' %}" 
-            class="mt-6 inline-block bg-[var(--color-accent-secondary)] text-[var(--color-bg)] px-10 py-3 text-base font-bold rounded-full transition-transform active:scale-[.97] shadow-lg shadow-[var(--color-accent-secondary)]/20">
-                Создать следующий тест
-            </a>
+            <p class="mt-2 text-[var(--color-text-secondary)] max-w-md mx-auto">Вы только что увидели, как аналитика превращает догадки в факты.</p>
+            <a href="{% url 'create' %}" class="mt-6 inline-block bg-[var(--color-accent-secondary)] text-[var(--color-bg)] px-10 py-3 text-base font-bold rounded-full transition-transform active:scale-[.97] shadow-lg shadow-[var(--color-accent-secondary)]/20">Создать следующий тест</a>
         </div>
     </main>
 
