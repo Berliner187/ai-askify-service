@@ -11,6 +11,7 @@ from askify_service.views import telegram_magic_auth, telegram_code_auth, bot_ge
 urlpatterns = [
     path('', index, name='home'),
     path('dlya-prepodavateley/', for_prepods, name='for_prepods'),
+    path('testirovanie-online/', pro_landing, name='pro_landing'),
 
     path('create/', page_create_survey, name='create'),
     path('api-create-survey/', ManageSurveysView.as_view(), name='api-create-survey'),

@@ -45,6 +45,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.core.cache import cache
 from django.utils.crypto import get_random_string
 from django.conf import settings
+from django.db.models.functions import Length, TruncDate
+from django.db.models.functions import TruncHour, TruncDay, ExtractWeekDay
 
 
 from smtplib import SMTPException
@@ -140,6 +142,15 @@ def index(request):
         'debug': DEBUG
     }
     return render(request, 'askify_service/index.html', context)
+
+
+@check_legal_process
+def pro_landing(request):
+    context = {
+        'username': request.user.username if request.user.is_authenticated else 0,
+        'debug': DEBUG
+    }
+    return render(request, 'pro_landing.html', context)
 
 
 @check_legal_process
@@ -1870,7 +1881,7 @@ def take_test(request, survey_id):
         'survey': survey,
         'questions_json': json.dumps(questions_list, ensure_ascii=False),
         'author': author_username if len(author_username) < 40 else 'Аноним',
-        'page_title': survey.title,
+        'page_title': f'{survey.title} ({survey.created_at})',
         'is_creator': get_is_creator(request, survey)
     }
     return render(request, 'askify_service/take_test.html', context)
@@ -2007,7 +2018,7 @@ def preview_test(request, survey_id):
         tracer_l.info(f'{request.user.username} {client_ip} --- preview {survey.title}')
 
         json_response = {
-            'page_title': f'{survey.title} | Генератор тестов с ИИ | Создать тест в Летучке',
+            'page_title': f'{survey.title} ({survey.created_at}) | Генератор тестов с ИИ | Создать тест в Летучке',
             'title': survey.title,
             'survey_id': survey_id,
             'questions': questions,
@@ -2211,6 +2222,7 @@ def view_results(request, survey_id):
         'username': get_username(request),
         'page_title': survey.title,
         'subscription_level': get_subscription_level(request),
+        'subscription_status': True if Subscription.objects.get(staff_id=get_staff_id(request)).check_sub_status == 'active' else False,
         'author': author_username if len(author_username) < 40 else 'Аноним',
         'is_short_enough': is_short_enough,
         'date_create': survey.created_at.strftime('%d.%m.%Y'),
@@ -2511,6 +2523,7 @@ def register(request):
     else:
         form = CustomUserCreationForm()
 
+    tracer_l.info(f'{get_client_ip(request)} --- register [ LOAD ]')
     context = {'form': form, 'debug': DEBUG}
     return render(request, 'register.html', context)
 
@@ -2619,6 +2632,7 @@ def login_view(request):
 
     context['next_url'] = request.GET.get('next', '/create')
     context['debug'] = DEBUG
+    tracer_l.info(f'{get_client_ip(request)} --- login [ LOAD ]')
     return render(request, 'login.html', context)
 
 
@@ -2849,7 +2863,7 @@ def profile_view(request, username):
         view_count__gt=0
     ).order_by('-view_count')[:3]
 
-    tracer_l.info(f'{request.user.username} --- profile [ LOADED ]]')
+    tracer_l.info(f'{request.user.username} --- profile [ LOADED ]')
 
     top_surveys_formatted = []
     for survey in top_3_surveys:
@@ -3161,7 +3175,7 @@ def get_user_activity_distribution():
     """
     real_users_ids = AuthUser.objects.annotate(
         username_len=Length('username')
-    ).filter(username_len__lt=20).values_list('id_staff', flat=True)
+    ).filter(username_len__lt=40).values_list('id_staff', flat=True)
 
     user_test_counts = list(
         Survey.objects.filter(id_staff__in=real_users_ids)
@@ -3645,44 +3659,107 @@ def get_daily_creation_dynamics_data(start_date, end_date):
     }
 
 
-def get_gauges_data():
-    """Собирает данные для трех главных полукруглых датчиков."""
+def get_cyber_gauges_data():
+    """
+    Собирает данные для новых "киберпанк" виджетов.
+    """
     today = timezone.now().date()
-    start_of_month = today.replace(day=1)
+    yesterday = today - timedelta(days=1)
 
-    real_users_qs = AuthUser.objects.annotate(username_len=Length('username')).filter(username_len__lt=20)
+    # --- 1. Данные для "Воронки Активации" (с расчетом конверсии) ---
+    new_users_today = AuthUser.objects.filter(date_joined__date=today, is_staff=False)
+    new_users_today_count = new_users_today.count()
 
-    users_this_month = real_users_qs.filter(date_joined__gte=start_of_month)
-    users_this_month_count = users_this_month.count()
-    activated_users_count = users_this_month.filter(id_staff__in=Survey.objects.values('id_staff')).distinct().count()
-    activation_percent = round((activated_users_count / users_this_month_count) * 100,
-                               1) if users_this_month_count > 0 else 0
+    activated_today_count = new_users_today.filter(
+        id_staff__in=Survey.objects.filter(created_at__date=today).values('id_staff')
+    ).distinct().count()
 
-    MONTHLY_REVENUE_GOAL = 50000
-    revenue_this_month = (Payment.objects.filter(status='completed', created_at__gte=start_of_month).aggregate(
-        sum=Sum('amount'))['sum'] or 0) / 100
-    revenue_goal_percent = round((revenue_this_month / MONTHLY_REVENUE_GOAL) * 100,
-                                 1) if MONTHLY_REVENUE_GOAL > 0 else 0
+    reached_paywall_count = activated_today_count
 
-    tests_created_today = Survey.objects.filter(created_at__date=today).count()
-    DAILY_TESTS_GOAL = 100
-    tests_goal_percent = round((tests_created_today / DAILY_TESTS_GOAL) * 100, 1) if DAILY_TESTS_GOAL > 0 else 0
+    # --- СЧИТАЕМ КОНВЕРСИЮ ПРЯМО ЗДЕСЬ ---
+    conversion_rate = (activated_today_count / new_users_today_count * 100) if new_users_today_count > 0 else 0
 
-    ARC_LENGTH = 157
-    activation_dashoffset = ARC_LENGTH * (1 - (min(activation_percent, 100) / 100))
-    tests_dashoffset = ARC_LENGTH * (1 - (min(tests_goal_percent, 100) / 100))
-    revenue_dashoffset = ARC_LENGTH * (1 - (min(revenue_goal_percent, 100) / 100))
+    activation_funnel = {
+        'registered': new_users_today_count,
+        'activated': activated_today_count,
+        'reached_paywall': reached_paywall_count,
+        'conversion_rate': round(conversion_rate, 1)
+    }
+
+    # --- 2. Данные для "Дневной Кассы" ---
+    revenue_today_raw = (
+                Payment.objects.filter(created_at__date=today, status='completed').aggregate(sum=Sum('amount'))[
+                    'sum'] or 0)
+    revenue_yesterday_raw = (
+                Payment.objects.filter(created_at__date=yesterday, status='completed').aggregate(sum=Sum('amount'))[
+                    'sum'] or 0)
+
+    revenue_today = float(revenue_today_raw / 100)
+    revenue_yesterday = float(revenue_yesterday_raw / 100)
+
+    revenue_change = 0
+    if revenue_yesterday > 0:
+        revenue_change = round((revenue_today - revenue_yesterday) / revenue_yesterday * 100)
+
+    # --- СЧИТАЕМ ПРОГРЕСС ДО ЦЕЛИ ПРЯМО ЗДЕСЬ ---
+    DAILY_REVENUE_GOAL = 5000  # Условная цель в 5000р/день
+    revenue_goal_percent = (revenue_today / DAILY_REVENUE_GOAL * 100) if DAILY_REVENUE_GOAL > 0 else 0
+
+    daily_revenue = {
+        'today': revenue_today,
+        'change': revenue_change,
+        'goal_percent': min(round(revenue_goal_percent), 100)  # <-- ДОБАВИЛИ ГОТОВЫЙ ПРОЦЕНТ
+    }
+
+    # --- 3. Данные для "Пульса Активности" (Тесты) ---
+    tests_today = Survey.objects.filter(created_at__date=today).count()
+    tests_yesterday = Survey.objects.filter(created_at__date=yesterday).count()
+
+    tests_change = 0
+    if tests_yesterday > 0:
+        tests_change = round((tests_today - tests_yesterday) / tests_yesterday * 100)
+
+    # Микро-график активности за последние часы
+    last_12_hours = timezone.now() - timedelta(hours=12)
+    hourly_activity = Survey.objects.filter(
+        created_at__gte=last_12_hours
+    ).annotate(
+        hour=TruncHour('created_at')
+    ).values('hour').annotate(count=Count('id')).order_by('hour')
+
+    activity_sparkline = [0] * 12
+    for item in hourly_activity:
+        # Определяем, сколько часов назад это было
+        hour_diff = (timezone.now().hour - item['hour'].hour + 24) % 24
+        if 0 <= hour_diff < 12:
+            activity_sparkline[11 - hour_diff] = item['count']
+
+    tests_today = Survey.objects.filter(created_at__date=today).count()
+    tests_yesterday = Survey.objects.filter(created_at__date=yesterday).count()
+    tests_change = 0
+    if tests_yesterday > 0:
+        tests_change = round((tests_today - tests_yesterday) / tests_yesterday * 100)
+
+    last_12_hours = timezone.now() - timedelta(hours=12)
+    hourly_activity = Survey.objects.filter(
+        created_at__gte=last_12_hours
+    ).annotate(hour=TruncHour('created_at')).values('hour').annotate(count=Count('id')).order_by('hour')
+    activity_sparkline = [0] * 12
+    for item in hourly_activity:
+        hour_diff = (timezone.now().hour - item['hour'].hour + 24) % 24
+        if 0 <= hour_diff < 12:
+            activity_sparkline[11 - hour_diff] = item['count']
+
+    tests_pulse = {
+        'today': tests_today,
+        'change': tests_change,
+        'sparkline': activity_sparkline
+    }
 
     return {
-        'activation_percent': activation_percent,
-        'activation_dashoffset': round(activation_dashoffset),
-        'revenue_this_month': revenue_this_month,
-        'revenue_goal_percent': revenue_goal_percent,
-        'monthly_goal': MONTHLY_REVENUE_GOAL,
-        'revenue_dashoffset': round(revenue_dashoffset),
-        'tests_created_today': tests_created_today,
-        'tests_goal_percent': tests_goal_percent,
-        'tests_dashoffset': round(tests_dashoffset)
+        'activation_funnel': activation_funnel,
+        'daily_revenue': daily_revenue,
+        'tests_pulse': tests_pulse,
     }
 
 
@@ -3969,6 +4046,267 @@ def api_admin_live_stats(request):
     return JsonResponse({'service_statuses': statuses, 'logs': logs})
 
 
+def get_churn_radar_data():
+    """
+    Собирает данные о пользователях, чьи подписки скоро истекают.
+    """
+    today = timezone.now().date()
+    start_window = today - timedelta(days=30)
+    end_window = today + timedelta(days=30)
+
+    expiring_subscriptions_qs = Subscription.objects.filter(
+        end_date__date__range=(start_window, end_window),
+        status='active'
+    ).exclude(
+        plan_name__in=['free_plan', 'Стартовый']
+    ).order_by('end_date')
+
+    if expiring_subscriptions_qs.count() < 10:
+        expiring_subscriptions_qs = Subscription.objects.filter(
+            status='active',
+            end_date__date__gte=today
+        ).exclude(
+            plan_name__in=['free_plan', 'Стартовый']
+        ).order_by('end_date')[:10]
+
+    staff_ids = list(expiring_subscriptions_qs.values_list('staff_id', flat=True))
+
+    users_map = {
+        user.id_staff: user for user in AuthUser.objects.filter(id_staff__in=staff_ids)
+    }
+
+    churn_list = []
+    calendar_events = []
+
+    for sub in expiring_subscriptions_qs:
+        user = users_map.get(sub.staff_id)
+        if not user:
+            continue
+
+        username = "НЕЛЕГАЛ" if len(user.username) > 40 else user.username
+        end_date = sub.end_date.date()
+
+        urgency = 'near'
+        if end_date < today:
+            urgency = 'expired'
+        elif end_date == today:
+            urgency = 'today'
+
+        churn_list.append({
+            'username': username,
+            'plan_name': sub.get_human_plan(),
+            'end_date_str': end_date.strftime('%d.%m.%Y'),
+            'urgency': urgency,
+        })
+
+        calendar_events.append({
+            'title': username,
+            'start': end_date.strftime('%Y-%m-%d'),
+            'extendedProps': {
+                'plan_name': sub.get_human_plan(),
+                'end_date_str': end_date.strftime('%d.%m.%Y'),
+            },
+            'backgroundColor': '#F06161' if urgency == 'expired' else ('#f59e0b' if urgency == 'today' else '#616DF0'),
+            'borderColor': '#F06161' if urgency == 'expired' else ('#f59e0b' if urgency == 'today' else '#616DF0'),
+        })
+
+    return {
+        'list': churn_list,
+        'calendar_events': calendar_events,
+    }
+
+
+def get_growth_engine_data():
+    """
+    Собирает данные для виджета "Двигатель Роста" за последние 30 дней,
+    """
+    today = timezone.now().date()
+    thirty_days_ago = today - timedelta(days=29)
+    prev_period_start = thirty_days_ago - timedelta(days=30)
+    prev_period_end = thirty_days_ago - timedelta(days=1)
+
+    real_users_qs = AuthUser.objects.annotate(
+        username_len=Length('username')
+    ).filter(
+        username_len__lt=40,
+        is_staff=False
+    )
+    # --------------------------------------------------------------------
+
+    new_users_current_qs = real_users_qs.filter(date_joined__date__gte=thirty_days_ago)
+    new_users_current = new_users_current_qs.count()
+
+    new_users_prev_qs = real_users_qs.filter(date_joined__date__range=(prev_period_start, prev_period_end))
+    new_users_prev = new_users_prev_qs.count()
+
+    new_user_staff_ids = new_users_current_qs.values_list('id_staff', flat=True)
+    activated_user_staff_ids = Survey.objects.filter(id_staff__in=new_user_staff_ids).values_list('id_staff',
+                                                                                                  flat=True).distinct()
+
+    activation_rate = (len(activated_user_staff_ids) / new_users_current * 100) if new_users_current > 0 else 0
+
+    new_users_prev_staff_ids = new_users_prev_qs.values_list('id_staff', flat=True)
+    activated_users_prev_count = Survey.objects.filter(id_staff__in=new_users_prev_staff_ids).distinct().count()
+    activation_rate_prev = (activated_users_prev_count / new_users_prev * 100) if new_users_prev > 0 else 0
+
+    payments_current = Payment.objects.filter(created_at__date__gte=thirty_days_ago, status='completed')
+    returning_payers_staff_ids = [p.staff_id for p in payments_current if
+                                  Payment.objects.filter(staff_id=p.staff_id, created_at__lt=thirty_days_ago,
+                                                         status='completed').exists()]
+
+    total_paying_users_current = payments_current.values('staff_id').distinct().count()
+    retention_rate = (len(set(
+        returning_payers_staff_ids)) / total_paying_users_current * 100) if total_paying_users_current > 0 else 0
+
+    daily_new_users = new_users_current_qs.annotate(
+        day=TruncDate('date_joined')
+    ).values('day').annotate(
+        count=Count('id')
+    ).order_by('day')
+
+    date_counts = {(thirty_days_ago + timedelta(days=i)): 0 for i in range(30)}
+    for item in daily_new_users:
+        date_counts[item['day']] = item['count']
+
+    new_users_sparkline = list(date_counts.values())
+
+    return {
+        'acquisition': {
+            'value': new_users_current,
+            'change': new_users_current - new_users_prev,
+            'sparkline': new_users_sparkline,
+        },
+        'activation': {
+            'value': round(activation_rate),
+            'change': round(activation_rate - activation_rate_prev, 1),
+        },
+        'retention': {
+            'value': round(retention_rate),
+            'change': 0,
+        }
+    }
+
+
+def get_cohort_quality_data():
+    """
+    Анализирует и сравнивает качество двух последних месячных когорт.
+    """
+    today = timezone.now().date()
+    start_of_current_month = today.replace(day=1)
+    start_of_previous_month = (start_of_current_month - timedelta(days=1)).replace(day=1)
+    end_of_previous_month = start_of_current_month - timedelta(days=1)
+
+    current_cohort_users = AuthUser.objects.filter(date_joined__date__gte=start_of_current_month)
+    current_cohort_staff_ids = list(current_cohort_users.values_list('id_staff', flat=True))
+
+    prev_cohort_users = AuthUser.objects.filter(
+        date_joined__date__range=(start_of_previous_month, end_of_previous_month))
+    prev_cohort_staff_ids = list(prev_cohort_users.values_list('id_staff', flat=True))
+
+    def calculate_metrics_for_cohort(staff_ids_list):
+        if not staff_ids_list:
+            return {'avg_tests': 0, 'conversion_rate': 0, 'arppu': 0}
+
+        cohort_size = len(staff_ids_list)
+        total_surveys = Survey.objects.filter(id_staff__in=staff_ids_list).count()
+        avg_tests = total_surveys / cohort_size if cohort_size > 0 else 0
+
+        paying_users_qs = Payment.objects.filter(status='completed', staff_id__in=staff_ids_list).distinct('staff_id')
+        paying_users_count = paying_users_qs.count()
+        conversion_rate = (paying_users_count / cohort_size * 100) if cohort_size > 0 else 0
+
+        total_revenue = (Payment.objects.filter(status='completed', staff_id__in=staff_ids_list).aggregate(
+            sum=Sum('amount'))['sum'] or 0) / 100
+        arppu = total_revenue / paying_users_count if paying_users_count > 0 else 0
+
+        return {
+            'avg_tests': round(avg_tests, 1),
+            'conversion_rate': round(conversion_rate, 2),
+            'arppu': round(arppu),
+        }
+
+    current_metrics = calculate_metrics_for_cohort(current_cohort_staff_ids)
+    prev_metrics = calculate_metrics_for_cohort(prev_cohort_staff_ids)
+
+    return {
+        'current_month': {
+            'name': start_of_current_month.strftime('%B'),
+            'metrics': current_metrics,
+        },
+        'previous_month': {
+            'name': start_of_previous_month.strftime('%B'),
+            'metrics': prev_metrics,
+        },
+        'changes': {
+            'conversion_rate': round(current_metrics['conversion_rate'] - prev_metrics['conversion_rate'], 2),
+            'arppu': round(current_metrics['arppu'] - prev_metrics['arppu']),
+            'avg_tests': round(current_metrics['avg_tests'] - prev_metrics['avg_tests'], 1),
+        }
+    }
+
+
+def get_activity_heatmap_data():
+    """
+    Собирает данные для тепловой карты активности за последние 4 недели.
+    """
+    four_weeks_ago = timezone.now() - timedelta(weeks=4)
+
+    activity_data = Survey.objects.filter(
+        created_at__gte=four_weeks_ago
+    ).annotate(
+        hour=TruncHour('created_at'),
+        weekday=ExtractWeekDay('created_at')
+    ).values(
+        'hour', 'weekday'
+    ).annotate(
+        count=Count('id')
+    ).order_by('weekday', 'hour')
+
+    heatmap_matrix = [[0 for _ in range(24)] for _ in range(7)]
+
+    weekday_map = {2: 0, 3: 1, 4: 2, 5: 3, 6: 4, 7: 5, 1: 6}
+
+    for item in activity_data:
+        day_index = weekday_map.get(item['weekday'])
+        hour_index = item['hour'].hour
+        if day_index is not None:
+            heatmap_matrix[day_index][hour_index] = item['count']
+
+    return heatmap_matrix
+
+
+def get_anomaly_detector_data():
+    """
+    Собирает данные для виджета "Детектор Аномалий" за сегодня.
+    """
+    today_start = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+
+    # --- Индекс Наглости ---
+    total_users_today = AuthUser.objects.filter(date_joined__gte=today_start).count()
+    total_surveys_today = Survey.objects.filter(created_at__gte=today_start).count()
+
+    if total_users_today > 0 and total_surveys_today > 0:
+        audacity_index = total_surveys_today / total_users_today
+    else:
+        audacity_index = 0
+
+    paying_user_staff_ids = Payment.objects.filter(status='completed').values_list('staff_id', flat=True).distinct()
+
+    surveys_today_qs = Survey.objects.filter(created_at__gte=today_start)
+
+    total_surveys_count = surveys_today_qs.count()
+    if total_surveys_count == 0:
+        free_tests_percentage = 0
+    else:
+        free_surveys_count = surveys_today_qs.exclude(id_staff__in=paying_user_staff_ids).count()
+        free_tests_percentage = (free_surveys_count / total_surveys_count) * 100
+
+    return {
+        'audacity_index': round(audacity_index, 2),
+        'free_tests_percentage': round(free_tests_percentage),
+    }
+
+
 @login_required
 def admin_stats(request):
     if not request.user.is_superuser:
@@ -4142,7 +4480,7 @@ def admin_stats(request):
     test_performance_data = json.dumps(get_test_performance_scatter_data())
     score_distribution_data = json.dumps(get_score_distribution_data())
 
-    gauges_data = get_gauges_data()
+    cyber_gauges_data = get_cyber_gauges_data()
     total_api_usage_data = json.dumps(get_total_api_usage_chart_data(start_date, end_date))
 
     time_to_payment_data = json.dumps(get_time_to_payment_data())
@@ -4157,9 +4495,18 @@ def admin_stats(request):
 
     daily_creation_data = json.dumps(get_daily_creation_dynamics_data(start_date, end_date))
 
+    churn_radar_data = get_churn_radar_data()
+    growth_engine_data = get_growth_engine_data()
+
+    activity_heatmap_data = get_activity_heatmap_data()
+    anomaly_detector_data = get_anomaly_detector_data()
+
+    cohort_quality_data = get_cohort_quality_data()
+
     context = {
         "cockpit": cockpit_metrics,
-        "gauges": gauges_data,
+        "cyber_gauges": cyber_gauges_data,
+        "cyber_tests_pulse_json": json.dumps(cyber_gauges_data['tests_pulse']['sparkline']),
         "financial_briefing": financial_briefing_data,
         "daily_revenue_data": daily_revenue_data,
         "arpu_dynamics_data": arpu_dynamics_data,
@@ -4202,6 +4549,12 @@ def admin_stats(request):
         "user_journey_data": user_journey_data,
         "daily_creation_data": daily_creation_data,
         "daily_token_usage_data": daily_token_usage_data,
+        "churn_radar_data": churn_radar_data,
+        "growth_engine_data": growth_engine_data,
+        "churn_calendar_events_json": json.dumps(churn_radar_data['calendar_events']),
+        "activity_heatmap_data": json.dumps(activity_heatmap_data),
+        "anomaly_detector_data": anomaly_detector_data,
+        "cohort_quality_data": cohort_quality_data,
         'username': get_username(request)
     }
 

@@ -14,7 +14,7 @@
         <script src="{% static 'vendor/jquery.min.js' %}"></script>
     {% endif %}
 
-    {% if view_count < 5 %}
+    {% if view_count < 1 %}
         <meta name="robots" content="noindex, nofollow" />
     {% endif %}
 
@@ -371,7 +371,8 @@
                 <h1 class="text-xl sm:text-xl font-bold text-white text-center">{{ title }}</h1>
             </div>
 
-            <!-- СПИСОК ВОПРОСОВ -->
+            {% if is_creator and username == 0 %}
+            <!-- СПИСОК ВОПРОСОВ (АВТОРАМ) -->
             <div class="mt-8 relative">
                 {% if username == 0 %}
                     <div class="space-y-4 select-none filter blur-[2px] pointer-events-none opacity-60 max-h-[800px] overflow-hidden">
@@ -427,10 +428,8 @@
                                 </p>
                             </div>
                         </div>
-                        
                     </div>
-
-                <!-- Если юзер ЗАРЕГАН - показываем как обычно -->
+                <!-- Если автор ЗАРЕГАН - показываем как обычно -->
                 {% else %}
                     <div class="space-y-4 {% if is_creator == 0 %}select-none{% endif %}">
                         {% for question in questions %}
@@ -464,6 +463,39 @@
                     </div>
                 {% endif %}
             </div>
+            {% else %}
+            <!-- СПИСОК ВОПРОСОВ -->
+            <div class="mt-8 space-y-4 {% if is_creator == 0 %}select-none{% endif %}">
+                {% for question in questions %}
+                <div class="question-card bg-[var(--color-surface)] rounded-3xl border border-[var(--color-border)] p-5 animate-fadeIn">
+                    <div class="flex items-center gap-3 mb-3">
+                        <span class="px-3 py-1 text-xs font-semibold bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)] rounded-full">Вопрос {{ forloop.counter }}</span>
+                    </div>
+                    <p class="text-lg font-semibold text-white">{{ question.question }}</p>
+                    
+                    <div class="mt-4 space-y-3">
+                        {% for option in question.options %}
+                        <div class="flex items-start gap-3">
+                            <div class="flex-shrink-0 flex items-center justify-center h-7 w-7 bg-black/20 rounded-full border border-[var(--color-border)] text-sm font-semibold text-[var(--color-text-secondary)]">
+                                {{ forloop.counter }}
+                            </div>
+                            <div class="pt-0.5 text-white">
+                                {{ option }}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    {% if question.correct_answer %}
+                        <div class="correct-answer mt-4 p-3 bg-green-500/10 border border-green-500/20 rounded-2xl flex items-center gap-3" style="display: {% if show_answers %}flex{% else %}none{% endif %};">
+                            <i class="fas fa-check-circle text-green-400"></i>
+                            <p class="text-sm text-gray-300">Правильный ответ: <strong class="text-white">{{ question.correct_answer }}</strong></p>
+                        </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
 
             <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {% if username != 0 %}

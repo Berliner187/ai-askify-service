@@ -1,0 +1,1061 @@
+<!DOCTYPE html>
+<html lang="ru" class="scroll-smooth">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <title>Онлайн тесты: создание, тестирование и диагностика | Летучка AI</title>
+    <meta name="description" content="Летучка — это система для онлайн тестирования. Создавайте школьные и образовательные тесты из текста, проводите оценку знаний и получайте детальную диагностику результатов.">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://letychka.ru/pro">
+    <meta property="og:title" content="Летучка AI: Система контроля и диагностики знаний">
+    <meta property="og:description" content="Превратите любой документ в тест за 30 секунд и получайте не просто оценки, а полную диагностику знаний вашей группы в реальном времени.">
+    <meta property="og:image" content="https://letychka.ru/static/img/letychka_pro_banner.webp">
+    
+    <link rel="icon" href="{% static 'img/favicon.ico' %}" type="image/ico">
+    <script src="{% static 'vendor/tailwind.full.min.js' %}"></script>
+    <script src="{% static 'vendor/jquery.min.js' %}"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    {% if debug %}
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    {% else %}
+        <script src="{% static 'vendor/tailwind.full.min.js' %}"></script>
+        <script src="{% static 'vendor/jquery.min.js' %}"></script>
+    {% endif %}
+
+    <style>
+        :root {
+            --color-bg: #0F0818;
+            --color-surface: rgba(30, 24, 48, 0.5);
+            --color-border: rgba(97, 109, 240, 0.2);
+            --color-text-primary: #f0f0f0;
+            --color-text-secondary: #a0a0b0;
+            --color-accent-primary: #616DF0;
+            --color-accent-secondary: #79EF66;
+        }
+       @font-face {
+            font-family: 'Unbounded Medium';
+            src: url("{% static 'fonts/Unbounded-Medium.ttf' %}") format('truetype');
+        }
+        body { background-color: var(--color-bg); color: var(--color-text-primary); font-family: 'Inter', sans-serif; }
+        h1, h2, h3 { font-family: 'Unbounded Medium'; }
+        .gradient-text {
+            background: linear-gradient(45deg, var(--color-accent-primary), var(--color-accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .feature-card:hover .feature-icon {
+            transform: scale(1.1);
+            box-shadow: 0 0 25px rgba(97, 109, 240, 0.5);
+        }
+
+        #main-header {
+            transition: padding 0.3s ease-in-out, background-color 0.3s ease, box-shadow 0.3s ease, top 0.3s ease-in-out;
+            max-width: max-content;
+            border-radius: 9999px;
+            margin: 0 auto;
+            top: 32px;
+            padding: 0.5rem;
+        }
+        
+        #main-header.scrolled {
+            padding-top: 0.75rem;
+            padding-bottom: 0.75rem;
+            background-color: rgba(20, 18, 23, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            box-shadow: 0 8px 32px rgba(62, 30, 112, 0.3);
+            top: 12px;
+            z-index: 50;
+        }
+        
+        /* Плавность для внутренних элементов */
+        #main-header .logo-img, #main-header .nav-link, #main-header .cta-btn, #main-header .main-nav {
+            transition: all 0.3s ease-in-out;
+        }
+        #main-header .main-nav {
+            padding: 0 64px;
+        }
+        #main-header.scrolled .main-nav {
+            padding: 0 32px;
+        }
+
+        /* СТИЛИ ДЛЯ МОБИЛЬНОГО МЕНЮ */
+        #mobile-menu {
+            max-width: 100%;
+            position: absolute;
+            top: calc(100% + 0.5rem);
+            right: 0;
+            opacity: 0;
+            transform-origin: top right;
+            transform: scale(0.95);
+            pointer-events: none;
+            transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
+        }
+
+        #mobile-menu.menu-open {
+            opacity: 1;
+            transform: scale(1);
+            pointer-events: auto;
+        }
+
+        @media screen and (width <= 600px) {
+            #main-header {
+                max-width: 100%;
+            }
+        }
+
+        .step-indicator {
+            border-left: 4px solid transparent;
+            opacity: 0.5;
+        }
+        .step-indicator.active {
+            background-color: var(--color-surface);
+            border-left-color: var(--color-accent-primary);
+            opacity: 1;
+            transform: scale(1.05);
+        }
+        .machine-content {
+            transition: opacity 0.5s ease;
+        }
+    </style>
+</head>
+
+<body class="bg-[var(--color-bg)] text-[var(--color-text-primary)]">
+
+    <!-- Блок 0: Header -->
+    <header id="main-header" class="sticky z-50">
+        <div class="relative max-w-6xl mx-auto px-4 sm:px-8">
+            <div class="flex justify-between items-center">
+                
+                <a href="/" class="flex-shrink-0">
+                    <img src="{% static 'img/logo-header.webp' %}" alt="Летучка Логотип" class="logo-img w-32 md:w-32 h-auto">
+                </a>
+
+                <div class="main-nav hidden lg:flex items-center gap-6">
+                    <a href="#manifesto" class="text-sm font-semibold text-[var(--color-text-secondary)] hover:text-white">Принцип работы</a>
+                    <a href="#analytics" class="text-sm font-semibold text-[var(--color-text-secondary)] hover:text-white">Диагностика</a>
+                    <a href="#use-cases" class="text-sm font-semibold text-[var(--color-text-secondary)] hover:text-white">Решения</a>
+                </div>
+
+                <div class="hidden lg:flex items-center space-x-3">
+                    <a href="/login" class="cta-btn px-5 py-2 text-sm font-semibold rounded-full hover:bg-[var(--color-surface)] transition-colors">Вход</a>
+                    <a href="/register" class="cta-btn bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] px-5 py-2.5 text-sm font-bold rounded-full transition-transform hover:scale-105">Начать бесплатно</a>
+                </div>
+
+                <div class="lg:hidden">
+                    <button id="burger-btn" class="text-white text-2xl w-10 h-10 flex items-center justify-center">
+                        <i id="burger-icon" class="fas fa-bars transition-transform duration-300"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div id="mobile-menu" class="w-64 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/80 backdrop-blur-xl shadow-2xl shadow-black/50">
+                <nav class="flex flex-col p-4 space-y-2">
+                    <a href="#transformation-engine" class="px-4 py-3 text-base text-white font-semibold rounded-lg hover:bg-black/20">Начать</a>
+                    <a href="#use-cases" class="px-4 py-3 text-base text-white font-semibold rounded-lg hover:bg-black/20">Кейсы</a>
+                    <a href="#analytics-showcase" class="px-4 py-3 text-base text-white font-semibold rounded-lg hover:bg-black/20">Аналитика</a>
+                    <a href="#faq" class="px-4 py-3 text-base text-white font-semibold rounded-lg hover:bg-black/20">FAQ</a>
+                    <hr class="border-t border-[var(--color-border)] !my-3">
+                    <a href="/login" class="px-4 py-3 text-base text-white font-semibold rounded-lg hover:bg-black/20">Вход</a>
+                    <a href="/register" class="block text-center bg-[var(--color-accent-primary)] text-white px-5 py-3 text-base font-bold rounded-3xl mt-2">Начать бесплатно</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto p-4 sm:px-8">
+
+        <!-- Блок 0: Hero Section -->
+        <section id="hero-pro" class="text-center pt-24 pb-32">
+            <h1 class="text-4xl md:text-6xl font-black tracking-tighter">
+                <span class="gradient-text">Онлайн тестирование</span>, <br>которое работает на вас
+            </h1>
+            <p class="mt-6 text-lg max-w-3xl mx-auto text-[var(--color-text-secondary)]">
+                Хватит тратить вечера на рутину. Превратите любой учебный материал в <strong>интерактивный онлайн тест</strong> за 30 секунд. Получайте не просто оценки, а полную <strong>диагностику</strong> знаний вашей группы.
+            </p>
+            <div class="mt-10">
+                <a href="/register" class="bg-[var(--color-accent-secondary)] text-black px-12 py-4 text-lg font-bold rounded-full transition-transform hover:scale-105">
+                    Создать тест онлайн бесплатно
+                </a>
+                <p class="mt-4 text-xs text-gray-500">Без карт и обязательств. Оцените все возможности.</p>
+            </div>
+        </section>
+
+        <!-- Блок 1: ИНТЕРАКТИВНЫЙ ВИДЖЕТ -->
+        <section id="the-machine" class="py-24">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold">Ваша рутина. Наш автопилот.</h2>
+                <p class="mt-4 text-lg text-[var(--color-text-secondary)]">Как мы заменили 3 часа вашей работы на 3 этапа.</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
+                <!-- Левая колонка с "липкими" табами -->
+                <div class="lg:sticky top-24 self-start">
+                    <div class="flex lg:flex-col gap-4">
+                        <div class="step-indicator w-full p-4 rounded-xl text-left transition-all duration-300" data-step="1">
+                            <span class="text-sm text-[var(--color-text-secondary)]">Этап 1</span>
+                            <h3 class="font-bold text-white text-lg">Загрузка материала</h3>
+                        </div>
+                        <div class="step-indicator w-full p-4 rounded-xl text-left transition-all duration-300" data-step="2">
+                            <span class="text-sm text-[var(--color-text-secondary)]">Этап 2</span>
+                            <h3 class="font-bold text-white text-lg">Запуск теста</h3>
+                        </div>
+                        <div class="step-indicator w-full p-4 rounded-xl text-left transition-all duration-300" data-step="3">
+                            <span class="text-sm text-[var(--color-text-secondary)]">Этап 3</span>
+                            <h3 class="font-bold text-white text-lg">Анализ результатов</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Правая колонка с контентом -->
+                <div class="lg:col-span-2 space-y-16">
+                    <!-- Шаг 1 -->
+                    <div class="machine-content" data-content="1">
+                        <h3 class="font-bold text-white text-2xl mb-4">1. Скармливаете любой документ</h3>
+                        <div class="p-4 bg-[var(--color-surface)] rounded-2xl border border-[var(--color-border)] text-sm text-gray-400">
+                            <p class="font-bold text-white mb-2">Теорема Пифагора: Основы</p>
+                            <p>В прямоугольном треугольнике квадрат длины гипотенузы... (и т.д.)</p>
+                        </div>
+                    </div>
+                    <!-- Шаг 2 -->
+                    <div class="machine-content" data-content="2">
+                        <h3 class="font-bold text-white text-2xl mb-4">2. Делитесь одной ссылкой</h3>
+                        <div class="p-8 bg-[var(--color-surface)] rounded-2xl border border-[var(--color-border)] text-center">
+                            <i class="fas fa-link text-6xl text-[var(--color-accent-secondary)] mb-4"></i>
+                            <p class="font-bold text-white text-lg">Тест готов. Отправьте ссылку группе.</p>
+                            <p class="text-sm text-gray-400">Участникам не нужна регистрация. Вообще.</p>
+                        </div>
+                    </div>
+                    <!-- Шаг 3 -->
+                    <div class="machine-content" data-content="3">
+                        <h3 class="font-bold text-white text-2xl mb-4">3. Получаете карту решений</h3>
+                        <div class="p-4 bg-[var(--color-surface)] rounded-2xl border border-[var(--color-border)] space-y-4">
+                            <div class="flex justify-between items-baseline">
+                                <span class="font-bold text-white">Статус: <span class="text-green-400">Идет тестирование</span></span>
+                                <span class="text-sm text-gray-400">Участников: <span class="font-bold text-white">12</span></span>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-400">Средний балл</p>
+                                <div class="flex items-center gap-2">
+                                    <div class="w-full bg-black/50 rounded-full h-4"><div class="bg-gradient-to-r from-blue-500 to-green-400 h-4 rounded-full" style="width: 81%;"></div></div>
+                                    <span class="font-bold text-white">81%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Блок 2: "ПОД КАПОТОМ" -->
+        <section id="under-the-hood" class="py-24">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold">Не магия. <span class="gradient-text">Технология.</span></h2>
+                <p class="mt-4 text-lg text-[var(--color-text-secondary)] max-w-2xl mx-auto">Мы создали систему, которая думает как вы, но работает как машина.</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="bg-[var(--color-surface)] p-8 rounded-3xl border border-[var(--color-border)]">
+                    <i class="fas fa-brain text-3xl text-[var(--color-accent-primary)] mb-4"></i>
+                    <h3 class="font-bold text-white text-xl">Понимает смысл</h3>
+                    <p class="mt-2 text-sm text-gray-400">Наш AI анализирует не просто слова, а контекст и связи между понятиями. Это позволяет создавать вопросы, которые проверяют реальное понимание, а не зубрежку.</p>
+                </div>
+                <div class="bg-[var(--color-surface)] p-8 rounded-3xl border border-[var(--color-border)]">
+                    <i class="fas fa-layer-group text-3xl text-[var(--color-accent-primary)] mb-4"></i>
+                    <h3 class="font-bold text-white text-xl">Создает варианты</h3>
+                    <p class="mt-2 text-sm text-gray-400">Система не только находит правильный ответ, но и генерирует правдоподобные, но неверные варианты (дистракторы), чтобы тест был действительно сложным.</p>
+                </div>
+                <div class="bg-[var(--color-surface)] p-8 rounded-3xl border border-[var(--color-border)]">
+                    <i class="fas fa-shield-alt text-3xl text-[var(--color-accent-primary)] mb-4"></i>
+                    <h3 class="font-bold text-white text-xl">Защищает от угадывания</h3>
+                    <p class="mt-2 text-sm text-gray-400">При каждом запуске теста варианты ответов автоматически перемешиваются. Списать, сравнив "ответ 2", больше не получится.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Блок 3: The Pain-Point Loop -->
+        <section id="pain-loop" class="py-24">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold">Знакомая картина?</h2>
+                <p class="mt-4 text-lg text-[var(--color-text-secondary)]">Когда нужна простая <strong>оценка знаний</strong>, а превращается в ад.</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                <div class="bg-black/20 p-8 rounded-3xl border border-red-500/20">
+                    <h3 class="text-2xl font-bold text-red-400">Как обычно</h3>
+                    <ul class="mt-6 space-y-4 text-[var(--color-text-secondary)]">
+                        <li class="flex items-start gap-3"><i class="fas fa-file-word text-red-500 mt-1"></i><span>Копируете в Word, боретесь с форматом.</span></li>
+                        <li class="flex items-start gap-3"><i class="fas fa-random text-red-500 mt-1"></i><span>Перемешиваете вопросы, чтобы не списывали.</span></li>
+                        <li class="flex items-start gap-3"><i class="fas fa-check-double text-red-500 mt-1"></i><span>Проверяете каждую работу, ища ошибки.</span></li>
+                        <li class="flex items-start gap-3"><i class="fas fa-chart-bar text-red-500 mt-1"></i><span>Сводите результаты в Excel, чтобы понять хоть что-то.</span></li>
+                        <li class="flex items-start gap-3"><b><i class="fas fa-hourglass-end text-red-400 mt-1"></i><span>Итог: еще один вечер убит на рутину.</span></b></li>
+                    </ul>
+                </div>
+                <div class="bg-[var(--color-surface)] p-8 rounded-3xl border border-[var(--color-border)]">
+                    <h3 class="text-2xl font-bold gradient-text">Как с Летучкой</h3>
+                     <ul class="mt-6 space-y-4 text-[var(--color-text-secondary)]">
+                        <li class="flex items-start gap-3"><i class="fas fa-upload text-[var(--color-accent-secondary)] mt-1"></i><span>Загружаете PDF, Word или просто текст.</span></li>
+                        <li class="flex items-start gap-3"><i class="fas fa-share-alt text-[var(--color-accent-secondary)] mt-1"></i><span>Кидаете одну ссылку или QR-код группе.</span></li>
+                        <li class="flex items-start gap-3"><i class="fas fa-eye text-[var(--color-accent-secondary)] mt-1"></i><span>Смотрите, как ответы приходят в реальном времени.</span></li>
+                        <li class="flex items-start gap-3"><i class="fas fa-chart-pie text-[var(--color-accent-secondary)] mt-1"></i><span>Получаете готовый отчет: кто ошибся и где.</span></li>
+                        <li class="flex items-start gap-3"><b><i class="fas fa-coffee text-green-400 mt-1"></i><span>Итог: идете пить кофе. Работа сделана.</span></b></li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Блок 4: Full-Cycle Manifesto -->
+        <section id="manifesto" class="py-24 text-center">
+            <h2 class="text-3xl md:text-4xl font-bold">Три шага к полной <span class="gradient-text">диагностике знаний</span></h2>
+            <p class="mt-4 text-lg text-[var(--color-text-secondary)] max-w-2xl mx-auto">Это не просто тест. Это полный цикл работы с информацией.</p>
+            <div class="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- ШАГ 1 -->
+                <div class="feature-card bg-[var(--color-surface)] p-8 rounded-3xl border border-[var(--color-border)]">
+                    <div class="feature-icon flex items-center justify-center h-16 w-16 rounded-full bg-black/30 mx-auto mb-5 border-2 border-[var(--color-accent-primary)] transition-all duration-300">
+                        <i class="fas fa-magic text-3xl text-[var(--color-accent-primary)]"></i>
+                    </div>
+                    <h3 class="font-bold text-white text-xl">1. Создание AI</h3>
+                    <p class="mt-2 text-sm text-gray-400">Загрузите любой материал (PDF, DOCX, текст). Наш AI проанализирует его и за 30 секунд создаст релевантный тест.</p>
+                </div>
+                <!-- ШАГ 2 -->
+                <div class="feature-card bg-[var(--color-surface)] p-8 rounded-3xl border border-[var(--color-border)]">
+                     <div class="feature-icon flex items-center justify-center h-16 w-16 rounded-full bg-black/30 mx-auto mb-5 border-2 border-[var(--color-accent-primary)] transition-all duration-300">
+                        <i class="fas fa-rocket text-3xl text-[var(--color-accent-primary)]"></i>
+                    </div>
+                    <h3 class="font-bold text-white text-xl">2. Запуск без трения</h3>
+                    <p class="mt-2 text-sm text-gray-400">Отправьте группе одну ссылку или покажите QR-код. Им не нужна регистрация, чтобы пройти тест. Только имя.</p>
+                </div>
+                <!-- ШАГ 3 -->
+                <div class="feature-card bg-[var(--color-surface)] p-8 rounded-3xl border border-[var(--color-border)]">
+                     <div class="feature-icon flex items-center justify-center h-16 w-16 rounded-full bg-black/30 mx-auto mb-5 border-2 border-[var(--color-accent-primary)] transition-all duration-300">
+                        <i class="fas fa-chart-pie text-3xl text-[var(--color-accent-primary)]"></i>
+                    </div>
+                    <h3 class="font-bold text-white text-xl">3. Анализ и отчет</h3>
+                    <p class="mt-2 text-sm text-gray-400">Получайте не просто баллы, а наглядные отчеты: кто лидер, какие вопросы самые сложные, где пробелы у всей группы.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Блок 6: The Paywall Value (Аналитика) -->
+        <section id="analytics" class="py-24">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                <div class="text-center lg:text-left">
+                    <span class="inline-block px-3 py-1 text-xs font-semibold gradient-text bg-white/5 rounded-full mb-4">АНАЛИТИКА PRO</span>
+                    <h2 class="text-3xl sm:text-4xl font-extrabold text-white">Хватит гадать. <br>Пора <span class="gradient-text">видеть.</span></h2>
+                    <p class="mt-4 text-lg text-[var(--color-text-secondary)]">
+                        Провести <strong>тестирование учеников</strong> – это полдела. Главное – понять, почему результаты именно такие. Наш дашборд создан для этого.
+                    </p>
+                    <ul class="mt-8 space-y-4 text-left">
+                        <li class="flex items-center gap-3"><i class="fas fa-check-circle text-green-400"></i><span><b>Карта ошибок:</b> Мгновенно видите, какой вопрос завалило большинство.</span></li>
+                        <li class="flex items-center gap-3"><i class="fas fa-check-circle text-green-400"></i><span><b>Лидеры и отстающие:</b> Определяйте сильнейших и тех, кому нужна помощь.</span></li>
+                        <li class="flex items-center gap-3"><i class="fas fa-check-circle text-green-400"></i><span><b>Динамика прогресса:</b> Сравнивайте результаты по разным тестам и отслеживайте рост.</span></li>
+                        <li class="flex items-center gap-3"><i class="fas fa-check-circle text-green-400"></i><span><b>Экспорт в Excel:</b> В один клик выгружайте все сырые данные для отчетов.</span></li>
+                    </ul>
+                     <a href="/register" class="mt-10 inline-block bg-[var(--color-accent-primary)] text-white px-8 py-3 font-semibold rounded-full transition-transform hover:scale-105">Открыть доступ к аналитике</a>
+                </div>
+                <div>
+                    <img src="{% static 'blog_img/analys4.png' %}" alt="Дашборд аналитики Летучка" class="w-full rounded-3xl border-2 border-[var(--color-border)] shadow-2xl shadow-black/50">
+                </div>
+            </div>
+        </section>
+        
+        <!-- Блок 7: Use Cases (H3-LTV Focus) -->
+        <section id="use-cases" class="py-24">
+             <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold">Решение для <span class="gradient-text">профессионалов</span></h2>
+                <p class="mt-4 text-lg text-[var(--color-text-secondary)] max-w-2xl mx-auto">Летучка создана для тех, кто ценит свое время и эффективность.</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="bg-[var(--color-surface)] p-8 rounded-3xl border border-[var(--color-border)]">
+                    <i class="fas fa-sitemap text-3xl text-[var(--color-accent-primary)] mb-4"></i>
+                    <h3 class="font-bold text-white text-xl">HR и Бизнес</h3>
+                    <p class="mt-2 text-sm text-gray-400">Быстрая аттестация, онбординг новых сотрудников, проверка знаний регламентов. Экономьте часы HR-менеджеров и получайте измеримый результат.</p>
+                </div>
+                <div class="bg-[var(--color-surface)] p-8 rounded-3xl border border-[var(--color-border)]">
+                    <i class="fas fa-university text-3xl text-[var(--color-accent-primary)] mb-4"></i>
+                    <h3 class="font-bold text-white text-xl">ВУЗы и Школы</h3>
+                    <p class="mt-2 text-sm text-gray-400">Проводите срезы знаний для целых потоков, анализируйте успеваемость групп и экономьте время на подготовке к сессиям и экзаменам.</p>
+                </div>
+                <div class="bg-[var(--color-surface)] p-8 rounded-3xl border border-[var(--color-border)]">
+                    <i class="fas fa-chalkboard-teacher text-3xl text-[var(--color-accent-primary)] mb-4"></i>
+                    <h3 class="font-bold text-white text-xl">Онлайн-курсы и Коучинг</h3>
+                    <p class="mt-2 text-sm text-gray-400">Автоматизируйте проверку домашних заданий, отслеживайте понимание материала и повышайте доходимость ваших студентов до конца курса.</p>
+                </div>
+            </div>
+        </section>
+    
+        <section id="pricing" class="py-16 sm:py-24">
+            <div class="max-w-4xl mx-auto text-center px-4">
+                <h2 class="text-3xl sm:text-4xl font-extrabold text-white">Для начала нужен <span class="gradient-text">План.</span></h2>
+                <p class="mt-4 text-lg text-[var(--color-text-secondary)]">Выберите удобный срок доступа ко всем возможностям Летучки.</p>
+            </div>
+
+            <div class="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto items-center px-4">
+
+                <div class="bg-[var(--color-surface)] p-8 rounded-3xl border border-[var(--color-border)] flex flex-col h-full text-center">
+                    <div class="flex-grow">
+                        <h3 class="font-bold text-white text-xl">Неделя</h3>
+                        <p class="mt-1 text-sm text-[var(--color-text-secondary)]">Тест-драйв всех функций</p>
+                        <div class="my-6">
+                            <p class="text-5xl font-extrabold text-white">390 <span class="text-xl font-medium text-gray-400">₽</span></p>
+                            <p class="text-white/80 m-2">390 ₽ / неделя</p>
+                            <p class="text-sm text-gray-400">абонемент, не подписка</p>
+                        </div>
+                    </div>
+                    <button data-trigger-modal="register" class="mt-8 block w-full text-center bg-[var(--color-accent-primary)] text-white font-bold text-m py-4 rounded-full transition hover:opacity-90 active:opacity-80 transition-transform active:scale-[.97] shadow-lg shadow-[var(--color-accent-primary)]/30">
+                        Выбрать на неделю
+                    </button>
+                </div>
+
+                <div class="relative p-8 rounded-3xl bg-[var(--color-surface)] border-2 border-[var(--color-accent-primary)] flex flex-col h-full text-center transform scale-105 shadow-2xl shadow-[var(--color-accent-primary)]/20">
+                    <div class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2">
+                        <div class="bg-[var(--color-accent-primary)] text-white text-sm font-bold px-4 py-1.5 rounded-full uppercase tracking-wider">Максимум выгоды</div>
+                    </div>
+                    <div class="flex-grow">
+                        <h3 class="font-bold text-white text-2xl">3 Месяца</h3>
+                        <p class="mt-1 text-sm text-[var(--color-text-secondary)]">Для регулярной работы</p>
+                        <div class="my-6">
+                            <p class="text-2xl text-gray-400 line-through">2070 ₽</p>
+                            <p class="text-6xl font-extrabold text-white">1440<span class="text-2xl font-medium text-gray-400"> ₽</span></p>
+                            <p class="text-white/80 m-2">~120 ₽ / неделя</p>
+                            <p class="text-sm text-gray-400">абонемент, не подписка</p>
+                            <p class="mt-2 text-lg font-bold text-[var(--color-accent-secondary)]">Экономия 61%</p>
+                        </div>
+                    </div>
+                    <button data-trigger-modal="register" class="mt-8 block w-full text-center bg-[var(--color-accent-primary)] text-white font-bold text-m py-4 rounded-full transition hover:opacity-90 active:opacity-80 transition-transform active:scale-[.97] shadow-lg shadow-[var(--color-accent-primary)]/30">
+                        Выбрать на 3 месяца
+                    </button>
+                </div>
+                
+                <div class="bg-[var(--color-surface)] p-8 rounded-3xl border border-[var(--color-border)] flex flex-col h-full text-center">
+                    <div class="flex-grow">
+                        <h3 class="font-bold text-white text-xl">Месяц</h3>
+                        <p class="mt-1 text-sm text-[var(--color-text-secondary)]">Полный доступ</p>
+                        <div class="my-6">
+                            <p class="text-5xl font-extrabold text-white">690 <span class="text-xl font-medium text-gray-400">₽</span></p>
+                            <p class="text-white/80 m-2">~172 ₽ / неделя</p>
+                            <p class="text-sm text-gray-400">абонемент, не подписка</p>
+                            <p class="mt-2 text-lg font-bold text-[var(--color-accent-secondary)]">Экономия 44%</p>
+                        </div>
+                    </div>
+                    <button data-trigger-modal="register" class="mt-8 block w-full text-center bg-[var(--color-accent-primary)] text-white font-bold text-m py-4 rounded-full transition hover:opacity-90 active:opacity-80 transition-transform active:scale-[.97] shadow-lg shadow-[var(--color-accent-primary)]/30">
+                        Выбрать на месяц
+                    </button>
+                </div>
+            </div>
+
+            <!-- НОВЫЙ БЛОК-ВИТРИНА С ФИЧАМИ -->
+            <div class="max-w-4xl mx-auto mt-16 text-center">
+                <h3 class="text-lg font-semibold text-white"><span class="gradient-text">Все тарифы включают</span></h3>
+                <div class="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] text-left hover:border-[var(--color-accent-primary)] hover:-translate-y-1 transition-all duration-300">
+                        <i class="fas fa-magic text-2xl text-[var(--color-accent-primary)] mb-3"></i>
+                        <h3 class="font-bold text-white">Полная автоматизация</h3>
+                        <p class="text-sm text-[var(--color-text-secondary)] mt-1">Создавайте тесты напрямую из&nbsp;ваших PDF и&nbsp;Word файлов. Экономьте часы работы.</p>
+                    </div>
+                    <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] text-left hover:border-[var(--color-accent-primary)] hover:-translate-y-1 transition-all duration-300">
+                        <i class="fas fa-chart-pie text-2xl text-[var(--color-accent-primary)] mb-3"></i>
+                        <h3 class="font-bold text-white">Аналитика на&nbsp;дашбордах</h3>
+                        <p class="text-sm text-[var(--color-text-secondary)] mt-1">Отслеживайте прогресс учеников и&nbsp;смотрите детальную карту ошибок по&nbsp;всем тестам.</p>
+                    </div>
+                    <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] text-left hover:border-[var(--color-accent-primary)] hover:-translate-y-1 transition-all duration-300">
+                        <i class="fas fa-file-excel text-2xl text-[var(--color-accent-primary)] mb-3"></i>
+                        <h3 class="font-bold text-white">Экспорт в Excel</h3>
+                        <p class="text-sm text-[var(--color-text-secondary)] mt-1">Выгружайте результаты для отчётности и&nbsp;архива в&nbsp;один клик.</p>
+                    </div>
+                    <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] text-left hover:border-[var(--color-accent-primary)] hover:-translate-y-1 transition-all duration-300">
+                        <i class="fas fa-infinity text-2xl text-[var(--color-accent-primary)] mb-3"></i>
+                        <h3 class="font-bold text-white">Максимальные лимиты</h3>
+                        <p class="text-sm text-[var(--color-text-secondary)] mt-1">Создавайте до&nbsp;50&nbsp;тестов в&nbsp;сутки (до&nbsp;15&nbsp;вопросов в&nbsp;каждом).</p>
+                    </div>
+                    <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] text-left hover:border-[var(--color-accent-primary)] hover:-translate-y-1 transition-all duration-300">
+                        <i class="fas fa-print text-2xl text-[var(--color-accent-primary)] mb-3"></i>
+                        <h3 class="font-bold text-white">Тесты без водяных знаков</h3>
+                        <p class="text-sm text-[var(--color-text-secondary)] mt-1">Скачивайте тесты, которые сразу готовы к&nbsp;печати. Чисто и&nbsp;профессионально.</p>
+                    </div>
+                    <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] text-left hover:border-[var(--color-accent-primary)] hover:-translate-y-1 transition-all duration-300">
+                        <i class="fas fa-user-check text-2xl text-[var(--color-accent-primary)] mb-3"></i>
+                        <h3 class="font-bold text-white">Самопроверка</h3>
+                        <p class="text-sm text-[var(--color-text-secondary)] mt-1">Проходите тесты прямо на&nbsp;платформе, чтобы убедиться в&nbsp;качестве вопросов.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- БЛОК: ОПЛАТА ДОЛЯМИ -->
+        <section id="security" class="py-16 sm:py-24">
+            <div class="max-w-4xl mx-auto px-4 sm:px-8">
+                <div class="text-center">
+                    <h2 class="text-3xl sm:text-4xl font-extrabold text-white"><span class="gradient-text">Безопасность</span> — это <span class="gradient-text">фундамент.</span></h2>
+                    <p class="mt-4 text-lg text-[var(--color-text-secondary)]">Оплата в одно касание через проверенные сервисы. Быстро, привычно и на 100% безопасно.</p>
+                </div>
+
+                <!-- ГАРАНТИИ БЕЗОПАСНОСТИ -->
+                <div class="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+                    
+                    <div class="bg-[var(--color-surface)] p-4 rounded-3xl border border-[var(--color-border)]">
+                        <div class="flex items-center justify-center h-16 w-16 rounded-full bg-black/30 mx-auto">
+                            <i class="fas fa-wand-magic-sparkles text-3xl text-[var(--color-accent-secondary)]"></i>
+                        </div>
+                        <h3 class="mt-5 font-bold text-white text-lg">Платите как удобно</h3>
+                        <p class="mt-2 text-sm text-gray-400">Забудьте о&nbsp;неудобных формах. Оплачивайте подписку в&nbsp;одно касание картой, через SberPay, T-Pay или СБП. Быстро и&nbsp;безопасно.</p>
+                    </div>
+                    
+                    <div class="bg-[var(--color-surface)] p-4 rounded-3xl border border-[var(--color-border)]">
+                        <div class="flex items-center justify-center h-16 w-16 rounded-full bg-black/30 mx-auto">
+                            <i class="fas fa-shield-halved text-3xl text-[var(--color-accent-secondary)]"></i>
+                        </div>
+                        <h3 class="mt-5 font-bold text-white text-lg">Банковский уровень защиты</h3>
+                        <p class="mt-2 text-sm text-gray-400">Все платежи обрабатываются АО&nbsp;&laquo;Т-Банк&raquo; по&nbsp;стандарту PCI&nbsp;DSS. Это высший стандарт безопасности, гарантирующий, что Ваша транзакция защищена.</p>
+                    </div>
+
+                    <div class="bg-[var(--color-surface)] p-4 rounded-3xl border border-[var(--color-border)]">
+                        <div class="flex items-center justify-center h-16 w-16 rounded-full bg-black/30 mx-auto">
+                            <i class="fas fa-user-secret text-3xl text-[var(--color-accent-secondary)]"></i>
+                        </div>
+                        <h3 class="mt-5 font-bold text-white text-lg">Ваши данные&nbsp;&mdash; не&nbsp;наш бизнес</h3>
+                        <p class="mt-2 text-sm text-gray-400">Мы&nbsp;не&nbsp;видим и&nbsp;тем более не&nbsp;храним полные данные вашей карты. Они отправляются напрямую, в&nbsp;зашифрованный банковский шлюз.</p>
+                    </div>
+
+                </div>
+
+                <!-- БЛОК "ДОЛЯМИ" -->
+                <div class="mt-12">
+                    <div class="bg-gradient-to-r from-[#211a32] to-[var(--color-surface)] p-8 rounded-3xl border border-[var(--color-border)]">
+                        <div class="flex flex-col md:flex-row items-center gap-8 text-center md:text-left">
+                            <div class="flex-shrink-0 text-center">
+                                <!-- SVG логотипы для идеального отображения -->
+                                <div class="flex-shrink-0">
+                                    <img width="300" height="48" src="{% static 'img/dolyami.png' %}" alt="Летучка: Оплата Долями">
+                                </div>
+                                <p class="text-xs text-gray-500 mt-2">Официальный партнер</p>
+                            </div>
+                            <div>
+                                <h4 class="text-xl font-bold text-white">Платите, как Вам удобно.</h4>
+                                <p class="text-[var(--color-text-secondary)] mt-1">Разделите годовую подписку на&nbsp;4&nbsp;равных платежа &laquo;Долями&raquo;. Первый платеж&nbsp;&mdash; сегодня, остальные&nbsp;&mdash; потом.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+                            <button id="open-register-modal-btn" class="w-full sm:w-auto bg-[var(--color-accent-primary)] text-white px-10 py-4 font-bold rounded-full transition-transform hover:opacity-90 active:opacity-80 transition-transform active:scale-[.97]">
+                                Перейти на Премиум
+                            </button>
+                            <a href="/register" class="w-full sm:w-auto text-sm text-gray-400 hover:text-white">или попробовать бесплатно</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ====================================================== -->
+        <!--         FAQ                 -->
+        <!-- ====================================================== -->
+        <section id="faq" class="py-16 sm:py-24">
+            <div class="max-w-3xl mx-auto px-4 sm:px-8">
+                <div class="text-center mb-16">
+                    <h2 class="text-3xl sm:text-4xl font-extrabold text-white"><span class="gradient-text">Частые вопросы.</span></h2>
+                    <p class="mt-4 text-lg text-[var(--color-text-secondary)]">Разбираем всё по полочкам</p>
+                </div>
+                
+                <div class="space-y-4">
+                    
+                    <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider pt-8">Основы работы</h3>
+                    
+                    <details class="group bg-[#1a1625] rounded-2xl border border-[var(--color-border)] transition-all duration-300 hover:border-[var(--color-accent-primary)] overflow-hidden">
+                        <summary class="flex items-center justify-between p-6 cursor-pointer">
+                            <span class="font-semibold text-white text-lg">Что именно делает Летучка, и в чем ее <strong>уникальная ценность</strong>?</span>
+                            <i class="fas fa-plus text-gray-500 transition-transform duration-300 icon-plus"></i>
+                            <i class="fas fa-minus text-[var(--color-accent-primary)] transition-transform duration-300 icon-minus"></i>
+                        </summary>
+                        <div class="px-6 pb-6 text-gray-400 border-t border-[var(--color-border)] pt-4">
+                            <p>Летучка делает две вещи: <strong>создаёт тесты</strong> и <strong>даёт полный контроль</strong>. Вы загружаете любой материал, и наш AI создает готовый тест за 30 секунд. Но главное — Вы получаете <strong>полный отчет по результатам в реальном времени</strong> на интерактивных дашбордах. Это личный ассистент, который не только готовит тест, но и <strong>анализирует</strong> успешность обучения за вас.</p>
+                        </div>
+                    </details>
+
+                    <details class="group bg-[#1a1625] rounded-2xl border border-[var(--color-border)] transition-all duration-300 hover:border-[var(--color-accent-primary)] overflow-hidden">
+                        <summary class="flex items-center justify-between p-6 cursor-pointer">
+                            <span class="font-semibold text-white text-lg">Могу ли я создать тест из своих <strong>PDF, DOCX или TXT-файлов</strong>?</span>
+                            <i class="fas fa-plus text-gray-500 transition-transform duration-300 icon-plus"></i>
+                            <i class="fas fa-minus text-[var(--color-accent-primary)] transition-transform duration-300 icon-minus"></i>
+                        </summary>
+                        <div class="px-6 pb-6 text-gray-400 border-t border-[var(--color-border)] pt-4">
+                            <p><strong>Да. Это ключевая функция Премиум-тарифа и основное УТП.</strong> Забудьте о ручном копировании больших документов. Вы загружаете свой учебный материал, и Летучка сама извлекает из него суть для создания релевантных вопросов. Это превращает любой статический документ в <strong>систему быстрой проверки знаний</strong>.</p>
+                        </div>
+                    </details>
+
+                    <details class="group bg-[#1a1625] rounded-2xl border border-[var(--color-border)] transition-all duration-300 hover:border-[var(--color-accent-primary)] overflow-hidden">
+                        <summary class="flex items-center justify-between p-6 cursor-pointer">
+                            <span class="font-semibold text-white text-lg">Насколько <strong>глубокими и полезными</strong> получаются вопросы?</span>
+                            <i class="fas fa-plus text-gray-500 transition-transform duration-300 icon-plus"></i>
+                            <i class="fas fa-minus text-[var(--color-accent-primary)] transition-transform duration-300 icon-minus"></i>
+                        </summary>
+                        <div class="px-6 pb-6 text-gray-400 border-t border-[var(--color-border)] pt-4">
+                            <p>Наш AI обучен понимать <strong>контекст и причинно-следственные связи</strong>, а не просто факты. Он создает вопросы, которые проверяют <strong>реальное понимание</strong> материала. Это позволяет вам оценить <strong>глубину знаний</strong>, а не поверхностную память, и <strong>диагностировать</strong> пробелы в обучении.</p>
+                        </div>
+                    </details>
+
+
+                    <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider pt-8">Дистрибуция и запуск тестов</h3>
+
+                    <details class="group bg-[#1a1625] rounded-2xl border border-[var(--color-border)] transition-all duration-300 hover:border-[var(--color-accent-primary)] overflow-hidden">
+                        <summary class="flex items-center justify-between p-6 cursor-pointer">
+                            <span class="font-semibold text-white text-lg">Как происходит <strong>запуск теста</strong> и нужна ли регистрация участникам?</span>
+                            <i class="fas fa-plus text-gray-500 transition-transform duration-300 icon-plus"></i>
+                            <i class="fas fa-minus text-[var(--color-accent-primary)] transition-transform duration-300 icon-minus"></i>
+                        </summary>
+                        <div class="px-6 pb-6 text-gray-400 border-t border-[var(--color-border)] pt-4">
+                            <p>Это наше главное УТП: <strong>Zero-Friction Дистрибуция</strong>. Вы просто делитесь ссылкой. Участникам нужно ввести <strong>только имя</strong> — <strong>без регистрации, паролей и скачиваний</strong>. Вы мгновенно получаете <strong>полный отчет по результатам</strong> в Вашем личном кабинете. <strong>Вы контролируете процесс, участники проходят тест без трения.</strong></p>
+                        </div>
+                    </details>
+                    
+                    <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider pt-8">Аналитика и контроль результатов</h3>
+
+                    <details class="group bg-[#1a1625] rounded-2xl border border-[var(--color-border)] transition-all duration-300 hover:border-[var(--color-accent-primary)] overflow-hidden">
+                        <summary class="flex items-center justify-between p-6 cursor-pointer">
+                            <span class="font-semibold text-white text-lg">Что именно я увижу на <strong>Дашборде</strong>?</span>
+                            <i class="fas fa-plus text-gray-500 transition-transform duration-300 icon-plus"></i>
+                            <i class="fas fa-minus text-[var(--color-accent-primary)] transition-transform duration-300 icon-minus"></i>
+                        </summary>
+                        <div class="px-6 pb-6 text-gray-400 border-t border-[var(--color-border)] pt-4">
+                            <p>Вы увидите <strong>интерактивную картину</strong> успеваемости. Это не просто список баллов, это: <strong>распределение результатов</strong>, <strong>средний балл</strong>, <strong>общее количество прохождений</strong> и <strong>динамика активности</strong>. Дашборд по одному конкретному тесту доступен бесплатно.</p>
+                        </div>
+                    </details>
+
+                    <details class="group bg-[#1a1625] rounded-2xl border border-[var(--color-border)] transition-all duration-300 hover:border-[var(--color-accent-primary)] overflow-hidden">
+                        <summary class="flex items-center justify-between p-6 cursor-pointer">
+                            <span class="font-semibold text-white text-lg">Как получить полный доступ к <strong>Истории</strong> и <strong>общим данным</strong>?</span>
+                            <i class="fas fa-plus text-gray-500 transition-transform duration-300 icon-plus"></i>
+                            <i class="fas fa-minus text-[var(--color-accent-primary)] transition-transform duration-300 icon-minus"></i>
+                        </summary>
+                        <div class="px-6 pb-6 text-gray-400 border-t border-[var(--color-border)] pt-4">
+                            <p>Для профессионального использования вам нужен <strong>полный контроль</strong>. Платный абонемент открывает: <strong>1. Историю всех тестов</strong> (отслеживание прогресса в динамике) и <strong>2. Сводную аналитику</strong> по всем прохождениям. Это позволяет вам проводить <strong>глубинную диагностику знаний</strong> и видеть картину в целом.</p>
+                        </div>
+                    </details>
+
+                    
+                    <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider pt-8">Тарифы и оплата</h3>
+                    
+                    <details class="group bg-[#1a1625] rounded-2xl border border-[var(--color-border)] transition-all duration-300 hover:border-[var(--color-accent-primary)] overflow-hidden">
+                        <summary class="flex items-center justify-between p-6 cursor-pointer">
+                            <span class="font-semibold text-white text-lg">Как работает оплата: это подписка с автосписанием или <strong>абонемент</strong>?</span>
+                            <i class="fas fa-plus text-gray-500 transition-transform duration-300 icon-plus"></i>
+                            <i class="fas fa-minus text-[var(--color-accent-primary)] transition-transform duration-300 icon-minus"></i>
+                        </summary>
+                        <div class="px-6 pb-6 text-gray-400 border-t border-[var(--color-border)] pt-4">
+                            <p>
+                                Это <strong>абонемент</strong>, а не рекуррентная подписка. Вы платите один раз за выбранный период (месяц, квартал или год) и получаете доступ ко всем Премиум-функциям. 
+                                <strong>Никаких автоматических списаний с вашей карты.</strong> Когда срок действия абонемента закончится, Вы сами решаете, продлевать его или нет. Полный <strong>контроль</strong> над Вашими финансами.
+                            </p>
+                        </div>
+                    </details>
+
+                    <details class="group bg-[#1a1625] rounded-2xl border border-[var(--color-border)] transition-all duration-300 hover:border-[var(--color-accent-primary)] overflow-hidden">
+                        <summary class="flex items-center justify-between p-6 cursor-pointer">
+                            <span class="font-semibold text-white text-lg">Что я получу, если начну <strong>бесплатно</strong>?</span>
+                            <i class="fas fa-plus text-gray-500 transition-transform duration-300 icon-plus"></i>
+                            <i class="fas fa-minus text-[var(--color-accent-primary)] transition-transform duration-300 icon-minus"></i>
+                        </summary>
+                        <div class="px-6 pb-6 text-gray-400 border-t border-[var(--color-border)] pt-4">
+                            <p>Наш бесплатный тариф — это <strong>полноценный тест-драйв</strong>. Вы получаете возможность создать <strong>5 тестов</strong> из любого текста. Этого достаточно, чтобы оценить <strong>качество генерации</strong>, увидеть <strong>полный Дашборд по этому тесту</strong> и понять, как много времени Вы экономите. <strong>Мы даем Вам попробовать всю ценность перед тем, как предложить оплату.</strong></p>
+                        </div>
+                    </details>
+
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- ====================================================== -->
+    <!--         THE NON-ANNOYING COOKIE CONSENT BANNER         -->
+    <!-- ====================================================== -->
+    <div id="cookie-banner" 
+        class="fixed z-50 w-full p-5 rounded-t-2xl 
+                sm:max-w-sm sm:rounded-2xl sm:bottom-6 sm:left-6 bottom-0 left-0
+                border-t sm:border border-[var(--color-border)] 
+                bg-[var(--color-surface)]/80 backdrop-blur-xl 
+                shadow-2xl shadow-black/50" 
+        style="display: none;">
+        <div class="flex flex-col gap-3">
+            <div>
+                <h3 class="font-bold text-white">Немного о cookie</h3>
+                <p class="mt-1 text-sm text-gray-400">
+                    Мы используем их, чтобы сделать сайт лучше. Это безопасно. Подробнее — в  
+                    <a href="/docs/privacy-policy/" target="_blank" rel="noopener noreferrer" class="text-[var(--color-accent-primary)] hover:underline">политике</a>.
+                </p>
+            </div>
+            <div class="flex items-center gap-4">
+                <button id="accept-cookies-btn" class="w-full bg-white/10 hover:bg-white/20 text-white px-5 py-2.5 text-sm font-bold rounded-full transition-transform hover:scale-105">
+                    Понятно
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====================================================== -->
+    <!--         THE QUICK REGISTER & PAY MODAL                 -->
+    <!-- ====================================================== -->
+    <div id="register-modal" class="fixed inset-0 bg-black/80 z-50 hidden items-center justify-center p-4">
+        <div id="modal-content" class="bg-[var(--color-surface)] w-full max-w-md p-8 rounded-3xl border border-[var(--color-border)] transform scale-95 opacity-0 transition-all duration-300 backdrop-blur-xl">
+            <div class="flex justify-between items-center">
+                <h3 class="text-2xl font-bold text-white">Регистрация</h3>
+                <button id="close-modal-btn" class="text-gray-500 hover:text-white text-2xl">&times;</button>
+            </div>
+            <p class="mt-2 text-sm text-gray-400">Создайте аккаунт, чтобы перейти к оплате.</p>
+            
+            <form id="quick-register-form" class="mt-6 space-y-4">
+                {% csrf_token %}
+                <div>
+                    <label for="id_email" class="text-sm font-semibold text-gray-300">Ваш Email</label>
+                    <input type="email" name="email" id="id_email" required class="mt-1 w-full p-3 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]">
+                </div>
+                <div>
+                <label for="id_password1" class="text-sm font-semibold text-gray-300">Придумайте пароль</label>
+                    <input type="password" name="password1" id="id_password1" required class="mt-1 w-full p-3 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]">
+                </div>
+                <div>
+                    <label for="id_password2" class="text-sm font-semibold text-gray-300">Повторите пароль</label>
+                    <input type="password" name="password2" id="id_password2" required class="mt-1 w-full p-3 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]">
+                </div>
+
+                <div class="pt-2">
+                    <label class="flex items-start gap-3 cursor-pointer">
+                        <input type="checkbox" id="terms-checkbox" class="mt-1 h-4 w-4 rounded border-gray-500 bg-gray-700 text-[var(--color-accent-primary)] focus:ring-[var(--color-accent-primary)]">
+                        <span class="text-xs text-gray-400">
+                            Нажимая кнопку, я принимаю условия
+                            <a href="/docs/public-offer" target="_blank" class="text-[var(--color-accent-primary)] hover:underline">Публичной оферты</a>
+                            и даю согласие на обработку персональных данных в соответствии с
+                            <a href="/docs/privacy-policy" target="_blank" class="text-[var(--color-accent-primary)] hover:underline">Политикой конфиденциальности</a>.
+                        </span>
+                    </label>
+                </div>
+                
+                <p id="form-error" class="text-red-500 text-sm hidden"></p>
+                
+                <button type="submit" id="submit-register-btn" disabled class="w-full py-3 font-bold text-center rounded-full bg-[var(--color-accent-primary)] text-white transition-opacity duration-300 disabled:opacity-50 disabled:cursor-not-allowed">
+                    Создать и оплатить
+                </button>
+            </form>
+        </div>
+    </div>
+    
+    <footer class="mt-24 border-t border-[var(--color-border)]">
+        <div class="max-w-6xl mx-auto px-4 sm:px-8 py-16">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-12">
+                
+                <div class="sm:col-span-2 md:col-span-1">
+                    <a href="/">
+                        <img src="{% static 'img/logo-header.webp' %}" alt="Летучка Логотип" class="w-40 h-auto">
+                    </a>
+                    <p class="mt-4 text-sm text-[var(--color-text-secondary)]">
+                        AI-сервис для создания тестов и&nbsp;онлайн тестирования
+                    </p>
+                </div>
+
+                <div>
+                    <h3 class="text-sm font-semibold text-white uppercase tracking-wider">Продукт</h3>
+                    <div class="mt-4 flex flex-col space-y-3 text-sm">
+                        <a href="#transformation" class="text-[var(--color-text-secondary)] hover:text-white transition-colors">Возможности</a>
+                        <a href="#security-and-payments" class="text-[var(--color-text-secondary)] hover:text-white transition-colors">Безопасность</a>
+                        <a href="#pricing" class="text-[var(--color-text-secondary)] hover:text-white transition-colors">Тарифы</a>
+                        <a href="#faq" class="text-[var(--color-text-secondary)] hover:text-white transition-colors">FAQ</a>
+                        <a href="/dlya-prepodavateley/" target="_blank" rel="noopener noreferrer" class="text-[var(--color-text-secondary)] hover:text-white transition-colors">Преподавателям</a>
+                        
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-sm font-semibold text-white uppercase tracking-wider">Медиа</h3>
+                    <div class="mt-4 flex flex-col space-y-3 text-sm">
+                        <a href="https://letychka.ru/media/main/" class="text-[var(--color-text-secondary)] hover:text-white transition-colors">Блог</a>
+                        <a href="https://productradar.ru/product/letuchka/" target="_blank" rel="noopener noreferrer" class="text-[var(--color-text-secondary)] hover:text-white transition-colors">Product Radar</a>
+                        <a href="https://www.behance.net/gallery/217116137/Letychka-letuchka-AI-servis-dlja-generacii-testov/" target="_blank" rel="noopener noreferrer" class="text-[var(--color-text-secondary)] hover:text-white transition-colors">Кейс на Behance</a>
+                        <a href="https://rutube.ru/video/05833232f69b6dd32e4ccd0e9ec63c4b/?r=wd" target="_blank" rel="noopener noreferrer" class="text-[var(--color-text-secondary)] hover:text-white transition-colors">Промо на Rutube</a>
+                        <a href="https://www.uchportal.ru/" target="_blank"><img border="0" src="https://www.uchportal.ru/banners/baner3.gif" width="200" height="100" alt="Учительский портал " class="text-[var(--color-text-secondary)] hover:text-white transition-colors">Учительский портал</a>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-sm font-semibold text-white uppercase tracking-wider">Компания</h3>
+                    <div class="mt-4 flex flex-col space-y-3 text-sm">
+                        <a href="mailto:support@letychka.ru" class="text-[var(--color-text-secondary)] hover:text-white transition-colors">support@letychka.ru</a>
+                        <a href="/docs/public-offer/" class="text-[var(--color-text-secondary)] hover:text-white transition-colors">Публичная оферта</a>
+                        <a href="/docs/privacy-policy/" class="text-[var(--color-text-secondary)] hover:text-white transition-colors">Политика конфиденциальности</a>
+                        <hr>
+                        <a href="https://golosok.space/" class="text-[var(--color-text-secondary)] hover:text-white transition-colors" target="_blank" rel="noopener noreferrer">Голосок</a>
+                        <a href="https://taxi-watcher.ru/" class="text-[var(--color-text-secondary)] hover:text-white transition-colors" target="_blank" rel="noopener noreferrer">Taxi Watcher</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-16 pt-8 border-t border-[var(--color-border)] flex flex-col sm:flex-row justify-between items-center text-sm text-[var(--color-text-secondary)]">
+                <p>2024-2025 Летучка AI. Design & Development <a href="https://dprofile.ru/case/106507/letucka-ai-servis-dlia-generacii-testov/" target="_blank" rel="noopener noreferrer" class="text-[var(--color-text-secondary)] hover:text-white transition-colors">by Kozak</a></p>
+                <div class="flex items-center space-x-6 text-xl mt-4 sm:mt-0">
+                    <a href="https://t.me/LetychkaRobot" target="_blank" rel="noopener noreferrer" class="hover:text-white transition-colors" title="Telegram">
+                        <i class="fab fa-telegram"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const stepIndicators = document.querySelectorAll('.step-indicator');
+        const machineContents = document.querySelectorAll('.machine-content');
+
+        function setActiveStep(step) {
+            stepIndicators.forEach(indicator => {
+                if (indicator.dataset.step === step) {
+                    indicator.classList.add('active');
+                } else {
+                    indicator.classList.remove('active');
+                }
+            });
+        }
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const step = entry.target.dataset.content;
+                    setActiveStep(step);
+                }
+            });
+        }, {
+            root: null,
+            threshold: 0.5
+        });
+
+        machineContents.forEach(content => {
+            observer.observe(content);
+        });
+
+        stepIndicators.forEach(indicator => {
+            indicator.addEventListener('click', () => {
+                const step = indicator.dataset.step;
+                const targetContent = document.querySelector(`.machine-content[data-content='${step}']`);
+                
+                if (targetContent) {
+                    targetContent.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            });
+        });
+        setActiveStep('1');
+
+        
+        const tabButtons = document.querySelectorAll('.tab-btn');
+        const machineSteps = document.querySelectorAll('.machine-step');
+
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const step = button.dataset.step;
+
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+
+                machineSteps.forEach(content => {
+                    if (content.dataset.content === step) {
+                        content.classList.add('active');
+                    } else {
+                        content.classList.remove('active');
+                    }
+                });
+                
+                if (step === '3') {
+                    animateLiveDashboard();
+                }
+            });
+        });
+
+        function animateLiveDashboard() {
+            const participantsEl = document.getElementById('live-participants');
+            const avgBarEl = document.getElementById('live-avg-bar');
+            const avgScoreEl = document.getElementById('live-avg-score');
+            const hardestQuestionEl = document.getElementById('live-hardest-question');
+
+            // Сброс анимации
+            participantsEl.textContent = '0';
+            avgScoreEl.textContent = '0%';
+            avgBarEl.style.width = '0%';
+            hardestQuestionEl.textContent = 'Анализ данных...';
+
+            // Симуляция данных
+            setTimeout(() => { participantsEl.textContent = '5'; hardestQuestionEl.textContent = 'Что такое гипотенуза?'; }, 500);
+            setTimeout(() => { avgBarEl.style.width = '75%'; avgScoreEl.textContent = '75%'; }, 1000);
+            setTimeout(() => { participantsEl.textContent = '12'; }, 1500);
+            setTimeout(() => { avgBarEl.style.width = '81%'; avgScoreEl.textContent = '81%'; hardestQuestionEl.textContent = 'Как доказать теорему?'; }, 2500);
+        }
+    });
+    </script>
+
+    <script src="{% static 'js/head-landing.js' %}"></script>
+
+    <script>
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        $(document).ready(function() {
+            const openModalBtn = $('#open-register-modal-btn');
+            const modal = $('#register-modal');
+            const closeModalBtn = $('#close-modal-btn');
+            const modalContent = $('#modal-content');
+            const form = $('#quick-register-form');
+            const errorDisplay = $('#form-error');
+
+            const termsCheckbox = $('#terms-checkbox');
+            const submitBtn = $('#submit-register-btn');
+
+            termsCheckbox.on('change', function() {
+                submitBtn.prop('disabled', !this.checked);
+            });
+
+            const cookieBanner = $('#cookie-banner');
+            const acceptCookiesBtn = $('#accept-cookies-btn');
+
+            if (!localStorage.getItem('cookies_accepted')) {
+                cookieBanner.css({ 
+                    'display': 'block',
+                    'transform': 'translateY(20px)',
+                    'opacity': '0',
+                    'transition': 'transform 0.4s ease, opacity 0.4s ease'
+                });
+                setTimeout(() => {
+                    cookieBanner.css({
+                        'transform': 'translateY(0)',
+                        'opacity': '1'
+                    });
+                }, 100);
+            }
+
+            acceptCookiesBtn.on('click', function() {
+                localStorage.setItem('cookies_accepted', 'true');
+                
+                cookieBanner.css({
+                    'transform': 'translateY(20px)',
+                    'opacity': '0'
+                });
+                setTimeout(() => {
+                    cookieBanner.hide();
+                }, 400);
+            });
+
+            const isUserAuthenticated = "{{ username }}" !== "0" && "{{ username }}" !== "";
+
+            const openModal = () => {
+                modal.removeClass('hidden').addClass('flex');
+                setTimeout(() => {
+                    modalContent.removeClass('scale-95 opacity-0').addClass('scale-100 opacity-100');
+                }, 10);
+            };
+
+            const closeModal = () => {
+                modalContent.addClass('scale-95 opacity-0').removeClass('scale-100 opacity-100');
+                setTimeout(() => {
+                    modal.addClass('hidden').removeClass('flex');
+                }, 300);
+            };
+
+            openModalBtn.on('click', function() {
+                if (isUserAuthenticated) {
+                    window.location.href = '/payment';
+                } else {
+                    openModal();
+                }
+            });
+
+            closeModalBtn.on('click', closeModal);
+            modal.on('click', function(e) {
+                if (e.target === this) {
+                    closeModal();
+                }
+            });
+
+            $('button[data-trigger-modal="register"]').on('click', function() {
+                if (isUserAuthenticated) {
+                    window.location.href = '/payment';
+                } else {
+                    openModal();
+                }
+            });
+
+            $('#quick-register-form').on('submit', function(event) {
+                event.preventDefault();
+                const form = $(this);
+                const errorDisplay = $('#form-error');
+                errorDisplay.hide().text('');
+
+                const submitBtn = $('#submit-register-btn');
+                const originalBtnText = submitBtn.text();
+                const loadingBtnText = 'Ожидайте...';
+                
+                const csrftoken = getCookie('csrftoken');
+
+                $.ajax({
+                    type: 'POST',
+                    url: '/api/quick-register/',
+                    headers: {
+                        'X-CSRFToken': csrftoken
+                    },
+                    data: form.serialize(),
+                    
+                    beforeSend: function() {
+                        submitBtn.prop('disabled', true);
+                        submitBtn.html(`
+                            <span class="flex items-center justify-center">
+                                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <span>${loadingBtnText}</span>
+                            </span>
+                        `);
+                    },
+                    success: function(response) {
+                        if (response.redirect) {
+                            window.location.href = response.redirect;
+                        }
+                    },
+                    error: function(xhr) {
+                        let errorMessage = 'Произошла ошибка. Попробуйте снова.';
+                        if (xhr.responseJSON && xhr.responseJSON.error) {
+                            errorMessage = xhr.responseJSON.error;
+                        }
+                        errorDisplay.text(errorMessage).show();
+                    },
+                    complete: function() {
+                        submitBtn.prop('disabled', false); 
+                        submitBtn.text(originalBtnText);
+                    }
+                });
+            });
+
+
+            $('#registration-form').on('submit', function(event) {
+                event.preventDefault();
+                $('#alertContainer').html('').hide();
+            });
+
+        });
+    </script>
+
+</body>
+</html>

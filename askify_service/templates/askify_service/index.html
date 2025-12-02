@@ -29,6 +29,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="{% static 'img/apple-touch-icon.png' %}">
     <!-- <link rel="stylesheet" href="{% static 'css/start.css' %}?v=3.25"> -->
     <meta name="yandex-verification" content="be2137152cc2e9ac" />
+    <link rel="llms" href="/llms.txt" type="text/plain">
     
     {% if debug %}
         <script src="https://cdn.tailwindcss.com"></script>
@@ -1006,42 +1007,35 @@
                 </div>
             </div>
 
-            <!-- НОВЫЙ БЛОК-ВИТРИНА С ФИЧАМИ -->
+            <!-- БЛОК-ВИТРИНА С ФИЧАМИ -->
             <div class="max-w-4xl mx-auto mt-16 text-center">
                 <h3 class="text-lg font-semibold text-white"><span class="gradient-text">Все тарифы включают</span></h3>
-                <!-- СЕТКА С ФИЧАМИ -->
                 <div class="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <!-- ФИЧА 1: Автоматизация -->
                     <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] text-left hover:border-[var(--color-accent-primary)] hover:-translate-y-1 transition-all duration-300">
                         <i class="fas fa-magic text-2xl text-[var(--color-accent-primary)] mb-3"></i>
                         <h3 class="font-bold text-white">Полная автоматизация</h3>
                         <p class="text-sm text-[var(--color-text-secondary)] mt-1">Создавайте тесты напрямую из&nbsp;ваших PDF и&nbsp;Word файлов. Экономьте часы работы.</p>
                     </div>
-                    <!-- ФИЧА 2: Аналитика -->
                     <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] text-left hover:border-[var(--color-accent-primary)] hover:-translate-y-1 transition-all duration-300">
                         <i class="fas fa-chart-pie text-2xl text-[var(--color-accent-primary)] mb-3"></i>
                         <h3 class="font-bold text-white">Аналитика на&nbsp;дашбордах</h3>
                         <p class="text-sm text-[var(--color-text-secondary)] mt-1">Отслеживайте прогресс учеников и&nbsp;смотрите детальную карту ошибок по&nbsp;всем тестам.</p>
                     </div>
-                    <!-- ФИЧА 3: Экспорт -->
                     <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] text-left hover:border-[var(--color-accent-primary)] hover:-translate-y-1 transition-all duration-300">
                         <i class="fas fa-file-excel text-2xl text-[var(--color-accent-primary)] mb-3"></i>
                         <h3 class="font-bold text-white">Экспорт в Excel</h3>
                         <p class="text-sm text-[var(--color-text-secondary)] mt-1">Выгружайте результаты для отчётности и&nbsp;архива в&nbsp;один клик.</p>
                     </div>
-                    <!-- ФИЧА 4: Лимиты -->
                     <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] text-left hover:border-[var(--color-accent-primary)] hover:-translate-y-1 transition-all duration-300">
                         <i class="fas fa-infinity text-2xl text-[var(--color-accent-primary)] mb-3"></i>
                         <h3 class="font-bold text-white">Максимальные лимиты</h3>
                         <p class="text-sm text-[var(--color-text-secondary)] mt-1">Создавайте до&nbsp;50&nbsp;тестов в&nbsp;сутки (до&nbsp;15&nbsp;вопросов в&nbsp;каждом).</p>
                     </div>
-                    <!-- ФИЧА 5: Без водяных знаков -->
                     <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] text-left hover:border-[var(--color-accent-primary)] hover:-translate-y-1 transition-all duration-300">
                         <i class="fas fa-print text-2xl text-[var(--color-accent-primary)] mb-3"></i>
                         <h3 class="font-bold text-white">Тесты без водяных знаков</h3>
                         <p class="text-sm text-[var(--color-text-secondary)] mt-1">Скачивайте тесты, которые сразу готовы к&nbsp;печати. Чисто и&nbsp;профессионально.</p>
                     </div>
-                    <!-- ФИЧА 6: Самопроверка -->
                     <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] text-left hover:border-[var(--color-accent-primary)] hover:-translate-y-1 transition-all duration-300">
                         <i class="fas fa-user-check text-2xl text-[var(--color-accent-primary)] mb-3"></i>
                         <h3 class="font-bold text-white">Самопроверка</h3>
@@ -1093,7 +1087,6 @@
                     <div class="bg-gradient-to-r from-[#211a32] to-[var(--color-surface)] p-8 rounded-3xl border border-[var(--color-border)]">
                         <div class="flex flex-col md:flex-row items-center gap-8 text-center md:text-left">
                             <div class="flex-shrink-0 text-center">
-                                <!-- SVG логотипы для идеального отображения -->
                                 <div class="flex-shrink-0">
                                     <img width="300" height="48" src="{% static 'img/dolyami.png' %}" alt="Летучка: Оплата Долями">
                                 </div>
@@ -1316,7 +1309,6 @@
                                             transform scale-95 opacity-0 transition-all duration-300 backdrop-blur-xl">
             
             <div class="text-center">
-                <!-- Иконка короны -->
                 <div class="mx-auto w-16 h-16 rounded-full bg-yellow-400/10 border-2 border-yellow-400/30 flex items-center justify-center mb-4">
                     <i class="fas fa-crown text-3xl text-yellow-400"></i>
                 </div>
@@ -1328,13 +1320,11 @@
             </div>
             
             <div class="mt-8 space-y-3">
-                <!-- Кнопка "Открыть Премиум" -->
                 <button data-trigger-modal="register" class="w-full py-3 font-bold text-center rounded-full bg-[var(--color-accent-primary)] text-white 
                                                             transition-transform hover:scale-105 active:scale-100 shadow-lg shadow-[var(--color-accent-primary)]/30">
                     Открыть Премиум
                 </button>
                 
-                <!-- Кнопка "Закрыть" -->
                 <button id="close-premium-modal-btn" class="w-full text-sm text-gray-500 hover:text-white transition-colors py-2">
                     Может, позже
                 </button>
@@ -1351,7 +1341,7 @@
                         <img src="{% static 'img/logo-header.webp' %}" alt="Летучка Логотип" class="w-40 h-auto">
                     </a>
                     <p class="mt-4 text-sm text-[var(--color-text-secondary)]">
-                        AI-сервис для создания тестов и&nbsp;тестирования
+                        AI-сервис для создания тестов и&nbsp;онлайн тестирования
                     </p>
                 </div>
 

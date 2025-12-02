@@ -12,6 +12,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=Unbounded:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
+
     <style>
         :root {
             --color-bg: #0F0818;
@@ -145,6 +147,29 @@
             opacity: 1;
             pointer-events: auto;
         }
+
+        /* --- СТИЛИ ДЛЯ КАЛЕНДАРЯ И ТУЛТИПА --- */
+        #churn-calendar { --fc-border-color: var(--color-border); --fc-today-bg-color: rgba(97, 109, 240, 0.1); }
+        .fc-col-header-cell-cushion, .fc-daygrid-day-number { color: var(--color-text-secondary); text-decoration: none; }
+        .fc .fc-button-primary { background-color: var(--color-accent-primary); border: none; }
+        .fc .fc-button-primary:hover { background-color: #4a57d0; }
+        .fc-event { font-weight: 600; cursor: pointer; }
+        
+        #calendar-tooltip {
+            position: absolute;
+            z-index: 100;
+            background: rgba(15, 8, 24, 0.9);
+            backdrop-filter: blur(8px);
+            color: white;
+            padding: 0.75rem 1rem;
+            border-radius: 0.75rem;
+            border: 1px solid var(--color-border);
+            font-size: 0.875rem;
+            pointer-events: none;
+            opacity: 0;
+            transform: scale(0.95);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
     </style>
 </head>
 <body class="bg-[var(--color-bg)] text-[var(--color-text-primary)]">
@@ -236,69 +261,75 @@
             </div>
         </section>
 
-        <!-- 3 СУПЕР ВАЖНЫХ ДАТЧИКА -->
-        <section class="mb-8">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 text-center">
-                
-                <!-- Датчик Активации -->
-                <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] flex flex-col justify-center items-center">
-                    <div class="relative w-48 h-24 overflow-hidden">
-                        <svg viewBox="0 0 120 65" class="w-full h-full">
-                            <!-- Трек -->
-                            <path d="M 10 60 A 50 50 0 0 1 110 60" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="12" stroke-linecap="round"/>
-                            <!-- Прогресс -->
-                            <path d="M 10 60 A 50 50 0 0 1 110 60" fill="none" stroke="#10B981" stroke-width="12" stroke-linecap="round"
-                                class="gauge-ring"
-                                stroke-dasharray="157"
-                                stroke-dashoffset="{{ gauges.activation_dashoffset }}"/>
-                        </svg>
-                        <div class="absolute bottom-0 left-0 right-0">
-                            <span class="text-4xl font-bold text-glow">{{ gauges.activation_percent }}%</span>
+        <!-- 3 ВАЖНЫХ ДАТЧИКА -->
+        <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+
+            <!-- 1. Воронка Активации -->
+            <div class="p-6 rounded-2xl border border-[var(--color-border)] bg-[#110c1f] space-y-4">
+                <span class="text-sm font-semibold text-gray-400">Воронка Активации (сегодня)</span>
+                <div class="space-y-3">
+                    <!-- Шаг 1: Регистрация -->
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-lg bg-blue-500/20 text-blue-400"><i class="fas fa-user-plus"></i></div>
+                        <div>
+                            <p class="font-bold text-white">{{ cyber_gauges.activation_funnel.registered }}</p>
+                            <p class="text-xs text-gray-500">Зарегистрировались</p>
                         </div>
                     </div>
-                    <p class="mt-3 text-sm font-semibold text-white">Активация в 1-й тест</p>
-                    <p class="text-xs text-[var(--color-text-secondary)]">новые юзеры за месяц</p>
-                </div>
-
-                <!-- Центральный Дисплей: Доход к цели -->
-                <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] flex flex-col justify-center items-center">
-                    <div class="relative w-48 h-24 overflow-hidden">
-                        <svg viewBox="0 0 120 65" class="w-full h-full">
-                            <!-- Трек -->
-                            <path d="M 10 60 A 50 50 0 0 1 110 60" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="12" stroke-linecap="round"/>
-                            <!-- Прогресс -->
-                            <path d="M 10 60 A 50 50 0 0 1 110 60" fill="none" stroke="#8B5CF6" stroke-width="12" stroke-linecap="round"
-                                class="gauge-ring"
-                                stroke-dasharray="157"
-                                stroke-dashoffset="{{ gauges.revenue_dashoffset }}"/>
-                        </svg>
-                        <div class="absolute bottom-0 left-0 right-0">
-                            <span class="text-4xl font-bold text-glow">{{ gauges.revenue_this_month|floatformat:0 }}<span class="text-2xl opacity-80"> ₽</span></span>
+                    <!-- Шаг 2: Активация -->
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-lg bg-green-500/20 text-green-400"><i class="fas fa-magic"></i></div>
+                        <div>
+                            <p class="font-bold text-white">{{ cyber_gauges.activation_funnel.activated }}</p>
+                            <p class="text-xs text-gray-500">Создали 1-й тест</p>
+                        </div>
+                        <div class="ml-auto text-right">
+                            <p class="font-bold text-green-400">{{ cyber_gauges.activation_funnel.conversion_rate }}%</p>
+                            <p class="text-xs text-gray-500">Конверсия</p>
                         </div>
                     </div>
-                    <p class="mt-3 text-sm font-semibold text-white">Доход за месяц</p>
-                    <p class="text-xs text-[var(--color-text-secondary)]">Цель: {{ gauges.monthly_goal }} ₽ ({{ gauges.revenue_goal_percent }}%)</p>
-                </div>
-
-                <!-- Датчик Мощности -->
-                <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] flex flex-col justify-center items-center">
-                    <div class="relative w-48 h-24 overflow-hidden">
-                        <svg viewBox="0 0 120 65" class="w-full h-full">
-                            <path d="M 10 60 A 50 50 0 0 1 110 60" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="12" stroke-linecap="round"/>
-                            <path d="M 10 60 A 50 50 0 0 1 110 60" fill="none" stroke="#3B82F6" stroke-width="12" stroke-linecap="round"
-                                class="gauge-ring"
-                                stroke-dasharray="157"
-                                stroke-dashoffset="{{ gauges.tests_dashoffset }}"/>
-                        </svg>
-                        <div class="absolute bottom-0 left-0 right-0">
-                            <span class="text-4xl font-bold text-glow">{{ gauges.tests_created_today }}</span>
+                    <!-- Шаг 3: Пейвол (пока заглушка) -->
+                    <div class="flex items-center gap-3 opacity-50">
+                        <div class="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-lg bg-yellow-500/20 text-yellow-400"><i class="fas fa-credit-card"></i></div>
+                        <div>
+                            <p class="font-bold text-white">{{ cyber_gauges.activation_funnel.reached_paywall }}</p>
+                            <p class="text-xs text-gray-500">Увидели пейвол</p>
                         </div>
                     </div>
-                    <p class="mt-3 text-sm font-semibold text-white">Тестов создано сегодня</p>
-                    <p class="text-xs text-[var(--color-text-secondary)]">нелегалами и легальными</p>
                 </div>
-
             </div>
+
+            <!-- 2. Дневная Касса -->
+            <div class="p-6 rounded-2xl border border-[var(--color-border)] bg-[#110c1f] flex flex-col justify-between">
+                <div>
+                    <span class="text-sm font-semibold text-gray-400">Дневная Касса</span>
+                    <span class="ml-2 text-sm font-bold {% if cyber_gauges.daily_revenue.change >= 0 %}text-green-400{% else %}text-red-400{% endif %}">
+                        {% if cyber_gauges.daily_revenue.change >= 0 %}+{% endif %}{{ cyber_gauges.daily_revenue.change }}% vs вчера
+                    </span>
+                </div>
+                <div class="text-center my-4">
+                    <p class="text-5xl font-black text-white text-glow">{{ cyber_gauges.daily_revenue.today|floatformat:2 }} <span class="text-3xl text-green-400 opacity-80">₽</span></p>
+                </div>
+                <div class="w-full bg-black/20 rounded-full h-2">
+                    <div class="bg-gradient-to-r from-purple-500 to-green-400 h-2 rounded-full" style="width: {{ cyber_gauges.daily_revenue.goal_percent }}%"></div>
+                </div>
+            </div>
+
+            <!-- 3. Пульс Активности -->
+            <div class="p-6 rounded-2xl border border-[var(--color-border)] bg-[#110c1f] flex flex-col justify-between">
+                <div>
+                    <span class="text-sm font-semibold text-gray-400">Пульс Активности (тесты)</span>
+                    <span class="ml-2 text-sm font-bold {% if cyber_gauges.tests_pulse.change >= 0 %}text-green-400{% else %}text-red-400{% endif %}">
+                        {% if cyber_gauges.tests_pulse.change >= 0 %}+{% endif %}{{ cyber_gauges.tests_pulse.change }}% vs вчера
+                    </span>
+                </div>
+                <div class="my-4">
+                    <p class="text-5xl font-black text-white text-glow">{{ cyber_gauges.tests_pulse.today }}</p>
+                    <p class="text-xs text-gray-500 -mt-1">Создано сегодня</p>
+                </div>
+                <div class="h-12"><canvas id="tests-pulse-sparkline"></canvas></div>
+            </div>
+
         </section>
 
         <!-- КЛЮЧЕВЫЕ ПОКАЗАТЕЛИ -->
@@ -531,7 +562,6 @@
 
             <section class="space-y-8">
                 <h2 class="font-bold text-white text-xl">Бизнес-инсайты</h2>
-
                 <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
                     <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
                         <h3 class="font-bold text-white mb-4">Время до Первой Покупки</h3>
@@ -539,7 +569,154 @@
                             <canvas id="timeToPaymentChart"></canvas>
                         </div>
                     </div>
-                    
+
+                    <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
+                        <h3 class="font-bold text-white mb-4">Качество Когорт</h3>
+                        <div class="space-y-4">
+                            <!-- Сравнение конверсии -->
+                            <div>
+                                <p class="text-xs text-gray-400">Конверсия в 1-ю покупку</p>
+                                <div class="flex items-baseline gap-2">
+                                    <p class="text-2xl font-bold text-white">{{ cohort_quality_data.current_month.metrics.conversion_rate }}<span class="text-lg">%</span></p>
+                                    {% with change=cohort_quality_data.changes.conversion_rate %}
+                                    <span class="text-sm font-semibold {% if change >= 0 %}text-green-400{% else %}text-red-400{% endif %}">
+                                        ({% if change >= 0 %}+{% endif %}{{ change|floatformat:2 }}% vs {{ cohort_quality_data.previous_month.name }})
+                                    </span>
+                                    {% endwith %}
+                                </div>
+                            </div>
+                            <!-- Сравнение ARPU -->
+                            <div>
+                                <p class="text-xs text-gray-400">ARPU (ср. доход с платящего)</p>
+                                <div class="flex items-baseline gap-2">
+                                    <p class="text-2xl font-bold text-white">{{ cohort_quality_data.current_month.metrics.arppu }} <span class="text-lg text-gray-400">₽</span></p>
+                                    {% with change=cohort_quality_data.changes.arppu %}
+                                    <span class="text-sm font-semibold {% if change >= 0 %}text-green-400{% else %}text-red-400{% endif %}">
+                                        ({% if change >= 0 %}+{% endif %}{{ change|floatformat:0 }} ₽ vs {{ cohort_quality_data.previous_month.name }})
+                                    </span>
+                                    {% endwith %}
+                                </div>
+                            </div>
+                            <!-- Сравнение активации -->
+                            <div>
+                                <p class="text-xs text-gray-400">Ср. тестов на юзера</p>
+                                <div class="flex items-baseline gap-2">
+                                    <p class="text-2xl font-bold text-white">{{ cohort_quality_data.current_month.metrics.avg_tests }}</p>
+                                    {% with change=cohort_quality_data.changes.avg_tests %}
+                                    <span class="text-sm font-semibold {% if change >= 0 %}text-green-400{% else %}text-red-400{% endif %}">
+                                        ({% if change >= 0 %}+{% endif %}{{ change|floatformat:1 }} vs {{ cohort_quality_data.previous_month.name }})
+                                    </span>
+                                    {% endwith %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- ТЕМПЕРАТУРНАЯ КАРТА -->
+                <div class="lg:col-span-2 bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
+                    <h3 class="font-bold text-white mb-4">Температурная Карта Активности (Создание тестов, 4 нед.)</h3>
+                    <div class="h-64"><canvas id="activity-heatmap"></canvas></div>
+                </div>
+                <!-- ДЕТЕКТОР АНОМАЛИЙ -->
+                <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-shield-virus text-2xl text-red-400"></i>
+                            <h3 class="font-bold text-white">Детектор Аномалий</h3>
+                        </div>
+                    </div>
+                    <div class="space-y-6 mt-4">
+                        <div>
+                            <p class="text-xs text-gray-400">Индекс Наглости</p>
+                            <p class="text-4xl font-black text-white">{{ anomaly_detector_data.audacity_index }}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-400">Доля бесплатных тестов сегодня</p>
+                            <div class="w-full bg-black/20 rounded-full h-6 mt-1 flex items-center pr-2 relative">
+                                <div class="bg-gradient-to-r from-red-500 to-yellow-500 h-6 rounded-full" style="width: {{ anomaly_detector_data.free_tests_percentage }}%"></div>
+                                <span class="absolute right-3 text-sm font-bold text-white mix-blend-difference">{{ anomaly_detector_data.free_tests_percentage }}%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="growth-engine" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- 1. ПРИВЛЕЧЕНИЕ -->
+                <div class="growth-card p-6 rounded-2xl border border-[var(--color-border)] bg-gradient-to-br from-[rgba(30,24,48,0.5)] to-[rgba(30,24,48,0.2)]">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-semibold text-gray-400">Привлечение</span>
+                        <span id="acq-change" class="text-sm font-bold {% if growth_engine_data.acquisition.change >= 0 %}text-green-400{% else %}text-red-400{% endif %}">
+                            {% if growth_engine_data.acquisition.change >= 0 %}+{% endif %}{{ growth_engine_data.acquisition.change }}
+                        </span>
+                    </div>
+                    <p class="text-4xl font-black text-white my-2">{{ growth_engine_data.acquisition.value }}</p>
+                    <p class="text-xs text-gray-500 -mt-2 mb-4">Новых пользователей (30 д.)</p>
+                    <div class="h-16"><canvas id="acq-sparkline"></canvas></div>
+                </div>
+                <!-- 2. АКТИВАЦИЯ -->
+                <div class="growth-card p-6 rounded-2xl border border-[var(--color-border)] bg-gradient-to-br from-[rgba(30,24,48,0.5)] to-[rgba(30,24,48,0.2)]">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-semibold text-gray-400">Активация</span>
+                        <span id="act-change" class="text-sm font-bold {% if growth_engine_data.activation.change >= 0 %}text-green-400{% else %}text-red-400{% endif %}">
+                            {% if growth_engine_data.activation.change >= 0 %}+{% endif %}{{ growth_engine_data.activation.change }}%
+                        </span>
+                    </div>
+                    <p class="text-4xl font-black text-white my-2">{{ growth_engine_data.activation.value }}<span class="text-2xl text-gray-400">%</span></p>
+                    <p class="text-xs text-gray-500 -mt-2 mb-4">Создали 1-й тест (30 д.)</p>
+                    <div class="h-16 relative flex items-center justify-center">
+                        <svg class="w-24 h-24 transform -rotate-90"><circle class="text-black/20" stroke-width="8" stroke="currentColor" fill="transparent" r="40" cx="48" cy="48"/><circle id="act-circle" class="text-[var(--color-accent-secondary)]" stroke-width="8" stroke-linecap="round" stroke="currentColor" fill="transparent" r="40" cx="48" cy="48" style="stroke-dasharray: 251.2; stroke-dashoffset: calc(251.2 - (251.2 * {{ growth_engine_data.activation.value }}) / 100); transition: stroke-dashoffset 1s ease-out;"/></svg>
+                        <span class="absolute text-xl font-bold">{{ growth_engine_data.activation.value }}%</span>
+                    </div>
+                </div>
+                <!-- 3. УДЕРЖАНИЕ -->
+                <div class="growth-card p-6 rounded-2xl border border-[var(--color-border)] bg-gradient-to-br from-[rgba(30,24,48,0.5)] to-[rgba(30,24,48,0.2)]">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-semibold text-gray-400">Удержание</span>
+                    </div>
+                    <p class="text-4xl font-black text-white my-2">{{ growth_engine_data.retention.value }}<span class="text-2xl text-gray-400">%</span></p>
+                    <p class="text-xs text-gray-500 -mt-2 mb-4">Повторных покупок (30 д.)</p>
+                    <div class="h-16">
+                    </div>
+                </div>
+
+            </section>
+
+            <section class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+                <!-- Календарь -->
+                <div class="xl:col-span-2 bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
+                    <h3 class="font-bold text-white mb-4">Радар оттока: Календарь подписок</h3>
+                    <div id="churn-calendar"></div>
+                </div>
+                
+                <!-- Список -->
+                <div class="xl:col-span-1 bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
+                    <h3 class="font-bold text-white mb-4">Ближайшие истечения</h3>
+                    <div class="space-y-3">
+                        {% if churn_radar_data.list %}
+                            {% for user in churn_radar_data.list %}
+                            <div class="p-3 bg-black/20 rounded-lg">
+                                <div class="flex justify-between items-center">
+                                    <p class="font-bold text-white truncate pr-2">{{ user.username }}</p>
+                                    {% if user.urgency == 'expired' %}
+                                        <span class="text-xs font-bold text-red-400">Истекла</span>
+                                    {% elif user.urgency == 'today' %}
+                                        <span class="text-xs font-bold text-yellow-400">Сегодня</span>
+                                    {% endif %}
+                                </div>
+                                <div class="flex justify-between items-center text-xs text-gray-400 mt-1">
+                                    <span>{{ user.plan_name }}</span>
+                                    <span class="font-mono">{{ user.end_date_str }}</span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-gray-500 text-sm text-center py-8">В ближайшее время нет истекающих подписок.</p>
+                        {% endif %}
+                    </div>
                 </div>
             </section>
 
@@ -824,6 +1001,7 @@
 
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-matrix@2.0.1/dist/chartjs-chart-matrix.min.js"></script>
 
     <script>
         $(document).ready(function() {
@@ -1939,6 +2117,186 @@
                 }, 4000);
             }
         });
+    </script>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const calendarEl = document.getElementById('churn-calendar');
+        if (calendarEl) {
+            const tooltip = document.createElement('div');
+            tooltip.id = 'calendar-tooltip';
+            document.body.appendChild(tooltip);
+
+            const calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                locale: 'ru',
+                headerToolbar: {
+                    left: 'prev',
+                    center: 'title',
+                    right: 'next'
+                },
+                buttonText: {
+                    today: 'Сегодня'
+                },
+                events: {{ churn_calendar_events_json|safe }},
+                
+                eventMouseEnter: function(info) {
+                    const props = info.event.extendedProps;
+                    tooltip.innerHTML = `
+                        <p class="font-bold">${info.event.title}</p>
+                        <p class="text-sm text-gray-300">${props.plan_name}</p>
+                        <p class="text-xs text-gray-500 mt-1">до ${props.end_date_str}</p>
+                    `;
+                    
+                    tooltip.style.opacity = '1';
+                    tooltip.style.transform = 'scale(1)';
+                    
+                    const rect = info.el.getBoundingClientRect();
+                    tooltip.style.left = `${rect.left + window.scrollX}px`;
+                    tooltip.style.top = `${rect.bottom + window.scrollY + 5}px`;
+                },
+                eventMouseLeave: function(info) {
+                    tooltip.style.opacity = '0';
+                    tooltip.style.transform = 'scale(0.95)';
+                }
+            });
+            calendar.render();
+        }
+
+        const chartTextColor = 'rgba(160, 160, 176, 1)';
+
+        const acqSparklineCanvas = document.getElementById('acq-sparkline');
+        if (acqSparklineCanvas) {
+            const acqData = {{ growth_engine_data.acquisition.sparkline|safe }};
+            const ctx = acqSparklineCanvas.getContext('2d');
+            
+            const gradient = ctx.createLinearGradient(0, 0, 0, 64);
+            gradient.addColorStop(0, 'rgba(97, 109, 240, 0.5)');
+            gradient.addColorStop(1, 'rgba(97, 109, 240, 0)');
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: Array(acqData.length).fill(''),
+                    datasets: [{
+                        data: acqData,
+                        borderColor: '#616DF0',
+                        backgroundColor: gradient,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                    scales: {
+                        x: { display: false },
+                        y: { display: false }
+                    }
+                }
+            });
+        }
+
+        const heatmapCanvas = document.getElementById('activity-heatmap');
+        if (heatmapCanvas) {
+            const heatmapData = {{ activity_heatmap_data|safe }};
+            
+            new Chart(heatmapCanvas.getContext('2d'), {
+                type: 'matrix',
+                data: {
+                    datasets: [{
+                        label: 'Активность',
+                        data: heatmapData.flatMap((row, i) => row.map((value, j) => ({
+                            x: j, // Час
+                            y: i, // День недели
+                            v: value
+                        }))),
+                        backgroundColor: function(ctx) {
+                            const value = ctx.raw.v;
+                            if (value === 0) return 'rgba(30, 24, 48, 0.5)';
+                            const alpha = 0.2 + (value / (Math.max(...heatmapData.flat()) || 1)) * 0.8;
+                            return `rgba(121, 239, 102, ${alpha})`;
+                        },
+                        borderColor: 'rgba(97, 109, 240, 0.2)',
+                        borderWidth: 1,
+                        width: ({chart}) => (chart.chartArea || {}).width / 24 - 1,
+                        height: ({chart}) => (chart.chartArea || {}).height / 7 - 1,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                title: function(ctx) {
+                                    const day = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'][ctx[0].raw.y];
+                                    const hour = ctx[0].raw.x;
+                                    return `${day}, ${hour}:00 - ${hour+1}:00`;
+                                },
+                                label: function(ctx) {
+                                    return `Создано тестов: ${ctx.raw.v}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            labels: Array.from({length: 24}, (_, i) => `${i}`),
+                            offset: false,
+                            grid: { display: false },
+                            ticks: {
+                                stepSize: 2,
+                                color: chartTextColor,
+                            }
+                        },
+                        y: {
+                            type: 'linear',
+                            labels: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'],
+                            offset: true,
+                            grid: { display: false },
+                            ticks: {
+                                color: chartTextColor,
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        const pulseCanvas = document.getElementById('tests-pulse-sparkline');
+        if (pulseCanvas) {
+            const pulseData = {{ cyber_tests_pulse_json|safe }};
+            const ctx = pulseCanvas.getContext('2d');
+            
+            const gradient = ctx.createLinearGradient(0, 0, 0, 48);
+            gradient.addColorStop(0, 'rgba(121, 239, 102, 0.4)');
+            gradient.addColorStop(1, 'rgba(121, 239, 102, 0)');
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Array(pulseData.length).fill(''),
+                    datasets: [{
+                        data: pulseData,
+                        backgroundColor: gradient,
+                        borderColor: '#79EF66',
+                        borderWidth: 1,
+                        borderRadius: 2,
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                    scales: { x: { display: false }, y: { display: false, beginAtZero: true } }
+                }
+            });
+        }
+    });
     </script>
 </body>
 </html>

@@ -240,7 +240,7 @@
 
     <main class="flex-grow flex items-center justify-center p-4">
         <div class="w-full max-w-md mx-auto">
-            <div class="bg-[var(--color-surface)]/80 backdrop-blur-xl p-8 rounded-3xl border border-[var(--color-border)] text-center">
+            <div class="bg-[var(--color-surface)]/80 backdrop-blur-xl p-8 mt-8 rounded-3xl border border-[var(--color-border)] text-center">
                 <h1 class="text-3xl font-bold text-white">Вход в Летучку</h1>
                 
                 <a href="{% url 'tg_code_login' %}" class="mt-8 group flex items-center justify-center gap-3 w-full p-4 bg-[#2AABEE] text-white font-bold rounded-2xl transition-transform hover:scale-105">
@@ -284,6 +284,65 @@
             </div>
         </div>
     </main>
+
+    <footer class="mt-24 border-t border-[var(--color-border)]">
+        <div class="max-w-6xl mx-auto px-4 sm:px-8 py-16">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-12">
+                
+                <div class="sm:col-span-2 md:col-span-1">
+                    <a href="/">
+                        <img src="{% static 'img/logo-header.webp' %}" alt="Летучка Логотип" class="w-40 h-auto">
+                    </a>
+                    <p class="mt-4 text-sm text-[var(--color-text-secondary)]">
+                        AI-сервис для создания тестов и&nbsp;онлайн тестирования
+                    </p>
+                </div>
+
+                <div>
+                    <h3 class="text-sm font-semibold text-white uppercase tracking-wider">Продукт</h3>
+                    <div class="mt-4 flex flex-col space-y-3 text-sm">
+                        <a href="#transformation" class="text-[var(--color-text-secondary)] hover:text-white transition-colors">Возможности</a>
+                        <a href="#security-and-payments" class="text-[var(--color-text-secondary)] hover:text-white transition-colors">Безопасность</a>
+                        <a href="#pricing" class="text-[var(--color-text-secondary)] hover:text-white transition-colors">Тарифы</a>
+                        <a href="#faq" class="text-[var(--color-text-secondary)] hover:text-white transition-colors">FAQ</a>
+                        <a href="/dlya-prepodavateley/" target="_blank" rel="noopener noreferrer" class="text-[var(--color-text-secondary)] hover:text-white transition-colors">Преподавателям</a>
+                        
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-sm font-semibold text-white uppercase tracking-wider">Медиа</h3>
+                    <div class="mt-4 flex flex-col space-y-3 text-sm">
+                        <a href="https://letychka.ru/media/main/" class="text-[var(--color-text-secondary)] hover:text-white transition-colors">Блог</a>
+                        <a href="https://productradar.ru/product/letuchka/" target="_blank" rel="noopener noreferrer" class="text-[var(--color-text-secondary)] hover:text-white transition-colors">Product Radar</a>
+                        <a href="https://www.behance.net/gallery/217116137/Letychka-letuchka-AI-servis-dlja-generacii-testov/" target="_blank" rel="noopener noreferrer" class="text-[var(--color-text-secondary)] hover:text-white transition-colors">Кейс на Behance</a>
+                        <a href="https://rutube.ru/video/05833232f69b6dd32e4ccd0e9ec63c4b/?r=wd" target="_blank" rel="noopener noreferrer" class="text-[var(--color-text-secondary)] hover:text-white transition-colors">Промо на Rutube</a>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-sm font-semibold text-white uppercase tracking-wider">Компания</h3>
+                    <div class="mt-4 flex flex-col space-y-3 text-sm">
+                        <a href="mailto:support@letychka.ru" class="text-[var(--color-text-secondary)] hover:text-white transition-colors">support@letychka.ru</a>
+                        <a href="/docs/public-offer/" class="text-[var(--color-text-secondary)] hover:text-white transition-colors">Публичная оферта</a>
+                        <a href="/docs/privacy-policy/" class="text-[var(--color-text-secondary)] hover:text-white transition-colors">Политика конфиденциальности</a>
+                        <hr>
+                        <a href="https://golosok.space/" class="text-[var(--color-text-secondary)] hover:text-white transition-colors" target="_blank" rel="noopener noreferrer">Голосок</a>
+                        <a href="https://taxi-watcher.ru/" class="text-[var(--color-text-secondary)] hover:text-white transition-colors" target="_blank" rel="noopener noreferrer">Taxi Watcher</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-16 pt-8 border-t border-[var(--color-border)] flex flex-col sm:flex-row justify-between items-center text-sm text-[var(--color-text-secondary)]">
+                <p>2024-2025 Летучка AI. Design & Development <a href="https://dprofile.ru/case/106507/letucka-ai-servis-dlia-generacii-testov/" target="_blank" rel="noopener noreferrer" class="text-[var(--color-text-secondary)] hover:text-white transition-colors">by Kozak</a></p>
+                <div class="flex items-center space-x-6 text-xl mt-4 sm:mt-0">
+                    <a href="https://t.me/LetychkaRobot" target="_blank" rel="noopener noreferrer" class="hover:text-white transition-colors" title="Telegram">
+                        <i class="fab fa-telegram"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
     
     <script>
         document.addEventListener('DOMContentLoaded', () => {
