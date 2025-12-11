@@ -132,25 +132,26 @@
             <p class="mt-2 text-[var(--text-dim)] pricing-subtitle">Прекратите тратить вечера на рутину и освободите время для себя.</p>
         </div>
 
-        <!-- ТРИ ГОРЯЧИХ ТАРИФА -->
+        <!-- СЕТКА ТАРИФОВ -->
         <div class="grid grid-cols-3 gap-2 mb-8 animate-fadeIn" style="animation-delay: 0.1s;" id="plans-container">
             <!-- НЕДЕЛЯ PREMIUM -->
             <div class="plan-card" data-plan="premium-week" data-price="390" data-desc="Премиум неделя">
-                <div class="plan-badge">Базовый</div>
+                <div class="plan-badge">Тест-драйв</div>
                 <p class="sm:text-sm text-xs font-semibold">Неделя</s-p>
                 <p class="text-lg sm:text-2xl font-bold">390 р</p>
-                <p class="text-sm font-semibold text-white/60">390 р / неделя</p>
+                <p class="text-sm font-semibold text-white/60">Попробовать все функции</p>
             </div>
             <!-- МЕСЯЦ PREMIUM -->
-            <div class="plan-card" data-plan="premium-month" data-price="690" data-desc="Премиум">
-                <div class="plan-badge">Выгода 56%</div>
+            <div class="plan-card" data-plan="premium-month" data-price="590" data-desc="Премиум">
+                <div class="plan-badge">Лучший выбор</div>
                 <p class="sm:text-sm text-xs font-semibold">Месяц</p>
-                <p class="text-lg sm:text-3xl font-bold">690 р</p>
-                <p class="text-sm font-semibold text-white/60">~172 р / неделя</p>
+                <p class="text-lg sm:text-xl text-white/60 line-through">690 р</p>
+                <p class="text-lg sm:text-3xl font-bold">590 р</p>
+                <p class="text-sm font-semibold text-white/60">~147 р / неделя</p>
             </div>
             <!-- 3 МЕСЯЦА PREMIUM -->
             <div class="plan-card popular" data-plan="premium-quarter" data-price="1440" data-desc="Премиум 3 мес">
-                <div class="plan-badge">Выгода 69%</div>
+                <div class="plan-badge">Макс. выгода</div>
                 <p class="sm: text-sm text-xs font-semibold">3 месяца</p>
                 <p class="text-lg sm:text-2xl font-bold">1440 р</p>
                 <p class="text-sm font-semibold text-white/60">~120 р / неделя</p>
@@ -267,7 +268,7 @@
                 <input type="hidden" name="email" value="{{email}}" />
                 <input type="hidden" name="phone" value="{{phone}}" />
 
-                <input class="w-full p-2 mb-2 bg-[var(--surface)] border border-[var(--border)] rounded-xl text-white placeholder-[var(--text-dim)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]" 
+                <input id="user-email" class="w-full p-2 mb-2 bg-[var(--surface)] border border-[var(--border)] rounded-xl text-white placeholder-[var(--text-dim)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]" 
                        placeholder="E‑mail для чека" name="email" value="{{email}}" required/>
                 
                 <button class="w-full py-4 font-bold text-center rounded-3xl bg-[var(--accent)] text-white sm:text-lg text-base transition-transform hover:scale-105 active:scale-95 shadow-lg shadow-[var(--accent)]/30" id="payment-button" type="submit">
@@ -325,15 +326,16 @@
             }
         });
         
-        // --- Логика отправки платежа (твоя оригинальная, но обернутая) ---
+        // --- Логика отправки платежа ---
         payForm.addEventListener('submit', function(e) {
             e.preventDefault();
             if (paymentButton.disabled) return;
 
-            const email = payForm.querySelector('input[name="email"]').value;
+            const email = document.getElementById('user-email').value;
             const phone = payForm.querySelector('input[name="phone"]').value;
             
             if (!email) {
+                console.log('mail', email);
                 alert('Пожалуйста, укажите E-mail для отправки чека');
                 return;
             }

@@ -46,7 +46,7 @@ from django.core.cache import cache
 from django.utils.crypto import get_random_string
 from django.conf import settings
 from django.db.models.functions import Length, TruncDate
-from django.db.models.functions import TruncHour, TruncDay, ExtractWeekDay
+from django.db.models.functions import TruncHour, TruncWeek, TruncDay, ExtractWeekDay
 
 
 from smtplib import SMTPException
@@ -1870,6 +1870,13 @@ def take_test(request, survey_id):
     """
     Отображает страницу прохождения теста.
     """
+    survey_id = str(survey_id).strip()
+
+    try:
+        uuid_obj = uuid.UUID(survey_id)
+    except ValueError:
+        return HttpResponse("Тест не найден :(", status=404)
+
     survey = get_object_or_404(Survey, survey_id=survey_id)
 
     questions_list = survey.get_questions()
@@ -3049,12 +3056,17 @@ def block_ip_api(request):
             return JsonResponse({"status": False, "message": "IP адрес не указан"}, status=400)
 
         if BlockedUsers.objects.filter(ip_address=ip_to_block).exists():
-            return JsonResponse({"status": True, "message": f"IP {ip_to_block} уже заблокирован"})
+            return JsonResponse({"status": True, "message": f"IP {ip_to_block} уже был в бане"})
 
-        BlockedUsers.objects.create(ip_address=ip_to_block)
+        BlockedUsers.objects.create(
+            ip_address=ip_to_block,
+            reason="Manual ban via Admin Panel"
+        )
+
         return JsonResponse({"status": True, "message": f"IP {ip_to_block} успешно заблокирован"})
+
     except Exception as e:
-        return JsonResponse({"status": False, "message": str(e)}, status=500)
+        return JsonResponse({"status": False, "message": f"Ошибка: {str(e)}"}, status=500)
 
 
 @require_POST
@@ -4337,6 +4349,77 @@ def get_anomaly_detector_data():
     }
 
 
+def get_financial_pulse_data(start_date, end_date):
+    """
+    Собирает данные для виджета "Финансовый Пульс".
+    """
+    weekly_revenue = Payment.objects.filter(
+        status='completed',
+        created_at__date__range=(start_date, end_date)
+    ).annotate(
+        week=TruncWeek('created_at')
+    ).values('week').annotate(
+        total_revenue=Sum('amount')
+    ).order_by('week')
+
+    chart_labels = [w['week'].strftime('%d.%m') for w in weekly_revenue]
+    chart_data = [float(w['total_revenue'] / 100) for w in weekly_revenue]
+
+    payments_in_period = Payment.objects.filter(status='completed', created_at__date__range=(start_date, end_date))
+    total_revenue = (payments_in_period.aggregate(total=Sum('amount'))['total'] or 0) / 100
+
+    avg_check = (payments_in_period.aggregate(avg=Avg('amount'))['avg'] or 0) / 100
+
+    paying_users = Payment.objects.filter(status='completed').values('staff_id').distinct()
+    total_revenue_all_time = (Payment.objects.filter(status='completed').aggregate(total=Sum('amount'))[
+                                  'total'] or 0) / 100
+    ltv = total_revenue_all_time / paying_users.count() if paying_users.exists() else 0
+
+    today = timezone.now().date()
+    thirty_days_ago = today - timedelta(days=30)
+
+    active_at_start_of_period_qs = Subscription.objects.filter(
+        start_date__date__lt=thirty_days_ago,
+        end_date__date__gte=thirty_days_ago
+    ).values_list('staff_id', flat=True).distinct()
+
+    active_at_start_of_period_count = active_at_start_of_period_qs.count()
+
+    if active_at_start_of_period_count == 0:
+        churn_rate = 0
+    else:
+        churned_users_count = Subscription.objects.filter(
+            staff_id__in=active_at_start_of_period_qs,
+            end_date__date__lt=today
+        ).values_list('staff_id', flat=True).distinct().count()
+
+        churn_rate = (churned_users_count / active_at_start_of_period_count) * 100
+
+    payments_count_in_period = payments_in_period.count()
+    returning_payments_count = 0
+    for p in payments_in_period:
+        if Payment.objects.filter(staff_id=p.staff_id, status='completed', created_at__lt=p.created_at).exists():
+            returning_payments_count += 1
+    new_payments_count = payments_count_in_period - returning_payments_count
+
+    return {
+        'chart': {
+            'labels': chart_labels,
+            'data': chart_data,
+        },
+        'total_revenue': round(total_revenue),
+        'quality_metrics': {
+            'avg_check': round(avg_check),
+            'ltv': round(ltv),
+        },
+        'growth_metrics': {
+            'new_payments': new_payments_count,
+            'returning_payments': returning_payments_count,
+            'churn_rate': round(churn_rate, 1),
+        }
+    }
+
+
 @login_required
 def admin_stats(request):
     if not request.user.is_superuser:
@@ -4532,6 +4615,7 @@ def admin_stats(request):
     anomaly_detector_data = get_anomaly_detector_data()
 
     cohort_quality_data = get_cohort_quality_data()
+    financial_pulse_data = get_financial_pulse_data(start_date - timedelta(days=60), end_date)
 
     context = {
         "cockpit": cockpit_metrics,
@@ -4585,6 +4669,8 @@ def admin_stats(request):
         "activity_heatmap_data": json.dumps(activity_heatmap_data),
         "anomaly_detector_data": anomaly_detector_data,
         "cohort_quality_data": cohort_quality_data,
+        "financial_pulse_data": financial_pulse_data,
+        "financial_pulse_chart_json": json.dumps(financial_pulse_data['chart']),
         'username': get_username(request)
     }
 
@@ -4856,7 +4942,7 @@ class PaymentInitiateView(View):
             'Начальный': 0,
             'Лайтовый': 99,
             'Стандартный': 550,
-            'Премиум': 690,
+            'Премиум': 590,
             'Стандартный 3 мес': 1470,
             'Премиум 3 мес': 1440,
             'Ультра': 990,

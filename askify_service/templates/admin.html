@@ -170,6 +170,90 @@
             transform: scale(0.95);
             transition: opacity 0.2s ease, transform 0.2s ease;
         }
+
+        .satellite-widget {
+            background: linear-gradient(145deg, rgba(30, 24, 48, 0.4), rgba(15, 8, 24, 0.3));
+            border-radius: 1.25rem;
+            border: 1px solid var(--color-border);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 280px;
+        }
+        .satellite-widget .title {
+            font-family: 'Unbounded Medium', sans-serif;
+            font-size: 1.125rem;
+            color: white;
+        }
+
+        .progress-ring {
+            position: relative;
+            width: 100px;
+            height: 100px;
+        }
+        .progress-ring svg {
+            transform: rotate(-90deg);
+        }
+        .progress-ring circle {
+            transition: stroke-dashoffset 1s ease-out;
+        }
+        .progress-ring .value-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: 'Unbounded Medium', sans-serif;
+            font-size: 1.5rem;
+            color: white;
+        }
+
+        .stacked-bar {
+            display: flex;
+            height: 1rem;
+            width: 100%;
+            background-color: rgba(0,0,0,0.3);
+            border-radius: 9999px;
+            overflow: hidden;
+        }
+        .stacked-bar-segment {
+            height: 100%;
+            transition: width 1s ease-out;
+        }
+
+        /* --- СТИЛИ ДЛЯ ВИДЖЕТА "КАЧЕСТВО КОГОРТ" --- */
+        .cohort-metric {
+            position: relative;
+            padding-top: 1rem;
+            border-top: 1px solid var(--color-border);
+        }
+        .cohort-metric:first-child {
+            border-top: none;
+            padding-top: 0;
+        }
+        .metric-ring {
+            position: relative;
+            width: 64px;
+            height: 64px;
+        }
+        .metric-ring svg {
+            transform: rotate(-90deg);
+        }
+        .metric-ring circle {
+            transition: stroke-dashoffset 1s ease-out;
+        }
+        .metric-ring .value-text {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: 'Unbounded Medium', sans-serif;
+            font-size: 1.125rem;
+            color: white;
+        }
+        .metric-ring .value-text .unit {
+            font-size: 0.875rem;
+            color: var(--color-text-secondary);
+        }
     </style>
 </head>
 <body class="bg-[var(--color-bg)] text-[var(--color-text-primary)]">
@@ -562,6 +646,66 @@
 
             <section class="space-y-8">
                 <h2 class="font-bold text-white text-xl">Бизнес-инсайты</h2>
+
+                <section class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                    <!-- Главный график -->
+                    <div class="lg:col-span-2 bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
+                        <div class="flex justify-between items-baseline">
+                            <h3 class="font-bold text-white">Поступления</h3>
+                            <span class="text-2xl font-black text-white">{{ financial_pulse_data.total_revenue }} <span class="text-lg text-gray-400">₽</span></span>
+                        </div>
+                        <div class="h-64 mt-4"><canvas id="revenue-pulse-chart"></canvas></div>
+                    </div>
+
+                    <!-- Сателлит 1: Качество Покупок -->
+                    <div class="satellite-widget">
+                        <h3 class="title">Качество Покупок</h3>
+                        <div class="grid grid-cols-2 gap-4 text-center items-center">
+                            <!-- ARPU -->
+                            <div>
+                                <div class="progress-ring mx-auto">
+                                    <svg class="w-full h-full"><circle class="text-black/20" stroke-width="8" stroke="currentColor" fill="transparent" r="46" cx="50" cy="50"/><circle class="text-[var(--color-accent-primary)]" stroke-width="8" stroke-linecap="round" stroke="currentColor" fill="transparent" r="46" cx="50" cy="50" style="stroke-dasharray: 289; stroke-dashoffset: calc(289 - (289 * {% widthratio financial_pulse_data.quality_metrics.avg_check 1000 100 %}) / 100);"/></svg>
+                                    <div class="value-text">{{ financial_pulse_data.quality_metrics.avg_check }}<span class="text-lg">₽</span></div>
+                                </div>
+                                <p class="text-xs text-gray-400 mt-2">Средний чек (ARPU)</p>
+                            </div>
+                            <!-- LTV -->
+                            <div>
+                                <div class="progress-ring mx-auto">
+                                    <svg class="w-full h-full"><circle class="text-black/20" stroke-width="8" stroke="currentColor" fill="transparent" r="46" cx="50" cy="50"/><circle class="text-green-400" stroke-width="8" stroke-linecap="round" stroke="currentColor" fill="transparent" r="46" cx="50" cy="50" style="stroke-dasharray: 289; stroke-dashoffset: calc(289 - (289 * {% widthratio financial_pulse_data.quality_metrics.ltv 2000 100 %}) / 100);"/></svg>
+                                    <div class="value-text">{{ financial_pulse_data.quality_metrics.ltv }}<span class="text-lg">₽</span></div>
+                                </div>
+                                <p class="text-xs text-gray-400 mt-2">LTV (доход с клиента)</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Сателлит 2: Источники Роста (РЕДИЗАЙН) -->
+                    <div class="satellite-widget">
+                        <h3 class="title">Источники Роста</h3>
+                        <div class="space-y-6">
+                            <!-- Новые vs Повторные -->
+                            <div>
+                                {% with total_payments=financial_pulse_data.growth_metrics.new_payments|add:financial_pulse_data.growth_metrics.returning_payments %}
+                                    <div class="stacked-bar">
+                                        <div class="stacked-bar-segment bg-blue-500" style="width: {% widthratio financial_pulse_data.growth_metrics.new_payments total_payments 100 %}%" title="Новые: {{ financial_pulse_data.growth_metrics.new_payments }}"></div>
+                                        <div class="stacked-bar-segment bg-green-500" style="width: {% widthratio financial_pulse_data.growth_metrics.returning_payments total_payments 100 %}%" title="Повторные: {{ financial_pulse_data.growth_metrics.returning_payments }}"></div>
+                                    </div>
+                                    <div class="flex justify-between text-xs mt-2">
+                                        <span class="font-semibold text-blue-400">Новые: {{ financial_pulse_data.growth_metrics.new_payments }}</span>
+                                        <span class="font-semibold text-green-400">Повторные: {{ financial_pulse_data.growth_metrics.returning_payments }}</span>
+                                    </div>
+                                {% endwith %}
+                            </div>
+                            <!-- Churn Rate -->
+                            <div class="text-center">
+                                <p class="text-5xl font-black text-red-400 text-glow">{{ financial_pulse_data.growth_metrics.churn_rate }}<span class="text-3xl">%</span></p>
+                                <p class="widget-label mt-1">Уровень оттока (общий)</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
                 <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
                     <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
                         <h3 class="font-bold text-white mb-4">Время до Первой Покупки</h3>
@@ -570,44 +714,71 @@
                         </div>
                     </div>
 
+                    <!-- КАЧЕСТВО КОГОРТ -->
                     <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
                         <h3 class="font-bold text-white mb-4">Качество Когорт</h3>
                         <div class="space-y-4">
-                            <!-- Сравнение конверсии -->
-                            <div>
-                                <p class="text-xs text-gray-400">Конверсия в 1-ю покупку</p>
-                                <div class="flex items-baseline gap-2">
-                                    <p class="text-2xl font-bold text-white">{{ cohort_quality_data.current_month.metrics.conversion_rate }}<span class="text-lg">%</span></p>
+
+                            <!-- Метрика 1: Конверсия -->
+                            <div class="cohort-metric flex items-center gap-4">
+                                <div class="metric-ring flex-shrink-0">
+                                    <svg class="w-full h-full">
+                                        <!-- Трек-фон -->
+                                        <circle class="text-black/20" stroke-width="6" stroke="currentColor" fill="transparent" r="28" cx="32" cy="32"/>
+                                        <!-- Прогресс предыдущего месяца (полупрозрачный) -->
+                                        <circle class="text-[var(--color-accent-primary)] opacity-30" stroke-width="6" stroke-linecap="round" stroke="currentColor" fill="transparent" r="28" cx="32" cy="32" style="stroke-dasharray: 176; stroke-dashoffset: calc(176 - (176 * {{ cohort_quality_data.previous_month.metrics.conversion_rate }}) / 10);"/>
+                                        <!-- Прогресс текущего месяца -->
+                                        <circle class="text-[var(--color-accent-primary)]" stroke-width="6" stroke-linecap="round" stroke="currentColor" fill="transparent" r="28" cx="32" cy="32" style="stroke-dasharray: 176; stroke-dashoffset: calc(176 - (176 * {{ cohort_quality_data.current_month.metrics.conversion_rate }}) / 10);"/>
+                                    </svg>
+                                    <div class="value-text">{{ cohort_quality_data.current_month.metrics.conversion_rate }}<span class="unit">%</span></div>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-white">Конверсия в 1-ю покупку</p>
                                     {% with change=cohort_quality_data.changes.conversion_rate %}
-                                    <span class="text-sm font-semibold {% if change >= 0 %}text-green-400{% else %}text-red-400{% endif %}">
-                                        ({% if change >= 0 %}+{% endif %}{{ change|floatformat:2 }}% vs {{ cohort_quality_data.previous_month.name }})
-                                    </span>
+                                    <p class="text-xs {% if change >= 0 %}text-green-400{% else %}text-red-400{% endif %}">
+                                        {% if change >= 0 %}+{% endif %}{{ change|floatformat:2 }}% vs {{ cohort_quality_data.previous_month.name }}
+                                    </p>
                                     {% endwith %}
                                 </div>
                             </div>
-                            <!-- Сравнение ARPU -->
-                            <div>
-                                <p class="text-xs text-gray-400">ARPU (ср. доход с платящего)</p>
-                                <div class="flex items-baseline gap-2">
-                                    <p class="text-2xl font-bold text-white">{{ cohort_quality_data.current_month.metrics.arppu }} <span class="text-lg text-gray-400">₽</span></p>
+
+                            <!-- Метрика 2: ARPU -->
+                            <div class="cohort-metric flex items-center gap-4">
+                                <div class="metric-ring flex-shrink-0">
+                                    <svg class="w-full h-full">
+                                        <circle class="text-black/20" stroke-width="6" stroke="currentColor" fill="transparent" r="28" cx="32" cy="32"/>
+                                        <circle class="text-green-400 opacity-30" stroke-width="6" stroke-linecap="round" stroke="currentColor" fill="transparent" r="28" cx="32" cy="32" style="stroke-dasharray: 176; stroke-dashoffset: calc(176 - (176 * {% widthratio cohort_quality_data.previous_month.metrics.arppu 1000 100 %}) / 100);"/>
+                                        <circle class="text-green-400" stroke-width="6" stroke-linecap="round" stroke="currentColor" fill="transparent" r="28" cx="32" cy="32" style="stroke-dasharray: 176; stroke-dashoffset: calc(176 - (176 * {% widthratio cohort_quality_data.current_month.metrics.arppu 1000 100 %}) / 100);"/>
+                                    </svg>
+                                    <div class="value-text">{{ cohort_quality_data.current_month.metrics.arppu }}<span class="unit">₽</span></div>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-white">ARPU (ср. доход)</p>
                                     {% with change=cohort_quality_data.changes.arppu %}
-                                    <span class="text-sm font-semibold {% if change >= 0 %}text-green-400{% else %}text-red-400{% endif %}">
-                                        ({% if change >= 0 %}+{% endif %}{{ change|floatformat:0 }} ₽ vs {{ cohort_quality_data.previous_month.name }})
-                                    </span>
+                                    <p class="text-xs {% if change >= 0 %}text-green-400{% else %}text-red-400{% endif %}">
+                                        {% if change >= 0 %}+{% endif %}{{ change|floatformat:0 }} ₽ vs {{ cohort_quality_data.previous_month.name }}
+                                    </p>
                                     {% endwith %}
                                 </div>
                             </div>
-                            <!-- Сравнение активации -->
-                            <div>
-                                <p class="text-xs text-gray-400">Ср. тестов на юзера</p>
-                                <div class="flex items-baseline gap-2">
-                                    <p class="text-2xl font-bold text-white">{{ cohort_quality_data.current_month.metrics.avg_tests }}</p>
-                                    {% with change=cohort_quality_data.changes.avg_tests %}
-                                    <span class="text-sm font-semibold {% if change >= 0 %}text-green-400{% else %}text-red-400{% endif %}">
-                                        ({% if change >= 0 %}+{% endif %}{{ change|floatformat:1 }} vs {{ cohort_quality_data.previous_month.name }})
-                                    </span>
-                                    {% endwith %}
+                            
+                            <!-- Метрика 3: Активация -->
+                            <div class="cohort-metric">
+                                <div class="flex justify-between items-baseline mb-1">
+                                    <p class="text-sm font-semibold text-white">Ср. тестов на юзера</p>
+                                    <p class="text-lg font-bold text-white">{{ cohort_quality_data.current_month.metrics.avg_tests }}</p>
                                 </div>
+                                <div class="w-full bg-black/30 rounded-full h-2 relative">
+                                    <!-- Прогресс предыдущего месяца (фон) -->
+                                    <div class="absolute top-0 left-0 h-2 bg-gray-600 rounded-full" style="width: {% widthratio cohort_quality_data.previous_month.metrics.avg_tests 5 100 %}%"></div>
+                                    <!-- Прогресс текущего месяца -->
+                                    <div class="absolute top-0 left-0 h-2 bg-[var(--color-accent-secondary)] rounded-full" style="width: {% widthratio cohort_quality_data.current_month.metrics.avg_tests 5 100 %}%"></div>
+                                </div>
+                                {% with change=cohort_quality_data.changes.avg_tests %}
+                                <p class="text-xs text-right mt-1 {% if change >= 0 %}text-green-400{% else %}text-red-400{% endif %}">
+                                    {% if change >= 0 %}+{% endif %}{{ change|floatformat:1 }} vs {{ cohort_quality_data.previous_month.name }}
+                                </p>
+                                {% endwith %}
                             </div>
                         </div>
                     </div>
@@ -2293,6 +2464,50 @@
                     responsive: true, maintainAspectRatio: false,
                     plugins: { legend: { display: false }, tooltip: { enabled: false } },
                     scales: { x: { display: false }, y: { display: false, beginAtZero: true } }
+                }
+            });
+        }
+
+        const chartBorderColor = 'rgba(97, 109, 240, 0.2)';
+
+        // --- ФИНАНСОВЫЙ ПУЛЬС ---
+        const revenuePulseCanvas = document.getElementById('revenue-pulse-chart');
+        if (revenuePulseCanvas) {
+            const chartData = {{ financial_pulse_chart_json|safe }};
+            const ctx = revenuePulseCanvas.getContext('2d');
+            
+            const gradient = ctx.createLinearGradient(0, 0, 0, 256);
+            gradient.addColorStop(0, 'rgba(59, 130, 246, 0.6)');
+            gradient.addColorStop(1, 'rgba(59, 130, 246, 0.1)');
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: chartData.labels,
+                    datasets: [{
+                        label: 'Поступления',
+                        data: chartData.data,
+                        borderColor: '#3B82F6',
+                        backgroundColor: gradient,
+                        fill: true,
+                        tension: 0.3,
+                        pointBackgroundColor: '#3B82F6',
+                        pointBorderColor: 'var(--color-bg)',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { ticks: { color: chartTextColor }, grid: { color: chartBorderColor } },
+                        y: { 
+                            ticks: { color: chartTextColor, callback: value => `${value/1000} тыс. ₽` }, 
+                            grid: { color: chartBorderColor }
+                        }
+                    }
                 }
             });
         }
