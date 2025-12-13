@@ -308,11 +308,11 @@
             console.log(periodText);
 
             if (periodText.includes('3 месяца')) {
-                ctaText = `Оплатить ${price} руб за 3 месяца`;
+                ctaText = `Оплатить ${price} руб на 3 месяца`;
             } else if (periodText.includes('Месяц')) {
-                ctaText = `Оплатить ${price} руб за месяц`;
+                ctaText = `Оплатить ${price} руб на месяц`;
             } else {
-                ctaText = `Оплатить ${price} руб за неделю`;
+                ctaText = `Оплатить ${price} руб на неделю`;
             }
             paymentButton.textContent = ctaText;
             paymentButton.disabled = false;

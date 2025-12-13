@@ -345,77 +345,6 @@
             </div>
         </section>
 
-        <!-- 3 ВАЖНЫХ ДАТЧИКА -->
-        <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-
-            <!-- 1. Воронка Активации -->
-            <div class="p-6 rounded-2xl border border-[var(--color-border)] bg-[#110c1f] space-y-4">
-                <span class="text-sm font-semibold text-gray-400">Воронка Активации (сегодня)</span>
-                <div class="space-y-3">
-                    <!-- Шаг 1: Регистрация -->
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-lg bg-blue-500/20 text-blue-400"><i class="fas fa-user-plus"></i></div>
-                        <div>
-                            <p class="font-bold text-white">{{ cyber_gauges.activation_funnel.registered }}</p>
-                            <p class="text-xs text-gray-500">Зарегистрировались</p>
-                        </div>
-                    </div>
-                    <!-- Шаг 2: Активация -->
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-lg bg-green-500/20 text-green-400"><i class="fas fa-magic"></i></div>
-                        <div>
-                            <p class="font-bold text-white">{{ cyber_gauges.activation_funnel.activated }}</p>
-                            <p class="text-xs text-gray-500">Создали 1-й тест</p>
-                        </div>
-                        <div class="ml-auto text-right">
-                            <p class="font-bold text-green-400">{{ cyber_gauges.activation_funnel.conversion_rate }}%</p>
-                            <p class="text-xs text-gray-500">Конверсия</p>
-                        </div>
-                    </div>
-                    <!-- Шаг 3: Пейвол (пока заглушка) -->
-                    <div class="flex items-center gap-3 opacity-50">
-                        <div class="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-lg bg-yellow-500/20 text-yellow-400"><i class="fas fa-credit-card"></i></div>
-                        <div>
-                            <p class="font-bold text-white">{{ cyber_gauges.activation_funnel.reached_paywall }}</p>
-                            <p class="text-xs text-gray-500">Увидели пейвол</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 2. Дневная Касса -->
-            <div class="p-6 rounded-2xl border border-[var(--color-border)] bg-[#110c1f] flex flex-col justify-between">
-                <div>
-                    <span class="text-sm font-semibold text-gray-400">Дневная Касса</span>
-                    <span class="ml-2 text-sm font-bold {% if cyber_gauges.daily_revenue.change >= 0 %}text-green-400{% else %}text-red-400{% endif %}">
-                        {% if cyber_gauges.daily_revenue.change >= 0 %}+{% endif %}{{ cyber_gauges.daily_revenue.change }}% vs вчера
-                    </span>
-                </div>
-                <div class="text-center my-4">
-                    <p class="text-5xl font-black text-white text-glow">{{ cyber_gauges.daily_revenue.today|floatformat:2 }} <span class="text-3xl text-green-400 opacity-80">₽</span></p>
-                </div>
-                <div class="w-full bg-black/20 rounded-full h-2">
-                    <div class="bg-gradient-to-r from-purple-500 to-green-400 h-2 rounded-full" style="width: {{ cyber_gauges.daily_revenue.goal_percent }}%"></div>
-                </div>
-            </div>
-
-            <!-- 3. Пульс Активности -->
-            <div class="p-6 rounded-2xl border border-[var(--color-border)] bg-[#110c1f] flex flex-col justify-between">
-                <div>
-                    <span class="text-sm font-semibold text-gray-400">Пульс Активности (тесты)</span>
-                    <span class="ml-2 text-sm font-bold {% if cyber_gauges.tests_pulse.change >= 0 %}text-green-400{% else %}text-red-400{% endif %}">
-                        {% if cyber_gauges.tests_pulse.change >= 0 %}+{% endif %}{{ cyber_gauges.tests_pulse.change }}% vs вчера
-                    </span>
-                </div>
-                <div class="my-4">
-                    <p class="text-5xl font-black text-white text-glow">{{ cyber_gauges.tests_pulse.today }}</p>
-                    <p class="text-xs text-gray-500 -mt-1">Создано сегодня</p>
-                </div>
-                <div class="h-12"><canvas id="tests-pulse-sparkline"></canvas></div>
-            </div>
-
-        </section>
-
         <!-- КЛЮЧЕВЫЕ ПОКАЗАТЕЛИ -->
         <section>
             <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -424,7 +353,7 @@
                     <h2 class="font-bold text-white text-lg border-b border-b-[var(--color-border)] pb-2">Показатели</h2>
                     
                     <div class="text-center">
-                        <p class="text-xs text-[var(--color-text-secondary)]">Всего реальных юзеров</p>
+                        <p class="text-xs text-[var(--color-text-secondary)]">Всего юзеров</p>
                         <p class="text-4xl font-bold gradient-text">{{ cockpit.total_real_users }}</p>
                     </div>
 
@@ -562,6 +491,189 @@
             </div>
         </section>
 
+        <!-- ВАЖНЫЕ ДАТЧИКИ -->
+        <section class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-6 mb-8">
+            <!-- 1. ВОРОНКА АКТИВАЦИИ -->
+            <div class="md:col-span-1 p-6 rounded-2xl border border-[var(--color-border)] bg-[#110c1f] space-y-4">
+                <h3 class="font-bold text-white">Воронка Активации сегодня</h3>
+                <div class="relative pt-8">
+                    <!-- Линия воронки -->
+                    <div class="absolute top-8 left-5 w-px h-full bg-[var(--color-border)]"></div>
+                    <!-- Шаг 1: Всего касаний -->
+                    <div class="relative flex items-start gap-4 mb-4">
+                        <div class="z-10 w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full bg-purple-500/20 text-purple-400 border-2 border-purple-500"><i class="fas fa-users"></i></div>
+                        <div>
+                            <p class="font-bold text-white text-lg">{{ cyber_gauges.activation_funnel.total_touches }} - Всего взаимодействий</p>
+                            <p class="text-xs text-gray-400">Нелегалы ({{ cyber_gauges.activation_funnel.illegals }}) + Регистрации ({{ cyber_gauges.activation_funnel.registrations }})</p>
+                        </div>
+                    </div>
+                    <!-- Шаг 2: Регистрации -->
+                    <div class="relative flex items-start gap-4 mb-4">
+                        <div class="z-10 w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full bg-blue-500/20 text-blue-400 border-2 border-blue-500"><i class="fas fa-user-plus"></i></div>
+                        <div>
+                            <p class="font-bold text-white text-lg">{{ cyber_gauges.activation_funnel.registrations }} - Регистраций</p>
+                            <p class="text-xs text-gray-400">Создали аккаунт</p>
+                        </div>
+                    </div>
+                    <!-- Шаг 3: Активация после реги -->
+                    <div class="relative flex items-start gap-4">
+                        <div class="z-10 w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full bg-green-500/20 text-green-400 border-2 border-green-500"><i class="fas fa-magic"></i></div>
+                        <div>
+                            <p class="font-bold text-white text-lg">{{ cyber_gauges.activation_funnel.activated_after_reg }} - Активировались</p>
+                            <p class="text-xs text-gray-400">Создали тест после регистрации</p>
+                        </div>
+                        <div class="ml-auto text-right">
+                            <p class="font-bold text-green-400 text-2xl">{{ cyber_gauges.activation_funnel.conversion_reg_to_activation }}%</p>
+                            <p class="text-xs text-gray-500">Конверсия</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <section class="bg-[var(--color-surface)] md:col-span-2 p-6 rounded-2xl border border-[var(--color-border)]">
+                <h3 class="font-bold text-white mb-4">Лента Активности (тесты за сегодня)</h3>
+                <div class="space-y-3">
+                    {% if live_feed_data %}
+                        {% for item in live_feed_data %}
+                            <a href="{% url 'preview_test' item.survey_id %}" target="_blank" 
+                            class="block p-3 bg-black/20 rounded-lg hover:bg-black/40 transition-colors">
+                                <div class="grid grid-cols-12 gap-4 items-center">
+                                    <!-- Время -->
+                                    <div class="col-span-2 sm:col-span-1 text-sm font-mono text-gray-400">
+                                        {{ item.time }}
+                                    </div>
+                                    <!-- Название -->
+                                    <div class="col-span-10 sm:col-span-8">
+                                        <p class="font-semibold text-white truncate">{{ item.title }}</p>
+                                    </div>
+                                    <!-- Статистика -->
+                                    <div class="col-span-12 sm:col-span-3 mt-2 sm:mt-0 flex justify-start sm:justify-end items-center gap-6 text-sm">
+                                        <div class="flex items-center gap-2 text-gray-400" title="Просмотры">
+                                            <i class="fas fa-eye"></i>
+                                            <span class="font-bold text-white">{{ item.views }}</span>
+                                        </div>
+                                        <div class="flex items-center gap-2 text-gray-400" title="Прохождения">
+                                            <i class="fas fa-tasks"></i>
+                                            <span class="font-bold text-white">{{ item.attempts }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </a>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-center text-gray-500 py-8">Сегодня еще не было создано ни одного теста.</p>
+                    {% endif %}
+                </div>
+            </section>
+
+            <!-- 1. НОВАЯ ВИЗУАЛЬНАЯ ВОРЕНКА АКТИВАЦИИ -->
+            <div class="md:col-span-2 p-6 rounded-2xl border border-[var(--color-border)] bg-[#110c1f]">
+                <h3 class="font-bold text-white mb-4">Воронка Прихода сегодня</h3>
+                <div class="h-64 sm:h-80"><canvas id="activation-funnel-chart"></canvas></div>
+            </div>
+
+            <!-- 2. НОВЫЙ ВИДЖЕТ "МОНЕТИЗАЦИЯ" -->
+            <div class="p-6 rounded-2xl border border-[var(--color-border)] bg-[#110c1f] flex flex-col justify-between">
+                <h3 class="font-bold text-white">Монетизация (сегодня)</h3>
+                <div class="text-center my-4">
+                    <p class="text-6xl font-black text-white text-glow">{{ cyber_gauges.monetization.revenue|floatformat:2 }} <span class="text-4xl text-green-400 opacity-80">₽</span></p>
+                </div>
+                <div class="space-y-4">
+                    <div>
+                        <p class="text-sm text-gray-400">Новых платящих клиентов</p>
+                        <p class="text-2xl font-bold text-white">{{ cyber_gauges.monetization.buyers }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-400">Конверсия в покупку</p>
+                        <p class="text-2xl font-bold text-white">{{ cyber_gauges.monetization.conversion_activation_to_payment }}%</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Пульс Активности -->
+            <div class="p-6 rounded-2xl border border-[var(--color-border)] bg-[#110c1f] flex flex-col justify-between">
+                <div>
+                    <span class="text-sm font-semibold text-gray-400">Пульс Активности (тесты)</span>
+                    <span class="ml-2 text-sm font-bold {% if cyber_gauges.tests_pulse.change >= 0 %}text-green-400{% else %}text-red-400{% endif %}">
+                        {% if cyber_gauges.tests_pulse.change >= 0 %}+{% endif %}{{ cyber_gauges.tests_pulse.change }}% vs вчера
+                    </span>
+                </div>
+                <div class="my-4">
+                    <p class="text-5xl font-black text-white text-glow">{{ cyber_gauges.tests_pulse.today }}</p>
+                    <p class="text-xs text-gray-500 -mt-1">Создано сегодня</p>
+                </div>
+                <div class="h-12"><canvas id="tests-pulse-sparkline"></canvas></div>
+            </div>
+
+            <!-- 3. НОВЫЙ ВИДЖЕТ "НЕДЕЛЬНЫЙ ПУЛЬС" -->
+            <div class="p-6 md:col-span-2 rounded-2xl border border-[var(--color-border)] bg-[#110c1f]">
+                <h3 class="font-bold text-white mb-4">Недельный Пульс</h3>
+                <div class="grid grid-cols-2 sm:grid-cols-2 gap-4 items-center">
+                    <!-- Левая часть: Цифры -->
+                    <div class="space-y-4">
+                        <!-- Новые пользователи -->
+                        <div>
+                            <p class="text-3xl font-bold text-white">{{ weekly_pulse_data.current.new_users }}</p>
+                            <p class="text-xs text-gray-400">Новых пользователей</p>
+                            <span class="text-xs font-semibold {{ weekly_pulse_data.changes.new_users.color }}">
+                                {{ weekly_pulse_data.changes.new_users.value }} vs прошлая неделя
+                            </span>
+                        </div>
+                        <!-- Выручка -->
+                        <div>
+                            <p class="text-3xl font-bold text-white">{{ weekly_pulse_data.current.revenue|floatformat:0 }} <span class="text-xl text-gray-500">₽</span></p>
+                            <p class="text-xs text-gray-400">Выручка</p>
+                            <span class="text-xs font-semibold {{ weekly_pulse_data.changes.revenue.color }}">
+                                {{ weekly_pulse_data.changes.revenue.value }} vs прошлая неделя
+                            </span>
+                        </div>
+                        <!-- Создано тестов -->
+                        <div>
+                            <p class="text-3xl font-bold text-white">{{ weekly_pulse_data.current.surveys }}</p>
+                            <p class="text-xs text-gray-400">Создано тестов</p>
+                            <span class="text-xs font-semibold {{ weekly_pulse_data.changes.surveys.color }}">
+                                {{ weekly_pulse_data.changes.surveys.value }} vs прошлая неделя
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Правая часть: Диаграмма-радар -->
+                    <div class="h-48 sm:h-full">
+                        <canvas id="weekly-pulse-radar-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <section class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <div class="lg:col-span-3 bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
+                <h3 class="font-bold text-white mb-4">Ежедневная Воронка Активации (30 дней)</h3>
+                <div class="h-96"><canvas id="daily-funnel-chart"></canvas></div>
+            </div>
+            <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] flex flex-col justify-around text-center">
+                <div>
+                    <p class="text-4xl font-black text-white">{{ daily_funnel_summary.total_touches }}</p>
+                    <p class="text-sm text-gray-400">Всего взаимодействий</p>
+                </div>
+                <div class="border-t border-[var(--color-border)] my-4"></div>
+                <div>
+                    <p class="text-4xl font-black text-white">{{ daily_funnel_summary.total_registrations }}</p>
+                    <p class="text-sm text-gray-400">Регистраций</p>
+                </div>
+                <div class="border-t border-[var(--color-border)] my-4"></div>
+                <div>
+                    <p class="text-4xl font-black text-white">{{ daily_funnel_summary.total_activations }}</p>
+                    <p class="text-sm text-gray-400">Активаций</p>
+                </div>
+                <div class="border-t border-[var(--color-border)] my-4"></div>
+                <div>
+                    <p class="text-4xl font-black text-green-400 text-glow">{{ daily_funnel_summary.total_conversion }}<span class="text-2xl">%</span></p>
+                    <p class="text-sm text-gray-400">Итоговая конверсия</p>
+                </div>
+            </div>
+        </section>
+
         <section class="space-y-8">
             <div class="grid grid-cols-1 gap-8">
                 <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
@@ -571,6 +683,71 @@
                     </div>
                 </div>
             </div>
+        </section>
+
+        <section class.="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Колонка 1: Топ по просмотрам -->
+            <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
+                <div class="flex items-center gap-3 mb-4">
+                    <i class="fas fa-eye text-xl text-[var(--color-accent-primary)]"></i>
+                    <h3 class="font-bold text-white">Топ по просмотрам (30 дней)</h3>
+                </div>
+                <div class="space-y-3">
+                    {% if hall_of_fame_data.top_by_views %}
+                        {% for item in hall_of_fame_data.top_by_views %}
+                            <a href="{% url 'preview_test' item.survey_id %}" target="_blank"
+                            class="block p-3 bg-black/20 rounded-lg hover:bg-black/40 transition-colors">
+                                <div class="flex justify-between items-start gap-4">
+                                    <div class="min-w-0">
+                                        <p class="font-semibold text-white truncate">{{ item.title }}</p>
+                                        <p class="text-xs text-gray-400 mt-1">
+                                            Автор: {{ item.author }} &bull; {{ item.created_at }}
+                                        </p>
+                                    </div>
+                                    <div class="flex-shrink-0 text-right">
+                                        <p class="text-lg font-bold text-[var(--color-accent-primary)]">{{ item.metric_value }}</p>
+                                        <p class="text-xs text-gray-500 -mt-1">просмотров</p>
+                                    </div>
+                                </div>
+                            </a>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-center text-gray-500 py-8">Нет данных.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Колонка 2: Топ по прохождениям -->
+            <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] mt-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <i class="fas fa-tasks text-xl text-[var(--color-accent-secondary)]"></i>
+                    <h3 class="font-bold text-white">Топ по прохождениям (30 дней)</h3>
+                </div>
+                <div class="space-y-3">
+                    {% if hall_of_fame_data.top_by_attempts %}
+                        {% for item in hall_of_fame_data.top_by_attempts %}
+                            <a href="{% url 'preview_test' item.survey_id %}" target="_blank"
+                            class="block p-3 bg-black/20 rounded-lg hover:bg-black/40 transition-colors">
+                                <div class="flex justify-between items-start gap-4">
+                                    <div class="min-w-0">
+                                        <p class="font-semibold text-white truncate">{{ item.title }}</p>
+                                        <p class="text-xs text-gray-400 mt-1">
+                                            Автор: {{ item.author }} &bull; {{ item.created_at }}
+                                        </p>
+                                    </div>
+                                    <div class="flex-shrink-0 text-right">
+                                        <p class="text-lg font-bold text-[var(--color-accent-secondary)]">{{ item.metric_value }}</p>
+                                        <p class="text-xs text-gray-500 -mt-1">прохождений</p>
+                                    </div>
+                                </div>
+                            </a>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-center text-gray-500 py-8">Нет данных.</p>
+                    {% endif %}
+                </div>
+            </div>
+            
         </section>
 
         <section class="space-y-8">
@@ -1173,6 +1350,7 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-matrix@2.0.1/dist/chartjs-chart-matrix.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 
     <script>
         $(document).ready(function() {
@@ -2511,6 +2689,211 @@
                 }
             });
         }
+
+        const radarCanvas = document.getElementById('weekly-pulse-radar-chart');
+        if (radarCanvas) {
+            const chartData = {{ weekly_pulse_chart_json|safe }};
+
+            new Chart(radarCanvas, {
+                type: 'radar',
+                data: {
+                    labels: chartData.labels,
+                    datasets: [
+                        {
+                            label: 'Прошлая неделя',
+                            data: chartData.previous,
+                            borderColor: 'rgba(97, 109, 240, 0.4)',
+                            backgroundColor: 'rgba(97, 109, 240, 0.1)',
+                            pointBackgroundColor: 'rgba(97, 109, 240, 0.4)',
+                        },
+                        {
+                            label: 'Текущая неделя',
+                            data: chartData.current,
+                            borderColor: 'rgba(121, 239, 102, 0.8)',
+                            backgroundColor: 'rgba(121, 239, 102, 0.2)',
+                            pointBackgroundColor: 'rgba(121, 239, 102, 0.8)',
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: chartTextColor }
+                        }
+                    },
+                    scales: {
+                        r: {
+                            grid: { color: chartBorderColor },
+                            angleLines: { color: chartBorderColor },
+                            pointLabels: { color: chartTextColor, font: { weight: 'bold' } },
+                            ticks: {
+                                display: false 
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // --- ВИЗУАЛЬНАЯ ВОРОНКА АКТИВАЦИИ (1) ---
+        const funnelCanvas = document.getElementById('activation-funnel-chart');
+        if (funnelCanvas) {
+            const funnelData = {{ cyber_gauges.activation_funnel_chart|safe }};
+            
+            const percentages = [];
+            const totalTouches = funnelData.values[0] || 0;
+            const registrations = funnelData.values[2] || 0;
+
+            percentages.push(100.0);
+            percentages.push(totalTouches > 0 ? (funnelData.values[1] / totalTouches * 100).toFixed(1) : 0.0); // Нелегалы от Всего
+            percentages.push(totalTouches > 0 ? (funnelData.values[2] / totalTouches * 100).toFixed(1) : 0.0); // Регистрации от Всего
+            percentages.push(registrations > 0 ? (funnelData.values[3] / registrations * 100).toFixed(1) : 0.0); // Активации от Регистраций
+
+            const dataLabelsPlugin = {
+                id: 'customDataLabels',
+                afterDatasetsDraw(chart, args, options) {
+                    const { ctx } = chart;
+                    ctx.save();
+                    ctx.font = 'bold 12px Inter';
+                    ctx.fillStyle = 'white';
+                    
+                    chart.getDatasetMeta(0).data.forEach((datapoint, index) => {
+                        const value = chart.data.datasets[0].data[index];
+                        const percentage = percentages[index];
+                        
+                        let textToDraw = `${value}`;
+
+                        if (index > 0) {
+                            textToDraw += `\n(${percentage}%)`;
+                        }
+
+                        const lines = textToDraw.split('\n');
+                        let y = datapoint.y;
+                        if (lines.length > 1) { y = datapoint.y - 7; }
+
+                        ctx.textAlign = 'left';
+                        ctx.textBaseline = 'middle';
+                        lines.forEach((line, i) => {
+                            ctx.fillText(line, datapoint.x + 8, y + (i * 14));
+                        });
+                    });
+                    ctx.restore();
+                }
+            };
+
+            new Chart(funnelCanvas, {
+                type: 'bar',
+                data: {
+                    labels: funnelData.labels,
+                    datasets: [{
+                        data: funnelData.values,
+                        backgroundColor: [
+                            'rgba(139, 92, 246, 0.7)',
+                            'rgba(59, 130, 246, 0.7)',
+                            'rgba(16, 185, 129, 0.7)',  // Зеленый
+                            'rgba(234, 179, 8, 0.7)'    // Желтый
+                        ],
+                    }]
+                },
+                plugins: [dataLabelsPlugin],
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { enabled: false },
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: chartBorderColor },
+                            ticks: { color: chartTextColor, precision: 0 },
+                        },
+                        y: {
+                            grid: { display: false },
+                            ticks: { color: chartTextColor, font: { weight: 'bold' } },
+                        }
+                    }
+                }
+            });
+        }
+
+        // --- ЕЖЕДНЕВНАЯ КАРТА ВОРОНКИ ---
+        const dailyFunnelCanvas = document.getElementById('daily-funnel-chart');
+        if (dailyFunnelCanvas) {
+            const chartData = {{ daily_funnel_chart_json|safe }};
+
+            new Chart(dailyFunnelCanvas, {
+                type: 'bar',
+                data: {
+                    labels: chartData.labels,
+                    datasets: [
+                        {
+                            label: 'Всего взаимодействий',
+                            data: chartData.total_touches,
+                            backgroundColor: 'rgba(97, 109, 240, 0.4)',
+                            borderColor: 'rgba(97, 109, 240, 1)',
+                            stack: 'background',
+                            order: 4
+                        },
+                        {
+                            label: 'Нелегалы',
+                            data: chartData.illegals,
+                            backgroundColor: '#3B82F6',
+                            stack: 'bars',
+                            order: 3
+                        },
+                        {
+                            label: 'Регистрации',
+                            data: chartData.registrations,
+                            backgroundColor: '#22C55E',
+                            stack: 'bars',
+                            order: 2
+                        },
+                        {
+                            label: 'Активировались',
+                            data: chartData.activations,
+                            type: 'line',
+                            borderColor: '#F59E0B',
+                            backgroundColor: 'rgba(245, 158, 11, 0.2)',
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 3,
+                            pointBackgroundColor: '#F59E0B',
+                            pointBorderColor: '#0F0818',
+                            pointBorderWidth: 1.5,
+                            borderWidth: 3,
+                            order: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: chartTextColor } },
+                        tooltip: { mode: 'index', intersect: false }
+                    },
+                    scales: {
+                        x: {
+                            stacked: true,
+                            grid: { color: chartBorderColor },
+                            ticks: { color: chartTextColor }
+                        },
+                        y: {
+                            stacked: false,
+                            grid: { color: chartBorderColor },
+                            ticks: { color: chartTextColor, precision: 0 },
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
     });
     </script>
 </body>

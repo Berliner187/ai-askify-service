@@ -2024,8 +2024,10 @@ def preview_test(request, survey_id):
         client_ip = get_client_ip(request)
         tracer_l.info(f'{request.user.username} {client_ip} --- preview {survey.title}')
 
+        date_create = survey.created_at.strftime('%d.%m.%Y')
+
         json_response = {
-            'page_title': f'{survey.title} ({survey.created_at}) | Генератор тестов с ИИ | Создать тест в Летучке',
+            'page_title': f'{survey.title} ({date_create}) | Генератор тестов с ИИ | Создать тест в Летучке',
             'title': survey.title,
             'survey_id': survey_id,
             'questions': questions,
@@ -2033,7 +2035,7 @@ def preview_test(request, survey_id):
             'username': request.user.username if request.user.is_authenticated else 0,
             'model_name': f"{'Сгенерировано ' + survey.model_name.upper().replace('O', 'o') if survey.model_name else 'Сгенерировано в Летучке'}",
             'view_count': view_count,
-            'date_create': survey.created_at.strftime('%d.%m.%Y'),
+            'date_create': date_create,
             'is_creator': is_creator,
             'show_answers': survey.show_answers,
             'can_generate': can_generate,
@@ -2248,7 +2250,9 @@ def export_results_to_excel(request, survey_id):
 
     workbook = Workbook()
     sheet = workbook.active
-    sheet.title = f'Результаты - {survey.title[:20]}'
+
+    sanitized = re.sub(r'[:\\/?*\[\]]', '', survey.title[:20])
+    sheet.title = f'Результаты - {sanitized}'
 
     questions_list = survey.get_questions()
     question_headers = [q['question'] for q in questions_list]
@@ -2511,7 +2515,33 @@ def register(request):
             if not is_allowed_email(form.cleaned_data.get('email')):
                 form.add_error('email', 'Регистрация с этого почтового домена не разрешена.')
             else:
+                x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+                if x_forwarded_for:
+                    ip = x_forwarded_for.split(',')[0]
+                else:
+                    ip = request.META.get('REMOTE_ADDR')
+
+                # Рега временного юзера
+                temporary_user = AuthUser.objects.annotate(
+                    username_len=Length('username')
+                ).filter(
+                    hash_user_id=ip,
+                    username_len__gt=20
+                ).first()
+
                 user = form.save()
+
+                if temporary_user:
+                    user = temporary_user
+
+                    email = request.POST.get('email', '').strip()
+                    password = request.POST.get('password1')
+
+                    user.username = email.split('@')[0]
+                    user.email = email
+                    user.set_password(password)
+                    user.hash_user_id = None
+                    user.save()
 
                 tracer_l.info(f'USER. NEW USER {user.username}')
 
@@ -2558,7 +2588,6 @@ def quick_register_api(request):
     ).first()
 
     if temporary_user:
-        tracer_l.info(f'API REGISTRATION [ OK ]')
         user = temporary_user
 
         if AuthUser.objects.exclude(pk=user.pk).filter(email=email).exists():
@@ -2578,6 +2607,7 @@ def quick_register_api(request):
                 'billing_cycle': billing_cycle, 'discount': 0.00
             }
         )
+        tracer_l.info(f'API REGISTRATION [ OK ]')
 
     else:
         form = CustomUserCreationForm(request.POST)
@@ -3703,65 +3733,111 @@ def get_daily_creation_dynamics_data(start_date, end_date):
 
 def get_cyber_gauges_data():
     """
-    Собирает данные для новых "киберпанк" виджетов.
+    (ПОЛНАЯ ВЕРСИЯ БЕЗ FOREIGNKEY И БЕЗ ОШИБОК)
+    Считает воронку, монетизацию и пульс активности.
     """
     today = timezone.now().date()
-    yesterday = today - timedelta(days=1)
 
-    # --- 1. Данные для "Воронки Активации" (с расчетом конверсии) ---
-    new_users_today = AuthUser.objects.filter(date_joined__date=today, is_staff=False)
-    new_users_today_count = new_users_today.count()
+    # --- ШАГ 1: Собираем "сырые" события за сегодня ---
+    all_creators_qs = Survey.objects.filter(created_at__date=today)
+    all_creators_staff_ids = set(all_creators_qs.values_list('id_staff', flat=True))
+    all_creators_count = len(all_creators_staff_ids)
 
-    activated_today_count = new_users_today.filter(
-        id_staff__in=Survey.objects.filter(created_at__date=today).values('id_staff')
-    ).distinct().count()
+    # 2. Все, кто зарегистрировался сегодня ("легалы")
+    registrations_qs = AuthUser.objects.annotate(
+        username_len=Length('username')
+    ).filter(
+        date_joined__date=today,
+        username_len__lt=40,
+        is_staff=False
+    )
+    registrations_staff_ids = set(registrations_qs.values_list('id_staff', flat=True))
+    registrations_count = len(registrations_staff_ids)
 
-    reached_paywall_count = activated_today_count
+    # 3. "Нелегалы" - это те, кто создавал, но не входит в список зареганных
+    # (технически это не совсем так, но для воронки это лучшая прокси-метрика)
+    illegal_creators_staff_ids = all_creators_staff_ids - registrations_staff_ids
+    illegal_creators_count = len(illegal_creators_staff_ids)
 
-    # --- СЧИТАЕМ КОНВЕРСИЮ ПРЯМО ЗДЕСЬ ---
-    conversion_rate = (activated_today_count / new_users_today_count * 100) if new_users_today_count > 0 else 0
+    # 4. Общее число взаимодействий
+    total_touches = registrations_count + illegal_creators_count
+
+    # OLD
+    all_creators_today_qs = Survey.objects.filter(created_at__date=today)
+    all_creators_staff_ids = list(all_creators_today_qs.values_list('id_staff', flat=True))
+
+    if not all_creators_staff_ids:
+        illegal_creators_count = 0
+        real_user_creators_staff_ids = []
+    else:
+        real_users_who_created_today = AuthUser.objects.annotate(
+            username_len=Length('username')
+        ).filter(
+            username_len__lt=40,
+            id_staff__in=all_creators_staff_ids
+        )
+        real_user_creators_staff_ids = list(real_users_who_created_today.values_list('id_staff', flat=True))
+        illegal_creators_count = len(all_creators_staff_ids) - len(real_user_creators_staff_ids)
+
+    registrations_today_qs = AuthUser.objects.annotate(
+        username_len=Length('username')
+    ).filter(
+        date_joined__date=today,
+        username_len__lt=40,
+        is_staff=False
+    )
+    registrations_today_count = registrations_today_qs.count()
+
+    activated_after_reg_count = len(
+        set(registrations_today_qs.values_list('id_staff', flat=True)) & set(real_user_creators_staff_ids)
+    )
+
+    # --- ШАГ 2: Собираем воронку ---
+    total_touches = registrations_today_count + illegal_creators_count
+    conversion_reg_to_activation = (
+                activated_after_reg_count / illegal_creators_count * 100) if illegal_creators_count > 0 else 0
 
     activation_funnel = {
-        'registered': new_users_today_count,
-        'activated': activated_today_count,
-        'reached_paywall': reached_paywall_count,
-        'conversion_rate': round(conversion_rate, 1)
+        'total_touches': total_touches,
+        'registrations': registrations_today_count,
+        'illegals': illegal_creators_count,
+        'activated_after_reg': activated_after_reg_count,
+        'conversion_reg_to_activation': round(conversion_reg_to_activation, 1),
     }
 
-    # --- 2. Данные для "Дневной Кассы" ---
-    revenue_today_raw = (
-                Payment.objects.filter(created_at__date=today, status='completed').aggregate(sum=Sum('amount'))[
-                    'sum'] or 0)
-    revenue_yesterday_raw = (
-                Payment.objects.filter(created_at__date=yesterday, status='completed').aggregate(sum=Sum('amount'))[
-                    'sum'] or 0)
+    # --- Данные для чарта ---
+    funnel_data = {
+        'labels': ['Всего взаимодействий', 'Нелегалы', 'Регистрации', 'Активировались'],
+        'values': [
+            total_touches,
+            illegal_creators_count,
+            registrations_today_count,
+            activated_after_reg_count,
+        ],
+    }
 
-    revenue_today = float(revenue_today_raw / 100)
-    revenue_yesterday = float(revenue_yesterday_raw / 100)
+    # --- Данные для виджета "Монетизация" ---
+    payments_today = Payment.objects.filter(created_at__date=today, status='completed')
+    revenue_today = (payments_today.aggregate(sum=Sum('amount'))['sum'] or 0) / 100
+    buyers_today_count = payments_today.values('staff_id').distinct().count()
 
-    revenue_change = 0
-    if revenue_yesterday > 0:
-        revenue_change = round((revenue_today - revenue_yesterday) / revenue_yesterday * 100)
+    total_activated_today = activated_after_reg_count + illegal_creators_count
+    conversion_activation_to_payment = (
+                buyers_today_count / total_activated_today * 100) if total_activated_today > 0 else 0
 
-    # --- СЧИТАЕМ ПРОГРЕСС ДО ЦЕЛИ ПРЯМО ЗДЕСЬ ---
-    DAILY_REVENUE_GOAL = 5000  # Условная цель в 5000р/день
-    revenue_goal_percent = (revenue_today / DAILY_REVENUE_GOAL * 100) if DAILY_REVENUE_GOAL > 0 else 0
-
-    daily_revenue = {
-        'today': revenue_today,
-        'change': revenue_change,
-        'goal_percent': min(round(revenue_goal_percent), 100)  # <-- ДОБАВИЛИ ГОТОВЫЙ ПРОЦЕНТ
+    monetization_metrics = {
+        'revenue': revenue_today,
+        'buyers': buyers_today_count,
+        'conversion_activation_to_payment': round(conversion_activation_to_payment, 2),
     }
 
     # --- 3. Данные для "Пульса Активности" (Тесты) ---
-    tests_today = Survey.objects.filter(created_at__date=today).count()
+    yesterday = today - timedelta(days=1)
+    tests_today = all_creators_today_qs.count()
     tests_yesterday = Survey.objects.filter(created_at__date=yesterday).count()
 
-    tests_change = 0
-    if tests_yesterday > 0:
-        tests_change = round((tests_today - tests_yesterday) / tests_yesterday * 100)
+    tests_change = round((tests_today - tests_yesterday) / tests_yesterday * 100) if tests_yesterday > 0 else 0
 
-    # Микро-график активности за последние часы
     last_12_hours = timezone.now() - timedelta(hours=12)
     hourly_activity = Survey.objects.filter(
         created_at__gte=last_12_hours
@@ -3770,25 +3846,9 @@ def get_cyber_gauges_data():
     ).values('hour').annotate(count=Count('id')).order_by('hour')
 
     activity_sparkline = [0] * 12
+    now_hour = timezone.now().hour
     for item in hourly_activity:
-        # Определяем, сколько часов назад это было
-        hour_diff = (timezone.now().hour - item['hour'].hour + 24) % 24
-        if 0 <= hour_diff < 12:
-            activity_sparkline[11 - hour_diff] = item['count']
-
-    tests_today = Survey.objects.filter(created_at__date=today).count()
-    tests_yesterday = Survey.objects.filter(created_at__date=yesterday).count()
-    tests_change = 0
-    if tests_yesterday > 0:
-        tests_change = round((tests_today - tests_yesterday) / tests_yesterday * 100)
-
-    last_12_hours = timezone.now() - timedelta(hours=12)
-    hourly_activity = Survey.objects.filter(
-        created_at__gte=last_12_hours
-    ).annotate(hour=TruncHour('created_at')).values('hour').annotate(count=Count('id')).order_by('hour')
-    activity_sparkline = [0] * 12
-    for item in hourly_activity:
-        hour_diff = (timezone.now().hour - item['hour'].hour + 24) % 24
+        hour_diff = (now_hour - item['hour'].hour + 24) % 24
         if 0 <= hour_diff < 12:
             activity_sparkline[11 - hour_diff] = item['count']
 
@@ -3800,8 +3860,243 @@ def get_cyber_gauges_data():
 
     return {
         'activation_funnel': activation_funnel,
-        'daily_revenue': daily_revenue,
+        'monetization': monetization_metrics,
         'tests_pulse': tests_pulse,
+        'activation_funnel_chart': funnel_data,
+    }
+
+
+def get_daily_funnel_trends_data():
+    """
+    (ВЕРСИЯ БЕЗ FOREIGNKEY, С ИТОГАМИ)
+    """
+    today = timezone.now().date()
+    start_period = today - timedelta(days=29)
+
+    # --- Собираем события за весь период ---
+
+    # 1. Регистрации по дням
+    registrations_by_day_qs = AuthUser.objects.annotate(
+        username_len=Length('username')
+    ).filter(
+        date_joined__date__gte=start_period, username_len__lt=40, is_staff=False
+    ).annotate(day=TruncDay('date_joined')).values('day').annotate(count=Count('id'))
+
+    # 2. Создания тестов по дням
+    creations_by_day_qs = Survey.objects.filter(
+        created_at__date__gte=start_period
+    ).annotate(day=TruncDay('created_at')).values('day', 'id_staff')
+
+    # --- Собираем данные в словари ---
+    registrations_map = {item['day'].date(): item['count'] for item in registrations_by_day_qs}
+
+    # Собираем множества id_staff для каждого дня
+    creations_map = defaultdict(set)
+    for item in creations_by_day_qs:
+        creations_map[item['day'].date()].add(item['id_staff'])
+
+    registrations_staff_ids_map = defaultdict(set)
+    for user in AuthUser.objects.filter(date_joined__date__gte=start_period, is_staff=False).annotate(
+            len=Length('username')).filter(len__lt=40):
+        registrations_staff_ids_map[user.date_joined.date()].add(user.id_staff)
+
+    # --- Проходим по дням и собираем данные для графика ---
+    labels = []
+    total_touches_data, illegals_data, registrations_data, activations_data = [], [], [], []
+
+    for i in range(30):
+        current_day = start_period + timedelta(days=i)
+        labels.append(current_day.strftime('%d.%m'))
+
+        regs_today = registrations_map.get(current_day, 0)
+
+        creators_today_staff_ids = creations_map.get(current_day, set())
+        regs_today_staff_ids = registrations_staff_ids_map.get(current_day, set())
+
+        illegals_today = len(creators_today_staff_ids - regs_today_staff_ids)
+        touches_today = regs_today + illegals_today
+        activations_today = len(regs_today_staff_ids & creators_today_staff_ids)
+
+        total_touches_data.append(touches_today)
+        illegals_data.append(illegals_today)
+        registrations_data.append(regs_today)
+        activations_data.append(activations_today)
+
+    # --- Считаем итоговые цифры за период ---
+    total_registrations = sum(registrations_data)
+    total_activations = sum(activations_data)
+    total_conversion = (total_activations / total_registrations * 100) if total_registrations > 0 else 0
+
+    return {
+        'chart': {
+            'labels': labels,
+            'total_touches': total_touches_data,
+            'illegals': illegals_data,
+            'registrations': registrations_data,
+            'activations': activations_data,
+        },
+        'summary': {
+            'total_touches': sum(total_touches_data),
+            'total_registrations': total_registrations,
+            'total_activations': total_activations,
+            'total_conversion': round(total_conversion, 1)
+        }
+    }
+
+
+def get_weekly_pulse_data():
+    """
+    Собирает и сравнивает ключевые метрики за последние 7 дней с предыдущими 7 днями.
+    """
+    today = timezone.now().date()
+    current_period_start = today - timedelta(days=6)
+    current_period_end = today
+    previous_period_start = current_period_start - timedelta(days=7)
+    previous_period_end = current_period_start - timedelta(days=1)
+
+    # Предыдущая неделя (7 дней до этого)
+    previous_period_start = current_period_start - timedelta(days=7)
+    previous_period_end = current_period_start - timedelta(days=1)
+
+    # --- Функция-помощник для сбора метрик ---
+    def calculate_metrics_for_period(start_date, end_date):
+        # "Чистые" пользователи, зареганные в этот период
+        real_users_qs = AuthUser.objects.annotate(username_len=Length('username')).filter(
+            username_len__lt=40, is_staff=False, date_joined__date__range=(start_date, end_date)
+        )
+        new_users_count = real_users_qs.count()
+
+        # Платежи в этот период
+        payments_qs = Payment.objects.filter(status='completed', created_at__date__range=(start_date, end_date))
+        revenue = (payments_qs.aggregate(sum=Sum('amount'))['sum'] or 0) / 100
+
+        # Созданные тесты в этот период (только "чистыми" юзерами)
+        real_user_staff_ids_ever = AuthUser.objects.annotate(username_len=Length('username')).filter(
+            username_len__lt=40, is_staff=False
+        ).values_list('id_staff', flat=True)
+
+        surveys_count = Survey.objects.filter(
+            created_at__date__range=(start_date, end_date),
+            id_staff__in=real_user_staff_ids_ever
+        ).count()
+
+        return {
+            'new_users': new_users_count,
+            'revenue': float(revenue),
+            'surveys': surveys_count,
+        }
+
+    # --- Считаем для обоих периодов ---
+    current_metrics = calculate_metrics_for_period(current_period_start, current_period_end)
+    previous_metrics = calculate_metrics_for_period(previous_period_start, previous_period_end)
+
+    # --- СЧИТАЕМ РАЗНИЦУ И СРАЗУ ФОРМАТИРУЕМ СТРОКИ ---
+    def format_change(current, previous, is_currency=False):
+        change = current - previous
+        sign = '+' if change >= 0 else ''
+        color = 'text-green-400' if change >= 0 else 'text-red-400'
+
+        if is_currency:
+            formatted_change = f"{sign}{change:,.0f} ₽".replace(',', ' ')
+        else:
+            formatted_change = f"{sign}{change}"
+
+        return {
+            'value': formatted_change,
+            'color': color
+        }
+
+    changes = {
+        'new_users': format_change(current_metrics['new_users'], previous_metrics['new_users']),
+        'revenue': format_change(current_metrics['revenue'], previous_metrics['revenue'], is_currency=True),
+        'surveys': format_change(current_metrics['surveys'], previous_metrics['surveys']),
+    }
+
+    # --- Готовим данные для Chart.js (Radar Chart) ---
+    chart_data = {
+        'labels': ['Новые юзеры', 'Выручка (в тыс. ₽)', 'Создано тестов'],
+        'current': [
+            current_metrics['new_users'],
+            current_metrics['revenue'] / 1000,
+            current_metrics['surveys'],
+        ],
+        'previous': [
+            previous_metrics['new_users'],
+            previous_metrics['revenue'] / 1000,
+            previous_metrics['surveys'],
+        ]
+    }
+
+    return {
+        'current': current_metrics,
+        'changes': changes,
+        'chart_data': chart_data,
+    }
+
+
+def get_live_feed_data():
+    """
+    Собирает данные для виджета "Лента Активности" (последние 16 тестов за сегодня).
+    """
+    today = timezone.now().date()
+
+    recent_surveys = Survey.objects.filter(
+        created_at__date=today
+    ).annotate(
+        attempts_count=Count('attempts')
+    ).order_by('-created_at')[:16]
+
+    feed_items = []
+    for survey in recent_surveys:
+        feed_items.append({
+            'title': survey.title,
+            'survey_id': survey.survey_id,
+            'time': survey.created_at.strftime('%H:%M'),
+            'views': survey.view_count,
+            'attempts': survey.attempts_count,
+        })
+
+    return feed_items
+
+
+def get_hall_of_fame_data():
+    """
+    Собирает данные для виджета с топом тестов (топ-12 тестов за 30 дней).
+    """
+    thirty_days_ago = timezone.now() - timedelta(days=30)
+    top_by_views = Survey.objects.filter(
+        created_at__gte=thirty_days_ago,
+        view_count__gt=0
+    ).order_by('-view_count')[:12]
+
+    top_by_attempts = Survey.objects.filter(
+        created_at__gte=thirty_days_ago
+    ).annotate(
+        attempts_count=Count('attempts')
+    ).filter(
+        attempts_count__gt=0
+    ).order_by('-attempts_count')[:12]
+
+    def format_survey_list(queryset, order_metric):
+        survey_list = []
+        staff_ids = [s.id_staff for s in queryset]
+        users_map = {user.id_staff: user.username for user in AuthUser.objects.filter(id_staff__in=staff_ids)}
+
+        for survey in queryset:
+            metric_value = getattr(survey, order_metric, 0)
+
+            survey_list.append({
+                'title': survey.title,
+                'survey_id': survey.survey_id,
+                'author': users_map.get(survey.id_staff, "Аноним") if len(users_map.get(survey.id_staff, "Аноним")) < 32 else 'Аноним',
+                'created_at': survey.created_at.strftime('%d.%m.%Y'),
+                'metric_value': metric_value,
+            })
+        return survey_list
+
+    return {
+        'top_by_views': format_survey_list(top_by_views, 'view_count'),
+        'top_by_attempts': format_survey_list(top_by_attempts, 'attempts_count'),
     }
 
 
@@ -4617,10 +4912,22 @@ def admin_stats(request):
     cohort_quality_data = get_cohort_quality_data()
     financial_pulse_data = get_financial_pulse_data(start_date - timedelta(days=60), end_date)
 
+    weekly_pulse_data = get_weekly_pulse_data()
+    daily_funnel_data = get_daily_funnel_trends_data()
+
+    live_feed_data = get_live_feed_data()
+    hall_of_fame_data = get_hall_of_fame_data()
+
     context = {
         "cockpit": cockpit_metrics,
         "cyber_gauges": cyber_gauges_data,
         "cyber_tests_pulse_json": json.dumps(cyber_gauges_data['tests_pulse']['sparkline']),
+        "weekly_pulse_data": weekly_pulse_data,
+        "weekly_pulse_chart_json": json.dumps(weekly_pulse_data['chart_data']),
+        "daily_funnel_chart_json": json.dumps(daily_funnel_data['chart']),
+        "daily_funnel_summary": daily_funnel_data['summary'],
+        "live_feed_data": live_feed_data,
+        "hall_of_fame_data": hall_of_fame_data,
         "financial_briefing": financial_briefing_data,
         "daily_revenue_data": daily_revenue_data,
         "arpu_dynamics_data": arpu_dynamics_data,

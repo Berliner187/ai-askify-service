@@ -1443,7 +1443,7 @@ hr {
     position: relative;
     z-index: 1;
     border-radius: var(--border-radius);
-    padding: 24px 32px;
+    padding: 16px 24px;
 }
 .plan-premium .plan-title {
     background: linear-gradient(45deg, #FFDF78, #B8860B);
@@ -1802,7 +1802,7 @@ hr {
 
 @media (max-width: 480px) {
     .plan-highlights-grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(1, 1fr);
     }
 }
 

@@ -50,29 +50,6 @@
         margin: 0; padding: 0;
     }
 
-    #watermarkContent {
-        position: absolute;
-        top: 0; left: 0;
-        width: 100%; height: 100%;
-        z-index: -1;
-    }
-    
-    .wm-text {
-        position: absolute;
-        top: 35%;
-        left: -25%;
-        width: 150%;
-        text-align: center;
-        transform: rotate(35deg);
-        transform-origin: 50% 50%;
-        font-family: 'Unbounded', sans-serif;
-        font-weight: bold;
-        font-size: 26pt;
-        color: rgba(97, 109, 240, 0.08);
-        line-height: 1.8;
-        text-transform: uppercase;
-    }
-
     h1 { font-family: 'Unbounded'; font-size: 20pt; color: #0F0818; margin: 0 0 6pt 0; line-height: 1.1; }
     .meta-data { font-family: 'Manrope'; font-size: 8pt; color: #666; margin-bottom: 12pt; text-transform: uppercase; letter-spacing: 1px; font-weight: bold; }
     .divider { border-bottom: 2px solid #000; margin-bottom: 20pt; width: 100%; }
@@ -94,17 +71,43 @@
     .td-center { text-align: center; width: 20%; }
     .td-right { text-align: right; width: 30%; }
     .brand { color: #616DF0; font-weight: bold; text-decoration: none; }
+
+    #watermark {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -1000;
+        opacity: 0.08;
+        
+        -pdf-transform: rotate(35deg); 
+        -pdf-transform-origin: 50% 50%;
+    }
+
+    .wm-text {
+        text-align: center;
+        font-family: 'Unbounded', sans-serif;
+        font-weight: bold;
+        font-size: 26pt;
+        color: #616DF0;
+        line-height: 2.5;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
 </style>
 </head>
 <body>
 
     <div id="watermarkContent">
         {% if watermark %}
-        <div class="wm-text">
-            Letychka.ru &nbsp;•&nbsp; Free Version &nbsp;•&nbsp; Letychka.ru<br>
-            <span style="font-size: 36pt; opacity: 0.15;">Demo Mode</span><br>
-            Не для коммерческого использования<br>
-            Letychka.ru &nbsp;•&nbsp; Protected &nbsp;•&nbsp; Letychka.ru
+        <div id="watermark">
+            <div class="wm-text">
+                Letychka.ru • Free Version • Letychka.ru <br>
+                <span style="font-size: 36pt;">Demo Mode</span><br>
+                Не для коммерческого использования<br>
+                Letychka.ru • Protected • Letychka.ru
+            </div>
         </div>
         {% endif %}
     </div>
