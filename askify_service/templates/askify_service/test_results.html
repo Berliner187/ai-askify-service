@@ -639,7 +639,7 @@
             </span>
         </a>
 
-        <button title="Скопировать ссылку" data-action="share" data-content="/t/{{survey.survey_id}}"
+        <button title="Скопировать ссылку" data-action="share" data-share-url="{% url 'take_test' survey.survey_id %}"
             class="group flex items-center h-12 rounded-full text-white font-bold transition-all duration-300 overflow-hidden 
                 bg-indigo-600 
                 hover:opacity-90 hover:scale-[1.05] active:scale-[0.98] shadow-lg shadow-indigo-500/30">

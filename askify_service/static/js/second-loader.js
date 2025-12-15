@@ -6,5 +6,5 @@ window.addEventListener("load", function() {
     pageContainer.style.display = 'block';
     setTimeout(() => {
         pageContainer.classList.add('fade-in');
-    }, 250);
+    }, 150);
 });

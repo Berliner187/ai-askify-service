@@ -162,6 +162,55 @@ def for_prepods(request):
     return render(request, 'askify_service/for_prepods.html', context)
 
 
+def get_user_dashboard_context(user):
+    """
+    Ищет самый популярный тест пользователя и собирает для него детальную сводку.
+    """
+    thirty_days_ago = timezone.now() - timedelta(days=30)
+
+    popular_test = Survey.objects.filter(
+        id_staff=user.id_staff,
+        view_count__gte=5
+    ).order_by('-view_count').first()
+
+    if popular_test:
+        print('popular test', popular_test)
+        total_attempts = popular_test.attempts.count()
+
+        # Последний, кто прошел тест
+        last_attempt = popular_test.attempts.order_by('-created_at').first()
+        if last_attempt:
+            last_participant_name = last_attempt.student_name
+            last_attempt_time = last_attempt.created_at
+        else:
+            last_participant_name = None
+            last_attempt_time = None
+
+        # Средний балл по тесту
+        avg_score_data = popular_test.attempts.aggregate(
+            avg_score=Avg('score'),
+            avg_total=Avg('total_questions')
+        )
+        avg_score_percent = 0
+        if avg_score_data['avg_score'] is not None and avg_score_data['avg_total'] > 0:
+            avg_score_percent = (avg_score_data['avg_score'] / avg_score_data['avg_total']) * 100
+
+        return {
+            'type': 'popular_test',
+            'test_title': popular_test.title,
+            'survey_id': popular_test.survey_id,
+            'total_views': popular_test.view_count,
+            'total_attempts': total_attempts,
+            'last_participant': {
+                'name': last_participant_name,
+                'time': last_attempt_time,
+            },
+            'avg_score_percent': round(avg_score_percent),
+        }
+
+    return {'type': 'default'}
+
+
 # @subscription_required
 @login_required
 def page_create_survey(request):
@@ -178,38 +227,22 @@ def page_create_survey(request):
     subscription_level = get_subscription_level(request)
 
     start_month = date.today().replace(day=1)
-    week_ago = date.today() - timedelta(days=7)
     today = date.today()
 
     all_surveys = Survey.objects.filter().only('survey_id', 'updated_at')
     user_surveys = Survey.objects.filter(id_staff=current_id_staff).only('survey_id', 'questions', 'title', 'updated_at')
-    user_answers = UserAnswers.objects.filter(id_staff=current_id_staff)
-    feedbacks = FeedbackFromAI.objects.filter(id_staff=current_id_staff)
 
     total_tests = user_surveys.count()
 
     stats = UserAnswers.calculate_user_statistics(current_id_staff)
 
-    feedback_agg = feedbacks.aggregate(
-        feedback_count=Count('id'),
-        unique_models=Count('model_name', distinct=True),
-    )
-
     today_uploads = all_surveys.filter(updated_at__date=today).count()
     tests_this_month = user_surveys.filter(updated_at__gte=start_month).count()
-    feedback_last_week = feedbacks.filter(created_at__gte=week_ago).count()
 
     total_questions = sum(len(json.loads(s.questions)) for s in user_surveys if s.questions)
     avg_questions = total_questions / total_tests if total_tests else 0
 
-    total_answers = user_answers.count()
-    avg_correct_answers = user_answers.aggregate(avg=Avg('scored_points'))['avg'] or 0
-
-    surveys_with_feedback = feedbacks.values_list('survey_id', flat=True).distinct().count()
-    percent_with_feedback = (surveys_with_feedback / total_tests * 100) if total_tests else 0
-
-    passed_survey_ids = user_answers.values_list('survey_id', flat=True).distinct()
-    tests_created_and_passed = user_surveys.filter(survey_id__in=passed_survey_ids).count()
+    dashboard_context = get_user_dashboard_context(request.user)
 
     context = {
         "page_title": "Создать тест",
@@ -219,17 +252,11 @@ def page_create_survey(request):
         'subscription_status': subs.status,
         "total_tests": total_tests,
         "passed_tests": stats['passed_tests'],
-        "feedback_count": feedback_agg['feedback_count'] or 0,
         "today_uploads": today_uploads,
         "total_questions": total_questions,
         "avg_questions": f"{avg_questions:.1f}" if total_tests else 0,
-        "total_answers": total_answers,
-        "avg_correct_answers": f"{avg_correct_answers:.1f}" if total_answers else 0,
-        "unique_models_count": feedback_agg['unique_models'] or 0,
         "tests_this_month": tests_this_month,
-        "feedback_last_week": feedback_last_week,
-        "percent_with_feedback": f"{percent_with_feedback:.1f}%" if total_tests else "0%",
-        "tests_created_and_passed": tests_created_and_passed,
+        "dashboard_context": dashboard_context,
         'debug': DEBUG
     }
 
@@ -658,6 +685,9 @@ def load_more_surveys(request):
 
 @login_required
 def drop_survey(request, survey_id):
+    if not is_valid_uuid(survey_id):
+        return JsonResponse({'error': 'No.'})
+
     survey_obj = Survey.objects.filter(survey_id=uuid.UUID(survey_id)).first()
 
     if survey_obj and (survey_obj.id_staff == get_staff_id(request)):
@@ -751,7 +781,7 @@ class ManageSurveysView(View):
             tracer_l.debug(f"{request.user.username} --- question_count: {question_count} text_from_user: {text_from_user}")
 
             if question_count.isdigit():
-                if int(question_count) > 15 or int(question_count) < 0:
+                if int(question_count) > 30 or int(question_count) < 0:
                     return JsonResponse({'error': 'Недоступное кол-во вопросов :('}, status=400)
             else:
                 return JsonResponse({'error': 'Кол-во вопросов должно быть число'}, status=400)
@@ -2243,7 +2273,7 @@ def view_results(request, survey_id):
 def export_results_to_excel(request, survey_id):
     survey = get_object_or_404(Survey, survey_id=survey_id)
 
-    if survey.id_staff != get_staff_id(request):
+    if survey.id_staff != get_staff_id(request) and not request.user.is_superuser:
         return HttpResponse("Доступ запрещен", status=403)
 
     attempts_qs = survey.attempts.all().order_by('-created_at')
@@ -6154,12 +6184,19 @@ def blog_view(request, slug):
 
     view_count_text = get_view_count_text(post.view_count)
 
+    other_posts = BlogPost.objects.exclude(
+        slug=slug
+    ).order_by('-created_at')[:4]
+
     context = {
         'title': title,
         'content': content_html,
         'year': get_year_now(),
-        'view_count': f"{view_count_text} • {post.created_at.strftime('%d.%m')}",
-        'article_url': f"media/{slug}"
+        'view_count': f"{view_count_text} • {post.created_at.strftime('%d.%m.%Y')}",
+        'article_url': f"media/{slug}",
+        'other_posts': other_posts,
+        'username': get_username(request) if get_username(request) else 0,
+        'debug': DEBUG
     }
 
     return render(request, 'blog.html', context)

@@ -107,31 +107,13 @@
             {% endif %}
         </div>
 
-        {% if tests_today == 0 %}
-            <div class="container notice-banner deactivated">
-                <div class="icon-wrapper">
-                    <i class="fas fa-battery-empty"></i>
-                </div>
-                <div class="text-wrapper">
-                    <h3>Вы использовали все доступные генерации</h3>
-                    <p>
-                        Снимите все ограничения с тарифом <strong>Премиум</strong>: загружайте файлы,
-                        получайте глубокую аналитику и создавайте тесты без оглядки на лимиты.
-                    </p>
-                </div>
-                <a class="button-medium button-accent" href="{% url 'payment' %}">
-                    <div><i class="fas fa-unlock-alt"></i> <p>Снять ограничения</p></div>
-                </a>
-            </div>
-        {% endif %}
-
         {% if subscription_status != 'active' %}
             <div class="container notice-banner deactivated">
                 <div class="icon-wrapper">
                     <i class="fas fa-bolt"></i>
                 </div>
                 <div class="text-wrapper">
-                    <h3>Ваши Премиум-возможности отключены</h3>
+                    <h3>Премиум отключен</h3>
                     <p>
                         Активируйте подписку, чтобы снова <strong>превращать Ваши учебные материалы и&nbsp;документы в&nbsp;тесты за&nbsp;считанные секунды</strong>, получать фидбэк от&nbsp;ИИ, а&nbsp;также работать без оглядки на&nbsp;лимиты.
                     </p>
@@ -141,6 +123,23 @@
                 </a>
             </div>
         {% else %}
+            {% if tests_today == 0 %}
+                <div class="container notice-banner deactivated">
+                    <div class="icon-wrapper">
+                        <i class="fas fa-battery-empty"></i>
+                    </div>
+                    <div class="text-wrapper">
+                        <h3>Вы использовали все доступные генерации</h3>
+                        <p>
+                            Снимите все ограничения с тарифом <strong>Премиум</strong>: загружайте файлы,
+                            получайте глубокую аналитику и создавайте тесты без оглядки на лимиты.
+                        </p>
+                    </div>
+                    <a class="button-medium button-accent" href="{% url 'payment' %}">
+                        <div><i class="fas fa-unlock-alt"></i> <p>Снять ограничения</p></div>
+                    </a>
+                </div>
+            {% endif %}
             {% if subscription_level < 1 %}
                 <div class="container locked-upload-integrated">
                     <div class="icon-wrapper">
@@ -181,62 +180,61 @@
             </div>
         </div>
 
-        <div class="container glass-metrics-container">
-            <div class="metrics-scroll-box">
-                <div class="metric-ios active">
-                    <span class="metric-title">Создано Вами</span>
-                    <span class="metric-badge"><strong>{{ total_tests }}</strong></span>
+        {% if dashboard_context.type == 'popular_test' %}
+        <div class="container p-6 max-w-auto bg-[var(--color-surface)] rounded-3xl border border-[var(--color-border)]">
+            <div class="flex justify-between flex-wrap items-start">
+                <div>
+                    <p class="text-xs text-gray-400 uppercase tracking-wider">Популярный за 30 дней</p>
+                    <h2 class="text-base font-bold text-white mt-1 truncate">
+                        {{ dashboard_context.test_title }}
+                    </h2>
                 </div>
-                <div class="metric-ios">
-                    <span class="metric-title">Успешно пройдено</span>
-                    <span class="metric-badge"><strong>{{ passed_tests }}</strong></span>
+                <a href="{% url 'preview_test_result' dashboard_context.survey_id %}" 
+                class="group flex-shrink-0 flex items-center gap-2 px-3 py-1.5 bg-black/20 rounded-full
+                        hover:bg-[var(--color-accent-primary)] transition-colors">
+                    <span class="text-xs font-semibold text-white">Аналитика</span>
+                    <i class="fas fa-arrow-right text-gray-400 transition-transform group-hover:translate-x-1 group-hover:text-white"></i>
+                </a>
+            </div>
+            <!-- Сетка с KPI -->
+            <div class="mt-4 grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
+                <!-- Просмотры -->
+                <div class="bg-black/20 p-3 rounded-xl">
+                    <p class="text-2xl font-bold text-white">{{ dashboard_context.total_views }}</p>
+                    <p class="text-xs text-gray-500">Просмотров</p>
                 </div>
-                <div class="metric-ios">
-                    <span class="metric-title">Создано пользователями сегодня</span>
-                    <span class="metric-badge"><strong>{{ today_uploads }}</strong></span>
+                <!-- Прохождения -->
+                <div class="bg-black/20 p-3 rounded-xl">
+                    <p class="text-2xl font-bold text-white">{{ dashboard_context.total_attempts }}</p>
+                    <p class="text-xs text-gray-500">Прохождений</p>
                 </div>
-                <div class="metric-ios">
-                    <span class="metric-title">Фидбэка от ИИ</span>
-                    <span class="metric-badge"><strong>{{ feedback_count }}</strong></span>
+                <!-- Средний балл -->
+                <div class="bg-black/20 p-3 rounded-xl">
+                    <p class="text-2xl font-bold text-white">{{ dashboard_context.avg_score_percent }}<span class="text-lg">%</span></p>
+                    <p class="text-xs text-gray-500">Средний балл</p>
                 </div>
-                <div class="metric-ios">
-                    <span class="metric-title">Всего вопросов создано</span>
-                    <span class="metric-badge"><strong>{{ total_questions }}</strong></span>
-                </div>
-                <div class="metric-ios">
-                    <span class="metric-title">Вопросов в среднем</span>
-                    <span class="metric-badge"><strong>{{ avg_questions }}</strong> на тест</span>
-                </div>
-                <div class="metric-ios">
-                    <span class="metric-title">Ответов за всё время</span>
-                    <span class="metric-badge"><strong>{{ total_answers }}</strong> раз</span>
-                </div>
-                <div class="metric-ios">
-                    <span class="metric-title">Средне верно</span>
-                    <span class="metric-badge"><strong>{{ avg_correct_answers|default:"–" }}</strong></span>
-                </div>
-                <div class="metric-ios">
-                    <span class="metric-title">Моделей опробовано</span>
-                    <span class="metric-badge"><strong>{{ unique_models_count }}</strong></span>
-                </div>
-                <div class="metric-ios">
-                    <span class="metric-title">Тестов в этом месяце</span>
-                    <span class="metric-badge"><strong>{{ tests_this_month }}</strong></span>
-                </div>
-                <div class="metric-ios">
-                    <span class="metric-title">Фидбэка от ИИ за неделю</span>
-                    <span class="metric-badge"><strong>{{ feedback_last_week }}</strong></span>
-                </div>
-                <div class="metric-ios">
-                    <span class="metric-title">ИИ оценивал</span>
-                    <span class="metric-badge"><strong>{{ percent_with_feedback }}</strong></span>
-                </div>
-                <div class="metric-ios">
-                    <span class="metric-title">Решённых тестов</span>
-                    <span class="metric-badge"><strong>{{ tests_created_and_passed }}</strong></span>
+                <!-- Последний участник -->
+                <div class="bg-black/20 p-3 rounded-xl">
+                    {% if dashboard_context.last_participant.name %}
+                        <p class="text-lg font-bold text-white truncate">{{ dashboard_context.last_participant.name }}</p>
+                        <p class="text-xs text-gray-500">
+                            {{ dashboard_context.last_participant.time|timesince }} назад
+                        </p>
+                    {% else %}
+                        <p class="text-lg font-bold text-gray-600">-</p>
+                        <p class="text-xs text-gray-500">Последний участник</p>
+                    {% endif %}
                 </div>
             </div>
         </div>
+        {% endif %}
+
+        <section class="container" id="recent-history-container">
+            <h3><i class="fas fa-history"></i> Недавние тесты</h3>
+            <div id="history-content">
+                <!-- Сюда JavaScript вставит прелоадер, список тестов или сообщение о пустоте -->
+            </div>
+        </section>
 
         <style>
             .features-container {
@@ -307,82 +305,68 @@
 
         <div class="container features-container">
 
-        {% if subscription_level >= 2 %}
-            <div class="feature-block quick-link">
-                <img src="{% static 'img/icon-create.png' %}" alt="Генерация" class="feature-icon">
-                <h3>Генерация из файла</h3>
-                <p>Импортируйте Ваши Word/PDF документы для мгновенного создания тестов.</p>
-                <p class="accent">Прикрепите файл в поле ввода</p>
-            </div>
-            <a href="{% url 'profile' username %}" class="feature-block quick-link">
-                <img src="{% static 'img/icon-analytics.png' %}" alt="Анализ" class="feature-icon">
-                <div class="feature-badge">НОВОЕ</div>
-                <h3>Аналитика</h3>
-                <p>Ваш центр управления продуктивностью и&nbsp;трекингу прогресса.</p>
-                <p class="accent">Открыть дашборд →</p>
-            </a>
-            <a href="{% url 'history' %}" class="feature-block quick-link">
-                <img src="{% static 'img/icon-link.png' %}" alt="Поделиться" class="feature-icon">
-                <h3>История и Экспорт</h3>
-                <p>Управляйте созданными тестами, делитесь ссылками или скачивайте в&nbsp;PDF.</p>
-                <p class="accent">Перейти к моим тестам</p>
-            </a>
-        {% else %}
-            <div class="feature-block premium-feature">
-                <div class="feature-badge">ПРЕМИУМ</div>
-                <img src="{% static 'img/icon-create.png' %}" alt="Генерация из файлов" class="feature-icon">
-                <h3>Экономьте часы, а не минуты</h3>
-                <p class="accent">Устали копировать текст вручную? Загрузите лекцию или параграф целиком. ИИ сделает тест за вас.</p>
-                <a href="/payment">Превратить рутину в магию</a>
-            </div>
-            
-            <div class="feature-block premium-feature">
-                <div class="feature-badge">ПРЕМИУМ</div>
-                <img src="{% static 'img/icon-analytics.png' %}" alt="Анализ" class="feature-icon">
-                <h3>Смотрите на то, что скрыто</h3>
-                <p class="accent">Обычные оценки лгут. Наши графики покажут, какие темы "западают" у всего класса, а не только у отдельных учеников.</p>
-                <a href="/payment">Открыть аналитику</a>
-            </div>
-            
-            <div class="feature-block">
-                <img src="{% static 'img/icon-link.png' %}" alt="Поделиться" class="feature-icon">
-                <h3>Делитесь мгновенно</h3>
-                <p>Отправьте ученикам ссылку на онлайн-тест или скачайте готовый к печати PDF-файл.</p>
-            </div>
+        <section class="py-0">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- Блок 1: Конвейер тестов -->
+                <a href="/media/ot-dokumenta-do-testa/" class="group block p-4 rounded-3xl bg-gradient-to-br from-[rgba(30,24,48,0.5)] to-transparent border border-[var(--color-border)] 
+                                transition-all duration-300 hover:border-[var(--color-accent-primary)] hover:-translate-y-2 active:scale-[0.97]">
+                    <div class="flex items-center justify-center h-14 w-14 rounded-2xl bg-black/30 mb-5 border border-[var(--color-border)]
+                                transition-all duration-300 group-hover:bg-[var(--color-accent-primary)]/20 group-hover:border-[var(--color-accent-primary)]/50 group-hover:scale-110">
+                        <i class="fas fa-layer-group text-2xl text-[var(--color-accent-primary)] transition-colors duration-300 group-hover:text-white"></i>
+                    </div>
+                    <h3 class="font-bold text-white text-xl">Ваши старые лекции&nbsp;&mdash; ваш новый актив</h3>
+                    <p class="mt-2 text-sm text-gray-400">
+                        Устали придумывать вопросы? Прекратите. Вся ваша база материалов&nbsp;&mdash; PDF, Word, статьи&nbsp;&mdash; это готовое топливо. Летучка превращает любой документ в&nbsp;уникальный тест.
+                    </p>
+                    <div class="mt-4 text-sm font-semibold text-[var(--color-accent-primary)] opacity-0 group-hover:opacity-100 transition-opacity">
+                        Попробовать загрузку файла &rarr;
+                    </div>
+                </a>
 
-        {% endif %}
-    </div>
+                <a href="/media/kak-chitat-dashbordy/" class="group block p-4 rounded-3xl bg-gradient-to-br from-[rgba(30,24,48,0.5)] to-transparent border border-[var(--color-border)] 
+                                transition-all duration-300 hover:border-[var(--color-accent-primary)] hover:-translate-y-2 active:scale-[0.97]">
+                    <div class="flex items-center justify-center h-14 w-14 rounded-2xl bg-black/30 mb-5 border border-[var(--color-border)]
+                                transition-all duration-300 group-hover:bg-[var(--color-accent-primary)]/20 group-hover:border-[var(--color-accent-primary)]/50 group-hover:scale-110">
+                        <i class="fas fa-crosshairs text-2xl text-[var(--color-accent-primary)] transition-colors duration-300 group-hover:text-white"></i>
+                    </div>
+                    <h3 class="font-bold text-white text-xl">От&nbsp;баллов&nbsp;&mdash; к&nbsp;пониманию</h3>
+                    <p class="mt-2 text-sm text-gray-400">
+                        Перестаньте просто ставить "5" или "3". Наши дашборды покажут карту ошибок всей группы, выявят лидеров и отстающих и подсветят темы, которые "западают".
+                    </p>
+                    <div class="mt-4 text-sm font-semibold text-[var(--color-accent-primary)] opacity-0 group-hover:opacity-100 transition-opacity">
+                        Посмотреть пример отчета &rarr;
+                    </div>
+                </a>
+
+                <a href="/media/vse-sposoby-podelitsya/" class="group block p-4 rounded-3xl bg-gradient-to-br from-[rgba(30,24,48,0.5)] to-transparent border border-[var(--color-border)] 
+                                transition-all duration-300 hover:border-[var(--color-accent-primary)] hover:-translate-y-2 active:scale-[0.97]">
+                    <div class="flex items-center justify-center h-14 w-14 rounded-2xl bg-black/30 mb-5 border border-[var(--color-border)]
+                                transition-all duration-300 group-hover:bg-[var(--color-accent-primary)]/20 group-hover:border-[var(--color-accent-primary)]/50 group-hover:scale-110">
+                        <i class="fas fa-network-wired text-2xl text-[var(--color-accent-primary)] transition-colors duration-300 group-hover:text-white"></i>
+                    </div>
+                    <h3 class="font-bold text-white text-xl">Для аудитории, онлайна и&nbsp;оффлайна</h3>
+                    <p class="mt-2 text-sm text-gray-400">
+                        Отправьте простую ссылку для онлайн-теста. Покажите QR-код на&nbsp;проекторе. Или скачайте профессиональный PDF для печати и&nbsp;раздачи.
+                    </p>
+                    <div class="mt-4 text-sm font-semibold text-[var(--color-accent-primary)] opacity-0 group-hover:opacity-100 transition-opacity">
+                        Изучить все способы &rarr;
+                    </div>
+                </a>
                 
-        <section class="container" id="recent-history-container">
-            <h3><i class="fas fa-history"></i> Недавние тесты</h3>
-            <div id="history-content">
-                <!-- Сюда JavaScript вставит прелоадер, список тестов или сообщение о пустоте -->
             </div>
         </section>
 
+    </div>
+
         <div class="max-w-4xl mx-auto mt-6">
-            <a href="https://golosok.space/?utm_referrer=letychka.ru" target="_blank" rel="noopener noreferrer"
-            class="group bg-gray-800/40 backdrop-blur-sm border border-gray-700/60 rounded-3xl p-6
-                    flex flex-col sm:flex-row items-center gap-6
-                    transition-all duration-300
-                    hover:border-cyan-500/50 hover:-translate-y-1">
-                <div class="flex-shrink-0">
-                    <img src="https://golosok.space/static/img/golosok-favicon.png" alt="Логотип Голосок" 
-                        class="w-16 h-16 rounded-2xl">
-                </div>
-                <div class="flex-grow text-center sm:text-left">
-                    <h3 class="font-bold text-white text-lg">
-                        Превратите голос в текст для ваших тестов
-                    </h3>
-                    <p class="mt-1 text-sm text-gray-400 leading-relaxed">
-                        Записали лекцию на диктофон или нашли полезное видео? 
-                        <span class="font-semibold text-cyan-300">Голосок</span> транскрибирует аудио и видео в текст, который вы можете сразу использовать для создания тестов в Летучке.
-                    </p>
-                </div>
-                <div class="flex-shrink-0 text-2xl text-gray-600 transition-colors duration-300 group-hover:text-cyan-400">
-                    <i class="fas fa-external-link-alt"></i>
-                </div>
-            </a>
+            <div class="mt-8 bg-black/20 p-6 rounded-3xl border border-dashed border-cyan-500/30 text-center">
+                <h3 class="font-bold text-white text-lg">
+                    Нет текстового материала? <span class="text-cyan-300">Надиктуйте.</span>
+                </h3>
+                <p class="mt-2 text-sm text-gray-400 max-w-lg mx-auto">
+                    Если у&nbsp;вас есть только аудио-лекция или видео, <a href="https://golosok.space/?utm_referrer=letychka.ru" target="_blank" class="font-semibold text-cyan-300 hover:underline">Голосок</a> превратит их&nbsp;в&nbsp;текст, который вы&nbsp;сразу сможете использовать для создания теста в&nbsp;Летучке.
+                </p>
+            </div>
         </div>
         
         <div class="container" id="block-generate">
@@ -416,7 +400,7 @@
                     <div class="slider-container">
                         <p id="question-slider-text"><span id="slider-value">5</span> вопросов</p>
                         {% if subscription_level > 0 and subscription_level < 50 %}
-                        <input type="range" id="question-slider" class="custom-slider" min="1" max="15" value="5" style="display: none;">
+                        <input type="range" id="question-slider" class="custom-slider" min="1" max="30" value="5" style="display: none;">
                         {% else %}
                         <input type="range" id="question-slider" class="custom-slider" min="1" max="10" value="5" style="display: none;">
                         {% endif %}
@@ -592,18 +576,15 @@
             });
         });
     </script>
-    
     <script>
-        let current = 0;
-        const metrics = document.querySelectorAll('.metric-ios');
-
-        function cycleMetrics() {
-            metrics[current].classList.remove('active');
-            current = (current + 1) % metrics.length;
-            metrics[current].classList.add('active');
-        }
-
-        setInterval(cycleMetrics, 5000);
+        window.addEventListener('pageshow', function(event) {
+            // `event.persisted` - это флаг, который равен `true`
+            // только если страница была восстановлена из bfcache.
+            if (event.persisted) {
+                console.log('Page was loaded from bfcache. Forcing reload...');
+                window.location.reload();
+            }
+        });
     </script>
 </body>
 </html>

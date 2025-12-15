@@ -1,10 +1,11 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" class="scroll-smooth">
 <head>
+    {% load static %}
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ title }} | Создать тест онлайн с результатами | Летучка Медиа</title>
-
+    <title>{{ title }} | Летучка Медиа</title>
+    
     <meta name="description" content="Онлайн сервис на русском языке на основе искусственного интеллекта для создания квизов и тестов. Узнайте, как быстро создать тест для урока за 5 минут. Пошаговая инструкция, лучшие сервисы и готовые шаблоны для учителей и преподавателей.">
     <meta name="keywords" content="генератор тестов с ИИ, создать тест, создать тест из статьи автоматически, подготовка к экзаменам, онлайн тесты, ии для создания тестов, летучка, создать тест нейросетью">
     
@@ -19,59 +20,172 @@
     
     {% load static %}
     <link rel="shortcut icon" href="{% static 'img/favicon.ico' %}" type="image/ico">
-    <link rel="stylesheet" href="{% static 'css/adaptive.css' %}">
-    <link rel="stylesheet" href="{% static 'css/docu.css' %}?v=1.0">
-    <link rel="stylesheet" href="{% static 'css/nav.css' %}">
     <link rel="stylesheet" href="{% static 'css/footer.css' %}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@200..900&display=swap" rel="stylesheet">
 
-    <!-- Yandex.Metrika counter -->
-    <script type="text/javascript" >
-        (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
-        m[i].l=1*new Date();
-        for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
-        k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
-        (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
-    
-        ym(99526445, "init", {
-            clickmap:true,
-            trackLinks:true,
-            accurateTrackBounce:true
-        });
-    </script>
-    <noscript><div><img src="https://mc.yandex.ru/watch/99526445" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
-    <!-- /Yandex.Metrika counter -->
-</head>
-<body>
-    <header>
-        <a href="{% url 'home' %}">
-            <img src="{% static 'img/logo-header-media.png' %}" alt="">
-        </a>
+    {% if username == 0 %}
+        <!-- Yandex.Metrika counter -->
+        <script type="text/javascript" >
+            (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+            m[i].l=1*new Date();
+            for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+            k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+            (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
         
-        <div class="burger" id="burger">
-            <div></div>
-            <div></div>
-            <div></div>
-        </div>
-        
-        <nav id="nav">
-            <ul>
-                <li><a href="/create">Начать создавать</a></li>
-                <li><a href="/docs/public-offer">Публичная оферта</a></li>
-                <li><a href="/docs/privacy-policy">Политика конфиденциальности</a></li>
-            </ul>
-        </nav>
-    </header>
+            ym(99526445, "init", {
+                clickmap:true,
+                trackLinks:true,
+                accurateTrackBounce:true
+            });
+        </script>
+        <noscript><div><img src="https://mc.yandex.ru/watch/99526445" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+        <!-- /Yandex.Metrika counter -->
+    {% else %}
+        <!-- Yandex.Metrika counter -->
+        <script type="text/javascript">
+            (function(m,e,t,r,i,k,a){
+                m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+                m[i].l=1*new Date();
+                for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+                k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
+            })(window, document,'script','https://mc.yandex.ru/metrika/tag.js', 'ym');
+            ym(98829160, 'init', {webvisor:true, clickmap:true, accurateTrackBounce:true, trackLinks:true});
+        </script>
+        <noscript><div><img src="https://mc.yandex.ru/watch/98829160" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+        <!-- /Yandex.Metrika counter -->
+    {% endif %}
+     
+    {% if debug %}
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    {% else %}
+        <script src="{% static 'vendor/tailwind.full.min.js' %}"></script>
+        <script src="{% static 'vendor/jquery.min.js' %}"></script>
+    {% endif %}
 
-    <main>
-        <div>{{ view_count }}</div>
-        <div>{{ content|safe }}</div>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Unbounded:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --color-bg: #0F0818;
+            --color-surface: rgba(30, 24, 48, 0.5);
+            --color-border: rgba(97, 109, 240, 0.2);
+            --color-text-primary: #f0f0f0;
+            --color-text-secondary: #a0a0b0;
+            --color-accent-primary: #616DF0;
+            --color-accent-secondary: #79EF66;
+        }
+        @font-face {
+            font-family: 'Unbounded Medium';
+            src: url("{% static 'fonts/Unbounded-Medium.ttf' %}") format('truetype');
+        }
+        body { background-color: var(--color-bg); color: var(--color-text-primary); font-family: 'Inter', sans-serif; }
+        
+        .prose {
+            color: var(--color-text-secondary);
+            line-height: 1.7;
+        }
+        .prose h1, .prose h2, .prose h3 {
+            font-family: 'Unbounded Medium', sans-serif;
+            color: var(--color-text-primary);
+            margin-top: 2em;
+            margin-bottom: 1em;
+        }
+        .prose h1 { font-size: 2.25rem; }
+        .prose h2 { font-size: 1.875rem; }
+        .prose h3 { font-size: 1.5rem; }
+        .prose p { margin-bottom: 1.25em; }
+        .prose a { color: var(--color-accent-primary); text-decoration: underline; font-weight: 600; }
+        .prose a:hover { color: var(--color-accent-secondary); }
+        .prose strong { color: var(--color-text-primary); font-weight: 700; }
+        .prose ul, .prose ol { margin-left: 1.5em; margin-bottom: 1.25em; }
+        .prose li { margin-bottom: 0.5em; }
+        .prose img {
+            border-radius: 1.5rem;
+            border: 1px solid var(--color-border);
+            margin-top: 2em;
+            margin-bottom: 2em;
+        }
+        .prose blockquote {
+            border-left: 4px solid var(--color-accent-primary);
+            padding-left: 1em;
+            margin-left: 0;
+            font-style: italic;
+            color: var(--color-text-primary);
+        }
+    </style>
+</head>
+<body class="bg-[var(--color-bg)]">
+
+    <!-- Используем твой основной Sticky Header с лендинга для консистентности -->
+    {% include 'header.html' %} 
+
+    <main class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
+        
+        <!-- Заголовок и мета-информация -->
+        <header class="text-center mb-12">
+            <h1 class="text-3xl md:text-5xl font-black tracking-tighter text-white">
+                {{ title }}
+            </h1>
+            <p class="mt-4 text-sm font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">
+                {{ view_count }}
+            </p>
+        </header>
+
+        <!-- Контент статьи -->
+        <article class="prose max-w-none">
+            {{ content|safe }}
+        </article>
+
+        <!-- CTA-блок после статьи -->
+        <div class="mt-16 pt-12 border-t border-[var(--color-border)] text-center">
+            <h2 class="text-2xl md:text-3xl font-bold text-white">
+                Готовы вернуть себе <span class="gradient-text">часы времени?</span>
+            </h2>
+            <p class="mt-4 text-lg text-[var(--color-text-secondary)] max-w-xl mx-auto">
+                Прекратите тратить вечера на рутину. Начните создавать тесты за 30 секунд.
+            </p>
+            <a href="/register" class="mt-8 inline-block bg-[var(--color-accent-primary)] text-white px-10 py-4 font-bold rounded-full transition-transform hover:scale-105">
+                Попробовать Летучку бесплатно
+            </a>
+        </div>
+
+        <div class="mt-16 pt-12 border-t border-[var(--color-border)]">
+            <h2 class="text-2xl md:text-3xl font-bold text-white text-center mb-8">
+                Что еще почитать
+            </h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                {% for other_post in other_posts %}
+                    <a href="{% url 'media_view' other_post.slug %}" 
+                       class="group block p-6 bg-[var(--color-surface)] rounded-2xl border border-[var(--color-border)]
+                              transition-all duration-300 hover:border-[var(--color-accent-primary)] hover:-translate-y-1">
+                        
+                        <h3 class="font-bold text-white text-lg group-hover:text-[var(--color-accent-primary)] transition-colors">
+                            {{ other_post.title }}
+                        </h3>
+                        <p class="mt-2 text-sm text-gray-400">
+                            <!-- Здесь может быть ваша реклама -->
+                        </p>
+                        <div class="mt-4 flex justify-between items-center text-xs text-gray-500">
+                            <span>{{ other_post.view_count }} • {{ other_post.created_at|date:"d M, Y" }}</span>
+                            <span class="font-semibold text-[var(--color-accent-primary)] opacity-0 group-hover:opacity-100 transition-opacity">
+                                Читать &rarr;
+                            </span>
+                        </div>
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+
     </main>
 
     {% include 'footer.html' %}
-
-    <script src="{% static 'js/nav.js' %}"></script>
+    
+    <script src="{% static 'js/head-landing.js' %}"></script>
 </body>
 </html>
