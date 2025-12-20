@@ -41,6 +41,7 @@ class Survey(models.Model):
     description = models.CharField(max_length=255, blank=True, null=True)
     is_private = models.BooleanField(default=False)
     tags = models.ManyToManyField(Tag, blank=True, related_name='surveys')
+    is_visible = models.BooleanField(default=False, db_index=True, help_text="Мягкое удаление")
 
     def get_questions(self):
         return json.loads(self.questions)

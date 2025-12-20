@@ -174,7 +174,6 @@ def get_user_dashboard_context(user):
     ).order_by('-view_count').first()
 
     if popular_test:
-        print('popular test', popular_test)
         total_attempts = popular_test.attempts.count()
 
         # Последний, кто прошел тест
@@ -688,14 +687,19 @@ def drop_survey(request, survey_id):
     if not is_valid_uuid(survey_id):
         return JsonResponse({'error': 'No.'})
 
-    survey_obj = Survey.objects.filter(survey_id=uuid.UUID(survey_id)).first()
+    survey_obj = Survey.objects.filter(
+        survey_id=uuid.UUID(survey_id),
+        is_visible=False
+    ).first()
 
     if survey_obj and (survey_obj.id_staff == get_staff_id(request)):
         try:
+            survey_obj.is_visible = True
+            survey_obj.save()
             UserAnswers.objects.filter(survey_id=uuid.UUID(survey_id)).delete()
-            TestAttempt.objects.filter(survey__survey_id=uuid.UUID(survey_id)).delete()
-            survey_obj.delete()
-            tracer_l.info(f"{request.user.username} drop_survey {survey_id} [ DELETE OK ]")
+            # TestAttempt.objects.filter(survey__survey_id=uuid.UUID(survey_id)).delete()
+            # survey_obj.delete()
+            tracer_l.info(f"{request.user.username} drop_survey {survey_id} [ HIDE OK ]")
         except Exception as pass_fail:
             tracer_l.info(f"warn: {request.user.username} {pass_fail}")
         return redirect('history')
@@ -1092,7 +1096,7 @@ def get_all_surveys(request, page=1, per_page=10):
     if request is None:
         return {}
 
-    surveys_queryset = Survey.objects.filter(id_staff=get_staff_id(request)).order_by('-created_at')
+    surveys_queryset = Survey.objects.filter(id_staff=get_staff_id(request), is_visible=False).order_by('-created_at')
 
     paginator = Paginator(surveys_queryset, per_page)
     try:
@@ -1280,7 +1284,7 @@ class FileUploadView(View):
                         full_text += text.strip() + "\n"
                 return full_text[:read_symbols_count]
             except Exception as e:
-                print(f"Error reading PDF: {e}")
+                tracer_l.error(f"Error reading PDF: {e}")
                 return -1
 
         elif ext == '.txt':
@@ -1289,7 +1293,7 @@ class FileUploadView(View):
                 encoding = chardet.detect_encoding(uploaded_file)
                 return uploaded_file.read().decode(encoding)[:read_symbols_count]
             except Exception as e:
-                print(f"Error reading TXT: {e}")
+                tracer_l.error(f"Error reading TXT: {e}")
                 return -1
 
         elif ext in ['.doc', '.docx']:
@@ -1299,7 +1303,7 @@ class FileUploadView(View):
                     tmp.seek(0)
                     return self.extract_text_from_word(tmp.name)[:read_symbols_count]
             except Exception as e:
-                print(f"Error reading Word document: {e}")
+                tracer_l.error(f"Error reading Word: {e}")
                 return -1
 
         return -1
@@ -2035,7 +2039,6 @@ def preview_test(request, survey_id):
         view_count = survey.view_count
 
         author_username = AuthUser.objects.filter(id_staff=survey.id_staff).first()
-        print(author_username)
 
         if author_username:
             author_username = author_username.username
@@ -2996,7 +2999,6 @@ def user_profile_api(request):
     days_until_end = (end_date - timezone.now().date()).days
 
     percent_used = (used_today / tests_limit * 100) if tests_limit > 0 else 0
-    print(percent_used)
 
     return JsonResponse({
         "username": user.username,
@@ -6167,7 +6169,7 @@ def document_view(request, slug):
 def blog_view(request, slug):
     post = get_object_or_404(BlogPost, slug=slug)
 
-    ip = request.META.get('REMOTE_ADDR')
+    ip = get_client_ip(request)
 
     post.add_unique_view(ip)
 
