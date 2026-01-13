@@ -6,13 +6,14 @@ from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.conf import settings
 from django.core.signing import Signer
+from django.db.models import Count
 
 import requests
 import html2text
 
 from smtplib import SMTPException
 
-from .models import Mailing, MailingRecipient, AuthUser, AuthAdditionalUser, Survey, Subscription
+from .models import Mailing, MailingRecipient, AuthUser, AuthAdditionalUser, Survey, Subscription, PromoCode, Payment
 from askify_app.settings import TELEGRAM_BOT_TOKEN, EMAIL_HOST_USER
 
 
@@ -272,3 +273,26 @@ def start_mailing_task(mailing_id):
 
     except Mailing.DoesNotExist:
         print(f"Mailing with id {mailing_id} not found.")
+
+
+@shared_task
+def send_magic_link_email(user_id, token):
+    try:
+        user = AuthUser.objects.get(id=user_id)
+        if not user.email: return
+
+        subject = 'Ваша ссылка для входа в Летучку'
+        login_url = f"https://letychka.ru/auth/magic-link/{token}/"
+
+        message_body = (
+            f"Здравствуйте, {user.username}!\n\n"
+            f"Вот Ваша ссылка для быстрого входа в аккаунт. Она действует 15 минут и работает только один раз.\n\n"
+            f"Просто перейдите по ней, чтобы войти:\n"
+            f"{login_url}\n\n"
+            f"Если Вы не запрашивали эту ссылку, просто проигнорируйте это письмо."
+        )
+
+        send_mail(subject, message_body, settings.DEFAULT_FROM_EMAIL, [user.email])
+        print(f"Sent magic link to {user.email}")
+    except AuthUser.DoesNotExist:
+        pass

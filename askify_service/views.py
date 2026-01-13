@@ -1916,7 +1916,10 @@ def take_test(request, survey_id):
     questions_list = survey.get_questions()
     random.shuffle(questions_list)
 
-    author_username = AuthUser.objects.get(id_staff=survey.id_staff).username
+    try:
+        author_username = AuthUser.objects.get(id_staff=survey.id_staff).username
+    except Exception:
+        author_username = 'Сообщество Летучки'
 
     context = {
         'survey': survey,
@@ -2856,6 +2859,46 @@ def vk_auth_callback(request):
                 'success': False,
                 'error': str(e)
             }, status=500)
+
+
+def exchange_view(request):
+    # --- ДАННЫЕ ДЛЯ БЕГУЩЕЙ СТРОКИ ---
+    ticker_tapes = Survey.objects.filter(
+        is_in_marketplace=True,
+        # view_count__gt=5
+    ).order_by('-updated_at')[:10]
+
+    marketplace_surveys = Survey.objects.filter(
+        is_in_marketplace=True
+    ).order_by('-view_count')
+
+    context = {
+        'ticker_tapes': ticker_tapes,
+        'marketplace_surveys': marketplace_surveys,
+    }
+    return render(request, 'exchange.html', context)
+
+
+def get_survey_details_api(request, survey_id):
+    survey = get_object_or_404(Survey, survey_id=survey_id, is_in_marketplace=True)
+
+    author = AuthUser.objects.filter(id_staff=survey.id_staff).first()
+    author_nickname = "Сообщество Летучки"
+    if author:
+        author_nickname = author.first_name or author.username
+
+    data = {
+        'title': survey.title,
+        'description': survey.description or "Описание отсутствует.",
+        'author_nickname': author_nickname,
+        'is_verified': survey.is_verified,
+        'questions_count': len(survey.get_questions()),
+        'view_count': survey.view_count,
+        'attempts_count': survey.attempts.count(),
+        'take_test_url': reverse('take_test', args=[survey.survey_id]),
+        # 'remix_url': reverse('remix_survey', args=[survey.survey_id]),
+    }
+    return JsonResponse(data)
 
 
 @login_required
@@ -5246,6 +5289,15 @@ def create_payment(request):
 
     tracer_l.info(f'USER. {request.user.username}: VIEW PAYMENT')
 
+    user_staff_id = get_staff_id(request)
+
+    previous_payments_count = Payment.objects.filter(
+        staff_id=user_staff_id,
+        status='completed'
+    ).count()
+
+    is_veteran = previous_payments_count > 0
+
     context = {
         'page_title': 'Выбор тарифного плана',
         'username': get_username(request),
@@ -5253,10 +5305,49 @@ def create_payment(request):
         'phone': '' if user_data.phone is None else user_data.phone,
         'order_id': order_id,
         'fullname': user_data.username,
+        'is_veteran': is_veteran,
         'debug': DEBUG
     }
 
     return render(request, 'payments/payment.html', context)
+
+
+@require_POST
+def validate_promo_code_api(request):
+    try:
+        data = json.loads(request.body)
+        code = data.get('promo_code', '').strip().upper()
+    except json.JSONDecodeError:
+        return JsonResponse({'valid': False, 'error': 'Неверный формат запроса.'}, status=400)
+
+    if not code:
+        return JsonResponse({'valid': False, 'error': 'Введите промокод.'}, status=400)
+
+    previous_payments_count = Payment.objects.filter(
+        staff_id=get_staff_id(request),
+        status='completed'
+    ).count()
+    is_veteran = previous_payments_count > 0
+
+    if not is_veteran:
+        return JsonResponse({'valid': False, 'error': 'Промокод не действителен.'}, status=400)
+
+    try:
+        promo = PromoCode.objects.get(code__iexact=code)
+        print(code, promo.code)
+
+        if promo.expires_at and timezone.now() > promo.expires_at:
+            return JsonResponse({'valid': False, 'error': 'Срок действия этого промокода истек.'})
+
+        return JsonResponse({
+            'valid': True,
+            'code': promo.code,
+            'discount_percent': promo.discount_percent,
+            'message': f'Промокод на {promo.discount_percent}% успешно применен!'
+        })
+
+    except PromoCode.DoesNotExist:
+        return JsonResponse({'valid': False, 'error': 'Такого промокода не существует.'})
 
 
 class PaymentInitiateView(View):
@@ -5290,11 +5381,27 @@ class PaymentInitiateView(View):
             'Премиум неделя': 390
         }
 
+        previous_payments_count = Payment.objects.filter(
+            staff_id=get_staff_id(request),
+            status='completed'
+        ).count()
+
+        is_veteran = previous_payments_count > 0
+
+        if is_veteran:
+            plan_prices = {
+                'Начальный': 0,
+                'Премиум неделя': 195,
+                'Премиум': 345,
+                'Премиум 3 мес': 720,
+                'Премиум Год': 2400,
+            }
+
         print(int(amount), description, plan_prices.get(description))
 
-        if int(amount) != plan_prices.get(description):
-            tracer_l.warning(f'ADMIN. {request.user.username}: Неверная сумма. code 400')
-            return JsonResponse({'Success': False, 'Message': 'Неверная сумма.'}, status=400)
+        # if int(amount) != plan_prices.get(description):
+        #     tracer_l.warning(f'ADMIN. {request.user.username}: Неверная сумма. code 400')
+        #     return JsonResponse({'Success': False, 'Message': 'Неверная сумма.'}, status=400)
 
         order_id = generate_payment_id()
         tracer_l.debug(f'{request.user.username}: Приход: {order_id}. ')
@@ -6322,6 +6429,62 @@ def password_reset_email(request):
         'page_title': 'Сброс пароля'
     }
     return render(request, 'confirmed_data/password_message_reset_email.html', context)
+
+
+def passwordless_auth_view(request):
+    """
+    Страница для беспарольного входа.
+    """
+    if request.method == 'POST':
+        email = request.POST.get('email', '').strip()
+        user = AuthUser.objects.filter(email__iexact=email).first()
+
+        if user:
+            try:
+                MagicLinkToken.objects.filter(user=user).delete()
+                magic_token = MagicLinkToken.objects.create(user=user)
+
+                subject = 'Сброс пароля'
+
+                login_url = request.build_absolute_uri(
+                    reverse('magic_link_login', args=[magic_token.token])
+                )
+                message = render_to_string('confirmed_data/password_reset_email.html', {'link': login_url})
+
+                send_mail(
+                    subject,
+                    message,
+                    'support@letychka.ru',
+                    [user.email],
+                    fail_silently=False,
+                    html_message=message
+                )
+
+            except SMTPException as e:
+                tracer_l.warning(f"Failed to send magic link to {email} synchronously: {e}")
+                return render(request, 'confirmed_data/passwordless_auth.html',
+                              {'error': 'Не удалось отправить ссылку. Пожалуйста, попробуйте через минуту.'})
+
+        return render(request, 'confirmed_data/passwordless_sent.html', {'email': email})
+
+    return render(request, 'confirmed_data/passwordless_auth.html')
+
+
+def magic_link_login_view(request, token):
+    """
+    Обрабатывает переход по "магической" ссылке.
+    """
+    magic_token = MagicLinkToken.objects.filter(token=token).first()
+
+    if magic_token and not magic_token.is_expired():
+        user = magic_token.user
+        login(request, user)
+        magic_token.delete()
+        tracer_l.warning(f"Magic link email {user.username} success")
+        return redirect('create')
+    else:
+        if magic_token: magic_token.delete()
+        return render(request, 'confirmed_data/magic_link_invalid.html')
 
 
 @staff_member_required

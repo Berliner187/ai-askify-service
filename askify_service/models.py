@@ -10,6 +10,7 @@ from django.db.models.functions import Coalesce
 from django.conf import settings
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+import secrets
 
 from datetime import timedelta, datetime
 import json
@@ -42,6 +43,8 @@ class Survey(models.Model):
     is_private = models.BooleanField(default=False)
     tags = models.ManyToManyField(Tag, blank=True, related_name='surveys')
     is_visible = models.BooleanField(default=False, db_index=True, help_text="Мягкое удаление")
+    is_in_marketplace = models.BooleanField(default=False, db_index=True)
+    is_verified = models.BooleanField(default=False, help_text="Подтверждено редакцией Летучки")
 
     def get_questions(self):
         return json.loads(self.questions)
@@ -76,6 +79,16 @@ class Survey(models.Model):
 
     def generate_pdf(self, subscription_level):
         return PDFGenerator.generate_from_survey(self, subscription_level)
+
+
+class PromoCode(models.Model):
+    code = models.CharField(max_length=50, unique=True)
+    discount_percent = models.PositiveIntegerField(default=0)
+    expires_at = models.DateTimeField(blank=True, null=True)
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return self.code
 
 
 class SurveyUniqueView(models.Model):
@@ -654,3 +667,18 @@ class MailingRecipient(models.Model):
 
     class Meta:
         unique_together = ('mailing', 'user')
+
+
+class MagicLinkToken(models.Model):
+    user = models.ForeignKey(AuthUser, on_delete=models.CASCADE)
+    token = models.CharField(max_length=64, unique=True, default=secrets.token_urlsafe)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+
+    def save(self, *args, **kwargs):
+        if not self.expires_at:
+            self.expires_at = timezone.now() + timedelta(minutes=15)
+        super().save(*args, **kwargs)
+
+    def is_expired(self):
+        return self.expires_at < timezone.now()

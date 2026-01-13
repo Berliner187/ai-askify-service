@@ -27,6 +27,9 @@ urlpatterns = [
     path('c/<str:survey_id>/result/', redirect_to_dashboard, name='preview_test_inside'),
     path('c/<str:survey_id>/dashboard/', view_results, name='preview_test_result'),
 
+    path('exchange/', exchange_view, name='exchange_main'),
+    path('api/survey-details/<uuid:survey_id>/', get_survey_details_api, name='api_get_survey_details'),
+
     path('arena/', arena_view, name='arena'),
     path('api/arena/next-question/', get_next_question, name='api_get_next_question'),
     path('api/arena/submit-answer/', submit_arena_answer, name='api_submit_arena_answer'),
@@ -78,6 +81,7 @@ urlpatterns = [
     path('payment/', create_payment, name='payment'),
     path('payment/success/', PaymentSuccessView.as_view(), name='payment_success'),
     path('payment/fail/', PaymentSuccessView.as_view(), name='payment_fail'),
+    path('api/validate-promo/', validate_promo_code_api, name='api_validate_promo'),
 
     path('api/get-demo-tests/', get_demo_tests),
     path('upload/', FileUploadView.as_view(), name='file_upload'),
@@ -111,6 +115,9 @@ urlpatterns = [
     path('password_reset_confirm/<uidb64>/<token>/', PasswordResetConfirmView.as_view(), name='password_reset_confirm'),
     path('password_reset_done/', password_reset_email, name='password_reset_done'),
     path('password_reset_complete/', password_reset_complete, name='password_reset_complete'),
+
+    path('auth/', passwordless_auth_view, name='passwordless_auth'),
+    path('auth/magic-link/<str:token>/', magic_link_login_view, name='magic_link_login'),
 
     path('stats2975/crm/', user_ops_center_view, name='user_ops_center'),
     path('api/admin/search-users/', search_users_api, name='api_search_users'),

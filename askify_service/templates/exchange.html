@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Летучка.Exchange: Биржа готовых тестов</title>
+
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    {% load static %}
+    <link rel="icon" href="{% static 'img/favicon.ico' %}" type="image/ico">
+
+    {% if debug %}
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    {% else %}
+        <script src="{% static 'vendor/tailwind.full.min.js' %}"></script>
+        <script src="{% static 'vendor/jquery.min.js' %}"></script>
+    {% endif %}
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=Unbounded:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Yandex.Metrika counter -->
+    <script type="text/javascript">
+        (function(m,e,t,r,i,k,a){
+            m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+            m[i].l=1*new Date();
+            for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+            k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
+        })(window, document,'script','https://mc.yandex.ru/metrika/tag.js', 'ym');
+        ym(98829160, 'init', {webvisor:true, clickmap:true, accurateTrackBounce:true, trackLinks:true});
+    </script>
+    <noscript><div><img src="https://mc.yandex.ru/watch/98829160" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+    <!-- /Yandex.Metrika counter -->
+
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Unbounded:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --color-bg: #0A0512; /* Чуть глубже и темнее */
+            --color-surface: rgba(30, 24, 48, 0.3);
+            --color-border: rgba(97, 109, 240, 0.15);
+            --color-text-primary: #f0f0f0;
+            --color-text-secondary: #a0a0b0;
+            --color-accent-primary: #616DF0;
+            --color-accent-secondary: #79EF66;
+        }
+        @font-face {
+            font-family: 'Unbounded Medium';
+            src: url("{% static 'fonts/Unbounded-Medium.ttf' %}");
+        }
+        body { background-color: var(--color-bg); font-family: 'Inter', sans-serif; }
+        h1, h2, h3 { font-family: 'Unbounded Medium', sans-serif; }
+        .gradient-text {
+            background: linear-gradient(45deg, var(--color-accent-primary), var(--color-accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* --- СТИЛИ ДЛЯ APPLE-КАРТОЧЕК --- */
+        .card {
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(145deg, var(--color-surface), rgba(15, 8, 24, 0.5));
+            border: 1px solid var(--color-border);
+            transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        .card:hover {
+            transform: translateY(-8px) scale(1.03);
+            border-color: rgba(97, 109, 240, 0.4);
+            box-shadow: 0 25px 50px -12px rgba(97, 109, 240, 0.2);
+        }
+        /* Неоновое свечение, которое следует за курсором */
+        .card::before {
+            content: '';
+            position: absolute;
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(97, 109, 240, 0.25) 0%, rgba(97, 109, 240, 0) 70%);
+            left: var(--x, 50%);
+            top: var(--y, 50%);
+            transform: translate(-50%, -50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+        .card:hover::before {
+            opacity: 1;
+        }
+
+        #survey-modal-overlay.visible {
+            opacity: 1 !important;
+        }
+        #survey-modal.visible {
+            transform: scale(1) !important;
+            opacity: 1 !important;
+        }
+
+        @keyframes ticker {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        @keyframes ticker-reverse {
+            0% { transform: translateX(-50%); }
+            100% { transform: translateX(0); }
+        }
+        .ticker-wrap {
+            width: 100%;
+            overflow: hidden;
+            background-color: #000;
+            padding: 0.75rem 0;
+            border-top: 1px solid var(--color-border);
+            border-bottom: 1px solid var(--color-border);
+        }
+        .ticker-container {
+            width: 200%;
+            display: flex;
+            animation: ticker 30s linear infinite;
+        }
+        .ticker-container-reverse {
+            width: 200%;
+            display: flex;
+            animation: ticker-reverse 30s linear infinite;
+        }
+        .ticker-move {
+            width: 50%;
+            display: flex;
+            justify-content: space-around;
+        }
+        .ticker-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: #a0a0b0;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .ticker-item .symbol { color: #79EF66; }
+        .ticker-item .views { color: white; }
+    </style>
+</head>
+<body class="bg-[var(--color-bg)] text-[var(--color-text-primary)]">
+    {% include 'header.html' %}
+
+    <!-- БЕГУЩАЯ СТРОКА (TICKER) -->
+    <div class="ticker-wrap">
+        <div class="ticker-container">
+            <div class="ticker-move">
+                {% for tape in ticker_tapes %}
+                    <div class="ticker-item">
+                        <span class="symbol">{{ tape.title|truncatechars:35 }}</span>
+                        <span><i class="fas fa-eye mr-1"></i><span class="views">{{ tape.view_count }}  </span> </span>
+                        <br>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="ticker-container-reverse">
+            <div class="ticker-move">
+                {% for tape in ticker_tapes %}
+                    <div class="ticker-item">
+                        <span class="symbol">{{ tape.title|truncatechars:35 }}</span>
+                        <span><i class="fas fa-eye mr-1"></i><span class="views">{{ tape.view_count }}  </span> </span>
+                        <br>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-8 py-16">
+        <section class="text-center mb-24">
+            <h1 class="text-4xl md:text-6xl font-black tracking-tighter">
+                ЛЕТУЧКА.<span class="gradient-text">EXCHANGE</span>
+            </h1>
+            <p class="mt-6 text-lg max-w-3xl mx-auto text-[var(--color-text-secondary)]">
+                Биржа готовых тестов от экспертов и редакции Летучки. Исследуйте, проходите для самопроверки или копируйте в свой аккаунт для работы.
+            </p>
+        </section>
+
+        <!-- СЕТКА "1+2+3" С КАРТОЧКАМИ ТЕСТОВ -->
+        <section class="space-y-8">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Главный блок -->
+                {% with test=marketplace_surveys.0 %}
+                {% if test %}
+                <button class="card survey-card-link text-left lg:row-span-2 rounded-3xl p-8 flex flex-col justify-end" data-survey-id="{{ test.survey_id }}">
+                    <h3 class="text-3xl font-bold text-white">{{ test.title }}</h3>
+                    <p class="mt-2 text-sm text-gray-300">{{ test.description|truncatewords:20 }}</p>
+                    <div class="mt-4 flex gap-4 text-xs font-semibold text-white">
+                        <span>{{ test.get_questions|length }} вопросов</span>
+                        <span><i class="fas fa-eye mr-1.5 opacity-70"></i> {{ test.view_count }}</span>
+                    </div>
+                </button>
+                {% endif %}
+                {% endwith %}
+                
+                <!-- Два второстепенных блока -->
+                <div class="grid grid-rows-2 gap-8">
+                    {% for test in marketplace_surveys|slice:"1:3" %}
+                    <button class="card survey-card-link text-left rounded-3xl p-6 flex flex-col justify-between" data-survey-id="{{ test.survey_id }}">
+                        <h3 class="text-xl font-bold text-white">{{ test.title }}</h3>
+                        <div class="mt-2 flex gap-4 text-xs font-semibold text-white">
+                           <span>{{ test.get_questions|length }} вопросов</span>
+                           <span><i class="fas fa-eye mr-1.5 opacity-70"></i>{{ test.view_count }}</span>
+                        </div>
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Три третичных блока -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                 {% for test in marketplace_surveys|slice:"3:6" %}
+                 <button class="card survey-card-link text-left rounded-3xl p-6 flex flex-col justify-between min-h-[150px]" data-survey-id="{{ test.survey_id }}">
+                        <h3 class="font-bold text-white">{{ test.title }}</h3>
+                        <div class="mt-2 flex gap-4 text-xs font-semibold text-white">
+                           <span>{{ test.get_questions|length }} вопросов</span>
+                           <span><i class="fas fa-eye mr-1.5 opacity-70"></i>{{ test.view_count }}</span>
+                        </div>
+                    </button>
+                 {% endfor %}
+            </div>
+        </section>
+    </main>
+
+    <!-- МОДАЛЬНОЕ ОКНО ДЛЯ ПРОСМОТРА ТЕСТА (ВЕРСИЯ "APPLE") -->
+    <div id="survey-modal-overlay" class="fixed inset-0 bg-black/80 z-50 hidden items-center justify-center p-4 transition-opacity duration-300">
+        <div id="survey-modal" class="w-full max-w-2xl bg-[#1a132a] rounded-3xl border border-[var(--color-border)] 
+                                    shadow-2xl shadow-black/50 transform scale-95 opacity-0 transition-all duration-300">
+            <!-- Сюда JS будет вставлять контент -->
+            <div id="modal-content-container" class="p-8">
+                <!-- Прелоадер -->
+                <div class="text-center py-16">
+                    <div class="w-8 h-8 border-4 border-t-[var(--color-accent-primary)] border-transparent rounded-full animate-spin mx-auto"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="mt-24 border-t border-[var(--color-border)]">
+        <div class="max-w-6xl mx-auto px-4 sm:px-8 py-16">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-12">
+                
+                <div class="sm:col-span-2 md:col-span-1">
+                    <a href="/">
+                        <img src="{% static 'img/logo-header.webp' %}" alt="Летучка Логотип" class="w-40 h-auto">
+                    </a>
+                    <p class="mt-4 text-sm text-[var(--color-text-secondary)]">
+                        AI-сервис для создания тестов и&nbsp;онлайн тестирования
+                    </p>
+                </div>
+
+                <div>
+                    <h3 class="text-sm font-semibold text-white uppercase tracking-wider">Продукт</h3>
+                    <div class="mt-4 flex flex-col space-y-3 text-sm">
+                        <a href="#transformation" class="text-[var(--color-text-secondary)] hover:text-white transition-colors">Возможности</a>
+                        <a href="#security-and-payments" class="text-[var(--color-text-secondary)] hover:text-white transition-colors">Безопасность</a>
+                        <a href="#pricing" class="text-[var(--color-text-secondary)] hover:text-white transition-colors">Тарифы</a>
+                        <a href="#faq" class="text-[var(--color-text-secondary)] hover:text-white transition-colors">FAQ</a>
+                        <a href="/dlya-prepodavateley/" target="_blank" rel="noopener noreferrer" class="text-[var(--color-text-secondary)] hover:text-white transition-colors">Преподавателям</a>
+                        
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-sm font-semibold text-white uppercase tracking-wider">Медиа</h3>
+                    <div class="mt-4 flex flex-col space-y-3 text-sm">
+                        <a href="https://letychka.ru/media/main/" class="text-[var(--color-text-secondary)] hover:text-white transition-colors">Блог</a>
+                        <a href="https://productradar.ru/product/letuchka/" target="_blank" rel="noopener noreferrer" class="text-[var(--color-text-secondary)] hover:text-white transition-colors">Product Radar</a>
+                        <a href="https://www.behance.net/gallery/217116137/Letychka-letuchka-AI-servis-dlja-generacii-testov/" target="_blank" rel="noopener noreferrer" class="text-[var(--color-text-secondary)] hover:text-white transition-colors">Кейс на Behance</a>
+                        <a href="https://rutube.ru/video/05833232f69b6dd32e4ccd0e9ec63c4b/?r=wd" target="_blank" rel="noopener noreferrer" class="text-[var(--color-text-secondary)] hover:text-white transition-colors">Промо на Rutube</a>
+                        <a href="https://www.uchportal.ru/" target="_blank"><img border="0" src="https://www.uchportal.ru/banners/baner3.gif" width="200" height="100" alt="Учительский портал " class="text-[var(--color-text-secondary)] hover:text-white transition-colors">Учительский портал</a>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-sm font-semibold text-white uppercase tracking-wider">Компания</h3>
+                    <div class="mt-4 flex flex-col space-y-3 text-sm">
+                        <a href="mailto:support@letychka.ru" class="text-[var(--color-text-secondary)] hover:text-white transition-colors">support@letychka.ru</a>
+                        <a href="/docs/public-offer/" class="text-[var(--color-text-secondary)] hover:text-white transition-colors">Публичная оферта</a>
+                        <a href="/docs/privacy-policy/" class="text-[var(--color-text-secondary)] hover:text-white transition-colors">Политика конфиденциальности</a>
+                        <hr>
+                        <a href="https://golosok.space/" class="text-[var(--color-text-secondary)] hover:text-white transition-colors" target="_blank" rel="noopener noreferrer">Голосок</a>
+                        <a href="https://taxi-watcher.ru/" class="text-[var(--color-text-secondary)] hover:text-white transition-colors" target="_blank" rel="noopener noreferrer">Taxi Watcher</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-16 pt-8 border-t border-[var(--color-border)] flex flex-col sm:flex-row justify-between items-center text-sm text-[var(--color-text-secondary)]">
+                <p>2024-2025 Летучка AI. Design & Development <a href="https://dprofile.ru/case/106507/letucka-ai-servis-dlia-generacii-testov/" target="_blank" rel="noopener noreferrer" class="text-[var(--color-text-secondary)] hover:text-white transition-colors">by Kozak</a></p>
+                <div class="flex items-center space-x-6 text-xl mt-4 sm:mt-0">
+                    <a href="https://t.me/LetychkaRobot" target="_blank" rel="noopener noreferrer" class="hover:text-white transition-colors" title="Telegram">
+                        <i class="fab fa-telegram"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+    // JS для эффекта свечения, следующего за курсором
+    document.querySelectorAll('.card').forEach(card => {
+        card.addEventListener('mousemove', (e) => {
+            const rect = card.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            card.style.setProperty('--x', `${x}px`);
+            card.style.setProperty('--y', `${y}px`);
+        });
+    });
+    </script>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const modalOverlay = document.getElementById('survey-modal-overlay');
+        const modal = document.getElementById('survey-modal');
+        const contentContainer = document.getElementById('modal-content-container');
+
+        async function openModal(surveyId) {
+            modalOverlay.classList.remove('hidden');
+            modalOverlay.classList.add('flex');
+            setTimeout(() => {
+                modalOverlay.classList.add('visible', 'opacity-100');
+                modal.classList.add('visible', 'scale-100', 'opacity-100');
+            }, 10);
+
+            try {
+                const response = await fetch(`/api/survey-details/${surveyId}/`);
+                const data = await response.json();
+                renderModalContent(data);
+            } catch (error) {
+                contentContainer.innerHTML = '<p class="text-center text-red-400">Не удалось загрузить данные теста.</p>';
+            }
+        }
+
+        function renderModalContent(data) {
+            const verifiedBadge = data.is_verified 
+                ? `<i class="fas fa-check-circle text-blue-400 text-xl" title="Проверено Летучкой"></i>` 
+                : '';
+            
+            contentContainer.innerHTML = `
+                <div class="flex justify-between items-start gap-4">
+                    <h2 class="text-2xl font-bold text-white">${data.title}</h2>
+                    ${verifiedBadge}
+                </div>
+                <p class="text-sm text-gray-400 mt-2">Автор: <span class="font-semibold text-white">${data.author_nickname}</span></p>
+                <div class="flex items-center gap-6 text-sm text-gray-400 mt-4 pt-4 border-t border-[var(--color-border)]">
+                    <div><span class="font-bold text-white">${data.questions_count}</span> вопросов</div>
+                    <div><span class="font-bold text-white">${data.view_count}</span> просмотров</div>
+                    <div><span class="font-bold text-white">${data.attempts_count}</span> прохождений</div>
+                </div>
+                <p class="mt-6 text-gray-300 leading-relaxed">${data.description}</p>
+                <div class="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <button onclick="location.href='${data.remix_url || '/payment'}'" class="group p-4 bg-black/20 rounded-xl font-bold text-white border border-transparent hover:border-[var(--color-border)] hover:bg-[var(--color-surface)] transition-all">
+                        Копировать себе <span class="ml-1 text-xs px-2 py-0.5 rounded-full bg-green-500/20 text-green-300">ПРЕМИУМ</span>
+                    </button>
+                    <a href="${data.take_test_url}" class="group p-4 bg-[var(--color-accent-primary)] rounded-xl font-bold text-white text-center transition-transform hover:scale-105">
+                        Пройти тест <i class="fas fa-arrow-right ml-2 transition-transform group-hover:translate-x-1"></i>
+                    </a>
+                </div>
+            `;
+        }
+
+        function closeModal() {
+            modalOverlay.classList.remove('visible', 'opacity-100');
+            modal.classList.remove('visible', 'scale-100', 'opacity-100');
+            setTimeout(() => {
+                modalOverlay.classList.add('hidden');
+                contentContainer.innerHTML = '<div class="text-center py-16"><div class="w-8 h-8 border-4 border-t-[var(--color-accent-primary)] border-transparent rounded-full animate-spin mx-auto"></div></div>';
+            }, 300);
+        }
+
+        document.querySelectorAll('.survey-card-link').forEach(link => {
+            link.addEventListener('click', () => {
+                openModal(link.dataset.surveyId);
+            });
+        });
+        modalOverlay.addEventListener('click', (event) => {
+            if (event.target === modalOverlay) closeModal();
+        });
+    });
+    </script>
+</body>
+</html>

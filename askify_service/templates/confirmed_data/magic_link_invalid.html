@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Летучка • Регистрация</title>
+    {% load static %}
+    <link rel="icon" href="{% static 'img/favicon.ico' %}" type="image/ico">
+    <link rel="apple-touch-icon" sizes="180x180" href="{% static 'img/apple-touch-icon.png' %}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=Unbounded:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Yandex.Metrika counter -->
+    <script type="text/javascript" >
+        setTimeout(function() {
+            (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+            m[i].l=1*new Date();
+            for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+            k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+            (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+        
+            ym(98823704, "init", {
+                clickmap:true,
+                trackLinks:true,
+                accurateTrackBounce:true,
+                webvisor:true
+            });
+        }, 1000);
+    </script>
+    <noscript><div><img src="https://mc.yandex.ru/watch/98823704" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+    <!-- /Yandex.Metrika counter -->
+
+    {% if debug %}
+        <script src="https://cdn.tailwindcss.com"></script>
+    {% else %}
+        <script src="{% static 'vendor/tailwind.full.min.js' %}"></script>
+    {% endif %}
+
+
+    <style>
+        :root {
+            --color-bg: #0F0818;
+            --color-surface: rgba(30, 24, 48, 0.5);
+            --color-border: rgba(97, 109, 240, 0.2);
+            --color-text-primary: #f0f0f0;
+            --color-text-secondary: #a0a0b0;
+            --color-accent-primary: #616DF0;
+            --color-accent-secondary: #79EF66;
+        }
+        body { background-color: var(--color-bg); color: var(--color-text-primary); font-family: 'Inter', sans-serif; }
+        h1, h2, h3 { font-family: 'Unbounded', sans-serif; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeIn { animation: fadeIn 0.5s ease-out forwards; }
+
+        input[type="checkbox"]:checked ~ div svg {
+            opacity: 1;
+        }
+
+        #main-header {
+            transition: padding 0.3s ease-in-out, background-color 0.3s ease, box-shadow 0.3s ease, top 0.3s ease-in-out;
+            max-width: max-content;
+            border-radius: 9999px;
+            margin: 0 auto;
+            top: 32px;
+            padding: 0.5rem;
+        }
+        
+        #main-header.scrolled {
+            padding-top: 0.75rem;
+            padding-bottom: 0.75rem;
+            background-color: rgba(20, 18, 23, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            box-shadow: 0 8px 32px rgba(62, 30, 112, 0.3);
+            top: 12px;
+            z-index: 50;
+        }
+        
+        /* Плавность для внутренних элементов */
+        #main-header .logo-img, #main-header .nav-link, #main-header .cta-btn, #main-header .main-nav {
+            transition: all 0.3s ease-in-out;
+        }
+        #main-header .main-nav {
+            padding: 0 64px;
+        }
+        #main-header.scrolled .main-nav {
+            padding: 0 32px;
+        }
+
+        /* СТИЛИ ДЛЯ МОБИЛЬНОГО МЕНЮ */
+        #mobile-menu {
+            max-width: 100%;
+            position: absolute;
+            top: calc(100% + 0.5rem);
+            right: 0;
+            opacity: 0;
+            transform-origin: top right;
+            transform: scale(0.95);
+            pointer-events: none;
+            transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
+        }
+
+        #mobile-menu.menu-open {
+            opacity: 1;
+            transform: scale(1);
+            pointer-events: auto;
+        }
+
+        @media screen and (width <= 600px) {
+            #main-header {
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+<main class="flex-grow flex items-center justify-center p-4 text-center">
+    <div>
+        <div class="mx-auto w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center mb-6">
+            <i class="fas fa-exclamation-triangle text-3xl text-red-400"></i>
+        </div>
+        <h1 class="text-3xl font-bold text-white">Ссылка недействительна</h1>
+        <p class="mt-2 text-lg text-gray-400">
+            Возможно, ее срок действия истек или она уже была использована.<br>
+            Пожалуйста, запросите новую ссылку для входа.
+        </p>
+        <a href="{% url 'passwordless_auth' %}" class="mt-6 inline-block px-6 py-3 bg-[var(--color-accent-primary)] ...">Запросить новую</a>
+    </div>
+</main>
+
+</body>
+</html>

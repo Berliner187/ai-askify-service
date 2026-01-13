@@ -111,6 +111,17 @@
             text-align: left;
             padding: 20px;
         }
+
+        #promo-container input::placeholder {
+            color: #6B7280;
+            font-weight: 500;
+        }
+        #promo-container:focus-within {
+            border-color: var(--color-accent-primary);
+            box-shadow: 0 0 15px rgba(97, 109, 240, 0.3);
+        }
+        .promo-success { color: var(--color-accent-secondary); }
+        .promo-error { color: #F87171; }
     </style>
 </head>
 
@@ -127,35 +138,78 @@
         <!-- ЗАГОЛОВОК -->
         <div class="text-center mb-8 animate-fadeIn">
             <div class="flex justify-center items-center gap-3 mb-2">
-                <h1 class="text-2xl font-['Unbounded_Medium'] font-bold text-white">Летучка <span class="gradient-text">Premium</span></h1>
+                <h1 class="text-2xl font-['Unbounded_Medium'] font-bold text-white">Летучка <span class="gradient-text">Премиум</span></h1>
             </div>
             <p class="mt-2 text-[var(--text-dim)] pricing-subtitle">Прекратите тратить вечера на рутину и освободите время для себя.</p>
         </div>
 
-        <!-- СЕТКА ТАРИФОВ -->
         <div class="grid grid-cols-3 gap-2 mb-8 animate-fadeIn" style="animation-delay: 0.1s;" id="plans-container">
-            <!-- НЕДЕЛЯ PREMIUM -->
-            <div class="plan-card" data-plan="premium-week" data-price="390" data-desc="Премиум неделя">
-                <div class="plan-badge">Тест-драйв</div>
-                <p class="sm:text-sm text-xs font-semibold">Неделя</s-p>
-                <p class="text-lg sm:text-2xl font-bold">390 р</p>
-                <p class="text-sm font-semibold text-white/60">Попробовать все функции</p>
+        {% if is_veteran %}
+            <!-- МЕСЯЦ PREMIUM (со скидкой) -->
+            <div class="plan-card popular" data-plan="premium-month" data-price="590" data-original-price="690" data-desc="Премиум">
+                <div class="plan-badge">Популярный</div>
+                <p class="sm:text-sm text-xs font-semibold">Месяц</p>
+                <p class="text-lg sm:text-xl text-white/60 line-through">690 р</p>
+                <p id="price-month" class="text-lg sm:text-3xl font-bold">590 р</p>
+                <p class="text-sm sm:text-sm text-white/50">~147 р / неделя</p>
             </div>
-            <!-- МЕСЯЦ PREMIUM -->
-            <div class="plan-card" data-plan="premium-month" data-price="590" data-desc="Премиум">
+            
+            <!-- 3 МЕСЯЦА PREMIUM -->
+            <div class="plan-card" data-plan="premium-quarter" data-price="1440" data-original-price="1440" data-desc="Премиум 3 мес">
+                <p class="sm: text-sm text-xs font-semibold">3 месяца</p>
+                <p id="price-three-months" class="text-lg sm:text-2xl font-bold">1440 р</p>
+                <p class="text-sm font-semibold text-white/50">~120 р / неделя</p>
+            </div>
+
+            <!-- ГОД PREMIUM -->
+            <div class="plan-card" data-plan="premium-year" data-price="4800" data-original-price="4800" data-desc="Премиум 1 год">
+                <div class="plan-badge">Макс. выгода</div>
+                <p class="sm:text-sm text-xs font-semibold">Год</p>
+                <p id="price-year" class="text-lg sm:text-2xl font-bold">4800 р</p>
+                <p class="text-sm font-semibold text-white/50">~92 р / неделя</p>
+            </div>
+
+        {% else %}
+            <!-- НЕДЕЛЯ PREMIUM -->
+            <div class="plan-card" data-plan="premium-week" data-price="390" data-original-price="390" data-desc="Премиум неделя">
+                <div class="plan-badge">Тест-драйв</div>
+                <p class="sm:text-sm text-xs font-semibold">Неделя</p>
+                <p id="price-week" class="text-lg sm:text-2xl font-bold">390 р</p>
+            </div>
+
+            <!-- МЕСЯЦ PREMIUM (популярный для новичков) -->
+            <div class="plan-card popular" data-plan="premium-month" data-price="590" data-original-price="690" data-desc="Премиум">
                 <div class="plan-badge">Лучший выбор</div>
                 <p class="sm:text-sm text-xs font-semibold">Месяц</p>
                 <p class="text-lg sm:text-xl text-white/60 line-through">690 р</p>
-                <p class="text-lg sm:text-3xl font-bold">590 р</p>
-                <p class="text-sm font-semibold text-white/60">~147 р / неделя</p>
+                <p id="price-month" class="text-lg sm:text-3xl font-bold">590 р</p>
+                <p class="text-sm sm:text-sm text-white/50">~147 р / неделя</p>
             </div>
+
             <!-- 3 МЕСЯЦА PREMIUM -->
-            <div class="plan-card popular" data-plan="premium-quarter" data-price="1440" data-desc="Премиум 3 мес">
+            <div class="plan-card" data-plan="premium-quarter" data-price="1440" data-original-price="1440" data-desc="Премиум 3 мес">
                 <div class="plan-badge">Макс. выгода</div>
                 <p class="sm: text-sm text-xs font-semibold">3 месяца</p>
-                <p class="text-lg sm:text-2xl font-bold">1440 р</p>
-                <p class="text-sm font-semibold text-white/60">~120 р / неделя</p>
+                <p id="price-three-months" class="text-lg sm:text-2xl font-bold">1440 р</p>
+                <p class="text-sm font-semibold text-white/50">~120 р / неделя</p>
             </div>
+            
+        {% endif %}
+        </div>
+            
+        <!-- БЛОК ПРОМОКОДА -->
+        <div class="mt-8 max-w-sm mx-auto">
+            <div id="promo-container" class="relative p-1 bg-[var(--color-surface)] rounded-full border border-[var(--color-border)] flex items-center gap-2">
+                <span class="promo-icon text-blue-300 text-xl pl-3">❄️</span>
+                <input type="text" id="promo-input" placeholder="Есть промокод?" 
+                    class="flex-grow bg-transparent text-white placeholder-gray-500 font-semibold focus:outline-none">
+                    
+                <button id="apply-promo-btn" 
+                        class="px-5 py-2 bg-[var(--color-accent-primary)] text-white font-bold rounded-full transition-transform hover:scale-105 active:scale-98">
+                    Применить
+                </button>
+            </div>
+            <p id="promo-message" class="text-center text-sm mt-2 h-12 mb-6"></p>
         </div>
 
         <!-- СПИСОК ФИЧ PREMIUM -->
@@ -311,6 +365,8 @@
                 ctaText = `Оплатить ${price} руб на 3 месяца`;
             } else if (periodText.includes('Месяц')) {
                 ctaText = `Оплатить ${price} руб на месяц`;
+            } else if (periodText.includes('Год')) {
+                ctaText = `Оплатить ${price} руб на год`;
             } else {
                 ctaText = `Оплатить ${price} руб на неделю`;
             }
@@ -394,6 +450,170 @@
         }
     });
   </script>
+
+  <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const promoInput = document.getElementById('promo-input');
+            const applyBtn = document.getElementById('apply-promo-btn');
+            const promoMessage = document.getElementById('promo-message');
+            
+            // --- Цены тарифов (захардкодим, чтобы не дергать бэк) ---
+            const originalPrices = {
+                week: 390,
+                month: 590,
+                three_months: 1440,
+            };
+            
+            const priceElements = {
+                month: document.getElementById('price-month'),
+                three_months: document.getElementById('price-three-months'),
+                year: document.getElementById('price-year')
+            };
+
+            applyBtn.addEventListener('click', async () => {
+                const code = promoInput.value.trim();
+                if (!code) return;
+
+                applyBtn.textContent = '...';
+                applyBtn.disabled = true;
+                promoMessage.textContent = '';
+                promoMessage.className = 'text-center text-sm mt-2 mb-8 h-8';
+
+                try {
+                    const response = await fetch("{% url 'api_validate_promo' %}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': '{{ csrf_token }}'
+                        },
+                        body: JSON.stringify({ promo_code: code })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.valid) {
+                        // --- УСПЕХ ---
+                        promoMessage.textContent = data.message;
+                        promoMessage.classList.add('promo-success');
+                        
+                        // Пересчитываем и обновляем цены на странице
+                        const discountMultiplier = 1 - (data.discount_percent / 100);
+                        
+                        for (const plan in originalPrices) {
+                            const newPrice = Math.round(originalPrices[plan] * discountMultiplier);
+                            if (priceElements[plan]) {
+                                priceElements[plan].textContent = newPrice + ' ₽';
+                            }
+                        }
+                        
+                        // Деактивируем поле и кнопку
+                        promoInput.disabled = true;
+                        applyBtn.style.display = 'none';
+
+                    } else {
+                        // --- ОШИБКА ---
+                        throw new Error(data.error);
+                    }
+
+                } catch (error) {
+                    promoMessage.textContent = error.message;
+                    promoMessage.classList.add('promo-error');
+                } finally {
+                    if (!promoInput.disabled) {
+                        applyBtn.textContent = 'Применить';
+                        applyBtn.disabled = false;
+                    }
+                }
+            });
+
+            // Обработчик для Enter
+            promoInput.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    applyBtn.click();
+                }
+            });
+        });
+        </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const applyBtn = document.getElementById('apply-promo-btn');
+            const promoInput = document.getElementById('promo-input');
+            const planCards = document.querySelectorAll('.plan-card');
+
+            applyBtn.addEventListener('click', async () => {
+                const code = promoInput.value.trim();
+                if (!code) return;
+
+                try {
+                    const response = await fetch("{% url 'api_validate_promo' %}", {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                        body: JSON.stringify({ promo_code: code })
+                    });
+                    const data = await response.json();
+
+                    if (data.valid) {
+                        promoMessage.textContent = data.message;
+                        promoMessage.classList.add('promo-success');
+                        
+                        // --- УНИВЕРСАЛЬНАЯ ЛОГИКА ОБНОВЛЕНИЯ ЦЕН ---
+                        const discountMultiplier = 1 - (data.discount_percent / 100);
+
+                        planCards.forEach(card => {
+                            const originalPrice = parseFloat(card.dataset.originalPrice);
+                            if (originalPrice) {
+                                const newPrice = Math.round(originalPrice * discountMultiplier);
+                                
+                                // Ищем элемент с ценой ВНУТРИ карточки
+                                const priceEl = card.querySelector('[id^="price-"]');
+                                if (priceEl) {
+                                    priceEl.textContent = newPrice + ' р';
+                                }
+                                // Обновляем data-price для кнопки оплаты
+                                card.dataset.price = newPrice;
+                            }
+                        });
+
+                        document.querySelectorAll('.plan-card, .long-term-plan').forEach(c => c.classList.remove('selected'));
+                        planCard.classList.add('selected');
+                        
+                        const price = planCard.dataset.price;
+                        const desc = planCard.dataset.desc;
+                        
+                        amountInput.value = price;
+                        descInput.value = desc;
+                        
+                        let ctaText = `Перейти к оплате`;
+
+                        console.log(periodText);
+
+                        if (periodText.includes('3 месяца')) {
+                            ctaText = `Оплатить ${price} руб на 3 месяца`;
+                        } else if (periodText.includes('Месяц')) {
+                            ctaText = `Оплатить ${price} руб на месяц`;
+                        } else {
+                            ctaText = `Оплатить ${price} руб на неделю`;
+                        }
+                        paymentButton.textContent = ctaText;
+                        paymentButton.disabled = false;
+                        
+                        promoInput.disabled = true;
+                        applyBtn.style.display = 'none';
+
+                    } else {
+                        throw new Error(data.error);
+                    }
+                } catch (error) {
+                    // ... (обработка ошибок)
+                } finally {
+                    // ... (возвращение кнопки в исходное состояние)
+                }
+            });
+        });
+
+    </script>
 
     {% include 'footer-s.html' %}
 </body>

@@ -105,15 +105,21 @@ WSGI_APPLICATION = 'askify_app.wsgi.application'
 
 
 # --- DATABASES
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': env('NAME_DB'),
+#         'USER': env('USER_DB'),
+#         'PASSWORD': env('PASSWORD_DB'),
+#         'HOST': env('HOST_DB'),
+#         'PORT': env('PORT_DB'),
+#         'CONN_MAX_AGE': 0
+#     }
+# }
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': env('NAME_DB'),
-        'USER': env('USER_DB'),
-        'PASSWORD': env('PASSWORD_DB'),
-        'HOST': env('HOST_DB'),
-        'PORT': env('PORT_DB'),
-        'CONN_MAX_AGE': 0
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 
@@ -167,7 +173,7 @@ USE_TZ = True
 
 AUTH_USER_MODEL = 'askify_service.AuthUser'
 
-SESSION_COOKIE_AGE = 5_000_000
+SESSION_COOKIE_AGE = 15_000_000
 
 
 # --- STATIC FILES & CONST
