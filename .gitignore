@@ -27,3 +27,5 @@ app.log.2
 app.log.4
 app.log.3
 *.1
+/static
+*.dump

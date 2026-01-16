@@ -242,7 +242,7 @@ class ManageGenerationSurveys:
             ctypes.string_at(0)
 
     def process_generated_text(self, generated_text):
-        self._validate_json_buffer_encoding(generated_text)
+        # self._validate_json_buffer_encoding(generated_text)
 
         json_match = re.search(r'(\{.*\})', generated_text, re.DOTALL)
 
@@ -299,7 +299,11 @@ class ManageGenerationSurveys:
             generated_text = completion.choices[0].message.content
             print("\n\ngenerated_text", generated_text)
             cleaned_generated_text = generated_text.replace("json", "").replace("`", "")
-            tokens_used = completion.usage.total_tokens
+            
+            try:
+                tokens_used = completion.usage.total_tokens
+            except Exception as fail:
+                tokens_used = 0
 
             print("\n\ncleaned_generated_text", cleaned_generated_text)
             return {
