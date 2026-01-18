@@ -122,6 +122,48 @@
         }
         .promo-success { color: var(--color-accent-secondary); }
         .promo-error { color: #F87171; }
+
+
+        /* Анимация переливания неона */
+        @keyframes neon-flow {
+            0% { border-color: #7928CA; box-shadow: 0 0 15px rgba(121, 40, 202, 0.3); }
+            50% { border-color: #FF0080; box-shadow: 0 0 25px rgba(255, 0, 128, 0.4); }
+            100% { border-color: #007CF0; box-shadow: 0 0 15px rgba(0, 124, 240, 0.3); }
+        }
+
+        .plan-card.premium-neon {
+            position: relative;
+            border: 2px solid #7928CA;
+            border-radius: 1.5rem;
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            animation: neon-flow 4s infinite alternate;
+            z-index: 1;
+        }
+
+        .plan-card.premium-neon .plan-badge {
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            background: linear-gradient(45deg, #7928CA, #FF0080);
+            box-shadow: 0 0 15px rgba(255, 0, 128, 0.4);
+            border: none;
+            color: #fff;
+            white-space: nowrap;
+        }
+
+        .plan-card.premium-neon:hover {
+            transform: translateY(-4px);
+            z-index: 2;
+        }
+
+        .plan-card.premium-neon.selected {
+            border-color: #fff;
+            box-shadow: 0 0 35px rgba(255, 255, 255, 0.4);
+        }
     </style>
 </head>
 
@@ -145,30 +187,30 @@
 
         <div class="grid grid-cols-3 gap-2 mb-8 animate-fadeIn" style="animation-delay: 0.1s;" id="plans-container">
         {% if is_veteran %}
-            <!-- МЕСЯЦ PREMIUM (со скидкой) -->
-            <div class="plan-card popular" data-plan="premium-month" data-price="590" data-original-price="690" data-desc="Премиум">
-                <div class="plan-badge">Популярный</div>
-                <p class="sm:text-sm text-xs font-semibold">Месяц</p>
-                <p class="text-lg sm:text-xl text-white/60 line-through">690 р</p>
-                <p id="price-month" class="text-lg sm:text-3xl font-bold">590 р</p>
-                <p class="text-sm sm:text-sm text-white/50">~147 р / неделя</p>
-            </div>
-            
-            <!-- 3 МЕСЯЦА PREMIUM -->
-            <div class="plan-card" data-plan="premium-quarter" data-price="1440" data-original-price="1440" data-desc="Премиум 3 мес">
-                <p class="sm: text-sm text-xs font-semibold">3 месяца</p>
-                <p id="price-three-months" class="text-lg sm:text-2xl font-bold">1440 р</p>
-                <p class="text-sm font-semibold text-white/50">~120 р / неделя</p>
-            </div>
-
             <!-- ГОД PREMIUM -->
-            <div class="plan-card" data-plan="premium-year" data-price="4800" data-original-price="4800" data-desc="Премиум 1 год">
+            <div class="plan-card premium-neon" data-plan="premium-year" data-price="4800" data-original-price="4800" data-desc="Премиум 1 год">
                 <div class="plan-badge">Макс. выгода</div>
                 <p class="sm:text-sm text-xs font-semibold">Год</p>
                 <p id="price-year" class="text-lg sm:text-2xl font-bold">4800 р</p>
                 <p class="text-sm font-semibold text-white/50">~92 р / неделя</p>
             </div>
 
+            <!-- 3 МЕСЯЦА PREMIUM -->
+            <div class="plan-card" data-plan="premium-quarter" data-price="1440" data-original-price="1440" data-desc="Премиум 3 мес">
+                <div class="plan-badge">Популярный</div>
+                <p class="sm: text-sm text-xs font-semibold">3 месяца</p>
+                <p class="text-lg sm:text-xl text-white/60 line-through">2070 р</p>
+                <p id="price-three-months" class="text-lg sm:text-3xl font-bold">1440 р</p>
+                <p class="text-sm font-semibold text-white/50">~120 р / неделя</p>
+            </div>
+
+            <!-- МЕСЯЦ PREMIUM -->
+            <div class="plan-card popular" data-plan="premium-month" data-price="690" data-original-price="690" data-desc="Премиум">
+                <p class="sm:text-sm text-xs font-semibold">Месяц</p>
+                <p id="price-month" class="text-lg sm:text-2xl font-bold">690 р</p>
+                <p class="text-sm sm:text-sm text-white/50">~147 р / неделя</p>
+            </div>
+            
         {% else %}
             <!-- НЕДЕЛЯ PREMIUM -->
             <div class="plan-card" data-plan="premium-week" data-price="390" data-original-price="390" data-desc="Премиум неделя">
@@ -178,11 +220,11 @@
             </div>
 
             <!-- МЕСЯЦ PREMIUM (популярный для новичков) -->
-            <div class="plan-card popular" data-plan="premium-month" data-price="590" data-original-price="690" data-desc="Премиум">
+            <div class="plan-card popular" data-plan="premium-month" data-price="690" data-original-price="690" data-desc="Премиум">
                 <div class="plan-badge">Лучший выбор</div>
                 <p class="sm:text-sm text-xs font-semibold">Месяц</p>
-                <p class="text-lg sm:text-xl text-white/60 line-through">690 р</p>
-                <p id="price-month" class="text-lg sm:text-3xl font-bold">590 р</p>
+                <p class="text-lg sm:text-xl text-white/60 line-through">900 р</p>
+                <p id="price-month" class="text-lg sm:text-3xl font-bold">690 р</p>
                 <p class="text-sm sm:text-sm text-white/50">~147 р / неделя</p>
             </div>
 
@@ -198,7 +240,7 @@
         </div>
             
         <!-- БЛОК ПРОМОКОДА -->
-        <div class="mt-8 max-w-sm mx-auto">
+        <!-- <div class="mt-8 max-w-sm mx-auto">
             <div id="promo-container" class="relative p-1 bg-[var(--color-surface)] rounded-full border border-[var(--color-border)] flex items-center gap-2">
                 <span class="promo-icon text-blue-300 text-xl pl-3">❄️</span>
                 <input type="text" id="promo-input" placeholder="Есть промокод?" 
@@ -210,7 +252,7 @@
                 </button>
             </div>
             <p id="promo-message" class="text-center text-sm mt-2 h-12 mb-6"></p>
-        </div>
+        </div> -->
 
         <!-- СПИСОК ФИЧ PREMIUM -->
         <div class="space-y-3 animate-fadeIn">
@@ -231,7 +273,7 @@
 
             <div class="feature-item">
                 <div class="feature-icon animate-fadeIn" style="animation-delay: 320ms;"><i class="fas fa-bolt"></i></div>
-                <p class="feature-text"><strong>Максимальные лимиты.</strong> Создавайте до 50 тестов в сутки (до 15 вопросов в каждом).</p>
+                <p class="feature-text"><strong>Максимальные лимиты.</strong> Создавайте до 50 тестов в сутки (до 20 вопросов в каждом).</p>
             </div>
             
             <div class="feature-item">
@@ -245,6 +287,15 @@
                     <strong>Самопроверка.</strong> Проходите тесты прямо на платформе, чтобы быстро проверить свои знания или убедиться в качестве сгенерированных вопросов.
                 </p>
             </div>
+        </div>
+
+        <div class="mt-12 mb-8 text-center">
+            <p class="text-7xl font-extrabold gradient-text">
+                3,000+
+            </p>
+            <p class="mt-2 font-semibold text-gray-400">
+                Учителей, преподавателей, HR-специалистов и студентов уже в Летучке!
+            </p>
         </div>
 
         <div class="mt-12 mb-8 text-center">
@@ -363,10 +414,16 @@
 
             if (periodText.includes('3 месяца')) {
                 ctaText = `Оплатить ${price} руб на 3 месяца`;
+                paymentButton.style.background = 'var(--accent)';
+                paymentButton.style.shadow = 'none';
             } else if (periodText.includes('Месяц')) {
                 ctaText = `Оплатить ${price} руб на месяц`;
+                paymentButton.style.background = 'var(--accent)';
+                paymentButton.style.shadow = 'none';
             } else if (periodText.includes('Год')) {
                 ctaText = `Оплатить ${price} руб на год`;
+                paymentButton.style.background = 'linear-gradient(45deg, #7928CA, #FF0080)';
+                paymentButton.style.boxShadow = '0 0 20px rgba(255, 0, 128, 0.4)';
             } else {
                 ctaText = `Оплатить ${price} руб на неделю`;
             }
@@ -440,8 +497,8 @@
             .catch(() => alert('Ошибка сети. Пожалуйста, попробуйте еще раз.'));
         });
 
-        // --- Инициализация: предвыбираем Премиум ---
-        const defaultPlan = document.querySelector('.plan-card[data-plan="premium-month"]');
+        // --- Инициализация: предвыбираем Премиум 3 мес ---
+        const defaultPlan = document.querySelector('.plan-card[data-plan="premium-quarter"]');
         if (defaultPlan) {
             selectPlan(defaultPlan);
         } else {
@@ -457,7 +514,7 @@
             const applyBtn = document.getElementById('apply-promo-btn');
             const promoMessage = document.getElementById('promo-message');
             
-            // --- Цены тарифов (захардкодим, чтобы не дергать бэк) ---
+            // --- Цены тарифов ---
             const originalPrices = {
                 week: 390,
                 month: 590,
@@ -566,12 +623,10 @@
                             if (originalPrice) {
                                 const newPrice = Math.round(originalPrice * discountMultiplier);
                                 
-                                // Ищем элемент с ценой ВНУТРИ карточки
                                 const priceEl = card.querySelector('[id^="price-"]');
                                 if (priceEl) {
                                     priceEl.textContent = newPrice + ' р';
                                 }
-                                // Обновляем data-price для кнопки оплаты
                                 card.dataset.price = newPrice;
                             }
                         });

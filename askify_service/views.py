@@ -134,6 +134,10 @@ tracer_l = logging.getLogger('askify_app')
 
 signer = Signer()
 
+# Параметры входа
+MAX_LOGIN_ATTEMPTS = 5
+LOCKOUT_TIME = 60 * 30
+
 
 @check_legal_process
 def index(request):
@@ -2662,10 +2666,6 @@ def quick_register_api(request):
 
     login(request, user)
     return JsonResponse({'redirect': '/payment'})
-
-
-MAX_LOGIN_ATTEMPTS = 5
-LOCKOUT_TIME = 60 * 30
 
 
 @check_legal_process
@@ -5372,7 +5372,7 @@ class PaymentInitiateView(View):
             'Начальный': 0,
             'Лайтовый': 99,
             'Стандартный': 550,
-            'Премиум': 590,
+            'Премиум': 690,
             'Стандартный 3 мес': 1470,
             'Премиум 3 мес': 1440,
             'Ультра': 990,

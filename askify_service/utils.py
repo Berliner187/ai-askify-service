@@ -99,7 +99,11 @@ class ManageGenerationSurveys:
             )
 
             generated_text = completion.choices[0].message.content
-            tokens_used = completion.usage.total_tokens
+
+            try:
+                tokens_used = completion.usage.total_tokens
+            except Exception as fail:
+                tokens_used = 0
 
             try:
                 cleaned_generated_text = generated_text.replace("json", "").replace("`", "")
@@ -525,7 +529,12 @@ class GenerationModelsControl:
                 generated_text = completion.choices[0].message.content
                 print("\n\ngenerated_text", generated_text)
                 cleaned_generated_text = generated_text.replace("json", "").replace("`", "")
-                tokens_used = completion.usage.total_tokens
+
+                try:
+                    tokens_used = completion.usage.total_tokens
+                except Exception as fail:
+                    tokens_used = 0
+                
                 print("\n\ncleaned_generated_text", cleaned_generated_text, '\ntokens used', tokens_used)
                 return {
                     'success': True, 'generated_text': cleaned_generated_text, 'tokens_used': tokens_used,
