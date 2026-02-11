@@ -188,9 +188,10 @@
         <div class="grid grid-cols-3 gap-2 mb-8 animate-fadeIn" style="animation-delay: 0.1s;" id="plans-container">
         {% if is_veteran %}
             <!-- ГОД PREMIUM -->
-            <div class="plan-card premium-neon" data-plan="premium-year" data-price="4800" data-original-price="4800" data-desc="Премиум 1 год">
+            <div class="plan-card premium-neon" data-plan="premium-year" data-price="4800" data-original-price="4800" data-desc="Премиум Год">
                 <div class="plan-badge">Макс. выгода</div>
                 <p class="sm:text-sm text-xs font-semibold">Год</p>
+                <p class="text-lg sm:text-xl text-white/60 line-through">8280 р</p>
                 <p id="price-year" class="text-lg sm:text-2xl font-bold">4800 р</p>
                 <p class="text-sm font-semibold text-white/50">~92 р / неделя</p>
             </div>
@@ -208,10 +209,27 @@
             <div class="plan-card popular" data-plan="premium-month" data-price="690" data-original-price="690" data-desc="Премиум">
                 <p class="sm:text-sm text-xs font-semibold">Месяц</p>
                 <p id="price-month" class="text-lg sm:text-2xl font-bold">690 р</p>
-                <p class="text-sm sm:text-sm text-white/50">~147 р / неделя</p>
+                <p class="text-sm sm:text-sm text-white/50">~172 р / неделя</p>
             </div>
             
         {% else %}
+            <!-- МЕСЯЦ PREMIUM (популярный для новичков) -->
+            <div class="plan-card popular" data-plan="premium-month" data-price="690" data-original-price="690" data-desc="Премиум">
+                <div class="plan-badge">Лучший выбор</div>
+                <p class="sm:text-sm text-xs font-semibold">Месяц</p>
+                <p class="text-lg sm:text-xl text-white/60 line-through">900 р</p>
+                <p id="price-month" class="text-lg sm:text-2xl font-bold">690 р</p>
+                <p class="text-sm sm:text-sm text-white/50">~172 р / неделя</p>
+            </div>
+
+            <!-- 3 МЕСЯЦА PREMIUM -->
+            <div class="plan-card" data-plan="premium-quarter" data-price="1440" data-original-price="1440" data-desc="Премиум 3 мес">
+                <div class="plan-badge">Макс. выгода</div>
+                <p class="sm: text-sm text-xs font-semibold">3 месяца</p>
+                <p id="price-three-months" class="text-2xl sm:text-2xl font-bold">1440 р</p>
+                <p class="text-sm font-semibold text-white/50">~120 р / неделя</p>
+            </div>
+            
             <!-- НЕДЕЛЯ PREMIUM -->
             <div class="plan-card" data-plan="premium-week" data-price="390" data-original-price="390" data-desc="Премиум неделя">
                 <div class="plan-badge">Тест-драйв</div>
@@ -219,23 +237,6 @@
                 <p id="price-week" class="text-lg sm:text-2xl font-bold">390 р</p>
             </div>
 
-            <!-- МЕСЯЦ PREMIUM (популярный для новичков) -->
-            <div class="plan-card popular" data-plan="premium-month" data-price="690" data-original-price="690" data-desc="Премиум">
-                <div class="plan-badge">Лучший выбор</div>
-                <p class="sm:text-sm text-xs font-semibold">Месяц</p>
-                <p class="text-lg sm:text-xl text-white/60 line-through">900 р</p>
-                <p id="price-month" class="text-lg sm:text-3xl font-bold">690 р</p>
-                <p class="text-sm sm:text-sm text-white/50">~147 р / неделя</p>
-            </div>
-
-            <!-- 3 МЕСЯЦА PREMIUM -->
-            <div class="plan-card" data-plan="premium-quarter" data-price="1440" data-original-price="1440" data-desc="Премиум 3 мес">
-                <div class="plan-badge">Макс. выгода</div>
-                <p class="sm: text-sm text-xs font-semibold">3 месяца</p>
-                <p id="price-three-months" class="text-lg sm:text-2xl font-bold">1440 р</p>
-                <p class="text-sm font-semibold text-white/50">~120 р / неделя</p>
-            </div>
-            
         {% endif %}
         </div>
             
@@ -300,7 +301,7 @@
 
         <div class="mt-12 mb-8 text-center">
             <p class="text-7xl font-extrabold gradient-text">
-                25,000+
+                40,000+
             </p>
             <p class="mt-2 font-semibold text-gray-400">
                 Тестов уже создано преподавателями и студентами
@@ -351,7 +352,7 @@
 
         <div class="max-w-3xl mx-auto px-4 sm:px-8">
             <div class="mt-8 mb-4 pt-8 border-t border-[var(--color-border)] flex flex-col sm:flex-row justify-between items-center text-xs text-gray-600 text-center">
-                <p>2024-2025 Летучка AI. Design & Development <a class="text-gray-500 hover:text-[var(--color-accent-primary)]" rel='nofollow' href="https://dprofile.ru/kozak_developer" target="_blank">by Kozak</a></p>
+                <p>2024-2026 Летучка AI. Design & Development <a class="text-gray-500 hover:text-[var(--color-accent-primary)]" rel='nofollow' href="https://dprofile.ru/kozak_developer" target="_blank">by Kozak</a></p>
                 <div class="mt-2 sm:mt-0">
                     <a href="/docs/public-offer" class="hover:text-gray-400">Публичная оферта</a>
                     <span class="mx-2">|</span>

@@ -10,6 +10,9 @@ import re
 import time
 import hashlib
 import logging
+import socket
+import ctypes
+import struct
 from urllib.parse import urlparse
 from asgiref.sync import sync_to_async
 
@@ -21,6 +24,7 @@ import requests
 import httpx
 import asyncio
 import tiktoken
+import json_repair
 
 from .tracer import *
 from .constants import *
@@ -49,10 +53,7 @@ class ManageConfidentFields:
 manage_conf = ManageConfidentFields("config.json")
 TERMINAL_KEY = manage_conf.get_confident_key("bank_terminal_key")
 TERMINAL_PASSWORD = manage_conf.get_confident_key("bank_terminal_password")
-import socket
-import ctypes
-import hashlib
-import struct
+
 
 class ManageGenerationSurveys:
     def __init__(self, request, data, q_count):
@@ -85,6 +86,7 @@ class ManageGenerationSurveys:
         """
         Одна попытка вызова API с ВНУТРЕННИМИ повторами при ошибке JSON.
         """
+
         max_json_retries = 2
 
         for attempt in range(max_json_retries):
@@ -95,30 +97,44 @@ class ManageGenerationSurveys:
                      "content": f"{self.__get_confidential_key('system_prompt')}{self.count_questions}"},
                     {"role": "user", "content": f"{self.data}{self.__get_confidential_key('user_prompt')}"},
                 ],
-                model="gpt-4o", temperature=0.3, max_tokens=2048, top_p=1, timeout=45.0
+                model="gpt-4o",
+                temperature=0.3,
+                max_tokens=4096,
+                top_p=1,
+                timeout=55.0
             )
 
             generated_text = completion.choices[0].message.content
-
+            
             try:
                 tokens_used = completion.usage.total_tokens
-            except Exception as fail:
+            except Exception:
                 tokens_used = 0
 
+            cleaned_generated_text = generated_text.replace("```json", "").replace("```", "").strip()
+            
+            parsed_json = None
+
             try:
-                cleaned_generated_text = generated_text.replace("json", "").replace("`", "")
                 parsed_json = json.loads(cleaned_generated_text)
+            
+            except json.JSONDecodeError:
+                tracer_l.warning(f"JSON truncated/invalid (Attempt {attempt+1}/{max_json_retries}). Repairing...")
+                try:
+                    parsed_json = json_repair.loads(cleaned_generated_text)
+                except Exception as e:
+                    tracer_l.error(f"Repair failed: {e}")
+                    continue
 
+            if parsed_json:
                 return {
-                    'success': True, 'generated_text': parsed_json, 'tokens_used': tokens_used, 'model_used': 'gpt-4o'
+                    'success': True,
+                    'generated_text': parsed_json,
+                    'tokens_used': tokens_used,
+                    'model_used': 'gpt-4o'
                 }
-            except json.JSONDecodeError as e:
-                tracer_l.warning(
-                    f"JSONDecodeError from API: {e}. Retrying generation (attempt {attempt + 1}/{max_json_retries})...")
-                if attempt == max_json_retries - 1:
-                    raise e
 
-        raise json.JSONDecodeError("Failed to get valid JSON from API after multiple retries.", "", 0)
+        raise json.JSONDecodeError("Failed to get valid JSON from API after multiple retries and repair attempts.", "", 0)
 
     async def generate_with_failover(self):
         """
