@@ -1,6 +1,5 @@
 from django.contrib.auth.models import User
 from django.views.decorators.csrf import csrf_exempt
-from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, authenticate
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -1170,7 +1169,7 @@ class FileUploadView(View):
 
         form = FileUploadForm(request.POST, request.FILES)
         if not form.is_valid():
-            tracer_l.error('Загружен невалидный файл')
+            tracer_l.error(f'Загружен невалидный файл: {form.errors.as_text()}')
             return JsonResponse({'errors': form.errors}, status=400)
 
         available_file_types = [
@@ -1181,15 +1180,15 @@ class FileUploadView(View):
         question_count = form.cleaned_data['question_count']
         uploaded_file = form.cleaned_data['file']
 
-        tracer_l.debug(f'question_count {question_count} uploaded_file {uploaded_file}')
+        tracer_l.info(f'question_count {question_count} uploaded_file {uploaded_file}')
 
         if uploaded_file.content_type not in available_file_types:
             tracer_l.error('Недопустимый файл')
             return JsonResponse({'error': 'Недопустимый файл'}, status=400)
 
-        if uploaded_file.size > 5 * 1024 * 1024:
+        if uploaded_file.size > 10 * 1024 * 1024:
             tracer_l.error('No file provided')
-            return JsonResponse({'error': 'Файл слишком большой. Максимальный размер: 5 МБ'}, status=400)
+            return JsonResponse({'error': 'Файл слишком большой. Максимальный размер: 10 МБ'}, status=400)
 
         data = self.read_file_data(uploaded_file)
         if not data or data == -1:
@@ -1486,81 +1485,79 @@ def result_view(request, survey_id):
     processed_questions = []
     correct_answers_count = 0
 
-    for index, question in enumerate(questions_data):
-        answer_key = f"question_{index + 1}"
-        user_answer = selected_answers_dict.get(answer_key)
-        question['user_answer'] = user_answer
+    if isinstance(questions_data, list):
+        for index, question in enumerate(questions_data):
+            answer_key_idx = f"question_{index + 1}"
+            answer_key_text = question.get('question')
+            
+            user_answer = selected_answers_dict.get(answer_key_idx) or selected_answers_dict.get(answer_key_text)
+            
+            q_copy = question.copy()
+            q_copy['user_answer'] = user_answer
+            
+            corr = q_copy.get('correct_answer')
+            if user_answer and str(user_answer).strip() == str(corr).strip():
+                correct_answers_count += 1
 
-        if user_answer and user_answer == question.get('correct_answer'):
-            correct_answers_count += 1
-
-        processed_questions.append(question)
+            processed_questions.append(q_copy)
 
     score = correct_answers_count
-    total = len(questions_data)
+    total = len(questions_data) if isinstance(questions_data, list) else 0
+    percentage = round((score * 100 / total) if total > 0 else 0)
+
+    result_verdict = "Стоит подучить"
+    result_color_class = {"text": "text-red-500", "bg": "bg-red-500"}
+    if percentage >= 75:
+        result_verdict = "Отлично!"
+        result_color_class = {"text": "text-green-400", "bg": "bg-green-400"}
+    elif percentage >= 40:
+        result_verdict = "Неплохо!"
+        result_color_class = {"text": "text-amber-400", "bg": "bg-amber-400"}
+    if percentage == 100:
+        result_verdict = "Идеально!"
+        result_color_class = {"text": "gradient-text", "bg": "bg-gradient-to-r from-indigo-500 to-purple-600"}
 
     feedback_text = ''
     model_name = ''
     try:
         feedback_obj = FeedbackFromAI.objects.filter(survey_id=survey_id).first()
         if feedback_obj:
-            feedback_text = markdown.markdown(feedback_obj.feedback_data)  # Упростил
+            feedback_text = markdown.markdown(feedback_obj.feedback_data)
             model_name = feedback_obj.model_name
-    except Exception as fail:
-        feedback_text = 'Не удалось получить обратную связь от ИИ :('
-        tracer_l.warning(f'Нет фидбэка: {request.user.username} --- {fail}')
+    except:
+        pass
 
-    subscription_db = Subscription.objects.get(staff_id=get_staff_id(request))
-    subscription_check = SubscriptionCheck()
-    subscription_level = subscription_check.get_subscription_level(subscription_db.plan_name)
-    status = subscription_db.check_sub_status()
-
-    percentage = round((score * 100 / total) if total > 0 else 0)
-
-    result_verdict = "Стоит подучить"
-    result_color_class = {
-        "text": "text-red-500",
-        "bg": "bg-red-500"
-    }
-
-    if percentage >= 75:
-        result_verdict = "Отлично!"
-        result_color_class = {
-            "text": "text-green-400",
-            "bg": "bg-green-400"
-        }
-    elif percentage >= 40:
-        result_verdict = "Неплохо!"
-        result_color_class = {
-            "text": "text-amber-400",
-            "bg": "bg-amber-400"
-        }
-    if percentage == 100:
-        result_verdict = "Идеально!"
-        result_color_class = {
-            "text": "gradient-text",
-            "bg": "bg-gradient-to-r from-indigo-500 to-purple-600"
-        }
+    try:
+        sub = Subscription.objects.get(staff_id=get_staff_id(request))
+        checker = SubscriptionCheck()
+        sub_level = checker.get_subscription_level(sub.plan_name)
+    except:
+        sub_level = 0
 
     context = {
-        'page_title': f'Результаты прохождения теста – {survey.title}',
+        'page_title': f'Результаты – {survey.title}',
         'title': survey.title,
+        'survey_id': survey_id,
+        'created_at': survey.created_at,
         'score': score,
         'total': total,
         'percentage': percentage,
         'result_verdict': result_verdict,
         'result_color_class': result_color_class,
-        'survey_id': survey_id,
-        'created_at': survey.created_at,
         'questions': processed_questions,
-        'username': request.user.username if request.user.is_authenticated else None,
+        'username': request.user.username,
         'feedback_text': feedback_text,
-        'subscription_level': subscription_level,
+        'model_name': model_name,
+        'subscription_level': sub_level,
         'attempt_exists': last_attempt is not None,
-        'model_name': f"Сгенерировано {format_model_name(model_name)}" if model_name else "",
-        'subs_active': status == 'active',
         'debug': DEBUG
     }
+
+    try:
+        analytics_data = get_analytics_context(request, survey_id)
+        context.update(analytics_data)
+    except Exception as e:
+        print(f"Analytics calc error: {e}")
 
     return render(request, 'result.html', context)
 
@@ -2108,6 +2105,15 @@ def redirect_to_dashboard(request, survey_id):
 
 @login_required
 def view_results(request, survey_id):
+    return redirect(f'/result/{survey_id}/')
+
+
+@login_required
+def get_analytics_context(request, survey_id):
+    """
+        Логика аналитики для теста.
+        Возвращает только context (словарь).
+    """
     survey = get_object_or_404(Survey, survey_id=survey_id)
 
     attempts_qs = survey.attempts.all().order_by('-created_at')
@@ -2244,8 +2250,6 @@ def view_results(request, survey_id):
     author_username = AuthUser.objects.get(id_staff=survey.id_staff).username
     is_short_enough = len(author_username) < 20
 
-    tracer_l.info(f'{request.user.username} --- dashboard {survey.title}')
-
     conversion_rate = (total_attempts / survey.view_count) * 100 if survey.view_count > 0 else 0
 
     success_rate_color = '#EF4444'
@@ -2255,7 +2259,6 @@ def view_results(request, survey_id):
         success_rate_color = '#F59E0B'
 
     context = {
-        'survey': survey,
         'attempts': attempts_for_template,
         'total_attempts': total_attempts,
         'average_score_percent': average_score_percent,
@@ -2268,15 +2271,18 @@ def view_results(request, survey_id):
         'questions_breakdown': questions_breakdown,
         'view_count': survey.view_count,
         'conversion_rate': conversion_rate,
-        'username': get_username(request),
-        'page_title': survey.title,
-        'subscription_level': get_subscription_level(request),
-        'subscription_status': True if Subscription.objects.get(staff_id=get_staff_id(request)).check_sub_status == 'active' else False,
-        'author': author_username if len(author_username) < 40 else 'Аноним',
+        'analytics_username': get_username(request),
+        'analytics_subscription_level': get_subscription_level(request),
+        'analytics_author': author_username if len(author_username) < 40 else 'Аноним',
         'is_short_enough': is_short_enough,
-        'date_create': survey.created_at.strftime('%d.%m.%Y'),
+        'analytics_date_create': survey.created_at.strftime('%d.%m.%Y'),
+        
+        # Заглушки для графиков, чтобы JS не падал, (оставлено для API-запросов)
+        'chart_activity_json': '{}',
+        'chart_scores_json': '{}',
     }
-    return render(request, 'askify_service/test_results.html', context)
+    
+    return context
 
 
 @login_required

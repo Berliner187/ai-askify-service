@@ -21,52 +21,7 @@
         --color-accent-secondary: #70dd60;
         --border-radius: 32px;
     }
-
-    /* --- СНЕГОПАД --- */
-    #snow-container {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        pointer-events: none;
-        z-index: -1;
-        transition: opacity 0.5s ease-in-out;
-    }
-
-    #snow-container:not(.snow-active) {
-        opacity: 0;
-    }
-
-    .snowflake {
-        position: absolute;
-        top: -10px;
-        background: white;
-        border-radius: 50%;
-        animation: fall linear infinite;
-    }
-
-    .layer1 { width: 1px; height: 1px; animation-duration: 20s; }
-    .layer2 { width: 2px; height: 2px; animation-duration: 30s; opacity: 0.7; }
-    .layer3 { width: 3px; height: 3px; animation-duration: 40s; opacity: 0.5; }
-
-    @keyframes fall {
-        to {
-            transform: translateY(100vh);
-        }
-    }
 </style>
-
-<div id="snow-container"></div>
-<button id="snow-toggle" 
-        class="fixed bottom-5 right-5 z-[10000] 
-                w-10 h-10 flex items-center justify-center 
-                bg-[var(--color-surface)] backdrop-blur-md 
-                rounded-full border border-[var(--color-border)] 
-                text-[var(--color-text-secondary)] hover:text-white
-                transition-all duration-300">
-    <i class="fas fa-snowflake"></i>
-</button>
 
 <header class="sticky top-4 z-40 max-w-3xl sm:max-w-[80%] mx-auto">
     <div class="relative">
@@ -115,10 +70,6 @@
                         <span>Мой профиль</span>
                     </a>
                     <hr class="border-t border-[var(--color-border)] my-1">
-                    <a href="{% url 'arena' %}" class="menu-item">
-                        <i class="fa-solid fa-jet-fighter-up w-5 text-center"></i>
-                        <span>Сразиться на Арене!</span>
-                    </a>
 
                     {% if subscription_level < 1 or subscription_level == 99 %}
                         <hr class="border-t border-[var(--color-border)] my-1">
@@ -754,60 +705,6 @@
                 console.error('Ошибка загрузки тестов:', err);
                 list.innerHTML = '<li>Ошибка при загрузке</li>';
             }
-        }
-    });
-</script>
-
-<!-- СНЕГОПАД -->
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const snowContainer = document.getElementById('snow-container');
-        const snowToggle = document.getElementById('snow-toggle');
-        const DUST_COUNT = 250;
-
-        let isSnowing = false;
-
-        function createDust() {
-            if (!snowContainer || snowContainer.children.length > 0) return;
-            
-            for (let i = 0; i < DUST_COUNT; i++) {
-                const dustParticle = document.createElement('div');
-                const layer = Math.ceil(Math.random() * 3);
-                dustParticle.className = `snowflake layer${layer}`;
-                
-                dustParticle.style.left = `${Math.random() * 100}vw`;
-                dustParticle.style.animationDelay = `${Math.random() * 40}s`; 
-                
-                snowContainer.appendChild(dustParticle);
-            }
-        }
-
-        function enableSnow() {
-            localStorage.setItem('snowEffect', 'enabled');
-            snowContainer.classList.add('snow-active');
-            snowToggle.classList.add('text-white', 'bg-[var(--color-accent-primary)]/20');
-            if (!isSnowing) {
-                createDust();
-                isSnowing = true;
-            }
-        }
-
-        function disableSnow() {
-            localStorage.setItem('snowEffect', 'disabled');
-            snowContainer.classList.remove('snow-active');
-            snowToggle.classList.remove('text-white', 'bg-[var(--color-accent-primary)]/20');
-        }
-
-        snowToggle.addEventListener('click', () => {
-            if (snowContainer.classList.contains('snow-active')) {
-                disableSnow();
-            } else {
-                enableSnow();
-            }
-        });
-
-        if (localStorage.getItem('snowEffect') !== 'disabled') {
-            enableSnow();
         }
     });
 </script>

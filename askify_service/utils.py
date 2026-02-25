@@ -174,7 +174,13 @@ class ManageGenerationSurveys:
                     return result
 
                 except APIStatusError as e:
-                    if e.status_code == 429:
+                    if e.status_code == 400 and "content_filter" in str(e.response.text):
+                        tracer_l.warning(f"Content Policy Violation (Violence/Hate) with key {api_key.name}. Aborting.")
+                        return {
+                            'success': False, 
+                            'error': 'Обнаружен недопустимый контент (насилие/вражда). Измените текст.'
+                        }
+                    elif e.status_code == 429:
                         tracer_l.warning(f"Key {api_key.name} hit rate limit. Throttling for 60s.")
                         cache.set(cache_key, True, timeout=60)
                         continue

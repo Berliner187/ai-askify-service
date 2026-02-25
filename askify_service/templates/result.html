@@ -20,13 +20,20 @@
     <!-- /Yandex.Metrika counter -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
+<style>
+    #attempt-modal:not(.hidden) {
+        display: flex !important;
+    }
+</style>
 <body>
     <script src="{% static 'js/second-loader.js' %}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     {% include 'components/loader.html' %}
 
     <div id="page-container" class="fade" style="display: none;">
         {% include 'header.html' %}
 
+        <!-- Smart Sticky Header -->
         <div id="smart-header" 
             class="fixed top-4 left-1/2 -translate-x-1/2 z-50 
                     flex items-center justify-center 
@@ -47,309 +54,549 @@
             </span>
         </div>
 
+        <div class="copy-notification">Ссылка скопирована</div>
+
         <div class="container result-section">
 
-            <div class="head-button">
-
+            <!-- Навигация верхнего уровня -->
+            <div class="head-button mb-6">
                 <a class="button-medium" href="{% url 'history' %}">
                     <div>
                         <img src="{% static 'img/icon-history.png' %}" alt="">
                         <p>История</p>
                     </div>
                 </a>
-
                 <a class="button-medium" href="{% url 'create' %}">
                     <div>
                         <p>Создать новый</p>
                         <img src="{% static 'img/icon-new.png' %}" alt="">
                     </div>
                 </a>
-
             </div>
             
-            <div class="result-container" id="results-block">
-                <h2 class="result-survey-title">{{ title }}</h2>
+            <!-- Заголовок теста -->
+            <h2 class="result-survey-title text-center mb-6">{{ title }}</h2>
 
-                {% if attempt_exists %}
-                <div class="w-full max-w-sm mx-auto mb-8 text-center">
-                    <p id="result-percentage" 
-                    class="text-8xl font-extrabold {{ result_color_class.text }}" 
-                    data-final-percentage="{{ percentage }}">
-                        0<span class="text-6xl opacity-50">%</span>
-                    </p>
-                    <p class="mt-2 text-lg font-bold text-white">{{ result_verdict }}</p>
-                    <p class="text-sm text-gray-400">{{ score }} из {{ total }} правильных ответов</p>
-                    <div class="w-full bg-black/30 rounded-full h-2 mt-6">
-                        <div id="result-progress-bar" 
-                            class="h-2 rounded-full {{ result_color_class.bg }} transition-all duration-1000 ease-out" 
-                            style="width: 0%;">
-                        </div>
-                    </div>
-                </div>
-                {% endif %}
-
-                {% if score == 0 %}
-                    <div class="main-action-wrapper">
-                        <a class="button-medium button-accent primary-action" href="{% url 'survey' survey_id=survey_id %}">
-                            <div>
-                                <i class="fa-solid fa-circle-chevron-right"></i>
-                                <p>Пройти тест</p>
-                            </div>
-                        </a>
-                    </div>
-                {% else %}
-                    <div class="main-action-wrapper">
-                        <a class="button-medium button-accent" href="{% url 'survey' survey_id=survey_id %}">
-                            <div>
-                                <i class="fas fa-redo-alt"></i>
-                                <p>Пройти заново</p>
-                            </div>
-                        </a>
-                    </div>
-                {% endif %}
-
-                <div class="secondary-actions-wrapper">
-                    <a class="button-medium" href="{% url 'download-survey_pdf' survey_id=survey_id %}">
-                        <div>
-                            <i class="fas fa-print"></i>
-                            <p>Скачать тест для печати</p>
-                        </div>
-                    </a>
-                    {% if score != 0 %}
-                    <a class="button-medium" href="{% url 'download-results_pdf' survey_id=survey_id %}">
-                        <div>
-                            <i class="fas fa-file-download"></i>
-                            <p>Скачать результат</p>
-                        </div>
-                    </a>
-                    {% endif %}
-                </div>
-                
-                <hr class="actions-divider">
-
-                <div class="max-w-xl mx-auto mt-8">
-                    <a href="{% url 'preview_test_result' survey_id %}"
-                    class="group bg-gray-800/50 backdrop-blur-sm border border-gray-700/80 rounded-2xl p-4
-                            flex items-center gap-4
-                            transition-all duration-300
-                            hover:border-[var(--color-accent-primary)] hover:-translate-y-1 active:-translate-y-2">
-                        
-                        <div class="flex-shrink-0">
-                            <i class="fas fa-chart-pie text-xl text-gray-500 transition-colors duration-300 group-hover:text-[var(--color-accent-primary)]"></i>
-                        </div>
-                        
-                        <div class="flex-grow">
-                            <h4 class="font-bold text-white transition-colors duration-300 group-hover:text-[var(--color-accent-primary)]">
-                                Управление тестом
-                            </h4>
-                            <p class="mt-0.5 text-sm text-gray-400">
-                                Анализ результатов и динамика прохождений
-                            </p>
-                        </div>
-
-                        <div class="flex-shrink-0">
-                            <i class="fas fa-chevron-right text-gray-600 transition-colors duration-300 group-hover:text-gray-400"></i>
-                        </div>
-                    </a>
+            <!-- ТАБЫ (Переключатели) -->
+            <div class="flex justify-center mb-8">
+                <div class="bg-gray-800/60 backdrop-blur-md p-1.5 rounded-3xl inline-flex border border-gray-700/50 shadow-inner">
+                    <button onclick="switchTab('personal')" id="btn-tab-personal" 
+                        class="px-6 py-2.5 mr-0 sm:mr-2 rounded-2xl text-sm font-bold transition-all duration-300 bg-[var(--color-accent-primary)] text-white shadow-lg">
+                        <i class="fas fa-user-astronaut mr-2"></i>Мой результат
+                    </button>
+                    <button onclick="switchTab('analytics')" id="btn-tab-analytics" 
+                        class="px-6 py-2.5 rounded-2xl text-sm font-bold transition-all duration-300 text-gray-400 hover:text-white hover:bg-white/5">
+                        <i class="fas fa-chart-pie mr-2"></i>Результаты группы
+                    </button>
                 </div>
             </div>
-
-        </div>
-        
-        <div class="copy-notification">Ссылка скопирована</div>
-
-        <div>
-            {% if feedback_text %}
-            <div class="container result-full feedback-container" id="feedback-block">
-                <div class="result-header">
-                    <h2>Рекомендации</h2>
-                    <p>Индивидуальные рекомендации от нейросети по результатам прохождения.</p>
-                </div>
-                {{ feedback_text|safe }}
-                <hr>
-                <p class="hint">{{ model_name }}</p>
-            </div>
-            {% endif %}
-
-            {% if attempt_exists %}
-            <div class="container result-full" id="breakdown-block">
-                <div class="result-header">
-                    <h2>{% if attempt_exists %}Результаты теста{% else %}Вопросы к тесту{% endif %}</h2>
-                    <!-- <p>Вы верно ответили на <span class="result-score">{{ score }}</span> из <span class="result-total">{{ total }}</span> вопросов.</p> -->
-                </div>
-
-                <div class="questions-breakdown">
-                    {% for question in questions %}
-                        <div class="question-card-result">
-                            <h3 class="question-title">{{ forloop.counter }}. {{ question.question }}</h3>
-                            <div class="options-list">
-                                {% for option in question.options %}
-                                    
-                                    <div class="option-item-result 
-                                        {% if option == question.correct_answer %}is-correct{% endif %}
-                                        {% if option == question.user_answer and option != question.correct_answer %}is-incorrect{% endif %}
-                                    ">
-                                        
-                                        {% if option == question.correct_answer %}
-                                            <i class="fas fa-check-circle icon-correct"></i>
-                                        {% elif option == question.user_answer %}
-                                            <i class="fas fa-times-circle icon-incorrect"></i>
-                                        {% else %}
-                                            <i class="far fa-circle icon-neutral"></i>
-                                        {% endif %}
-                                        
-                                        <span>{{ option }}</span>
-                                    </div>
-
-                                {% endfor %}
-                            </div>
-                        </div>
-                    {% endfor %}
-                </div>
-
-                <div class="result-header">
-                    <p>Создан {{ created_at }}</p>
-                </div>
-                
-                <div class="head-button mt-2">
-                    <a class="button-medium" href="{% url 'download-results_pdf' survey_id=survey_id %}">
-                        <div>
-                            <p>Скачать результат</p>
-                            <img src="{% static 'img/icon-download-pdf.png' %}" alt="Icon download results in PDF">
-                        </div>
-                    </a>
-                    {% if subscription_level > 0 %}
-                    <div class="button-medium button-red" style="cursor: pointer;" onclick="openDeleteModal('{{ survey_id }}', '{{ title|escapejs }}')">
-                        <div >
-                            <img src="{% static 'img/icon-delete.png' %}" alt="Удалить">
-                            <p>Удалить тест</p>
-                        </div>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-            {% else %}
-            <div class="container result-full">
-                <div class="result-header">
-                    <h2>{% if attempt_exists %}Результаты теста{% else %}Вопросы к тесту{% endif %}</h2>
-                    <p>Пройдите тест, чтобы увидеть все вопросы и результаты прохождения.</p>
-                </div>
-
-                <div class="result-header">
-                    <p>Создан {{ created_at }}</p>
-                </div>
-            </div>
-            {% endif %}
-
-        {% if subscription_level < 2 or subscription_level == 99 %}
-            <div class="max-w-4xl mx-auto p-6 md:p-8 mt-24 rounded-3xl shadow-2xl 
-            bg-gradient-to-br from-gray-900 via-gray-900 to-indigo-900/40 
-            border border-indigo-500/30 text-white">
-
-                <div class="flex flex-col items-center text-center mb-6 gap-3">
-                    <div class="flex items-center justify-center h-14 w-14 rounded-full bg-indigo-500/10 border border-indigo-500/40 shadow-inner">
-                        <i class="fas fa-rocket text-2xl text-indigo-400"></i>
-                    </div>
+            
+            <!-- ========================================== -->
+            <!-- ТАБ 1: ЛИЧНЫЙ РЕЗУЛЬТАТ (PERSONAL) -->
+            <!-- ========================================== -->
+            <div id="tab-personal" class="tab-content animate-fadeIn">
+                <div class="result-container" id="results-block">
                     
-                    <div class="max-w-lg">
-                        <h2 class="text-2xl md:text-3xl font-['Unbounded_Bold'] font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white to-indigo-300">
-                            Перейдите на новый уровень подготовки
-                        </h2>
-                        <p class="mt-1 text-gray-300 text-base leading-relaxed">
-                            Превратите стандартную зубрежку в увлекательный и эффективный процесс с инструментами Премиума.
+                    {% if attempt_exists %}
+                    <div class="w-full max-w-sm mx-auto mb-8 text-center">
+                        <p id="result-percentage" 
+                        class="text-8xl font-extrabold {{ result_color_class.text }}" 
+                        data-final-percentage="{{ percentage }}">
+                            0<span class="text-6xl opacity-50">%</span>
                         </p>
+                        <p class="mt-2 text-lg font-bold text-white">{{ result_verdict }}</p>
+                        <p class="text-sm text-gray-400">{{ score }} из {{ total }} правильных ответов</p>
+                        <div class="w-full bg-black/30 rounded-full h-2 mt-6">
+                            <div id="result-progress-bar" 
+                                class="h-2 rounded-full {{ result_color_class.bg }} transition-all duration-1000 ease-out" 
+                                style="width: 0%;">
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if score == 0 %}
+                        <div class="main-action-wrapper">
+                            <a class="button-medium button-accent primary-action" href="{% url 'survey' survey_id=survey_id %}">
+                                <div>
+                                    <i class="fa-solid fa-circle-chevron-right"></i>
+                                    <p>Пройти тест</p>
+                                </div>
+                            </a>
+                        </div>
+                    {% else %}
+                        <div class="main-action-wrapper">
+                            <a class="button-medium button-accent" href="{% url 'survey' survey_id=survey_id %}">
+                                <div>
+                                    <i class="fas fa-redo-alt"></i>
+                                    <p>Пройти заново</p>
+                                </div>
+                            </a>
+                        </div>
+                    {% endif %}
+
+                    <div class="secondary-actions-wrapper">
+                        <a class="button-medium" href="{% url 'download-survey_pdf' survey_id=survey_id %}">
+                            <div>
+                                <i class="fas fa-print"></i>
+                                <p>Скачать тест для печати</p>
+                            </div>
+                        </a>
+                        {% if score != 0 %}
+                        <a class="button-medium" href="{% url 'download-results_pdf' survey_id=survey_id %}">
+                            <div>
+                                <i class="fas fa-file-download"></i>
+                                <p>Скачать результат</p>
+                            </div>
+                        </a>
+                        {% endif %}
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-                    
-                    <div class="flex items-start gap-3 p-3 rounded-xl hover:bg-white/5 transition duration-200">
-                        <div class="flex-shrink-0 mt-1">
-                            <i class="fas fa-magic text-lg text-indigo-400"></i>
+                <div>
+                    {% if feedback_text %}
+                    <div class="container result-full feedback-container" id="feedback-block">
+                        <div class="result-header">
+                            <h2>Рекомендации</h2>
+                            <p>Индивидуальные рекомендации от нейросети по результатам прохождения.</p>
                         </div>
-                        <div>
-                            <h4 class="text-lg font-bold">Магия из Ваших документов</h4>
-                            <span class="mt-1 text-gray-400 text-sm">Загружайте лекции в&nbsp;PDF/Word и&nbsp;получайте готовые тесты за&nbsp;секунды.</span>
-                        </div>
+                        {{ feedback_text|safe }}
+                        <hr>
+                        <p class="hint">{{ model_name }}</p>
                     </div>
+                    {% endif %}
 
-                    <div class="flex items-start gap-3 p-3 rounded-xl hover:bg-white/5 transition duration-200">
-                        <div class="flex-shrink-0 mt-1">
-                            <i class="fas fa-user-graduate text-lg text-indigo-400"></i>
+                    {% if attempt_exists %}
+                    <div class="container result-full" id="breakdown-block">
+                        <div class="result-header">
+                            <h2>{% if attempt_exists %}Результаты теста{% else %}Вопросы к тесту{% endif %}</h2>
                         </div>
-                        <div>
-                            <h4 class="text-lg font-bold">Ваш персональный AI-репетитор</h4>
-                            <span class="mt-1 text-gray-400 text-sm">Получайте детальный разбор ошибок от&nbsp;ИИ, чтобы понимать, <strong class="text-indigo-300">ПОЧЕМУ</strong> ответ неверный.</span>
-                        </div>
-                    </div>
-                    
-                    <div class="flex items-start gap-3 p-3 rounded-xl hover:bg-white/5 transition duration-200">
-                        <div class="flex-shrink-0 mt-1">
-                            <i class="fas fa-chart-pie text-lg text-indigo-400"></i>
-                        </div>
-                        <div>
-                            <h4 class="text-lg font-bold">Полная картина успеваемости</h4>
-                            <span class="mt-1 text-gray-400 text-sm">
-                                Отслеживайте результаты <strong class="text-indigo-300">каждого ученика</strong>, находите самые <strong class="text-indigo-300">сложные вопросы</strong>.
-                            </span>
-                        </div>
-                    </div>
-                    
-                    <div class="flex items-start gap-3 p-3 rounded-xl hover:bg-white/5 transition duration-200">
-                        <div class="flex-shrink-0 mt-1">
-                            <i class="fas fa-download text-lg text-indigo-400"></i>
-                        </div>
-                        <div>
-                            <h4 class="text-lg font-bold">Все материалы под рукой</h4>
-                            <span class="mt-1 text-gray-400 text-sm">Экспортируйте результаты в&nbsp;<strong class="text-indigo-300">Excel</strong> и&nbsp;сами тесты в&nbsp;чистом PDF для печати.</span>
-                        </div>
-                    </div>
 
-                </div>
+                        <div class="questions-breakdown">
+                            {% for question in questions %}
+                                <div class="question-card-result">
+                                    <h3 class="question-title">{{ forloop.counter }}. {{ question.question }}</h3>
+                                    <div class="options-list">
+                                        {% for option in question.options %}
+                                            
+                                            <div class="option-item-result 
+                                                {% if option == question.correct_answer %}is-correct{% endif %}
+                                                {% if option == question.user_answer and option != question.correct_answer %}is-incorrect{% endif %}
+                                            ">
+                                                
+                                                {% if option == question.correct_answer %}
+                                                    <i class="fas fa-check-circle icon-correct"></i>
+                                                {% elif option == question.user_answer %}
+                                                    <i class="fas fa-times-circle icon-incorrect"></i>
+                                                {% else %}
+                                                    <i class="far fa-circle icon-neutral"></i>
+                                                {% endif %}
+                                                
+                                                <span>{{ option }}</span>
+                                            </div>
 
-                <div class="mt-8 text-center">
-                    <a class="inline-flex items-center justify-center py-3 px-8 text-lg font-bold 
-                            rounded-full shadow-2xl 
-                            bg-indigo-600 hover:bg-indigo-700 active:scale-95 transition-all duration-300 
-                            transform hover:translate-y-[-2px] focus:outline-none focus:ring-4 focus:ring-indigo-500/50" 
-                    href="{% url 'payment' %}">
-                        <i class="fas fa-gem mr-2"></i> Открыть Премиум
-                    </a>
-                    <p class="mt-2 text-xs text-gray-500">
-                        Откройте для себя все возможности Летучки
-                    </p>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="result-header">
+                            <p>Создан {{ created_at }}</p>
+                        </div>
+                        
+                        <div class="head-button mt-2">
+                            <a class="button-medium" href="{% url 'download-results_pdf' survey_id=survey_id %}">
+                                <div>
+                                    <p>Скачать результат</p>
+                                    <img src="{% static 'img/icon-download-pdf.png' %}" alt="Icon download results in PDF">
+                                </div>
+                            </a>
+                            <div class="button-medium button-red" style="cursor: pointer;" onclick="openDeleteModal('{{ survey_id }}', '{{ title|escapejs }}')">
+                                <div >
+                                    <img src="{% static 'img/icon-delete.png' %}" alt="Удалить">
+                                    <p>Удалить тест</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="container result-full">
+                        <div class="result-header">
+                            <h2>Вопросы к тесту</h2>
+                            <p>Пройдите тест во вкладке "Мой результат", чтобы увидеть детали.</p>
+                        </div>
+                        <div class="result-header">
+                            <p>Создан {{ created_at }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- UPSELL BLOCK (PREMIUM) -->
+                    {% if subscription_level < 2 or subscription_level == 99 %}
+                        <div class="max-w-4xl mx-auto p-6 md:p-8 mt-24 rounded-3xl shadow-2xl 
+                        bg-gradient-to-br from-gray-900 via-gray-900 to-indigo-900/40 
+                        border border-indigo-500/30 text-white">
+
+                            <div class="flex flex-col items-center text-center mb-6 gap-3">
+                                <div class="flex items-center justify-center h-14 w-14 rounded-full bg-indigo-500/10 border border-indigo-500/40 shadow-inner">
+                                    <i class="fas fa-rocket text-2xl text-indigo-400"></i>
+                                </div>
+                                
+                                <div class="max-w-lg">
+                                    <h2 class="text-2xl md:text-3xl font-['Unbounded_Bold'] font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white to-indigo-300">
+                                        Перейдите на новый уровень подготовки
+                                    </h2>
+                                    <p class="mt-1 text-gray-300 text-base leading-relaxed">
+                                        Превратите стандартную зубрежку в увлекательный и эффективный процесс с инструментами Премиума.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                                <div class="flex items-start gap-3 p-3 rounded-xl hover:bg-white/5 transition duration-200">
+                                    <div class="flex-shrink-0 mt-1"><i class="fas fa-magic text-lg text-indigo-400"></i></div>
+                                    <div><h4 class="text-lg font-bold">Магия из Ваших документов</h4><span class="mt-1 text-gray-400 text-sm">Загружайте лекции в&nbsp;PDF/Word и&nbsp;получайте готовые тесты.</span></div>
+                                </div>
+                                <div class="flex items-start gap-3 p-3 rounded-xl hover:bg-white/5 transition duration-200">
+                                    <div class="flex-shrink-0 mt-1"><i class="fas fa-user-graduate text-lg text-indigo-400"></i></div>
+                                    <div><h4 class="text-lg font-bold">Ваш персональный AI-репетитор</h4><span class="mt-1 text-gray-400 text-sm">Получайте детальный разбор ошибок от&nbsp;ИИ.</span></div>
+                                </div>
+                            </div>
+
+                            <div class="mt-8 text-center">
+                                <a class="inline-flex items-center justify-center py-3 px-8 text-lg font-bold rounded-full shadow-2xl bg-indigo-600 hover:bg-indigo-700 active:scale-95 transition-all duration-300" href="{% url 'payment' %}">
+                                    <i class="fas fa-gem mr-2"></i> Открыть Премиум
+                                </a>
+                            </div>
+                        </div>
+                    {% endif %}
                 </div>
             </div>
-        {% endif %}
-        
+
+            <!-- ========================================== -->
+            <!-- ТАБ 2: АНАЛИТИКА (ANALYTICS) -->
+            <!-- ========================================== -->
+            <div id="tab-analytics" class="tab-content hidden animate-fadeIn">
+                <!-- Share Block -->
+                <div class="mt-2 mb-8 animate-fadeIn">
+                    <div class="group bg-gradient-to-br from-[#1E1830]/80 to-[#110D1C]/80 
+                                pt-4 pb-4 rounded-3xl border border-[var(--color-border)] 
+                                text-center transition-all duration-300 hover:border-[var(--color-accent-primary)]">
+
+                        <p class="mt-2 text-sm text-gray-400 max-w-md mx-auto">
+                            Отправьте эту ссылку респондентам, чтобы увидеть их ответы.
+                        </p>
+
+                        <div class="mt-6">
+                            <button 
+                                data-action="share" 
+                                data-share-url="{% url 'take_test' survey_id %}" 
+                                class="inline-flex items-center justify-center gap-3 
+                                    px-10 py-4 font-bold text-sm 
+                                    bg-[var(--color-accent-secondary)] text-black font-bold
+                                    rounded-2xl transition-transform hover:scale-105 active:scale-100
+                                    shadow-lg shadow-[var(--color-accent-secondary)]/20">
+                                <i class="fas fa-share-alt"></i>
+                                <span>Поделиться тестом</span>
+                            </button>
+                        </div>
+
+                        <div class="mt-4 text-xs text-gray-500">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            Метрики обновляются в реальном времени.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-6">
+                    <!-- General Stats Grid -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- Card 1 -->
+                        <div class="bg-[#151517] p-6 rounded-3xl border border-gray-800 shadow-2xl shadow-black/50">
+                            <h3 class="text-base font-bold text-white mb-4">Общая сводка</h3>
+                            <div class="space-y-4">
+                                <div class="flex justify-between items-baseline">
+                                    <p class="text-gray-400">Всего прохождений</p>
+                                    <p class="text-3xl font-extrabold text-white">{{ total_attempts }}</p>
+                                </div>
+                                <div class="flex justify-between items-baseline">
+                                    <p class="text-gray-400">Просмотры теста</p>
+                                    <p class="text-3xl font-extrabold text-white">{{ view_count }}</p>
+                                </div>
+                                <div class="flex justify-between items-baseline border-t border-gray-700 pt-3">
+                                    <p class="text-gray-400">Идеальные попытки</p>
+                                    <p class="text-3xl font-extrabold text-amber-400">{{ perfect_attempts_percent|floatformat:0 }}%</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card 2 -->
+                        <div class="bg-[#151517] p-6 rounded-3xl border border-gray-800 shadow-2xl shadow-black/50 flex flex-col justify-center items-center">
+                            <h3 class="text-base font-bold text-white mb-4">Средний балл</h3>
+                            <div class="relative w-36 h-36 flex items-center justify-center">
+                                <div style="--value:{{ average_score_percent|floatformat:0 }};" class="radial-progress gradient-text text-lg" role="progressbar">
+                                    <span class="text-white font-extrabold text-5xl">{{ average_score_percent|floatformat:0 }}<span class="text-3xl opacity-50">%</span></span>
+                                </div>
+                            </div>
+                            <p class="text-sm text-gray-400 text-center mt-3">Медианный балл: <span class="font-bold text-white">{{ median_score|floatformat:0 }}</span></p>
+                        </div>
+
+                        <!-- Card 3 -->
+                        <div class="bg-[#151517] p-6 rounded-3xl border border-gray-800 shadow-2xl shadow-black/50 flex flex-col">
+                            <div><h3 class="text-base font-bold text-white">Процент успеха</h3></div>
+                            <div class="flex-grow flex items-center justify-center my-4">
+                                <p class="text-8xl font-extrabold" style="color: {{ success_rate_color }};">{{ success_rate|floatformat:0 }}</p>
+                            </div>
+                            <div class="w-full bg-black/30 rounded-full h-4">
+                                <div class="h-4 rounded-full" style="width: {{ success_rate }}%; background-color: {{ success_rate_color }};"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Charts & Insights -->
+                    <div class="relative">
+                        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 transition-all duration-500 
+                            {% if subscription_level == 0 %}filter blur-lg opacity-40 pointer-events-none select-none{% endif %}">
+                            
+                            <div class="lg:col-span-3 bg-[#151517] p-6 rounded-3xl border border-gray-800 shadow-2xl shadow-black/50">
+                                <h3 class="text-base font-bold text-white mb-4">Активность за 7 дней</h3>
+                                <div class="chart-wrapper h-64"><canvas id="activityChart"></canvas></div>
+                            </div>
+                            <div class="lg:col-span-2 bg-[#151517] p-6 rounded-3xl border border-gray-800 shadow-2xl shadow-black/50">
+                                <h3 class="text-base font-bold text-white mb-4">Распределение баллов</h3>
+                                <div class="chart-wrapper h-64"><canvas id="scoresDistributionChart"></canvas></div>
+                            </div>
+                            
+                            <!-- Insights -->
+                            <div class="lg:col-span-5 bg-[#151517] p-6 rounded-3xl border border-gray-800 shadow-2xl shadow-black/50">
+                                <h3 class="text-base font-bold text-white mb-4">Анализ вопросов</h3>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div class="bg-black/20 p-4 rounded-xl flex items-start gap-4">
+                                        <i class="fas fa-brain text-xl text-red-400 pt-1"></i>
+                                        <div class="min-w-0">
+                                            <p class="text-sm font-semibold text-red-400">Самый сложный вопрос</p>
+                                            {% if question_insights.hardest %}
+                                                <p class="text-sm text-gray-300 truncate">{{ question_insights.hardest.text }}</p>
+                                                <p class="text-lg font-bold text-white">{{ question_insights.hardest.rate|floatformat:0 }}% <span class="text-xs text-gray-500">верно</span></p>
+                                            {% else %}<p class="text-sm text-gray-500 mt-1">Недостаточно данных</p>{% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="bg-black/20 p-4 rounded-xl flex items-start gap-4">
+                                        <i class="fas fa-star text-xl text-green-400 pt-1"></i>
+                                        <div class="min-w-0">
+                                            <p class="text-sm font-semibold text-green-400">Самый легкий вопрос</p>
+                                            {% if question_insights.easiest %}
+                                                <p class="text-sm text-gray-300 truncate">{{ question_insights.easiest.text }}</p>
+                                                <p class="text-lg font-bold text-white">{{ question_insights.easiest.rate|floatformat:0 }}% <span class="text-xs text-gray-500">верно</span></p>
+                                            {% else %}<p class="text-sm text-gray-500 mt-1">Недостаточно данных</p>{% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Leaderboard & Map -->
+                            <div class="lg:col-span-5 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                <div class="bg-[#151517] p-6 rounded-3xl border border-gray-800 shadow-2xl shadow-black/50">
+                                    <h3 class="text-base font-bold text-white mb-4 flex items-center gap-2">
+                                        <i class="fas fa-trophy text-amber-400"></i> Таблица лидеров
+                                    </h3>
+                                    <ul class="space-y-3">
+                                        {% for attempt in leaderboard_attempts|slice:":5" %}
+                                        <li class="flex items-center gap-4">
+                                            <div class="font-bold text-lg w-6 text-center {% if forloop.counter == 1 %}text-amber-400{% elif forloop.counter == 2 %}text-gray-300{% elif forloop.counter == 3 %}text-yellow-700{% else %}text-gray-500{% endif %}">
+                                                {{ forloop.counter }}
+                                            </div>
+                                            <div class="flex-grow min-w-0">
+                                                <p class="text-white font-semibold truncate">{{ attempt.student_name }}</p>
+                                                <p class="text-xs text-gray-500">{{ attempt.created_at|date:"d M Y" }}</p>
+                                            </div>
+                                            <div class="flex-shrink-0 font-bold text-white bg-black/20 px-3 py-1 rounded-lg">
+                                                {{ attempt.score }}/{{ attempt.total_questions }}
+                                            </div>
+                                        </li>
+                                        {% empty %}
+                                        <li class="text-center text-gray-500 py-8">Данные собираются...</li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                                <div class="bg-[#151517] p-6 rounded-3xl border border-gray-800 shadow-2xl shadow-black/50">
+                                    <h3 class="text-base font-bold text-white mb-4 flex items-center gap-2">
+                                        <i class="fas fa-map text-cyan-400"></i> Карта вопросов
+                                    </h3>
+                                    <div class="space-y-3 max-h-60 overflow-hidden">
+                                        {% for q in questions_breakdown|slice:":5" %}
+                                        <div>
+                                            <div class="flex justify-between items-center text-xs text-gray-400 mb-1">
+                                                <p class="pr-4 truncate" title="{{ q.text }}">{{ q.text }}</p>
+                                                <p class="font-bold text-white flex-shrink-0">{{ q.rate|floatformat:0 }}%</p>
+                                            </div>
+                                            <div class="w-full bg-gray-700/50 rounded-full h-1.5">
+                                                <div class="h-1.5 rounded-full" style="width: {{ q.rate }}%; background-color: {{ q.color }};"></div>
+                                            </div>
+                                        </div>
+                                        {% empty %}
+                                        <div class="text-center text-gray-500 py-8">Данные собираются...</div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- PAYWALL OVERLAY -->
+                        {% if subscription_level == 0 %}
+                        <div class="absolute inset-0 z-10 flex flex-col items-center justify-center">
+                            <div class="bg-[#151517]/95 backdrop-blur-xl border border-gray-700 p-8 rounded-[2rem] text-center shadow-2xl shadow-black/80 ring-1 ring-white/10 max-w-md mx-4">
+                                <div class="mx-auto w-16 h-16 bg-indigo-500/10 border-2 border-indigo-500/30 rounded-full flex items-center justify-center mb-6">
+                                    <i class="fas fa-chart-pie text-3xl text-indigo-400"></i>
+                                </div>
+                                <h3 class="text-2xl font-bold text-white mb-4">Откройте полную картину</h3>
+                                <div class="text-left space-y-3 mb-6 max-w-sm mx-auto">
+                                    <div class="flex items-center gap-3 p-2 rounded-lg bg-white/5 border border-white/10"><div class="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center text-red-400"><i class="fas fa-brain"></i></div><div class="text-sm text-gray-300"><span class="block text-white font-bold">Сложные вопросы</span>Где ошибаются чаще всего?</div></div>
+                                    <div class="flex items-center gap-3 p-2 rounded-lg bg-white/5 border border-white/10"><div class="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400"><i class="fas fa-trophy"></i></div><div class="text-sm text-gray-300"><span class="block text-white font-bold">Таблица лидеров</span>Ранжирование учеников.</div></div>
+                                </div>
+                                <a href="{% url 'payment' %}" class="block w-full bg-[var(--color-accent-primary)] text-white font-bold py-3 rounded-xl transition-transform hover:scale-[1.02] shadow-lg shadow-indigo-500/20">
+                                    Открыть аналитику
+                                </a>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Export Block -->
+                    <div class="flex flex-col p-2 sm:flex-row justify-between sm:items-center mt-8 mb-4 border-t border-gray-800 pt-8">
+                        <div>
+                            <h2 class="text-xl font-bold text-white">Результат в Excel</h2>
+                            <p class="text-gray-400 text-sm">Вся статистика уже готова к скачиванию.</p>
+                        </div>
+                        
+                        {% if subscription_level > 0 %}
+                            <a href="{% url 'export_results_to_excel' survey_id %}" class="mt-3 sm:mt-0 inline-flex items-center gap-2 bg-emerald-600/20 text-emerald-300 px-4 py-2 rounded-xl font-semibold text-sm border border-emerald-500/30 hover:bg-emerald-600/40 transition-colors">
+                                <i class="fas fa-file-excel"></i> Экспорт в Excel
+                            </a>
+                        {% else %}
+                            <button type="button" id="export-trigger-button" class="mt-3 sm:mt-0 inline-flex items-center gap-2 bg-emerald-600/20 text-emerald-300 px-4 py-2 rounded-xl font-semibold text-sm border border-emerald-500/30 hover:bg-emerald-600/40 transition-colors">
+                                <i class="fas fa-lock mr-1 text-xs"></i> <i class="fas fa-file-excel"></i> Экспорт в Excel
+                            </button>
+                        {% endif %}
+                    </div>
+
+                    <!-- Attempts List -->
+                    <div class="relative bg-[#151517] p-6 rounded-3xl border border-gray-800 shadow-2xl shadow-black/50">
+                        <h2 class="text-xl font-bold text-white mb-4">Последние попытки</h2>
+                        
+                        <div class="flow-root {% if subscription_level == 0 %}filter blur-md opacity-40 pointer-events-none select-none min-h-[300px]{% endif %}">
+                            <ul class="-my-3 divide-y divide-gray-800">
+                                {% for attempt in attempts %}
+                                <li class="py-4 flex flex-col sm:flex-row justify-between sm:items-center gap-3 hover:bg-black/20 -mx-4 px-4 rounded-2xl transition-colors duration-200 cursor-pointer" data-action="show-attempt-details">
+                                    <div class="flex items-center gap-4">
+                                        <div class="flex-shrink-0 flex items-center justify-center h-11 w-11 rounded-full bg-indigo-500/20 border border-indigo-500/30">
+                                            <span class="font-bold text-lg text-white">{{ attempt.student_name|first|upper }}</span>
+                                        </div>
+                                        <div>
+                                            <p class="font-semibold text-white">{{ attempt.student_name }}</p>
+                                            <p class="text-xs text-gray-400">{{ attempt.created_at|date:"d M Y в H:i" }}</p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right mt-2 sm:mt-0 flex-shrink-0">
+                                        <p class="font-bold text-lg {% if attempt.percent == 100 %}text-green-400{% else %}text-white{% endif %}">{{ attempt.score }} / {{ attempt.total_questions }}</p>
+                                    </div>
+                                    <script type="application/json" class="attempt-details-json">{{ attempt.answers_json }}</script>
+                                    <span class="student-name" style="display: none;">{{ attempt.student_name }}</span>
+                                    <span class="attempt-date" style="display: none;">{{ attempt.created_at|date:"d M Y в H:i" }}</span>
+                                    <span class="attempt-score" style="display: none;">{{ attempt.score }} / {{ attempt.total_questions }}</span>
+                                </li>
+                                {% empty %}
+                                    {% if subscription_level == 0 %}
+                                        <li class="py-4 flex items-center gap-4"><div class="h-11 w-11 rounded-full bg-gray-700"></div><div class="h-4 bg-gray-700 w-32 rounded"></div></li>
+                                    {% else %}
+                                        <li class="text-center text-gray-500 py-16"><i class="fas fa-ghost text-4xl mb-4 opacity-50"></i><p class="font-semibold text-white">Здесь пока пусто</p></li>
+                                    {% endif %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+
+                        {% if subscription_level == 0 %}
+                        <div class="absolute inset-0 z-10 flex items-center justify-center">
+                            <div class="bg-[#151517]/90 backdrop-blur-xl border border-gray-700 p-6 rounded-3xl text-center shadow-2xl max-w-sm mx-4">
+                                <i class="fas fa-lock text-2xl text-[var(--color-accent-secondary)] mb-4"></i>
+                                <h3 class="text-lg font-bold text-white mb-2">Список участников скрыт</h3>
+                                <p class="text-gray-400 text-sm mb-4">Узнайте, кто именно прошел тест.</p>
+                                <a href="{% url 'payment' %}" class="block w-full border border-[var(--color-accent-secondary)] text-[var(--color-accent-secondary)] font-bold py-2 rounded-xl hover:bg-[var(--color-accent-secondary)] hover:text-black transition-colors">
+                                    Открыть список
+                                </a>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
         </div>
     </div>
 
+
+    <!-- ========================================== -->
+    <!-- MODALS (Hidden by default) -->
+    <!-- ========================================== -->
+
+    <!-- Delete Modal -->
+    <div id="delete-modal" class="modal-overlay hidden" onclick="closeDeleteModal()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-icon"><i class="fas fa-exclamation-triangle"></i></div>
+            <h3>Подтвердите удаление</h3>
+            <p>Вы уверены, что хотите удалить тест «<strong id="modal-survey-title"></strong>»? <br>Это действие необратимо.</p>
+            <div class="modal-actions">
+                <button onclick="closeDeleteModal()" class="button-medium">Отмена</button>
+                <a id="confirm-delete-link" href="#" class="button-medium button-red"><div><p>Удалить безвозвратно</p></div></a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attempt Detail Modal -->
+    <div id="attempt-modal" class="fixed inset-0 bg-black/80 z-50 hidden items-center justify-center p-4">
+        <div id="attempt-modal-content" class="bg-[#151517] w-full max-w-2xl p-6 sm:p-8 rounded-3xl border border-gray-700 transform scale-95 opacity-0 transition-all duration-300 backdrop-blur-xl flex flex-col max-h-[90vh]">
+            <div class="flex-shrink-0 flex justify-between items-start mb-4">
+                <div><h3 id="modal-student-name" class="text-2xl font-bold text-white"></h3><p id="modal-attempt-date" class="text-sm text-gray-400"></p></div>
+                <button id="close-attempt-modal" class="text-gray-500 hover:text-white text-3xl">&times;</button>
+            </div>
+            <div id="modal-answers-list" class="flex-grow overflow-y-auto pr-2 space-y-4"></div>
+            <div class="flex-shrink-0 mt-6 pt-4 border-t border-gray-700 text-right"><p class="text-lg text-gray-400">Итоговый балл: <span id="modal-attempt-score" class="font-bold text-2xl text-white"></span></p></div>
+        </div>
+    </div>
+
+    <!-- Export Paywall Modal -->
+    <div id="export-paywall-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-[#151517] border border-gray-700 rounded-3xl w-full max-w-md text-center p-8 shadow-2xl shadow-black/50 transform transition-all opacity-0 scale-95" id="export-paywall-panel">
+            <div class="flex items-center justify-center h-16 w-16 rounded-full bg-indigo-500/10 border-2 border-indigo-500/30 mb-4 mx-auto"><i class="fas fa-file-excel text-3xl text-indigo-400"></i></div>
+            <h3 class="text-2xl font-bold text-white">Доступно в Премиум</h3>
+            <p class="mt-2 text-gray-300">Получите полный доступ к экспорту данных в Excel.</p>
+            <a href="{% url 'payment' %}" class="mt-6 inline-block bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-8 py-3 font-bold rounded-full transition-transform hover:scale-105 active:scale-[.95] shadow-lg shadow-indigo-500/30">Разблокировать</a>
+            <button id="close-paywall-modal" class="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors"><i class="fas fa-times text-xl"></i></button>
+        </div>
+    </div>
+
+
+    <!-- Sticky Bottom Bar (Merged) -->
     <div class="fixed bottom-5 left-1/2 -translate-x-1/2 flex space-x-2 p-2 rounded-full 
                 bg-black/40 backdrop-blur-lg 
                 border border-gray-700/60 
                 shadow-lg shadow-[0_0_20px_rgba(139,92,246,0.2)] z-50">
-        <button title="Скопировать ссылку" id="copyShareLink" data-content="/t/{{survey_id}}"
-            class="group flex items-center h-12 rounded-full text-gray-400 transition-all duration-300 overflow-hidden 
-                bg-gray-800/50 hover:bg-gray-700/70 hover:scale-[1.05] active:scale-[0.98]">
-            
-            <i class="fa fa-share-alt h-12 w-12 flex items-center justify-center flex-shrink-0 transition-colors group-hover:text-white"></i>
-            
-            <span class="max-w-0 group-hover:max-w-xs opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out pr-0 group-hover:pr-4 whitespace-nowrap text-sm font-semibold text-white">
-                Скопировать
-            </span>
-        </button>
-        <a href="{% url 'preview_test_result' survey_id %}" title="Аналитика по тесту"
+        
+        <!-- Кнопка Копировать ссылку (Работает везде) -->
+        <button title="Скопировать ссылку" data-action="share" data-share-url="{% url 'take_test' survey_id %}"
             class="group flex items-center h-12 rounded-full text-white font-bold transition-all duration-300 overflow-hidden 
-                bg-indigo-500 
+                bg-indigo-600 
                 hover:opacity-90 hover:scale-[1.05] active:scale-[0.98] shadow-lg shadow-indigo-500/30">
             
-            <i class="fas fa-chart-simple h-12 w-12 flex items-center justify-center flex-shrink-0"></i>
+            <i class="fa fa-share-alt h-12 w-12 flex items-center justify-center flex-shrink-0"></i>
             
             <span class="max-w-0 group-hover:max-w-xs opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out pr-0 group-hover:pr-4 whitespace-nowrap text-sm">
-                Аналитика
+                Поделиться
             </span>
-        </a>
+        </button>
+        
+        <!-- Кнопка Вопросы (Ведет на просмотр вопросов или якорь) -->
         <a href="{% url 'preview_test' survey_id %}" title="Посмотреть вопросы"
             class="group flex items-center h-12 rounded-full text-gray-400 transition-all duration-300 overflow-hidden 
                 bg-gray-800/50 hover:bg-gray-700/70 hover:scale-[1.05] active:scale-[0.98]">
@@ -357,282 +604,292 @@
             <i class="fa-solid fa-tasks h-12 w-12 flex items-center justify-center flex-shrink-0 transition-colors group-hover:text-white"></i>
             
             <span class="max-w-0 group-hover:max-w-xs opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out pr-0 group-hover:pr-4 whitespace-nowrap text-sm font-semibold text-white">
-                Вопросы к тесту
+                Вопросы
             </span>
         </a>
     </div>
 
     {% include 'footer-s.html' %}
 
-    <div id="delete-modal" class="modal-overlay hidden" onclick="closeDeleteModal()">
-        <div class="modal-content" onclick="event.stopPropagation()">
-            <div class="modal-icon">
-                <i class="fas fa-exclamation-triangle"></i>
-            </div>
-            <h3>Подтвердите удаление</h3>
-            <p>Вы уверены, что хотите удалить тест «<strong id="modal-survey-title"></strong>»? <br>Это действие необратимо.</p>
-            <div class="modal-actions">
-                <button onclick="closeDeleteModal()" class="button-medium">Отмена</button>
-                <a id="confirm-delete-link" href="#" class="button-medium button-red">
-                    <div>
-                        <p>Удалить безвозвратно</p>
-                    </div>
-                </a>
-            </div>
-        </div>
-    </div>
-
+    <!-- ========================================== -->
+    <!-- SCRIPTS -->
+    <!-- ========================================== -->
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const percentageElement = document.getElementById('result-percentage');
-            const progressBarElement = document.getElementById('result-progress-bar');
-            
-            const finalPercentage = {{ percentage }};
-            if (percentageElement && progressBarElement) {
-                setTimeout(() => {
-                    progressBarElement.style.width = `${finalPercentage}%`;
-                }, 100);
-                let startTimestamp = null;
-                const duration = 2000;
-                const step = (timestamp) => {
-                    if (!startTimestamp) startTimestamp = timestamp;
-                    const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-                    
-                    const currentValue = Math.floor(progress * finalPercentage);
-                    
-                    percentageElement.innerHTML = `${currentValue}<span class="text-6xl opacity-50">%</span>`;
+        // ----------------------------------------------
+        // TABS LOGIC
+        // ----------------------------------------------
+        function switchTab(tabName) {
+            const personalTab = document.getElementById('tab-personal');
+            const analyticsTab = document.getElementById('tab-analytics');
+            const btnPersonal = document.getElementById('btn-tab-personal');
+            const btnAnalytics = document.getElementById('btn-tab-analytics');
 
-                    if (progress < 1) {
-                        window.requestAnimationFrame(step);
-                    }
-                };
-                window.requestAnimationFrame(step);
-            }
-        });
-
-    </script>
-
-    <script>
-        const modal = document.getElementById('delete-modal');
-        const modalTitle = document.getElementById('modal-survey-title');
-        const confirmLink = document.getElementById('confirm-delete-link');
-
-        function openDeleteModal(surveyId, surveyTitle) {
-            console.log('Открываю модалку для:', surveyTitle);
-            if (!modal || !modalTitle || !confirmLink) {
-                console.error('Элементы модального окна не найдены!');
-                return;
-            }
-            
-            modalTitle.textContent = surveyTitle;
-            const deleteUrl = `/drop-survey/${surveyId}/`;
-            confirmLink.setAttribute('href', deleteUrl);
-            
-            modal.classList.remove('hidden');
-        }
-
-        function closeDeleteModal() {
-            console.log('Закрываю модалку');
-            if (modal) {
-                modal.classList.add('hidden');
-            }
-        }
-
-        document.addEventListener('keydown', (event) => {
-            if (event.key === 'Escape' && modal && !modal.classList.contains('hidden')) {
-                closeDeleteModal();
-            }
-        });
-    </script>
-
-    <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            const container = document.querySelector('.container');
-        
-            setTimeout(() => {
-                container.classList.add('show');
-            }, 1000);
-        });
-
-        const copyButton = document.getElementById('copyShareLink');
-        const notification = document.querySelector('.copy-notification');
-
-        if (copyButton && notification) {
-            copyButton.addEventListener('click', async () => {
-                const relativePath = copyButton.getAttribute('data-content');
-                console.log(`${window.location.origin}${relativePath.startsWith('/') ? '' : '/'}${relativePath}`);
-                const fullLink = `${window.location.origin}${relativePath.startsWith('/') ? '' : '/'}${relativePath}`;
+            if (tabName === 'personal') {
+                personalTab.classList.remove('hidden');
+                analyticsTab.classList.add('hidden');
                 
-                try {
-                    await copyToClipboard(fullLink);
-                    notification.classList.add('show');
-                    setTimeout(() => {
-                        notification.classList.remove('show');
-                    }, 3000);
-                } catch (err) {
-                    console.error('Не удалось скопировать ссылку: ', err);
-                }
-            });
-        }
-
-        function copyToClipboard(text) {
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                return navigator.clipboard.writeText(text);
+                // Style updates
+                btnPersonal.classList.remove('text-gray-400', 'hover:text-white', 'hover:bg-white/5');
+                btnPersonal.classList.add('bg-[var(--color-accent-primary)]', 'text-white', 'shadow-lg');
+                
+                btnAnalytics.classList.add('text-gray-400', 'hover:text-white', 'hover:bg-white/5');
+                btnAnalytics.classList.remove('bg-[var(--color-accent-primary)]', 'text-white', 'shadow-lg');
+                
             } else {
-                const textArea = document.createElement("textarea");
-                textArea.value = text;
-                textArea.style.position = "fixed";
-                textArea.style.left = "-999999px";
-                textArea.style.top = "-999999px";
-                document.body.appendChild(textArea);
-                textArea.focus();
-                textArea.select();
-                return new Promise((res, rej) => {
-                    document.execCommand('copy') ? res() : rej();
-                    textArea.remove();
-                });
+                personalTab.classList.add('hidden');
+                analyticsTab.classList.remove('hidden');
+
+                // Style updates
+                btnAnalytics.classList.remove('text-gray-400', 'hover:text-white', 'hover:bg-white/5');
+                btnAnalytics.classList.add('bg-[var(--color-accent-primary)]', 'text-white', 'shadow-lg');
+                
+                btnPersonal.classList.add('text-gray-400', 'hover:text-white', 'hover:bg-white/5');
+                btnPersonal.classList.remove('bg-[var(--color-accent-primary)]', 'text-white', 'shadow-lg');
+                
+                // Trigger chart resize in case it rendered while hidden
+                if (typeof Chart !== 'undefined') {
+                    Object.values(Chart.instances).forEach(chart => chart.resize());
+                }
             }
         }
-    </script>
 
-    <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const smartHeader = document.getElementById('smart-header');
-            const smartHeaderProgress = document.getElementById('smart-header-progress');
-            const smartHeaderText = document.getElementById('smart-header-text');
+        // 1. Получаем параметры из URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const tabParam = urlParams.get('tab');
 
-            const sections = [
-                { id: 'results-block', text: 'Результат теста' },
-                { id: 'feedback-block', text: 'Фидбэк и рекомендации' },
-                { id: 'breakdown-block', text: 'Разбор ошибок по тесту' },
-                { id: 'upsell-block', text: 'Ещё возможности Летучки' }
-            ];
-
-            const availableSections = sections.map(sec => ({
-                ...sec,
-                element: document.getElementById(sec.id)
-            })).filter(sec => sec.element);
-            
-            let isHeaderVisible = false;
-
-            function handleScroll() {
-                if (!smartHeader || !smartHeaderProgress || !smartHeaderText) return;
-
-                const scrollY = window.scrollY;
-                const windowHeight = window.innerHeight;
-                const docHeight = document.documentElement.scrollHeight;
-
-                if (scrollY > 0 && !isHeaderVisible) {
-                    isHeaderVisible = true;
-                    smartHeader.classList.remove('opacity-0', 'scale-95');
-                } else if (scrollY <= 300 && isHeaderVisible) {
-                    isHeaderVisible = false;
-                    smartHeader.classList.add('opacity-0', 'scale-95');
-                }
-
-                const totalScrollable = docHeight - windowHeight;
-                const scrollPercentage = totalScrollable > 0 ? (scrollY / totalScrollable) * 100 : 0;
-                smartHeaderProgress.style.width = `${scrollPercentage}%`;
-
-                let currentSectionText = '';
-                for (let i = availableSections.length - 1; i >= 0; i--) {
-                    const section = availableSections[i];
-                    const rect = section.element.getBoundingClientRect();
-                    if (rect.top < windowHeight / 2) {
-                        currentSectionText = section.text;
-                        break;
-                    }
-                }
-                
-                if (smartHeaderText.textContent !== currentSectionText) {
-                    smartHeader.style.width = '';
-                    smartHeaderText.classList.add('opacity-0');
+            // 2. Если в ссылке есть ?tab=analytics, переключаем сразу
+            if (tabParam === 'analytics') {
+                // Небольшая задержка, чтобы UI прогрузился
+                setTimeout(() => {
+                    switchTab('analytics');
                     
-                    setTimeout(() => {
-                        smartHeaderText.textContent = currentSectionText;
-                        smartHeaderText.classList.remove('opacity-0');
-                        const currentWidth = smartHeader.offsetWidth;
-                        smartHeader.style.width = `${currentWidth}px`;
-                    }, 300);
-                }
+                    // Опционально: плавная прокрутка к контенту, если нужно
+                    const analyticsTab = document.getElementById('tab-analytics');
+                    if(analyticsTab) {
+                        analyticsTab.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                }, 100);
             }
+        });
 
-            window.addEventListener('scroll', handleScroll, { passive: true });
 
+        // ----------------------------------------------
+        // ANIMATIONS & UTILS (From Result Page)
+        // ----------------------------------------------
+        document.addEventListener('DOMContentLoaded', function() {
+            // Fade In Container
+            const container = document.querySelector('.container');
+            if(container) setTimeout(() => container.classList.add('show'), 500);
+
+            // Progress Bar Animation
             const percentageElement = document.getElementById('result-percentage');
             const progressBarElement = document.getElementById('result-progress-bar');
             
             if (percentageElement && progressBarElement) {
                 const finalPercentage = parseFloat(percentageElement.dataset.finalPercentage || '0');
-
-                setTimeout(() => {
-                    progressBarElement.style.width = `${finalPercentage}%`;
-                }, 100);
+                setTimeout(() => { progressBarElement.style.width = `${finalPercentage}%`; }, 100);
 
                 let startTimestamp = null;
                 const duration = 1500;
-
                 const step = (timestamp) => {
                     if (!startTimestamp) startTimestamp = timestamp;
                     const progress = Math.min((timestamp - startTimestamp) / duration, 1);
                     const currentValue = Math.floor(progress * finalPercentage);
-                    
                     percentageElement.innerHTML = `${currentValue}<span class="text-6xl opacity-50">%</span>`;
-
-                    if (progress < 1) {
-                        window.requestAnimationFrame(step);
-                    }
+                    if (progress < 1) window.requestAnimationFrame(step);
                 };
                 window.requestAnimationFrame(step);
             }
 
-            const modal = document.getElementById('delete-modal');
-            const modalTitle = document.getElementById('modal-survey-title');
-            const confirmLink = document.getElementById('confirm-delete-link');
-
-            window.openDeleteModal = function(surveyId, surveyTitle) {
-                if (!modal || !modalTitle || !confirmLink) return;
-                modalTitle.textContent = surveyTitle;
-                confirmLink.setAttribute('href', `/drop-survey/${surveyId}/`);
-                modal.classList.remove('hidden');
+            // --- COPY LINK LOGIC (Unified) ---
+            function copyLinkAndNotify(btn) {
+                const relativePath = btn.getAttribute('data-share-url');
+                const fullLink = `${window.location.origin}${relativePath.startsWith('/') ? '' : '/'}${relativePath}`;
+                
+                navigator.clipboard.writeText(fullLink).then(() => {
+                    // Try to find the nearest notification
+                    const notif = document.querySelector('.copy-notification');
+                    if(notif) {
+                        notif.classList.add('show');
+                        setTimeout(() => notif.classList.remove('show'), 3000);
+                    } else {
+                        alert('Ссылка скопирована!');
+                    }
+                }).catch(err => console.error('Failed to copy', err));
             }
 
-            window.closeDeleteModal = function() {
-                if (modal) modal.classList.add('hidden');
-            }
+            // Attach to all share buttons
+            document.querySelectorAll('button[data-action="share"]').forEach(btn => {
+                btn.addEventListener('click', () => copyLinkAndNotify(btn));
+            });
+        });
 
-            if(modal) {
-                modal.addEventListener('click', (event) => {
-                    if(event.target === modal) closeDeleteModal();
-                });
-            }
+        // ----------------------------------------------
+        // SMART HEADER LOGIC
+        // ----------------------------------------------
+        document.addEventListener('DOMContentLoaded', function() {
+            const smartHeader = document.getElementById('smart-header');
+            const smartHeaderProgress = document.getElementById('smart-header-progress');
+            const smartHeaderText = document.getElementById('smart-header-text');
+            let isHeaderVisible = false;
 
-            document.addEventListener('keydown', (event) => {
-                if (event.key === 'Escape' && modal && !modal.classList.contains('hidden')) {
-                    closeDeleteModal();
+            function handleScroll() {
+                if (!smartHeader) return;
+                const scrollY = window.scrollY;
+                if (scrollY > 100 && !isHeaderVisible) {
+                    isHeaderVisible = true;
+                    smartHeader.classList.remove('opacity-0', 'scale-95');
+                } else if (scrollY <= 100 && isHeaderVisible) {
+                    isHeaderVisible = false;
+                    smartHeader.classList.add('opacity-0', 'scale-95');
                 }
+                // Simple progress bar
+                const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+                const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+                const scrolled = (winScroll / height) * 100;
+                if(smartHeaderProgress) smartHeaderProgress.style.width = scrolled + "%";
+                if(smartHeaderText) smartHeaderText.textContent = document.title;
+            }
+            window.addEventListener('scroll', handleScroll, { passive: true });
+        });
+
+        // ----------------------------------------------
+        // MODALS LOGIC (Delete & Paywall)
+        // ----------------------------------------------
+        // Delete Modal
+        const deleteModal = document.getElementById('delete-modal');
+        const deleteModalTitle = document.getElementById('modal-survey-title');
+        const confirmDeleteLink = document.getElementById('confirm-delete-link');
+
+        window.openDeleteModal = function(surveyId, surveyTitle) {
+            if (!deleteModal) return;
+            deleteModalTitle.textContent = surveyTitle;
+            confirmDeleteLink.setAttribute('href', `/drop-survey/${surveyId}/`);
+            deleteModal.classList.remove('hidden');
+        }
+        window.closeDeleteModal = function() {
+            if (deleteModal) deleteModal.classList.add('hidden');
+        }
+
+        // Export Paywall Modal
+        const paywallModal = document.getElementById('export-paywall-modal');
+        const paywallPanel = document.getElementById('export-paywall-panel');
+        const exportTrigger = document.getElementById('export-trigger-button');
+        const closePaywallBtn = document.getElementById('close-paywall-modal');
+
+        if (exportTrigger) {
+            exportTrigger.addEventListener('click', (e) => {
+                e.preventDefault();
+                paywallModal.classList.remove('hidden');
+                setTimeout(() => paywallPanel.classList.remove('opacity-0', 'scale-95'), 10);
+            });
+        }
+        if (closePaywallBtn) {
+            closePaywallBtn.addEventListener('click', () => {
+                paywallPanel.classList.add('opacity-0', 'scale-95');
+                setTimeout(() => paywallModal.classList.add('hidden'), 200);
+            });
+        }
+
+        // ----------------------------------------------
+        // ANALYTICS: CHARTS & ATTEMPTS
+        // ----------------------------------------------
+        const chartInstances = {};
+        function destroyChart(id) { if(chartInstances[id]) { chartInstances[id].destroy(); delete chartInstances[id]; } }
+
+        function initializeCharts() {
+            const surveyId = '{{ survey_id }}'; 
+            fetch(`/api/test-charts/${surveyId}/`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.error) return; // Silent fail or log
+                    
+                    const commonOptions = {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: { 
+                            y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#888' } },
+                            x: { grid: { display: false }, ticks: { color: '#888' } }
+                        }
+                    };
+
+                    destroyChart('activityChart');
+                    const ctx1 = document.getElementById('activityChart');
+                    if(ctx1) {
+                        chartInstances.activityChart = new Chart(ctx1.getContext('2d'), {
+                            type: 'bar',
+                            data: {
+                                labels: data.attempts_activity_chart.labels,
+                                datasets: [{ 
+                                    label: 'Прохождений', 
+                                    data: data.attempts_activity_chart.data, 
+                                    backgroundColor: '#6366f1', borderRadius: 4 
+                                }]
+                            },
+                            options: commonOptions
+                        });
+                    }
+
+                    destroyChart('scoresDistributionChart');
+                    const ctx2 = document.getElementById('scoresDistributionChart');
+                    if(ctx2) {
+                        chartInstances.scoresDistributionChart = new Chart(ctx2.getContext('2d'), {
+                            type: 'bar',
+                            data: {
+                                labels: data.scores_distribution_chart.labels,
+                                datasets: [{ 
+                                    label: 'Людей', 
+                                    data: data.scores_distribution_chart.data, 
+                                    backgroundColor: ['#ef4444', '#f59e0b', '#84cc16', '#22c55e'], 
+                                    borderRadius: 4 
+                                }]
+                            },
+                            options: { ...commonOptions, indexAxis: 'y' }
+                        });
+                    }
+                }).catch(e => console.error('Charts error:', e));
+        }
+
+        // Initialize charts when DOM ready
+        document.addEventListener('DOMContentLoaded', initializeCharts);
+
+        // Attempt Details Logic
+        const attemptModal = $('#attempt-modal');
+        const attemptContent = $('#attempt-modal-content');
+        
+        $('[data-action="show-attempt-details"]').on('click', function() {
+            const item = $(this);
+            let answers = [];
+            try { answers = JSON.parse(item.find('.attempt-details-json').text()); } catch(e){}
+
+            $('#modal-student-name').text(item.find('.student-name').text());
+            $('#modal-attempt-date').text(item.find('.attempt-date').text());
+            $('#modal-attempt-score').text(item.find('.attempt-score').text());
+
+            const list = $('#modal-answers-list').empty();
+            answers.forEach(a => {
+                const isCorrect = a.is_correct;
+                const borderClass = isCorrect ? 'border-green-500/20 bg-green-500/10' : 'border-red-500/20 bg-red-500/10';
+                const html = `
+                    <div class="p-4 rounded-2xl border ${borderClass}">
+                        <p class="font-semibold text-white mb-2">${a.question}</p>
+                        <p class="text-sm text-gray-300">Ответ: <strong class="text-white">${a.selected_answer || '-'}</strong></p>
+                        ${!isCorrect ? `<p class="text-sm text-gray-400 mt-1">Верно: ${a.correct_answer}</p>` : ''}
+                    </div>`;
+                list.append(html);
             });
 
-            const copyButton = document.getElementById('copyShareLink');
-            const notification = document.querySelector('.copy-notification');
+            $('body').addClass('modal-open');
+            attemptModal.removeClass('hidden');
+            setTimeout(() => { attemptContent.removeClass('scale-95 opacity-0').addClass('scale-100 opacity-100'); }, 10);
+        });
 
-            if (copyButton && notification) {
-                copyButton.addEventListener('click', async () => {
-                    const relativePath = copyButton.getAttribute('data-content');
-                    const fullLink = `${window.location.origin}${relativePath.startsWith('/') ? '' : '/'}${relativePath}`;
-                    try {
-                        await navigator.clipboard.writeText(fullLink);
-                        notification.classList.add('show');
-                        setTimeout(() => {
-                            notification.classList.remove('show');
-                        }, 3000);
-                    } catch (err) {
-                        console.error('Failed to copy: ', err);
-                    }
-                });
-            }
+        $('#close-attempt-modal').on('click', function() {
+            $('body').removeClass('modal-open');
+            attemptContent.removeClass('scale-100 opacity-100').addClass('scale-95 opacity-0');
+            setTimeout(() => attemptModal.addClass('hidden'), 300);
         });
     </script>
-
 </body>
 </html>

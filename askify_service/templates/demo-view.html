@@ -213,133 +213,126 @@
 
         <div id="scrollProgress" class="fixed top-0 left-0 h-1 bg-[var(--color-accent-primary)] z-50" style="width: 0%;"></div>
 
-        <div class="max-w-3xl mx-auto p-4 sm:p-8">
-            <header class="sticky top-4 z-40 rounded-3xl pt-2 pb-2">
-                <div class="relative max-w-3xl mx-auto">
-                    <!-- Основная панель хедера -->
-                    <div class="flex items-center justify-between gap-4 
-                                bg-[var(--color-surface)]/80 backdrop-blur-xl 
-                                rounded-3xl border border-[var(--color-border)] 
-                                p-3 sm:p-4 shadow-2xl shadow-black/50">
-                        <!-- Логотип -->
-                        <a href="/" class="flex-shrink-0">
-                            <img src="{% static 'img/logo.png' %}" alt="Летучка Логотип" class="w-8 h-auto">
-                        </a>
-                        <!-- Контекстная информация (скрыта на мобильных) -->
-                        <div class="hidden sm:flex flex-col items-center min-w-0">
-                            <h1 class="text-sm font-bold text-white truncate" title="{{ title }}">{{ title | truncatechars:40  }}</h1>
-                            <div class="flex items-center gap-2 text-xs text-gray-400">
-                                <span>{{ author }}</span>
-                                <span class="text-gray-600">•</span>
-                                <div class="flex items-center gap-1.5" title="{{ view_count }} просмотров">
-                                    <i class="fas fa-eye text-xs"></i>
-                                    <span>{{ view_count }}</span>
-                                </div>
+        <header class="sticky top-4 z-40 max-w-3xl  mx-auto">
+            <div class="relative max-w-3xl mx-auto">
+                <!-- Основная панель хедера -->
+                <div class="flex items-center justify-between gap-4 
+                    bg-[var(--color-surface)]/80 backdrop-blur-xl 
+                    rounded-[32px] border border-[var(--color-border)] 
+                    pl-4 pr-4 py-2 shadow-2xl shadow-black/50">
+                    <!-- Логотип -->
+                    <a href="/" class="flex-shrink-0">
+                        <img src="{% static 'img/logo.png' %}" alt="Летучка Логотип" class="w-8 h-auto">
+                    </a>
+                    <!-- Контекстная информация (скрыта на мобильных) -->
+                    <div class="hidden sm:flex flex-col items-center min-w-0">
+                        <h1 class="text-sm font-bold text-white truncate" title="{{ title }}">{{ title | truncatechars:40  }}</h1>
+                        <div class="flex items-center gap-2 text-xs text-gray-400">
+                            <span>{{ author }}</span>
+                            <span class="text-gray-600">•</span>
+                            <div class="flex items-center gap-1.5" title="{{ view_count }} просмотров">
+                                <i class="fas fa-eye text-xs"></i>
+                                <span>{{ view_count }}</span>
                             </div>
                         </div>
-                        <!-- "Кнопка Действий" (Action Button) -->
-                        <div class="flex-shrink-0">
-                            <button id="action-menu-btn" class="h-12 w-12 flex items-center justify-center bg-black/20 rounded-full hover:bg-black/40 transition-colors transition-transform active:scale-[.95]">
-                                <i class="fas fa-ellipsis-h text-[var(--color-accent-primary)]"></i>
-                            </button>
-                        </div>
                     </div>
-                    <!-- Выпадающее меню -->
-                    <div id="action-menu" class="hidden absolute top-full right-0 mt-2 w-64
-                                                bg-[var(--color-surface)]/90 backdrop-blur-xl 
-                                                rounded-3xl border border-[var(--color-border)]
-                                                p-2 shadow-2xl shadow-black/50
-                                                origin-top-right transition-all duration-200 ease-out 
-                                                transform opacity-0 scale-95 z-50">
-                        <nav class="flex flex-col">
-                            {% if username != 0 %}
-
-                                {% if is_creator %}
-                                    <a href="{% url 'preview_test_result' survey_id %}" class="flex items-center gap-3 px-4 py-3 text-[var(--color-accent-secondary)] font-bold rounded-3xl hover:bg-white/5 transition-transform active:scale-[.97]"><i class="fas fa-chart-pie w-5 text-center"></i><span>Аналитика теста</span></a>
-                                    <hr class="border-t border-[var(--color-border)] my-1">
-                                {% endif %}
-
-                                {% if username != 0 %}
-                                <button data-action="share" data-share-url="{% url 'take_test' survey_id %}" class="flex items-center gap-3 px-4 py-3 text-white font-semibold rounded-3xl hover:bg-white/5 transition-transform active:scale-[.97]">
-                                    <i class="fas fa-share-alt w-5 text-center text-gray-400"></i>
-                                    <span>Поделиться тестом</span>
-                                </button>
-                                <a href="{% url 'download-survey_pdf' survey_id %}" class="flex items-center gap-3 px-4 py-3 text-white font-semibold rounded-3xl hover:bg-white/5 transition-transform active:scale-[.97]">
-                                    <i class="fas fa-download w-5 text-center text-gray-400"></i>
-                                    <span>Скачать тест в PDF</span>
-                                </a>
-                                {% endif %}
-
-                                <hr class="border-t border-[var(--color-border)] my-1">
-                                
-                                <a href="{% url 'profile_redirect' %}" class="flex items-center gap-3 px-4 py-3 text-white font-semibold rounded-3xl hover:bg-white/5 transition-transform active:scale-[.97]"><i class="fas fa-user-circle w-5 text-center text-gray-400"></i><span>Мой профиль</span></a>
-                                <a href="{% url 'history' %}" class="flex items-center gap-3 px-4 py-3 text-white font-semibold rounded-3xl hover:bg-white/5 transition-transform active:scale-[.97]"><i class="fas fa-history w-5 text-center text-gray-400"></i><span>История тестов</span></a>
-                                <a href="{% url 'create' %}" class="flex items-center gap-3 px-4 py-3 text-white font-semibold rounded-3xl hover:bg-white/5 transition-transform active:scale-[.97]"><i class="fas fa-plus w-5 text-center text-gray-400"></i><span>Создать новый</span></a>
-                                
-                                <hr class="border-t border-[var(--color-border)] my-1">
-                                <a href="{% url 'logout' %}" class="flex items-center gap-3 px-4 py-3 text-red-400 font-semibold rounded-3xl hover:bg-white/5 transition-transform active:scale-[.97]"><i class="fas fa-sign-out-alt w-5 text-center"></i><span>Выйти</span></a>
-
-                            {% else %}
-                                <a href="/#transformation-engine" class="px-4 py-3 text-white font-semibold rounded-3xl hover:bg-white/5 transition-transform active:scale-[.97]">Как начать</a>
-                                <a href="/#use-cases" class="px-4 py-3 text-white font-semibold rounded-3xl hover:bg-white/5 transition-transform active:scale-[.97]">Кейсы</a>
-                                <a href="/#analytics-showcase" class="px-4 py-3 text-white font-semibold rounded-3xl hover:bg-white/5 transition-transform active:scale-[.97]">Аналитика</a>
-                                <a href="/#faq" class="px-4 py-3 text-white font-semibold rounded-3xl hover:bg-white/5 transition-transform active:scale-[.97]">FAQ</a>
-                                <hr class="border-t border-[var(--color-border)] my-1">
-                                <a href="/register" class="block text-center bg-[var(--color-accent-primary)] text-white px-5 py-3 font-bold rounded-3xl mt-1">Зарегистрироваться</a>
-                            {% endif %}
-                        </nav>
+                    <!-- "Кнопка Действий" (Action Button) -->
+                    <div class="flex-shrink-0">
+                        <button id="action-menu-btn" class="h-12 w-12 flex items-center justify-center bg-black/20 rounded-full hover:bg-black/40 transition-colors transition-transform active:scale-[.95]">
+                            <i class="fas fa-ellipsis-h text-[var(--color-accent-primary)]"></i>
+                        </button>
                     </div>
                 </div>
-                {% if is_creator %}
-                    {% if username != 0 %}
-                        <div class="mt-2 pt-1 pl-2 pr-2 flex justify-between items-center gap-3">
-                            <div class="flex items-center gap-3">
-                                <label class="toggle-switch relative inline-block w-[52px] h-[28px]">
-                                    <input type="checkbox" id="answersToggle" class="opacity-0 w-0 h-0" {% if show_answers %}checked{% endif %}>
-                                    <span class="slider absolute cursor-pointer top-0 left-0 right-0 bottom-0 bg-gray-600 rounded-full transition-colors before:absolute before:content-[''] before:h-[20px] before:w-[20px] before:left-[4px] before:bottom-[4px] before:bg-white before:rounded-full before:transition-transform"></span>
-                                </label>
-                                <span class="text-sm font-semibold text-white">Показать ответы</span>
-                                <div class="group relative flex items-center">
-                                    <i class="fas fa-question-circle text-gray-500 cursor-pointer"></i>
+                <!-- Выпадающее меню -->
+                <div id="action-menu" class="hidden absolute top-full right-0 mt-2 w-64
+                                            bg-[var(--color-surface)]/90 backdrop-blur-xl 
+                                            rounded-3xl border border-[var(--color-border)]
+                                            p-2 shadow-2xl shadow-black/50
+                                            origin-top-right transition-all duration-200 ease-out 
+                                            transform opacity-0 scale-95 z-50">
+                    <nav class="flex flex-col">
+                        {% if username != 0 %}
+                            
+                            <a href="{% url 'create' %}" class="flex items-center gap-3 px-4 py-3 text-white font-semibold rounded-3xl hover:bg-white/5 transition-transform active:scale-[.97]"><i class="fas fa-plus w-5 text-center text-gray-400"></i><span>Создать новый</span></a>
+                            <a href="{% url 'history' %}" class="flex items-center gap-3 px-4 py-3 text-white font-semibold rounded-3xl hover:bg-white/5 transition-transform active:scale-[.97]"><i class="fas fa-history w-5 text-center text-gray-400"></i><span>История тестов</span></a>
+                            <a href="{% url 'profile_redirect' %}" class="flex items-center gap-3 px-4 py-3 text-white font-semibold rounded-3xl hover:bg-white/5 transition-transform active:scale-[.97]"><i class="fas fa-user-circle w-5 text-center text-gray-400"></i><span>Мой профиль</span></a>
+                            
+                            <hr class="border-t border-[var(--color-border)] my-1">
+                            <a href="{% url 'logout' %}" class="flex items-center gap-3 px-4 py-3 text-red-400 font-semibold rounded-3xl hover:bg-white/5 transition-transform active:scale-[.97]"><i class="fas fa-sign-out-alt w-5 text-center"></i><span>Выйти</span></a>
+
+                        {% else %}
+                            <a href="/#transformation-engine" class="px-4 py-3 text-white font-semibold rounded-3xl hover:bg-white/5 transition-transform active:scale-[.97]">Как начать</a>
+                            <a href="/#use-cases" class="px-4 py-3 text-white font-semibold rounded-3xl hover:bg-white/5 transition-transform active:scale-[.97]">Кейсы</a>
+                            <a href="/#analytics-showcase" class="px-4 py-3 text-white font-semibold rounded-3xl hover:bg-white/5 transition-transform active:scale-[.97]">Аналитика</a>
+                            <a href="/#faq" class="px-4 py-3 text-white font-semibold rounded-3xl hover:bg-white/5 transition-transform active:scale-[.97]">FAQ</a>
+                            <hr class="border-t border-[var(--color-border)] my-1">
+                            <a href="/register" class="block text-center bg-[var(--color-accent-primary)] text-white px-5 py-3 font-bold rounded-3xl mt-1">Зарегистрироваться</a>
+                        {% endif %}
+                    </nav>
+                </div>
+            </div>
+            {% if is_creator %}
+                {% if username != 0 %}
+                    <div class="mt-2 pt-1 pl-2 pr-2 flex justify-between items-center gap-3">
+                        <div class="flex items-center gap-3">
+                            <label class="toggle-switch relative inline-block w-[52px] h-[28px]">
+                                <input type="checkbox" id="answersToggle" class="opacity-0 w-0 h-0" {% if show_answers %}checked{% endif %}>
+                                <span class="slider absolute cursor-pointer top-0 left-0 right-0 bottom-0 bg-gray-600 rounded-full transition-colors before:absolute before:content-[''] before:h-[20px] before:w-[20px] before:left-[4px] before:bottom-[4px] before:bg-white before:rounded-full before:transition-transform"></span>
+                            </label>
+                            <span class="text-sm font-semibold text-white">Ответы</span>
+                            <div class="group relative flex items-center">
+                                <i class="fas fa-question-circle text-gray-500 cursor-pointer"></i>
+                                
+                                <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 
+                                            bg-black p-3 rounded-xl border border-gray-700 shadow-lg
+                                            opacity-0 group-hover:opacity-100 group-focus:opacity-100 
+                                            transition-opacity duration-300 pointer-events-none">
                                     
-                                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 
-                                                bg-black p-3 rounded-xl border border-gray-700 shadow-lg
-                                                opacity-0 group-hover:opacity-100 group-focus:opacity-100 
-                                                transition-opacity duration-300 pointer-events-none">
-                                        
-                                        <p class="text-sm text-gray-300 leading-relaxed">
-                                            <strong class="text-white">Если опция включена,</strong> правильные ответы будут видны всем участникам сразу после завершения теста.
-                                        </p>
-                                        <div class="absolute left-1/2 -translate-x-1/2 bottom-[-6px] w-3 h-3 bg-black border-b border-r border-gray-700 transform rotate-45"></div>
-                                    </div>
+                                    <p class="text-sm text-gray-300 leading-relaxed">
+                                        <strong class="text-white">Если опция включена,</strong> правильные ответы будут видны всем участникам.
+                                    </p>
+                                    <div class="absolute left-1/2 -translate-x-1/2 bottom-[-6px] w-3 h-3 bg-black border-b border-r border-gray-700 transform rotate-45"></div>
                                 </div>
                             </div>
-                            
-                            <div class="flex justify-end rounded-3xl">
-                                <a href="{% url 'preview_test_result' survey_id %}" class="text-sm text-[var(--color-text-secondary)] hover:text-white transition-colors duration-200">
-                                    Результаты <i class="fas fa-arrow-right mr-2"></i>
-                                </a>
-                            </div>
                         </div>
-                    {% else %}
-                        <div class="mt-4 p-4 bg-[var(--color-surface)] rounded-2xl border border-[var(--color-border)] text-center text-sm text-[var(--color-text-secondary)]">
-                            <i class="fas fa-user-plus text-[var(--color-accent-primary)] mr-2"></i>
-                            <button data-trigger-modal="register" class="font-semibold text-white hover:underline">Создайте аккаунт</button>, чтобы видеть ответы, сохранять свои тесты, делиться ими и&nbsp;скачивать в&nbsp;PDF для печати.
+                        
+                        <div class="flex justify-end">
+                            <a href="{% url 'preview_test_result' survey_id %}" 
+                            class="group inline-flex items-center gap-2 
+                                    bg-indigo-600 hover:bg-indigo-500 
+                                    text-white text-sm font-bold 
+                                    py-2.5 px-6 rounded-full 
+                                    shadow-lg shadow-indigo-500/40 hover:shadow-indigo-500/60 
+                                    transition-all duration-300 ease-out 
+                                    transform hover:-translate-y-0.5 hover:scale-105 active:scale-95">
+                                
+                                <span>Результаты</span>
+                                
+                                <i class="fas fa-arrow-right transition-transform duration-300 group-hover:translate-x-1"></i>
+                            </a>
                         </div>
-                    {% endif %}
+                    </div>
                 {% else %}
-                    <div class="mt-3 text-center text-sm gap-4 
-                                bg-[var(--color-surface)]/80 backdrop-blur-xl 
-                                rounded-3xl border border-[var(--color-border)] 
-                                p-3 sm:p-4 shadow-2xl shadow-black/50">
-                        {% if show_answers %}
-                            <i class="fas fa-eye text-green-400"></i> Автор разрешил просмотр ответов.
-                        {% else %}
-                            <i class="fas fa-eye-slash text-red-400"></i> Автор скрыл ответы.
-                        {% endif %}
+                    <div class="mt-4 p-4 bg-[var(--color-surface)] rounded-2xl border border-[var(--color-border)] text-center text-sm text-[var(--color-text-secondary)]">
+                        <i class="fas fa-user-plus text-[var(--color-accent-primary)] mr-2"></i>
+                        <button data-trigger-modal="register" class="font-semibold text-white hover:underline">Создайте аккаунт</button>, чтобы видеть ответы, сохранять свои тесты, делиться ими и&nbsp;скачивать в&nbsp;PDF для печати.
                     </div>
                 {% endif %}
-            </header>
+            {% else %}
+                <div class="mt-3 text-center text-sm gap-4 
+                            bg-[var(--color-surface)]/80 backdrop-blur-xl 
+                            rounded-3xl border border-[var(--color-border)] 
+                            p-3 sm:p-4 shadow-2xl shadow-black/50">
+                    {% if show_answers %}
+                        <i class="fas fa-eye text-green-400"></i> Автор разрешил просмотр ответов.
+                    {% else %}
+                        <i class="fas fa-eye-slash text-red-400"></i> Автор скрыл ответы.
+                    {% endif %}
+                </div>
+            {% endif %}
+        </header>
+
+        <div class="max-w-3xl mx-auto p-4 sm:p-8">
 
             {% if is_creator %}
                 {% if username != 0 %}
@@ -816,19 +809,6 @@
 
         {% if is_creator %}
 
-            {% if is_short_enough %}
-                <a href="{% url 'result' survey_id %}" title="Вернуться к тесту"
-                    class="group flex items-center h-12 rounded-full text-gray-400 transition-all duration-300 overflow-hidden 
-                        bg-gray-800/50 hover:bg-gray-700/70 hover:scale-[1.05] active:scale-[0.98]">
-                    
-                    <i class="fas fa-circle-chevron-left h-12 w-12 flex items-center justify-center flex-shrink-0 transition-colors group-hover:text-white"></i>
-                    
-                    <span class="max-w-0 group-hover:max-w-xs opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out pr-0 group-hover:pr-4 whitespace-nowrap text-sm font-semibold text-white">
-                        Назад
-                    </span>
-                </a>
-            {% endif %}
-            
             {% if username == 0 %}
                 <button data-trigger-modal="register" 
                     class="group flex items-center h-12 rounded-full text-white font-bold transition-all duration-300 overflow-hidden 
@@ -849,7 +829,7 @@
                     <i class="fas fa-chart-simple h-12 w-12 flex items-center justify-center flex-shrink-0 transition-colors group-hover:text-white"></i>
                     
                     <span class="max-w-0 group-hover:max-w-xs opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out pr-0 group-hover:pr-4 whitespace-nowrap text-sm font-semibold text-white">
-                        Результаты
+                        Панель теста
                     </span>
                 </a>
 
@@ -861,7 +841,7 @@
                     <i class="fas fa-play h-12 w-12 flex items-center justify-center flex-shrink-0"></i>
                     
                     <span class="max-w-0 group-hover:max-w-xs opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out pr-0 group-hover:pr-4 whitespace-nowrap text-sm">
-                        Пройти
+                        Пройти самому
                     </span>
                 </a>
             {% endif %}
