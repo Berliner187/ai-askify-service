@@ -90,7 +90,7 @@
                     </button>
                 </div>
             </div>
-            
+
             <!-- ========================================== -->
             <!-- ТАБ 1: ЛИЧНЫЙ РЕЗУЛЬТАТ (PERSONAL) -->
             <!-- ========================================== -->
@@ -142,14 +142,15 @@
                                 <p>Скачать тест для печати</p>
                             </div>
                         </a>
-                        {% if score != 0 %}
-                        <a class="button-medium" href="{% url 'download-results_pdf' survey_id=survey_id %}">
+                    </div>
+
+                    <div class="secondary-actions-wrapper">
+                        <button class="button-medium" data-action="share" data-share-url="{% url 'take_test' survey_id %}" href="{% url 'download-survey_pdf' survey_id=survey_id %}">
                             <div>
-                                <i class="fas fa-file-download"></i>
-                                <p>Скачать результат</p>
+                                <i class="fas fa-share"></i>
+                                <p>Поделиться тестом</p>
                             </div>
-                        </a>
-                        {% endif %}
+                        </button>
                     </div>
                 </div>
 
@@ -228,6 +229,12 @@
                         </div>
                         <div class="result-header">
                             <p>Создан {{ created_at }}</p>
+                            <div class="button-medium button-red mt-12" style="cursor: pointer;" onclick="openDeleteModal('{{ survey_id }}', '{{ title|escapejs }}')">
+                                <div>
+                                    <img src="{% static 'img/icon-delete.png' %}" alt="Удалить">
+                                    <p>Удалить тест</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     {% endif %}
@@ -313,26 +320,46 @@
                     <!-- General Stats Grid -->
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <!-- Card 1 -->
-                        <div class="bg-[#151517] p-6 rounded-3xl border border-gray-800 shadow-2xl shadow-black/50">
-                            <h3 class="text-base font-bold text-white mb-4">Общая сводка</h3>
-                            <div class="space-y-4">
-                                <div class="flex justify-between items-baseline">
-                                    <p class="text-gray-400">Всего прохождений</p>
-                                    <p class="text-3xl font-extrabold text-white">{{ total_attempts }}</p>
+                        <div class="relative overflow-hidden
+                                    bg-[#110D1C]/60 backdrop-blur-xl 
+                                    border border-[#282952]/80 rounded-3xl p-6 
+                                    transition-all duration-300 ease-out
+                                    hover:border-[var(--color-accent-primary)]/50">
+                            
+                            <div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-[var(--color-accent-primary)]/20 rounded-full blur-3xl pointer-events-none"></div>
+
+                            <h3 class="relative text-base font-bold text-white mb-4 flex items-center gap-2">
+                                <i class="fas fa-chart-bar text-[var(--color-accent-primary)]"></i>
+                                Общая сводка
+                            </h3>
+                            
+                            <div class="relative space-y-4">
+                                <div class="flex justify-between items-baseline group/item">
+                                    <p class="text-gray-400 transition-colors group-hover/item:text-gray-300">Всего прохождений</p>
+                                    <p class="text-3xl font-extrabold text-white tracking-tight">{{ total_attempts }}</p>
                                 </div>
-                                <div class="flex justify-between items-baseline">
-                                    <p class="text-gray-400">Просмотры теста</p>
-                                    <p class="text-3xl font-extrabold text-white">{{ view_count }}</p>
+                                
+                                <div class="flex justify-between items-baseline group/item">
+                                    <p class="text-gray-400 transition-colors group-hover/item:text-gray-300">Просмотры теста</p>
+                                    <p class="text-3xl font-extrabold text-white tracking-tight">{{ view_count }}</p>
                                 </div>
-                                <div class="flex justify-between items-baseline border-t border-gray-700 pt-3">
-                                    <p class="text-gray-400">Идеальные попытки</p>
-                                    <p class="text-3xl font-extrabold text-amber-400">{{ perfect_attempts_percent|floatformat:0 }}%</p>
+                                
+                                <div class="flex justify-between items-baseline border-t border-white/10 pt-3 group/item">
+                                    <p class="text-gray-400 transition-colors group-hover/item:text-gray-300">Идеальные попытки</p>
+                                    <p class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-amber-500">
+                                        {{ perfect_attempts_percent|floatformat:0 }}%
+                                    </p>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Card 2 -->
-                        <div class="bg-[#151517] p-6 rounded-3xl border border-gray-800 shadow-2xl shadow-black/50 flex flex-col justify-center items-center">
+                        <div class="relative overflow-hidden
+                                    bg-[#110D1C]/60 backdrop-blur-xl 
+                                    border border-[#282952]/80 rounded-3xl p-6 
+                                    transition-all duration-300 ease-out
+                                    hover:border-[var(--color-accent-primary)]/50">
+
                             <h3 class="text-base font-bold text-white mb-4">Средний балл</h3>
                             <div class="relative w-36 h-36 flex items-center justify-center">
                                 <div style="--value:{{ average_score_percent|floatformat:0 }};" class="radial-progress gradient-text text-lg" role="progressbar">
@@ -343,7 +370,12 @@
                         </div>
 
                         <!-- Card 3 -->
-                        <div class="bg-[#151517] p-6 rounded-3xl border border-gray-800 shadow-2xl shadow-black/50 flex flex-col">
+                        <div class="relative overflow-hidden
+                                    bg-[#110D1C]/60 backdrop-blur-xl 
+                                    border border-[#282952]/80 rounded-3xl p-6 
+                                    transition-all duration-300 ease-out
+                                    hover:border-[var(--color-accent-primary)]/50">
+
                             <div><h3 class="text-base font-bold text-white">Процент успеха</h3></div>
                             <div class="flex-grow flex items-center justify-center my-4">
                                 <p class="text-8xl font-extrabold" style="color: {{ success_rate_color }};">{{ success_rate|floatformat:0 }}</p>
@@ -354,22 +386,64 @@
                         </div>
                     </div>
 
+                    <section class="my-16 animate-fadeIn">
+                        <a href="{% url 'media_view' 'ot-paragrafa-v-uchebnike-do-pervykh-rezultatov-i-otcheta-v-excel' %}" 
+                        class="group block max-w-auto mx-auto p-4 bg-[var(--color-surface)] rounded-3xl border border-[var(--color-border)] 
+                                transition-all duration-300 hover:border-[var(--color-accent-primary)] hover:-translate-y-1">
+                            
+                            <div class="flex flex-col sm:flex-row items-center gap-6 text-center sm:text-left">
+                                <div class="flex-shrink-0">
+                                    <div class="flex items-center justify-center h-16 w-16 rounded-2xl bg-black/30 border border-[var(--color-border)]
+                                                transition-all duration-300 group-hover:bg-[var(--color-accent-primary)]/20 group-hover:border-[var(--color-accent-primary)]/50 group-hover:scale-110">
+                                        <i class="fas fa-graduation-cap text-3xl text-[var(--color-accent-primary)] transition-colors duration-300 group-hover:text-white"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow">
+                                    <h3 class="font-bold text-white/90 text-base">Не знаете, с чего начать?</h3>
+                                    <p class="mt-2 text-sm text-gray-400">
+                                        Написали подробный гайд о&nbsp;том, как читать дашборды и&nbsp;превращать сухие цифры в&nbsp;полезные инсайты для улучшения обучения.
+                                    </p>
+                                </div>
+                                <div class="flex-shrink-0 text-3xl text-gray-600 transition-transform duration-300 group-hover:translate-x-2 group-hover:text-[var(--color-accent-primary)]">
+                                    <i class="fas fa-arrow-right"></i>
+                                </div>
+                            </div>
+
+                        </a>
+                    </section>
+
                     <!-- Charts & Insights -->
                     <div class="relative">
                         <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 transition-all duration-500 
                             {% if subscription_level == 0 %}filter blur-lg opacity-40 pointer-events-none select-none{% endif %}">
                             
-                            <div class="lg:col-span-3 bg-[#151517] p-6 rounded-3xl border border-gray-800 shadow-2xl shadow-black/50">
+                            <div class="lg:col-span-3 
+                                relative overflow-hidden
+                                bg-[#110D1C]/60 backdrop-blur-xl 
+                                border border-[#282952]/80 rounded-3xl p-6 
+                                transition-all duration-300 ease-out
+                                hover:border-[var(--color-accent-primary)]/50">
+
                                 <h3 class="text-base font-bold text-white mb-4">Активность за 7 дней</h3>
                                 <div class="chart-wrapper h-64"><canvas id="activityChart"></canvas></div>
                             </div>
-                            <div class="lg:col-span-2 bg-[#151517] p-6 rounded-3xl border border-gray-800 shadow-2xl shadow-black/50">
+                            <div class="lg:col-span-2
+                                bg-[#110D1C]/60 backdrop-blur-xl 
+                                border border-[#282952]/80 rounded-3xl p-6 
+                                transition-all duration-300 ease-out
+                                hover:border-[var(--color-accent-primary)]/50">
+
                                 <h3 class="text-base font-bold text-white mb-4">Распределение баллов</h3>
                                 <div class="chart-wrapper h-64"><canvas id="scoresDistributionChart"></canvas></div>
                             </div>
                             
                             <!-- Insights -->
-                            <div class="lg:col-span-5 bg-[#151517] p-6 rounded-3xl border border-gray-800 shadow-2xl shadow-black/50">
+                            <div class="lg:col-span-5 
+                                bg-[#110D1C]/60 backdrop-blur-xl 
+                                border border-[#282952]/80 rounded-3xl p-6 
+                                transition-all duration-300 ease-out
+                                hover:border-[var(--color-accent-primary)]/50">
+
                                 <h3 class="text-base font-bold text-white mb-4">Анализ вопросов</h3>
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div class="bg-black/20 p-4 rounded-xl flex items-start gap-4">
@@ -397,7 +471,11 @@
 
                             <!-- Leaderboard & Map -->
                             <div class="lg:col-span-5 grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                <div class="bg-[#151517] p-6 rounded-3xl border border-gray-800 shadow-2xl shadow-black/50">
+                                <div class="bg-[#110D1C]/60 backdrop-blur-xl 
+                                    border border-[#282952]/80 rounded-3xl p-6 
+                                    transition-all duration-300 ease-out
+                                    hover:border-[var(--color-accent-primary)]/50">
+
                                     <h3 class="text-base font-bold text-white mb-4 flex items-center gap-2">
                                         <i class="fas fa-trophy text-amber-400"></i> Таблица лидеров
                                     </h3>
@@ -420,7 +498,11 @@
                                         {% endfor %}
                                     </ul>
                                 </div>
-                                <div class="bg-[#151517] p-6 rounded-3xl border border-gray-800 shadow-2xl shadow-black/50">
+                                <div class="bg-[#110D1C]/60 backdrop-blur-xl 
+                                    border border-[#282952]/80 rounded-3xl p-6 
+                                    transition-all duration-300 ease-out
+                                    hover:border-[var(--color-accent-primary)]/50">
+
                                     <h3 class="text-base font-bold text-white mb-4 flex items-center gap-2">
                                         <i class="fas fa-map text-cyan-400"></i> Карта вопросов
                                     </h3>
@@ -482,7 +564,10 @@
                     </div>
 
                     <!-- Attempts List -->
-                    <div class="relative bg-[#151517] p-6 rounded-3xl border border-gray-800 shadow-2xl shadow-black/50">
+                    <div class="relative bg-[#110D1C]/60 backdrop-blur-xl 
+                                border border-[#282952]/80 rounded-3xl p-6 
+                                transition-all duration-300 ease-out
+                                hover:border-[var(--color-accent-primary)]/50">
                         <h2 class="text-xl font-bold text-white mb-4">Последние попытки</h2>
                         
                         <div class="flow-root {% if subscription_level == 0 %}filter blur-md opacity-40 pointer-events-none select-none min-h-[300px]{% endif %}">
@@ -624,52 +709,48 @@
             const btnPersonal = document.getElementById('btn-tab-personal');
             const btnAnalytics = document.getElementById('btn-tab-analytics');
 
+            const activeClasses = ['bg-[var(--color-accent-primary)]', 'text-white', 'shadow-lg'];
+            const inactiveClasses = ['text-gray-400', 'hover:text-white', 'hover:bg-white/5'];
+
             if (tabName === 'personal') {
                 personalTab.classList.remove('hidden');
                 analyticsTab.classList.add('hidden');
-                
-                // Style updates
-                btnPersonal.classList.remove('text-gray-400', 'hover:text-white', 'hover:bg-white/5');
-                btnPersonal.classList.add('bg-[var(--color-accent-primary)]', 'text-white', 'shadow-lg');
-                
-                btnAnalytics.classList.add('text-gray-400', 'hover:text-white', 'hover:bg-white/5');
-                btnAnalytics.classList.remove('bg-[var(--color-accent-primary)]', 'text-white', 'shadow-lg');
-                
-            } else {
-                personalTab.classList.add('hidden');
-                analyticsTab.classList.remove('hidden');
 
-                // Style updates
-                btnAnalytics.classList.remove('text-gray-400', 'hover:text-white', 'hover:bg-white/5');
-                btnAnalytics.classList.add('bg-[var(--color-accent-primary)]', 'text-white', 'shadow-lg');
+                btnPersonal.classList.add(...activeClasses);
+                btnPersonal.classList.remove(...inactiveClasses);
                 
-                btnPersonal.classList.add('text-gray-400', 'hover:text-white', 'hover:bg-white/5');
-                btnPersonal.classList.remove('bg-[var(--color-accent-primary)]', 'text-white', 'shadow-lg');
+                btnAnalytics.classList.remove(...activeClasses);
+                btnAnalytics.classList.add(...inactiveClasses);
+
+            } else if (tabName === 'analytics') {
+                analyticsTab.classList.remove('hidden');
+                personalTab.classList.add('hidden');
+
+                btnAnalytics.classList.add(...activeClasses);
+                btnAnalytics.classList.remove(...inactiveClasses);
                 
-                // Trigger chart resize in case it rendered while hidden
+                btnPersonal.classList.remove(...activeClasses);
+                btnPersonal.classList.add(...inactiveClasses);
+
                 if (typeof Chart !== 'undefined') {
                     Object.values(Chart.instances).forEach(chart => chart.resize());
                 }
             }
+
+            const url = new URL(window.location);
+            url.searchParams.set('tab', tabName);
+            window.history.replaceState({}, '', url);
         }
 
+        // === ПРОВЕРКА ПРИ ЗАГРУЗКЕ СТРАНИЦЫ ===
         document.addEventListener('DOMContentLoaded', function() {
-        // 1. Получаем параметры из URL
             const urlParams = new URLSearchParams(window.location.search);
-            const tabParam = urlParams.get('tab');
+            const currentTab = urlParams.get('tab');
 
-            // 2. Если в ссылке есть ?tab=analytics, переключаем сразу
-            if (tabParam === 'analytics') {
-                // Небольшая задержка, чтобы UI прогрузился
+            if (currentTab === 'analytics') {
                 setTimeout(() => {
                     switchTab('analytics');
-                    
-                    // Опционально: плавная прокрутка к контенту, если нужно
-                    const analyticsTab = document.getElementById('tab-analytics');
-                    if(analyticsTab) {
-                        analyticsTab.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }
-                }, 100);
+                }, 50);
             }
         });
 
@@ -702,13 +783,12 @@
                 window.requestAnimationFrame(step);
             }
 
-            // --- COPY LINK LOGIC (Unified) ---
+            // --- COPY LINK LOGIC ---
             function copyLinkAndNotify(btn) {
                 const relativePath = btn.getAttribute('data-share-url');
                 const fullLink = `${window.location.origin}${relativePath.startsWith('/') ? '' : '/'}${relativePath}`;
                 
                 navigator.clipboard.writeText(fullLink).then(() => {
-                    // Try to find the nearest notification
                     const notif = document.querySelector('.copy-notification');
                     if(notif) {
                         notif.classList.add('show');

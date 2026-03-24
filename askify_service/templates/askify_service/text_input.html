@@ -69,6 +69,27 @@
     <div id="page-container" class="fade" style="display: none;">
         {% include 'header.html' %}
 
+        <div class="container" id="file-preview-container" style="display: none;">
+            <div id="attached-file-name">
+                ✅ Прикреплен файл: <strong></strong>
+            </div>
+            <div class="file-preview">
+                <div class="file-icon">
+                    <img src="{% static 'img/icon-file3d.png' %}" alt="File Icon">
+                </div>
+                <div class="file-info">
+                    <div class="file-name"><strong id="preview-file-name"></strong></div>
+                    <div class="file-size"><strong id="preview-file-size"></strong></div>
+                    <div class="button-medium" id="remove-file-button" style="display: none;" onclick="removeUploadedFile()">
+                        <div>
+                            <img src="{% static 'img/icon-delete.png' %}" alt="Удалить файл">
+                            <p>Открепить</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="main-content-create">
             {% if total_tests == 0 %}
                 <div class="onboarding-welcome">
@@ -158,27 +179,6 @@
                 </div>
             {% endif %}
         {% endif %}
-
-        <div class="container" id="file-preview-container" style="display: none;">
-            <div id="attached-file-name">
-                ✅ Прикреплен файл: <strong></strong>
-            </div>
-            <div class="file-preview">
-                <div class="file-icon">
-                    <img src="{% static 'img/icon-file3d.png' %}" alt="File Icon">
-                </div>
-                <div class="file-info">
-                    <div class="file-name"><strong id="preview-file-name"></strong></div>
-                    <div class="file-size"><strong id="preview-file-size"></strong></div>
-                    <div class="button-medium" id="remove-file-button" style="display: none;" onclick="removeUploadedFile()">
-                        <div>
-                            <img src="{% static 'img/icon-delete.png' %}" alt="Удалить файл">
-                            <p>Открепить</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
 
         {% if dashboard_context.type == 'popular_test' %}
         <div class="container p-6 max-w-auto bg-[var(--color-surface)] rounded-3xl border border-[var(--color-border)]">

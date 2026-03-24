@@ -127,19 +127,8 @@ class PDFGenerator:
         writer = PdfWriter()
         content_reader = PdfReader(content_pdf_buffer)
 
-        if subscription_level < 1:
-            writer.encrypt("", permissions_flag=0b000000000000000000001111110100)
-
-            watermark_pdf_buffer = PDFGenerator._create_watermark_pdf("letychka.ru • создано бесплатно")
-            watermark_reader = PdfReader(watermark_pdf_buffer)
-            watermark_page = watermark_reader.pages[0]
-
-            for page in content_reader.pages:
-                page.merge_page(watermark_page, over=False)
-                writer.add_page(page)
-        else:
-            for page in content_reader.pages:
-                writer.add_page(page)
+        for page in content_reader.pages:
+            writer.add_page(page)
 
         writer.write(output_buffer)
         pdf_data = output_buffer.getvalue()
