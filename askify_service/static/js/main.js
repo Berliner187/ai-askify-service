@@ -19,6 +19,10 @@ async function submitText() {
     }
 
     const overlay = document.getElementById('overlay');
+    const islandWrapper = document.getElementById('floating-island-wrapper');
+
+    if (islandWrapper) islandWrapper.style.display = 'none';
+
     overlay.style.display = 'flex';
     overlay.classList.remove('hidden');
     overlay.classList.add('flex');
@@ -85,8 +89,10 @@ async function submitText() {
         stopTextAnimation();
         overlay.classList.add('hidden');
         overlay.classList.remove('flex');
+        islandWrapper.style.display = 'fixed';
     } finally {
         document.getElementById('overlay').style.display = 'none';
+        islandWrapper.style.display = 'fixed';
     }
 }
 
@@ -99,30 +105,24 @@ function handleFiles(files) {
     const file = files[0];
     if (!file) return;
 
-    function showSliderBlock(slider, sliderText, count = 5) {
-        slider.style.display = 'block';
-        sliderText.style.display = 'none';
-        slider.parentElement.classList.add('show');
-        slider.value = count;
-        updateQuestionText(slider.value);
-    }
+    selectedFile = file;
+    window.letychkaUploadedFile = file;
 
-    document.getElementById('remove-file-button').style.display = 'flex';
-    document.querySelector('#attached-file-name strong').textContent = file.name;
+    // 1. Показываем блок превью (наш новый "заголовок")
+    updateFilePreview(file);
 
-    // Показ слайдера и текста
+    // 2. Логика слайдера (как у тебя была)
     const fileSlider = document.getElementById('question-slider');
     const charCount = document.getElementById('char-count');
-    showSliderBlock(fileSlider, charCount);
+    const sliderValueText = document.getElementById('question-slider-text');
 
-    selectedFile = file;
-    document.getElementById('file-preview-container').style.display = 'block';
-    document.querySelector('#attached-file-name strong').textContent = file.name;
+    if (fileSlider) fileSlider.style.display = 'block';
+    if (charCount) charCount.style.display = 'none'; // Скрываем счетчик символов при файле
+    if (sliderValueText) sliderValueText.style.display = 'block';
 
-    document.getElementById('question-slider').style.display = 'flex';
-
-    updateFilePreview(selectedFile);
-    window.letychkaUploadedFile = file;
+    // 3. Скрываем уведомления о подписке, чтобы не городить этажи
+    const noticeHub = document.getElementById('notice-hub');
+    if (noticeHub) noticeHub.style.display = 'none';
 }
 
 
@@ -137,13 +137,13 @@ function formatBytes(bytes, decimals = 2) {
 
 function updateFilePreview(file) {
     const previewContainer = document.getElementById('file-preview-container');
-    const fileNameEl = previewContainer.querySelector('.file-name strong');
-    const fileSizeEl = previewContainer.querySelector('.file-size strong');
+    const fileNameEl = document.getElementById('preview-file-name');
+    const fileSizeEl = document.getElementById('preview-file-size');
 
-    fileNameEl.textContent = file.name;
-    fileSizeEl.textContent = formatBytes(file.size);
+    if (fileNameEl) fileNameEl.textContent = file.name;
+    if (fileSizeEl) fileSizeEl.textContent = formatBytes(file.size);
 
-    previewContainer.style.display = 'flex';
+    if (previewContainer) previewContainer.style.display = 'block';
 }
 
 
@@ -151,12 +151,22 @@ function updateFilePreview(file) {
 function removeUploadedFile() {
     selectedFile = null;
     window.letychkaUploadedFile = null;
-    document.getElementById('hidden-file-input').value = '';
-    document.getElementById('file-preview-container').style.display = 'none';
-    document.getElementById('char-count').style.display = 'none';
-    document.getElementById('question-slider-text').style.display = 'none';
-    document.getElementById('remove-file-button').style.display = 'none';
-    document.getElementById('question-slider').style.display = 'none';
+    
+    // Очищаем инпут файла
+    const fileInput = document.getElementById('hidden-file-input');
+    if (fileInput) fileInput.value = '';
+
+    // Прячем превью
+    const previewContainer = document.getElementById('file-preview-container');
+    if (previewContainer) previewContainer.style.display = 'none';
+
+    // Возвращаем стандартные контроллеры
+    const charCount = document.getElementById('char-count');
+    if (charCount) charCount.style.display = 'block';
+
+    // Возвращаем плашку подписки (если она должна быть)
+    const noticeHub = document.getElementById('notice-hub');
+    if (noticeHub) noticeHub.style.display = 'block';
 }
 
 

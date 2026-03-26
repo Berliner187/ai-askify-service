@@ -245,14 +245,12 @@ body {
 
 .welcome-title {
     font-family: 'Unbounded Bold';
-    font-size: 1.8rem;
     color: #e8e7f1;
     margin: 0 0 16px 0;
     max-width: 600px;
 }
 
 .welcome-subtitle {
-    font-size: 1.1rem;
     color: #bab8c1;
     max-width: 650px;
     line-height: 1.7;
@@ -282,11 +280,11 @@ body {
 }
 .welcome-return h1 {
     font-family: 'Unbounded Medium';
-    font-size: 1.8rem;
+    font-size: 1.4rem;
     color: #e8e7f1;
 }
 .welcome-return p {
-    font-size: 1.1rem;
+    font-size: .8rem;
     color: #bab8c1;
 }
 

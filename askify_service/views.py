@@ -218,7 +218,18 @@ def get_user_dashboard_context(user):
 def page_create_survey(request):
     current_id_staff = get_staff_id(request)
 
-    subs = Subscription.objects.get(staff_id=current_id_staff)
+    try:
+        subs = Subscription.objects.get(staff_id=current_id_staff)
+    except Subscription.DoesNotExist:
+        tracer_l.warning(f"Self-healing: Creating missing subscription for {current_id_staff}")
+        subs = Subscription.objects.create(
+            staff_id=current_id_staff,
+            plan_name='Стартовый',
+            status='active',
+            billing_cycle='monthly',
+            end_date=timezone.now() + timedelta(days=7)
+        )
+        
     subs.status = subs.check_sub_status()
     tests_count_limit = get_daily_test_limit(subs.plan_name) if subs.status == 'active' else 0
 
@@ -1186,11 +1197,12 @@ class FileUploadView(View):
             tracer_l.error('Недопустимый файл')
             return JsonResponse({'error': 'Недопустимый файл'}, status=400)
 
-        if uploaded_file.size > 10 * 1024 * 1024:
+        if uploaded_file.size > 50 * 1024 * 1024:
             tracer_l.error('No file provided')
-            return JsonResponse({'error': 'Файл слишком большой. Максимальный размер: 10 МБ'}, status=400)
+            return JsonResponse({'error': 'Файл слишком большой. Максимальный размер: 50 МБ'}, status=400)
 
         data = self.read_file_data(uploaded_file)
+
         if not data or data == -1:
             tracer_l.error('Файл пуст или не удалось прочитать')
             return JsonResponse({'error': 'Файл пуст или содержит недопустимые данные.'})
@@ -1206,14 +1218,18 @@ class FileUploadView(View):
             cleaned_data_for_llm = clean_text_for_llm(data)
             num_tokens = count_tokens(cleaned_data_for_llm) + prompts_tokens
             tracer_l.info(f"Кол-во токенов в файле: {num_tokens}")
-            if num_tokens > 8000:
-                tracer_l.error(f'Слишком большой объем текста в файле ({num_tokens} токенов). ')
-                error_message = (
-                    f'Слишком большой объем текста в файле ({num_tokens} токенов). '
-                    f'Максимально допустимо {8000} токенов. '
-                    'Пожалуйста, сократите документ.'
-                )
-                return JsonResponse({'error': error_message}, status=400)
+            
+            max_tokens = 64000 if DEBUG is True else 8000
+            
+            # if max_tokens > 8000:
+            #     tracer_l.error(f'Слишком большой объем текста в файле ({num_tokens} токенов). ')
+            #     error_message = (
+            #         f'Слишком большой объем текста в файле ({num_tokens} токенов). '
+            #         f'Максимально допустимо {8000} токенов. '
+            #         'Пожалуйста, сократите документ.'
+            #     )
+            #     return JsonResponse({'error': error_message}, status=400)
+            
         except Exception as e:
             tracer_l.error(f'Error counting tokens: {e}')
             # return JsonResponse({'error': 'Не удалось обработать текст файла.'}, status=500)
@@ -1222,7 +1238,11 @@ class FileUploadView(View):
         try:
             tracer_l.debug("Начало генерации")
             manage_generate_surveys_text = ManageGenerationSurveys(request, cleaned_data_for_llm, f'{question_count}')
-            generated_text = await manage_generate_surveys_text.github_gpt(await get_active_api_key('SURVEY'))
+
+            if DEBUG:
+                generated_text = await manage_generate_surveys_text.smart_generate()
+            else:
+                generated_text = await manage_generate_surveys_text.github_gpt(await get_active_api_key('SURVEY'))
             tracer_l.debug("Завершение генерации")
 
             if generated_text.get('success'):
@@ -1232,7 +1252,8 @@ class FileUploadView(View):
                 tracer_l.critical(f'Произошла ошибка: {generated_text.get("message")}')
                 return JsonResponse({'error': f'Произошла ошибка: {generated_text.get("message")}'}, status=429)
         except Exception as fatal:
-            return JsonResponse({'error': f'Не удалось выполнить запрос: {fatal}'}, status=400)
+            error_msg = self.__remove_surrogates(str(fatal))
+            return JsonResponse({'error': f'Не удалось выполнить запрос: {error_msg}'}, status=400)
 
         try:
             with transaction.atomic():
@@ -1273,6 +1294,9 @@ class FileUploadView(View):
             return HttpResponseForbidden()
         return JsonResponse({'error': True, 'message': 'Invalid method'})
 
+    def __remove_surrogates(self, text):
+        return "".join(c for c in text if not (0xD800 <= ord(c) <= 0xDFFF))
+
     def read_file_data(self, uploaded_file):
         full_text = ""
         ext = os.path.splitext(str(uploaded_file.name))[1].lower()
@@ -1285,6 +1309,10 @@ class FileUploadView(View):
                 for page in reader.pages:
                     if text := page.extract_text():
                         full_text += text.strip() + "\n"
+
+                if isinstance(full_text, str):
+                    full_text = self.__remove_surrogates(full_text)
+
                 return full_text[:read_symbols_count]
             except Exception as e:
                 tracer_l.error(f"Error reading PDF: {e}")
@@ -1304,6 +1332,10 @@ class FileUploadView(View):
                 with NamedTemporaryFile(delete=True, suffix=ext) as tmp:
                     tmp.write(uploaded_file.read())
                     tmp.seek(0)
+
+                    if isinstance(full_text, str):
+                        full_text = self.__remove_surrogates(full_text)
+
                     return self.extract_text_from_word(tmp.name)[:read_symbols_count]
             except Exception as e:
                 tracer_l.error(f"Error reading Word: {e}")
@@ -1410,36 +1442,6 @@ class TakeSurvey(View):
         status = subscription.check_sub_status()
         tests_count_limit = get_daily_test_limit(subscription.plan_name) if status == 'active' else 0
 
-        if (status == 'active') and (tests_count_limit > 0) and (subs_level > 1):
-            generation_models_control = GenerationModelsControl()
-            ai_feedback = generation_models_control.get_feedback_001(
-                f"Список вопросов и моих ответов: {user_answers_list}.\n"
-                f"Набрано балов: {correct_count} из {len(user_answers)}"
-            )
-
-            if ai_feedback.get('success'):
-                feedback_obj = FeedbackFromAI.objects.filter(survey_id=survey_id)
-                if feedback_obj.exists():
-                    feedback_obj.delete()
-
-                FeedbackFromAI.objects.create(
-                    survey_id=survey_id,
-                    id_staff=get_staff_id(request),
-                    feedback_data=ai_feedback.get('generated_text'),
-                    model_name=ai_feedback.get('model_used', '')
-                )
-
-                TokensUsed.objects.create(
-                    id_staff=get_staff_id(request),
-                    tokens_feedback_used=ai_feedback.get('tokens_used', '')
-                )
-
-                api_key_manage = APIKey.objects.filter(purpose='FEEDBACK', is_active=True).first()
-                APIKeyUsage.objects.create(
-                    api_key=api_key_manage,
-                    success=True
-                )
-
         context = {
             'score': correct_count, 'total': user_answers, 'survey_id': survey_id,
             'subscription_level': get_subscription_level(request),
@@ -1469,97 +1471,7 @@ class TakeSurvey(View):
 # @subscription_required
 @login_required
 def result_view(request, survey_id):
-    survey = get_object_or_404(Survey, survey_id=survey_id)
-    questions_data = survey.get_questions()
-
-    last_attempt = UserAnswers.objects.filter(
-        survey_id=survey_id,
-        id_staff=get_staff_id(request)
-    ).order_by('-created_at').first()
-
-    if not last_attempt:
-        selected_answers_dict = {}
-    else:
-        selected_answers_dict = last_attempt.get_user_answers()
-
-    processed_questions = []
-    correct_answers_count = 0
-
-    if isinstance(questions_data, list):
-        for index, question in enumerate(questions_data):
-            answer_key_idx = f"question_{index + 1}"
-            answer_key_text = question.get('question')
-            
-            user_answer = selected_answers_dict.get(answer_key_idx) or selected_answers_dict.get(answer_key_text)
-            
-            q_copy = question.copy()
-            q_copy['user_answer'] = user_answer
-            
-            corr = q_copy.get('correct_answer')
-            if user_answer and str(user_answer).strip() == str(corr).strip():
-                correct_answers_count += 1
-
-            processed_questions.append(q_copy)
-
-    score = correct_answers_count
-    total = len(questions_data) if isinstance(questions_data, list) else 0
-    percentage = round((score * 100 / total) if total > 0 else 0)
-
-    result_verdict = "Стоит подучить"
-    result_color_class = {"text": "text-red-500", "bg": "bg-red-500"}
-    if percentage >= 75:
-        result_verdict = "Отлично!"
-        result_color_class = {"text": "text-green-400", "bg": "bg-green-400"}
-    elif percentage >= 40:
-        result_verdict = "Неплохо!"
-        result_color_class = {"text": "text-amber-400", "bg": "bg-amber-400"}
-    if percentage == 100:
-        result_verdict = "Идеально!"
-        result_color_class = {"text": "gradient-text", "bg": "bg-gradient-to-r from-indigo-500 to-purple-600"}
-
-    feedback_text = ''
-    model_name = ''
-    try:
-        feedback_obj = FeedbackFromAI.objects.filter(survey_id=survey_id).first()
-        if feedback_obj:
-            feedback_text = markdown.markdown(feedback_obj.feedback_data)
-            model_name = feedback_obj.model_name
-    except:
-        pass
-
-    try:
-        sub = Subscription.objects.get(staff_id=get_staff_id(request))
-        checker = SubscriptionCheck()
-        sub_level = checker.get_subscription_level(sub.plan_name)
-    except:
-        sub_level = 0
-
-    context = {
-        'page_title': f'Результаты – {survey.title}',
-        'title': survey.title,
-        'survey_id': survey_id,
-        'created_at': survey.created_at,
-        'score': score,
-        'total': total,
-        'percentage': percentage,
-        'result_verdict': result_verdict,
-        'result_color_class': result_color_class,
-        'questions': processed_questions,
-        'username': request.user.username,
-        'feedback_text': feedback_text,
-        'model_name': model_name,
-        'subscription_level': sub_level,
-        'attempt_exists': last_attempt is not None,
-        'debug': DEBUG
-    }
-
-    try:
-        analytics_data = get_analytics_context(request, survey_id)
-        context.update(analytics_data)
-    except Exception as e:
-        print(f"Analytics calc error: {e}")
-
-    return render(request, 'result.html', context)
+    return redirect(f'/c/{survey_id}/')
 
 
 def download_results_pdf(request, survey_id):
@@ -2105,7 +2017,176 @@ def redirect_to_dashboard(request, survey_id):
 
 @login_required
 def view_results(request, survey_id):
-    return redirect(f'/result/{survey_id}/')
+    survey = get_object_or_404(Survey, survey_id=survey_id)
+
+    attempts_qs = survey.attempts.all().order_by('-created_at')
+    total_attempts = attempts_qs.count()
+
+    try:
+        survey_questions_list = json.loads(survey.questions)
+        questions_map = {q['question']: q['correct_answer'] for q in survey_questions_list if isinstance(q, dict)}
+    except (json.JSONDecodeError, TypeError):
+        questions_map = {}
+
+    average_score_percent = 0
+    median_score = 0
+    perfect_attempts_percent = 0
+    success_rate = 0
+    question_insights = {"hardest": None, "easiest": None}
+    leaderboard_attempts = []
+    questions_breakdown = []
+
+    if total_attempts > 0:
+        base_aggregation = {
+            'avg_percent': Avg(100.0 * F('score') / F('total_questions')),
+            'perfect_count': Count('id', filter=Q(score=F('total_questions'))),
+            'success_count': Count('id', filter=Q(score__gte=F('total_questions') * 0.5))
+        }
+
+        if not settings.DEBUG and 'postgresql' in connection.vendor:
+            try:
+                from django.contrib.postgres.aggregates import PercentileCont
+
+                base_aggregation['median_score_agg'] = PercentileCont(0.5).within_group('score')
+                stats = attempts_qs.aggregate(**base_aggregation)
+                median_score = stats.get('median_score_agg', 0)
+
+            except ImportError:
+                stats = attempts_qs.aggregate(**base_aggregation)
+                scores = list(attempts_qs.values_list('score', flat=True).order_by('score'))
+                count = len(scores)
+                if count % 2 == 1:
+                    median_score = scores[count // 2]
+                else:
+                    mid1 = scores[count // 2 - 1]
+                    mid2 = scores[count // 2]
+                    median_score = (mid1 + mid2) / 2
+        else:
+            stats = attempts_qs.aggregate(**base_aggregation)
+            scores = list(attempts_qs.values_list('score', flat=True).order_by('score'))
+            count = len(scores)
+            if count > 0:
+                if count % 2 == 1:
+                    median_score = scores[count // 2]
+                else:
+                    mid1 = scores[count // 2 - 1]
+                    mid2 = scores[count // 2]
+                    median_score = (mid1 + mid2) / 2
+
+        average_score_percent = stats.get('avg_percent', 0)
+        perfect_attempts_percent = (stats.get('perfect_count', 0) / total_attempts) * 100
+        success_rate = round((stats.get('success_count', 0) / total_attempts) * 100)
+
+        questions_stats = {}
+        all_answers_json = attempts_qs.values_list('answers_json', flat=True)
+
+        for answers_str in all_answers_json:
+            try:
+                student_answers = json.loads(answers_str)
+                if isinstance(student_answers, dict):
+                    for q_text, student_answer in student_answers.items():
+                        if q_text in questions_map:
+                            q_stats = questions_stats.setdefault(q_text, {'correct': 0, 'total': 0})
+                            q_stats['total'] += 1
+                            if student_answer == questions_map[q_text]:
+                                q_stats['correct'] += 1
+            except (json.JSONDecodeError, AttributeError):
+                continue
+
+        question_insights = get_question_insights(questions_stats)
+
+        leaderboard_attempts = attempts_qs.order_by('-score', 'created_at')[:5]
+
+        questions_breakdown = []
+        if questions_stats:
+            sorted_stats = sorted(questions_stats.items(), key=lambda item: (
+                (item[1].get('correct', 0) / item[1].get('total', 1))
+            ))
+            for q_text, stats in sorted_stats:
+                correct = stats.get('correct', 0)
+                total = stats.get('total', 0)
+                if total > 0:
+                    rate = (correct / total) * 100
+                    if rate < 33:
+                        color = '#EF4444'
+                    elif rate < 66:
+                        color = '#F59E0B'
+                    else:
+                        color = '#10B981'
+                    questions_breakdown.append({
+                        "text": q_text, "rate": rate,
+                        "stats": f"{correct}/{total}", "color": color
+                    })
+
+    attempts_for_template = []
+    for attempt in attempts_qs:
+        percent = (attempt.score * 100 / attempt.total_questions) if attempt.total_questions > 0 else 0
+        answers_with_results = []
+        try:
+            user_answers = json.loads(attempt.answers_json)
+            if isinstance(user_answers, dict):
+                for question_text, selected_answer in user_answers.items():
+                    correct_answer = questions_map.get(question_text)
+                    is_correct = (selected_answer == correct_answer)
+
+                    answers_with_results.append({
+                        'question': question_text,
+                        'selected_answer': selected_answer,
+                        'correct_answer': correct_answer,
+                        'is_correct': is_correct
+                    })
+        except (json.JSONDecodeError, TypeError):
+            pass
+
+        answers_json_str = json.dumps(answers_with_results, ensure_ascii=False)
+
+        attempts_for_template.append({
+            'id': attempt.id,
+            'student_name': attempt.student_name,
+            'created_at': attempt.created_at,
+            'score': attempt.score,
+            'total_questions': attempt.total_questions,
+            'percent': round(percent),
+            'answers_json': mark_safe(answers_json_str)
+        })
+
+    author_username = AuthUser.objects.get(id_staff=survey.id_staff).username
+    is_short_enough = len(author_username) < 20
+
+    tracer_l.info(f'{request.user.username} --- dashboard {survey.title}')
+
+    conversion_rate = (total_attempts / survey.view_count) * 100 if survey.view_count > 0 else 0
+
+    success_rate_color = '#EF4444'
+    if success_rate >= 75:
+        success_rate_color = '#10B981'
+    elif success_rate >= 40:
+        success_rate_color = '#F59E0B'
+
+    context = {
+        'survey': survey,
+        'attempts': attempts_for_template,
+        'total_attempts': total_attempts,
+        'average_score_percent': average_score_percent,
+        'median_score': median_score,
+        'perfect_attempts_percent': perfect_attempts_percent,
+        'success_rate': success_rate,
+        'success_rate_color': success_rate_color,
+        'question_insights': question_insights,
+        'leaderboard_attempts': leaderboard_attempts,
+        'questions_breakdown': questions_breakdown,
+        'view_count': survey.view_count,
+        'conversion_rate': conversion_rate,
+        'username': get_username(request),
+        'page_title': survey.title,
+        'subscription_level': get_subscription_level(request),
+        'subscription_status': True if Subscription.objects.get(staff_id=get_staff_id(request)).check_sub_status == 'active' else False,
+        'author': author_username if len(author_username) < 40 else 'Аноним',
+        'is_short_enough': is_short_enough,
+        'date_create': survey.created_at.strftime('%d.%m.%Y'),
+    }
+    return render(request, 'askify_service/test_results.html', context)
+
 
 
 @login_required
@@ -6450,12 +6531,12 @@ def passwordless_auth_view(request):
                 MagicLinkToken.objects.filter(user=user).delete()
                 magic_token = MagicLinkToken.objects.create(user=user)
 
-                subject = 'Сброс пароля'
+                subject = 'Войти в Летучку'
 
                 login_url = request.build_absolute_uri(
                     reverse('magic_link_login', args=[magic_token.token])
                 )
-                message = render_to_string('confirmed_data/password_reset_email.html', {'link': login_url})
+                message = render_to_string('confirmed_data/magic_link_auth.html', {'link': login_url})
 
                 send_mail(
                     subject,
@@ -6478,7 +6559,7 @@ def passwordless_auth_view(request):
 
 def magic_link_login_view(request, token):
     """
-    Обрабатывает переход по "магической" ссылке.
+    Обрабатывает переход по Магической ссылке.
     """
     magic_token = MagicLinkToken.objects.filter(token=token).first()
 

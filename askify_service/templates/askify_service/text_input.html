@@ -12,7 +12,7 @@
     <link rel="shortcut icon" href="{% static 'img/logo.png' %}" type="image/png">
     
     {% include 'components/linker.html' %}
-    <link rel="stylesheet" href="{% static 'css/upload-styles.css' %}?v=1.9">
+    <link rel="stylesheet" href="{% static 'css/upload-styles.css' %}?v=1.11">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- Yandex.Metrika counter -->
@@ -69,27 +69,6 @@
     <div id="page-container" class="fade" style="display: none;">
         {% include 'header.html' %}
 
-        <div class="container" id="file-preview-container" style="display: none;">
-            <div id="attached-file-name">
-                ✅ Прикреплен файл: <strong></strong>
-            </div>
-            <div class="file-preview">
-                <div class="file-icon">
-                    <img src="{% static 'img/icon-file3d.png' %}" alt="File Icon">
-                </div>
-                <div class="file-info">
-                    <div class="file-name"><strong id="preview-file-name"></strong></div>
-                    <div class="file-size"><strong id="preview-file-size"></strong></div>
-                    <div class="button-medium" id="remove-file-button" style="display: none;" onclick="removeUploadedFile()">
-                        <div>
-                            <img src="{% static 'img/icon-delete.png' %}" alt="Удалить файл">
-                            <p>Открепить</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <div class="main-content-create">
             {% if total_tests == 0 %}
                 <div class="onboarding-welcome">
@@ -128,113 +107,227 @@
             {% endif %}
         </div>
 
-        {% if subscription_status != 'active' %}
-            <div class="container notice-banner deactivated">
-                <div class="icon-wrapper">
-                    <i class="fas fa-bolt"></i>
-                </div>
-                <div class="text-wrapper">
-                    <h3>Премиум отключен</h3>
-                    <p>
-                        Активируйте подписку, чтобы снова <strong>превращать Ваши учебные материалы и&nbsp;документы в&nbsp;тесты за&nbsp;считанные секунды</strong>, получать фидбэк от&nbsp;ИИ, а&nbsp;также работать без оглядки на&nbsp;лимиты.
-                    </p>
-                </div>
-                <a class="button-medium button-accent" href="{% url 'payment' %}">
-                    <div><i class="fas fa-rocket"></i> <p>Оформить Премиум</p></div>
-                </a>
-            </div>
-        {% else %}
-            {% if tests_today == 0 %}
-                <div class="container notice-banner deactivated">
-                    <div class="icon-wrapper">
-                        <i class="fas fa-battery-empty"></i>
+        <div class="container features-container">
+            <section class="py-2">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    
+                    <!-- Шаг 1: Дайте текст -->
+                    <div class="feature-card-pressable group" onclick="document.getElementById('user-text').focus()">
+                        <div class="feature-icon-wrapper">
+                            <i class="fas fa-file-signature text-indigo-400"></i>
+                        </div>
+                        <div class="feature-content">
+                            <h3>1. Дайте любой текст</h3>
+                            <p>Вставьте тему, лекцию или загрузите PDF, Word. Летучка выделит главное.</p>
+                        </div>
                     </div>
-                    <div class="text-wrapper">
-                        <h3>Вы использовали все доступные генерации</h3>
-                        <p>
-                            Снимите все ограничения с тарифом <strong>Премиум</strong>: загружайте файлы,
-                            получайте глубокую аналитику и создавайте тесты без оглядки на лимиты.
-                        </p>
-                    </div>
-                    <a class="button-medium button-accent" href="{% url 'payment' %}">
-                        <div><i class="fas fa-unlock-alt"></i> <p>Снять ограничения</p></div>
-                    </a>
-                </div>
-            {% endif %}
-            {% if subscription_level < 1 %}
-                <div class="container locked-upload-integrated">
-                    <div class="icon-wrapper">
-                        <img src="{% static 'img/icon-diamond.png' %}" alt="Генерация" class="feature-icon">
-                    </div>
-                    <div class="text-wrapper">
-                        <h3>Отличный выбор для старта</h3>
-                        <p>
-                            Большинство новых пользователей выбирают <strong>квартальный абонемент</strong>. <br><br>
-                            Это выгоднее, чем платить каждый месяц. <a href="/available-plans/" rel="noopener noreferrer">Посмотрите</a>, что Вы получите.
-                        </p>
-                    </div>
-                    <a class="button-medium button-accent" href="{% url 'payment' %}">
-                        <div><i class="fas fa-rocket"></i> <p>Выбрать план</p></div>
-                    </a>
-                </div>
-            {% endif %}
-        {% endif %}
 
-        {% if dashboard_context.type == 'popular_test' %}
-        <div class="container p-6 max-w-auto bg-[var(--color-surface)] rounded-3xl border border-[var(--color-border)]">
-            <div class="flex justify-between flex-wrap items-start">
-                <div>
-                    <p class="text-xs text-gray-400 uppercase tracking-wider">Популярный за 30 дней</p>
-                    <h2 class="text-base font-bold text-white mt-1 truncate">
-                        {{ dashboard_context.test_title }}
-                    </h2>
+                    <!-- Шаг 2: Магия ИИ -->
+                    <div class="feature-card-pressable group">
+                        <div class="feature-icon-wrapper">
+                            <i class="fas fa-wand-magic-sparkles text-indigo-400"></i>
+                        </div>
+                        <div class="feature-content">
+                            <h3>2. Получите тест</h3>
+                            <p>Нейросеть создаст качественный тест.</p>
+                        </div>
+                    </div>
+
+                    <!-- Шаг 3: Прогресс -->
+                    <div class="feature-card-pressable group">
+                        <div class="feature-icon-wrapper">
+                            <i class="fas fa-chart-line text-indigo-400"></i>
+                        </div>
+                        <div class="feature-content">
+                            <h3>3. Следите за результатами</h3>
+                            <p>Отправьте ссылку и смотрите карту ошибок всей группы.</p>
+                        </div>
+                    </div>
+                    
                 </div>
-                <a href="{% url 'preview_test_result' dashboard_context.survey_id %}" 
-                class="group flex-shrink-0 flex items-center gap-2 px-3 py-1.5 bg-black/20 rounded-full
-                        hover:bg-[var(--color-accent-primary)] transition-colors">
-                    <span class="text-xs font-semibold text-white">Аналитика</span>
-                    <i class="fas fa-arrow-right text-gray-400 transition-transform group-hover:translate-x-1 group-hover:text-white"></i>
-                </a>
-            </div>
-            <!-- Сетка с KPI -->
-            <div class="mt-4 grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
-                <!-- Просмотры -->
-                <div class="bg-black/20 p-3 rounded-xl">
-                    <p class="text-2xl font-bold text-white">{{ dashboard_context.total_views }}</p>
-                    <p class="text-xs text-gray-500">Просмотров</p>
-                </div>
-                <!-- Прохождения -->
-                <div class="bg-black/20 p-3 rounded-xl">
-                    <p class="text-2xl font-bold text-white">{{ dashboard_context.total_attempts }}</p>
-                    <p class="text-xs text-gray-500">Прохождений</p>
-                </div>
-                <!-- Средний балл -->
-                <div class="bg-black/20 p-3 rounded-xl">
-                    <p class="text-2xl font-bold text-white">{{ dashboard_context.avg_score_percent }}<span class="text-lg">%</span></p>
-                    <p class="text-xs text-gray-500">Средний балл</p>
-                </div>
-                <!-- Последний участник -->
-                <div class="bg-black/20 p-3 rounded-xl">
-                    {% if dashboard_context.last_participant.name %}
-                        <p class="text-lg font-bold text-white truncate">{{ dashboard_context.last_participant.name }}</p>
-                        <p class="text-xs text-gray-500">
-                            {{ dashboard_context.last_participant.time|timesince }} назад
-                        </p>
-                    {% else %}
-                        <p class="text-lg font-bold text-gray-600">-</p>
-                        <p class="text-xs text-gray-500">Последний участник</p>
-                    {% endif %}
-                </div>
-            </div>
+            </section>
+
+            <style>
+                /* Наследуем твой Bottom Medium для карточек */
+                .feature-card-pressable {
+                    display: flex;
+                    align-items: center;
+                    gap: 16px;
+                    padding: 16px;
+                    background: rgba(40, 39, 47, 0.4);
+                    border: 1px solid rgba(255, 255, 255, 0.08);
+                    border-radius: 20px;
+                    backdrop-filter: blur(12px);
+                    -webkit-backdrop-filter: blur(12px);
+                    transition: all 0.2s ease;
+                    cursor: pointer;
+                    user-select: none;
+                }
+
+                .feature-card-pressable:hover {
+                    background: rgba(60, 59, 67, 0.5);
+                    border-color: rgba(99, 102, 241, 0.3);
+                    transform: translateY(-2px);
+                }
+
+                /* Эффект продавливания как у твоих кнопок */
+                .feature-card-pressable:active {
+                    transform: scale(0.97) translateY(1px);
+                    box-shadow: inset 0 4px 12px rgba(0, 0, 0, 0.4);
+                    background: rgba(30, 29, 36, 0.8);
+                }
+
+                .feature-icon-wrapper {
+                    flex-shrink: 0;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    width: 44px;
+                    height: 44px;
+                    border-radius: 12px;
+                    background: rgba(99, 102, 241, 0.1);
+                    border: 1px solid rgba(99, 102, 241, 0.2);
+                    transition: all 0.3s ease;
+                }
+
+                .feature-card-pressable:hover .feature-icon-wrapper {
+                    background: rgba(99, 102, 241, 0.2);
+                    transform: rotate(-5deg) scale(1.1);
+                }
+
+                .feature-content h3 {
+                    color: #fff;
+                    font-size: 0.9rem;
+                    font-weight: 800;
+                    margin: 0;
+                    letter-spacing: -0.02em;
+                }
+
+                .feature-content p {
+                    color: #9ca3af;
+                    font-size: 0.75rem;
+                    line-height: 1.3;
+                    margin: 2px 0 0 0;
+                }
+
+                @media (max-width: 768px) {
+                    .feature-card-pressable {
+                        padding: 12px;
+                    }
+                }
+            </style>
         </div>
-        {% endif %}
 
-        <section class="container" id="recent-history-container">
-            <h3><i class="fas fa-history"></i> Недавние тесты</h3>
-            <div id="history-content">
-                <!-- Сюда JavaScript вставит прелоадер, список тестов или сообщение о пустоте -->
+        <section class="container mt-8" id="recent-history-container">
+            <div class="flex items-center justify-between mb-4 px-2">
+                <h3 class="text-white font-black opacity-60">
+                    <i class="fas fa-history mr-2 text-indigo-500"></i> Недавние тесты
+                </h3>
+                <a href="{% url 'history' %}" class="text-[10px] font-bold text-indigo-400 hover:text-indigo-300 uppercase tracking-tighter transition-colors">
+                    Все тесты &rarr;
+                </a>
+            </div>
+
+            <div id="history-content" class="grid grid-cols-1 gap-2.5">
+                <!-- Пример того, как JavaScript должен рендерить одну карточку -->
+                <!-- Повтори эту структуру в своем JS-цикле отрисовки истории -->
+                {% for survey in recent_surveys %}
+                <a href="{% url 'result' survey.survey_id %}" class="history-item-pressable group">
+                    <div class="flex items-center justify-between w-full">
+                        <div class="flex items-center gap-4 overflow-hidden">
+                            <div class="history-icon-box">
+                                <i class="fas fa-file-alt"></i>
+                            </div>
+                            <div class="flex flex-col overflow-hidden">
+                                <span class="history-item-title truncate">{{ survey.title }}</span>
+                                <span class="history-item-date">{{ survey.created_at|date:"d.m.Y" }}</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Бейдж, если тест популярный (добавь условие, если нужно) -->
+                        {% if survey.view_count > 10 %}
+                        <div class="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
+                            <i class="fas fa-fire text-[10px] text-indigo-400"></i>
+                            <span class="text-[9px] font-black text-indigo-300 uppercase">{{ survey.view_count }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </a>
+                {% endfor %}
             </div>
         </section>
+
+        <style>
+            .history-item-pressable {
+                display: flex;
+                padding: 14px 18px;
+                background: rgba(40, 39, 47, 0.4);
+                border: 1px solid rgba(255, 255, 255, 0.06);
+                border-radius: 18px;
+                backdrop-filter: blur(8px);
+                -webkit-backdrop-filter: blur(8px);
+                transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+                text-decoration: none;
+                will-change: transform;
+            }
+
+            .history-item-pressable:hover {
+                background: rgba(60, 59, 67, 0.5);
+                border-color: rgba(255, 255, 255, 0.15);
+                transform: scale(1.01);
+            }
+
+            /* Твой фирменный прожим */
+            .history-item-pressable:active {
+                transform: scale(0.97) translateY(2px);
+                box-shadow: inset 0 4px 12px rgba(0, 0, 0, 0.5);
+                background: rgba(30, 29, 36, 0.8);
+            }
+
+            .history-icon-box {
+                flex-shrink: 0;
+                width: 36px;
+                height: 36px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: rgba(255, 255, 255, 0.03);
+                border: 1px solid rgba(255, 255, 255, 0.05);
+                border-radius: 10px;
+                color: #6366f1;
+                font-size: 14px;
+                transition: all 0.3s ease;
+            }
+
+            .history-item-pressable:hover .history-icon-box {
+                background: rgba(99, 102, 241, 0.15);
+                color: #fff;
+            }
+
+            .history-item-title {
+                color: #efeff1;
+                font-size: 0.85rem;
+                font-weight: 700;
+                letter-spacing: -0.01em;
+            }
+
+            .history-item-date {
+                color: #6b7280;
+                font-size: 0.65rem;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                margin-top: 1px;
+            }
+
+            /* Убираем скроллбар у контейнера истории, если он будет */
+            #history-content {
+                scrollbar-width: none; /* Firefox */
+            }
+            #history-content::-webkit-scrollbar {
+                display: none; /* Chrome/Safari */
+            }
+        </style>
 
         <style>
             .features-container {
@@ -303,62 +396,56 @@
             }
         </style>
 
-        <div class="container features-container">
-
-        <section class="py-0">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <!-- Блок 1: Конвейер тестов -->
-                <a href="/media/ot-dokumenta-do-testa/" class="group block p-4 rounded-3xl bg-gradient-to-br from-[rgba(30,24,48,0.5)] to-transparent border border-[var(--color-border)] 
-                                transition-all duration-300 hover:border-[var(--color-accent-primary)] hover:-translate-y-2 active:scale-[0.97]">
-                    <div class="flex items-center justify-center h-14 w-14 rounded-2xl bg-black/30 mb-5 border border-[var(--color-border)]
-                                transition-all duration-300 group-hover:bg-[var(--color-accent-primary)]/20 group-hover:border-[var(--color-accent-primary)]/50 group-hover:scale-110">
-                        <i class="fas fa-layer-group text-2xl text-[var(--color-accent-primary)] transition-colors duration-300 group-hover:text-white"></i>
-                    </div>
-                    <h3 class="font-bold text-white text-xl">Ваши старые лекции&nbsp;&mdash; ваш новый актив</h3>
-                    <p class="mt-2 text-sm text-gray-400">
-                        Устали придумывать вопросы? Прекратите. Вся ваша база материалов&nbsp;&mdash; PDF, Word, статьи&nbsp;&mdash; это готовое топливо. Летучка превращает любой документ в&nbsp;уникальный тест.
-                    </p>
-                    <div class="mt-4 text-sm font-semibold text-[var(--color-accent-primary)] opacity-0 group-hover:opacity-100 transition-opacity">
-                        Попробовать загрузку файла &rarr;
-                    </div>
+        {% if dashboard_context.type == 'popular_test' %}
+        <div class="container p-6 max-w-auto bg-[var(--color-surface)] rounded-3xl border border-[var(--color-border)]">
+            <div class="flex justify-between flex-wrap items-start">
+                <div>
+                    <p class="text-xs text-gray-400 uppercase tracking-wider">Популярный за 30 дней</p>
+                    <h2 class="text-base font-bold text-white mt-1 truncate">
+                        {{ dashboard_context.test_title }}
+                    </h2>
+                </div>
+                <a href="{% url 'preview_test_result' dashboard_context.survey_id %}" 
+                class="group flex-shrink-0 flex items-center gap-2 px-3 py-1.5 bg-black/20 rounded-full
+                        hover:bg-[var(--color-accent-primary)] transition-colors">
+                    <span class="text-xs font-semibold text-white">Аналитика</span>
+                    <i class="fas fa-arrow-right text-gray-400 transition-transform group-hover:translate-x-1 group-hover:text-white"></i>
                 </a>
-
-                <a href="/media/kak-chitat-dashbordy/" class="group block p-4 rounded-3xl bg-gradient-to-br from-[rgba(30,24,48,0.5)] to-transparent border border-[var(--color-border)] 
-                                transition-all duration-300 hover:border-[var(--color-accent-primary)] hover:-translate-y-2 active:scale-[0.97]">
-                    <div class="flex items-center justify-center h-14 w-14 rounded-2xl bg-black/30 mb-5 border border-[var(--color-border)]
-                                transition-all duration-300 group-hover:bg-[var(--color-accent-primary)]/20 group-hover:border-[var(--color-accent-primary)]/50 group-hover:scale-110">
-                        <i class="fas fa-crosshairs text-2xl text-[var(--color-accent-primary)] transition-colors duration-300 group-hover:text-white"></i>
-                    </div>
-                    <h3 class="font-bold text-white text-xl">От&nbsp;баллов&nbsp;&mdash; к&nbsp;пониманию</h3>
-                    <p class="mt-2 text-sm text-gray-400">
-                        Перестаньте просто ставить "5" или "3". Наши дашборды покажут карту ошибок всей группы, выявят лидеров и отстающих и подсветят темы, которые "западают".
-                    </p>
-                    <div class="mt-4 text-sm font-semibold text-[var(--color-accent-primary)] opacity-0 group-hover:opacity-100 transition-opacity">
-                        Посмотреть пример отчета &rarr;
-                    </div>
-                </a>
-
-                <a href="/media/vse-sposoby-podelitsya/" class="group block p-4 rounded-3xl bg-gradient-to-br from-[rgba(30,24,48,0.5)] to-transparent border border-[var(--color-border)] 
-                                transition-all duration-300 hover:border-[var(--color-accent-primary)] hover:-translate-y-2 active:scale-[0.97]">
-                    <div class="flex items-center justify-center h-14 w-14 rounded-2xl bg-black/30 mb-5 border border-[var(--color-border)]
-                                transition-all duration-300 group-hover:bg-[var(--color-accent-primary)]/20 group-hover:border-[var(--color-accent-primary)]/50 group-hover:scale-110">
-                        <i class="fas fa-network-wired text-2xl text-[var(--color-accent-primary)] transition-colors duration-300 group-hover:text-white"></i>
-                    </div>
-                    <h3 class="font-bold text-white text-xl">Для аудитории, онлайна и&nbsp;оффлайна</h3>
-                    <p class="mt-2 text-sm text-gray-400">
-                        Отправьте простую ссылку для онлайн-теста. Покажите QR-код на&nbsp;проекторе. Или скачайте профессиональный PDF для печати и&nbsp;раздачи.
-                    </p>
-                    <div class="mt-4 text-sm font-semibold text-[var(--color-accent-primary)] opacity-0 group-hover:opacity-100 transition-opacity">
-                        Изучить все способы &rarr;
-                    </div>
-                </a>
-                
             </div>
-        </section>
+            <!-- Сетка с KPI -->
+            <div class="mt-4 grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
+                <!-- Просмотры -->
+                <div class="bg-black/20 p-3 rounded-xl">
+                    <p class="text-2xl font-bold text-white">{{ dashboard_context.total_views }}</p>
+                    <p class="text-xs text-gray-500">Просмотров</p>
+                </div>
+                <!-- Прохождения -->
+                <div class="bg-black/20 p-3 rounded-xl">
+                    <p class="text-2xl font-bold text-white">{{ dashboard_context.total_attempts }}</p>
+                    <p class="text-xs text-gray-500">Прохождений</p>
+                </div>
+                <!-- Средний балл -->
+                <div class="bg-black/20 p-3 rounded-xl">
+                    <p class="text-2xl font-bold text-white">{{ dashboard_context.avg_score_percent }}<span class="text-lg">%</span></p>
+                    <p class="text-xs text-gray-500">Средний балл</p>
+                </div>
+                <!-- Последний участник -->
+                <div class="bg-black/20 p-3 rounded-xl">
+                    {% if dashboard_context.last_participant.name %}
+                        <p class="text-lg font-bold text-white truncate">{{ dashboard_context.last_participant.name }}</p>
+                        <p class="text-xs text-gray-500">
+                            {{ dashboard_context.last_participant.time|timesince }} назад
+                        </p>
+                    {% else %}
+                        <p class="text-lg font-bold text-gray-600">-</p>
+                        <p class="text-xs text-gray-500">Последний участник</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
 
-    </div>
-
-        <div class="max-w-4xl mx-auto mt-6">
+        <div class="max-w-4xl mx-auto mt-6 mb-24">
             <div class="mt-8 bg-black/20 p-6 rounded-3xl border border-dashed border-cyan-500/30 text-center">
                 <h3 class="font-bold text-white text-lg">
                     Нет текстового материала? <span class="text-cyan-300">Надиктуйте.</span>
@@ -369,58 +456,153 @@
             </div>
         </div>
         
-        <div class="container" id="block-generate">
-            <form id="text-form" method="post" onsubmit="event.preventDefault(); submitText();">
-                {% csrf_token %}
-                <div class="input-area">
-                    <textarea id="user-text" 
-                            rows="4" 
-                            placeholder="Введите здесь тему, содержание статьи или текст из методички..."
-                            class="w-full rounded-2xl p-4 pr-28 resize-none 
-                                    transition-all duration-300 ease-in-out 
-                                    h-24 max-h-96 custom-scrollbar"></textarea>
-                    
-                    <div class="input-buttons-wrapper">
-                        {% if subscription_level > 1 and subscription_level < 50 %}
-                            <button type="button" class="attach-button" title="Прикрепить файл" onclick="document.getElementById('hidden-file-input').click();">
-                                <i class="fas fa-paperclip"></i>
-                            </button>
-                        {% else %}
-                            <a id="premium-upload-trigger" class="attach-button" title="Прикрепить файл">
-                                <i class="fas fa-paperclip"></i>
-                            </a>
-                        {% endif %}
-                        <button type="button" class="send-button" title="Создать тест" onclick="submitText()">
-                            <i class="fas fa-paper-plane"></i>
+        <!-- ПАРЯЩИЙ ОСТРОВ ГЕНЕРАЦИИ -->
+        <div id="floating-island-wrapper" class="fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-1.5rem)] sm:w-full max-w-4xl px-0 sm:px-4 z-[9999] animate-fadeIn">
+            <div class="relative flex flex-col shadow-[0_8px_32px_rgba(40,39,47,.1)] rounded-[1.8rem] sm:rounded-[2.2rem] overflow-hidden border border-white/10 bg-[40,39,47,.5]/80 backdrop-blur-xl">
+                <div id="notice-hub">
+                    {% if subscription_status != 'active' %}
+                        <div class="bg-red-500/10 px-4 sm:px-6 py-2 flex items-center justify-between border-b border-white/5">
+                            <div class="flex items-center gap-2">
+                                <i class="fas fa-bolt text-red-500 text-xs"></i>
+                                <span class="text-white text-[10px] sm:text-[11px] font-black uppercase tracking-wider">Премиум отключен</span>
+                            </div>
+                            <a href="{% url 'payment' %}" class="text-[9px] sm:text-[10px] font-black text-red-400 uppercase hover:text-red-300 transition-colors">Восстановить &rarr;</a>
+                        </div>
+                    {% elif tests_today == 0 %}
+                        <div class="bg-amber-500/10 px-4 sm:px-6 py-2 flex items-center justify-between border-b border-white/5">
+                            <div class="flex items-center gap-2">
+                                <i class="fas fa-battery-empty text-amber-500 text-xs"></i>
+                                <span class="text-white text-[10px] sm:text-[11px] font-black uppercase tracking-wider">Лимиты исчерпаны</span>
+                            </div>
+                            <a href="{% url 'payment' %}" class="text-[9px] sm:text-[10px] font-black text-amber-400 uppercase hover:text-amber-300 transition-colors">Снять лимиты &rarr;</a>
+                        </div>
+                    {% elif subscription_level < 1 %}
+                        <div class="bg-indigo-500/10 px-4 sm:px-6 py-2 flex items-center justify-between border-b border-white/5">
+                            <div class="flex items-center gap-2">
+                                <img src="{% static 'img/icon-diamond.png' %}" class="w-3 h-3 sm:w-4 sm:h-4" alt="">
+                                <span class="text-white text-[10px] sm:text-[11px] font-black uppercase tracking-wider">Доступен Премиум</span>
+                            </div>
+                            <a href="{% url 'payment' %}" class="text-[9px] sm:text-[10px] font-black text-indigo-400 uppercase hover:text-indigo-300 transition-colors">Узнать больше</a>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- ПРИМАГНИЧЕННЫЙ ПРЕВЬЮ ФАЙЛА -->
+                <div id="file-preview-container" style="display: none;">
+                    <div class="bg-indigo-200/10 px-4 sm:px-6 py-2 flex items-center justify-between border-b border-white/5 backdrop-blur-xl">
+                        <div class="flex items-center gap-3 overflow-hidden">
+                            <!-- Иконка файла -->
+                            <div class="flex-shrink-0 h-7 w-7 rounded-lg bg-indigo-500/20 flex items-center justify-center">
+                                <i class="fas fa-file-alt text-indigo-400 text-xs"></i>
+                            </div>
+                            
+                            <div class="flex flex-col overflow-hidden leading-tight">
+                                <!-- Название файла с авто-обрезанием (truncate) -->
+                                <span id="preview-file-name" class="text-white text-[10px] sm:text-[11px] font-black uppercase tracking-wider truncate max-w-[140px] sm:max-w-[300px]">
+                                    Название файла...
+                                </span>
+                                <span id="preview-file-size" class="text-gray-400 text-[9px] font-mono uppercase tracking-tighter">
+                                    0 KB
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Кнопка открепить -->
+                        <button type="button" onclick="removeUploadedFile()" 
+                                class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 hover:bg-red-500/20 text-gray-400 hover:text-red-400 transition-all border border-white/5">
+                            <span class="text-[9px] font-black uppercase tracking-widest">Открепить</span>
+                            <i class="fas fa-times text-[10px]"></i>
                         </button>
                     </div>
                 </div>
 
-                <div class="controls-toolbar">
-                    <div class="slider-container">
-                        <p id="question-slider-text"><span id="slider-value">5</span> вопросов</p>
-                        {% if subscription_level > 0 and subscription_level < 50 %}
-                        <input type="range" id="question-slider" class="custom-slider" min="1" max="15" value="5" style="display: none;">
-                        {% else %}
-                        <input type="range" id="question-slider" class="custom-slider" min="1" max="7" value="5" style="display: none;">
+                <div class="p-3 sm:p-4" id="block-generate">
+                    
+                    <form id="text-form" method="post" onsubmit="event.preventDefault(); submitText();">
+                        {% csrf_token %}
+                        
+                        <div class="relative flex items-end gap-2 bg-white/5 rounded-[1.4rem] sm:rounded-[1.8rem] border border-white/5 p-1.5 sm:p-2 focus-within:border-indigo-500/30 transition-all">
+                            <textarea id="user-text" 
+                                    rows="1" 
+                                    placeholder="Тема или текст методички..."
+                                    class="w-full bg-transparent border-none text-white text-sm sm:text-base p-2 sm:p-3 outline-none focus:ring-0 resize-none custom-scrollbar min-h-[44px] sm:min-h-[60px] max-h-48"></textarea>
+                            
+                            <div class="flex gap-1.5 sm:gap-2 pb-0.5 sm:pb-1 pr-0.5 sm:pr-1">
+                                {% if subscription_level > 1 and subscription_level < 50 %}
+                                    <button type="button" class="h-9 w-9 sm:h-12 sm:w-12 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-gray-400 transition-all" onclick="document.getElementById('hidden-file-input').click();">
+                                        <i class="fas fa-paperclip text-sm sm:text-lg"></i>
+                                    </button>
+                                {% else %}
+                                    <a id="premium-upload-trigger" class="h-9 w-9 sm:h-12 sm:w-12 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-gray-400 cursor-pointer">
+                                        <i class="fas fa-paperclip text-sm sm:text-lg"></i>
+                                    </a>
+                                {% endif %}
+                                <button type="button" class="h-9 w-9 sm:h-12 sm:w-12 flex items-center justify-center rounded-full bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg transition-all active:scale-90" onclick="submitText()">
+                                    <i class="fas fa-paper-plane text-sm sm:text-lg"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-between items-center mt-2 sm:mt-4 px-2 sm:px-4">
+                            <div class="flex items-center">
+                                <div class="w-16 sm:w-24 flex-shrink-0 text-[9px] sm:text-[10px] font-black text-indigo-400 uppercase tracking-widest">
+                                    <span id="slider-value">5</span> вопр.
+                                </div>
+                                <input type="range" id="question-slider" class="w-20 sm:w-32 h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-indigo-500 ml-1" 
+                                    min="1" max="{% if subscription_level > 0 %}15{% else %}7{% endif %}" value="5">
+                            </div>
+                            <div id="char-count" class="text-[8px] sm:text-[10px] font-mono text-gray-500 uppercase">0 / 16384</div>
+                        </div>
+                        <!-- ТЕ САМЫЕ КНОПКИ "BOTTOM MEDIUM" -->
+                        <div class="grid grid-cols-2 gap-1 mt-3 px-1 pb-1">
+                            <a class="button-medium !flex !justify-center !m-1 !py-3 !rounded-2xl" href="{% url 'history' %}">
+                                <div>
+                                    <img src="{% static 'img/icon-history.png' %}" alt="">
+                                    <p class="!text-[10px] !uppercase !tracking-widest">История</p>
+                                </div>
+                            </a>
+                            
+                            <a class="button-medium !flex !justify-center !m-1 !py-3 !rounded-2xl" href="{% url 'payment' %}">
+                                <div>
+                                    <i class="fas fa-star text-amber-400 text-xs"></i>
+                                    <p class="!text-[10px] !uppercase !tracking-widest">Лимит {{ tests_today }}</p>
+                                </div>
+                            </a>
+                        </div>
+                        
+                        {% if subscription_level > 1 and subscription_level < 50 %}
+                            <input type="file" id="hidden-file-input" accept=".pdf, .doc, .docx, .txt" style="display: none;" onchange="handleFiles(this.files)">
                         {% endif %}
-                    </div>
-                    <div id="char-count">0 / 16384</div>
+                    </form>
                 </div>
-                <div class="toolbar-actions">
-                    <a class="button-medium" href="{% url 'history' %}" title="История генераций">
-                        <div><i class="fas fa-history"></i><p>История</p></div>
-                    </a>
-                    <a class="button-medium" href="{% url 'payment' %}" title="Ваши лимиты">
-                        <div><i class="fas fa-star"></i><p><span>{{ tests_today }}</span></p></div>
-                    </a>
-                </div>
-                
-                {% if subscription_level > 1 and subscription_level < 50 %}
-                    <input type="file" id="hidden-file-input" accept=".pdf, .doc, .docx, .txt" style="display: none;" onchange="handleFiles(this.files)">
-                {% endif %}
-            </form>
+            </div>
         </div>
+
+        <style>
+            .animate-fadeIn {
+                animation: islandFloatUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            }
+            @keyframes islandFloatUp {
+                from { transform: translate(-50%, 40px); opacity: 0; }
+                to { transform: translate(-50%, 0); opacity: 1; }
+            }
+
+            input[type=range]::-webkit-slider-thumb {
+                -webkit-appearance: none;
+                height: 14px;
+                width: 14px;
+                border-radius: 50%;
+                background: #6366f1;
+                cursor: pointer;
+                border: 2px solid #fff;
+                box-shadow: 0 0 10px rgba(99, 102, 241, 0.4);
+            }
+
+            #user-text::-webkit-scrollbar { width: 3px; }
+            #user-text::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+            
+            textarea, button, a { -webkit-tap-highlight-color: transparent; }
+        </style>
 
         <script>
             document.querySelectorAll('.faq-question').forEach(item => {
@@ -437,6 +619,8 @@
         </script>        
     </div>
     {% include 'footer-s.html' %}
+
+    <div class="mb-64"> </div>
 
     <div id="limit-exceeded-modal" class="modal-overlay hidden">
         <div class="modal-content">
@@ -460,8 +644,8 @@
         </div>
     </div>
 
-    <script src="{% static 'js/main.js' %}?v=1.5"></script>
-    <script src="{% static 'js/auto-scroll.js' %}"></script>
+    <script src="{% static 'js/main.js' %}?v=1.7"></script>
+    <script src="{% static 'js/auto-scroll.js' %}?v=1.2"></script>
 
     <!-- Модалка Premium -->
     <div id="premium-upload-modal" class="action-modal">
@@ -540,11 +724,6 @@
                 this.value.length + '/ 16384';
         });
         
-        const slider = document.getElementById('question-slider');
-        slider.addEventListener('input', function() {
-            document.getElementById('question-count').textContent = 
-                this.value + (this.value == 1 ? ' вопрос' : ' вопросов');
-        });
     });
     </script>
     

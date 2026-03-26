@@ -21,16 +21,16 @@ text.addEventListener('input', function() {
         charCount.classList.remove('error');
     }
 
-    if (this.value.trim() !== '') {
-        slider.style.display = 'block';
-        questionSliderText.style.display = 'block';
-        slider.parentElement.classList.add('show');
-        updateQuestionText(slider.value);
-    } else {
-        slider.style.display = 'none';
-        questionSliderText.style.display = 'none';
-        slider.parentElement.classList.remove('show');
-    }
+    // if (this.value.trim() !== '') {
+    //     slider.style.display = 'block';
+    //     questionSliderText.style.display = 'block';
+    //     slider.parentElement.classList.add('show');
+    //     updateQuestionText(slider.value);
+    // } else {
+    //     slider.style.display = 'none';
+    //     questionSliderText.style.display = 'none';
+    //     slider.parentElement.classList.remove('show');
+    // }
 });
 
 document.querySelectorAll('.topic').forEach(item => {
@@ -51,7 +51,7 @@ document.querySelectorAll('.topic').forEach(item => {
             slider.style.display = 'block';
             questionSliderText.style.display = 'block';
             slider.parentElement.classList.add('show');
-            updateQuestionText(slider.value);
+            // updateQuestionText(slider.value);
         } else {
             slider.style.display = 'none';
             questionSliderText.style.display = 'none';
@@ -62,21 +62,6 @@ document.querySelectorAll('.topic').forEach(item => {
 
 slider.addEventListener('input', function() {
     sliderValue.textContent = this.value;
-    updateQuestionText(this.value);
 });
-
-function updateQuestionText(count) {
-    let questionWord;
-
-    if (count % 10 === 1 && count % 100 !== 11) {
-        questionWord = 'вопрос';
-    } else if ((count % 10 >= 2 && count % 10 <= 4) && (count % 100 < 10 || count % 100 >= 20)) {
-        questionWord = 'вопроса';
-    } else {
-        questionWord = 'вопросов';
-    }
-
-    questionSliderText.innerHTML = `<span id="slider-value">${count}</span> ${questionWord} в тесте`;
-}
 
 text.style.height = (text.scrollHeight) + 'px';
