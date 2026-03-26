@@ -181,36 +181,37 @@
             </p>
             <p class="text-lg text-[var(--color-text-secondary)]">Отлично! Результат отправлен автору.</p>
 
-            <button 
-                id="challenge-friend-button"
-                class="mt-8 w-full bg-[var(--color-accent-secondary)] text-black px-10 py-4 text-lg font-bold rounded-full transition-transform hover:scale-[1.03] active:scale-[.97] shadow-lg shadow-[var(--color-accent-secondary)]/20"
-                data-base-text="Тест в Летучке по теме «{{ survey.title|escapejs }}».
-
-Мой результат: %score%/%total% 🔥
-
-Слабо перебить? Держи ссылку 👇
-"
-                data-share-url="{% url 'take_test' survey.survey_id %}"
-            >
-                <i class="fas fa-fist-raised"></i> Бросить вызов другим
-            </button>
-            
             {% if is_creator %}
-                <a href="{% url 'preview_test_result' survey.survey_id %}" class="mt-6 block w-full text-center bg-[var(--color-accent-secondary)] text-white p-5 rounded-3xl transition-transform hover:scale-[1.03] active:scale-[.97] shadow-lg shadow-[var(--color-accent-primary)]/20">
-                    <span class="text-lg font-bold text-[var(--color-bg)]">ПЕРЕЙТИ К АНАЛИТИКЕ</span>
-                    <span class="block text-sm opacity-70 text-[var(--color-bg)]">Просматривайте результаты на наглядных диаграммах</span>
+                <a href="{% url 'preview_test' survey.survey_id %}" class="mt-6 block w-full text-center bg-[var(--color-accent-secondary)] text-white p-5 rounded-3xl transition-transform hover:scale-[1.03] active:scale-[.97] shadow-lg shadow-[var(--color-accent-primary)]/20">
+                    <span class="text-lg font-bold text-[var(--color-bg)]">Вернуться к тесту</span>
                 </a>
+            {% else %}
+                <button 
+                    id="challenge-friend-button"
+                    class="mt-8 w-full bg-[var(--color-accent-secondary)] text-black px-10 py-4 text-lg font-bold rounded-full transition-transform hover:scale-[1.03] active:scale-[.97] shadow-lg shadow-[var(--color-accent-secondary)]/20"
+                    data-base-text="Тест в Летучке по теме «{{ survey.title|escapejs }}».
+
+    Мой результат: %score%/%total% 🔥
+
+    Слабо перебить? Держи ссылку 👇
+    "
+                    data-share-url="{% url 'take_test' survey.survey_id %}"
+                >
+                    <i class="fas fa-fist-raised"></i> Бросить вызов другим
+                </button>
             {% endif %}
 
             <a href="{% url 'take_test' survey.survey_id %}" class="mt-4 inline-block text-[var(--color-text-secondary)] hover:text-white text-sm">
                 Пройти заново
             </a>
             
+            {% if not is_creator %}
             <p class="mt-4 text-s">Понравилось? Создайте свой тест!</p>
-            <a href="{% url 'register' %}" class="mt-2 inline-block text-[var(--color-text-secondary)] hover:text-white text-sm">
-                Создать свой тест в Летучке
-            </a>
+                <a href="{% url 'register' %}" class="mt-2 inline-block text-[var(--color-text-secondary)] hover:text-white text-sm">
+                    Создать свой тест в Летучке
+                </a>
             </div>
+            {% endif %}
         </div>
     </main>
 
