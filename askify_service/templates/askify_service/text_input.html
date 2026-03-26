@@ -394,6 +394,19 @@
             .feature-block.quick-link .accent {
                 color: var(--primary-color);
             }
+
+            /* Модалка лимитов */
+            @keyframes modalIn {
+                from { transform: scale(0.9) translateY(20px); opacity: 0; }
+                to { transform: scale(1) translateY(0); opacity: 1; }
+            }
+            .animate-modalIn {
+                animation: modalIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            }
+            
+            #limit-exceeded-modal:not(.hidden) {
+                display: flex !important;
+            }
         </style>
 
         {% if dashboard_context.type == 'popular_test' %}
@@ -464,7 +477,7 @@
                         <div class="bg-red-500/10 px-4 sm:px-6 py-2 flex items-center justify-between border-b border-white/5">
                             <div class="flex items-center gap-2">
                                 <i class="fas fa-bolt text-red-500 text-xs"></i>
-                                <span class="text-white text-[10px] sm:text-[11px] font-black uppercase tracking-wider">Премиум отключен</span>
+                                <span class="text-white text-[10px] sm:text-[11px] font-black uppercase tracking-wider">Создание отключено</span>
                             </div>
                             <a href="{% url 'payment' %}" class="text-[9px] sm:text-[10px] font-black text-red-400 uppercase hover:text-red-300 transition-colors">Восстановить &rarr;</a>
                         </div>
@@ -622,24 +635,38 @@
 
     <div class="mb-64"> </div>
 
-    <div id="limit-exceeded-modal" class="modal-overlay hidden">
-        <div class="modal-content">
-            <div class="modal-icon">
-                <i class="fas fa-battery-empty"></i>
-            </div>
-            <h3>Лимит исчерпан</h3>
-            <p id="limit-modal-text">
-                Вы использовали все доступные генерации на тарифе «Стартовый».
-                Перейдите на Премиум, чтобы снять все ограничения.
-            </p>
-            <div class="modal-actions">
-                <button id="close-limit-modal-btn" class="button-medium">Позже</button>
-                <a href="{% url 'payment' %}" class="button-medium button-accent">
-                    <div>
-                        <i class="fas fa-rocket"></i>
-                        <p>Снять ограничения</p>
-                    </div>
-                </a>
+    <!-- МОДАЛЬНОЕ ОКНО ЛИМИТОВ -->
+    <div id="limit-exceeded-modal" class="fixed inset-0 z-[10001] hidden items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-md" onclick="document.getElementById('limit-exceeded-modal').classList.add('hidden'); document.getElementById('limit-exceeded-modal').classList.remove('flex');"></div>
+        
+        <div class="relative w-full max-w-sm bg-[#121119]/95 border border-white/10 rounded-[2.5rem] p-8 shadow-[0_20px_50px_rgba(0,0,0,0.5)] animate-modalIn">
+            
+            <div class="flex flex-col items-center text-center">
+                <div class="w-20 h-20 bg-amber-500/10 rounded-full flex items-center justify-center mb-6 border border-amber-500/20 shadow-[0_0_30px_rgba(245,158,11,0.1)]">
+                    <i class="fas fa-battery-empty text-3xl text-amber-500"></i>
+                </div>
+                
+                <h3 class="text-2xl font-black text-white uppercase tracking-widest mb-3">Лимит исчерпан</h3>
+                
+                <p id="limit-modal-text" class="text-gray-400 text-sm leading-relaxed mb-10 px-2">
+                    Вы использовали все доступные генерации на тарифе <span class="text-white font-bold">«Стартовый»</span>. 
+                    Перейдите на Премиум, чтобы работать без ограничений.
+                </p>
+
+                <div class="flex flex-col w-full gap-3">
+                    <a href="{% url 'payment' %}" class="button-medium button-accent !flex !justify-center !py-4 !rounded-2xl !m-0 !w-full shadow-lg shadow-indigo-600/20">
+                        <div>
+                            <i class="fas fa-rocket text-white"></i>
+                            <p class="!text-xs !uppercase !tracking-widest !text-white">Снять все ограничения</p>
+                        </div>
+                    </a>
+                    
+                    <button id="close-limit-modal-btn" class="button-medium !flex !justify-center !py-4 !rounded-2xl !m-0 !w-full !bg-white/5 border-none">
+                        <div>
+                            <p class="!text-xs !uppercase !tracking-widest !text-gray-400">Вернуться позже</p>
+                        </div>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -672,16 +699,30 @@
             const triggerButton = document.getElementById(triggerId);
             const confirmButton = document.getElementById(confirmId);
             const cancelButton = document.getElementById(cancelId);
+            const islandWrapper = document.getElementById('floating-island-wrapper');
 
             if (!modal || !triggerButton || !confirmButton || !cancelButton) {
-                console.error('Modal setup failed: one or more elements not found.');
+                console.error('Modal setup failed: elements not found.');
                 return;
             }
 
-            const showModal = () => modal.classList.add('is-visible');
-            const hideModal = () => modal.classList.remove('is-visible');
+            const showModal = () => {
+                modal.classList.add('is-visible');
+                modal.classList.remove('hidden');
+                if (islandWrapper) islandWrapper.style.display = 'none';
+            };
 
-            triggerButton.addEventListener('click', showModal);
+            const hideModal = () => {
+                modal.classList.remove('is-visible');
+                modal.classList.add('hidden');
+                if (islandWrapper) islandWrapper.style.display = 'block';
+            };
+
+            triggerButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                showModal();
+            });
+
             cancelButton.addEventListener('click', hideModal);
 
             modal.addEventListener('click', (event) => {
@@ -757,8 +798,6 @@
     </script>
     <script>
         window.addEventListener('pageshow', function(event) {
-            // `event.persisted` - это флаг, который равен `true`
-            // только если страница была восстановлена из bfcache.
             if (event.persisted) {
                 console.log('Page was loaded from bfcache. Forcing reload...');
                 window.location.reload();
