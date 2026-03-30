@@ -71,39 +71,21 @@
 
         <div class="main-content-create">
             {% if total_tests == 0 %}
-                <div class="onboarding-welcome">
-                    <h1 class="welcome-title">Превратите знания в тесты. Мгновенно.</h1>
-                    <p class="welcome-subtitle">
-                        Это Летучка — Ваш персональный AI-ассистент для создания тестов. <br>
-                        Просто вставьте текст из лекции или статьи в поле ниже, чтобы начать.
-                    </p>
-                    <div class="welcome-arrow">
-                        <i class="fas fa-chevron-down"></i>
-                    </div>
-                </div>
-                <div class="inspiration-container">
-                    <div class="inspiration-card" data-inspiration-text="Теорема Пифагора гласит, что в прямоугольном треугольнике квадрат длины гипотенузы равен сумме квадратов длин двух других сторон. Это можно записать как: a² + b² = c², где c представляет длину гипотенузы, а a и b — длины двух других сторон, или катетов.">
-                        <h4>📚 Тест по параграфу</h4>
-                        <span>Проверьте, как усвоен материал</span>
-                    </div>
-                    <div class="inspiration-card" data-inspiration-text="Ключевые события Второй мировой войны: 1. Вторжение в Польшу (1939). 2. Битва за Британию (1940). 3. Нападение на Перл-Харбор (1941). 4. Сталинградская битва (1942-1943). 5. Высадка в Нормандии (1944). 6. Капитуляция Германии (1945).">
-                        <h4>📜 Вопросы по датам и фактам</h4>
-                        <span>Идеально для истории или литературы</span>
-                    </div>
-                    <div class="inspiration-card" data-inspiration-text="Основные принципы Agile-манифеста: 1. Люди и взаимодействие важнее процессов и инструментов. 2. Работающий продукт важнее исчерпывающей документации. 3. Сотрудничество с заказчиком важнее согласования условий контракта. 4. Готовность к изменениям важнее следования первоначальному плану.">
-                        <h4>💡 Проверка терминологии</h4>
-                        <span>Создайте тест по ключевым понятиям</span>
-                    </div>
-                    <div class="inspiration-card" data-inspiration-text="">
-                        <h4>✍️ Начать с чистого листа</h4>
-                        <span>Для ваших собственных идей</span>
-                    </div>
-                </div>
+                <h1 class="text-3xl md:text-4xl font-black text-white tracking-tight">
+                    Превратите текст в умный тест
+                </h1>
+                <p class="mt-3 text-gray-400 text-base md:text-lg leading-relaxed">
+                    Вставьте лекцию, статью или методичку в поле ниже. <br class="hidden md:block">
+                    Летучка сама выделит главное и создаст вопросы.
+                </p>
             {% else %}
-                <div class="welcome-return">
-                    <h1 class="welcome-title">С возвращением!</h1>
-                    <p>Готовы создать новый тест?</p>
-                </div>
+                <h1 class="text-3xl md:text-4xl font-black text-white tracking-tight">
+                    С возвращением!
+                </h1>
+                <p class="mt-3 text-gray-400 text-base md:text-lg leading-relaxed">
+                    Готовы создать новый тест? <br class="hidden md:block"> 
+                    Просто дайте нейросети свежий материал.
+                </p>
             {% endif %}
         </div>
 
@@ -117,7 +99,7 @@
                             <i class="fas fa-file-signature text-indigo-400"></i>
                         </div>
                         <div class="feature-content">
-                            <h3>1. Дайте любой текст</h3>
+                            <h3>1. Загрузите текст</h3>
                             <p>Вставьте тему, лекцию или загрузите PDF, Word. Летучка выделит главное.</p>
                         </div>
                     </div>
@@ -129,7 +111,7 @@
                         </div>
                         <div class="feature-content">
                             <h3>2. Получите тест</h3>
-                            <p>Нейросеть создаст качественный тест.</p>
+                            <p>Летучка создаст качественный тест.</p>
                         </div>
                     </div>
 
@@ -139,8 +121,8 @@
                             <i class="fas fa-chart-line text-indigo-400"></i>
                         </div>
                         <div class="feature-content">
-                            <h3>3. Следите за результатами</h3>
-                            <p>Отправьте ссылку и смотрите карту ошибок всей группы.</p>
+                            <h3>3. Наблюдайте</h3>
+                            <p>Наблюдайте за результатами, поделившись ссылкой и смотрите карту ошибок респондентов.</p>
                         </div>
                     </div>
                     
