@@ -141,15 +141,3 @@ urlpatterns = [
     path('cache-compat.php', lambda r: HttpResponseForbidden()),
     path('admin-post.php', lambda r: HttpResponseForbidden()),
 ]
-
-if DEBUG:
-    urlpatterns += [
-        path('test403/', TemplateView.as_view(template_name='askify_service/errors/403.html')),
-        path('test404/', TemplateView.as_view(template_name='askify_service/errors/404.html')),
-        path('test500/', TemplateView.as_view(template_name='askify_service/errors/500.html')),
-    ]
-
-handler400 = 'askify_service.views.handler400'
-handler403 = 'askify_service.views.handler403'
-handler404 = 'askify_service.views.handler404'
-handler500 = 'askify_service.views.handler500'

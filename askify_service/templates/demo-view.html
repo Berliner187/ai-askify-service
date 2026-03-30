@@ -23,7 +23,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=Unbounded:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    {% if username != 0 %}
+    {% if username == 0 %}
     <!-- Yandex.Metrika counter -->
     <script type="text/javascript" >
         setTimeout(function() {
@@ -372,6 +372,8 @@
             </div>
 
             <!-- ГЛАВНЫЙ КОНТРОЛЛЕР -->
+            {% if is_creator %}
+            {% if username != 0 %}
             <div class="mx-auto mt-8">
                 <div class="bg-[var(--color-surface)] p-6 rounded-[2rem] border border-[var(--color-border)] shadow-2xl">
                     
@@ -426,6 +428,8 @@
                     </div>
                 </div>
             </div>
+            {% endif %}
+            {% endif %}
 
             {% if is_creator and username == 0 %}
             <!-- СПИСОК ВОПРОСОВ (АВТОРАМ) -->
@@ -585,13 +589,14 @@
             </div>
             {% endif %}
 
-            <div class="max-w-2xl mx-auto mt-4 px-4">
-                <div class="flex items-center gap-3 p-3 mt-8 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-md">
-                    <div class="flex-shrink-0 w-8 h-8 rounded-full bg-indigo-500/10 flex items-center justify-center">
-                        <i class="fas fa-globe-americas text-indigo-400 text-xs"></i>
-                    </div>
-                    <p class="text-[10px] sm:text-[11px] text-gray-400 leading-tight tracking-wide uppercase font-bold">
-                        Тест доступен: любой пользователь, имеющий прямую ссылку, может пройти его или просмотреть содержимое.
+            <div id="privacy-notice" class="mt-8 flex items-start gap-4 bg-[var(--color-surface)] rounded-3xl border border-[var(--color-border)] p-5 animate-fadeIn">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-globe-americas text-xl text-[var(--color-accent-primary)] mt-1"></i>
+                </div>
+                <div>
+                    <p class="mt-1 text-sm text-[var(--color-text-secondary)] leading-relaxed">
+                        Этот тест является публичным. Любой сможет его просмотреть и&nbsp;пройти.
+                        <span class="block mt-2 opacity-70">Приватные тесты для внутреннего использования появятся в будущих обновлениях.</span>
                     </p>
                 </div>
             </div>
@@ -619,87 +624,75 @@
 
             {% if is_creator %}
                 {% if subscription_level == 0 %}
-                {% if username == 0 %}
-                    <div id="guest-upgrade-banner" class="mt-16 bg-[var(--color-surface)] backdrop-blur-sm border border-[var(--color-border)] rounded-3xl p-6 animate-fadeIn">
-                        <div class="flex justify-between items-center">
-                            <h3 class="text-lg font-bold text-white">Это Демо-версия</h3>
-                            <div class="flex items-center gap-2 text-sm font-medium text-purple-300">
-                                <i class="fas fa-eye"></i>
-                                <span>Только просмотр</span>
+                    {% if username == 0 %}
+                        <div id="guest-upgrade-banner" class="mt-16 bg-[var(--color-surface)] backdrop-blur-sm border border-[var(--color-border)] rounded-3xl p-6 animate-fadeIn">
+                            <div class="flex justify-between items-center">
+                                <h3 class="text-lg font-bold text-white">Это Демо-версия</h3>
+                                <div class="flex items-center gap-2 text-sm font-medium text-purple-300">
+                                    <i class="fas fa-eye"></i>
+                                    <span>Только просмотр</span>
+                                </div>
                             </div>
-                        </div>
-                        
-                        <div class="mt-4">
-                            <div class="flex justify-between text-xs font-medium text-gray-400 mb-2">
-                                <span class="font-bold text-white">Показано 5 вопросов</span>
-                                <span class="opacity-70">Максимум 15 на Премиуме</span>
+                            
+                            <div class="mt-4">
+                                <div class="flex justify-between text-xs font-medium text-gray-400 mb-2">
+                                    <span class="font-bold text-white">Показано 5 вопросов</span>
+                                    <span class="opacity-70">Максимум 15 на Премиуме</span>
+                                </div>
+                                <div class="w-full bg-black/30 rounded-full h-2.5 overflow-hidden">
+                                    <div class="bg-gradient-to-r from-indigo-500 to-purple-600 h-2.5 rounded-full" style="width: 33%;"></div>
+                                </div>
                             </div>
-                            <div class="w-full bg-black/30 rounded-full h-2.5 overflow-hidden">
-                                <div class="bg-gradient-to-r from-indigo-500 to-purple-600 h-2.5 rounded-full" style="width: 33%;"></div>
-                            </div>
-                        </div>
 
-                        <p class="mt-4 text-sm text-gray-300 leading-relaxed">
-                            Это сокращенная версия. <button data-trigger-modal="register" class="font-bold text-[var(--color-accent-secondary)] hover:underline">Создайте бесплатный аккаунт</button>, чтобы:
-                        </p>
-                        <ul class="mt-2 ml-4 list-disc list-inside text-[var(--color-accent-secondary)] space-y-1 text-sm">
-                            <li><span class="text-white">Сохранить</span> этот тест и не потерять его.</li>
-                            <li>Создавать тесты до <span class="text-white">7 вопросов</span>.</li>
-                            <li>Получить еще <span class="text-white">5 генераций</span> в подарок.</li>
-                        </ul>
+                            <p class="mt-4 text-sm text-gray-300 leading-relaxed">
+                                Это сокращенная версия. <button data-trigger-modal="register" class="font-bold text-[var(--color-accent-secondary)] hover:underline">Создайте бесплатный аккаунт</button>, чтобы:
+                            </p>
+                            <ul class="mt-2 ml-4 list-disc list-inside text-[var(--color-accent-secondary)] space-y-1 text-sm">
+                                <li><span class="text-white">Сохранить</span> этот тест и не потерять его.</li>
+                                <li>Создавать тесты до <span class="text-white">7 вопросов</span>.</li>
+                                <li>Получить еще <span class="text-white">5 генераций</span> в подарок.</li>
+                            </ul>
 
-                        <button data-trigger-modal="register" class="mt-6 w-full bg-[var(--color-accent-secondary)] text-black px-10 py-4 text-base font-bold rounded-full transition-transform hover:scale-[1.03] active:scale-[.97] shadow-lg shadow-[var(--color-accent-secondary)]/20">
-                            Зарегистрироваться и получить бонусы
-                        </button>
-                    </div>
-                {% else %}
-                    <!-- Блок для ЗАРЕГИСТРИРОВАННЫХ, но бесплатных -->
-                    <div id="free-user-upgrade-banner" class="mt-16 bg-[var(--color-surface)] backdrop-blur-sm border border-[var(--color-border)] rounded-3xl p-6 animate-fadeIn">
-                        <div class="flex justify-between items-center">
-                            <h3 class="text-lg font-bold text-white">Ваш Стартовый План</h3>
-                            <a href="{% url 'payment' %}" class="flex items-center gap-2 text-sm font-medium text-indigo-300 hover:underline">
-                                <i class="fas fa-rocket"></i>
-                                <span>Перейти на Премиум</span>
+                            <button data-trigger-modal="register" class="mt-6 w-full bg-[var(--color-accent-secondary)] text-black px-10 py-4 text-base font-bold rounded-full transition-transform hover:scale-[1.03] active:scale-[.97] shadow-lg shadow-[var(--color-accent-secondary)]/20">
+                                Зарегистрироваться и получить бонусы
+                            </button>
+                        </div>
+                    {% else %}
+                        <!-- Блок для ЗАРЕГИСТРИРОВАННЫХ, но бесплатных -->
+                        <div id="free-user-upgrade-banner" class="mt-16 bg-[var(--color-surface)] backdrop-blur-sm border border-[var(--color-border)] rounded-3xl p-6 animate-fadeIn">
+                            <div class="flex justify-between items-center">
+                                <h3 class="text-lg font-bold text-white">Ваш Стартовый План</h3>
+                                <a href="{% url 'payment' %}" class="flex items-center gap-2 text-sm font-medium text-indigo-300 hover:underline">
+                                    <i class="fas fa-rocket"></i>
+                                    <span>Перейти на Премиум</span>
+                                </a>
+                            </div>
+
+                            <div class="mt-4">
+                                <div class="flex justify-between text-xs font-medium text-gray-400 mb-2">
+                                    <span class="font-bold text-white">Лимит 7 вопросов</span>
+                                    <span class="opacity-70">20 вопросов в Премиуме</span>
+                                </div>
+                                <div class="w-full bg-black/30 rounded-full h-2.5 overflow-hidden">
+                                    <div class="bg-gradient-to-r from-indigo-500 to-purple-600 h-2.5 rounded-full" style="width: 35%;"></div>
+                                </div>
+                            </div>
+
+                            <p class="mt-4 text-sm text-gray-300 leading-relaxed">
+                                Перейдите на <a href="{% url 'payment' %}" class="font-bold text-[var(--color-accent-secondary)] hover:underline">Премиум</a>, чтобы разблокировать:
+                            </p>
+                            <ul class="mt-2 ml-4 list-disc list-inside text-[var(--color-accent-secondary)] space-y-1 text-sm">
+                                <li><span class="text-white">Создание тестов</span> до 15 вопросов.</li>
+                                <li>Полную аналитику <span class="text-white">по ответам участников.</span></li>
+                                <li><span class="text-white">Загрузку</span> PDF и Word файлов.</li>
+                                <li>50 генераций тестов <span class="text-white">в сутки.</span></li>
+                            </ul>
+
+                            <a href="{% url 'payment' %}" class="mt-6 block w-full bg-[var(--color-accent-primary)] text-white text-center px-10 py-4 font-bold rounded-full transition-transform hover:scale-[1.03] active:scale-[.97] shadow-lg shadow-[var(--color-accent-primary)]/30">
+                                Разблокировать все возможности
                             </a>
                         </div>
-
-                        <div class="mt-4">
-                            <div class="flex justify-between text-xs font-medium text-gray-400 mb-2">
-                                <span class="font-bold text-white">Лимит 7 вопросов</span>
-                                <span class="opacity-70">20 вопросов в Премиуме</span>
-                            </div>
-                            <div class="w-full bg-black/30 rounded-full h-2.5 overflow-hidden">
-                                <div class="bg-gradient-to-r from-indigo-500 to-purple-600 h-2.5 rounded-full" style="width: 35%;"></div>
-                            </div>
-                        </div>
-
-                        <p class="mt-4 text-sm text-gray-300 leading-relaxed">
-                            Перейдите на <a href="{% url 'payment' %}" class="font-bold text-[var(--color-accent-secondary)] hover:underline">Премиум</a>, чтобы разблокировать:
-                        </p>
-                        <ul class="mt-2 ml-4 list-disc list-inside text-[var(--color-accent-secondary)] space-y-1 text-sm">
-                            <li><span class="text-white">Создание тестов</span> до 20 вопросов.</li>
-                            <li>Полную аналитику <span class="text-white">по ответам участников.</span></li>
-                            <li><span class="text-white">Загрузку</span> PDF и Word файлов.</li>
-                            <li>50 генераций тестов <span class="text-white">в сутки.</span></li>
-                        </ul>
-
-                        <a href="{% url 'payment' %}" class="mt-6 block w-full bg-[var(--color-accent-primary)] text-white text-center px-10 py-4 font-bold rounded-full transition-transform hover:scale-[1.03] active:scale-[.97] shadow-lg shadow-[var(--color-accent-primary)]/30">
-                            Разблокировать все возможности
-                        </a>
-                    </div>
-                {% endif %}
-
-                <div id="privacy-notice" class="mt-8 flex items-start gap-4 bg-[var(--color-surface)] rounded-3xl border border-[var(--color-border)] p-5 animate-fadeIn">
-                    <div class="flex-shrink-0">
-                        <i class="fas fa-globe-americas text-xl text-[var(--color-accent-primary)] mt-1"></i>
-                    </div>
-                    <div>
-                        <p class="mt-1 text-sm text-[var(--color-text-secondary)] leading-relaxed">
-                            Этот тест является публичным. Любой сможет его просмотреть и&nbsp;пройти.
-                            <span class="block mt-2 opacity-70">Приватные тесты для внутреннего использования появятся в будущих обновлениях.</span>
-                        </p>
-                    </div>
-                </div>
+                    {% endif %}
             {% endif %}
             {% endif %}
 

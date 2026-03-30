@@ -1,5 +1,4 @@
 from django.contrib.auth.models import User
-from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import login, authenticate
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -11,25 +10,21 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.http import HttpResponseForbidden, HttpResponse
-from django.db.models import Q
-from django.db.models.functions import Length, TruncDate
 from django.views import View
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.utils import timezone
 from django.urls import reverse
-from django.db.models import F, ExpressionWrapper, DurationField
+from django.db.models import ExpressionWrapper, DurationField
 from django.db.models.functions import Abs
 from collections import defaultdict
 from datetime import date, timedelta
-from django.db import transaction
+from django.db import transaction, IntegrityError
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from django.views.decorators.csrf import csrf_exempt
 from django.db.models.functions import NthValue
 from django.utils.safestring import mark_safe
 from django.db import connection
 from django.db.models import Count, Sum, Q, F, Avg, Max
-from django.db.models.functions import TruncDate, Length
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 from django.views.decorators.http import require_POST
@@ -2639,50 +2634,52 @@ def register(request):
         form = CustomUserCreationForm(request.POST)
 
         if form.is_valid():
-            if not is_allowed_email(form.cleaned_data.get('email')):
+            email = form.cleaned_data.get('email')
+            if not is_allowed_email(email):
                 form.add_error('email', 'Регистрация с этого почтового домена не разрешена.')
             else:
-                x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-                if x_forwarded_for:
-                    ip = x_forwarded_for.split(',')[0]
-                else:
-                    ip = request.META.get('REMOTE_ADDR')
+                try:
+                    with transaction.atomic():
+                        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+                        ip = x_forwarded_for.split(',')[0] if x_forwarded_for else request.META.get('REMOTE_ADDR')
 
-                # Рега временного юзера
-                temporary_user = AuthUser.objects.annotate(
-                    username_len=Length('username')
-                ).filter(
-                    hash_user_id=ip,
-                    username_len__gt=20
-                ).first()
+                        temporary_user = AuthUser.objects.annotate(
+                            username_len=Length('username')
+                        ).filter(
+                            hash_user_id=ip,
+                            username_len__gt=20
+                        ).first()
 
-                user = form.save()
+                        if temporary_user:
+                            user = temporary_user
+                            user.username = email.split('@')[0]
+                            user.email = email
+                            user.set_password(form.cleaned_data.get('password1'))
+                            user.hash_user_id = None
+                            user.save()
+                        else:
+                            user = form.save()
 
-                if temporary_user:
-                    user = temporary_user
+                        plan_name, end_date, status, billing_cycle, discount = init_free_subscription()
+                        Subscription.objects.get_or_create(
+                            staff_id=user.id_staff,
+                            defaults={
+                                'plan_name': plan_name,
+                                'end_date': end_date,
+                                'status': status,
+                                'billing_cycle': billing_cycle
+                            }
+                        )
 
-                    email = request.POST.get('email', '').strip()
-                    password = request.POST.get('password1')
+                        login(request, user)
+                        tracer_l.info(f'USER. NEW USER {user.username}')
+                        return redirect('create')
 
-                    user.username = email.split('@')[0]
-                    user.email = email
-                    user.set_password(password)
-                    user.hash_user_id = None
-                    user.save()
-
-                tracer_l.info(f'USER. NEW USER {user.username}')
-
-                plan_name, end_date, status, billing_cycle, discount = init_free_subscription()
-                Subscription.objects.create(
-                    staff_id=user.id_staff,
-                    plan_name=plan_name,
-                    end_date=end_date,
-                    status=status,
-                    billing_cycle=billing_cycle
-                )
-
-                login(request, user)
-                return redirect('create')
+                except IntegrityError:
+                    form.add_error(None, 'Пользователь с таким именем уже существует.')
+                except Exception as e:
+                    tracer_l.error(f'Registration error: {e}')
+                    form.add_error(None, 'Произошла ошибка при регистрации.')
 
     else:
         form = CustomUserCreationForm()

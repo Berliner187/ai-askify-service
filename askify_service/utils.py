@@ -15,6 +15,7 @@ import ctypes
 import struct
 from urllib.parse import urlparse
 from asgiref.sync import sync_to_async
+from functools import lru_cache
 
 from django.core.cache import cache
 from django.http import JsonResponse
@@ -105,19 +106,19 @@ class ManageGenerationSurveys:
             )
 
             generated_text = completion.choices[0].message.content
-            
+
             try:
                 tokens_used = completion.usage.total_tokens
             except Exception:
                 tokens_used = 0
 
             cleaned_generated_text = generated_text.replace("```json", "").replace("```", "").strip()
-            
+
             parsed_json = None
 
             try:
                 parsed_json = json.loads(cleaned_generated_text)
-            
+
             except json.JSONDecodeError:
                 tracer_l.warning(f"JSON truncated/invalid (Attempt {attempt+1}/{max_json_retries}). Repairing...")
                 try:
@@ -177,7 +178,7 @@ class ManageGenerationSurveys:
                     if e.status_code == 400 and "content_filter" in str(e.response.text):
                         tracer_l.warning(f"Content Policy Violation (Violence/Hate) with key {api_key.name}. Aborting.")
                         return {
-                            'success': False, 
+                            'success': False,
                             'error': 'Обнаружен недопустимый контент (насилие/вражда). Измените текст.'
                         }
                     elif e.status_code == 429:
@@ -325,7 +326,7 @@ class ManageGenerationSurveys:
             generated_text = completion.choices[0].message.content
             print("\n\ngenerated_text", generated_text)
             cleaned_generated_text = generated_text.replace("json", "").replace("`", "")
-            
+
             try:
                 tokens_used = completion.usage.total_tokens
             except Exception as fail:
@@ -360,6 +361,79 @@ class ManageGenerationSurveys:
         #             return {'success': False, 'code': 429, 'message': str(fail)}
         except Exception as fail:
             return {'success': False, 'code': 500, 'message': str(fail)}
+
+    async def smart_generate(self) -> dict:
+        from askify_service.models import APIKey
+        from openai import AsyncOpenAI
+
+        if DEBUG is True:
+            try:
+                from httpx import Timeout
+                custom_timeout = Timeout(connect=3.0, read=120.0, write=10.0, pool=10.0)
+
+                local_client = AsyncOpenAI(
+                    base_url="http://localhost:1234/v1",
+                    api_key="lm-studio",
+                    timeout=custom_timeout
+                )
+
+                tracer_l.info("--- USAGE LOCAL MACHINE ---")
+                return await self._execute_generation(local_client, model="openai/gpt-oss-20b")
+
+            except Exception as e:
+                tracer_l.warning(f"Local machine is unavailable: {e}")
+
+        return await self.github_gpt(await APIKey.objects.filter(purpose=purpose, is_active=True).first())
+
+    async def _execute_generation(self, client, model="openai/gpt-oss-20b"):
+        """
+            Универсальный исполнитель запроса к local LLM.
+        """
+        try:
+            kwargs = {
+                "messages": [
+                    {"role": "system", "content": f"{self.__get_confidential_key('system_prompt')}{self.count_questions}"},
+                    {"role": "user", "content": f"{self.data}{self.__get_confidential_key('user_prompt')}"},
+                ],
+                "model": model,
+                "temperature": 0.3,
+                "max_tokens": 4096,
+            }
+
+            if "gpt-4" in model:
+                kwargs["response_format"] = { "type": "json_object" }
+
+            completion = await client.chat.completions.create(**kwargs)
+            generated_text = completion.choices[0].message.content
+
+            try:
+                tokens_used = completion.usage.total_tokens
+            except:
+                tokens_used = 0
+
+            cleaned_text = generated_text.strip()
+            if cleaned_text.startswith("```"):
+                cleaned_text = re.sub(r'^```(?:json)?\n?|```$', '', cleaned_text, flags=re.MULTILINE).strip()
+
+            try:
+                parsed_json = json.loads(cleaned_text)
+            except json.JSONDecodeError:
+                tracer_l.warning("JSON Decode Error. Attempting repair with json_repair...")
+                parsed_json = json_repair.loads(cleaned_text)
+
+            return {
+                'success': True,
+                'generated_text': parsed_json,
+                'tokens_used': tokens_used,
+                'model_used': model
+            }
+
+        except Exception as e:
+            tracer_l.error(f"Ошибка в _execute_generation ({model}): {str(e)}")
+            return {
+                'success': False,
+                'message': f"Сбой генерации: {str(e)}"
+            }
 
 
 class AccessControlUser:
@@ -442,7 +516,7 @@ class GenerationModelsControl:
         payload = json.dumps({
             "model": "Meta-Llama-3.1-8B-Instruct",
             "messages": messages,
-            "temperature": 0.7,
+            "temperature": 0.3,
             "max_tokens": 2048,
             "stream": False
         })
@@ -452,56 +526,6 @@ class GenerationModelsControl:
         }
         response = requests.post(url, headers=headers, data=payload)
         return response.json()
-
-    def get_generated_feedback_0003(self, text_from_user):
-        from .api_keys import get_active_key
-        for model in MODEL_NAMES:
-            try:
-                client = OpenAI(
-                    base_url="https://openrouter.ai/api/v1",
-                    api_key=get_active_key('FEEDBACK'),
-                )
-
-                completion = client.chat.completions.create(
-                    extra_headers={
-                        "HTTP-Referer": "https://letychka.ru/",
-                        "X-Title": "LETYCHKA"
-                    },
-                    extra_body={},
-                    model=model,
-                    messages=[
-                        {
-                            "role": "system",
-                            "content": [
-                                {
-                                    "type": "text",
-                                    "text": f"{self.__get_confidential_key('pre_feedback_prompt')}"
-                                },
-                                {
-                                    "type": "text",
-                                    "text": f"{text_from_user}{self.__get_confidential_key('post_feedback_prompt')}"
-                                }
-                            ]
-                        }
-                    ]
-                )
-
-                if hasattr(completion, 'error') and completion.error is not None:
-                    error_message = completion.error.get('message', 'Unknown error')
-                    raise Exception(f"Error from API: {error_message}")
-
-                return self.__generate_completion(completion, model)
-
-            except Exception as fail:
-
-                try:
-                    reserve = self.get_feedback_together(text_from_user)
-                    return reserve
-                except Exception as fail_02:
-
-                    return {'success': False, 'message': fail}
-
-        return None
 
     def get_feedback_together(self, text_from_user):
         from together import Together
@@ -535,15 +559,6 @@ class GenerationModelsControl:
             'model_used': model
         }
 
-    def get_feedback_001(self, text_from_user):
-        ai_response = self.get_generated_feedback_0003(text_from_user)
-
-        if ai_response.get('success') is True:
-            print("Feedback's response:", ai_response)
-            return ai_response
-        else:
-            return {'success': False, 'feedback_text': None, 'tokens_used': None}
-
     @staticmethod
     def __generate_completion(completion, model) -> dict:
         try:
@@ -556,7 +571,7 @@ class GenerationModelsControl:
                     tokens_used = completion.usage.total_tokens
                 except Exception as fail:
                     tokens_used = 0
-                
+
                 print("\n\ncleaned_generated_text", cleaned_generated_text, '\ntokens used', tokens_used)
                 return {
                     'success': True, 'generated_text': cleaned_generated_text, 'tokens_used': tokens_used,
@@ -834,15 +849,17 @@ def format_model_name(raw_model: str) -> str:
     return formatted_name
 
 
-def count_tokens(text: str, model: str = 'gpt-4o') -> int:
-    """Подсчитывает количество токенов в тексте для указанной модели."""
+@lru_cache(maxsize=4)
+def get_encoding(model: str):
     try:
-        encoding = tiktoken.encoding_for_model(model)
-        return len(encoding.encode(text))
-    except Exception as e:
-        tracer_l.warning(f"Warning: Could not get encoding for model {model}. Using cl100k_base. Error: {e}")
-        encoding = tiktoken.get_encoding("cl100k_base")
-        return len(encoding.encode(text))
+        return tiktoken.encoding_for_model(model)
+    except:
+        return tiktoken.get_encoding("cl100k_base")
+
+
+def count_tokens(text: str, model: str = 'gpt-4o') -> int:
+    encoding = get_encoding(model)
+    return len(encoding.encode(text))
 
 
 def is_safe_url(url, allowed_hosts=None):
