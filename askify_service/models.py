@@ -351,19 +351,6 @@ class FeedbackFromAI(models.Model):
     model_name = models.CharField(max_length=255, blank=True, null=True)
 
 
-def get_token_limit(plan_name):
-    token_limits = {
-        'стартовый': 10_000,
-        'лайтовый': 15_000,
-        'стандартный': 50_000,
-        'премиум': 150_000,
-        'ультра': 2_500_000,
-        'стандартный год': 50_000,
-        'премиум год': 150_000,
-    }
-    return token_limits.get(plan_name.lower(), 0)
-
-
 def get_daily_test_limit(plan_name):
     """
     Возвращает дневной лимит на количество создаваемых тестов для данного плана.
@@ -375,7 +362,7 @@ def get_daily_test_limit(plan_name):
         'премиум': 50,
         'ультра': 800,
         'стандартный год': 50,
-        'премиум год': 100,
+        'премиум год': 50,
     }
     return daily_test_limits.get(plan_name.lower(), 0)
 
@@ -387,9 +374,9 @@ def slugify_title(title):
         'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u',
         'ф': 'f', 'х': 'kh', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'shch', 'ъ': '',
         'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya', ' ': '-',
-        '-': '-',  # Сохраняем дефисы
-        ':': '',  # Убираем двоеточие
-        '–': '-',  # Заменяем длинный дефис на обычный
+        '-': '-',
+        ':': '',
+        '–': '-',
     }
 
     title = str(title)
@@ -431,22 +418,6 @@ class BlogPost(models.Model):
 
     def __str__(self):
         return self.title
-
-
-def is_user_subscribed_and_has_tokens(user_id):
-    try:
-        subscription = Subscription.objects.get(staff_id=user_id, status='active')
-        if subscription.end_date < datetime.now():
-            return False
-
-        tokens_used = TokensUsed.get_tokens_usage(user_id)
-        token_limit = get_token_limit(subscription.plan_name)
-
-        total_used = tokens_used['tokens_survey_used'] + tokens_used['tokens_feedback_used']
-        return total_used < token_limit
-
-    except Subscription.DoesNotExist:
-        return False
 
 
 class TokensUsed(models.Model):
@@ -528,13 +499,6 @@ class TokensUsed(models.Model):
             'tokens_survey_used': tokens['total_survey_tokens'] or 0,
             'tokens_feedback_used': tokens['total_feedback_tokens'] or 0,
         }
-
-    def has_available_tokens(self, plan_name):
-        tokens_used = self.get_tokens_usage(self.id_staff)
-        token_limit = get_token_limit(plan_name)
-
-        total_used = tokens_used['tokens_survey_used'] + tokens_used['tokens_feedback_used']
-        return total_used < token_limit
 
     def add_tokens(self, survey_tokens=0, feedback_tokens=0):
         """Метод для добавления использованных токенов."""

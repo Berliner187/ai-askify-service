@@ -759,12 +759,6 @@ class ManageTokensLimits:
 
         return tests_created_today
 
-    @staticmethod
-    def check_token_limits(token_used, token_limit) -> bool:
-        if token_used >= token_limit:
-            return True
-        return False
-
 
 @sync_to_async
 def get_active_api_key(purpose: str):
@@ -1121,32 +1115,18 @@ def get_all_surveys(request, page=1, per_page=10):
     from django.db.models.functions import Abs, Extract
 
     for survey in surveys_page.object_list:
-        if not DEBUG:
-            nearby_tokens = (
-                tokens_entries
-                .filter(created_at__range=(survey.updated_at - time_margin, survey.updated_at + time_margin))
-                .annotate(
-                    time_diff=ExpressionWrapper(
-                        Abs(Extract(F('created_at') - survey.updated_at, 'epoch')),
-                        output_field=DurationField()
-                    )
+        nearby_tokens = (
+            tokens_entries
+            .filter(created_at__range=(survey.updated_at - time_margin, survey.updated_at + time_margin))
+            .annotate(
+                time_diff=ExpressionWrapper(
+                    Abs(Extract(F('created_at') - survey.updated_at, 'epoch')),
+                    output_field=DurationField()
                 )
-                .order_by('time_diff')
-                .first()
             )
-        else:
-            nearby_tokens = (
-                tokens_entries
-                .filter(created_at__range=(survey.updated_at - time_margin, survey.updated_at + time_margin))
-                .annotate(
-                    time_diff=ExpressionWrapper(
-                        Abs(F('created_at') - survey.updated_at),
-                        output_field=DurationField()
-                    )
-                )
-                .order_by('time_diff')
-                .first()
-            )
+            .order_by('time_diff')
+            .first()
+        )
 
         tokens_used = nearby_tokens.tokens_survey_used if nearby_tokens else None
 
@@ -2038,7 +2018,7 @@ def view_results(request, survey_id):
             'success_count': Count('id', filter=Q(score__gte=F('total_questions') * 0.5))
         }
 
-        if not settings.DEBUG and 'postgresql' in connection.vendor:
+        if 'postgresql' in connection.vendor:
             try:
                 from django.contrib.postgres.aggregates import PercentileCont
 
@@ -2216,7 +2196,7 @@ def get_analytics_context(request, survey_id):
             'success_count': Count('id', filter=Q(score__gte=F('total_questions') * 0.5))
         }
 
-        if not settings.DEBUG and 'postgresql' in connection.vendor:
+        if 'postgresql' in connection.vendor:
             try:
                 from django.contrib.postgres.aggregates import PercentileCont
 
@@ -3115,7 +3095,6 @@ def user_profile_api(request):
     statistics = UserAnswers.calculate_user_statistics(staff_id)
     subscription_status = subscription.check_sub_status()
     subscription_level = get_subscription_level(request)
-    token_limit = get_token_limit(subscription.plan_name)
 
     # Подписка и лимиты
     tests_limit = get_daily_test_limit(subscription.plan_name) if subscription_status == 'active' else 0
@@ -3135,8 +3114,6 @@ def user_profile_api(request):
         "date_last_login": user.last_login.strftime("%d.%m.%Y") if user.last_login else None,
         "statistics": statistics,
         "tokens": {
-            "limit": token_limit,
-            "token_limit": token_limit,
             "remaining": max(0, tests_limit - used_today),
             "used_percent": round(percent_used),
             "tests_remaining_today": tests_remaining,

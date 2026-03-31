@@ -308,7 +308,7 @@ class ManageGenerationSurveys:
                 messages=[
                     {
                         "role": "system",
-                        "content": f"{self.__get_confidential_key('system_prompt')}" + self.count_questions,
+                        "content": f"{self.__get_confidential_key('system_prompt')}{self.count_questions}",
                     },
                     {
                         "role": "user",
@@ -317,49 +317,38 @@ class ManageGenerationSurveys:
                 ],
                 model="gpt-4o",
                 temperature=.3,
-                max_tokens=2048,
+                max_tokens=4096,
                 top_p=1
             )
-            print(completion)
 
-            # try:
             generated_text = completion.choices[0].message.content
-            print("\n\ngenerated_text", generated_text)
-            cleaned_generated_text = generated_text.replace("json", "").replace("`", "")
+
+            # Чистим маркдаун по-умному
+            cleaned_generated_text = generated_text.replace("```json", "").replace("```", "").strip()
 
             try:
                 tokens_used = completion.usage.total_tokens
-            except Exception as fail:
+            except Exception:
                 tokens_used = 0
 
-            print("\n\ncleaned_generated_text", cleaned_generated_text)
+            try:
+                parsed_json = json.loads(cleaned_generated_text)
+            except json.JSONDecodeError:
+                tracer_l.warning(f"JSON truncated from API. Attempting repair. Length: {len(cleaned_generated_text)}")
+                parsed_json = json_repair.loads(cleaned_generated_text)
+
+            if not isinstance(parsed_json, (dict, list)):
+                raise ValueError("Could not repair JSON to valid structure")
+
             return {
-                'success': True, 'generated_text': json.loads(cleaned_generated_text), 'tokens_used': tokens_used,
+                'success': True,
+                'generated_text': parsed_json,
+                'tokens_used': tokens_used,
                 'model_used': 'gpt-4o'
             }
-        #
-        #     except Exception as fail:
-        #         print(fail)
-        #         if hasattr(completion, 'error') and completion.error is not None:
-        #             error_info = completion.error
-        #             code = error_info.get('code', 'Unknown error code')
-        #             raw_metadata = error_info.get('metadata', {}).get('raw', '')
-        #
-        #             if raw_metadata:
-        #                 try:
-        #                     metadata = json.loads(raw_metadata)
-        #                     message = metadata.get('error', {}).get('message', 'No error message provided')
-        #                 except json.JSONDecodeError:
-        #                     message = 'Failed to decode error message from raw metadata'
-        #             else:
-        #                 message = 'No raw metadata available'
-        #
-        #             print(f"Code: {code}, Message: {message}")
-        #             return {'success': False, 'code': code, 'message': message}
-        #         else:
-        #             print("Не удалось получить информацию об ошибке.")
-        #             return {'success': False, 'code': 429, 'message': str(fail)}
+
         except Exception as fail:
+            tracer_l.error(f"Generation error in github_gpt: {fail}")
             return {'success': False, 'code': 500, 'message': str(fail)}
 
     async def smart_generate(self) -> dict:
@@ -526,38 +515,6 @@ class GenerationModelsControl:
         }
         response = requests.post(url, headers=headers, data=payload)
         return response.json()
-
-    def get_feedback_together(self, text_from_user):
-        from together import Together
-
-        client = Together(api_key="b5083586c3c267c832108ede0d7aee9b1de69a167094baf06eea3e398865d2bd")
-
-        model = 'deepseek-ai/DeepSeek-R1-Distill-Llama-70B-free'
-
-        response = client.chat.completions.create(
-            model=model,
-            messages=[
-                {
-                    "role": "system",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": f"{self.__get_confidential_key('pre_feedback_prompt')}"
-                        },
-                        {
-                            "type": "text",
-                            "text": f"{text_from_user}{self.__get_confidential_key('post_feedback_prompt')}"
-                        }
-                    ]
-                }
-            ]
-        )
-        print(response.choices[0].message.content)
-        tokens_used = response.usage.total_tokens
-        return {
-            'success': True, 'generated_text': response.choices[0].message.content, 'tokens_used': tokens_used,
-            'model_used': model
-        }
 
     @staticmethod
     def __generate_completion(completion, model) -> dict:

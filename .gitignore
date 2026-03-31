@@ -10,13 +10,11 @@ askify_service/tester-2.py
 askify_service/tester-3.py
 askify_service/tester-4.py
 askify_service/tester.py
-/askify_service/migrations
 *.md
 /askify_service/static/blog_img
 askify_service/static/css/.DS_Store
 /askify_app/__pycache__
 *.log
-/askify_service/migrations
 *.txt
 *.pyc
 *.DS_Store
@@ -29,4 +27,3 @@ app.log.3
 *.1
 /static
 *.dump
-askify_app/forbidden_words.txt

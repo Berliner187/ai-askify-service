@@ -327,18 +327,6 @@
                                 </ul>
                             </div>
                         </div>
-
-                        <div class="content-grid" style="margin-top:30px">
-                            <div class="content-card">
-                                <div class="card-title">🧠 Модель и метрики</div>
-                                <ul>
-                                    <li><strong>Уникальных моделей:</strong> <span data-stat="unique_models_count">–</span></li>
-                                    <li><strong>Среднее кол-во токенов:</strong> <span data-stat="avg_tokens_used">–</span></li>
-                                    <li><strong>Тестов с прохождением:</strong> <span data-stat="tests_created_and_passed">–</span></li>
-                                    <li><strong>Лучший результат:</strong> <span data-stat="best_result">–</span></li>
-                                </ul>
-                            </div>
-                        </div>
                     `;
 
                     loadUserStats();
@@ -351,10 +339,8 @@
                             <div class="content-card">
                                 <div class="card-title">💎 Полный доступ</div>
                                 <ul>
-                                    <li>✅ Скачивание в PDF для печати без водяных знаков</li>
                                     <li>✅ Можно пройти тесты на платформе</li>
-                                    <li>✅ Персональная обратная связь от ИИ</li>
-                                    <li>✅ Создавайте до 150 тестов в день — всего 4 рубля за тест</li>
+                                    <li>✅ Создавайте до 50 тестов в день — всего 4 рубля за тест</li>
                                 </ul>
                                 <a href="/payment" class="card-action green-action">Перейти к оплате</a>
                             </div>
@@ -633,12 +619,7 @@
                     'date_last_login': data.date_last_login || '–',
                     'plan_name': data.subscription.plan_name,
                     'plan_end_date': data.subscription.plan_end_date,
-                    'days_until_end': data.subscription.days_until_end,
-                    'tests_remaining_today': data.tokens.tests_remaining_today,
-                    'tests_daily_limit': data.tokens.tests_daily_limit,
-                    'tokens_limit': data.tokens.tests_daily_limit,
-                    'tokens_remaining': data.tokens.tests_remaining_today,
-                    'tokens_used_percent': data.tokens.used_percent
+                    'days_until_end': data.subscription.days_until_end
                 };
 
                 // Подстановка значений
