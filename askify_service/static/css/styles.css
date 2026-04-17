@@ -1168,6 +1168,7 @@ hr {
     border: 1px solid rgba(48, 47, 50, 0.3);
     border-radius: var(--border-radius);
     padding: 24px 32px;
+    margin-top: 20px;
     transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
@@ -1402,6 +1403,10 @@ hr {
     background: linear-gradient(145deg, #5A66EB, #3E49B5);
 }
 .plan-standard .plan-title { color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,0.3); }
+
+.plan-package {
+    background: linear-gradient(145deg, #2f7c46, #226d5f);
+}
 
 .plan-premium {
     background: linear-gradient(145deg, #2c251a, #1a160f);
@@ -1919,7 +1924,7 @@ hr {
 
 .chart-card {
     background: rgba(0,0,0,0.2);
-    padding: 20px;
+    padding: 20px 0px;
     border-radius: 16px;
 }
 .chart-card h4 {

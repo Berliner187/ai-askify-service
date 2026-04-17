@@ -16,16 +16,23 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- Yandex.Metrika counter -->
-    <script type="text/javascript">
-        (function(m,e,t,r,i,k,a){
-            m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    <script type="text/javascript" >
+        setTimeout(function() {
+            (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
             m[i].l=1*new Date();
             for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
-            k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
-        })(window, document,'script','https://mc.yandex.ru/metrika/tag.js', 'ym');
-        ym(98829160, 'init', {webvisor:true, clickmap:true, accurateTrackBounce:true, trackLinks:true});
+            k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+            (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+        
+            ym(98823704, "init", {
+                clickmap:true,
+                trackLinks:true,
+                accurateTrackBounce:true,
+                webvisor:true
+            });
+        }, 1000);
     </script>
-    <noscript><div><img src="https://mc.yandex.ru/watch/98829160" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+    <noscript><div><img src="https://mc.yandex.ru/watch/98823704" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
     <!-- /Yandex.Metrika counter -->
 </head>
 
@@ -84,7 +91,7 @@
                 </h1>
                 <p class="mt-3 text-gray-400 text-base md:text-lg leading-relaxed">
                     Готовы создать новый тест? <br class="hidden md:block"> 
-                    Просто дайте нейросети свежий материал.
+                    Просто загрузите свежий материал.
                 </p>
             {% endif %}
         </div>
@@ -439,45 +446,28 @@
             </div>
         </div>
         {% endif %}
-
-        <div class="max-w-4xl mx-auto mt-6 mb-24">
-            <div class="mt-8 bg-black/20 p-6 rounded-3xl border border-dashed border-cyan-500/30 text-center">
-                <h3 class="font-bold text-white text-lg">
-                    Нет текстового материала? <span class="text-cyan-300">Надиктуйте.</span>
-                </h3>
-                <p class="mt-2 text-sm text-gray-400 max-w-lg mx-auto">
-                    Если у&nbsp;вас есть только аудио-лекция или видео, <a href="https://golosok.space/?utm_referrer=letychka.ru" target="_blank" class="font-semibold text-cyan-300 hover:underline">Голосок</a> превратит их&nbsp;в&nbsp;текст, который вы&nbsp;сразу сможете использовать для создания теста в&nbsp;Летучке.
-                </p>
-            </div>
-        </div>
         
+        <div class="mb-12"> </div>
+
         <!-- ПАРЯЩИЙ ОСТРОВ ГЕНЕРАЦИИ -->
-        <div id="floating-island-wrapper" class="fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-1.5rem)] sm:w-full max-w-4xl px-0 sm:px-4 z-[9999] animate-fadeIn">
+        <div id="floating-island-wrapper" class="fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-1.5rem)] sm:w-full max-w-4xl px-0 sm:px-4 z-[9999] animate-fadeIn" style="z-index: 10;">
             <div class="relative flex flex-col shadow-[0_8px_32px_rgba(40,39,47,.1)] rounded-[1.8rem] sm:rounded-[2.2rem] overflow-hidden border border-white/10 bg-[40,39,47,.5]/80 backdrop-blur-xl">
                 <div id="notice-hub">
-                    {% if subscription_status != 'active' %}
+                    {% if not can_generate %}
                         <div class="bg-red-500/10 px-4 sm:px-6 py-2 flex items-center justify-between border-b border-white/5">
                             <div class="flex items-center gap-2">
                                 <i class="fas fa-bolt text-red-500 text-xs"></i>
-                                <span class="text-white text-[10px] sm:text-[11px] font-black uppercase tracking-wider">Создание отключено</span>
+                                <span class="text-white text-[10px] sm:text-[11px] font-black uppercase tracking-wider">Создание недоступно</span>
                             </div>
                             <a href="{% url 'payment' %}" class="text-[9px] sm:text-[10px] font-black text-red-400 uppercase hover:text-red-300 transition-colors">Восстановить &rarr;</a>
                         </div>
-                    {% elif tests_today == 0 %}
-                        <div class="bg-amber-500/10 px-4 sm:px-6 py-2 flex items-center justify-between border-b border-white/5">
+                    {% elif banner_text %}
+                        <div class="bg-green-500/10 px-4 sm:px-6 py-2 flex items-center justify-between border-b border-white/5">
                             <div class="flex items-center gap-2">
-                                <i class="fas fa-battery-empty text-amber-500 text-xs"></i>
-                                <span class="text-white text-[10px] sm:text-[11px] font-black uppercase tracking-wider">Лимиты исчерпаны</span>
+                                <i class="fas fa-check-circle text-green-500 text-xs"></i>
+                                <span class="text-white text-[10px] sm:text-[11px] font-black uppercase tracking-wider">{{ banner_text }}</span>
                             </div>
-                            <a href="{% url 'payment' %}" class="text-[9px] sm:text-[10px] font-black text-amber-400 uppercase hover:text-amber-300 transition-colors">Снять лимиты &rarr;</a>
-                        </div>
-                    {% elif subscription_level < 1 %}
-                        <div class="bg-indigo-500/10 px-4 sm:px-6 py-2 flex items-center justify-between border-b border-white/5">
-                            <div class="flex items-center gap-2">
-                                <img src="{% static 'img/icon-diamond.png' %}" class="w-3 h-3 sm:w-4 sm:h-4" alt="">
-                                <span class="text-white text-[10px] sm:text-[11px] font-black uppercase tracking-wider">Доступен Премиум</span>
-                            </div>
-                            <a href="{% url 'payment' %}" class="text-[9px] sm:text-[10px] font-black text-indigo-400 uppercase hover:text-indigo-300 transition-colors">Узнать больше</a>
+                            <a href="{% url 'payment' %}" class="text-[9px] sm:text-[10px] font-black text-green-400 uppercase hover:text-green-300 transition-colors">Купить ещё &rarr;</a>
                         </div>
                     {% endif %}
                 </div>
@@ -523,7 +513,7 @@
                                     class="w-full bg-transparent border-none text-white text-sm sm:text-base p-2 sm:p-3 outline-none focus:ring-0 resize-none custom-scrollbar min-h-[44px] sm:min-h-[60px] max-h-48"></textarea>
                             
                             <div class="flex gap-1.5 sm:gap-2 pb-0.5 sm:pb-1 pr-0.5 sm:pr-1">
-                                {% if subscription_level > 1 and subscription_level < 50 %}
+                                {% if subscription_level > 1 and subscription_level < 50 or plan_type == 'package' %}
                                     <button type="button" class="h-9 w-9 sm:h-12 sm:w-12 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-gray-400 transition-all" onclick="document.getElementById('hidden-file-input').click();">
                                         <i class="fas fa-paperclip text-sm sm:text-lg"></i>
                                     </button>
@@ -544,7 +534,7 @@
                                     <span id="slider-value">5</span> вопр.
                                 </div>
                                 <input type="range" id="question-slider" class="w-20 sm:w-32 h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-indigo-500 ml-1" 
-                                    min="1" max="{% if subscription_level > 0 %}15{% else %}7{% endif %}" value="5">
+                                    min="1" max="{% if subscription_level > 1 or plan_type == 'package' %}15{% else %}7{% endif %}" value="5">
                             </div>
                             <div id="char-count" class="text-[8px] sm:text-[10px] font-mono text-gray-500 uppercase">0 / 16384</div>
                         </div>
@@ -560,12 +550,16 @@
                             <a class="button-medium !flex !justify-center !m-1 !py-3 !rounded-2xl" href="{% url 'payment' %}">
                                 <div>
                                     <i class="fas fa-star text-amber-400 text-xs"></i>
-                                    <p class="!text-[10px] !uppercase !tracking-widest">Лимит {{ tests_today }}</p>
+                                    {% if total_available > 0 %}
+                                        <p class="!text-[10px] !uppercase !tracking-widest">Лимит {{ total_available }}</p>
+                                    {% else %}
+                                        <p class="!text-[10px] !uppercase !tracking-widest">Купить</p>
+                                    {% endif %}
                                 </div>
                             </a>
                         </div>
                         
-                        {% if subscription_level > 1 and subscription_level < 50 %}
+                        {% if subscription_level > 1 and subscription_level < 50 or plan_type == 'package' %}
                             <input type="file" id="hidden-file-input" accept=".pdf, .doc, .docx, .txt" style="display: none;" onchange="handleFiles(this.files)">
                         {% endif %}
                     </form>
@@ -615,7 +609,9 @@
     </div>
     {% include 'footer-s.html' %}
 
-    <div class="mb-64"> </div>
+    <div class="mt-48 opacity-0"> 
+        <p>Dev</p>
+    </div>
 
     <!-- МОДАЛЬНОЕ ОКНО ЛИМИТОВ -->
     <div id="limit-exceeded-modal" class="fixed inset-0 z-[10001] hidden items-center justify-center p-4">

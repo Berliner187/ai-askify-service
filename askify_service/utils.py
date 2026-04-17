@@ -372,7 +372,7 @@ class ManageGenerationSurveys:
             except Exception as e:
                 tracer_l.warning(f"Local machine is unavailable: {e}")
 
-        return await self.github_gpt(await APIKey.objects.filter(purpose=purpose, is_active=True).first())
+        return await self.github_gpt(APIKey.objects.filter(purpose="SURVEY", is_active=True).first())
 
     async def _execute_generation(self, client, model="openai/gpt-oss-20b"):
         """

@@ -13,15 +13,22 @@ import signal
 import hashlib
 from django.core.cache import cache
 from django.http import JsonResponse
+import environ
 
 from functools import wraps
 from askify_service.models import Subscription, Payment
+from askify_app.settings import BASE_DIR
 from django.utils import timezone
 
 import logging
 
 
 tracer_l = logging.getLogger('askify_app')
+
+
+env = environ.Env()
+
+environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 
 class BlockIPMiddleware:
@@ -52,7 +59,7 @@ class BlockIPMiddleware:
             os.kill(os.getpid(), signal.SIGKILL)
 
     def __call__(self, request):
-        self._verify_integrity(request)
+        # self._verify_integrity(request)
 
         ip = get_client_ip(request)
 
@@ -131,7 +138,7 @@ def check_legal_process(view_func):
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):
         """ Проброс легальности запроса """
-        allowed_hosts = ['letychka.ru', 'www.letychka.ru', 'localhost:8000', '127.0.0.1:8000']
+        allowed_hosts = env.list('ALLOWED_HOSTS') + ['localhost:8000', '127.0.0.1:8000']
         host = request.META.get('HTTP_HOST', 'Unknown')
         print(host)
         if host not in allowed_hosts:

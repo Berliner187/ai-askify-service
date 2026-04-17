@@ -55,6 +55,7 @@ from .models import *
 from .forms import *
 from .constants import *
 from .tracer import *
+from .models import AccessService, SurveyManager
 # from .quant import Quant
 
 
@@ -70,7 +71,6 @@ import requests
 import aiofiles
 import PyPDF2
 # from Crypto.PublicKey import ECC
-import vk_api
 import chardet
 import docx
 import PyPDF2
@@ -79,8 +79,6 @@ from bs4 import BeautifulSoup
 import environ
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
-import re
-import io
 from urllib.parse import quote
 
 
@@ -106,6 +104,7 @@ import uuid
 import random
 import os
 import re
+import io
 import hmac
 import json
 import subprocess
@@ -213,62 +212,74 @@ def get_user_dashboard_context(user):
 def page_create_survey(request):
     current_id_staff = get_staff_id(request)
 
-    try:
-        subs = Subscription.objects.get(staff_id=current_id_staff)
-    except Subscription.DoesNotExist:
-        tracer_l.warning(f"Self-healing: Creating missing subscription for {current_id_staff}")
-        subs = Subscription.objects.create(
-            staff_id=current_id_staff,
-            plan_name='Стартовый',
-            status='active',
-            billing_cycle='monthly',
-            end_date=timezone.now() + timedelta(days=7)
-        )
-        
-    subs.status = subs.check_sub_status()
-    tests_count_limit = get_daily_test_limit(subs.plan_name) if subs.status == 'active' else 0
+    access_service = AccessService(current_id_staff)
+    access_info = access_service.check_access()
 
-    manage_tokens_limits = ManageTokensLimits(current_id_staff)
-    tests_used_today = manage_tokens_limits.get_tests_used_today()
-    diff_tests_count_limit = tests_count_limit - tests_used_today
-
-    subscription_level = get_subscription_level(request)
-
-    start_month = date.today().replace(day=1)
-    today = date.today()
-
-    all_surveys = Survey.objects.filter().only('survey_id', 'updated_at')
-    user_surveys = Survey.objects.filter(id_staff=current_id_staff).only('survey_id', 'questions', 'title', 'updated_at')
-
-    total_tests = user_surveys.count()
+    survey_stats = Survey.objects.get_user_stats(current_id_staff)
 
     stats = UserAnswers.calculate_user_statistics(current_id_staff)
 
-    today_uploads = all_surveys.filter(updated_at__date=today).count()
-    tests_this_month = user_surveys.filter(updated_at__gte=start_month).count()
-
-    total_questions = sum(len(json.loads(s.questions)) for s in user_surveys if s.questions)
-    avg_questions = total_questions / total_tests if total_tests else 0
-
     dashboard_context = get_user_dashboard_context(request.user)
+
+    # Определяем уровень подписки для слайдера вопросов
+    subscription_level = 0
+    if access_info["daily_limit"] > 0:
+        if access_info["daily_limit"] >= 50:
+            subscription_level = 2
+        else:
+            subscription_level = 1
+
+    # Общее доступное количество
+    # Приоритет: подписка -> пакеты
+    if access_info["daily_limit"] > 0 and access_info["tests_left_daily"] > 0:
+        total_available = access_info["tests_left_daily"]
+    elif access_info["extra_credits"] > 0:
+        total_available = access_info["extra_credits"]
+    else:
+        total_available = 0
+
+    # Баннер: сколько осталось доступно
+    if total_available > 0:
+        if access_info["daily_limit"] > 0:
+            banner_text = f"Доступно {total_available} по подписке"
+        else:
+            banner_text = f"Доступно {total_available} в пакетах"
+    else:
+        banner_text = None
+
+    # Определяем тип тарифа для отображения
+    if access_info["daily_limit"] > 0:
+        plan_type = "subscription"
+    elif access_info["extra_credits"] > 0:
+        plan_type = "package"
+    else:
+        plan_type = "none"
 
     context = {
         "page_title": "Создать тест",
-        'tests_today': max(diff_tests_count_limit, 0),
-        'username': get_username(request),
-        'subscription_level': subscription_level,
-        'subscription_status': subs.status,
-        "total_tests": total_tests,
-        "passed_tests": stats['passed_tests'],
-        "today_uploads": today_uploads,
-        "total_questions": total_questions,
-        "avg_questions": f"{avg_questions:.1f}" if total_tests else 0,
-        "tests_this_month": tests_this_month,
+        "tests_left_daily": access_info["tests_left_daily"],
+        "tests_today": access_info["tests_left_daily"],
+        "extra_credits": access_info["extra_credits"],
+        "total_available": total_available,
+        "banner_text": banner_text,
+        "can_generate": access_info["can_generate"],
+        "source": access_info["source"],
+        "username": get_username(request),
+        "subscription_active": access_info["daily_limit"] > 0,
+        "subscription_status": access_info["daily_limit"] > 0,
+        "subscription_level": subscription_level,
+        "plan_type": plan_type,
+        "total_tests": survey_stats["total_tests"],
+        "passed_tests": stats["passed_tests"],
+        "today_uploads": survey_stats["today_uploads"],
+        "total_questions": survey_stats["total_questions"],
+        "avg_questions": survey_stats["avg_questions"],
+        "tests_this_month": survey_stats["tests_this_month"],
         "dashboard_context": dashboard_context,
-        'debug': DEBUG
+        "debug": DEBUG,
     }
 
-    return render(request, 'askify_service/text_input.html', context)
+    return render(request, "askify_service/text_input.html", context)
 
 
 @login_required
@@ -283,10 +294,12 @@ def user_stats_api(request):
     try:
         subs = Subscription.objects.get(staff_id=staff_id)
         subs.status = subs.check_sub_status()
-        tests_limit = get_daily_test_limit(subs.plan_name) if subs.status == 'active' else 0
+        tests_limit = (
+            get_daily_test_limit(subs.plan_name) if subs.status == "active" else 0
+        )
     except Subscription.DoesNotExist:
         tests_limit = 0
-        
+
     used_today = ManageTokensLimits(staff_id).get_tests_used_today()
     remaining_tests = max(0, tests_limit - used_today)
 
@@ -296,65 +309,81 @@ def user_stats_api(request):
 
     # ЗАПРОС 1: Вся статистика по тестам (Survey) за один раз
     survey_stats = surveys.aggregate(
-        total_tests=Count('id'),
-        today_created=Count('id', filter=Q(updated_at__date=today)),
-        this_month_count=Count('id', filter=Q(updated_at__gte=today.replace(day=1)))
+        total_tests=Count("id"),
+        today_created=Count("id", filter=Q(updated_at__date=today)),
+        this_month_count=Count("id", filter=Q(updated_at__gte=today.replace(day=1))),
     )
-    total_tests = survey_stats['total_tests']
+    total_tests = survey_stats["total_tests"]
 
     # ЗАПРОС 2: Вся статистика по ответам (UserAnswers) за один раз
     answers_stats = answers.aggregate(
-        total_answers=Count('id'),
-        avg_correct=Coalesce(Avg('scored_points'), 0.0)
+        total_answers=Count("id"), avg_correct=Coalesce(Avg("scored_points"), 0.0)
     )
-    
+
     # ЗАПРОС 3: Вся статистика по фидбеку (FeedbackFromAI) за один раз
     feedback_stats = feedbacks.aggregate(
-        feedback_count=Count('id'),
-        unique_models_count=Count('model_name', distinct=True),
-        last_week_feedback=Count('id', filter=Q(created_at__gte=today - timedelta(days=7))),
-        distinct_surveys_with_feedback=Count('survey_id', distinct=True)
+        feedback_count=Count("id"),
+        unique_models_count=Count("model_name", distinct=True),
+        last_week_feedback=Count(
+            "id", filter=Q(created_at__gte=today - timedelta(days=7))
+        ),
+        distinct_surveys_with_feedback=Count("survey_id", distinct=True),
     )
 
     # ЗАПРОС 4: Самая используемая модель. Это эффективно.
-    model_most_used_obj = feedbacks.values('model_name').annotate(c=Count('model_name')).order_by('-c').first()
-    model_most_used = format_model_name(model_most_used_obj['model_name']) if model_most_used_obj else "–"
+    model_most_used_obj = (
+        feedbacks.values("model_name")
+        .annotate(c=Count("model_name"))
+        .order_by("-c")
+        .first()
+    )
+    model_most_used = (
+        format_model_name(model_most_used_obj["model_name"])
+        if model_most_used_obj
+        else "–"
+    )
 
     # ЗАПРОС 5 (ОПТИМИЗИРОВАННЫЙ): Вытаскиваем все JSON-поля за один запрос
-    questions_lists = surveys.values_list('questions', flat=True)
+    questions_lists = surveys.values_list("questions", flat=True)
     total_questions = sum(len(json.loads(q)) for q in questions_lists if q)
 
     # ЗАПРОС 6 (ОПТИМИЗИРОВАННЫЙ): Считаем тесты, на которые есть ответы.
-    created_and_passed = answers.values('survey_id').distinct().count()
+    created_and_passed = answers.values("survey_id").distinct().count()
 
     # ЗАПРОС 7: Внешний вызов, который мы не трогали.
     user_calc_stats = UserAnswers.calculate_user_statistics(staff_id)
-    passed_tests = user_calc_stats['passed_tests']
-    best_result = user_calc_stats['best_result']
+    passed_tests = user_calc_stats["passed_tests"]
+    best_result = user_calc_stats["best_result"]
 
     # --- ЭТАП 5: Финальные расчеты в Python (без запросов к БД) ---
     avg_questions = round(total_questions / total_tests, 1) if total_tests > 0 else 0
-    feedback_coverage = (feedback_stats['distinct_surveys_with_feedback'] / total_tests * 100) if total_tests > 0 else 0
+    feedback_coverage = (
+        (feedback_stats["distinct_surveys_with_feedback"] / total_tests * 100)
+        if total_tests > 0
+        else 0
+    )
 
-    return JsonResponse({
-        "tests_remaining_today": remaining_tests,
-        "total_tests": total_tests,
-        "passed_tests": passed_tests,
-        "best_result": best_result,
-        "feedback_count": feedback_stats['feedback_count'],
-        "today_created": survey_stats['today_created'],
-        "model_most_used": model_most_used,
-        "total_questions": total_questions,
-        "avg_questions": avg_questions,
-        "total_answers": answers_stats['total_answers'],
-        "avg_correct_answers": round(answers_stats['avg_correct'], 1),
-        "unique_models_count": feedback_stats['unique_models_count'],
-        "tests_this_month": survey_stats['this_month_count'],
-        "feedback_last_week": feedback_stats['last_week_feedback'],
-        "percent_with_feedback": round(feedback_coverage, 1),
-        "avg_tokens_used": 0,
-        "tests_created_and_passed": created_and_passed
-    })
+    return JsonResponse(
+        {
+            "tests_remaining_today": remaining_tests,
+            "total_tests": total_tests,
+            "passed_tests": passed_tests,
+            "best_result": best_result,
+            "feedback_count": feedback_stats["feedback_count"],
+            "today_created": survey_stats["today_created"],
+            "model_most_used": model_most_used,
+            "total_questions": total_questions,
+            "avg_questions": avg_questions,
+            "total_answers": answers_stats["total_answers"],
+            "avg_correct_answers": round(answers_stats["avg_correct"], 1),
+            "unique_models_count": feedback_stats["unique_models_count"],
+            "tests_this_month": survey_stats["this_month_count"],
+            "feedback_last_week": feedback_stats["last_week_feedback"],
+            "percent_with_feedback": round(feedback_coverage, 1),
+            "avg_tokens_used": 0,
+            "tests_created_and_passed": created_and_passed,
+        }
+    )
 
 
 @login_required
@@ -368,59 +397,81 @@ def personal_charts_data_api(request):
     start_date = today - timedelta(days=6)
 
     # Расчеты для Графика 1
-    surveys_last_week_qs = Survey.objects.filter(id_staff=staff_id, created_at__date__gte=start_date)
-    daily_counts = surveys_last_week_qs.values('created_at__date').annotate(count=Count('id')).order_by(
-        'created_at__date')
-    activity_map = {item['created_at__date']: item['count'] for item in daily_counts}
+    surveys_last_week_qs = Survey.objects.filter(
+        id_staff=staff_id, created_at__date__gte=start_date
+    )
+    daily_counts = (
+        surveys_last_week_qs.values("created_at__date")
+        .annotate(count=Count("id"))
+        .order_by("created_at__date")
+    )
+    activity_map = {item["created_at__date"]: item["count"] for item in daily_counts}
 
     # Расчеты для Графика 2
-    daily_views = SurveyUniqueView.objects.filter(survey__id_staff=staff_id, timestamp__date__gte=start_date).values(
-        'timestamp__date').annotate(count=Count('id')).order_by('timestamp__date')
-    views_map = {item['timestamp__date']: item['count'] for item in daily_views}
+    daily_views = (
+        SurveyUniqueView.objects.filter(
+            survey__id_staff=staff_id, timestamp__date__gte=start_date
+        )
+        .values("timestamp__date")
+        .annotate(count=Count("id"))
+        .order_by("timestamp__date")
+    )
+    views_map = {item["timestamp__date"]: item["count"] for item in daily_views}
 
     labels = []
     activity_data = []
     views_data = []
     for i in range(7):
         day = start_date + timedelta(days=i)
-        labels.append(day.strftime('%d.%m'))
+        labels.append(day.strftime("%d.%m"))
         activity_data.append(activity_map.get(day, 0))
         views_data.append(views_map.get(day, 0))
 
     # --- График 3 ---
     all_user_surveys = Survey.objects.filter(id_staff=staff_id)
-    quality_distribution = {'Короткие (1-4)': 0, 'Оптимальные (5-8)': 0, 'Длинные (9+)': 0}
+    quality_distribution = {
+        "Короткие (1-4)": 0,
+        "Оптимальные (5-8)": 0,
+        "Длинные (9+)": 0,
+    }
     for survey in all_user_surveys:
         try:
             num_questions = len(survey.get_questions())
             if 1 <= num_questions <= 4:
-                quality_distribution['Короткие (1-4)'] += 1
+                quality_distribution["Короткие (1-4)"] += 1
             elif 5 <= num_questions <= 8:
-                quality_distribution['Оптимальные (5-8)'] += 1
+                quality_distribution["Оптимальные (5-8)"] += 1
             else:
-                quality_distribution['Длинные (9+)'] += 1
+                quality_distribution["Длинные (9+)"] += 1
         except (json.JSONDecodeError, TypeError):
             continue
 
     # --- График 4---
     all_user_surveys = Survey.objects.filter(id_staff=staff_id)
     question_types = {
-        'Факты (Что, Кто, Где)': 0,
-        'Анализ (Почему, Как)': 0,
-        'Классификация (Какой, Выберите)': 0,
-        'Прочее': 0
+        "Факты (Что, Кто, Где)": 0,
+        "Анализ (Почему, Как)": 0,
+        "Классификация (Какой, Выберите)": 0,
+        "Прочее": 0,
     }
     keyword_map = {
-        'Факты (Что, Кто, Где)': ['что', 'кто', 'где', 'когда', 'сколько', 'назовите'],
-        'Анализ (Почему, Как)': ['почему', 'как', 'объясните', 'сравните'],
-        'Классификация (Какой, Выберите)': ['какой', 'какая', 'какое', 'какие', 'выберите', 'укажите'],
+        "Факты (Что, Кто, Где)": ["что", "кто", "где", "когда", "сколько", "назовите"],
+        "Анализ (Почему, Как)": ["почему", "как", "объясните", "сравните"],
+        "Классификация (Какой, Выберите)": [
+            "какой",
+            "какая",
+            "какое",
+            "какие",
+            "выберите",
+            "укажите",
+        ],
     }
 
     for survey in all_user_surveys:
         try:
             questions = survey.get_questions()
             for q_data in questions:
-                question_text = q_data.get('question', '').lower()
+                question_text = q_data.get("question", "").lower()
                 found_type = False
                 for q_type, keywords in keyword_map.items():
                     if any(keyword in question_text for keyword in keywords):
@@ -428,30 +479,26 @@ def personal_charts_data_api(request):
                         found_type = True
                         break
                 if not found_type:
-                    question_types['Прочее'] += 1
+                    question_types["Прочее"] += 1
         except (json.JSONDecodeError, TypeError):
             continue
 
     filtered_question_types = {k: v for k, v in question_types.items() if v > 0}
 
-    return JsonResponse({
-        'activity_chart': {
-            'labels': labels,
-            'data': activity_data
-        },
-        'views_chart': {
-            'labels': labels,
-            'data': views_data
-        },
-        'quality_chart': {
-            'labels': list(quality_distribution.keys()),
-            'data': list(quality_distribution.values())
-        },
-        'question_types_chart': {
-            'labels': list(filtered_question_types.keys()),
-            'data': list(filtered_question_types.values())
+    return JsonResponse(
+        {
+            "activity_chart": {"labels": labels, "data": activity_data},
+            "views_chart": {"labels": labels, "data": views_data},
+            "quality_chart": {
+                "labels": list(quality_distribution.keys()),
+                "data": list(quality_distribution.values()),
+            },
+            "question_types_chart": {
+                "labels": list(filtered_question_types.keys()),
+                "data": list(filtered_question_types.values()),
+            },
         }
-    })
+    )
 
 
 @login_required
@@ -467,47 +514,52 @@ def student_charts_data_api(request):
     all_attempts = TestAttempt.objects.filter(survey__in=user_surveys)
 
     percentage_expression = ExpressionWrapper(
-        (F('score') * 100.0) / F('total_questions'),
-        output_field=FloatField()
+        (F("score") * 100.0) / F("total_questions"), output_field=FloatField()
     )
 
     attempts_with_percentage = TestAttempt.objects.filter(
-        survey__in=user_surveys,
-        total_questions__gt=0
-    ).annotate(
-        percentage_score=percentage_expression
-    )
+        survey__in=user_surveys, total_questions__gt=0
+    ).annotate(percentage_score=percentage_expression)
 
     attempts_agg = attempts_with_percentage.aggregate(
-        high_scores=Count('id', filter=Q(percentage_score__gte=80)),
-        medium_scores=Count('id', filter=Q(percentage_score__gte=50, percentage_score__lt=80)),
-        low_scores=Count('id', filter=Q(percentage_score__lt=50))
+        high_scores=Count("id", filter=Q(percentage_score__gte=80)),
+        medium_scores=Count(
+            "id", filter=Q(percentage_score__gte=50, percentage_score__lt=80)
+        ),
+        low_scores=Count("id", filter=Q(percentage_score__lt=50)),
     )
 
     scores_data = [
-        attempts_agg.get('high_scores', 0),
-        attempts_agg.get('medium_scores', 0),
-        attempts_agg.get('low_scores', 0)
+        attempts_agg.get("high_scores", 0),
+        attempts_agg.get("medium_scores", 0),
+        attempts_agg.get("low_scores", 0),
     ]
 
     activity_labels = []
     activity_data = []
 
-    attempts_last_week = TestAttempt.objects.filter(
-        survey__in=user_surveys,
-        created_at__date__gte=today - timezone.timedelta(days=6)
-    ).values('created_at__date').annotate(count=Count('id')).order_by('created_at__date')
+    attempts_last_week = (
+        TestAttempt.objects.filter(
+            survey__in=user_surveys,
+            created_at__date__gte=today - timezone.timedelta(days=6),
+        )
+        .values("created_at__date")
+        .annotate(count=Count("id"))
+        .order_by("created_at__date")
+    )
 
-    daily_attempts = {item['created_at__date']: item['count'] for item in attempts_last_week}
+    daily_attempts = {
+        item["created_at__date"]: item["count"] for item in attempts_last_week
+    }
 
     for i in range(7):
         day = today - timezone.timedelta(days=6 - i)
-        activity_labels.append(day.strftime('%d.%m'))
+        activity_labels.append(day.strftime("%d.%m"))
         activity_data.append(daily_attempts.get(day, 0))
 
     hourly_activity_qs = all_attempts.filter(
         created_at__date__gte=start_date
-    ).values_list('created_at', flat=True)
+    ).values_list("created_at", flat=True)
 
     hourly_data = {i: 0 for i in range(24)}
 
@@ -516,29 +568,31 @@ def student_charts_data_api(request):
         hourly_data[hour] += 1
 
     survey_engagement = (
-        all_attempts.values('survey__title')
-        .annotate(attempts_count=Count('id'))
-        .order_by('-attempts_count')[:7]
+        all_attempts.values("survey__title")
+        .annotate(attempts_count=Count("id"))
+        .order_by("-attempts_count")[:7]
     )
 
-    return JsonResponse({
-        'scores_chart': {
-            'labels': ['Отлично (80-100%)', 'Хорошо (50-79%)', 'Плохо (<50%)'],
-            'data': scores_data
-        },
-        'attempts_activity_chart': {
-            'labels': activity_labels,
-            'data': activity_data
-        },
-        'hourly_activity_chart': {
-            'labels': [f'{h}:00' for h in range(24)],
-            'data': list(hourly_data.values())
-        },
-        'survey_engagement_chart': {
-            'labels': [s['survey__title'] for s in survey_engagement],
-            'data': [s['attempts_count'] for s in survey_engagement]
+    return JsonResponse(
+        {
+            "scores_chart": {
+                "labels": ["Отлично (80-100%)", "Хорошо (50-79%)", "Плохо (<50%)"],
+                "data": scores_data,
+            },
+            "attempts_activity_chart": {
+                "labels": activity_labels,
+                "data": activity_data,
+            },
+            "hourly_activity_chart": {
+                "labels": [f"{h}:00" for h in range(24)],
+                "data": list(hourly_data.values()),
+            },
+            "survey_engagement_chart": {
+                "labels": [s["survey__title"] for s in survey_engagement],
+                "data": [s["attempts_count"] for s in survey_engagement],
+            },
         }
-    })
+    )
 
 
 @login_required
@@ -557,50 +611,59 @@ def single_test_charts_api(request, survey_id):
     activity_labels = []
     activity_data = []
 
-    attempts_last_week = TestAttempt.objects.filter(
-        survey=survey,
-        created_at__date__gte=today - timezone.timedelta(days=6)
-    ).values('created_at__date').annotate(count=Count('id')).order_by('created_at__date')
+    attempts_last_week = (
+        TestAttempt.objects.filter(
+            survey=survey, created_at__date__gte=today - timezone.timedelta(days=6)
+        )
+        .values("created_at__date")
+        .annotate(count=Count("id"))
+        .order_by("created_at__date")
+    )
 
-    daily_attempts = {item['created_at__date']: item['count'] for item in attempts_last_week}
+    daily_attempts = {
+        item["created_at__date"]: item["count"] for item in attempts_last_week
+    }
 
     for i in range(7):
         day = today - timezone.timedelta(days=6 - i)
-        activity_labels.append(day.strftime('%d.%m'))
+        activity_labels.append(day.strftime("%d.%m"))
         activity_data.append(daily_attempts.get(day, 0))
 
     # --- График 2: Распределение баллов по группам (0-25%, 26-50% и т.д.) ---
     percentage_expression = ExpressionWrapper(
-        (F('score') * 100.0) / F('total_questions'),
-        output_field=FloatField()
+        (F("score") * 100.0) / F("total_questions"), output_field=FloatField()
     )
     attempts_with_percentage = TestAttempt.objects.filter(
         survey=survey, total_questions__gt=0
     ).annotate(percentage_score=percentage_expression)
 
     scores_distribution = attempts_with_percentage.aggregate(
-        group1=Count('id', filter=Q(percentage_score__gte=0, percentage_score__lte=25)),
-        group2=Count('id', filter=Q(percentage_score__gt=25, percentage_score__lte=50)),
-        group3=Count('id', filter=Q(percentage_score__gt=50, percentage_score__lte=75)),
-        group4=Count('id', filter=Q(percentage_score__gt=75, percentage_score__lte=100)),
+        group1=Count("id", filter=Q(percentage_score__gte=0, percentage_score__lte=25)),
+        group2=Count("id", filter=Q(percentage_score__gt=25, percentage_score__lte=50)),
+        group3=Count("id", filter=Q(percentage_score__gt=50, percentage_score__lte=75)),
+        group4=Count(
+            "id", filter=Q(percentage_score__gt=75, percentage_score__lte=100)
+        ),
     )
     distribution_data = [
-        scores_distribution.get('group1', 0),
-        scores_distribution.get('group2', 0),
-        scores_distribution.get('group3', 0),
-        scores_distribution.get('group4', 0),
+        scores_distribution.get("group1", 0),
+        scores_distribution.get("group2", 0),
+        scores_distribution.get("group3", 0),
+        scores_distribution.get("group4", 0),
     ]
 
-    return JsonResponse({
-        'attempts_activity_chart': {
-            'labels': activity_labels,
-            'data': activity_data
-        },
-        'scores_distribution_chart': {
-            'labels': ['0-25%', '26-50%', '51-75%', '76-100%'],
-            'data': distribution_data
+    return JsonResponse(
+        {
+            "attempts_activity_chart": {
+                "labels": activity_labels,
+                "data": activity_data,
+            },
+            "scores_distribution_chart": {
+                "labels": ["0-25%", "26-50%", "51-75%", "76-100%"],
+                "data": distribution_data,
+            },
         }
-    })
+    )
 
 
 def solving_tests_promo(request):
@@ -621,27 +684,27 @@ def page_history_surveys(request):
     page_obj = None
 
     # try:
-    page_number = request.GET.get('page', 1)
+    page_number = request.GET.get("page", 1)
     data_from_backend = get_all_surveys(request, page=page_number)
 
     if data_from_backend:
-        surveys_data = data_from_backend.get('results', {})
-        page_obj = data_from_backend.get('page_obj')
+        surveys_data = data_from_backend.get("results", {})
+        page_obj = data_from_backend.get("page_obj")
 
     tracer_l.info(f"{request.user.username} --- history page {page_number} [ LOADED ]")
     # except Exception as fatal:
     #     tracer_l.error(f"{request.user.username} --- {fatal}")
-        # Мы НЕ падаем. Мы просто оставим surveys_data пустым.
+    # Мы НЕ падаем. Мы просто оставим surveys_data пустым.
 
     context = {
-        'page_title': 'Предыдущие тесты',
-        'surveys_data': surveys_data,
-        'username': get_username(request),
-        'page_obj': page_obj,
-        'total_surveys': Survey.objects.filter(id_staff=get_staff_id(request)).count()
+        "page_title": "Предыдущие тесты",
+        "surveys_data": surveys_data,
+        "username": get_username(request),
+        "page_obj": page_obj,
+        "total_surveys": Survey.objects.filter(id_staff=get_staff_id(request)).count(),
     }
 
-    return render(request, 'askify_service/history.html', context)
+    return render(request, "askify_service/history.html", context)
 
 
 @login_required
@@ -653,52 +716,62 @@ def api_get_history(request):
 
 @login_required
 def load_more_surveys(request):
-    if request.method == "GET" and request.headers.get('x-requested-with') == 'XMLHttpRequest':
+    if (
+        request.method == "GET"
+        and request.headers.get("x-requested-with") == "XMLHttpRequest"
+    ):
         try:
-            page_number = int(request.GET.get('page', 2))
+            page_number = int(request.GET.get("page", 2))
             staff_id = get_staff_id(request)
 
             if staff_id is None:
-                return JsonResponse({'error': 'User not authenticated in API call'}, status=401)
+                return JsonResponse(
+                    {"error": "User not authenticated in API call"}, status=401
+                )
 
             surveys_data = get_all_surveys(request, page=page_number)
 
-            if not surveys_data or 'results' not in surveys_data:
-                return JsonResponse({'surveys': [], 'has_next': False})
+            if not surveys_data or "results" not in surveys_data:
+                return JsonResponse({"surveys": [], "has_next": False})
 
             surveys_list = [
                 {
-                    'survey_id': survey_id,
-                    'title': survey.get('title', ''),
-                    'create': survey.get('create', ''),
-                    'tokens': survey.get('tokens')
+                    "survey_id": survey_id,
+                    "title": survey.get("title", ""),
+                    "create": survey.get("create", ""),
+                    "tokens": survey.get("tokens"),
                 }
-                for survey_id, survey in surveys_data['results'].items()
+                for survey_id, survey in surveys_data["results"].items()
             ]
 
-            has_next = surveys_data['page_obj'].has_next()
-            next_page_number = surveys_data['page_obj'].next_page_number() if has_next else None
+            has_next = surveys_data["page_obj"].has_next()
+            next_page_number = (
+                surveys_data["page_obj"].next_page_number() if has_next else None
+            )
 
-            return JsonResponse({
-                'surveys': surveys_list,
-                'has_next': has_next,
-                'next_page': next_page_number
-            })
+            return JsonResponse(
+                {
+                    "surveys": surveys_list,
+                    "has_next": has_next,
+                    "next_page": next_page_number,
+                }
+            )
         except Exception as e:
-            tracer_l.error(f"FATAL Error in load_more_surveys: {e} | User: {request.user.username}")
-            return JsonResponse({'error': str(e)}, status=500)
+            tracer_l.error(
+                f"FATAL Error in load_more_surveys: {e} | User: {request.user.username}"
+            )
+            return JsonResponse({"error": str(e)}, status=500)
 
-    return JsonResponse({'error': 'Invalid request'}, status=400)
+    return JsonResponse({"error": "Invalid request"}, status=400)
 
 
 @login_required
 def drop_survey(request, survey_id):
     if not is_valid_uuid(survey_id):
-        return JsonResponse({'error': 'No.'})
+        return JsonResponse({"error": "No."})
 
     survey_obj = Survey.objects.filter(
-        survey_id=uuid.UUID(survey_id),
-        is_visible=False
+        survey_id=uuid.UUID(survey_id), is_visible=False
     ).first()
 
     if survey_obj and (survey_obj.id_staff == get_staff_id(request)):
@@ -708,13 +781,15 @@ def drop_survey(request, survey_id):
             UserAnswers.objects.filter(survey_id=uuid.UUID(survey_id)).delete()
             # TestAttempt.objects.filter(survey__survey_id=uuid.UUID(survey_id)).delete()
             # survey_obj.delete()
-            tracer_l.info(f"{request.user.username} drop_survey {survey_id} [ HIDE OK ]")
+            tracer_l.info(
+                f"{request.user.username} drop_survey {survey_id} [ HIDE OK ]"
+            )
         except Exception as pass_fail:
             tracer_l.info(f"warn: {request.user.username} {pass_fail}")
-        return redirect('history')
+        return redirect("history")
 
     else:
-        return JsonResponse({'error': 'No.'})
+        return JsonResponse({"error": "No."})
 
 
 class ManageTokensLimits:
@@ -724,37 +799,40 @@ class ManageTokensLimits:
     def get_usage_tokens(self) -> int:
         staff_id = self.id_staff
 
-        subscription_active = Subscription.objects.get(staff_id=staff_id)
-        plan_name = subscription_active.plan_name
+        try:
+            subscription_active = Subscription.objects.get(staff_id=staff_id)
+            plan_name = subscription_active.plan_name
+        except Subscription.DoesNotExist:
+            return 0
 
         total_used = TokensUsed.objects.filter(id_staff=staff_id).aggregate(
-            total_survey_tokens=Sum('tokens_survey_used'),
-            total_feedback_tokens=Sum('tokens_feedback_used')
+            total_survey_tokens=Sum("tokens_survey_used"),
+            total_feedback_tokens=Sum("tokens_feedback_used"),
         )
 
-        _total_used = (total_used['total_survey_tokens'] or 0) + (
-                total_used['total_feedback_tokens'] or 0)
+        _total_used = (total_used["total_survey_tokens"] or 0) + (
+            total_used["total_feedback_tokens"] or 0
+        )
 
         today = timezone.now().date()
-        tokens_used_today = TokensUsed.objects.filter(id_staff=staff_id, created_at__date=today).aggregate(
-            total_survey_tokens=Sum('tokens_survey_used'),
-            total_feedback_tokens=Sum('tokens_feedback_used')
+        tokens_used_today = TokensUsed.objects.filter(
+            id_staff=staff_id, created_at__date=today
+        ).aggregate(
+            total_survey_tokens=Sum("tokens_survey_used"),
+            total_feedback_tokens=Sum("tokens_feedback_used"),
         )
 
-        total_used_today = (tokens_used_today['total_survey_tokens'] or 0) + (
-                tokens_used_today['total_feedback_tokens'] or 0)
+        total_used_today = (tokens_used_today["total_survey_tokens"] or 0) + (
+            tokens_used_today["total_feedback_tokens"] or 0
+        )
 
         return total_used_today
 
     def get_tests_used_today(self) -> int:
-        """
-        Возвращает количество тестов, созданных текущим staff_id за сегодня.
-        """
         today = timezone.now().date()
 
         tests_created_today = Survey.objects.filter(
-            id_staff=self.id_staff,
-            created_at__date=today
+            id_staff=self.id_staff, created_at__date=today
         ).count()
 
         return tests_created_today
@@ -768,80 +846,82 @@ def get_active_api_key(purpose: str):
 @sync_to_async
 def create_api_key_usage(api_key_id, staff_id, purpose):
     APIKeyUsage.objects.create(
-        api_key_id=api_key_id,
-        staff_id=staff_id,
-        purpose=purpose
+        api_key_id=api_key_id, staff_id=staff_id, purpose=purpose
     )
 
 
 # @method_decorator(login_required, name='dispatch')
 # @method_decorator(subscription_required, name='dispatch')
-@method_decorator(csrf_exempt, name='dispatch')
-@method_decorator(check_blocked, name='dispatch')
+@method_decorator(csrf_exempt, name="dispatch")
+@method_decorator(check_blocked, name="dispatch")
 class ManageSurveysView(View):
     async def post(self, request):
-        if request.method == 'POST':
+        if request.method == "POST":
             request_from_user = json.loads(request.body)
-            question_count = request_from_user['questions']
-            text_from_user = request_from_user['text']
+            question_count = request_from_user["questions"]
+            text_from_user = request_from_user["text"]
 
-            tracer_l.debug(f"{request.user.username} --- question_count: {question_count} text_from_user: {text_from_user}")
+            tracer_l.debug(
+                f"{request.user.username} --- question_count: {question_count} text_from_user: {text_from_user}"
+            )
 
             if question_count.isdigit():
                 if int(question_count) > 30 or int(question_count) < 0:
-                    return JsonResponse({'error': 'Недоступное кол-во вопросов :('}, status=400)
-            else:
-                return JsonResponse({'error': 'Кол-во вопросов должно быть число'}, status=400)
-
-            staff_id = get_staff_id(request)
-            subscription_object = Subscription.objects.get(staff_id=staff_id)
-            plan_name = subscription_object.plan_name
-
-            tests_count_limit = get_daily_test_limit(plan_name)
-
-            # Получение кол-ва использованных токенов
-            manage_tokens_limits = ManageTokensLimits(staff_id)
-            total_used_per_period = manage_tokens_limits.get_tests_used_today()
-            tracer_l.debug(f"{request.user.username} --- total_used_per_period: {total_used_per_period}")
-
-            if plan_name.lower() == 'стартовый':
-                tracer_l.info(
-                    f"free user {request.user.username} --- total_used_per_period: {total_used_per_period} used")
-                if total_used_per_period >= tests_count_limit:
-                    tracer_l.info(
-                        f"free user {request.user.username} --- USED ALL generations: {total_used_per_period} used >= {tests_count_limit}")
-                    return JsonResponse({
-                        'error': 'Ваш лимит тестов на тарифе "Стартовый" исчерпан.'},
-                        status=429
+                    return JsonResponse(
+                        {"error": "Недоступное кол-во вопросов :("}, status=400
                     )
             else:
-                if total_used_per_period >= tests_count_limit:
-                    return JsonResponse({
-                        'error': 'Лимит по созданию тестов исчерпан :(\n\nОзнакомьтесь с тарифами на странице профиля.'
-                    }, status=429)
+                return JsonResponse(
+                    {"error": "Кол-во вопросов должно быть число"}, status=400
+                )
 
-            if subscription_object.check_sub_status() != 'active':
-                return JsonResponse({
-                    'error': 'Ваша подписка закончилась :( Ознакомьтесь с тарифами на странице профиля.'
-                }, status=429)
+            staff_id = get_staff_id(request)
+
+            # Используем AccessService для проверки доступа
+            access_service = AccessService(staff_id)
+            access_info = access_service.check_access()
+
+            if not access_info["can_generate"]:
+                if (
+                    access_info["source"] == "credits"
+                    and access_info["extra_credits"] > 0
+                ):
+                    return JsonResponse(
+                        {
+                            "error": "Лимит подписки исчерпан. Будет использован пакет тестов."
+                        },
+                        status=429,
+                    )
+                return JsonResponse(
+                    {"error": "Лимит исчерпан. Приобретите подписку или пакет тестов."},
+                    status=429,
+                )
 
             try:
                 tracer_l.debug(f"{request.user.username} --- GEN STAAAART")
                 start_time = time.perf_counter()
 
                 manage_generate_surveys = ManageGenerationSurveys(request, text_from_user, question_count)
-                generated_data = await manage_generate_surveys.generate_with_failover()
 
-                if not generated_data.get('success'):
-                    error_message = generated_data.get('error',
-                                                       'Не удалось составить тест, попробуйте снова чуть позже...')
-                    return JsonResponse({'error': error_message}, status=429)
+                if DEBUG:
+                    generated_data = await manage_generate_surveys.smart_generate()
+                else:
+                    generated_data = await manage_generate_surveys.generate_with_failover()
 
-                cleaned_generated_text = generated_data.get('generated_text')
-                tokens_used = generated_data.get('tokens_used')
-                api_key_used = generated_data.get('api_key_used')
+                if not generated_data.get("success"):
+                    error_message = generated_data.get(
+                        "error",
+                        "Не удалось составить тест, попробуйте снова через 15 минут",
+                    )
+                    return JsonResponse({"error": error_message}, status=429)
 
-                tracer_l.debug(f"{request.user.username} --- generated_text: {cleaned_generated_text}")
+                cleaned_generated_text = generated_data.get("generated_text")
+                tokens_used = generated_data.get("tokens_used")
+                api_key_used = generated_data.get("api_key_used")
+
+                tracer_l.debug(
+                    f"{request.user.username} --- generated_text: {cleaned_generated_text}"
+                )
                 end_time = time.perf_counter()
                 response_time_ms = int((end_time - start_time) * 1000)
 
@@ -849,21 +929,26 @@ class ManageSurveysView(View):
 
                 survey = Survey(
                     survey_id=new_survey_id,
-                    title=cleaned_generated_text['title'],
+                    title=cleaned_generated_text["title"],
                     id_staff=get_staff_id(request),
-                    model_name=generated_data.get('model_used', '')
+                    model_name=generated_data.get("model_used", ""),
                 )
-                survey.save_questions(cleaned_generated_text['questions'])
+                survey.save_questions(cleaned_generated_text["questions"])
                 survey.save()
+
+                # Списываем кредит если источник - пакеты
+                if access_info["source"] == "credits":
+                    access_service.consume_credits()
 
             except Exception as fail:
                 tracer_l.error(f"{request.user.username} --- {fail}")
-                return JsonResponse({'error': 'Опаньки :(\n\nК сожалению, не удалось составить тест'}, status=400)
+                return JsonResponse(
+                    {"error": "Опаньки :(\n\nК сожалению, не удалось составить тест"},
+                    status=400,
+                )
 
             APIKeyUsage.objects.create(
-                api_key=api_key_used,
-                success=True,
-                response_time_ms=response_time_ms
+                api_key=api_key_used, success=True, response_time_ms=response_time_ms
             )
 
             try:
@@ -874,36 +959,37 @@ class ManageSurveysView(View):
                 _tokens_used.save()
                 await notify_admin_by_limit()
             except Exception as fail:
-                tracer_l.warning(f'{request.user.username} --- чут чут фейл: {fail}')
+                tracer_l.warning(f"{request.user.username} --- чут чут фейл: {fail}")
 
-            tracer_l.info(f'{request.user.username} --- {Survey.objects.get(survey_id=new_survey_id).title} [ SAVED ]')
-            return JsonResponse({'survey': cleaned_generated_text, 'survey_id': f"{new_survey_id}"}, status=200)
+            tracer_l.info(
+                f"{request.user.username} --- {Survey.objects.get(survey_id=new_survey_id).title} [ SAVED ]"
+            )
+            return JsonResponse(
+                {"survey": cleaned_generated_text, "survey_id": f"{new_survey_id}"},
+                status=200,
+            )
 
-        tracer_l.warning(f'{request.user.username} --- Invalid request method: code 400')
-        return JsonResponse({'error': 'Invalid request method'}, status=400)
+        tracer_l.warning(
+            f"{request.user.username} --- Invalid request method: code 400"
+        )
+        return JsonResponse({"error": "Invalid request method"}, status=400)
 
 
 async def notify_admin_by_limit():
     active_api_key = APIKey.objects.filter(is_active=True).first()
     if active_api_key:
-        start_of_today = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
-        usage_count_for_active_key = (
-            APIKeyUsage.objects.filter(
-                api_key=active_api_key,
-                timestamp__gte=start_of_today
-            )
-            .aggregate(count=Count('id'))
+        start_of_today = timezone.now().replace(
+            hour=0, minute=0, second=0, microsecond=0
         )
-        count_today = usage_count_for_active_key.get('count', 0)
+        usage_count_for_active_key = APIKeyUsage.objects.filter(
+            api_key=active_api_key, timestamp__gte=start_of_today
+        ).aggregate(count=Count("id"))
+        count_today = usage_count_for_active_key.get("count", 0)
 
         LIMIT = 40
         if count_today > LIMIT:
-            tracer_l.info(
-                f"--- [ RESET counter active key ] ---"
-            )
-            tracer_l.info(
-                f"API [ FULL UP ] count_today: {count_today}"
-            )
+            tracer_l.info(f"--- [ RESET counter active key ] ---")
+            tracer_l.info(f"API [ FULL UP ] count_today: {count_today}")
             tracer_l.info(
                 f"Key: {active_api_key.name} ({active_api_key.provider}), "
                 f"Limit: {LIMIT} responses."
@@ -915,136 +1001,163 @@ async def notify_admin_by_limit():
             )
 
 
-@method_decorator(csrf_exempt, name='dispatch')
+@method_decorator(csrf_exempt, name="dispatch")
 class GenerationSurveysView(View):
     async def post(self, request):
         try:
-            body = await sync_to_async(request.body.decode)('utf-8')
+            body = await sync_to_async(request.body.decode)("utf-8")
             request_from_user = json.loads(body)
-            question_count = str(request_from_user['questions'])
-            text_from_user = request_from_user['text']
+            question_count = str(request_from_user["questions"])
+            text_from_user = request_from_user["text"]
 
             if not (0 < int(question_count) <= 5):
-                return JsonResponse({'error': 'Допустимо от 1 до 5 вопросов'}, status=400)
+                return JsonResponse(
+                    {"error": "Допустимо от 1 до 5 вопросов"}, status=400
+                )
 
             client_ip = get_client_ip(request)
             hashed_ip = hash_data(client_ip)
 
             # !!! ИСПРАВЛЕНИЕ: Обертываем синхронную ORM-операцию
-            existing_survey = await sync_to_async(Survey.objects.filter(title=text_from_user).first)()
+            existing_survey = await sync_to_async(
+                Survey.objects.filter(title=text_from_user).first
+            )()
             if existing_survey:
                 tracer_l.info(
-                    f'{request.user.username or hashed_ip} --- Survey already exists: {existing_survey.survey_id}')
-                return JsonResponse({
-                    'survey_id': str(existing_survey.survey_id),
-                    'redirect_url': f'/c/{existing_survey.survey_id}/'
-                }, status=200)
+                    f"{request.user.username or hashed_ip} --- Survey already exists: {existing_survey.survey_id}"
+                )
+                return JsonResponse(
+                    {
+                        "survey_id": str(existing_survey.survey_id),
+                        "redirect_url": f"/c/{existing_survey.survey_id}/",
+                    },
+                    status=200,
+                )
 
             try:
-                auth_user = await sync_to_async(AuthUser.objects.get)(hash_user_id=client_ip)
+                auth_user = await sync_to_async(AuthUser.objects.get)(
+                    hash_user_id=client_ip
+                )
             except Exception as fail:
                 auth_user = await sync_to_async(AuthUser.objects.create)(
                     username=f"{hashed_ip}_{uuid.uuid4().hex[:6]}",
-                    hash_user_id=client_ip
+                    hash_user_id=client_ip,
                 )
 
             staff_id = auth_user.id_staff
-            tracer_l.debug(f"НЕЛЕГАЛ {staff_id} --- IP: {client_ip}, TEXT: {text_from_user}")
+            tracer_l.debug(
+                f"НЕЛЕГАЛ {staff_id} --- IP: {client_ip}, TEXT: {text_from_user}"
+            )
 
             try:
-                subscription_object = await sync_to_async(Subscription.objects.filter(staff_id=staff_id).first)()
+                subscription_object = await sync_to_async(
+                    Subscription.objects.filter(staff_id=staff_id).first
+                )()
                 if subscription_object:
                     plan_name = subscription_object.plan_name
             except Exception as sub_e:
-                tracer_l.warning(f'{staff_id} --- Could not retrieve subscription details: {sub_e}')
+                tracer_l.warning(
+                    f"{staff_id} --- Could not retrieve subscription details: {sub_e}"
+                )
 
-            surveys_count = await sync_to_async(Survey.objects.filter(id_staff=staff_id).count)()
+            surveys_count = await sync_to_async(
+                Survey.objects.filter(id_staff=staff_id).count
+            )()
 
             if surveys_count > 0:
                 return JsonResponse(
-                    {'error': 'Лимит исчерпан :(\n\nХочешь ещё? Зарегистрируйся, и забери свои 5 тестов!'})
+                    {
+                        "error": "Лимит исчерпан :(\n\nХочешь ещё? Зарегистрируйся, и забери свои 3 теста!"
+                    }
+                )
 
-            manage_generate_surveys_text = ManageGenerationSurveys(request, text_from_user, question_count)
+            manage_generate_surveys_text = ManageGenerationSurveys(
+                request, text_from_user, question_count
+            )
             start_time = time.perf_counter()
 
-            # if DEBUG:
-            #     generated_text_data = {
-            #         'success': True, 'generated_text': {
-            #             "title": "Тест по процессорам Intel",
-            #             "questions": [
-            #                 {
-            #                     "question": "Как называется технология Intel, которая позволяет процессору автоматически увеличивать тактовую частоту при необходимости?",
-            #                     "options": ["Hyper-Threading", "Turbo Boost", "Intel Optane", "Quick Sync",
-            #                                 "Turbo Boost"],
-            #                     "correct_answer": "Turbo Boost"
-            #                 },
-            #                 {
-            #                     "question": "Какая архитектура процессоров Intel была представлена в 2021 году и сочетает производительные и энергоэффективные ядра?",
-            #                     "options": ["Rocket Lake", "Alder Lake", "Ice Lake", "Tiger Lake", "Alder Lake"],
-            #                     "correct_answer": "Alder Lake"
-            #                 }
-            #             ]
-            #         }, 'tokens_used': 200,
-            #     }
-            # else:
-            generated_text_data = await manage_generate_surveys_text.github_gpt(await get_active_api_key('SURVEY'))
+            if DEBUG:
+                generated_text_data = (
+                    await manage_generate_surveys_text.smart_generate()
+                )
+            else:
+                generated_text_data = await manage_generate_surveys_text.github_gpt(
+                    await get_active_api_key("SURVEY")
+                )
 
             end_time = time.perf_counter()
 
-            if not generated_text_data.get('success'):
-                tracer_l.error(f'{staff_id} --- Generation error: {generated_text_data.get("message")}')
-                return JsonResponse({
-                    'error': f'Произошла ошибка генерации: {generated_text_data.get("message", "Неизвестная ошибка")}'
-                }, status=500)
+            if not generated_text_data.get("success"):
+                tracer_l.error(
+                    f"{staff_id} --- Generation error: {generated_text_data.get('message')}"
+                )
+                return JsonResponse(
+                    {
+                        "error": f"Произошла ошибка генерации: {generated_text_data.get('message', 'Неизвестная ошибка')}"
+                    },
+                    status=500,
+                )
 
             response_time_ms = int((end_time - start_time) * 1000)
 
             new_survey_id = uuid.uuid4()
-            new_title = generated_text_data['generated_text']['title']
+            new_title = generated_text_data["generated_text"]["title"]
             survey = Survey(
                 survey_id=new_survey_id,
                 title=new_title,
                 id_staff=staff_id,
-                model_name=generated_text_data.get('model_used', '')
+                model_name=generated_text_data.get("model_used", ""),
             )
 
-            await sync_to_async(survey.save_questions)(generated_text_data['generated_text']['questions'])
+            await sync_to_async(survey.save_questions)(
+                generated_text_data["generated_text"]["questions"]
+            )
             await sync_to_async(survey.save)()
 
             _tokens_used = TokensUsed(
-                id_staff=staff_id,
-                tokens_survey_used=generated_text_data['tokens_used']
+                id_staff=staff_id, tokens_survey_used=generated_text_data["tokens_used"]
             )
             await sync_to_async(_tokens_used.save)()
             await notify_admin_by_limit()
 
             # !!! ИСПРАВЛЕНИЕ: Обертываем синхронную ORM-операцию
-            api_key_manage = await sync_to_async(APIKey.objects.filter(purpose='SURVEY', is_active=True).first)()
+            api_key_manage = await sync_to_async(
+                APIKey.objects.filter(purpose="SURVEY", is_active=True).first
+            )()
 
             # !!! ИСПРАВЛЕНИЕ: Обертываем синхронную ORM-операцию
             if api_key_manage:
                 await sync_to_async(APIKeyUsage.objects.create)(
                     api_key=api_key_manage,
                     success=True,
-                    response_time_ms=response_time_ms
+                    response_time_ms=response_time_ms,
                 )
             else:
-                tracer_l.warning(f'{staff_id} --- APIKey для SURVEY не найден для логирования использования.')
+                tracer_l.warning(
+                    f"{staff_id} --- APIKey для SURVEY не найден для логирования использования."
+                )
 
-            tracer_l.info(f'НЕЛЕГАЛ {staff_id} --- {new_title} [ SAVED ]')
+            tracer_l.info(f"НЕЛЕГАЛ {staff_id} --- {new_title} [ SAVED ]")
 
-            return JsonResponse({
-                'survey': generated_text_data['generated_text'],
-                'survey_id': str(new_survey_id),
-                'redirect_url': f'/c/{new_survey_id}/'
-            }, status=200)
+            return JsonResponse(
+                {
+                    "survey": generated_text_data["generated_text"],
+                    "survey_id": str(new_survey_id),
+                    "redirect_url": f"/c/{new_survey_id}/",
+                },
+                status=200,
+            )
 
         except json.JSONDecodeError:
-            tracer_l.error(f'{request.user.username or get_client_ip(request)} --- Invalid JSON in request body.')
-            return JsonResponse({'error': 'Невалидный JSON'}, status=400)
+            tracer_l.error(
+                f"{request.user.username or get_client_ip(request)} --- Invalid JSON in request body."
+            )
+            return JsonResponse({"error": "Невалидный JSON"}, status=400)
         except Exception as e:
-            tracer_l.critical(f"FATAL ERROR in GenerationSurveysView: {e}", exc_info=True)
-            return JsonResponse({'error': 'Внутренняя ошибка сервера'}, status=500)
+            tracer_l.critical(
+                f"FATAL ERROR in GenerationSurveysView: {e}", exc_info=True
+            )
+            return JsonResponse({"error": "Внутренняя ошибка сервера"}, status=500)
 
 
 def get_demo_tests(request):
@@ -1057,19 +1170,21 @@ def get_demo_tests(request):
 
         tests = []
         for survey in surveys:
-            tests.append({
-                'title': survey.title,
-                'url_link': f'/survey/{survey.survey_id}/download/',
-                'survey_id': survey.survey_id
-            })
+            tests.append(
+                {
+                    "title": survey.title,
+                    "url_link": f"/survey/{survey.survey_id}/download/",
+                    "survey_id": survey.survey_id,
+                }
+            )
 
-        return JsonResponse({'tests': tests})
+        return JsonResponse({"tests": tests})
 
-    return JsonResponse({'tests': {}})
+    return JsonResponse({"tests": {}})
 
 
 def toggle_answers(request, survey_id):
-    if request.method == 'POST':
+    if request.method == "POST":
         try:
             survey_data = Survey.objects.filter(survey_id=survey_id).first()
             client_ip = get_client_ip(request)
@@ -1079,19 +1194,21 @@ def toggle_answers(request, survey_id):
                 staff_id = AuthUser.objects.filter(hash_user_id=client_ip).first()
 
             if staff_id:
-
                 survey_data.show_answers = not survey_data.show_answers
                 survey_data.save()
 
-                return JsonResponse({
-                    'status': 'success',
-                    'show_answers': survey_data.show_answers
-                })
+                return JsonResponse(
+                    {"status": "success", "show_answers": survey_data.show_answers}
+                )
 
-            return JsonResponse({'status': 'error', 'message': 'Not authorized'}, status=403)
+            return JsonResponse(
+                {"status": "error", "message": "Not authorized"}, status=403
+            )
 
         except Survey.DoesNotExist:
-            return JsonResponse({'status': 'error', 'message': 'Survey not found'}, status=404)
+            return JsonResponse(
+                {"status": "error", "message": "Survey not found"}, status=404
+            )
 
 
 @login_required
@@ -1099,7 +1216,9 @@ def get_all_surveys(request, page=1, per_page=10):
     if request is None:
         return {}
 
-    surveys_queryset = Survey.objects.filter(id_staff=get_staff_id(request), is_visible=False).order_by('-created_at')
+    surveys_queryset = Survey.objects.filter(
+        id_staff=get_staff_id(request), is_visible=False
+    ).order_by("-created_at")
 
     paginator = Paginator(surveys_queryset, per_page)
     try:
@@ -1116,32 +1235,32 @@ def get_all_surveys(request, page=1, per_page=10):
 
     for survey in surveys_page.object_list:
         nearby_tokens = (
-            tokens_entries
-            .filter(created_at__range=(survey.updated_at - time_margin, survey.updated_at + time_margin))
-            .annotate(
-                time_diff=ExpressionWrapper(
-                    Abs(Extract(F('created_at') - survey.updated_at, 'epoch')),
-                    output_field=DurationField()
+            tokens_entries.filter(
+                created_at__range=(
+                    survey.updated_at - time_margin,
+                    survey.updated_at + time_margin,
                 )
             )
-            .order_by('time_diff')
+            .annotate(
+                time_diff=ExpressionWrapper(
+                    Abs(Extract(F("created_at") - survey.updated_at, "epoch")),
+                    output_field=DurationField(),
+                )
+            )
+            .order_by("time_diff")
             .first()
         )
 
         tokens_used = nearby_tokens.tokens_survey_used if nearby_tokens else None
 
         results[str(survey.survey_id)] = {
-            'title': survey.title,
-            'update': survey.updated_at.strftime('%d.%m.%Y'),
-            'create': survey.created_at.strftime('%d.%m.%Y'),
-            'tokens': tokens_used
+            "title": survey.title,
+            "update": survey.updated_at.strftime("%d.%m.%Y"),
+            "create": survey.created_at.strftime("%d.%m.%Y"),
+            "tokens": tokens_used,
         }
 
-    return {
-        'results': results,
-        'paginator': paginator,
-        'page_obj': surveys_page
-    }
+    return {"results": results, "paginator": paginator, "page_obj": surveys_page}
 
 
 # @method_decorator(login_required, name='dispatch')
@@ -1159,8 +1278,10 @@ class FileUploadView(View):
             return JsonResponse({'errors': form.errors}, status=400)
 
         available_file_types = [
-            'application/pdf', 'text/plain', 'application/msword',
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+            "application/pdf",
+            "text/plain",
+            "application/msword",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         ]
 
         question_count = form.cleaned_data['question_count']
@@ -1182,8 +1303,13 @@ class FileUploadView(View):
             tracer_l.error('Файл пуст или не удалось прочитать')
             return JsonResponse({'error': 'Файл пуст или содержит недопустимые данные.'})
 
+        # Проверка кредитов
+        access_service = AccessService(staff_id)
+        access_info = access_service.check_access()
+        extra_credits = access_info["extra_credits"]
+
         subscription_object = await sync_to_async(Subscription.objects.filter(staff_id=staff_id).first)()
-        if subscription_object.check_sub_status() != 'active':
+        if subscription_object.check_sub_status() != 'active' and extra_credits == 0:
             return JsonResponse({
                 'error': 'Ваша подписка закончилась :(\n\nОзнакомьтесь с тарифами на странице профиля.'
             }, status=400)
@@ -1193,9 +1319,9 @@ class FileUploadView(View):
             cleaned_data_for_llm = clean_text_for_llm(data)
             num_tokens = count_tokens(cleaned_data_for_llm) + prompts_tokens
             tracer_l.info(f"Кол-во токенов в файле: {num_tokens}")
-            
+
             max_tokens = 64000 if DEBUG is True else 8000
-            
+
             # if max_tokens > 8000:
             #     tracer_l.error(f'Слишком большой объем текста в файле ({num_tokens} токенов). ')
             #     error_message = (
@@ -1204,15 +1330,17 @@ class FileUploadView(View):
             #         'Пожалуйста, сократите документ.'
             #     )
             #     return JsonResponse({'error': error_message}, status=400)
-            
+
         except Exception as e:
-            tracer_l.error(f'Error counting tokens: {e}')
+            tracer_l.error(f"Error counting tokens: {e}")
             # return JsonResponse({'error': 'Не удалось обработать текст файла.'}, status=500)
 
         tracer_l.debug("--- ТЕСТ ГЕНЕРИРУЕТСЯ ---")
         try:
             tracer_l.debug("Начало генерации")
-            manage_generate_surveys_text = ManageGenerationSurveys(request, cleaned_data_for_llm, f'{question_count}')
+            manage_generate_surveys_text = ManageGenerationSurveys(
+                request, cleaned_data_for_llm, f"{question_count}"
+            )
 
             if DEBUG:
                 generated_text = await manage_generate_surveys_text.smart_generate()
@@ -1220,15 +1348,20 @@ class FileUploadView(View):
                 generated_text = await manage_generate_surveys_text.github_gpt(await get_active_api_key('SURVEY'))
             tracer_l.debug("Завершение генерации")
 
-            if generated_text.get('success'):
-                tokens_used = generated_text.get('tokens_used')
-                cleaned_generated_text = generated_text.get('generated_text')
+            if generated_text.get("success"):
+                tokens_used = generated_text.get("tokens_used")
+                cleaned_generated_text = generated_text.get("generated_text")
             else:
-                tracer_l.critical(f'Произошла ошибка: {generated_text.get("message")}')
-                return JsonResponse({'error': f'Произошла ошибка: {generated_text.get("message")}'}, status=429)
+                tracer_l.critical(f"Произошла ошибка: {generated_text.get('message')}")
+                return JsonResponse(
+                    {"error": f"Произошла ошибка: {generated_text.get('message')}"},
+                    status=429,
+                )
         except Exception as fatal:
             error_msg = self.__remove_surrogates(str(fatal))
-            return JsonResponse({'error': f'Не удалось выполнить запрос: {error_msg}'}, status=400)
+            return JsonResponse(
+                {"error": f"Не удалось выполнить запрос: {error_msg}"}, status=400
+            )
 
         try:
             with transaction.atomic():
@@ -1278,7 +1411,7 @@ class FileUploadView(View):
 
         read_symbols_count = 2 ** 13
 
-        if ext == '.pdf':
+        if ext == ".pdf":
             try:
                 reader = PyPDF2.PdfReader(uploaded_file)
                 for page in reader.pages:
@@ -1293,7 +1426,7 @@ class FileUploadView(View):
                 tracer_l.error(f"Error reading PDF: {e}")
                 return -1
 
-        elif ext == '.txt':
+        elif ext == ".txt":
             try:
                 uploaded_file.seek(0)
                 encoding = chardet.detect_encoding(uploaded_file)
@@ -1302,7 +1435,7 @@ class FileUploadView(View):
                 tracer_l.error(f"Error reading TXT: {e}")
                 return -1
 
-        elif ext in ['.doc', '.docx']:
+        elif ext in [".doc", ".docx"]:
             try:
                 with NamedTemporaryFile(delete=True, suffix=ext) as tmp:
                     tmp.write(uploaded_file.read())
@@ -1319,32 +1452,31 @@ class FileUploadView(View):
         return -1
 
     def detect_encoding(file_obj):
-        """ Определение кодировки текстовых файлов """
+        """Определение кодировки текстовых файлов"""
         sample = file_obj.read(1024)
         file_obj.seek(0)
         result = chardet.detect(sample)
-        return result['encoding'] or 'utf-8'
+        return result["encoding"] or "utf-8"
 
     def extract_text_from_word(self, file_path):
-        """ Извлечение текста из Word документов """
-        if file_path.endswith('.docx'):
+        """Извлечение текста из Word документов"""
+        if file_path.endswith(".docx"):
             try:
                 doc = docx.Document(file_path)
                 return "\n".join([para.text for para in doc.paragraphs])
             except Exception as e:
                 print(f".docx extraction error: {e}")
                 return ""
-        elif file_path.endswith('.doc'):
+        elif file_path.endswith(".doc"):
             try:
                 process = subprocess.run(
-                    ['antiword', file_path],
-                    capture_output=True,
-                    text=True,
-                    check=True
+                    ["antiword", file_path], capture_output=True, text=True, check=True
                 )
                 return process.stdout
             except FileNotFoundError:
-                print("ERROR: 'antiword' command not found. Please install it using 'sudo apt-get install antiword'")
+                print(
+                    "ERROR: 'antiword' command not found. Please install it using 'sudo apt-get install antiword'"
+                )
                 return "Ошибка: не найден обработчик для .doc файлов."
             except subprocess.CalledProcessError as e:
                 print(f".doc extraction error with antiword: {e}")
@@ -1357,8 +1489,8 @@ class FileUploadView(View):
         return ""
 
 
-@method_decorator(login_required, name='dispatch')
-@method_decorator(subscription_required, name='dispatch')
+@method_decorator(login_required, name="dispatch")
+@method_decorator(subscription_required, name="dispatch")
 # @method_decorator(sync_to_async, name='dispatch')
 class TakeSurvey(View):
     def post(self, request, survey_id):
@@ -1366,29 +1498,33 @@ class TakeSurvey(View):
         survey = get_object_or_404(Survey, survey_id=survey_id)
         questions = json.loads(survey.questions)
 
-        user_answers = [request.POST.get(f'answers_{i + 1}') for i in range(len(questions))]
+        user_answers = [
+            request.POST.get(f"answers_{i + 1}") for i in range(len(questions))
+        ]
 
         if None in user_answers:
             context = {
-                'survey': survey,
-                'questions': questions,
-                'error': 'Пожалуйста, ответьте на все вопросы.',
-                'username': get_username(request)
+                "survey": survey,
+                "questions": questions,
+                "error": "Пожалуйста, ответьте на все вопросы.",
+                "username": get_username(request),
             }
-            return render(request, 'survey.html', context)
+            return render(request, "survey.html", context)
 
         survey_obj_user_answer = UserAnswers.objects.filter(survey_id=survey_id)
 
         if survey_obj_user_answer.exists():
             survey_obj_user_answer.delete()
 
-        user_answers_dict = {f'question_{i + 1}': user_answers[i] for i in range(len(user_answers))}
+        user_answers_dict = {
+            f"question_{i + 1}": user_answers[i] for i in range(len(user_answers))
+        }
         user_answers_list = []
         correct_count = 0
 
         for index_q, question in enumerate(questions):
             selected_answer = user_answers[index_q]
-            is_correct = selected_answer == question['correct_answer']
+            is_correct = selected_answer == question["correct_answer"]
             correct_count += 1 if is_correct else 0
 
             user_answers_json = json.dumps(user_answers_dict)
@@ -1397,11 +1533,11 @@ class TakeSurvey(View):
                 survey_id=survey_id,
                 selected_answer=selected_answer,
                 defaults={
-                    'scored_points': 1 if is_correct else 0,
-                    'total_points': len(questions),
-                    'user_answers': user_answers_json,
-                    'id_staff': get_staff_id(request)
-                }
+                    "scored_points": 1 if is_correct else 0,
+                    "total_points": len(questions),
+                    "user_answers": user_answers_json,
+                    "id_staff": get_staff_id(request),
+                },
             )
 
             user_answers_list.append(
@@ -1412,19 +1548,19 @@ class TakeSurvey(View):
 
         subscription = Subscription.objects.get(staff_id=get_staff_id(request))
 
-        subs_level = get_subscription_level(request)
-
         status = subscription.check_sub_status()
         tests_count_limit = get_daily_test_limit(subscription.plan_name) if status == 'active' else 0
 
         context = {
-            'score': correct_count, 'total': user_answers, 'survey_id': survey_id,
-            'subscription_level': get_subscription_level(request),
-            'username': get_username(request),
-            'debug': DEBUG
+            "score": correct_count,
+            "total": user_answers,
+            "survey_id": survey_id,
+            "subscription_level": get_subscription_level(request),
+            "username": get_username(request),
+            "debug": DEBUG,
         }
 
-        return render(request, 'result.html', context)
+        return render(request, "result.html", context)
 
     def get(self, request, survey_id):
         survey_id = uuid.UUID(survey_id)
@@ -1434,48 +1570,52 @@ class TakeSurvey(View):
         subscription = Subscription.objects.get(staff_id=get_staff_id(request))
 
         context = {
-            'page_title': f'Прохождение теста – {survey.title}',
-            'survey': survey,
-            'questions': questions,
-            'survey_title': survey.title,
-            'username': request.user.username if request.user.is_authenticated else None,
+            "page_title": f"Прохождение теста – {survey.title}",
+            "survey": survey,
+            "questions": questions,
+            "survey_title": survey.title,
+            "username": request.user.username
+            if request.user.is_authenticated
+            else None,
         }
-        return render(request, 'survey.html', context)
+        return render(request, "survey.html", context)
 
 
 # @subscription_required
 @login_required
 def result_view(request, survey_id):
-    return redirect(f'/c/{survey_id}/')
+    return redirect(f"/c/{survey_id}/")
 
 
 def download_results_pdf(request, survey_id):
     try:
         from django.contrib.staticfiles import finders
 
-        font_path_medium = finders.find('fonts/Merriweather-Medium.ttf')
-        font_path_bold = finders.find('fonts/OpenSans-Bold.ttf')
-        font_signature = finders.find('fonts/Unbounded-Medium.ttf')
+        font_path_medium = finders.find("fonts/Merriweather-Medium.ttf")
+        font_path_bold = finders.find("fonts/OpenSans-Bold.ttf")
+        font_signature = finders.find("fonts/Unbounded-Medium.ttf")
 
-        pdfmetrics.registerFont(TTFont('Manrope Medium', font_path_medium))
-        pdfmetrics.registerFont(TTFont('Manrope Bold', font_path_bold))
-        pdfmetrics.registerFont(TTFont('Unbounded Medium', font_signature))
+        pdfmetrics.registerFont(TTFont("Manrope Medium", font_path_medium))
+        pdfmetrics.registerFont(TTFont("Manrope Bold", font_path_bold))
+        pdfmetrics.registerFont(TTFont("Unbounded Medium", font_signature))
         logging.info("Шрифты ReportLab успешно зарегистрированы.")
     except Exception as e:
         logging.error(
-            f"Ошибка при регистрации шрифтов ReportLab: {e}. Убедитесь, что файлы шрифтов находятся по указанным путям ('fonts/'). PDF может быть нечитаемым.")
+            f"Ошибка при регистрации шрифтов ReportLab: {e}. Убедитесь, что файлы шрифтов находятся по указанным путям ('fonts/'). PDF может быть нечитаемым."
+        )
 
     try:
         survey = Survey.objects.get(survey_id=survey_id)
         staff_id = get_staff_id(request)
 
         user_answers_instances = UserAnswers.objects.filter(
-            survey_id=survey_id,
-            id_staff=staff_id
-        ).order_by('created_at')
+            survey_id=survey_id, id_staff=staff_id
+        ).order_by("created_at")
 
         if not user_answers_instances.exists():
-            return HttpResponse("Вы не проходили этот тест или ответы не найдены.", status=404)
+            return HttpResponse(
+                "Вы не проходили этот тест или ответы не найдены.", status=404
+            )
 
         last_user_answer_instance = user_answers_instances.last()
 
@@ -1494,21 +1634,31 @@ def download_results_pdf(request, survey_id):
                     user_answer_json_data = json.loads(user_answer_json_data)
 
                 if isinstance(user_answer_json_data, dict):
-                    if 'question' in user_answer_json_data and 'selected_answer' in user_answer_json_data:
-                        user_answer_data_map[user_answer_json_data['question']] = {
-                            'selected_answer': user_answer_json_data.get('selected_answer'),
-                            'is_correct': user_answer_json_data.get('is_correct', False),
-                            'scored_points': ua_instance.scored_points
+                    if (
+                        "question" in user_answer_json_data
+                        and "selected_answer" in user_answer_json_data
+                    ):
+                        user_answer_data_map[user_answer_json_data["question"]] = {
+                            "selected_answer": user_answer_json_data.get(
+                                "selected_answer"
+                            ),
+                            "is_correct": user_answer_json_data.get(
+                                "is_correct", False
+                            ),
+                            "scored_points": ua_instance.scored_points,
                         }
 
             except (json.JSONDecodeError, TypeError) as e:
                 tracer_l.error(
-                    f"Ошибка парсинга JSON из user_answers для UserAnswers ID {ua_instance.id}: {ua_instance.user_answers} - {e}")
+                    f"Ошибка парсинга JSON из user_answers для UserAnswers ID {ua_instance.id}: {ua_instance.user_answers} - {e}"
+                )
 
         for i, original_q in enumerate(original_questions_from_survey):
-            q_text = original_q.get('question', f'Вопрос {i + 1} без текста')
-            q_options = original_q.get('options', [])
-            q_correct_answer = original_q.get('correct_answer', 'Нет правильного ответа')
+            q_text = original_q.get("question", f"Вопрос {i + 1} без текста")
+            q_options = original_q.get("options", [])
+            q_correct_answer = original_q.get(
+                "correct_answer", "Нет правильного ответа"
+            )
 
             selected_answer_text = "Нет ответа"
             is_correct_user_answer = False
@@ -1516,191 +1666,245 @@ def download_results_pdf(request, survey_id):
             matched_answer_info = user_answer_data_map.get(q_text)
 
             if matched_answer_info:
-                selected_answer_text = matched_answer_info['selected_answer']
-                is_correct_user_answer = matched_answer_info['is_correct']
+                selected_answer_text = matched_answer_info["selected_answer"]
+                is_correct_user_answer = matched_answer_info["is_correct"]
             else:
-                if last_user_answer_instance and isinstance(last_user_answer_instance.user_answers, dict):
-                    question_key_by_index = f'question_{i + 1}'
+                if last_user_answer_instance and isinstance(
+                    last_user_answer_instance.user_answers, dict
+                ):
+                    question_key_by_index = f"question_{i + 1}"
                     if question_key_by_index in last_user_answer_instance.user_answers:
-                        selected_answer_text = last_user_answer_instance.user_answers[question_key_by_index]
-                        is_correct_user_answer = (selected_answer_text == q_correct_answer)
-                elif last_user_answer_instance and isinstance(last_user_answer_instance.user_answers, str):
+                        selected_answer_text = last_user_answer_instance.user_answers[
+                            question_key_by_index
+                        ]
+                        is_correct_user_answer = (
+                            selected_answer_text == q_correct_answer
+                        )
+                elif last_user_answer_instance and isinstance(
+                    last_user_answer_instance.user_answers, str
+                ):
                     try:
-                        parsed_answers = json.loads(last_user_answer_instance.user_answers)
+                        parsed_answers = json.loads(
+                            last_user_answer_instance.user_answers
+                        )
                         if isinstance(parsed_answers, dict):
-                            question_key_by_index = f'question_{i + 1}'
+                            question_key_by_index = f"question_{i + 1}"
                             if question_key_by_index in parsed_answers:
-                                selected_answer_text = parsed_answers[question_key_by_index]
-                                is_correct_user_answer = (selected_answer_text == q_correct_answer)
+                                selected_answer_text = parsed_answers[
+                                    question_key_by_index
+                                ]
+                                is_correct_user_answer = (
+                                    selected_answer_text == q_correct_answer
+                                )
                     except (json.JSONDecodeError, TypeError):
                         pass
 
-            questions_for_pdf.append({
-                'question_text': q_text,
-                'options': q_options,
-                'correct_answer_text': q_correct_answer,
-                'selected_answer': selected_answer_text,
-                'is_correct_user_answer': is_correct_user_answer,
-            })
+            questions_for_pdf.append(
+                {
+                    "question_text": q_text,
+                    "options": q_options,
+                    "correct_answer_text": q_correct_answer,
+                    "selected_answer": selected_answer_text,
+                    "is_correct_user_answer": is_correct_user_answer,
+                }
+            )
 
         feedback_obj = FeedbackFromAI.objects.filter(survey_id=survey_id).first()
         story = []
-        model_name_ai = ''
+        model_name_ai = ""
 
         # --- ИНИЦИАЛИЗАЦИЯ СТИЛЕЙ REPORTLAB ---
         styles = getSampleStyleSheet()
 
-        styles['Normal'].fontName = 'Manrope Medium'
-        styles['Normal'].fontSize = 10
-        styles['Normal'].leading = 14
-        styles['Normal'].alignment = TA_LEFT
-        styles['Normal'].textColor = colors.black
+        styles["Normal"].fontName = "Manrope Medium"
+        styles["Normal"].fontSize = 10
+        styles["Normal"].leading = 14
+        styles["Normal"].alignment = TA_LEFT
+        styles["Normal"].textColor = colors.black
 
-        styles.add(ParagraphStyle(name='h1_feedback',
-                                  parent=styles['Normal'],
-                                  fontName='Manrope Bold',
-                                  fontSize=16,
-                                  leading=18,
-                                  alignment=TA_LEFT,
-                                  spaceBefore=15,
-                                  spaceAfter=8,
-                                  textColor=colors.black))
-        styles.add(ParagraphStyle(name='h2_feedback',
-                                  parent=styles['Normal'],
-                                  fontName='Manrope Bold',
-                                  fontSize=14,
-                                  leading=16,
-                                  alignment=TA_LEFT,
-                                  spaceBefore=12,
-                                  spaceAfter=6,
-                                  textColor=colors.black))
-        styles.add(ParagraphStyle(name='h3_feedback',
-                                  parent=styles['Normal'],
-                                  fontName='Manrope Bold',
-                                  fontSize=12,
-                                  leading=14,
-                                  alignment=TA_LEFT,
-                                  spaceBefore=10,
-                                  spaceAfter=5,
-                                  textColor=colors.black))
+        styles.add(
+            ParagraphStyle(
+                name="h1_feedback",
+                parent=styles["Normal"],
+                fontName="Manrope Bold",
+                fontSize=16,
+                leading=18,
+                alignment=TA_LEFT,
+                spaceBefore=15,
+                spaceAfter=8,
+                textColor=colors.black,
+            )
+        )
+        styles.add(
+            ParagraphStyle(
+                name="h2_feedback",
+                parent=styles["Normal"],
+                fontName="Manrope Bold",
+                fontSize=14,
+                leading=16,
+                alignment=TA_LEFT,
+                spaceBefore=12,
+                spaceAfter=6,
+                textColor=colors.black,
+            )
+        )
+        styles.add(
+            ParagraphStyle(
+                name="h3_feedback",
+                parent=styles["Normal"],
+                fontName="Manrope Bold",
+                fontSize=12,
+                leading=14,
+                alignment=TA_LEFT,
+                spaceBefore=10,
+                spaceAfter=5,
+                textColor=colors.black,
+            )
+        )
 
-        feedback_text_style = ParagraphStyle('FeedbackTextStyle',
-                                             parent=styles['Normal'],
-                                             fontName='Manrope Medium',
-                                             fontSize=10,
-                                             leading=14,
-                                             spaceAfter=5,
-                                             allowWidows=1,
-                                             allowOrphans=1
-                                             )
+        feedback_text_style = ParagraphStyle(
+            "FeedbackTextStyle",
+            parent=styles["Normal"],
+            fontName="Manrope Medium",
+            fontSize=10,
+            leading=14,
+            spaceAfter=5,
+            allowWidows=1,
+            allowOrphans=1,
+        )
 
-        title_style = ParagraphStyle('TitleStyle',
-                                     parent=styles['Normal'],
-                                     fontName='Manrope Bold',
-                                     fontSize=22,
-                                     leading=26,
-                                     alignment=TA_LEFT,
-                                     spaceAfter=15
-                                     )
-        subtitle_style = ParagraphStyle('SubtitleStyle',
-                                        parent=styles['Normal'],
-                                        fontName='Manrope Medium',
-                                        fontSize=10,
-                                        leading=12,
-                                        alignment=TA_LEFT,
-                                        spaceAfter=5
-                                        )
-        score_style = ParagraphStyle('ScoreStyle',
-                                     parent=styles['Normal'],
-                                     fontName='Manrope Bold',
-                                     fontSize=16,
-                                     leading=18,
-                                     alignment=TA_LEFT,
-                                     spaceAfter=25
-                                     )
+        title_style = ParagraphStyle(
+            "TitleStyle",
+            parent=styles["Normal"],
+            fontName="Manrope Bold",
+            fontSize=22,
+            leading=26,
+            alignment=TA_LEFT,
+            spaceAfter=15,
+        )
+        subtitle_style = ParagraphStyle(
+            "SubtitleStyle",
+            parent=styles["Normal"],
+            fontName="Manrope Medium",
+            fontSize=10,
+            leading=12,
+            alignment=TA_LEFT,
+            spaceAfter=5,
+        )
+        score_style = ParagraphStyle(
+            "ScoreStyle",
+            parent=styles["Normal"],
+            fontName="Manrope Bold",
+            fontSize=16,
+            leading=18,
+            alignment=TA_LEFT,
+            spaceAfter=25,
+        )
 
-        question_style = ParagraphStyle('QuestionStyle',
-                                        parent=styles['Normal'],
-                                        fontName='Manrope Bold',
-                                        fontSize=12,
-                                        leading=14,
-                                        spaceBefore=20,
-                                        spaceAfter=8
-                                        )
-        option_header_style = ParagraphStyle('OptionHeaderStyle',
-                                             parent=styles['Normal'],
-                                             fontName='Manrope Medium',
-                                             fontSize=10,
-                                             leading=12,
-                                             spaceAfter=5,
-                                             leftIndent=10
-                                             )
-        option_style_base = ParagraphStyle('OptionStyleBase',
-                                           parent=styles['Normal'],
-                                           fontName='Manrope Medium',
-                                           fontSize=11,
-                                           leading=13,
-                                           leftIndent=20,
-                                           spaceAfter=3,
-                                           textColor=colors.black
-                                           )
+        question_style = ParagraphStyle(
+            "QuestionStyle",
+            parent=styles["Normal"],
+            fontName="Manrope Bold",
+            fontSize=12,
+            leading=14,
+            spaceBefore=20,
+            spaceAfter=8,
+        )
+        option_header_style = ParagraphStyle(
+            "OptionHeaderStyle",
+            parent=styles["Normal"],
+            fontName="Manrope Medium",
+            fontSize=10,
+            leading=12,
+            spaceAfter=5,
+            leftIndent=10,
+        )
+        option_style_base = ParagraphStyle(
+            "OptionStyleBase",
+            parent=styles["Normal"],
+            fontName="Manrope Medium",
+            fontSize=11,
+            leading=13,
+            leftIndent=20,
+            spaceAfter=3,
+            textColor=colors.black,
+        )
 
         option_style_correct_user = option_style_base
         option_style_incorrect_user = option_style_base
         option_style_correct_answer = option_style_base
         option_style_default = option_style_base
 
-        feedback_header_style = ParagraphStyle('FeedbackHeaderStyle',
-                                               parent=styles['Normal'],
-                                               fontName='Manrope Bold',
-                                               fontSize=14,
-                                               leading=16,
-                                               spaceBefore=30,
-                                               spaceAfter=10
-                                               )
+        feedback_header_style = ParagraphStyle(
+            "FeedbackHeaderStyle",
+            parent=styles["Normal"],
+            fontName="Manrope Bold",
+            fontSize=14,
+            leading=16,
+            spaceBefore=30,
+            spaceAfter=10,
+        )
 
-        model_name_style = ParagraphStyle('ModelNameStyle',
-                                          parent=styles['Normal'],
-                                          fontName='Manrope Medium',
-                                          fontSize=8,
-                                          leading=10,
-                                          alignment=TA_RIGHT,
-                                          spaceAfter=20
-                                          )
+        model_name_style = ParagraphStyle(
+            "ModelNameStyle",
+            parent=styles["Normal"],
+            fontName="Manrope Medium",
+            fontSize=8,
+            leading=10,
+            alignment=TA_RIGHT,
+            spaceAfter=20,
+        )
 
-        footer_style = ParagraphStyle('FooterStyle',
-                                      parent=styles['Normal'],
-                                      fontName='Unbounded Medium',
-                                      fontSize=9,
-                                      alignment=TA_LEFT
-                                      )
+        footer_style = ParagraphStyle(
+            "FooterStyle",
+            parent=styles["Normal"],
+            fontName="Unbounded Medium",
+            fontSize=9,
+            alignment=TA_LEFT,
+        )
 
         # --- СОЗДАНИЕ ЭЛЕМЕНТОВ PDF В STORY ---
         story.append(Paragraph(f"Результаты теста: «{survey.title}»", title_style))
-        story.append(Paragraph(f"Пользователь: {get_username(request)}", subtitle_style))
-        story.append(Paragraph(f"Тест пройден: {last_user_answer_instance.created_at.strftime('%d.%m.%Y %H:%M')}",
-                               subtitle_style))
+        story.append(
+            Paragraph(f"Пользователь: {get_username(request)}", subtitle_style)
+        )
+        story.append(
+            Paragraph(
+                f"Тест пройден: {last_user_answer_instance.created_at.strftime('%d.%m.%Y %H:%M')}",
+                subtitle_style,
+            )
+        )
         story.append(Spacer(1, 10))
         percent = round((score / total_questions) * 100, 2)
-        story.append(Paragraph(f"Результат: {score} из {total_questions} ({percent}%)", score_style))
+        story.append(
+            Paragraph(
+                f"Результат: {score} из {total_questions} ({percent}%)", score_style
+            )
+        )
         story.append(Spacer(1, 20))
 
         # --- Вопросы и ответы ---
         for i, q_data in enumerate(questions_for_pdf):
-            story.append(Paragraph(f"Вопрос {i + 1}: {q_data['question_text']}", question_style))
+            story.append(
+                Paragraph(f"Вопрос {i + 1}: {q_data['question_text']}", question_style)
+            )
             story.append(Spacer(1, 5))
             story.append(Paragraph("Варианты ответов:", option_header_style))
             story.append(Spacer(1, 5))
 
-            for option in q_data['options']:
+            for option in q_data["options"]:
                 display_option = option
-                if option == q_data['selected_answer']:
-                    if q_data['is_correct_user_answer']:
-                        display_option = f"<b>[+] {display_option}</b> (Ваш верный ответ)"
+                if option == q_data["selected_answer"]:
+                    if q_data["is_correct_user_answer"]:
+                        display_option = (
+                            f"<b>[+] {display_option}</b> (Ваш верный ответ)"
+                        )
                     else:
-                        display_option = f"<b>[x] {display_option}</b> (Ваш неверный ответ)"
-                elif option == q_data['correct_answer_text']:
-                    if option != q_data['selected_answer']:
+                        display_option = (
+                            f"<b>[x] {display_option}</b> (Ваш неверный ответ)"
+                        )
+                elif option == q_data["correct_answer_text"]:
+                    if option != q_data["selected_answer"]:
                         display_option = f"[*] {display_option} (Правильный ответ)"
                 else:
                     display_option = f"[ ] {display_option}"
@@ -1712,31 +1916,36 @@ def download_results_pdf(request, survey_id):
         # --- Фидбэк от ИИ ---
         if feedback_obj:
             feedback_text_raw = feedback_obj.feedback_data
-            cleaned_feedback_raw = re.sub(r'think\s*', '', feedback_text_raw, flags=re.IGNORECASE).strip()
+            cleaned_feedback_raw = re.sub(
+                r"think\s*", "", feedback_text_raw, flags=re.IGNORECASE
+            ).strip()
             feedback_html = markdown.markdown(cleaned_feedback_raw)
-            soup = BeautifulSoup(feedback_html, 'html.parser')
+            soup = BeautifulSoup(feedback_html, "html.parser")
 
-            story.append(Paragraph("Обратная связь от ИИ:",
-                                   feedback_header_style))  # Исправлено: добавляем Paragraph, а не стиль
+            story.append(
+                Paragraph("Обратная связь от ИИ:", feedback_header_style)
+            )  # Исправлено: добавляем Paragraph, а не стиль
             story.append(Spacer(1, 10))
 
             for tag in soup.children:
-                if tag.name == 'p':
+                if tag.name == "p":
                     story.append(Paragraph(str(tag), feedback_text_style))
                     story.append(Spacer(1, 6))
-                elif tag.name == 'ul' or tag.name == 'ol':
-                    for li in tag.find_all('li'):
-                        story.append(Paragraph(f"• {li.get_text()}", feedback_text_style))
+                elif tag.name == "ul" or tag.name == "ol":
+                    for li in tag.find_all("li"):
+                        story.append(
+                            Paragraph(f"• {li.get_text()}", feedback_text_style)
+                        )
                         story.append(Spacer(1, 3))
                     story.append(Spacer(1, 6))
-                elif tag.name == 'h1':
-                    story.append(Paragraph(tag.get_text(), styles['h1_feedback']))
+                elif tag.name == "h1":
+                    story.append(Paragraph(tag.get_text(), styles["h1_feedback"]))
                     story.append(Spacer(1, 8))
-                elif tag.name == 'h2':
-                    story.append(Paragraph(tag.get_text(), styles['h2_feedback']))
+                elif tag.name == "h2":
+                    story.append(Paragraph(tag.get_text(), styles["h2_feedback"]))
                     story.append(Spacer(1, 8))
-                elif tag.name == 'h3':
-                    story.append(Paragraph(tag.get_text(), styles['h3_feedback']))
+                elif tag.name == "h3":
+                    story.append(Paragraph(tag.get_text(), styles["h3_feedback"]))
                     story.append(Spacer(1, 6))
 
             model_name_ai = f"{'Сгенерировано ' + survey.model_name.upper().replace('O', 'o') if survey.model_name else ''}"
@@ -1744,28 +1953,41 @@ def download_results_pdf(request, survey_id):
             story.append(Spacer(1, 20))
 
         # --- Футер ---
-        story.append(Paragraph(f"Сгенерировано в Летучке • {get_year_now()}", footer_style))
+        story.append(
+            Paragraph(f"Сгенерировано в Летучке • {get_year_now()}", footer_style)
+        )
 
         # --- Генерация PDF ---
         buffer = BytesIO()
-        doc = SimpleDocTemplate(buffer, pagesize=A4,
-                                leftMargin=50, rightMargin=50,
-                                topMargin=50, bottomMargin=50)
+        doc = SimpleDocTemplate(
+            buffer,
+            pagesize=A4,
+            leftMargin=50,
+            rightMargin=50,
+            topMargin=50,
+            bottomMargin=50,
+        )
 
         doc.build(story)
         buffer.seek(0)
 
-        response = HttpResponse(buffer, content_type='application/pdf')
-        safe_title = re.sub(r'[^\w\s-]', '', survey.title).strip().replace(' ', '_')
-        response['Content-Disposition'] = f'attachment; filename="letychka_result_{safe_title}.pdf"'
+        response = HttpResponse(buffer, content_type="application/pdf")
+        safe_title = re.sub(r"[^\w\s-]", "", survey.title).strip().replace(" ", "_")
+        response["Content-Disposition"] = (
+            f'attachment; filename="letychka_result_{safe_title}.pdf"'
+        )
         return response
 
     except Survey.DoesNotExist:
         return HttpResponse("Тест не найден.", status=404)
     except Exception as e:
         tracer_l.exception(
-            f"Критическая ошибка при генерации PDF результатов для survey_id={survey_id}, staff_id={staff_id}: {e}")
-        return HttpResponse("Произошла критическая ошибка при генерации PDF. Пожалуйста, попробуйте позже.", status=500)
+            f"Критическая ошибка при генерации PDF результатов для survey_id={survey_id}, staff_id={staff_id}: {e}"
+        )
+        return HttpResponse(
+            "Произошла критическая ошибка при генерации PDF. Пожалуйста, попробуйте позже.",
+            status=500,
+        )
 
 
 def get_is_creator(request, survey):
@@ -1807,16 +2029,16 @@ def take_test(request, survey_id):
     try:
         author_username = AuthUser.objects.get(id_staff=survey.id_staff).username
     except Exception:
-        author_username = 'Сообщество Летучки'
+        author_username = "Сообщество Летучки"
 
     context = {
-        'survey': survey,
-        'questions_json': json.dumps(questions_list, ensure_ascii=False),
-        'author': author_username if len(author_username) < 40 else 'Аноним',
-        'page_title': f'{survey.title} ({survey.created_at})',
-        'is_creator': get_is_creator(request, survey)
+        "survey": survey,
+        "questions_json": json.dumps(questions_list, ensure_ascii=False),
+        "author": author_username if len(author_username) < 40 else "Аноним",
+        "page_title": f"{survey.title} ({survey.created_at})",
+        "is_creator": get_is_creator(request, survey),
     }
-    return render(request, 'askify_service/take_test.html', context)
+    return render(request, "askify_service/take_test.html", context)
 
 
 @csrf_exempt
@@ -1824,19 +2046,22 @@ def submit_answers(request, survey_id):
     """
     API-ручка, которая принимает ответы.
     """
-    if request.method == 'POST':
+    if request.method == "POST":
         survey = get_object_or_404(Survey, survey_id=survey_id)
         data = json.loads(request.body)
 
-        student_name = data.get('student_name', 'Аноним').strip()
-        answers = data.get('answers', {})
+        student_name = data.get("student_name", "Аноним").strip()
+        answers = data.get("answers", {})
 
-        questions_data = {q['question']: q for q in survey.get_questions()}
+        questions_data = {q["question"]: q for q in survey.get_questions()}
         score = 0
         total_questions = len(questions_data)
 
         for q_text, student_answer in answers.items():
-            if q_text in questions_data and student_answer == questions_data[q_text]['correct_answer']:
+            if (
+                q_text in questions_data
+                and student_answer == questions_data[q_text]["correct_answer"]
+            ):
                 score += 1
 
         TestAttempt.objects.create(
@@ -1844,13 +2069,13 @@ def submit_answers(request, survey_id):
             student_name=student_name if student_name else "Аноним",
             answers_json=json.dumps(answers, ensure_ascii=False),
             score=score,
-            total_questions=total_questions
+            total_questions=total_questions,
         )
-        tracer_l.info(f'GUEST {student_name} take {survey.title}')
+        tracer_l.info(f"GUEST {student_name} take {survey.title}")
 
-        return JsonResponse({'success': True, 'score': score, 'total': total_questions})
+        return JsonResponse({"success": True, "score": score, "total": total_questions})
 
-    return JsonResponse({'error': 'Invalid request'}, status=400)
+    return JsonResponse({"error": "Invalid request"}, status=400)
 
 
 def get_question_insights(questions_stats):
@@ -1861,19 +2086,27 @@ def get_question_insights(questions_stats):
     min_rate, max_rate = 101, -1
 
     for q_text, stats in questions_stats.items():
-        correct = stats.get('correct', 0)
-        total = stats.get('total', 0)
+        correct = stats.get("correct", 0)
+        total = stats.get("total", 0)
 
         if total > 0:
             rate = (correct / total) * 100
 
             if rate < min_rate:
                 min_rate = rate
-                hardest_q = {"text": q_text, "rate": rate, "stats": f"{correct}/{total}"}
+                hardest_q = {
+                    "text": q_text,
+                    "rate": rate,
+                    "stats": f"{correct}/{total}",
+                }
 
             if rate > max_rate:
                 max_rate = rate
-                easiest_q = {"text": q_text, "rate": rate, "stats": f"{correct}/{total}"}
+                easiest_q = {
+                    "text": q_text,
+                    "rate": rate,
+                    "stats": f"{correct}/{total}",
+                }
 
     if hardest_q and not easiest_q:
         easiest_q = hardest_q
@@ -1921,7 +2154,9 @@ def preview_test(request, survey_id):
 
     can_generate = True
     if not is_authenticated and current_user_id_staff:
-        total_demo_surveys_count = Survey.objects.filter(id_staff=current_user_id_staff).count()
+        total_demo_surveys_count = Survey.objects.filter(
+            id_staff=current_user_id_staff
+        ).count()
         if total_demo_surveys_count >= 2:
             can_generate = False
 
@@ -1935,71 +2170,70 @@ def preview_test(request, survey_id):
             author_username = author_username.username
             is_short_enough = len(author_username) < 40
         else:
-            author_username = 'Аноним'
+            author_username = "Аноним"
             is_short_enough = False
 
-        try:
-            subscription_db = Subscription.objects.get(staff_id=get_staff_id(request))
-            subscription_check = SubscriptionCheck()
-            subscription_level = subscription_check.get_subscription_level(subscription_db.plan_name)
-        except Exception:
-            subscription_level = 0
+        subscription_level = get_subscription_level(request)
 
         client_ip = get_client_ip(request)
-        tracer_l.info(f'{request.user.username} {client_ip} --- preview {survey.title}')
+        tracer_l.info(f"{request.user.username} {client_ip} --- preview {survey.title}")
 
-        date_create = survey.created_at.strftime('%d.%m.%Y')
+        date_create = survey.created_at.strftime("%d.%m.%Y")
 
         json_response = {
-            'page_title': f'{survey.title} ({date_create}) | Генератор тестов с ИИ | Создать тест в Летучке',
-            'title': survey.title,
-            'survey_id': survey_id,
-            'questions': questions,
-            'author': author_username if len(author_username) < 40 else 'Аноним',
-            'username': request.user.username if request.user.is_authenticated else 0,
-            'model_name': f"{'Сгенерировано ' + survey.model_name.upper().replace('O', 'o') if survey.model_name else 'Сгенерировано в Летучке'}",
-            'view_count': view_count,
-            'date_create': date_create,
-            'is_creator': is_creator,
-            'show_answers': survey.show_answers,
-            'can_generate': can_generate,
-            'is_short_enough': is_short_enough,
-            'debug': DEBUG,
-            'subscription_level': subscription_level
+            "page_title": f"{survey.title} ({date_create}) | Генератор тестов с ИИ | Создать тест в Летучке",
+            "title": survey.title,
+            "survey_id": survey_id,
+            "questions": questions,
+            "author": author_username if len(author_username) < 40 else "Аноним",
+            "username": request.user.username if request.user.is_authenticated else 0,
+            "model_name": f"{'Сгенерировано ' + survey.model_name.upper().replace('O', 'o') if survey.model_name else 'Сгенерировано в Летучке'}",
+            "view_count": view_count,
+            "date_create": date_create,
+            "is_creator": is_creator,
+            "show_answers": survey.show_answers,
+            "can_generate": can_generate,
+            "is_short_enough": is_short_enough,
+            "debug": DEBUG,
+            "subscription_level": subscription_level,
         }
 
-        return render(request, 'demo-view.html', json_response)
+        return render(request, "demo-view.html", json_response)
 
     context = {
-        'page_title': f'Генератор тестов с ИИ | Создать тест в Летучке',
-        'title': 'Создать тест при помощи нейросети | Создать тест в Летучке',
-        'survey_id': survey_id,
-        'username': request.user.username if request.user.is_authenticated else None,
-        'debug': DEBUG
+        "page_title": f"Генератор тестов с ИИ | Создать тест в Летучке",
+        "title": "Создать тест при помощи нейросети | Создать тест в Летучке",
+        "survey_id": survey_id,
+        "username": request.user.username if request.user.is_authenticated else None,
+        "debug": DEBUG,
     }
 
-    return render(request, 'demo-view.html', context)
+    return render(request, "demo-view.html", context)
 
 
 @login_required
 def redirect_to_dashboard(request, survey_id):
     user = request.user
     if user.is_authenticated:
-        return redirect('preview_test_result', survey_id=survey_id)
+        return redirect("preview_test_result", survey_id=survey_id)
     else:
-        return redirect('login')
+        return redirect("login")
 
 
 @login_required
 def view_results(request, survey_id):
     survey = get_object_or_404(Survey, survey_id=survey_id)
 
-    attempts_qs = survey.attempts.all().order_by('-created_at')
+    attempts_qs = survey.attempts.all().order_by("-created_at")
     total_attempts = attempts_qs.count()
 
     try:
         survey_questions_list = json.loads(survey.questions)
-        questions_map = {q['question']: q['correct_answer'] for q in survey_questions_list if isinstance(q, dict)}
+        questions_map = {
+            q["question"]: q["correct_answer"]
+            for q in survey_questions_list
+            if isinstance(q, dict)
+        }
     except (json.JSONDecodeError, TypeError):
         questions_map = {}
 
@@ -2013,22 +2247,28 @@ def view_results(request, survey_id):
 
     if total_attempts > 0:
         base_aggregation = {
-            'avg_percent': Avg(100.0 * F('score') / F('total_questions')),
-            'perfect_count': Count('id', filter=Q(score=F('total_questions'))),
-            'success_count': Count('id', filter=Q(score__gte=F('total_questions') * 0.5))
+            "avg_percent": Avg(100.0 * F("score") / F("total_questions")),
+            "perfect_count": Count("id", filter=Q(score=F("total_questions"))),
+            "success_count": Count(
+                "id", filter=Q(score__gte=F("total_questions") * 0.5)
+            ),
         }
 
-        if 'postgresql' in connection.vendor:
+        if "postgresql" in connection.vendor:
             try:
                 from django.contrib.postgres.aggregates import PercentileCont
 
-                base_aggregation['median_score_agg'] = PercentileCont(0.5).within_group('score')
+                base_aggregation["median_score_agg"] = PercentileCont(0.5).within_group(
+                    "score"
+                )
                 stats = attempts_qs.aggregate(**base_aggregation)
-                median_score = stats.get('median_score_agg', 0)
+                median_score = stats.get("median_score_agg", 0)
 
             except ImportError:
                 stats = attempts_qs.aggregate(**base_aggregation)
-                scores = list(attempts_qs.values_list('score', flat=True).order_by('score'))
+                scores = list(
+                    attempts_qs.values_list("score", flat=True).order_by("score")
+                )
                 count = len(scores)
                 if count % 2 == 1:
                     median_score = scores[count // 2]
@@ -2038,7 +2278,7 @@ def view_results(request, survey_id):
                     median_score = (mid1 + mid2) / 2
         else:
             stats = attempts_qs.aggregate(**base_aggregation)
-            scores = list(attempts_qs.values_list('score', flat=True).order_by('score'))
+            scores = list(attempts_qs.values_list("score", flat=True).order_by("score"))
             count = len(scores)
             if count > 0:
                 if count % 2 == 1:
@@ -2048,12 +2288,14 @@ def view_results(request, survey_id):
                     mid2 = scores[count // 2]
                     median_score = (mid1 + mid2) / 2
 
-        average_score_percent = stats.get('avg_percent', 0)
-        perfect_attempts_percent = (stats.get('perfect_count', 0) / total_attempts) * 100
-        success_rate = round((stats.get('success_count', 0) / total_attempts) * 100)
+        average_score_percent = stats.get("avg_percent", 0)
+        perfect_attempts_percent = (
+            stats.get("perfect_count", 0) / total_attempts
+        ) * 100
+        success_rate = round((stats.get("success_count", 0) / total_attempts) * 100)
 
         questions_stats = {}
-        all_answers_json = attempts_qs.values_list('answers_json', flat=True)
+        all_answers_json = attempts_qs.values_list("answers_json", flat=True)
 
         for answers_str in all_answers_json:
             try:
@@ -2061,123 +2303,146 @@ def view_results(request, survey_id):
                 if isinstance(student_answers, dict):
                     for q_text, student_answer in student_answers.items():
                         if q_text in questions_map:
-                            q_stats = questions_stats.setdefault(q_text, {'correct': 0, 'total': 0})
-                            q_stats['total'] += 1
+                            q_stats = questions_stats.setdefault(
+                                q_text, {"correct": 0, "total": 0}
+                            )
+                            q_stats["total"] += 1
                             if student_answer == questions_map[q_text]:
-                                q_stats['correct'] += 1
+                                q_stats["correct"] += 1
             except (json.JSONDecodeError, AttributeError):
                 continue
 
         question_insights = get_question_insights(questions_stats)
 
-        leaderboard_attempts = attempts_qs.order_by('-score', 'created_at')[:5]
+        leaderboard_attempts = attempts_qs.order_by("-score", "created_at")[:5]
 
         questions_breakdown = []
         if questions_stats:
-            sorted_stats = sorted(questions_stats.items(), key=lambda item: (
-                (item[1].get('correct', 0) / item[1].get('total', 1))
-            ))
+            sorted_stats = sorted(
+                questions_stats.items(),
+                key=lambda item: (item[1].get("correct", 0) / item[1].get("total", 1)),
+            )
             for q_text, stats in sorted_stats:
-                correct = stats.get('correct', 0)
-                total = stats.get('total', 0)
+                correct = stats.get("correct", 0)
+                total = stats.get("total", 0)
                 if total > 0:
                     rate = (correct / total) * 100
                     if rate < 33:
-                        color = '#EF4444'
+                        color = "#EF4444"
                     elif rate < 66:
-                        color = '#F59E0B'
+                        color = "#F59E0B"
                     else:
-                        color = '#10B981'
-                    questions_breakdown.append({
-                        "text": q_text, "rate": rate,
-                        "stats": f"{correct}/{total}", "color": color
-                    })
+                        color = "#10B981"
+                    questions_breakdown.append(
+                        {
+                            "text": q_text,
+                            "rate": rate,
+                            "stats": f"{correct}/{total}",
+                            "color": color,
+                        }
+                    )
 
     attempts_for_template = []
     for attempt in attempts_qs:
-        percent = (attempt.score * 100 / attempt.total_questions) if attempt.total_questions > 0 else 0
+        percent = (
+            (attempt.score * 100 / attempt.total_questions)
+            if attempt.total_questions > 0
+            else 0
+        )
         answers_with_results = []
         try:
             user_answers = json.loads(attempt.answers_json)
             if isinstance(user_answers, dict):
                 for question_text, selected_answer in user_answers.items():
                     correct_answer = questions_map.get(question_text)
-                    is_correct = (selected_answer == correct_answer)
+                    is_correct = selected_answer == correct_answer
 
-                    answers_with_results.append({
-                        'question': question_text,
-                        'selected_answer': selected_answer,
-                        'correct_answer': correct_answer,
-                        'is_correct': is_correct
-                    })
+                    answers_with_results.append(
+                        {
+                            "question": question_text,
+                            "selected_answer": selected_answer,
+                            "correct_answer": correct_answer,
+                            "is_correct": is_correct,
+                        }
+                    )
         except (json.JSONDecodeError, TypeError):
             pass
 
         answers_json_str = json.dumps(answers_with_results, ensure_ascii=False)
 
-        attempts_for_template.append({
-            'id': attempt.id,
-            'student_name': attempt.student_name,
-            'created_at': attempt.created_at,
-            'score': attempt.score,
-            'total_questions': attempt.total_questions,
-            'percent': round(percent),
-            'answers_json': mark_safe(answers_json_str)
-        })
+        attempts_for_template.append(
+            {
+                "id": attempt.id,
+                "student_name": attempt.student_name,
+                "created_at": attempt.created_at,
+                "score": attempt.score,
+                "total_questions": attempt.total_questions,
+                "percent": round(percent),
+                "answers_json": mark_safe(answers_json_str),
+            }
+        )
 
     author_username = AuthUser.objects.get(id_staff=survey.id_staff).username
     is_short_enough = len(author_username) < 20
 
-    tracer_l.info(f'{request.user.username} --- dashboard {survey.title}')
+    tracer_l.info(f"{request.user.username} --- dashboard {survey.title}")
 
-    conversion_rate = (total_attempts / survey.view_count) * 100 if survey.view_count > 0 else 0
+    conversion_rate = (
+        (total_attempts / survey.view_count) * 100 if survey.view_count > 0 else 0
+    )
 
-    success_rate_color = '#EF4444'
+    success_rate_color = "#EF4444"
     if success_rate >= 75:
-        success_rate_color = '#10B981'
+        success_rate_color = "#10B981"
     elif success_rate >= 40:
-        success_rate_color = '#F59E0B'
+        success_rate_color = "#F59E0B"
 
     context = {
-        'survey': survey,
-        'attempts': attempts_for_template,
-        'total_attempts': total_attempts,
-        'average_score_percent': average_score_percent,
-        'median_score': median_score,
-        'perfect_attempts_percent': perfect_attempts_percent,
-        'success_rate': success_rate,
-        'success_rate_color': success_rate_color,
-        'question_insights': question_insights,
-        'leaderboard_attempts': leaderboard_attempts,
-        'questions_breakdown': questions_breakdown,
-        'view_count': survey.view_count,
-        'conversion_rate': conversion_rate,
-        'username': get_username(request),
-        'page_title': survey.title,
-        'subscription_level': get_subscription_level(request),
-        'subscription_status': True if Subscription.objects.get(staff_id=get_staff_id(request)).check_sub_status == 'active' else False,
-        'author': author_username if len(author_username) < 40 else 'Аноним',
-        'is_short_enough': is_short_enough,
-        'date_create': survey.created_at.strftime('%d.%m.%Y'),
+        "survey": survey,
+        "attempts": attempts_for_template,
+        "total_attempts": total_attempts,
+        "average_score_percent": average_score_percent,
+        "median_score": median_score,
+        "perfect_attempts_percent": perfect_attempts_percent,
+        "success_rate": success_rate,
+        "success_rate_color": success_rate_color,
+        "question_insights": question_insights,
+        "leaderboard_attempts": leaderboard_attempts,
+        "questions_breakdown": questions_breakdown,
+        "view_count": survey.view_count,
+        "conversion_rate": conversion_rate,
+        "username": get_username(request),
+        "page_title": survey.title,
+        "subscription_level": get_subscription_level(request),
+        "subscription_status": True
+        if Subscription.objects.get(staff_id=get_staff_id(request)).check_sub_status
+        == "active"
+        else False,
+        "author": author_username if len(author_username) < 40 else "Аноним",
+        "is_short_enough": is_short_enough,
+        "date_create": survey.created_at.strftime("%d.%m.%Y"),
     }
-    return render(request, 'askify_service/test_results.html', context)
-
+    return render(request, "askify_service/test_results.html", context)
 
 
 @login_required
 def get_analytics_context(request, survey_id):
     """
-        Логика аналитики для теста.
-        Возвращает только context (словарь).
+    Логика аналитики для теста.
+    Возвращает только context (словарь).
     """
     survey = get_object_or_404(Survey, survey_id=survey_id)
 
-    attempts_qs = survey.attempts.all().order_by('-created_at')
+    attempts_qs = survey.attempts.all().order_by("-created_at")
     total_attempts = attempts_qs.count()
 
     try:
         survey_questions_list = json.loads(survey.questions)
-        questions_map = {q['question']: q['correct_answer'] for q in survey_questions_list if isinstance(q, dict)}
+        questions_map = {
+            q["question"]: q["correct_answer"]
+            for q in survey_questions_list
+            if isinstance(q, dict)
+        }
     except (json.JSONDecodeError, TypeError):
         questions_map = {}
 
@@ -2191,22 +2456,28 @@ def get_analytics_context(request, survey_id):
 
     if total_attempts > 0:
         base_aggregation = {
-            'avg_percent': Avg(100.0 * F('score') / F('total_questions')),
-            'perfect_count': Count('id', filter=Q(score=F('total_questions'))),
-            'success_count': Count('id', filter=Q(score__gte=F('total_questions') * 0.5))
+            "avg_percent": Avg(100.0 * F("score") / F("total_questions")),
+            "perfect_count": Count("id", filter=Q(score=F("total_questions"))),
+            "success_count": Count(
+                "id", filter=Q(score__gte=F("total_questions") * 0.5)
+            ),
         }
 
-        if 'postgresql' in connection.vendor:
+        if "postgresql" in connection.vendor:
             try:
                 from django.contrib.postgres.aggregates import PercentileCont
 
-                base_aggregation['median_score_agg'] = PercentileCont(0.5).within_group('score')
+                base_aggregation["median_score_agg"] = PercentileCont(0.5).within_group(
+                    "score"
+                )
                 stats = attempts_qs.aggregate(**base_aggregation)
-                median_score = stats.get('median_score_agg', 0)
+                median_score = stats.get("median_score_agg", 0)
 
             except ImportError:
                 stats = attempts_qs.aggregate(**base_aggregation)
-                scores = list(attempts_qs.values_list('score', flat=True).order_by('score'))
+                scores = list(
+                    attempts_qs.values_list("score", flat=True).order_by("score")
+                )
                 count = len(scores)
                 if count % 2 == 1:
                     median_score = scores[count // 2]
@@ -2216,7 +2487,7 @@ def get_analytics_context(request, survey_id):
                     median_score = (mid1 + mid2) / 2
         else:
             stats = attempts_qs.aggregate(**base_aggregation)
-            scores = list(attempts_qs.values_list('score', flat=True).order_by('score'))
+            scores = list(attempts_qs.values_list("score", flat=True).order_by("score"))
             count = len(scores)
             if count > 0:
                 if count % 2 == 1:
@@ -2226,12 +2497,14 @@ def get_analytics_context(request, survey_id):
                     mid2 = scores[count // 2]
                     median_score = (mid1 + mid2) / 2
 
-        average_score_percent = stats.get('avg_percent', 0)
-        perfect_attempts_percent = (stats.get('perfect_count', 0) / total_attempts) * 100
-        success_rate = round((stats.get('success_count', 0) / total_attempts) * 100)
+        average_score_percent = stats.get("avg_percent", 0)
+        perfect_attempts_percent = (
+            stats.get("perfect_count", 0) / total_attempts
+        ) * 100
+        success_rate = round((stats.get("success_count", 0) / total_attempts) * 100)
 
         questions_stats = {}
-        all_answers_json = attempts_qs.values_list('answers_json', flat=True)
+        all_answers_json = attempts_qs.values_list("answers_json", flat=True)
 
         for answers_str in all_answers_json:
             try:
@@ -2239,105 +2512,121 @@ def get_analytics_context(request, survey_id):
                 if isinstance(student_answers, dict):
                     for q_text, student_answer in student_answers.items():
                         if q_text in questions_map:
-                            q_stats = questions_stats.setdefault(q_text, {'correct': 0, 'total': 0})
-                            q_stats['total'] += 1
+                            q_stats = questions_stats.setdefault(
+                                q_text, {"correct": 0, "total": 0}
+                            )
+                            q_stats["total"] += 1
                             if student_answer == questions_map[q_text]:
-                                q_stats['correct'] += 1
+                                q_stats["correct"] += 1
             except (json.JSONDecodeError, AttributeError):
                 continue
 
         question_insights = get_question_insights(questions_stats)
 
-        leaderboard_attempts = attempts_qs.order_by('-score', 'created_at')[:5]
+        leaderboard_attempts = attempts_qs.order_by("-score", "created_at")[:5]
 
         questions_breakdown = []
         if questions_stats:
-            sorted_stats = sorted(questions_stats.items(), key=lambda item: (
-                (item[1].get('correct', 0) / item[1].get('total', 1))
-            ))
+            sorted_stats = sorted(
+                questions_stats.items(),
+                key=lambda item: (item[1].get("correct", 0) / item[1].get("total", 1)),
+            )
             for q_text, stats in sorted_stats:
-                correct = stats.get('correct', 0)
-                total = stats.get('total', 0)
+                correct = stats.get("correct", 0)
+                total = stats.get("total", 0)
                 if total > 0:
                     rate = (correct / total) * 100
                     if rate < 33:
-                        color = '#EF4444'
+                        color = "#EF4444"
                     elif rate < 66:
-                        color = '#F59E0B'
+                        color = "#F59E0B"
                     else:
-                        color = '#10B981'
-                    questions_breakdown.append({
-                        "text": q_text, "rate": rate,
-                        "stats": f"{correct}/{total}", "color": color
-                    })
+                        color = "#10B981"
+                    questions_breakdown.append(
+                        {
+                            "text": q_text,
+                            "rate": rate,
+                            "stats": f"{correct}/{total}",
+                            "color": color,
+                        }
+                    )
 
     attempts_for_template = []
     for attempt in attempts_qs:
-        percent = (attempt.score * 100 / attempt.total_questions) if attempt.total_questions > 0 else 0
+        percent = (
+            (attempt.score * 100 / attempt.total_questions)
+            if attempt.total_questions > 0
+            else 0
+        )
         answers_with_results = []
         try:
             user_answers = json.loads(attempt.answers_json)
             if isinstance(user_answers, dict):
                 for question_text, selected_answer in user_answers.items():
                     correct_answer = questions_map.get(question_text)
-                    is_correct = (selected_answer == correct_answer)
+                    is_correct = selected_answer == correct_answer
 
-                    answers_with_results.append({
-                        'question': question_text,
-                        'selected_answer': selected_answer,
-                        'correct_answer': correct_answer,
-                        'is_correct': is_correct
-                    })
+                    answers_with_results.append(
+                        {
+                            "question": question_text,
+                            "selected_answer": selected_answer,
+                            "correct_answer": correct_answer,
+                            "is_correct": is_correct,
+                        }
+                    )
         except (json.JSONDecodeError, TypeError):
             pass
 
         answers_json_str = json.dumps(answers_with_results, ensure_ascii=False)
 
-        attempts_for_template.append({
-            'id': attempt.id,
-            'student_name': attempt.student_name,
-            'created_at': attempt.created_at,
-            'score': attempt.score,
-            'total_questions': attempt.total_questions,
-            'percent': round(percent),
-            'answers_json': mark_safe(answers_json_str)
-        })
+        attempts_for_template.append(
+            {
+                "id": attempt.id,
+                "student_name": attempt.student_name,
+                "created_at": attempt.created_at,
+                "score": attempt.score,
+                "total_questions": attempt.total_questions,
+                "percent": round(percent),
+                "answers_json": mark_safe(answers_json_str),
+            }
+        )
 
     author_username = AuthUser.objects.get(id_staff=survey.id_staff).username
     is_short_enough = len(author_username) < 20
 
-    conversion_rate = (total_attempts / survey.view_count) * 100 if survey.view_count > 0 else 0
+    conversion_rate = (
+        (total_attempts / survey.view_count) * 100 if survey.view_count > 0 else 0
+    )
 
-    success_rate_color = '#EF4444'
+    success_rate_color = "#EF4444"
     if success_rate >= 75:
-        success_rate_color = '#10B981'
+        success_rate_color = "#10B981"
     elif success_rate >= 40:
-        success_rate_color = '#F59E0B'
+        success_rate_color = "#F59E0B"
 
     context = {
-        'attempts': attempts_for_template,
-        'total_attempts': total_attempts,
-        'average_score_percent': average_score_percent,
-        'median_score': median_score,
-        'perfect_attempts_percent': perfect_attempts_percent,
-        'success_rate': success_rate,
-        'success_rate_color': success_rate_color,
-        'question_insights': question_insights,
-        'leaderboard_attempts': leaderboard_attempts,
-        'questions_breakdown': questions_breakdown,
-        'view_count': survey.view_count,
-        'conversion_rate': conversion_rate,
-        'analytics_username': get_username(request),
-        'analytics_subscription_level': get_subscription_level(request),
-        'analytics_author': author_username if len(author_username) < 40 else 'Аноним',
-        'is_short_enough': is_short_enough,
-        'analytics_date_create': survey.created_at.strftime('%d.%m.%Y'),
-        
+        "attempts": attempts_for_template,
+        "total_attempts": total_attempts,
+        "average_score_percent": average_score_percent,
+        "median_score": median_score,
+        "perfect_attempts_percent": perfect_attempts_percent,
+        "success_rate": success_rate,
+        "success_rate_color": success_rate_color,
+        "question_insights": question_insights,
+        "leaderboard_attempts": leaderboard_attempts,
+        "questions_breakdown": questions_breakdown,
+        "view_count": survey.view_count,
+        "conversion_rate": conversion_rate,
+        "analytics_username": get_username(request),
+        "analytics_subscription_level": get_subscription_level(request),
+        "analytics_author": author_username if len(author_username) < 40 else "Аноним",
+        "is_short_enough": is_short_enough,
+        "analytics_date_create": survey.created_at.strftime("%d.%m.%Y"),
         # Заглушки для графиков, чтобы JS не падал, (оставлено для API-запросов)
-        'chart_activity_json': '{}',
-        'chart_scores_json': '{}',
+        "chart_activity_json": "{}",
+        "chart_scores_json": "{}",
     }
-    
+
     return context
 
 
@@ -2348,25 +2637,31 @@ def export_results_to_excel(request, survey_id):
     if survey.id_staff != get_staff_id(request) and not request.user.is_superuser:
         return HttpResponse("Доступ запрещен", status=403)
 
-    attempts_qs = survey.attempts.all().order_by('-created_at')
+    attempts_qs = survey.attempts.all().order_by("-created_at")
 
     workbook = Workbook()
     sheet = workbook.active
 
-    sanitized = re.sub(r'[:\\/?*\[\]]', '', survey.title[:20])
-    sheet.title = f'Результаты - {sanitized}'
+    sanitized = re.sub(r"[:\\/?*\[\]]", "", survey.title[:20])
+    sheet.title = f"Результаты - {sanitized}"
 
     questions_list = survey.get_questions()
-    question_headers = [q['question'] for q in questions_list]
+    question_headers = [q["question"] for q in questions_list]
 
     headers = [
-                  'Имя участника', 'Дата прохождения', 'Балл', 'Всего вопросов', 'Процент верных'
-              ] + question_headers
+        "Имя участника",
+        "Дата прохождения",
+        "Балл",
+        "Всего вопросов",
+        "Процент верных",
+    ] + question_headers
 
     sheet.append(headers)
 
     header_font = Font(bold=True, color="FFFFFF")
-    header_fill = PatternFill(start_color="4F46E5", end_color="4F46E5", fill_type="solid")
+    header_fill = PatternFill(
+        start_color="4F46E5", end_color="4F46E5", fill_type="solid"
+    )
 
     for cell in sheet[1]:
         cell.font = header_font
@@ -2374,18 +2669,22 @@ def export_results_to_excel(request, survey_id):
 
     for attempt in attempts_qs:
         student_answers = attempt.get_answers()
-        percent = (attempt.score * 100 / attempt.total_questions) if attempt.total_questions > 0 else 0
+        percent = (
+            (attempt.score * 100 / attempt.total_questions)
+            if attempt.total_questions > 0
+            else 0
+        )
 
         row_data = [
             attempt.student_name,
-            attempt.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            attempt.created_at.strftime("%Y-%m-%d %H:%M:%S"),
             attempt.score,
             attempt.total_questions,
-            f"{percent:.1f}%"
+            f"{percent:.1f}%",
         ]
 
         for q_text in question_headers:
-            row_data.append(student_answers.get(q_text, 'Н/Д'))
+            row_data.append(student_answers.get(q_text, "Н/Д"))
 
         sheet.append(row_data)
 
@@ -2395,17 +2694,19 @@ def export_results_to_excel(request, survey_id):
 
     response = HttpResponse(
         buffer.getvalue(),
-        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
 
     filename = f"Результаты_{survey.title}.xlsx"
 
-    ascii_filename = 'results.xlsx'
+    ascii_filename = "results.xlsx"
     utf8_filename = quote(filename)
 
-    tracer_l.info(f'{request.user.username} --- download results {survey.title}')
+    tracer_l.info(f"{request.user.username} --- download results {survey.title}")
 
-    response['Content-Disposition'] = f'attachment; filename="{ascii_filename}"; filename*="UTF-8\'\'{utf8_filename}"'
+    response["Content-Disposition"] = (
+        f'attachment; filename="{ascii_filename}"; filename*="UTF-8\'\'{utf8_filename}"'
+    )
 
     return response
 
@@ -2413,122 +2714,139 @@ def export_results_to_excel(request, survey_id):
 @csrf_exempt
 @transaction.atomic
 def register_survey_view(request, survey_id):
-    if request.method == 'POST':
+    if request.method == "POST":
         try:
             survey = Survey.objects.select_for_update().get(survey_id=survey_id)
             data = json.loads(request.body)
-            view_hash = data.get('hash', '')
+            view_hash = data.get("hash", "")
 
             if not view_hash:
-                return JsonResponse({'success': False, 'error': 'Hash required'})
+                return JsonResponse({"success": False, "error": "Hash required"})
 
             _, created = SurveyUniqueView.objects.get_or_create(
-                survey=survey,
-                view_hash=view_hash
+                survey=survey, view_hash=view_hash
             )
 
             if created:
-                survey.view_count = F('view_count') + 1
-                survey.save(update_fields=['view_count'])
+                survey.view_count = F("view_count") + 1
+                survey.save(update_fields=["view_count"])
                 survey.refresh_from_db()
 
-            return JsonResponse({
-                'success': True,
-                'new_view': created,
-                'view_count': survey.view_count
-            })
+            return JsonResponse(
+                {"success": True, "new_view": created, "view_count": survey.view_count}
+            )
 
         except Survey.DoesNotExist:
-            return JsonResponse({'success': False, 'error': 'Survey not found'}, status=404)
+            return JsonResponse(
+                {"success": False, "error": "Survey not found"}, status=404
+            )
         except Exception as e:
-            return JsonResponse({'success': False, 'error': str(e)}, status=500)
+            return JsonResponse({"success": False, "error": str(e)}, status=500)
 
-    return JsonResponse({'success': False, 'error': 'Invalid request'}, status=400)
+    return JsonResponse({"success": False, "error": "Invalid request"}, status=400)
 
 
 def arena_view(request):
     profile, _ = ArenaProfile.objects.get_or_create(user=request.user)
 
-    accuracy = (profile.questions_correct * 100 / profile.questions_answered) if profile.questions_answered > 0 else 0
+    accuracy = (
+        (profile.questions_correct * 100 / profile.questions_answered)
+        if profile.questions_answered > 0
+        else 0
+    )
 
     initial_stats = {
-        'score': profile.total_score,
-        'streak': profile.current_streak,
-        'accuracy': f"{accuracy:.0f}%",
-        'max_streak': profile.max_streak,
-        'answered': profile.questions_answered,
-        'percentile': '-%'
+        "score": profile.total_score,
+        "streak": profile.current_streak,
+        "accuracy": f"{accuracy:.0f}%",
+        "max_streak": profile.max_streak,
+        "answered": profile.questions_answered,
+        "percentile": "-%",
     }
 
-    context = {
-        'initial_stats_json': json.dumps(initial_stats)
-    }
+    context = {"initial_stats_json": json.dumps(initial_stats)}
 
-    return render(request, 'askify_service/arena.html', context)
+    return render(request, "askify_service/arena.html", context)
 
 
 def get_next_question(request):
     user = request.user
 
-    seen_question_ids = request.GET.getlist('seen[]', [])
+    seen_question_ids = request.GET.getlist("seen[]", [])
     next_question = None
 
     if user.is_authenticated:
         try:
             profile = user.arena_profile
             if profile.interests:
-                top_tags = sorted(profile.interests.items(), key=lambda item: item[1], reverse=True)[:3]
+                top_tags = sorted(
+                    profile.interests.items(), key=lambda item: item[1], reverse=True
+                )[:3]
                 top_tag_names = [tag[0] for tag in top_tags]
 
                 if top_tag_names:
-                    next_question = Question.objects.select_related('survey').filter(
-                        survey__tags__name__in=top_tag_names
-                    ).exclude(id__in=seen_question_ids).order_by('?').first()
+                    next_question = (
+                        Question.objects.select_related("survey")
+                        .filter(survey__tags__name__in=top_tag_names)
+                        .exclude(id__in=seen_question_ids)
+                        .order_by("?")
+                        .first()
+                    )
         except ArenaProfile.DoesNotExist:
             pass
 
     if not next_question:
-        next_question = Question.objects.select_related('survey').exclude(id__in=seen_question_ids).order_by(
-            '?').first()
+        next_question = (
+            Question.objects.select_related("survey")
+            .exclude(id__in=seen_question_ids)
+            .order_by("?")
+            .first()
+        )
 
     if not next_question:
-        next_question = Question.objects.select_related('survey').order_by('?').first()
+        next_question = Question.objects.select_related("survey").order_by("?").first()
         if not next_question:
-            return JsonResponse({'error': 'All questions answered'}, status=404)
+            return JsonResponse({"error": "All questions answered"}, status=404)
 
     is_displaying_correct = random.choice([True, False])
     if is_displaying_correct:
         displayed_answer = next_question.correct_answer
     else:
-        incorrect_options = [opt for opt in next_question.options if opt != next_question.correct_answer]
+        incorrect_options = [
+            opt for opt in next_question.options if opt != next_question.correct_answer
+        ]
         if not incorrect_options:
             displayed_answer = next_question.correct_answer
             is_displaying_correct = True
         else:
             displayed_answer = random.choice(incorrect_options)
 
-    return JsonResponse({
-        'question_id': next_question.id,
-        'question_text': next_question.text,
-        'displayed_answer': displayed_answer,
-        'is_correct_answer_displayed': is_displaying_correct,
-        'survey_title': next_question.survey.title,
-        'survey_id': next_question.survey.survey_id,
-    })
+    return JsonResponse(
+        {
+            "question_id": next_question.id,
+            "question_text": next_question.text,
+            "displayed_answer": displayed_answer,
+            "is_correct_answer_displayed": is_displaying_correct,
+            "survey_title": next_question.survey.title,
+            "survey_id": next_question.survey.survey_id,
+        }
+    )
 
 
 @csrf_exempt
 def submit_arena_answer(request):
     if not request.user.is_authenticated:
         data = json.loads(request.body)
-        question = Question.objects.get(id=data.get('question_id'))
-        is_correct = (data.get('user_answer') == question.correct_answer)
-        return JsonResponse({'is_correct': is_correct, 'correct_answer': question.correct_answer})
+        question = Question.objects.get(id=data.get("question_id"))
+        is_correct = data.get("user_answer") == question.correct_answer
+        return JsonResponse(
+            {"is_correct": is_correct, "correct_answer": question.correct_answer}
+        )
 
     profile, _ = ArenaProfile.objects.get_or_create(user=request.user)
     data = json.loads(request.body)
-    question = Question.objects.get(id=data.get('question_id'))
-    is_correct = (data.get('user_answer') == question.correct_answer)
+    question = Question.objects.get(id=data.get("question_id"))
+    is_correct = data.get("user_answer") == question.correct_answer
 
     profile.questions_answered += 1
     if is_correct:
@@ -2546,20 +2864,26 @@ def submit_arena_answer(request):
 
     profile.save()
 
-    accuracy = (profile.questions_correct * 100 / profile.questions_answered) if profile.questions_answered > 0 else 0
+    accuracy = (
+        (profile.questions_correct * 100 / profile.questions_answered)
+        if profile.questions_answered > 0
+        else 0
+    )
 
-    return JsonResponse({
-        'is_correct': is_correct,
-        'correct_answer': question.correct_answer,
-        'updated_stats': {
-            'score': profile.total_score,
-            'streak': profile.current_streak,
-            'accuracy': f"{accuracy:.0f}%",
-            'max_streak': profile.max_streak,
-            'answered': profile.questions_answered,
-            # 'percentile': ... (тут заглушка)
+    return JsonResponse(
+        {
+            "is_correct": is_correct,
+            "correct_answer": question.correct_answer,
+            "updated_stats": {
+                "score": profile.total_score,
+                "streak": profile.current_streak,
+                "accuracy": f"{accuracy:.0f}%",
+                "max_streak": profile.max_streak,
+                "answered": profile.questions_answered,
+                # 'percentile': ... (тут заглушка)
+            },
         }
-    })
+    )
 
 
 # @login_required
@@ -2569,9 +2893,7 @@ def download_survey_pdf(request, survey_id):
 
         subscription_level = 0
         try:
-            subscription_db = Subscription.objects.get(staff_id=get_staff_id(request))
-            subscription_check = SubscriptionCheck()
-            subscription_level = subscription_check.get_subscription_level(subscription_db.plan_name)
+            subscription_level = get_subscription_level(request)
         except Subscription.DoesNotExist:
             pass
         except Exception as e:
@@ -2589,15 +2911,16 @@ def download_survey_pdf(request, survey_id):
     except Exception as fatal:
         return HttpResponse(
             "Произошла внутренняя ошибка при генерации PDF. Пожалуйста, попробуйте позже или обратитесь в поддержку.",
-            status=500)
+            status=500,
+        )
 
 
 def generate_username(email):
     from django.utils.text import slugify
     import random
 
-    base_username = email.split('@')[0]
-    base_username = slugify(base_username).replace('-', '_')
+    base_username = email.split("@")[0]
+    base_username = slugify(base_username).replace("-", "_")
 
     if not AuthUser.objects.filter(username=base_username).exists():
         return base_username
@@ -2608,96 +2931,102 @@ def generate_username(email):
 @check_legal_process
 def register(request):
     if request.user.is_authenticated:
-        return redirect('create')
+        return redirect("create")
 
-    if request.method == 'POST':
+    if request.method == "POST":
         form = CustomUserCreationForm(request.POST)
 
         if form.is_valid():
-            email = form.cleaned_data.get('email')
+            email = form.cleaned_data.get("email")
             if not is_allowed_email(email):
-                form.add_error('email', 'Регистрация с этого почтового домена не разрешена.')
+                form.add_error(
+                    "email", "Регистрация с этого почтового домена не разрешена."
+                )
             else:
                 try:
                     with transaction.atomic():
-                        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-                        ip = x_forwarded_for.split(',')[0] if x_forwarded_for else request.META.get('REMOTE_ADDR')
+                        x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
+                        ip = (
+                            x_forwarded_for.split(",")[0]
+                            if x_forwarded_for
+                            else request.META.get("REMOTE_ADDR")
+                        )
 
-                        temporary_user = AuthUser.objects.annotate(
-                            username_len=Length('username')
-                        ).filter(
-                            hash_user_id=ip,
-                            username_len__gt=20
-                        ).first()
+                        temporary_user = (
+                            AuthUser.objects.annotate(username_len=Length("username"))
+                            .filter(hash_user_id=ip, username_len__gt=20)
+                            .first()
+                        )
 
                         if temporary_user:
                             user = temporary_user
-                            user.username = email.split('@')[0]
+                            user.username = email.split("@")[0]
                             user.email = email
-                            user.set_password(form.cleaned_data.get('password1'))
+                            user.set_password(form.cleaned_data.get("password1"))
                             user.hash_user_id = None
                             user.save()
                         else:
                             user = form.save()
 
-                        plan_name, end_date, status, billing_cycle, discount = init_free_subscription()
+                        plan_name, end_date, status, billing_cycle, discount = (
+                            init_free_subscription()
+                        )
                         Subscription.objects.get_or_create(
                             staff_id=user.id_staff,
                             defaults={
-                                'plan_name': plan_name,
-                                'end_date': end_date,
-                                'status': status,
-                                'billing_cycle': billing_cycle
-                            }
+                                "plan_name": plan_name,
+                                "end_date": end_date,
+                                "status": status,
+                                "billing_cycle": billing_cycle,
+                            },
                         )
 
                         login(request, user)
-                        tracer_l.info(f'USER. NEW USER {user.username}')
-                        return redirect('create')
+                        tracer_l.info(f"USER. NEW USER {user.username}")
+                        return redirect("create")
 
                 except IntegrityError:
-                    form.add_error(None, 'Пользователь с таким именем уже существует.')
+                    form.add_error(None, "Пользователь с таким именем уже существует.")
                 except Exception as e:
-                    tracer_l.error(f'Registration error: {e}')
-                    form.add_error(None, 'Произошла ошибка при регистрации.')
+                    tracer_l.error(f"Registration error: {e}")
+                    form.add_error(None, "Произошла ошибка при регистрации.")
 
     else:
         form = CustomUserCreationForm()
 
-    tracer_l.info(f'{get_client_ip(request)} --- register [ LOAD ]')
-    context = {'form': form, 'debug': DEBUG}
-    return render(request, 'register.html', context)
+    tracer_l.info(f"{get_client_ip(request)} --- register [ LOAD ]")
+    context = {"form": form, "debug": DEBUG}
+    return render(request, "register.html", context)
 
 
 @transaction.atomic
 @check_legal_process
 def quick_register_api(request):
-    if request.method != 'POST':
-        return JsonResponse({'error': 'Метод не разрешен'}, status=405)
+    if request.method != "POST":
+        return JsonResponse({"error": "Метод не разрешен"}, status=405)
 
-    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
     if x_forwarded_for:
-        ip = x_forwarded_for.split(',')[0]
+        ip = x_forwarded_for.split(",")[0]
     else:
-        ip = request.META.get('REMOTE_ADDR')
+        ip = request.META.get("REMOTE_ADDR")
 
-    email = request.POST.get('email')
-    password = request.POST.get('password1')
+    email = request.POST.get("email")
+    password = request.POST.get("password1")
 
-    temporary_user = AuthUser.objects.annotate(
-        username_len=Length('username')
-    ).filter(
-        hash_user_id=ip,
-        username_len__gt=20
-    ).first()
+    temporary_user = (
+        AuthUser.objects.annotate(username_len=Length("username"))
+        .filter(hash_user_id=ip, username_len__gt=20)
+        .first()
+    )
 
     if temporary_user:
         user = temporary_user
 
         if AuthUser.objects.exclude(pk=user.pk).filter(email=email).exists():
-            return JsonResponse({'error': 'Этот Email уже используется.'}, status=400)
+            return JsonResponse({"error": "Этот Email уже используется."}, status=400)
 
-        user.username = email.split('@')[0]
+        user.username = email.split("@")[0]
         user.email = email
         user.set_password(password)
         user.hash_user_id = None
@@ -2707,78 +3036,85 @@ def quick_register_api(request):
         subscription, created = Subscription.objects.update_or_create(
             staff_id=user.id_staff,
             defaults={
-                'plan_name': plan_name, 'end_date': end_date, 'status': status,
-                'billing_cycle': billing_cycle, 'discount': 0.00
-            }
+                "plan_name": plan_name,
+                "end_date": end_date,
+                "status": status,
+                "billing_cycle": billing_cycle,
+                "discount": 0.00,
+            },
         )
-        tracer_l.info(f'API REGISTRATION [ OK ]')
+        tracer_l.info(f"API REGISTRATION [ OK ]")
 
     else:
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
-            tracer_l.warning(f'API REGISTRATION. NEW USER {user.username}')
+            tracer_l.warning(f"API REGISTRATION. NEW USER {user.username}")
 
             plan_name, end_date, status, billing_cycle, _ = init_free_subscription()
             Subscription.objects.create(
-                staff_id=user.id_staff, plan_name=plan_name, end_date=end_date,
-                status=status, billing_cycle=billing_cycle, discount=0.00
+                staff_id=user.id_staff,
+                plan_name=plan_name,
+                end_date=end_date,
+                status=status,
+                billing_cycle=billing_cycle,
+                discount=0.00,
             )
         else:
             error_message = next(iter(form.errors.values()))[0]
-            return JsonResponse({'error': error_message}, status=400)
+            return JsonResponse({"error": error_message}, status=400)
 
     login(request, user)
-    return JsonResponse({'redirect': '/payment'})
+    return JsonResponse({"redirect": "/payment"})
 
 
 @check_legal_process
 def login_view(request):
     if request.user.is_authenticated:
-        return redirect('/create')
+        return redirect("/create")
 
     client_ip = get_client_ip(request)
 
-    cache_key = f'login_attempts_{client_ip}'
+    cache_key = f"login_attempts_{client_ip}"
 
     attempt_count = cache.get(cache_key, 0)
     if attempt_count >= MAX_LOGIN_ATTEMPTS:
         tracer_l.warning(f"IP {client_ip} is locked out from login.")
         context = {
-            'error': f'Слишком много неудачных попыток. Пожалуйста, подождите 30 минут.',
-            'is_locked': True
+            "error": f"Слишком много неудачных попыток. Пожалуйста, подождите 30 минут.",
+            "is_locked": True,
         }
-        return render(request, 'login.html', context, status=429)
+        return render(request, "login.html", context, status=429)
 
     context = {}
 
-    if request.method == 'POST':
-        email = request.POST.get('email', '').strip()
-        password = request.POST.get('password', '')
+    if request.method == "POST":
+        email = request.POST.get("email", "").strip()
+        password = request.POST.get("password", "")
 
         if not email or not password:
-            context['error'] = 'Введите email и пароль.'
-            return render(request, 'login.html', context, status=400)
+            context["error"] = "Введите email и пароль."
+            return render(request, "login.html", context, status=400)
 
-        if '@' not in email:
-            context['error'] = 'Неверный email.'
-            return render(request, 'login.html', context, status=400)
+        if "@" not in email:
+            context["error"] = "Неверный email."
+            return render(request, "login.html", context, status=400)
 
         try:
-            username = email.split('@')[0]
+            username = email.split("@")[0]
         except IndexError:
-            username = ''
+            username = ""
 
         user = authenticate(request, username=username, password=password)
 
         if user is not None:
             login(request, user)
-            request.session['user_id'] = user.id
+            request.session["user_id"] = user.id
 
-            tracer_l.info(f'USER. LOGGED IN {user.username}')
+            tracer_l.info(f"USER. LOGGED IN {user.username}")
 
-            next_url = request.POST.get('next', '/create')
-            safe_next = next_url if is_safe_url(next_url) else '/create'
+            next_url = request.POST.get("next", "/create")
+            safe_next = next_url if is_safe_url(next_url) else "/create"
             return redirect(safe_next)
         else:
             cache.delete(cache_key)
@@ -2787,44 +3123,48 @@ def login_view(request):
 
             remaining_attempts = MAX_LOGIN_ATTEMPTS - new_attempt_count
 
-            error_message = 'Неверный email или пароль. Попробуйте снова.'
+            error_message = "Неверный email или пароль. Попробуйте снова."
             if remaining_attempts > 0:
-                error_message += f' Осталось попыток: {remaining_attempts}.'
+                error_message += f" Осталось попыток: {remaining_attempts}."
             else:
-                tracer_l.error(f"IP {client_ip} has been locked out after {new_attempt_count} failed attempts.")
-                error_message = f'Слишком много неудачных попыток. Пожалуйста, подождите 30 минут.'
+                tracer_l.error(
+                    f"IP {client_ip} has been locked out after {new_attempt_count} failed attempts."
+                )
+                error_message = (
+                    f"Слишком много неудачных попыток. Пожалуйста, подождите 30 минут."
+                )
 
-            context['error'] = error_message
-            return render(request, 'login.html', context, status=400)
+            context["error"] = error_message
+            return render(request, "login.html", context, status=400)
 
-    context['next_url'] = request.GET.get('next', '/create')
-    context['debug'] = DEBUG
-    tracer_l.info(f'{get_client_ip(request)} --- login [ LOAD ]')
-    return render(request, 'login.html', context)
+    context["next_url"] = request.GET.get("next", "/create")
+    context["debug"] = DEBUG
+    tracer_l.info(f"{get_client_ip(request)} --- login [ LOAD ]")
+    return render(request, "login.html", context)
 
 
 def logout_view(request):
     logout(request)
     request.session.flush()
-    tracer_l.info(f'USER. LOGOUT {request.user.username}')
-    return redirect('login')
+    tracer_l.info(f"USER. LOGOUT {request.user.username}")
+    return redirect("login")
 
 
 def blocked_view(request):
-    return render(request, 'askify_service/blocked.html')
+    return render(request, "askify_service/blocked.html")
 
 
-VK_CLIENT_ID = env('VK_CLIENT_ID')
-VK_CLIENT_SECRET = env('VK_CLIENT_SECRET')
-VK_REDIRECT_URI = env('VK_REDIRECT_URI')
-VK_API_VERSION = env('VK_API_VERSION')
+VK_CLIENT_ID = env("VK_CLIENT_ID")
+VK_CLIENT_SECRET = env("VK_CLIENT_SECRET")
+VK_REDIRECT_URI = env("VK_REDIRECT_URI")
+VK_API_VERSION = env("VK_API_VERSION")
 
 
 def vk_auth(request):
     if not request.session.session_key:
         request.session.create()
 
-    tracer_l.warning(f'USER. VK_AUTH START. Session: {request.session.session_key}')
+    tracer_l.warning(f"USER. VK_AUTH START. Session: {request.session.session_key}")
 
     auth_url = (
         f"https://oauth.vk.com/authorize?"
@@ -2836,59 +3176,58 @@ def vk_auth(request):
         f"state={request.session.session_key}&"
         f"scope=email"
     )
-    tracer_l.warning(f'USER. VK AUTH URL: {auth_url}')
+    tracer_l.warning(f"USER. VK AUTH URL: {auth_url}")
     return redirect(auth_url)
 
 
 @csrf_exempt
 def vk_auth_callback(request):
     # Получаем код из GET или POST запроса
-    code = request.GET.get('code') or request.POST.get('code')
+    code = request.GET.get("code") or request.POST.get("code")
     if not code:
-        return JsonResponse({'success': False, 'error': 'Authorization code missing'}, status=400)
+        return JsonResponse(
+            {"success": False, "error": "Authorization code missing"}, status=400
+        )
 
     # Для VK ID SDK (code_v2)
-    if code.startswith('vk2.a.'):
+    if code.startswith("vk2.a."):
         try:
             # Получаем данные пользователя напрямую через service token
             response = requests.get(
                 "https://api.vk.com/method/users.get",
                 params={
-                    'v': VK_API_VERSION,
-                    'access_token': "cf8db51fcf8db51fcf8db51f86ccaed8d3ccf8dcf8db51fa7f5bfa0b76655e0b9e7acae",
-                    'fields': 'first_name,last_name,photo_200',
-                    'code': code
-                }
+                    "v": VK_API_VERSION,
+                    "access_token": "cf8db51fcf8db51fcf8db51f86ccaed8d3ccf8dcf8db51fa7f5bfa0b76655e0b9e7acae",
+                    "fields": "first_name,last_name,photo_200",
+                    "code": code,
+                },
             )
             data = response.json()
 
-            if 'error' in data:
-                return JsonResponse({
-                    'success': False,
-                    'error': data['error']['error_msg']
-                }, status=400)
+            if "error" in data:
+                return JsonResponse(
+                    {"success": False, "error": data["error"]["error_msg"]}, status=400
+                )
 
             # Проверяем что есть данные пользователя
-            if not data.get('response'):
-                return JsonResponse({
-                    'success': False,
-                    'error': 'No user data received'
-                }, status=400)
+            if not data.get("response"):
+                return JsonResponse(
+                    {"success": False, "error": "No user data received"}, status=400
+                )
 
-            user_data = data['response'][0]
-            return JsonResponse({
-                'success': True,
-                'user_id': user_data['id'],
-                'first_name': user_data['first_name'],
-                'last_name': user_data['last_name'],
-                'photo': user_data.get('photo_200', '')
-            })
+            user_data = data["response"][0]
+            return JsonResponse(
+                {
+                    "success": True,
+                    "user_id": user_data["id"],
+                    "first_name": user_data["first_name"],
+                    "last_name": user_data["last_name"],
+                    "photo": user_data.get("photo_200", ""),
+                }
+            )
 
         except Exception as e:
-            return JsonResponse({
-                'success': False,
-                'error': str(e)
-            }, status=500)
+            return JsonResponse({"success": False, "error": str(e)}, status=500)
 
     # Для обычного OAuth
     else:
@@ -2897,32 +3236,34 @@ def vk_auth_callback(request):
             response = requests.post(
                 "https://oauth.vk.com/access_token",
                 data={
-                    'client_id': VK_CLIENT_ID,
-                    'client_secret': VK_CLIENT_SECRET,
-                    'redirect_uri': VK_REDIRECT_URI,
-                    'code': code
-                }
+                    "client_id": VK_CLIENT_ID,
+                    "client_secret": VK_CLIENT_SECRET,
+                    "redirect_uri": VK_REDIRECT_URI,
+                    "code": code,
+                },
             )
             data = response.json()
 
-            if 'error' in data:
-                return JsonResponse({
-                    'success': False,
-                    'error': data.get('error_description', 'VK auth error')
-                }, status=400)
+            if "error" in data:
+                return JsonResponse(
+                    {
+                        "success": False,
+                        "error": data.get("error_description", "VK auth error"),
+                    },
+                    status=400,
+                )
 
-            return JsonResponse({
-                'success': True,
-                'access_token': data['access_token'],
-                'user_id': data['user_id'],
-                'email': data.get('email', '')
-            })
+            return JsonResponse(
+                {
+                    "success": True,
+                    "access_token": data["access_token"],
+                    "user_id": data["user_id"],
+                    "email": data.get("email", ""),
+                }
+            )
 
         except Exception as e:
-            return JsonResponse({
-                'success': False,
-                'error': str(e)
-            }, status=500)
+            return JsonResponse({"success": False, "error": str(e)}, status=500)
 
 
 def exchange_view(request):
@@ -2930,17 +3271,17 @@ def exchange_view(request):
     ticker_tapes = Survey.objects.filter(
         is_in_marketplace=True,
         # view_count__gt=5
-    ).order_by('-updated_at')[:10]
+    ).order_by("-updated_at")[:10]
 
-    marketplace_surveys = Survey.objects.filter(
-        is_in_marketplace=True
-    ).order_by('-view_count')
+    marketplace_surveys = Survey.objects.filter(is_in_marketplace=True).order_by(
+        "-view_count"
+    )
 
     context = {
-        'ticker_tapes': ticker_tapes,
-        'marketplace_surveys': marketplace_surveys,
+        "ticker_tapes": ticker_tapes,
+        "marketplace_surveys": marketplace_surveys,
     }
-    return render(request, 'exchange.html', context)
+    return render(request, "exchange.html", context)
 
 
 def get_survey_details_api(request, survey_id):
@@ -2952,14 +3293,14 @@ def get_survey_details_api(request, survey_id):
         author_nickname = author.first_name or author.username
 
     data = {
-        'title': survey.title,
-        'description': survey.description or "Описание отсутствует.",
-        'author_nickname': author_nickname,
-        'is_verified': survey.is_verified,
-        'questions_count': len(survey.get_questions()),
-        'view_count': survey.view_count,
-        'attempts_count': survey.attempts.count(),
-        'take_test_url': reverse('take_test', args=[survey.survey_id]),
+        "title": survey.title,
+        "description": survey.description or "Описание отсутствует.",
+        "author_nickname": author_nickname,
+        "is_verified": survey.is_verified,
+        "questions_count": len(survey.get_questions()),
+        "view_count": survey.view_count,
+        "attempts_count": survey.attempts.count(),
+        "take_test_url": reverse("take_test", args=[survey.survey_id]),
         # 'remix_url': reverse('remix_survey', args=[survey.survey_id]),
     }
     return JsonResponse(data)
@@ -2973,9 +3314,9 @@ def redirect_to_profile(request):
     """
     user = request.user
     if user.is_authenticated:
-        return redirect('profile', username=user.username)
+        return redirect("profile", username=user.username)
     else:
-        return redirect('login')
+        return redirect("login")
 
 
 @login_required
@@ -2988,102 +3329,126 @@ def profile_view(request, username):
     date_join = get_formate_date(user.date_joined)
     date_last_login = get_formate_date(user.last_login)
 
-    subscription = get_object_or_404(Subscription, staff_id=staff_id)
-    subscription_end_date_formatted = subscription.end_date.strftime('%d.%m.%Y')
+    # Используем AccessService для получения актуальной информации
+    access_service = AccessService(staff_id)
+    access_info = access_service.check_access()
 
-    human_readable_plan = subscription.get_human_plan()
+    # Подписка
+    try:
+        subscription = Subscription.objects.get(staff_id=staff_id)
+        subscription_end_date_formatted = subscription.end_date.strftime("%d.%m.%Y")
+        human_readable_plan = subscription.get_human_plan()
+        subscription_end_date_as_date = subscription.end_date.date()
+        days_until_end = (subscription_end_date_as_date - timezone.now().date()).days
+        subscription.status = subscription.check_sub_status()
+    except Subscription.DoesNotExist:
+        subscription = None
+        subscription_end_date_formatted = None
+        human_readable_plan = "Нет"
+        days_until_end = 0
 
-    subscription_end_date_as_date = subscription.end_date.date()
+    # Лимиты через AccessService
+    tests_count_limit = access_info["daily_limit"]
+    tests_remaining = access_info["tests_left_daily"]
+    print(tests_remaining)
+    extra_credits = access_info["extra_credits"]
 
-    # Расчет дней до конца подписки
-    days_until_end = (subscription_end_date_as_date - timezone.now().date()).days
-
-    user_django = request.user
-    token_email_verification = signing.dumps(user_django.pk, salt='email-verification')
-
-    subscription.status = subscription.check_sub_status()
-    tests_count_limit = get_daily_test_limit(subscription.plan_name) if subscription.status == 'active' else 0
-
-    manage_tokens_limits = ManageTokensLimits(staff_id)
-    tests_used_today = manage_tokens_limits.get_tests_used_today()
-
-    diff_tests_count_limit = tests_count_limit - tests_used_today
-
+    # Процент использования подписки
     tests_remaining_percentage = 0
     if tests_count_limit > 0:
-        tests_remaining_percentage = (diff_tests_count_limit / tests_count_limit) * 100.0
+        tests_remaining_percentage = (tests_remaining / tests_count_limit) * 100.0
+    elif extra_credits > 0 and tests_count_limit == 0:
+        # Если только пакеты - показываем 100%
+        tests_remaining_percentage = 100.0
 
-    progress_bar_class = ''
+    progress_bar_class = ""
     if tests_remaining_percentage > 50:
-        progress_bar_class = 'progress-bar--high'
+        progress_bar_class = "progress-bar--high"
     elif tests_remaining_percentage > 20:
-        progress_bar_class = 'progress-bar--medium'
+        progress_bar_class = "progress-bar--medium"
     else:
-        progress_bar_class = 'progress-bar--low'
+        progress_bar_class = "progress-bar--low"
 
-    payments_qs = Payment.objects.filter(staff_id=staff_id).order_by('-created_at')
+    # Определяем тип тарифа для отображения
+    if access_info["daily_limit"] > 0:
+        plan_display = human_readable_plan
+        plan_type = "subscription"
+    elif extra_credits > 0:
+        plan_display = f"Пакеты"
+        plan_type = "package"
+    else:
+        plan_display = "Нет доступа"
+        plan_type = "none"
+
+    payments_qs = Payment.objects.filter(staff_id=staff_id).order_by("-created_at")
 
     payments_formatted = []
     for payment in payments_qs:
         amount_rubles = Decimal(payment.amount) / 100 / 100
-        payments_formatted.append({
-            'subscription': payment.subscription,
-            'order_id': payment.order_id,
-            'created_at': payment.created_at,
-            'status': payment.status,
-            'amount_display': "{:,.2f}".format(amount_rubles).replace('.', ',').replace(',', '')
-        })
-
-    manage_tokens_limits = ManageTokensLimits(staff_id)
-    tests_used_today = manage_tokens_limits.get_tests_used_today()
-    diff_tests_count_limit = tests_count_limit - tests_used_today
+        payments_formatted.append(
+            {
+                "subscription": payment.subscription,
+                "order_id": payment.order_id,
+                "created_at": payment.created_at,
+                "status": payment.status,
+                "amount_display": "{:,.2f}".format(amount_rubles)
+                .replace(".", ",")
+                .replace(",", ""),
+            }
+        )
 
     user_data = {
-        'page_title': f'Профиль {username}',
-        'username': username,
-        'tests_today_limit': max(diff_tests_count_limit, 0),
-        'email': ('E-mail: ' + user.email) if user.email else '',
-        'password': f'Пароль: *********' if user.password else '',
-        'phone': 'Телефон: ' + (user.phone if user.phone else 'Не указан'),
-        'date_join': date_join,
-        'date_last_login': date_last_login,
-        'statistics': statistics,
-        'tokens': {
-            'tests_remaining_count_limit': diff_tests_count_limit,
-            'tests_total_limit': tests_count_limit,
-            'tests_usage_percentage': tests_remaining_percentage,
-            'progress_bar_class': progress_bar_class
+        "page_title": f"Профиль {username}",
+        "username": username,
+        "tests_today_limit": max(access_info["daily_limit"] or extra_credits, 0),
+        "email": ("E-mail: " + user.email) if user.email else "",
+        "password": f"Пароль: *********" if user.password else "",
+        "phone": "Телефон: " + (user.phone if user.phone else "Не указан"),
+        "date_join": date_join,
+        "date_last_login": date_last_login,
+        "statistics": statistics,
+        "tokens": {
+            "tests_remaining_count_limit": tests_remaining,
+            "tests_total_limit": access_info["daily_limit"] or extra_credits,
+            "tests_usage_percentage": tests_remaining_percentage,
+            "progress_bar_class": progress_bar_class,
+            "extra_credits": extra_credits,
+            "plan_type": plan_type,
         },
-        'subscription': {
-            'plan_name': human_readable_plan,
-            'plan_end_date': f"{subscription_end_date_formatted}" if days_until_end > 0 else "Закончился",
-            'days_until_end': days_until_end,
-            'status': subscription.status
+        "subscription": {
+            "plan_name": plan_display,
+            "plan_end_date": f"{subscription_end_date_formatted}"
+            if days_until_end > 0
+            else "Закончился",
+            "days_until_end": days_until_end,
+            "status": subscription.status if subscription else "inactive",
         },
-        'subscription_level': get_subscription_level(request),
-        'payments': payments_formatted,
-        'token': token_email_verification
+        "plan_type": plan_type,
+        "extra_credits": extra_credits,
+        "subscription_level": get_subscription_level(request),
+        "payments": payments_formatted,
     }
 
-    top_3_surveys = Survey.objects.filter(
-        id_staff=staff_id,
-        view_count__gt=0
-    ).order_by('-view_count')[:3]
+    top_3_surveys = Survey.objects.filter(id_staff=staff_id, view_count__gt=0).order_by(
+        "-view_count"
+    )[:3]
 
-    tracer_l.info(f'{request.user.username} --- profile [ LOADED ]')
+    tracer_l.info(f"{request.user.username} --- profile [ LOADED ]")
 
     top_surveys_formatted = []
     for survey in top_3_surveys:
-        top_surveys_formatted.append({
-            'title': survey.title,
-            'survey_id': survey.survey_id,
-            'view_count': survey.view_count,
-            'created_at': survey.created_at.strftime('%d.%m.%Y')
-        })
+        top_surveys_formatted.append(
+            {
+                "title": survey.title,
+                "survey_id": survey.survey_id,
+                "view_count": survey.view_count,
+                "created_at": survey.created_at.strftime("%d.%m.%Y"),
+            }
+        )
 
-    user_data['top_surveys'] = top_surveys_formatted
+    user_data["top_surveys"] = top_surveys_formatted
 
-    return render(request, 'profile.html', user_data)
+    return render(request, "profile.html", user_data)
 
 
 @login_required
@@ -3097,7 +3462,11 @@ def user_profile_api(request):
     subscription_level = get_subscription_level(request)
 
     # Подписка и лимиты
-    tests_limit = get_daily_test_limit(subscription.plan_name) if subscription_status == 'active' else 0
+    tests_limit = (
+        get_daily_test_limit(subscription.plan_name)
+        if subscription_status == "active"
+        else 0
+    )
     used_today = ManageTokensLimits(staff_id).get_tests_used_today()
     tests_remaining = max(0, tests_limit - used_today)
 
@@ -3106,34 +3475,51 @@ def user_profile_api(request):
 
     percent_used = (used_today / tests_limit * 100) if tests_limit > 0 else 0
 
-    return JsonResponse({
-        "username": user.username,
-        "email": user.email,
-        "phone": user.phone or None,
-        "date_join": user.date_joined.strftime("%d.%m.%Y"),
-        "date_last_login": user.last_login.strftime("%d.%m.%Y") if user.last_login else None,
-        "statistics": statistics,
-        "tokens": {
-            "remaining": max(0, tests_limit - used_today),
-            "used_percent": round(percent_used),
-            "tests_remaining_today": tests_remaining,
-            "tests_daily_limit": tests_limit
-        },
-        "subscription": {
-            "plan_name": subscription.get_human_plan(),
-            "plan_end_date": subscription.end_date.strftime("%d.%m.%Y"),
-            "days_until_end": days_until_end if days_until_end > 0 else 0,
-            "is_active": days_until_end >= 0
-        },
-        "subscription_level": subscription_level,
-        "email_verification_token": signing.dumps(user.pk, salt="email-verification")
-    })
+    return JsonResponse(
+        {
+            "username": user.username,
+            "email": user.email,
+            "phone": user.phone or None,
+            "date_join": user.date_joined.strftime("%d.%m.%Y"),
+            "date_last_login": user.last_login.strftime("%d.%m.%Y")
+            if user.last_login
+            else None,
+            "statistics": statistics,
+            "tokens": {
+                "remaining": max(0, tests_limit - used_today),
+                "used_percent": round(percent_used),
+                "tests_remaining_today": tests_remaining,
+                "tests_daily_limit": tests_limit,
+            },
+            "subscription": {
+                "plan_name": subscription.get_human_plan(),
+                "plan_end_date": subscription.end_date.strftime("%d.%m.%Y"),
+                "days_until_end": days_until_end if days_until_end > 0 else 0,
+                "is_active": days_until_end >= 0,
+            },
+            "subscription_level": subscription_level,
+            "email_verification_token": signing.dumps(
+                user.pk, salt="email-verification"
+            ),
+        }
+    )
 
 
 def get_subscription_level(request) -> int:
-    subscription_db = Subscription.objects.get(staff_id=get_staff_id(request))
-    subscription_check = SubscriptionCheck()
-    return subscription_check.get_subscription_level(subscription_db.plan_name)
+    try:
+        subscription_db = Subscription.objects.get(staff_id=get_staff_id(request))
+        subscription_check = SubscriptionCheck()
+
+        # Проверка кредитов
+        access_service = AccessService(staff_id=get_staff_id(request))
+        access_info = access_service.check_access()
+        extra_credits = access_info["extra_credits"]
+        if extra_credits > 0:
+            return 2
+
+        return subscription_check.get_subscription_level(subscription_db.plan_name)
+    except (Subscription.DoesNotExist, AttributeError):
+        return 0
 
 
 def get_daily_api_usage_by_key(start_date, end_date):
@@ -3143,8 +3529,7 @@ def get_daily_api_usage_by_key(start_date, end_date):
     """
     usage_data = (
         APIKeyUsage.objects.filter(
-            timestamp__date__range=(start_date, end_date),
-            api_key__purpose='SURVEY'
+            timestamp__date__range=(start_date, end_date), api_key__purpose="SURVEY"
         )
         .annotate(day=TruncDate("timestamp"))
         .values("day", "api_key__name")
@@ -3155,21 +3540,25 @@ def get_daily_api_usage_by_key(start_date, end_date):
     if not usage_data:
         return None
 
-    date_range = [start_date + timedelta(days=x) for x in range((end_date-start_date).days + 1)]
+    date_range = [
+        start_date + timedelta(days=x) for x in range((end_date - start_date).days + 1)
+    ]
     key_names = sorted(list(set(item["api_key__name"] for item in usage_data)))
-    data_map = {(item["day"], item["api_key__name"]): item["count"] for item in usage_data}
+    data_map = {
+        (item["day"], item["api_key__name"]): item["count"] for item in usage_data
+    }
 
     PALETTE = [
-        'rgba(59, 130, 246, 0.7)',   # blue-500
-        'rgba(16, 185, 129, 0.7)',   # emerald-500
-        'rgba(234, 179, 8, 0.7)',    # yellow-500
-        'rgba(139, 92, 246, 0.7)',   # violet-500
-        'rgba(244, 63, 94, 0.7)',    # rose-500
-        'rgba(249, 115, 22, 0.7)',   # orange-500
-        'rgba(20, 184, 166, 0.7)',   # teal-500
-        'rgba(217, 70, 239, 0.7)',   # fuchsia-500
-        'rgba(132, 204, 22, 0.7)',   # lime-500
-        'rgba(99, 102, 241, 0.7)'    # indigo-500
+        "rgba(59, 130, 246, 0.7)",  # blue-500
+        "rgba(16, 185, 129, 0.7)",  # emerald-500
+        "rgba(234, 179, 8, 0.7)",  # yellow-500
+        "rgba(139, 92, 246, 0.7)",  # violet-500
+        "rgba(244, 63, 94, 0.7)",  # rose-500
+        "rgba(249, 115, 22, 0.7)",  # orange-500
+        "rgba(20, 184, 166, 0.7)",  # teal-500
+        "rgba(217, 70, 239, 0.7)",  # fuchsia-500
+        "rgba(132, 204, 22, 0.7)",  # lime-500
+        "rgba(99, 102, 241, 0.7)",  # indigo-500
     ]
 
     datasets = []
@@ -3192,13 +3581,13 @@ def get_total_api_usage_chart_data(start_date, end_date):
 
     daily_counts = (
         APIKeyUsage.objects.filter(timestamp__date__range=(start_date, end_date))
-        .annotate(day=TruncDate('timestamp'))
-        .values('day')
-        .annotate(count=Count('id'))
-        .order_by('day')
+        .annotate(day=TruncDate("timestamp"))
+        .values("day")
+        .annotate(count=Count("id"))
+        .order_by("day")
     )
 
-    data_map = {item['day']: item['count'] for item in daily_counts}
+    data_map = {item["day"]: item["count"] for item in daily_counts}
     labels, data_points = [], []
 
     current_date = start_date
@@ -3207,10 +3596,7 @@ def get_total_api_usage_chart_data(start_date, end_date):
         data_points.append(data_map.get(current_date, 0))
         current_date += timedelta(days=1)
 
-    return {
-        'labels': labels,
-        'data': data_points
-    }
+    return {"labels": labels, "data": data_points}
 
 
 @require_POST
@@ -3219,20 +3605,27 @@ def block_ip_api(request):
     try:
         ip_to_block = request.POST.get("ip_address")
         if not ip_to_block:
-            return JsonResponse({"status": False, "message": "IP адрес не указан"}, status=400)
+            return JsonResponse(
+                {"status": False, "message": "IP адрес не указан"}, status=400
+            )
 
         if BlockedUsers.objects.filter(ip_address=ip_to_block).exists():
-            return JsonResponse({"status": True, "message": f"IP {ip_to_block} уже был в бане"})
+            return JsonResponse(
+                {"status": True, "message": f"IP {ip_to_block} уже был в бане"}
+            )
 
         BlockedUsers.objects.create(
-            ip_address=ip_to_block,
-            reason="Manual ban via Admin Panel"
+            ip_address=ip_to_block, reason="Manual ban via Admin Panel"
         )
 
-        return JsonResponse({"status": True, "message": f"IP {ip_to_block} успешно заблокирован"})
+        return JsonResponse(
+            {"status": True, "message": f"IP {ip_to_block} успешно заблокирован"}
+        )
 
     except Exception as e:
-        return JsonResponse({"status": False, "message": f"Ошибка: {str(e)}"}, status=500)
+        return JsonResponse(
+            {"status": False, "message": f"Ошибка: {str(e)}"}, status=500
+        )
 
 
 @require_POST
@@ -3241,20 +3634,32 @@ def promote_user_api(request):
     try:
         username_to_promote = request.POST.get("username")
         if not username_to_promote:
-            return JsonResponse({"status": False, "message": "Имя пользователя не указано"}, status=400)
+            return JsonResponse(
+                {"status": False, "message": "Имя пользователя не указано"}, status=400
+            )
 
         user_to_promote = get_object_or_404(AuthUser, username=username_to_promote)
 
         if user_to_promote.is_superuser:
             return JsonResponse(
-                {"status": True, "message": f"Пользователь {username_to_promote} уже является администратором"})
+                {
+                    "status": True,
+                    "message": f"Пользователь {username_to_promote} уже является администратором",
+                }
+            )
 
         user_to_promote.is_superuser = True
         user_to_promote.save()
         return JsonResponse(
-            {"status": True, "message": f"Пользователю {username_to_promote} выданы права администратора"})
+            {
+                "status": True,
+                "message": f"Пользователю {username_to_promote} выданы права администратора",
+            }
+        )
     except AuthUser.DoesNotExist:
-        return JsonResponse({"status": False, "message": "Пользователь не найден"}, status=404)
+        return JsonResponse(
+            {"status": False, "message": "Пользователь не найден"}, status=404
+        )
     except Exception as e:
         return JsonResponse({"status": False, "message": str(e)}, status=500)
 
@@ -3282,18 +3687,18 @@ def get_api_performance_data(start_date, end_date):
     performance_data = (
         APIKeyUsage.objects.filter(
             timestamp__date__range=(start_date, end_date),
-            response_time_ms__isnull=False
+            response_time_ms__isnull=False,
         )
         .annotate(day=TruncDate("timestamp"))
         .values("day")
-        .annotate(avg_response=Avg('response_time_ms'))
+        .annotate(avg_response=Avg("response_time_ms"))
         .order_by("day")
     )
 
     if not performance_data:
         return None
 
-    data_map = {item['day']: item['avg_response'] for item in performance_data}
+    data_map = {item["day"]: item["avg_response"] for item in performance_data}
 
     labels, avg_responses = [], []
     current_date = start_date
@@ -3303,11 +3708,13 @@ def get_api_performance_data(start_date, end_date):
         current_date += timedelta(days=1)
 
     return {
-        'labels': labels,
-        'datasets': [{
-            'label': 'Среднее время ответа (ms)',
-            'data': avg_responses,
-        }]
+        "labels": labels,
+        "datasets": [
+            {
+                "label": "Среднее время ответа (ms)",
+                "data": avg_responses,
+            }
+        ],
     }
 
 
@@ -3318,18 +3725,26 @@ def activate_api_key_api(request):
     key_purpose = request.POST.get("key_purpose")
 
     if not key_id_to_activate or not key_purpose:
-        return JsonResponse({"status": False, "message": "Недостаточно данных"}, status=400)
+        return JsonResponse(
+            {"status": False, "message": "Недостаточно данных"}, status=400
+        )
 
     try:
         APIKey.objects.filter(purpose=key_purpose).update(is_active=False)
-        key_to_activate = get_object_or_404(APIKey, id=key_id_to_activate, purpose=key_purpose)
+        key_to_activate = get_object_or_404(
+            APIKey, id=key_id_to_activate, purpose=key_purpose
+        )
         key_to_activate.is_active = True
         key_to_activate.save()
-        return JsonResponse({"status": True, "message": f"Ключ для {key_purpose} активирован"})
+        return JsonResponse(
+            {"status": True, "message": f"Ключ для {key_purpose} активирован"}
+        )
     except APIKey.DoesNotExist:
         return JsonResponse({"status": False, "message": "Ключ не найден"}, status=404)
     except Exception as e:
-        return JsonResponse({"status": False, "message": f"Ошибка: {str(e)}"}, status=500)
+        return JsonResponse(
+            {"status": False, "message": f"Ошибка: {str(e)}"}, status=500
+        )
 
 
 def get_retention_data():
@@ -3341,25 +3756,29 @@ def get_retention_data():
     today = timezone.now().date()
     six_months_ago = (today - timedelta(days=180)).replace(day=1)
 
-    users = AuthUser.objects.annotate(
-        username_len=Length('username')
-    ).filter(
-        date_joined__gte=six_months_ago,
-        username_len__lt=20
-    ).annotate(
-        cohort=TruncMonth('date_joined')
-    ).values('id', 'cohort', 'last_login')
+    users = (
+        AuthUser.objects.annotate(username_len=Length("username"))
+        .filter(date_joined__gte=six_months_ago, username_len__lt=20)
+        .annotate(cohort=TruncMonth("date_joined"))
+        .values("id", "cohort", "last_login")
+    )
 
-    if not users: return None
+    if not users:
+        return None
 
-    cohort_sizes = (users.values('cohort').annotate(total=Count('id', distinct=True)).order_by('cohort'))
-    cohort_size_map = {c['cohort'].date(): c['total'] for c in cohort_sizes}
+    cohort_sizes = (
+        users.values("cohort")
+        .annotate(total=Count("id", distinct=True))
+        .order_by("cohort")
+    )
+    cohort_size_map = {c["cohort"].date(): c["total"] for c in cohort_sizes}
     retention_matrix = defaultdict(lambda: defaultdict(int))
     for user in users:
-        if user['last_login']:
-            month_diff = (user['last_login'].year - user['cohort'].year) * 12 + (
-                        user['last_login'].month - user['cohort'].month)
-            retention_matrix[user['cohort'].date()][month_diff] += 1
+        if user["last_login"]:
+            month_diff = (user["last_login"].year - user["cohort"].year) * 12 + (
+                user["last_login"].month - user["cohort"].month
+            )
+            retention_matrix[user["cohort"].date()][month_diff] += 1
 
     cohorts_data, max_month_diff = [], 0
     for cohort_date in sorted(cohort_size_map.keys(), reverse=True):
@@ -3369,30 +3788,49 @@ def get_retention_data():
             if active_users > 0:
                 max_month_diff = max(max_month_diff, month)
                 percentage = round((active_users / size) * 100)
-                retention_row.append({'percentage': percentage, 'users': active_users})
+                retention_row.append({"percentage": percentage, "users": active_users})
             else:
-                retention_row.append({'percentage': None, 'users': 0})
-        cohorts_data.append({'cohort_name': cohort_date.strftime("%B %Y"), 'size': size, 'values': retention_row})
+                retention_row.append({"percentage": None, "users": 0})
+        cohorts_data.append(
+            {
+                "cohort_name": cohort_date.strftime("%B %Y"),
+                "size": size,
+                "values": retention_row,
+            }
+        )
 
-    return {'headers': [f'Месяц {i}' for i in range(max_month_diff + 1)], 'cohorts': cohorts_data}
+    return {
+        "headers": [f"Месяц {i}" for i in range(max_month_diff + 1)],
+        "cohorts": cohorts_data,
+    }
 
 
 def get_user_activity_distribution():
     """
     Считает распределение пользователей по количеству созданных тестов.
     """
-    real_users_ids = AuthUser.objects.annotate(
-        username_len=Length('username')
-    ).filter(username_len__lt=40).values_list('id_staff', flat=True)
+    real_users_ids = (
+        AuthUser.objects.annotate(username_len=Length("username"))
+        .filter(username_len__lt=40)
+        .values_list("id_staff", flat=True)
+    )
 
     user_test_counts = list(
         Survey.objects.filter(id_staff__in=real_users_ids)
-        .values('id_staff').annotate(test_count=Count('id'))
-        .values_list('test_count', flat=True)
+        .values("id_staff")
+        .annotate(test_count=Count("id"))
+        .values_list("test_count", flat=True)
     )
-    if not user_test_counts: return None
+    if not user_test_counts:
+        return None
 
-    bins = {"1 тест": 0, "2-3 теста": 0, "4-5 тестов": 0, "6-10 тестов": 0, "11+ тестов": 0}
+    bins = {
+        "1 тест": 0,
+        "2-3 теста": 0,
+        "4-5 тестов": 0,
+        "6-10 тестов": 0,
+        "11+ тестов": 0,
+    }
     for count in user_test_counts:
         if count == 1:
             bins["1 тест"] += 1
@@ -3405,7 +3843,7 @@ def get_user_activity_distribution():
         elif count > 10:
             bins["11+ тестов"] += 1
 
-    return {'labels': list(bins.keys()), 'data': list(bins.values())}
+    return {"labels": list(bins.keys()), "data": list(bins.values())}
 
 
 def get_usage_by_subscription(start_date, end_date):
@@ -3414,44 +3852,41 @@ def get_usage_by_subscription(start_date, end_date):
     ЗА ВЫБРАННЫЙ ПЕРИОД.
     """
     active_subscriptions = Subscription.objects.filter(
-        status='active',
-        start_date__lte=end_date,
-        end_date__gte=start_date
-    ).values('plan_name', 'staff_id')
+        status="active", start_date__lte=end_date, end_date__gte=start_date
+    ).values("plan_name", "staff_id")
 
     if not active_subscriptions:
         return None
 
-    usage_by_plan = defaultdict(lambda: {'user_count': 0, 'test_count': 0})
+    usage_by_plan = defaultdict(lambda: {"user_count": 0, "test_count": 0})
 
     unique_users_in_plans = defaultdict(set)
     for sub in active_subscriptions:
-        unique_users_in_plans[sub['plan_name']].add(sub['staff_id'])
+        unique_users_in_plans[sub["plan_name"]].add(sub["staff_id"])
 
     for plan, users in unique_users_in_plans.items():
-        usage_by_plan[plan]['user_count'] = len(users)
+        usage_by_plan[plan]["user_count"] = len(users)
 
-    user_test_counts = Survey.objects.filter(
-        created_at__date__range=(start_date, end_date)
-    ).values('id_staff').annotate(count=Count('id'))
+    user_test_counts = (
+        Survey.objects.filter(created_at__date__range=(start_date, end_date))
+        .values("id_staff")
+        .annotate(count=Count("id"))
+    )
 
-    user_count_map = {str(item['id_staff']): item['count'] for item in user_test_counts}
+    user_count_map = {str(item["id_staff"]): item["count"] for item in user_test_counts}
 
     for plan, users in unique_users_in_plans.items():
         for user_id in users:
-            usage_by_plan[plan]['test_count'] += user_count_map.get(str(user_id), 0)
+            usage_by_plan[plan]["test_count"] += user_count_map.get(str(user_id), 0)
 
     result = defaultdict(float)
     for plan, data in usage_by_plan.items():
-        if data['user_count'] > 0:
-            result[plan] = round(data['test_count'] / data['user_count'], 1)
+        if data["user_count"] > 0:
+            result[plan] = round(data["test_count"] / data["user_count"], 1)
 
     sorted_result = dict(sorted(result.items(), key=lambda item: item[1], reverse=True))
 
-    return {
-        'labels': list(sorted_result.keys()),
-        'data': list(sorted_result.values())
-    }
+    return {"labels": list(sorted_result.keys()), "data": list(sorted_result.values())}
 
 
 def get_top_test_topics(start_date, end_date):
@@ -3459,32 +3894,39 @@ def get_top_test_topics(start_date, end_date):
     Анализирует заголовки тестов для определения популярных тем
     ЗА ВЫБРАННЫЙ ПЕРИОД.
     """
-    real_users_ids = AuthUser.objects.annotate(
-        username_len=Length('username')
-    ).filter().values_list('id_staff', flat=True)
+    real_users_ids = (
+        AuthUser.objects.annotate(username_len=Length("username"))
+        .filter()
+        .values_list("id_staff", flat=True)
+    )
 
     titles = Survey.objects.filter(
-        id_staff__in=real_users_ids,
-        created_at__date__range=(start_date, end_date)
-    ).values_list('title', flat=True)
+        id_staff__in=real_users_ids, created_at__date__range=(start_date, end_date)
+    ).values_list("title", flat=True)
 
     if not titles:
         return None
 
-    if not titles: return None
+    if not titles:
+        return None
 
     stop_words = set(
-        "и в во аналитический тест не что он на я с со как а то все она так его но да ты к у же вы за бы по только еще или от о из для за без до из к на по о от перед при через с у".split())
+        "и в во аналитический тест не что он на я с со как а то все она так его но да ты к у же вы за бы по только еще или от о из для за без до из к на по о от перед при через с у".split()
+    )
 
     words = []
     for title in titles:
-        cleaned_title = re.sub(r'[^\w\s]', '', title.lower())
+        cleaned_title = re.sub(r"[^\w\s]", "", title.lower())
         for word in cleaned_title.split():
             if word not in stop_words and len(word) > 3:
                 words.append(word)
     top_words = Counter(words).most_common(10)
-    if not top_words: return None
-    return {'labels': [word for word, count in top_words], 'data': [count for word, count in top_words]}
+    if not top_words:
+        return None
+    return {
+        "labels": [word for word, count in top_words],
+        "data": [count for word, count in top_words],
+    }
 
 
 def get_daily_token_usage_chart_data(start_date, end_date):
@@ -3494,15 +3936,13 @@ def get_daily_token_usage_chart_data(start_date, end_date):
     """
     daily_token_usage = (
         TokensUsed.objects.filter(created_at__date__range=(start_date, end_date))
-        .annotate(day=TruncDate('created_at'))
-        .values('day')
-        .annotate(
-            total_tokens=Sum('tokens_survey_used') + Sum('tokens_feedback_used')
-        )
-        .order_by('day')
+        .annotate(day=TruncDate("created_at"))
+        .values("day")
+        .annotate(total_tokens=Sum("tokens_survey_used") + Sum("tokens_feedback_used"))
+        .order_by("day")
     )
 
-    data_map = {item['day']: item['total_tokens'] for item in daily_token_usage}
+    data_map = {item["day"]: item["total_tokens"] for item in daily_token_usage}
 
     labels, data_points = [], []
     current_date = start_date
@@ -3511,10 +3951,7 @@ def get_daily_token_usage_chart_data(start_date, end_date):
         data_points.append(data_map.get(current_date, 0))
         current_date += timedelta(days=1)
 
-    return {
-        'labels': labels,
-        'data': data_points
-    }
+    return {"labels": labels, "data": data_points}
 
 
 def get_user_journey_funnel_data(start_date, end_date):
@@ -3524,47 +3961,54 @@ def get_user_journey_funnel_data(start_date, end_date):
     """
 
     registered_users_qs = AuthUser.objects.annotate(
-        username_len=Length('username')
-    ).filter(
-        date_joined__date__range=(start_date, end_date),
-        username_len__lt=20
-    )
+        username_len=Length("username")
+    ).filter(date_joined__date__range=(start_date, end_date), username_len__lt=20)
     registered_count = registered_users_qs.count()
 
     if registered_count == 0:
         return {
-            'labels': [
-                f'Реальные регистрации (0)',
-                f'Создали тест (0)',
-                f'Тест прошли (0)'
+            "labels": [
+                f"Реальные регистрации (0)",
+                f"Создали тест (0)",
+                f"Тест прошли (0)",
             ],
-            'data': [0, 0, 0],
-            'raw_counts': [0, 0, 0]
+            "data": [0, 0, 0],
+            "raw_counts": [0, 0, 0],
         }
 
-    creators_count = registered_users_qs.filter(
-        id_staff__in=Survey.objects.values('id_staff')
-    ).distinct().count()
+    creators_count = (
+        registered_users_qs.filter(id_staff__in=Survey.objects.values("id_staff"))
+        .distinct()
+        .count()
+    )
 
     surveys_from_cohort = Survey.objects.filter(
-        id_staff__in=registered_users_qs.values('id_staff')
+        id_staff__in=registered_users_qs.values("id_staff")
     )
-    successful_creators_count = TestAttempt.objects.filter(
-        survey__in=surveys_from_cohort
-    ).values('survey__id_staff').distinct().count()
+    successful_creators_count = (
+        TestAttempt.objects.filter(survey__in=surveys_from_cohort)
+        .values("survey__id_staff")
+        .distinct()
+        .count()
+    )
 
-    creator_percent = round(creators_count / registered_count * 100) if registered_count > 0 else 0
-    successful_creator_percent = round(
-        successful_creators_count / registered_count * 100) if registered_count > 0 else 0
+    creator_percent = (
+        round(creators_count / registered_count * 100) if registered_count > 0 else 0
+    )
+    successful_creator_percent = (
+        round(successful_creators_count / registered_count * 100)
+        if registered_count > 0
+        else 0
+    )
 
     return {
-        'labels': [
-            f'Реальные регистрации ({registered_count})',
-            f'Создали тест ({creators_count})',
-            f'Тест прошли ({successful_creators_count})'
+        "labels": [
+            f"Реальные регистрации ({registered_count})",
+            f"Создали тест ({creators_count})",
+            f"Тест прошли ({successful_creators_count})",
         ],
-        'data': [100, creator_percent, successful_creator_percent],
-        'raw_counts': [registered_count, creators_count, successful_creators_count]
+        "data": [100, creator_percent, successful_creator_percent],
+        "raw_counts": [registered_count, creators_count, successful_creators_count],
     }
 
 
@@ -3581,13 +4025,13 @@ def get_daily_attempts_chart_data():
 
     daily_counts = (
         TestAttempt.objects.filter(created_at__date__gte=previous_period_start)
-        .annotate(day=TruncDate('created_at'))
-        .values('day')
-        .annotate(count=Count('id'))
-        .order_by('day')
+        .annotate(day=TruncDate("created_at"))
+        .values("day")
+        .annotate(count=Count("id"))
+        .order_by("day")
     )
 
-    data_map = {item['day']: item['count'] for item in daily_counts}
+    data_map = {item["day"]: item["count"] for item in daily_counts}
 
     current_period_data = []
     previous_period_data = []
@@ -3603,9 +4047,9 @@ def get_daily_attempts_chart_data():
         labels.append(current_date.strftime("%a"))
 
     return {
-        'labels': labels,
-        'current_period_data': current_period_data,
-        'previous_period_data': previous_period_data
+        "labels": labels,
+        "current_period_data": current_period_data,
+        "previous_period_data": previous_period_data,
     }
 
 
@@ -3615,13 +4059,13 @@ def get_test_performance_scatter_data():
 
     performance_data = (
         TestAttempt.objects.filter(created_at__date__gte=seven_days_ago)
-        .values('survey__title')
+        .values("survey__title")
         .annotate(
-            attempts=Count('id'),
-            avg_score=Avg(F('score') * 100.0 / F('total_questions')),
-            unique_students=Count('student_name', distinct=True)
+            attempts=Count("id"),
+            avg_score=Avg(F("score") * 100.0 / F("total_questions")),
+            unique_students=Count("student_name", distinct=True),
         )
-        .order_by('-attempts')[:20]
+        .order_by("-attempts")[:20]
     )
 
     if not performance_data:
@@ -3629,12 +4073,14 @@ def get_test_performance_scatter_data():
 
     chart_data = []
     for test in performance_data:
-        chart_data.append({
-            'x': round(test['avg_score'], 1) if test['avg_score'] else 0,
-            'y': test['attempts'],
-            'r': test['unique_students'] * 2 + 4,
-            'label': test['survey__title']
-        })
+        chart_data.append(
+            {
+                "x": round(test["avg_score"], 1) if test["avg_score"] else 0,
+                "y": test["attempts"],
+                "r": test["unique_students"] * 2 + 4,
+                "label": test["survey__title"],
+            }
+        )
 
     return chart_data
 
@@ -3647,11 +4093,7 @@ def get_score_distribution_data():
     if not attempts.exists():
         return None
 
-    bins = {
-        "Отлично (80-100%)": 0,
-        "Хорошо (50-79%)": 0,
-        "Плохо (<50%)": 0
-    }
+    bins = {"Отлично (80-100%)": 0, "Хорошо (50-79%)": 0, "Плохо (<50%)": 0}
 
     for attempt in attempts:
         if attempt.total_questions > 0:
@@ -3663,10 +4105,7 @@ def get_score_distribution_data():
             else:
                 bins["Плохо (<50%)"] += 1
 
-    return {
-        'labels': list(bins.keys()),
-        'data': list(bins.values())
-    }
+    return {"labels": list(bins.keys()), "data": list(bins.values())}
 
 
 def get_cockpit_metrics():
@@ -3678,7 +4117,9 @@ def get_cockpit_metrics():
     start_of_week = today - timedelta(days=today.weekday())
     start_of_month = today.replace(day=1)
 
-    real_users_qs = AuthUser.objects.annotate(username_len=Length('username')).filter(username_len__lt=40)
+    real_users_qs = AuthUser.objects.annotate(username_len=Length("username")).filter(
+        username_len__lt=40
+    )
 
     # --- 1 ---
     dau = real_users_qs.filter(last_login__date=today).count()
@@ -3692,7 +4133,7 @@ def get_cockpit_metrics():
     attempts_today = TestAttempt.objects.filter(created_at__date=today).count()
     attempts_yesterday = TestAttempt.objects.filter(created_at__date=yesterday).count()
 
-    all_surveys_questions = Survey.objects.values_list('questions', flat=True)
+    all_surveys_questions = Survey.objects.values_list("questions", flat=True)
     question_counts = []
     for q_json in all_surveys_questions:
         try:
@@ -3702,14 +4143,23 @@ def get_cockpit_metrics():
         except (json.JSONDecodeError, TypeError):
             continue
 
-    avg_questions_per_survey = round(sum(question_counts) / len(question_counts), 1) if question_counts else 0
+    avg_questions_per_survey = (
+        round(sum(question_counts) / len(question_counts), 1) if question_counts else 0
+    )
 
     # --- 3 ---
-    revenue_today = Payment.objects.filter(status='completed', created_at__date=today).aggregate(sum=Sum('amount'))[
-                        'sum'] or 0
-    revenue_month = \
-    Payment.objects.filter(status='completed', created_at__date__gte=start_of_month).aggregate(sum=Sum('amount'))[
-        'sum'] or 0
+    revenue_today = (
+        Payment.objects.filter(status="completed", created_at__date=today).aggregate(
+            sum=Sum("amount")
+        )["sum"]
+        or 0
+    )
+    revenue_month = (
+        Payment.objects.filter(
+            status="completed", created_at__date__gte=start_of_month
+        ).aggregate(sum=Sum("amount"))["sum"]
+        or 0
+    )
 
     new_subs_today = Subscription.objects.filter(start_date__date=today).count()
 
@@ -3717,65 +4167,92 @@ def get_cockpit_metrics():
     api_calls_today = APIKeyUsage.objects.filter(timestamp__date=today).count()
     api_calls_yesterday = APIKeyUsage.objects.filter(timestamp__date=yesterday).count()
 
-    active_survey_key = APIKey.objects.filter(purpose='SURVEY', is_active=True).first()
+    active_survey_key = APIKey.objects.filter(purpose="SURVEY", is_active=True).first()
     active_key_usage = 0
     if active_survey_key:
-        active_key_usage = APIKeyUsage.objects.filter(api_key=active_survey_key, timestamp__date=today).count()
+        active_key_usage = APIKeyUsage.objects.filter(
+            api_key=active_survey_key, timestamp__date=today
+        ).count()
 
     active_key_load = round(active_key_usage / 50 * 100) if active_survey_key else 0
 
     if active_key_load > 90:
-        active_key_load_color = 'bg-red-600'
+        active_key_load_color = "bg-red-600"
     elif active_key_load > 70:
-        active_key_load_color = 'bg-orange-500'
+        active_key_load_color = "bg-orange-500"
     elif active_key_load > 40:
-        active_key_load_color = 'bg-yellow-400'
+        active_key_load_color = "bg-yellow-400"
     else:
-        active_key_load_color = 'bg-green-500'
+        active_key_load_color = "bg-green-500"
 
     today = timezone.now().date()
     start_of_current_month = today.replace(day=1)
-    funnel_data_for_cockpit = get_user_journey_funnel_data(start_of_current_month, today)
+    funnel_data_for_cockpit = get_user_journey_funnel_data(
+        start_of_current_month, today
+    )
 
     return {
-        'total_real_users': real_users_qs.count(),
-        'new_users_today': real_users_qs.filter(date_joined__date=today).count(),
-        'new_users_month': real_users_qs.filter(date_joined__date__gte=start_of_month).count(),
-        'dau': dau,
-        'wau': wau,
-        'mau': mau,
-        'stickiness': round(dau / mau * 100) if mau > 0 else 0,
-        'stickiness_wau': round(wau / mau * 100) if mau > 0 else 0,
-        'activation_rate_30d': funnel_data_for_cockpit['data'][1] if funnel_data_for_cockpit else 0,
-        'tests_created_today': tests_created_today,
-        'tests_created_total': Survey.objects.count(),
-        'tests_vs_yesterday': tests_created_today - tests_created_yesterday,
-        'attempts_today': attempts_today,
-        'attempts_total': TestAttempt.objects.count(),
-        'attempts_vs_yesterday': attempts_today - attempts_yesterday,
-        'avg_score_30d': TestAttempt.objects.filter(created_at__gte=today - timedelta(days=30)).aggregate(
-            avg=Avg(F('score') * 100 / F('total_questions')))['avg'] or 0,
-        'avg_questions': avg_questions_per_survey,
-        'revenue_today': revenue_today / 100,
-        'revenue_month': revenue_month / 100,
-        'new_subs_today': new_subs_today,
-        'active_subs_total': Subscription.objects.filter(status='active').count(),
-        'conversion_to_paid_total': round(
-            Subscription.objects.values('staff_id').distinct().count() / real_users_qs.count() * 100,
-            2) if real_users_qs.count() > 0 else 0,
-        'avg_check_total': (total_revenue / completed_count) / 100 if completed_count > 0 else 0,
-        'failed_payments_today': Payment.objects.filter(status='failed', created_at__date=today).count(),
-        'api_calls_today': api_calls_today,
-        'api_calls_vs_yesterday': api_calls_today - api_calls_yesterday,
-        'api_success_rate_today': round(
-            APIKeyUsage.objects.filter(timestamp__date=today, success=True).count() / api_calls_today * 100,
-            1) if api_calls_today > 0 else 100,
-        'avg_response_time_today':
-            APIKeyUsage.objects.filter(timestamp__date=today, response_time_ms__isnull=False).aggregate(
-                avg=Avg('response_time_ms'))['avg'] or 0,
-        'active_key_load': round(active_key_usage / 50 * 100) if active_survey_key else 0,
-        'active_key_name': active_survey_key.name if active_survey_key else "N/A",
-        'active_key_load_color': active_key_load_color,
+        "total_real_users": real_users_qs.count(),
+        "new_users_today": real_users_qs.filter(date_joined__date=today).count(),
+        "new_users_month": real_users_qs.filter(
+            date_joined__date__gte=start_of_month
+        ).count(),
+        "dau": dau,
+        "wau": wau,
+        "mau": mau,
+        "stickiness": round(dau / mau * 100) if mau > 0 else 0,
+        "stickiness_wau": round(wau / mau * 100) if mau > 0 else 0,
+        "activation_rate_30d": funnel_data_for_cockpit["data"][1]
+        if funnel_data_for_cockpit
+        else 0,
+        "tests_created_today": tests_created_today,
+        "tests_created_total": Survey.objects.count(),
+        "tests_vs_yesterday": tests_created_today - tests_created_yesterday,
+        "attempts_today": attempts_today,
+        "attempts_total": TestAttempt.objects.count(),
+        "attempts_vs_yesterday": attempts_today - attempts_yesterday,
+        "avg_score_30d": TestAttempt.objects.filter(
+            created_at__gte=today - timedelta(days=30)
+        ).aggregate(avg=Avg(F("score") * 100 / F("total_questions")))["avg"]
+        or 0,
+        "avg_questions": avg_questions_per_survey,
+        "revenue_today": revenue_today / 100,
+        "revenue_month": revenue_month / 100,
+        "new_subs_today": new_subs_today,
+        "active_subs_total": Subscription.objects.filter(status="active").count(),
+        "conversion_to_paid_total": round(
+            Subscription.objects.values("staff_id").distinct().count()
+            / real_users_qs.count()
+            * 100,
+            2,
+        )
+        if real_users_qs.count() > 0
+        else 0,
+        "avg_check_total": (total_revenue / completed_count) / 100
+        if completed_count > 0
+        else 0,
+        "failed_payments_today": Payment.objects.filter(
+            status="failed", created_at__date=today
+        ).count(),
+        "api_calls_today": api_calls_today,
+        "api_calls_vs_yesterday": api_calls_today - api_calls_yesterday,
+        "api_success_rate_today": round(
+            APIKeyUsage.objects.filter(timestamp__date=today, success=True).count()
+            / api_calls_today
+            * 100,
+            1,
+        )
+        if api_calls_today > 0
+        else 100,
+        "avg_response_time_today": APIKeyUsage.objects.filter(
+            timestamp__date=today, response_time_ms__isnull=False
+        ).aggregate(avg=Avg("response_time_ms"))["avg"]
+        or 0,
+        "active_key_load": round(active_key_usage / 50 * 100)
+        if active_survey_key
+        else 0,
+        "active_key_name": active_survey_key.name if active_survey_key else "N/A",
+        "active_key_load_color": active_key_load_color,
     }
 
 
@@ -3787,7 +4264,10 @@ def get_main_gauge_data():
     tests_today = Survey.objects.filter(created_at__date=today).count()
     tests_yesterday = Survey.objects.filter(created_at__date=yesterday).count()
 
-    last_7_days_counts = [Survey.objects.filter(created_at__date=today - timedelta(days=i)).count() for i in range(7)]
+    last_7_days_counts = [
+        Survey.objects.filter(created_at__date=today - timedelta(days=i)).count()
+        for i in range(7)
+    ]
     record_7_days = max(last_7_days_counts) if max(last_7_days_counts) > 0 else 50
 
     ARC_LENGTH = 141.3
@@ -3795,64 +4275,78 @@ def get_main_gauge_data():
     percent_filled = min(tests_today / record_7_days, 1) if record_7_days > 0 else 0
     final_dashoffset = ARC_LENGTH * (1 - percent_filled)
 
-    real_users_qs = AuthUser.objects.annotate(username_len=Length('username')).filter(username_len__lt=40)
+    real_users_qs = AuthUser.objects.annotate(username_len=Length("username")).filter(
+        username_len__lt=40
+    )
 
     tests_created_today = Survey.objects.filter(created_at__date=today).count()
     dau = real_users_qs.filter(last_login__date=today).count()
-    revenue_today = (Payment.objects.filter(status='completed', created_at__date=today).aggregate(sum=Sum('amount'))[
-                         'sum'] or 0) / 100
+    revenue_today = (
+        Payment.objects.filter(status="completed", created_at__date=today).aggregate(
+            sum=Sum("amount")
+        )["sum"]
+        or 0
+    ) / 100
 
     active_survey_key = APIKey.objects.filter(purpose='SURVEY', is_active=True).first()
     active_key_usage = 0
     if active_survey_key:
-        active_key_usage = APIKeyUsage.objects.filter(api_key=active_survey_key, timestamp__date=today).count()
+        active_key_usage = APIKeyUsage.objects.filter(
+            api_key=active_survey_key, timestamp__date=today
+        ).count()
 
-    active_key_load_percent = round(active_key_usage / 50 * 100) if active_survey_key else 0
+    active_key_load_percent = (
+        round(active_key_usage / 50 * 100) if active_survey_key else 0
+    )
 
     total_tests_created = Survey.objects.count()
 
     status_bar = {
-        'new_users_today': real_users_qs.filter(date_joined__date=today).count(),
-        'new_subs_today': Subscription.objects.filter(start_date__date=today).count(),
-        'api_calls_today': APIKeyUsage.objects.filter(timestamp__date=today).count(),
-        'avg_response_time':
-            APIKeyUsage.objects.filter(timestamp__date=today, response_time_ms__isnull=False).aggregate(
-                avg=Avg('response_time_ms'))['avg'] or 0,
-        'failed_payments_today': Payment.objects.filter(status='failed', created_at__date=today).count()
+        "new_users_today": real_users_qs.filter(date_joined__date=today).count(),
+        "new_subs_today": Subscription.objects.filter(start_date__date=today).count(),
+        "api_calls_today": APIKeyUsage.objects.filter(timestamp__date=today).count(),
+        "avg_response_time": APIKeyUsage.objects.filter(
+            timestamp__date=today, response_time_ms__isnull=False
+        ).aggregate(avg=Avg("response_time_ms"))["avg"]
+        or 0,
+        "failed_payments_today": Payment.objects.filter(
+            status="failed", created_at__date=today
+        ).count(),
     }
 
     return {
-        'tests_created_today': tests_created_today,
-        'dau': dau,
-        'revenue_today': revenue_today,
-        'active_key_load_percent': active_key_load_percent,
-        'active_key_load_degrees': active_key_load_percent * 3.6,
-        'total_tests_created': total_tests_created,
-        'status_bar': status_bar,
-        'tests_today': tests_today,
-        'tests_yesterday': tests_yesterday,
-        'record_7_days': record_7_days,
-        'arc_length': ARC_LENGTH,
-        'final_dashoffset': final_dashoffset,
+        "tests_created_today": tests_created_today,
+        "dau": dau,
+        "revenue_today": revenue_today,
+        "active_key_load_percent": active_key_load_percent,
+        "active_key_load_degrees": active_key_load_percent * 3.6,
+        "total_tests_created": total_tests_created,
+        "status_bar": status_bar,
+        "tests_today": tests_today,
+        "tests_yesterday": tests_yesterday,
+        "record_7_days": record_7_days,
+        "arc_length": ARC_LENGTH,
+        "final_dashoffset": final_dashoffset,
     }
 
 
 def get_daily_creation_dynamics_data(start_date, end_date):
     """Собирает данные по количеству созданных тестов за каждый день."""
-    all_users_ids = AuthUser.objects.annotate().filter().values_list('id_staff', flat=True)
+    all_users_ids = (
+        AuthUser.objects.annotate().filter().values_list("id_staff", flat=True)
+    )
 
     daily_counts = (
         Survey.objects.filter(
-            id_staff__in=all_users_ids,
-            created_at__date__range=(start_date, end_date)
+            id_staff__in=all_users_ids, created_at__date__range=(start_date, end_date)
         )
-        .annotate(day=TruncDate('created_at'))
-        .values('day')
-        .annotate(count=Count('id'))
-        .order_by('day')
+        .annotate(day=TruncDate("created_at"))
+        .values("day")
+        .annotate(count=Count("id"))
+        .order_by("day")
     )
 
-    data_map = {item['day']: item['count'] for item in daily_counts}
+    data_map = {item["day"]: item["count"] for item in daily_counts}
     labels, data_points = [], []
 
     current_date = start_date
@@ -3861,10 +4355,7 @@ def get_daily_creation_dynamics_data(start_date, end_date):
         data_points.append(data_map.get(current_date, 0))
         current_date += timedelta(days=1)
 
-    return {
-        'labels': labels,
-        'data': data_points
-    }
+    return {"labels": labels, "data": data_points}
 
 
 def get_cyber_gauges_data():
@@ -3876,18 +4367,14 @@ def get_cyber_gauges_data():
 
     # --- ШАГ 1: Собираем "сырые" события за сегодня ---
     all_creators_qs = Survey.objects.filter(created_at__date=today)
-    all_creators_staff_ids = set(all_creators_qs.values_list('id_staff', flat=True))
+    all_creators_staff_ids = set(all_creators_qs.values_list("id_staff", flat=True))
     all_creators_count = len(all_creators_staff_ids)
 
     # 2. Все, кто зарегистрировался сегодня ("легалы")
     registrations_qs = AuthUser.objects.annotate(
-        username_len=Length('username')
-    ).filter(
-        date_joined__date=today,
-        username_len__lt=40,
-        is_staff=False
-    )
-    registrations_staff_ids = set(registrations_qs.values_list('id_staff', flat=True))
+        username_len=Length("username")
+    ).filter(date_joined__date=today, username_len__lt=40, is_staff=False)
+    registrations_staff_ids = set(registrations_qs.values_list("id_staff", flat=True))
     registrations_count = len(registrations_staff_ids)
 
     # 3. "Нелегалы" - это те, кто создавал, но не входит в список зареганных
@@ -3900,51 +4387,54 @@ def get_cyber_gauges_data():
 
     # OLD
     all_creators_today_qs = Survey.objects.filter(created_at__date=today)
-    all_creators_staff_ids = list(all_creators_today_qs.values_list('id_staff', flat=True))
+    all_creators_staff_ids = list(
+        all_creators_today_qs.values_list("id_staff", flat=True)
+    )
 
     if not all_creators_staff_ids:
         illegal_creators_count = 0
         real_user_creators_staff_ids = []
     else:
         real_users_who_created_today = AuthUser.objects.annotate(
-            username_len=Length('username')
-        ).filter(
-            username_len__lt=40,
-            id_staff__in=all_creators_staff_ids
+            username_len=Length("username")
+        ).filter(username_len__lt=40, id_staff__in=all_creators_staff_ids)
+        real_user_creators_staff_ids = list(
+            real_users_who_created_today.values_list("id_staff", flat=True)
         )
-        real_user_creators_staff_ids = list(real_users_who_created_today.values_list('id_staff', flat=True))
-        illegal_creators_count = len(all_creators_staff_ids) - len(real_user_creators_staff_ids)
+        illegal_creators_count = len(all_creators_staff_ids) - len(
+            real_user_creators_staff_ids
+        )
 
     registrations_today_qs = AuthUser.objects.annotate(
-        username_len=Length('username')
-    ).filter(
-        date_joined__date=today,
-        username_len__lt=40,
-        is_staff=False
-    )
+        username_len=Length("username")
+    ).filter(date_joined__date=today, username_len__lt=40, is_staff=False)
     registrations_today_count = registrations_today_qs.count()
 
     activated_after_reg_count = len(
-        set(registrations_today_qs.values_list('id_staff', flat=True)) & set(real_user_creators_staff_ids)
+        set(registrations_today_qs.values_list("id_staff", flat=True))
+        & set(real_user_creators_staff_ids)
     )
 
     # --- ШАГ 2: Собираем воронку ---
     total_touches = registrations_today_count + illegal_creators_count
     conversion_reg_to_activation = (
-                activated_after_reg_count / illegal_creators_count * 100) if illegal_creators_count > 0 else 0
+        (activated_after_reg_count / illegal_creators_count * 100)
+        if illegal_creators_count > 0
+        else 0
+    )
 
     activation_funnel = {
-        'total_touches': total_touches,
-        'registrations': registrations_today_count,
-        'illegals': illegal_creators_count,
-        'activated_after_reg': activated_after_reg_count,
-        'conversion_reg_to_activation': round(conversion_reg_to_activation, 1),
+        "total_touches": total_touches,
+        "registrations": registrations_today_count,
+        "illegals": illegal_creators_count,
+        "activated_after_reg": activated_after_reg_count,
+        "conversion_reg_to_activation": round(conversion_reg_to_activation, 1),
     }
 
     # --- Данные для чарта ---
     funnel_data = {
-        'labels': ['Всего взаимодействий', 'Нелегалы', 'Регистрации', 'Активировались'],
-        'values': [
+        "labels": ["Всего взаимодействий", "Нелегалы", "Регистрации", "Активировались"],
+        "values": [
             total_touches,
             illegal_creators_count,
             registrations_today_count,
@@ -3953,18 +4443,21 @@ def get_cyber_gauges_data():
     }
 
     # --- Данные для виджета "Монетизация" ---
-    payments_today = Payment.objects.filter(created_at__date=today, status='completed')
-    revenue_today = (payments_today.aggregate(sum=Sum('amount'))['sum'] or 0) / 100
-    buyers_today_count = payments_today.values('staff_id').distinct().count()
+    payments_today = Payment.objects.filter(created_at__date=today, status="completed")
+    revenue_today = (payments_today.aggregate(sum=Sum("amount"))["sum"] or 0) / 100
+    buyers_today_count = payments_today.values("staff_id").distinct().count()
 
     total_activated_today = activated_after_reg_count + illegal_creators_count
     conversion_activation_to_payment = (
-                buyers_today_count / total_activated_today * 100) if total_activated_today > 0 else 0
+        (buyers_today_count / total_activated_today * 100)
+        if total_activated_today > 0
+        else 0
+    )
 
     monetization_metrics = {
-        'revenue': revenue_today,
-        'buyers': buyers_today_count,
-        'conversion_activation_to_payment': round(conversion_activation_to_payment, 2),
+        "revenue": revenue_today,
+        "buyers": buyers_today_count,
+        "conversion_activation_to_payment": round(conversion_activation_to_payment, 2),
     }
 
     # --- 3. Данные для "Пульса Активности" (Тесты) ---
@@ -3972,33 +4465,39 @@ def get_cyber_gauges_data():
     tests_today = all_creators_today_qs.count()
     tests_yesterday = Survey.objects.filter(created_at__date=yesterday).count()
 
-    tests_change = round((tests_today - tests_yesterday) / tests_yesterday * 100) if tests_yesterday > 0 else 0
+    tests_change = (
+        round((tests_today - tests_yesterday) / tests_yesterday * 100)
+        if tests_yesterday > 0
+        else 0
+    )
 
     last_12_hours = timezone.now() - timedelta(hours=12)
-    hourly_activity = Survey.objects.filter(
-        created_at__gte=last_12_hours
-    ).annotate(
-        hour=TruncHour('created_at')
-    ).values('hour').annotate(count=Count('id')).order_by('hour')
+    hourly_activity = (
+        Survey.objects.filter(created_at__gte=last_12_hours)
+        .annotate(hour=TruncHour("created_at"))
+        .values("hour")
+        .annotate(count=Count("id"))
+        .order_by("hour")
+    )
 
     activity_sparkline = [0] * 12
     now_hour = timezone.now().hour
     for item in hourly_activity:
-        hour_diff = (now_hour - item['hour'].hour + 24) % 24
+        hour_diff = (now_hour - item["hour"].hour + 24) % 24
         if 0 <= hour_diff < 12:
-            activity_sparkline[11 - hour_diff] = item['count']
+            activity_sparkline[11 - hour_diff] = item["count"]
 
     tests_pulse = {
-        'today': tests_today,
-        'change': tests_change,
-        'sparkline': activity_sparkline
+        "today": tests_today,
+        "change": tests_change,
+        "sparkline": activity_sparkline,
     }
 
     return {
-        'activation_funnel': activation_funnel,
-        'monetization': monetization_metrics,
-        'tests_pulse': tests_pulse,
-        'activation_funnel_chart': funnel_data,
+        "activation_funnel": activation_funnel,
+        "monetization": monetization_metrics,
+        "tests_pulse": tests_pulse,
+        "activation_funnel_chart": funnel_data,
     }
 
 
@@ -4012,37 +4511,53 @@ def get_daily_funnel_trends_data():
     # --- Собираем события за весь период ---
 
     # 1. Регистрации по дням
-    registrations_by_day_qs = AuthUser.objects.annotate(
-        username_len=Length('username')
-    ).filter(
-        date_joined__date__gte=start_period, username_len__lt=40, is_staff=False
-    ).annotate(day=TruncDay('date_joined')).values('day').annotate(count=Count('id'))
+    registrations_by_day_qs = (
+        AuthUser.objects.annotate(username_len=Length("username"))
+        .filter(
+            date_joined__date__gte=start_period, username_len__lt=40, is_staff=False
+        )
+        .annotate(day=TruncDay("date_joined"))
+        .values("day")
+        .annotate(count=Count("id"))
+    )
 
     # 2. Создания тестов по дням
-    creations_by_day_qs = Survey.objects.filter(
-        created_at__date__gte=start_period
-    ).annotate(day=TruncDay('created_at')).values('day', 'id_staff')
+    creations_by_day_qs = (
+        Survey.objects.filter(created_at__date__gte=start_period)
+        .annotate(day=TruncDay("created_at"))
+        .values("day", "id_staff")
+    )
 
     # --- Собираем данные в словари ---
-    registrations_map = {item['day'].date(): item['count'] for item in registrations_by_day_qs}
+    registrations_map = {
+        item["day"].date(): item["count"] for item in registrations_by_day_qs
+    }
 
     # Собираем множества id_staff для каждого дня
     creations_map = defaultdict(set)
     for item in creations_by_day_qs:
-        creations_map[item['day'].date()].add(item['id_staff'])
+        creations_map[item["day"].date()].add(item["id_staff"])
 
     registrations_staff_ids_map = defaultdict(set)
-    for user in AuthUser.objects.filter(date_joined__date__gte=start_period, is_staff=False).annotate(
-            len=Length('username')).filter(len__lt=40):
+    for user in (
+        AuthUser.objects.filter(date_joined__date__gte=start_period, is_staff=False)
+        .annotate(len=Length("username"))
+        .filter(len__lt=40)
+    ):
         registrations_staff_ids_map[user.date_joined.date()].add(user.id_staff)
 
     # --- Проходим по дням и собираем данные для графика ---
     labels = []
-    total_touches_data, illegals_data, registrations_data, activations_data = [], [], [], []
+    total_touches_data, illegals_data, registrations_data, activations_data = (
+        [],
+        [],
+        [],
+        [],
+    )
 
     for i in range(30):
         current_day = start_period + timedelta(days=i)
-        labels.append(current_day.strftime('%d.%m'))
+        labels.append(current_day.strftime("%d.%m"))
 
         regs_today = registrations_map.get(current_day, 0)
 
@@ -4061,22 +4576,26 @@ def get_daily_funnel_trends_data():
     # --- Считаем итоговые цифры за период ---
     total_registrations = sum(registrations_data)
     total_activations = sum(activations_data)
-    total_conversion = (total_activations / total_registrations * 100) if total_registrations > 0 else 0
+    total_conversion = (
+        (total_activations / total_registrations * 100)
+        if total_registrations > 0
+        else 0
+    )
 
     return {
-        'chart': {
-            'labels': labels,
-            'total_touches': total_touches_data,
-            'illegals': illegals_data,
-            'registrations': registrations_data,
-            'activations': activations_data,
+        "chart": {
+            "labels": labels,
+            "total_touches": total_touches_data,
+            "illegals": illegals_data,
+            "registrations": registrations_data,
+            "activations": activations_data,
         },
-        'summary': {
-            'total_touches': sum(total_touches_data),
-            'total_registrations': total_registrations,
-            'total_activations': total_activations,
-            'total_conversion': round(total_conversion, 1)
-        }
+        "summary": {
+            "total_touches": sum(total_touches_data),
+            "total_registrations": total_registrations,
+            "total_activations": total_activations,
+            "total_conversion": round(total_conversion, 1),
+        },
     }
 
 
@@ -4097,76 +4616,91 @@ def get_weekly_pulse_data():
     # --- Функция-помощник для сбора метрик ---
     def calculate_metrics_for_period(start_date, end_date):
         # "Чистые" пользователи, зареганные в этот период
-        real_users_qs = AuthUser.objects.annotate(username_len=Length('username')).filter(
-            username_len__lt=40, is_staff=False, date_joined__date__range=(start_date, end_date)
+        real_users_qs = AuthUser.objects.annotate(
+            username_len=Length("username")
+        ).filter(
+            username_len__lt=40,
+            is_staff=False,
+            date_joined__date__range=(start_date, end_date),
         )
         new_users_count = real_users_qs.count()
 
         # Платежи в этот период
-        payments_qs = Payment.objects.filter(status='completed', created_at__date__range=(start_date, end_date))
-        revenue = (payments_qs.aggregate(sum=Sum('amount'))['sum'] or 0) / 100
+        payments_qs = Payment.objects.filter(
+            status="completed", created_at__date__range=(start_date, end_date)
+        )
+        revenue = (payments_qs.aggregate(sum=Sum("amount"))["sum"] or 0) / 100
 
         # Созданные тесты в этот период (только "чистыми" юзерами)
-        real_user_staff_ids_ever = AuthUser.objects.annotate(username_len=Length('username')).filter(
-            username_len__lt=40, is_staff=False
-        ).values_list('id_staff', flat=True)
+        real_user_staff_ids_ever = (
+            AuthUser.objects.annotate(username_len=Length("username"))
+            .filter(username_len__lt=40, is_staff=False)
+            .values_list("id_staff", flat=True)
+        )
 
         surveys_count = Survey.objects.filter(
             created_at__date__range=(start_date, end_date),
-            id_staff__in=real_user_staff_ids_ever
+            id_staff__in=real_user_staff_ids_ever,
         ).count()
 
         return {
-            'new_users': new_users_count,
-            'revenue': float(revenue),
-            'surveys': surveys_count,
+            "new_users": new_users_count,
+            "revenue": float(revenue),
+            "surveys": surveys_count,
         }
 
     # --- Считаем для обоих периодов ---
-    current_metrics = calculate_metrics_for_period(current_period_start, current_period_end)
-    previous_metrics = calculate_metrics_for_period(previous_period_start, previous_period_end)
+    current_metrics = calculate_metrics_for_period(
+        current_period_start, current_period_end
+    )
+    previous_metrics = calculate_metrics_for_period(
+        previous_period_start, previous_period_end
+    )
 
     # --- СЧИТАЕМ РАЗНИЦУ И СРАЗУ ФОРМАТИРУЕМ СТРОКИ ---
     def format_change(current, previous, is_currency=False):
         change = current - previous
-        sign = '+' if change >= 0 else ''
-        color = 'text-green-400' if change >= 0 else 'text-red-400'
+        sign = "+" if change >= 0 else ""
+        color = "text-green-400" if change >= 0 else "text-red-400"
 
         if is_currency:
-            formatted_change = f"{sign}{change:,.0f} ₽".replace(',', ' ')
+            formatted_change = f"{sign}{change:,.0f} ₽".replace(",", " ")
         else:
             formatted_change = f"{sign}{change}"
 
-        return {
-            'value': formatted_change,
-            'color': color
-        }
+        return {"value": formatted_change, "color": color}
 
     changes = {
-        'new_users': format_change(current_metrics['new_users'], previous_metrics['new_users']),
-        'revenue': format_change(current_metrics['revenue'], previous_metrics['revenue'], is_currency=True),
-        'surveys': format_change(current_metrics['surveys'], previous_metrics['surveys']),
+        "new_users": format_change(
+            current_metrics["new_users"], previous_metrics["new_users"]
+        ),
+        "revenue": format_change(
+            current_metrics["revenue"], previous_metrics["revenue"], is_currency=True
+        ),
+        "surveys": format_change(
+            current_metrics["surveys"], previous_metrics["surveys"]
+        ),
     }
 
     # --- Готовим данные для Chart.js (Radar Chart) ---
     chart_data = {
-        'labels': ['Новые юзеры', 'Выручка (в тыс. ₽)', 'Создано тестов'],
-        'current': [
-            current_metrics['new_users'],
-            current_metrics['revenue'] / 1000,
-            current_metrics['surveys'],
+        "labels": ["Новые юзеры", "Выручка (в тыс. ₽)", "Создано тестов"],
+        "current": [
+            current_metrics["new_users"],
+            current_metrics["revenue"] / 1000,
+            current_metrics["surveys"],
         ],
-        'previous': [
-            previous_metrics['new_users'],
-            previous_metrics['revenue'] / 1000,
-            previous_metrics['surveys'],
-        ]
+        "previous": [
+            previous_metrics["new_users"],
+            previous_metrics["revenue"] / 1000,
+            previous_metrics["surveys"],
+        ],
     }
 
     return {
-        'current': current_metrics,
-        'changes': changes,
-        'chart_data': chart_data,
+        "current": current_metrics,
+        "changes": changes,
+        "chart_data": chart_data,
     }
 
 
@@ -4176,21 +4710,23 @@ def get_live_feed_data():
     """
     today = timezone.now().date()
 
-    recent_surveys = Survey.objects.filter(
-        created_at__date=today
-    ).annotate(
-        attempts_count=Count('attempts')
-    ).order_by('-created_at')[:16]
+    recent_surveys = (
+        Survey.objects.filter(created_at__date=today)
+        .annotate(attempts_count=Count("attempts"))
+        .order_by("-created_at")[:16]
+    )
 
     feed_items = []
     for survey in recent_surveys:
-        feed_items.append({
-            'title': survey.title,
-            'survey_id': survey.survey_id,
-            'time': survey.created_at.strftime('%H:%M'),
-            'views': survey.view_count,
-            'attempts': survey.attempts_count,
-        })
+        feed_items.append(
+            {
+                "title": survey.title,
+                "survey_id": survey.survey_id,
+                "time": survey.created_at.strftime("%H:%M"),
+                "views": survey.view_count,
+                "attempts": survey.attempts_count,
+            }
+        )
 
     return feed_items
 
@@ -4201,52 +4737,59 @@ def get_hall_of_fame_data():
     """
     thirty_days_ago = timezone.now() - timedelta(days=30)
     top_by_views = Survey.objects.filter(
-        created_at__gte=thirty_days_ago,
-        view_count__gt=0
-    ).order_by('-view_count')[:12]
+        created_at__gte=thirty_days_ago, view_count__gt=0
+    ).order_by("-view_count")[:12]
 
-    top_by_attempts = Survey.objects.filter(
-        created_at__gte=thirty_days_ago
-    ).annotate(
-        attempts_count=Count('attempts')
-    ).filter(
-        attempts_count__gt=0
-    ).order_by('-attempts_count')[:12]
+    top_by_attempts = (
+        Survey.objects.filter(created_at__gte=thirty_days_ago)
+        .annotate(attempts_count=Count("attempts"))
+        .filter(attempts_count__gt=0)
+        .order_by("-attempts_count")[:12]
+    )
 
     def format_survey_list(queryset, order_metric):
         survey_list = []
         staff_ids = [s.id_staff for s in queryset]
-        users_map = {user.id_staff: user.username for user in AuthUser.objects.filter(id_staff__in=staff_ids)}
+        users_map = {
+            user.id_staff: user.username
+            for user in AuthUser.objects.filter(id_staff__in=staff_ids)
+        }
 
         for survey in queryset:
             metric_value = getattr(survey, order_metric, 0)
 
-            survey_list.append({
-                'title': survey.title,
-                'survey_id': survey.survey_id,
-                'author': users_map.get(survey.id_staff, "Аноним") if len(users_map.get(survey.id_staff, "Аноним")) < 32 else 'Аноним',
-                'created_at': survey.created_at.strftime('%d.%m.%Y'),
-                'metric_value': metric_value,
-            })
+            survey_list.append(
+                {
+                    "title": survey.title,
+                    "survey_id": survey.survey_id,
+                    "author": users_map.get(survey.id_staff, "Аноним")
+                    if len(users_map.get(survey.id_staff, "Аноним")) < 32
+                    else "Аноним",
+                    "created_at": survey.created_at.strftime("%d.%m.%Y"),
+                    "metric_value": metric_value,
+                }
+            )
         return survey_list
 
     return {
-        'top_by_views': format_survey_list(top_by_views, 'view_count'),
-        'top_by_attempts': format_survey_list(top_by_attempts, 'attempts_count'),
+        "top_by_views": format_survey_list(top_by_views, "view_count"),
+        "top_by_attempts": format_survey_list(top_by_attempts, "attempts_count"),
     }
 
 
 def get_time_to_payment_data():
     """Собирает данные для гистограммы 'Время до первой покупки'."""
-    first_payments = Payment.objects.filter(
-        status='completed'
-    ).order_by('staff_id', 'created_at').distinct('staff_id')
+    first_payments = (
+        Payment.objects.filter(status="completed")
+        .order_by("staff_id", "created_at")
+        .distinct("staff_id")
+    )
 
     user_registration_dates = {
-        str(user['id_staff']): user['date_joined']
+        str(user["id_staff"]): user["date_joined"]
         for user in AuthUser.objects.filter(
-            id_staff__in=first_payments.values('staff_id')
-        ).values('id_staff', 'date_joined')
+            id_staff__in=first_payments.values("staff_id")
+        ).values("id_staff", "date_joined")
     }
 
     if not user_registration_dates:
@@ -4260,8 +4803,11 @@ def get_time_to_payment_data():
             time_deltas.append(delta)
 
     bins = {
-        "0-1 день": 0, "2-7 дней": 0, "8-14 дней": 0,
-        "15-30 дней": 0, "31+ дней": 0
+        "0-1 день": 0,
+        "2-7 дней": 0,
+        "8-14 дней": 0,
+        "15-30 дней": 0,
+        "31+ дней": 0,
     }
     for delta in time_deltas:
         if delta <= 1:
@@ -4275,35 +4821,35 @@ def get_time_to_payment_data():
         else:
             bins["31+ дней"] += 1
 
-    return {
-        'labels': list(bins.keys()),
-        'data': list(bins.values())
-    }
+    return {"labels": list(bins.keys()), "data": list(bins.values())}
 
 
 def get_user_value_matrix_data():
     """Собирает данные для 'Матрицы Ценности Пользователей'."""
-    real_users_qs = AuthUser.objects.annotate(username_len=Length('username')).filter(username_len__lt=20)
+    real_users_qs = AuthUser.objects.annotate(username_len=Length("username")).filter(
+        username_len__lt=20
+    )
 
     user_influence = defaultdict(int)
-    attempts_on_surveys = TestAttempt.objects.values(
-        'survey__id_staff'
-    ).annotate(
-        total_attempts=Count('id')
-    ).values('survey__id_staff', 'total_attempts')
+    attempts_on_surveys = (
+        TestAttempt.objects.values("survey__id_staff")
+        .annotate(total_attempts=Count("id"))
+        .values("survey__id_staff", "total_attempts")
+    )
 
     for item in attempts_on_surveys:
-        user_influence[str(item['survey__id_staff'])] = item['total_attempts']
+        user_influence[str(item["survey__id_staff"])] = item["total_attempts"]
 
     user_revenue = defaultdict(float)
-    payments_by_user = Payment.objects.filter(status='completed').values(
-        'staff_id'
-    ).annotate(
-        total_revenue=Sum('amount')
-    ).values('staff_id', 'total_revenue')
+    payments_by_user = (
+        Payment.objects.filter(status="completed")
+        .values("staff_id")
+        .annotate(total_revenue=Sum("amount"))
+        .values("staff_id", "total_revenue")
+    )
 
     for item in payments_by_user:
-        user_revenue[str(item['staff_id'])] = float(item['total_revenue'] / 100)
+        user_revenue[str(item["staff_id"])] = float(item["total_revenue"] / 100)
 
     matrix_data = []
     for user in real_users_qs:
@@ -4312,14 +4858,11 @@ def get_user_value_matrix_data():
         revenue = user_revenue.get(user_id_str, 0)
 
         if influence > 0 or revenue > 0:
-            matrix_data.append({
-                'x': influence,
-                'y': revenue,
-                'r': 5,
-                'label': user.username
-            })
+            matrix_data.append(
+                {"x": influence, "y": revenue, "r": 5, "label": user.username}
+            )
 
-    matrix_data.sort(key=lambda p: p['x'] + p['y'] * 10, reverse=True)
+    matrix_data.sort(key=lambda p: p["x"] + p["y"] * 10, reverse=True)
 
     return matrix_data[:100]
 
@@ -4327,53 +4870,62 @@ def get_user_value_matrix_data():
 def get_daily_revenue_data(start_date, end_date):
     """1. Денежный Поток: Cумма успешных транзакций по дням."""
     daily_revenue = (
-        Payment.objects.filter(created_at__date__range=(start_date, end_date), status='completed')
-        .annotate(day=TruncDate('created_at'))
-        .values('day')
-        .annotate(daily_total=Sum('amount'))
-        .order_by('day')
+        Payment.objects.filter(
+            created_at__date__range=(start_date, end_date), status="completed"
+        )
+        .annotate(day=TruncDate("created_at"))
+        .values("day")
+        .annotate(daily_total=Sum("amount"))
+        .order_by("day")
     )
-    data_map = {item['day']: float(item['daily_total'] / 100) for item in daily_revenue}
+    data_map = {item["day"]: float(item["daily_total"] / 100) for item in daily_revenue}
     labels, data_points = [], []
     current_date = start_date
     while current_date <= end_date:
         labels.append(current_date.strftime("%d.%m"))
         data_points.append(data_map.get(current_date, 0))
         current_date += timedelta(days=1)
-    return {'labels': labels, 'data': data_points}
+    return {"labels": labels, "data": data_points}
 
 
 def get_arpu_dynamics_data(start_date, end_date):
     """2. Динамика Среднего Чека по дням."""
-    payments = Payment.objects.filter(created_at__date__range=(start_date, end_date), status='completed')
-    daily_arpu = (
-        payments.annotate(day=TruncDate('created_at'))
-        .values('day')
-        .annotate(
-            daily_revenue=Sum('amount'),
-            paying_users=Count('staff_id', distinct=True)
-        )
-        .order_by('day')
+    payments = Payment.objects.filter(
+        created_at__date__range=(start_date, end_date), status="completed"
     )
-    data_map = {item['day']: float(item['daily_revenue'] / 100 / item['paying_users']) for item in daily_arpu}
+    daily_arpu = (
+        payments.annotate(day=TruncDate("created_at"))
+        .values("day")
+        .annotate(
+            daily_revenue=Sum("amount"), paying_users=Count("staff_id", distinct=True)
+        )
+        .order_by("day")
+    )
+    data_map = {
+        item["day"]: float(item["daily_revenue"] / 100 / item["paying_users"])
+        for item in daily_arpu
+    }
     labels, data_points = [], []
     current_date = start_date
     while current_date <= end_date:
         labels.append(current_date.strftime("%d.%m"))
         data_points.append(data_map.get(current_date, 0))
         current_date += timedelta(days=1)
-    return {'labels': labels, 'data': data_points}
+    return {"labels": labels, "data": data_points}
 
 
 def get_revenue_source_data(start_date, end_date):
     """3. Источник Дохода: Новые vs. Старые."""
-    payments = Payment.objects.filter(created_at__date__range=(start_date, end_date), status='completed')
+    payments = Payment.objects.filter(
+        created_at__date__range=(start_date, end_date), status="completed"
+    )
 
     new_revenue_map, expansion_revenue_map = defaultdict(float), defaultdict(float)
 
     for p in payments:
-        is_first_payment = not Payment.objects.filter(staff_id=p.staff_id, status='completed',
-                                                      created_at__lt=p.created_at).exists()
+        is_first_payment = not Payment.objects.filter(
+            staff_id=p.staff_id, status="completed", created_at__lt=p.created_at
+        ).exists()
         day = p.created_at.date()
         if is_first_payment:
             new_revenue_map[day] += float(p.amount / 100)
@@ -4388,33 +4940,45 @@ def get_revenue_source_data(start_date, end_date):
         expansion_data.append(expansion_revenue_map.get(current_date, 0))
         current_date += timedelta(days=1)
 
-    return {'labels': labels, 'new_revenue': new_data, 'expansion_revenue': expansion_data}
+    return {
+        "labels": labels,
+        "new_revenue": new_data,
+        "expansion_revenue": expansion_data,
+    }
 
 
 def get_cohort_revenue_data():
     """4. Жизненный Цикл Дохода по Когортам."""
     six_months_ago = (timezone.now() - timedelta(days=180)).replace(day=1)
 
-    users = AuthUser.objects.annotate(username_len=Length('username')).filter(
-        username_len__lt=20, date_joined__gte=six_months_ago
-    ).annotate(cohort=TruncMonth('date_joined'))
+    users = (
+        AuthUser.objects.annotate(username_len=Length("username"))
+        .filter(username_len__lt=20, date_joined__gte=six_months_ago)
+        .annotate(cohort=TruncMonth("date_joined"))
+    )
 
-    payments = Payment.objects.filter(status='completed', staff_id__in=users.values('id_staff'))
+    payments = Payment.objects.filter(
+        status="completed", staff_id__in=users.values("id_staff")
+    )
 
     cohort_sizes = {
-        item['cohort'].date(): item['count']
-        for item in users.values('cohort').annotate(count=Count('id')).order_by('cohort')
+        item["cohort"].date(): item["count"]
+        for item in users.values("cohort")
+        .annotate(count=Count("id"))
+        .order_by("cohort")
     }
 
     cohort_revenue_matrix = defaultdict(lambda: defaultdict(float))
     for p in payments:
         user_cohort = users.get(id_staff=p.staff_id).cohort.date()
-        month_diff = (p.created_at.year - user_cohort.year) * 12 + (p.created_at.month - user_cohort.month)
+        month_diff = (p.created_at.year - user_cohort.year) * 12 + (
+            p.created_at.month - user_cohort.month
+        )
         cohort_revenue_matrix[user_cohort][month_diff] += float(p.amount / 100)
 
     datasets = []
     max_months = 0
-    PALETTE = ['#3B82F6', '#10B981', '#F97316', '#8B5CF6', '#EC4899']
+    PALETTE = ["#3B82F6", "#10B981", "#F97316", "#8B5CF6", "#EC4899"]
 
     for i, (cohort_date, size) in enumerate(cohort_sizes.items()):
         cumulative_revenue_per_user = 0
@@ -4426,14 +4990,16 @@ def get_cohort_revenue_data():
             cumulative_revenue_per_user += revenue_this_month / size
             data_points.append(round(cumulative_revenue_per_user, 2))
 
-        datasets.append({
-            'label': cohort_date.strftime("%b %Y"),
-            'data': data_points,
-            'borderColor': PALETTE[i % len(PALETTE)],
-            'tension': 0.4,
-        })
+        datasets.append(
+            {
+                "label": cohort_date.strftime("%b %Y"),
+                "data": data_points,
+                "borderColor": PALETTE[i % len(PALETTE)],
+                "tension": 0.4,
+            }
+        )
 
-    return {'labels': [f'Месяц {i}' for i in range(max_months)], 'datasets': datasets}
+    return {"labels": [f"Месяц {i}" for i in range(max_months)], "datasets": datasets}
 
 
 def get_daily_registration_dynamics_data(start_date, end_date):
@@ -4441,25 +5007,25 @@ def get_daily_registration_dynamics_data(start_date, end_date):
     Собирает данные по динамике регистраций, разделяя пользователей на Email и Telegram.
     """
     real_users_in_period = AuthUser.objects.annotate(
-        username_len=Length('username')
-    ).filter(
-        username_len__lt=40,
-        date_joined__date__range=(start_date, end_date)
-    )
+        username_len=Length("username")
+    ).filter(username_len__lt=40, date_joined__date__range=(start_date, end_date))
 
     daily_regs = (
-        real_users_in_period
-        .annotate(day=TruncDate('date_joined'))
-        .values('day')
+        real_users_in_period.annotate(day=TruncDate("date_joined"))
+        .values("day")
         .annotate(
-            email_users=Count('id', filter=Q(email__isnull=False) & ~Q(email__exact='')),
-            telegram_users=Count('id', filter=Q(email__isnull=True) | Q(email__exact=''))
+            email_users=Count(
+                "id", filter=Q(email__isnull=False) & ~Q(email__exact="")
+            ),
+            telegram_users=Count(
+                "id", filter=Q(email__isnull=True) | Q(email__exact="")
+            ),
         )
-        .order_by('day')
+        .order_by("day")
     )
 
-    email_map = {item['day']: item['email_users'] for item in daily_regs}
-    telegram_map = {item['day']: item['telegram_users'] for item in daily_regs}
+    email_map = {item["day"]: item["email_users"] for item in daily_regs}
+    telegram_map = {item["day"]: item["telegram_users"] for item in daily_regs}
 
     labels, email_data, telegram_data = [], [], []
     current_date = start_date
@@ -4469,11 +5035,7 @@ def get_daily_registration_dynamics_data(start_date, end_date):
         telegram_data.append(telegram_map.get(current_date, 0))
         current_date += timedelta(days=1)
 
-    return {
-        'labels': labels,
-        'email_data': email_data,
-        'telegram_data': telegram_data
-    }
+    return {"labels": labels, "email_data": email_data, "telegram_data": telegram_data}
 
 
 @login_required
@@ -4481,42 +5043,69 @@ def api_admin_live_stats(request):
     if not request.user.is_superuser:
         return JsonResponse({"error": "Forbidden"}, status=403)
 
-    SUDO_PATH = '/usr/bin/sudo'
-    SYSTEMCTL_PATH = '/bin/systemctl'
-    TAIL_PATH = '/usr/bin/tail'
-    JOURNALCTL_PATH = '/usr/bin/journalctl'
+    SUDO_PATH = "/usr/bin/sudo"
+    SYSTEMCTL_PATH = "/bin/systemctl"
+    TAIL_PATH = "/usr/bin/tail"
+    JOURNALCTL_PATH = "/usr/bin/journalctl"
 
-    services = ['gunicorn.service', 'gunicorn-golosok.service', 'golosok-queue-worker.service']
+    services = [
+        "gunicorn.service",
+        "gunicorn-golosok.service",
+        "golosok-queue-worker.service",
+    ]
     statuses = {}
     for service in services:
         try:
             result = subprocess.run(
-                [SUDO_PATH, SYSTEMCTL_PATH, 'status', service],
-                capture_output=True, text=True, timeout=5
+                [SUDO_PATH, SYSTEMCTL_PATH, "status", service],
+                capture_output=True,
+                text=True,
+                timeout=5,
             )
             if result.returncode in [0, 3] and result.stdout:
                 statuses[service] = result.stdout
             else:
-                statuses[service] = f"Error: Failed.\nCode: {result.returncode}\nStderr: {result.stderr}"
+                statuses[service] = (
+                    f"Error: Failed.\nCode: {result.returncode}\nStderr: {result.stderr}"
+                )
         except Exception as e:
             statuses[service] = f"Critical Error: {e}"
 
     logs = {}
     try:
-        log_path = '/var/www/letychka.ru/app.log'
-        log_result = subprocess.run([TAIL_PATH, '-n', '50', log_path], capture_output=True, text=True, timeout=5)
-        logs[
-            'app_log'] = log_result.stdout if log_result.returncode == 0 else f"Error reading app.log: {log_result.stderr}"
+        log_path = "/var/www/letychka.ru/app.log"
+        log_result = subprocess.run(
+            [TAIL_PATH, "-n", "50", log_path], capture_output=True, text=True, timeout=5
+        )
+        logs["app_log"] = (
+            log_result.stdout
+            if log_result.returncode == 0
+            else f"Error reading app.log: {log_result.stderr}"
+        )
 
         gunicorn_log_result = subprocess.run(
-            [SUDO_PATH, JOURNALCTL_PATH, '-u', 'gunicorn.service', '-n', '50', '--no-pager'], capture_output=True,
-            text=True, timeout=5)
-        logs[
-            'gunicorn_log'] = gunicorn_log_result.stdout if gunicorn_log_result.returncode == 0 else f"Error reading journalctl: {gunicorn_log_result.stderr}"
+            [
+                SUDO_PATH,
+                JOURNALCTL_PATH,
+                "-u",
+                "gunicorn.service",
+                "-n",
+                "50",
+                "--no-pager",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        logs["gunicorn_log"] = (
+            gunicorn_log_result.stdout
+            if gunicorn_log_result.returncode == 0
+            else f"Error reading journalctl: {gunicorn_log_result.stderr}"
+        )
     except Exception as e:
-        logs['error'] = f"Critical Error fetching logs: {e}"
+        logs["error"] = f"Critical Error fetching logs: {e}"
 
-    return JsonResponse({'service_statuses': statuses, 'logs': logs})
+    return JsonResponse({"service_statuses": statuses, "logs": logs})
 
 
 def get_churn_radar_data():
@@ -4527,22 +5116,22 @@ def get_churn_radar_data():
     start_window = today - timedelta(days=30)
     end_window = today + timedelta(days=30)
 
-    expiring_subscriptions_qs = Subscription.objects.filter(
-        end_date__date__range=(start_window, end_window),
-        status='active'
-    ).exclude(
-        plan_name__in=['free_plan', 'Стартовый']
-    ).order_by('end_date')
+    expiring_subscriptions_qs = (
+        Subscription.objects.filter(
+            end_date__date__range=(start_window, end_window), status="active"
+        )
+        .exclude(plan_name__in=["free_plan", "Стартовый"])
+        .order_by("end_date")
+    )
 
     if expiring_subscriptions_qs.count() < 10:
-        expiring_subscriptions_qs = Subscription.objects.filter(
-            status='active',
-            end_date__date__gte=today
-        ).exclude(
-            plan_name__in=['free_plan', 'Стартовый']
-        ).order_by('end_date')[:10]
+        expiring_subscriptions_qs = (
+            Subscription.objects.filter(status="active", end_date__date__gte=today)
+            .exclude(plan_name__in=["free_plan", "Стартовый"])
+            .order_by("end_date")[:10]
+        )
 
-    staff_ids = list(expiring_subscriptions_qs.values_list('staff_id', flat=True))
+    staff_ids = list(expiring_subscriptions_qs.values_list("staff_id", flat=True))
 
     users_map = {
         user.id_staff: user for user in AuthUser.objects.filter(id_staff__in=staff_ids)
@@ -4559,33 +5148,41 @@ def get_churn_radar_data():
         username = "НЕЛЕГАЛ" if len(user.username) > 40 else user.username
         end_date = sub.end_date.date()
 
-        urgency = 'near'
+        urgency = "near"
         if end_date < today:
-            urgency = 'expired'
+            urgency = "expired"
         elif end_date == today:
-            urgency = 'today'
+            urgency = "today"
 
-        churn_list.append({
-            'username': username,
-            'plan_name': sub.get_human_plan(),
-            'end_date_str': end_date.strftime('%d.%m.%Y'),
-            'urgency': urgency,
-        })
+        churn_list.append(
+            {
+                "username": username,
+                "plan_name": sub.get_human_plan(),
+                "end_date_str": end_date.strftime("%d.%m.%Y"),
+                "urgency": urgency,
+            }
+        )
 
-        calendar_events.append({
-            'title': username,
-            'start': end_date.strftime('%Y-%m-%d'),
-            'extendedProps': {
-                'plan_name': sub.get_human_plan(),
-                'end_date_str': end_date.strftime('%d.%m.%Y'),
-            },
-            'backgroundColor': '#F06161' if urgency == 'expired' else ('#f59e0b' if urgency == 'today' else '#616DF0'),
-            'borderColor': '#F06161' if urgency == 'expired' else ('#f59e0b' if urgency == 'today' else '#616DF0'),
-        })
+        calendar_events.append(
+            {
+                "title": username,
+                "start": end_date.strftime("%Y-%m-%d"),
+                "extendedProps": {
+                    "plan_name": sub.get_human_plan(),
+                    "end_date_str": end_date.strftime("%d.%m.%Y"),
+                },
+                "backgroundColor": "#F06161"
+                if urgency == "expired"
+                else ("#f59e0b" if urgency == "today" else "#616DF0"),
+                "borderColor": "#F06161"
+                if urgency == "expired"
+                else ("#f59e0b" if urgency == "today" else "#616DF0"),
+            }
+        )
 
     return {
-        'list': churn_list,
-        'calendar_events': calendar_events,
+        "list": churn_list,
+        "calendar_events": calendar_events,
     }
 
 
@@ -4598,65 +5195,85 @@ def get_growth_engine_data():
     prev_period_start = thirty_days_ago - timedelta(days=30)
     prev_period_end = thirty_days_ago - timedelta(days=1)
 
-    real_users_qs = AuthUser.objects.annotate(
-        username_len=Length('username')
-    ).filter(
-        username_len__lt=40,
-        is_staff=False
+    real_users_qs = AuthUser.objects.annotate(username_len=Length("username")).filter(
+        username_len__lt=40, is_staff=False
     )
     # --------------------------------------------------------------------
 
     new_users_current_qs = real_users_qs.filter(date_joined__date__gte=thirty_days_ago)
     new_users_current = new_users_current_qs.count()
 
-    new_users_prev_qs = real_users_qs.filter(date_joined__date__range=(prev_period_start, prev_period_end))
+    new_users_prev_qs = real_users_qs.filter(
+        date_joined__date__range=(prev_period_start, prev_period_end)
+    )
     new_users_prev = new_users_prev_qs.count()
 
-    new_user_staff_ids = new_users_current_qs.values_list('id_staff', flat=True)
-    activated_user_staff_ids = Survey.objects.filter(id_staff__in=new_user_staff_ids).values_list('id_staff',
-                                                                                                  flat=True).distinct()
+    new_user_staff_ids = new_users_current_qs.values_list("id_staff", flat=True)
+    activated_user_staff_ids = (
+        Survey.objects.filter(id_staff__in=new_user_staff_ids)
+        .values_list("id_staff", flat=True)
+        .distinct()
+    )
 
-    activation_rate = (len(activated_user_staff_ids) / new_users_current * 100) if new_users_current > 0 else 0
+    activation_rate = (
+        (len(activated_user_staff_ids) / new_users_current * 100)
+        if new_users_current > 0
+        else 0
+    )
 
-    new_users_prev_staff_ids = new_users_prev_qs.values_list('id_staff', flat=True)
-    activated_users_prev_count = Survey.objects.filter(id_staff__in=new_users_prev_staff_ids).distinct().count()
-    activation_rate_prev = (activated_users_prev_count / new_users_prev * 100) if new_users_prev > 0 else 0
+    new_users_prev_staff_ids = new_users_prev_qs.values_list("id_staff", flat=True)
+    activated_users_prev_count = (
+        Survey.objects.filter(id_staff__in=new_users_prev_staff_ids).distinct().count()
+    )
+    activation_rate_prev = (
+        (activated_users_prev_count / new_users_prev * 100) if new_users_prev > 0 else 0
+    )
 
-    payments_current = Payment.objects.filter(created_at__date__gte=thirty_days_ago, status='completed')
-    returning_payers_staff_ids = [p.staff_id for p in payments_current if
-                                  Payment.objects.filter(staff_id=p.staff_id, created_at__lt=thirty_days_ago,
-                                                         status='completed').exists()]
+    payments_current = Payment.objects.filter(
+        created_at__date__gte=thirty_days_ago, status="completed"
+    )
+    returning_payers_staff_ids = [
+        p.staff_id
+        for p in payments_current
+        if Payment.objects.filter(
+            staff_id=p.staff_id, created_at__lt=thirty_days_ago, status="completed"
+        ).exists()
+    ]
 
-    total_paying_users_current = payments_current.values('staff_id').distinct().count()
-    retention_rate = (len(set(
-        returning_payers_staff_ids)) / total_paying_users_current * 100) if total_paying_users_current > 0 else 0
+    total_paying_users_current = payments_current.values("staff_id").distinct().count()
+    retention_rate = (
+        (len(set(returning_payers_staff_ids)) / total_paying_users_current * 100)
+        if total_paying_users_current > 0
+        else 0
+    )
 
-    daily_new_users = new_users_current_qs.annotate(
-        day=TruncDate('date_joined')
-    ).values('day').annotate(
-        count=Count('id')
-    ).order_by('day')
+    daily_new_users = (
+        new_users_current_qs.annotate(day=TruncDate("date_joined"))
+        .values("day")
+        .annotate(count=Count("id"))
+        .order_by("day")
+    )
 
     date_counts = {(thirty_days_ago + timedelta(days=i)): 0 for i in range(30)}
     for item in daily_new_users:
-        date_counts[item['day']] = item['count']
+        date_counts[item["day"]] = item["count"]
 
     new_users_sparkline = list(date_counts.values())
 
     return {
-        'acquisition': {
-            'value': new_users_current,
-            'change': new_users_current - new_users_prev,
-            'sparkline': new_users_sparkline,
+        "acquisition": {
+            "value": new_users_current,
+            "change": new_users_current - new_users_prev,
+            "sparkline": new_users_sparkline,
         },
-        'activation': {
-            'value': round(activation_rate),
-            'change': round(activation_rate - activation_rate_prev, 1),
+        "activation": {
+            "value": round(activation_rate),
+            "change": round(activation_rate - activation_rate_prev, 1),
         },
-        'retention': {
-            'value': round(retention_rate),
-            'change': 0,
-        }
+        "retention": {
+            "value": round(retention_rate),
+            "change": 0,
+        },
     }
 
 
@@ -4666,55 +5283,74 @@ def get_cohort_quality_data():
     """
     today = timezone.now().date()
     start_of_current_month = today.replace(day=1)
-    start_of_previous_month = (start_of_current_month - timedelta(days=1)).replace(day=1)
+    start_of_previous_month = (start_of_current_month - timedelta(days=1)).replace(
+        day=1
+    )
     end_of_previous_month = start_of_current_month - timedelta(days=1)
 
-    current_cohort_users = AuthUser.objects.filter(date_joined__date__gte=start_of_current_month)
-    current_cohort_staff_ids = list(current_cohort_users.values_list('id_staff', flat=True))
+    current_cohort_users = AuthUser.objects.filter(
+        date_joined__date__gte=start_of_current_month
+    )
+    current_cohort_staff_ids = list(
+        current_cohort_users.values_list("id_staff", flat=True)
+    )
 
     prev_cohort_users = AuthUser.objects.filter(
-        date_joined__date__range=(start_of_previous_month, end_of_previous_month))
-    prev_cohort_staff_ids = list(prev_cohort_users.values_list('id_staff', flat=True))
+        date_joined__date__range=(start_of_previous_month, end_of_previous_month)
+    )
+    prev_cohort_staff_ids = list(prev_cohort_users.values_list("id_staff", flat=True))
 
     def calculate_metrics_for_cohort(staff_ids_list):
         if not staff_ids_list:
-            return {'avg_tests': 0, 'conversion_rate': 0, 'arppu': 0}
+            return {"avg_tests": 0, "conversion_rate": 0, "arppu": 0}
 
         cohort_size = len(staff_ids_list)
         total_surveys = Survey.objects.filter(id_staff__in=staff_ids_list).count()
         avg_tests = total_surveys / cohort_size if cohort_size > 0 else 0
 
-        paying_users_qs = Payment.objects.filter(status='completed', staff_id__in=staff_ids_list).distinct('staff_id')
+        paying_users_qs = Payment.objects.filter(
+            status="completed", staff_id__in=staff_ids_list
+        ).distinct("staff_id")
         paying_users_count = paying_users_qs.count()
-        conversion_rate = (paying_users_count / cohort_size * 100) if cohort_size > 0 else 0
+        conversion_rate = (
+            (paying_users_count / cohort_size * 100) if cohort_size > 0 else 0
+        )
 
-        total_revenue = (Payment.objects.filter(status='completed', staff_id__in=staff_ids_list).aggregate(
-            sum=Sum('amount'))['sum'] or 0) / 100
+        total_revenue = (
+            Payment.objects.filter(
+                status="completed", staff_id__in=staff_ids_list
+            ).aggregate(sum=Sum("amount"))["sum"]
+            or 0
+        ) / 100
         arppu = total_revenue / paying_users_count if paying_users_count > 0 else 0
 
         return {
-            'avg_tests': round(avg_tests, 1),
-            'conversion_rate': round(conversion_rate, 2),
-            'arppu': round(arppu),
+            "avg_tests": round(avg_tests, 1),
+            "conversion_rate": round(conversion_rate, 2),
+            "arppu": round(arppu),
         }
 
     current_metrics = calculate_metrics_for_cohort(current_cohort_staff_ids)
     prev_metrics = calculate_metrics_for_cohort(prev_cohort_staff_ids)
 
     return {
-        'current_month': {
-            'name': start_of_current_month.strftime('%B'),
-            'metrics': current_metrics,
+        "current_month": {
+            "name": start_of_current_month.strftime("%B"),
+            "metrics": current_metrics,
         },
-        'previous_month': {
-            'name': start_of_previous_month.strftime('%B'),
-            'metrics': prev_metrics,
+        "previous_month": {
+            "name": start_of_previous_month.strftime("%B"),
+            "metrics": prev_metrics,
         },
-        'changes': {
-            'conversion_rate': round(current_metrics['conversion_rate'] - prev_metrics['conversion_rate'], 2),
-            'arppu': round(current_metrics['arppu'] - prev_metrics['arppu']),
-            'avg_tests': round(current_metrics['avg_tests'] - prev_metrics['avg_tests'], 1),
-        }
+        "changes": {
+            "conversion_rate": round(
+                current_metrics["conversion_rate"] - prev_metrics["conversion_rate"], 2
+            ),
+            "arppu": round(current_metrics["arppu"] - prev_metrics["arppu"]),
+            "avg_tests": round(
+                current_metrics["avg_tests"] - prev_metrics["avg_tests"], 1
+            ),
+        },
     }
 
 
@@ -4724,26 +5360,23 @@ def get_activity_heatmap_data():
     """
     four_weeks_ago = timezone.now() - timedelta(weeks=4)
 
-    activity_data = Survey.objects.filter(
-        created_at__gte=four_weeks_ago
-    ).annotate(
-        hour=TruncHour('created_at'),
-        weekday=ExtractWeekDay('created_at')
-    ).values(
-        'hour', 'weekday'
-    ).annotate(
-        count=Count('id')
-    ).order_by('weekday', 'hour')
+    activity_data = (
+        Survey.objects.filter(created_at__gte=four_weeks_ago)
+        .annotate(hour=TruncHour("created_at"), weekday=ExtractWeekDay("created_at"))
+        .values("hour", "weekday")
+        .annotate(count=Count("id"))
+        .order_by("weekday", "hour")
+    )
 
     heatmap_matrix = [[0 for _ in range(24)] for _ in range(7)]
 
     weekday_map = {2: 0, 3: 1, 4: 2, 5: 3, 6: 4, 7: 5, 1: 6}
 
     for item in activity_data:
-        day_index = weekday_map.get(item['weekday'])
-        hour_index = item['hour'].hour
+        day_index = weekday_map.get(item["weekday"])
+        hour_index = item["hour"].hour
         if day_index is not None:
-            heatmap_matrix[day_index][hour_index] = item['count']
+            heatmap_matrix[day_index][hour_index] = item["count"]
 
     return heatmap_matrix
 
@@ -4763,7 +5396,11 @@ def get_anomaly_detector_data():
     else:
         audacity_index = 0
 
-    paying_user_staff_ids = Payment.objects.filter(status='completed').values_list('staff_id', flat=True).distinct()
+    paying_user_staff_ids = (
+        Payment.objects.filter(status="completed")
+        .values_list("staff_id", flat=True)
+        .distinct()
+    )
 
     surveys_today_qs = Survey.objects.filter(created_at__gte=today_start)
 
@@ -4771,12 +5408,14 @@ def get_anomaly_detector_data():
     if total_surveys_count == 0:
         free_tests_percentage = 0
     else:
-        free_surveys_count = surveys_today_qs.exclude(id_staff__in=paying_user_staff_ids).count()
+        free_surveys_count = surveys_today_qs.exclude(
+            id_staff__in=paying_user_staff_ids
+        ).count()
         free_tests_percentage = (free_surveys_count / total_surveys_count) * 100
 
     return {
-        'audacity_index': round(audacity_index, 2),
-        'free_tests_percentage': round(free_tests_percentage),
+        "audacity_index": round(audacity_index, 2),
+        "free_tests_percentage": round(free_tests_percentage),
     }
 
 
@@ -4784,70 +5423,90 @@ def get_financial_pulse_data(start_date, end_date):
     """
     Собирает данные для виджета "Финансовый Пульс".
     """
-    weekly_revenue = Payment.objects.filter(
-        status='completed',
-        created_at__date__range=(start_date, end_date)
-    ).annotate(
-        week=TruncWeek('created_at')
-    ).values('week').annotate(
-        total_revenue=Sum('amount')
-    ).order_by('week')
+    weekly_revenue = (
+        Payment.objects.filter(
+            status="completed", created_at__date__range=(start_date, end_date)
+        )
+        .annotate(week=TruncWeek("created_at"))
+        .values("week")
+        .annotate(total_revenue=Sum("amount"))
+        .order_by("week")
+    )
 
-    chart_labels = [w['week'].strftime('%d.%m') for w in weekly_revenue]
-    chart_data = [float(w['total_revenue'] / 100) for w in weekly_revenue]
+    chart_labels = [w["week"].strftime("%d.%m") for w in weekly_revenue]
+    chart_data = [float(w["total_revenue"] / 100) for w in weekly_revenue]
 
-    payments_in_period = Payment.objects.filter(status='completed', created_at__date__range=(start_date, end_date))
-    total_revenue = (payments_in_period.aggregate(total=Sum('amount'))['total'] or 0) / 100
+    payments_in_period = Payment.objects.filter(
+        status="completed", created_at__date__range=(start_date, end_date)
+    )
+    total_revenue = (
+        payments_in_period.aggregate(total=Sum("amount"))["total"] or 0
+    ) / 100
 
-    avg_check = (payments_in_period.aggregate(avg=Avg('amount'))['avg'] or 0) / 100
+    avg_check = (payments_in_period.aggregate(avg=Avg("amount"))["avg"] or 0) / 100
 
-    paying_users = Payment.objects.filter(status='completed').values('staff_id').distinct()
-    total_revenue_all_time = (Payment.objects.filter(status='completed').aggregate(total=Sum('amount'))[
-                                  'total'] or 0) / 100
+    paying_users = (
+        Payment.objects.filter(status="completed").values("staff_id").distinct()
+    )
+    total_revenue_all_time = (
+        Payment.objects.filter(status="completed").aggregate(total=Sum("amount"))[
+            "total"
+        ]
+        or 0
+    ) / 100
     ltv = total_revenue_all_time / paying_users.count() if paying_users.exists() else 0
 
     today = timezone.now().date()
     thirty_days_ago = today - timedelta(days=30)
 
-    active_at_start_of_period_qs = Subscription.objects.filter(
-        start_date__date__lt=thirty_days_ago,
-        end_date__date__gte=thirty_days_ago
-    ).values_list('staff_id', flat=True).distinct()
+    active_at_start_of_period_qs = (
+        Subscription.objects.filter(
+            start_date__date__lt=thirty_days_ago, end_date__date__gte=thirty_days_ago
+        )
+        .values_list("staff_id", flat=True)
+        .distinct()
+    )
 
     active_at_start_of_period_count = active_at_start_of_period_qs.count()
 
     if active_at_start_of_period_count == 0:
         churn_rate = 0
     else:
-        churned_users_count = Subscription.objects.filter(
-            staff_id__in=active_at_start_of_period_qs,
-            end_date__date__lt=today
-        ).values_list('staff_id', flat=True).distinct().count()
+        churned_users_count = (
+            Subscription.objects.filter(
+                staff_id__in=active_at_start_of_period_qs, end_date__date__lt=today
+            )
+            .values_list("staff_id", flat=True)
+            .distinct()
+            .count()
+        )
 
         churn_rate = (churned_users_count / active_at_start_of_period_count) * 100
 
     payments_count_in_period = payments_in_period.count()
     returning_payments_count = 0
     for p in payments_in_period:
-        if Payment.objects.filter(staff_id=p.staff_id, status='completed', created_at__lt=p.created_at).exists():
+        if Payment.objects.filter(
+            staff_id=p.staff_id, status="completed", created_at__lt=p.created_at
+        ).exists():
             returning_payments_count += 1
     new_payments_count = payments_count_in_period - returning_payments_count
 
     return {
-        'chart': {
-            'labels': chart_labels,
-            'data': chart_data,
+        "chart": {
+            "labels": chart_labels,
+            "data": chart_data,
         },
-        'total_revenue': round(total_revenue),
-        'quality_metrics': {
-            'avg_check': round(avg_check),
-            'ltv': round(ltv),
+        "total_revenue": round(total_revenue),
+        "quality_metrics": {
+            "avg_check": round(avg_check),
+            "ltv": round(ltv),
         },
-        'growth_metrics': {
-            'new_payments': new_payments_count,
-            'returning_payments': returning_payments_count,
-            'churn_rate': round(churn_rate, 1),
-        }
+        "growth_metrics": {
+            "new_payments": new_payments_count,
+            "returning_payments": returning_payments_count,
+            "churn_rate": round(churn_rate, 1),
+        },
     }
 
 
@@ -4861,20 +5520,34 @@ def admin_stats(request):
     today = timezone.now().date()
     start_date_str = request.GET.get("start_date")
     end_date_str = request.GET.get("end_date")
-    start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date() if start_date_str else today - timedelta(days=29)
-    end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date() if end_date_str else today
+    start_date = (
+        datetime.strptime(start_date_str, "%Y-%m-%d").date()
+        if start_date_str
+        else today - timedelta(days=29)
+    )
+    end_date = (
+        datetime.strptime(end_date_str, "%Y-%m-%d").date() if end_date_str else today
+    )
 
     date_range = (start_date, end_date)
 
-    real_users_qs = AuthUser.objects.annotate(username_len=Length('username')).filter(username_len__lt=20)
+    real_users_qs = AuthUser.objects.annotate(username_len=Length("username")).filter(
+        username_len__lt=20
+    )
 
     # --- Сбор данных для карточек (за период) ---
     users_in_period = real_users_qs.filter(date_joined__date__range=date_range).count()
-    surveys_in_period = Survey.objects.filter(updated_at__date__range=date_range,
-                                              id_staff__in=real_users_qs.values('id_staff')).count()
-    answers_in_period = UserAnswers.objects.filter(created_at__date__range=date_range).count()
-    subscriptions_in_period = Subscription.objects.filter(start_date__date__range=date_range,
-                                                          staff_id__in=real_users_qs.values('id_staff')).count()
+    surveys_in_period = Survey.objects.filter(
+        updated_at__date__range=date_range,
+        id_staff__in=real_users_qs.values("id_staff"),
+    ).count()
+    answers_in_period = UserAnswers.objects.filter(
+        created_at__date__range=date_range
+    ).count()
+    subscriptions_in_period = Subscription.objects.filter(
+        start_date__date__range=date_range,
+        staff_id__in=real_users_qs.values("id_staff"),
+    ).count()
 
     # --- Сбор финансовых метрик (за все время) ---
     completed_payments = Payment.objects.filter(status="completed")
@@ -4882,26 +5555,43 @@ def admin_stats(request):
     completed_count = completed_payments.count()
     average_check = (total_revenue / completed_count) if completed_count > 0 else 0
     total_attempts = Payment.objects.count()
-    payment_conversion = (completed_count / total_attempts * 100) if total_attempts > 0 else 0
+    payment_conversion = (
+        (completed_count / total_attempts * 100) if total_attempts > 0 else 0
+    )
     failed_count = Payment.objects.filter(status="failed").count()
 
     # --- Сбор метрик по пользователям (общие) ---
     total_users_count = AuthUser.objects.count()
-    telegram_users_count = AuthUser.objects.filter(Q(hash_user_id__isnull=True) | Q(hash_user_id__exact=""),
-                                                   email__exact="").count()
+    telegram_users_count = AuthUser.objects.filter(
+        Q(hash_user_id__isnull=True) | Q(hash_user_id__exact=""), email__exact=""
+    ).count()
     email_users_count = AuthUser.objects.exclude(email__exact="").count()
 
     thirty_days_ago = timezone.now() - timedelta(days=30)
-    mau_monthly_active_users = AuthUser.objects.filter(last_login__gte=thirty_days_ago).count()
-    wau_weekly_active_users = AuthUser.objects.filter(last_login__gte=timezone.now() - timedelta(days=7)).count()
+    mau_monthly_active_users = AuthUser.objects.filter(
+        last_login__gte=thirty_days_ago
+    ).count()
+    wau_weekly_active_users = AuthUser.objects.filter(
+        last_login__gte=timezone.now() - timedelta(days=7)
+    ).count()
     dau_daily_active_users = AuthUser.objects.filter(last_login__date=today).count()
 
-    paid_users_count = Payment.objects.filter(status="completed").values("staff_id").distinct().count()
-    conversion_rate_to_paid = (paid_users_count / total_users_count * 100) if total_users_count > 0 else 0
-    stickiness_ratio = (dau_daily_active_users / mau_monthly_active_users * 100) if mau_monthly_active_users > 0 else 0
+    paid_users_count = (
+        Payment.objects.filter(status="completed").values("staff_id").distinct().count()
+    )
+    conversion_rate_to_paid = (
+        (paid_users_count / total_users_count * 100) if total_users_count > 0 else 0
+    )
+    stickiness_ratio = (
+        (dau_daily_active_users / mau_monthly_active_users * 100)
+        if mau_monthly_active_users > 0
+        else 0
+    )
 
     # --- Сбор данных для графиков ---
-    user_chart_data = json.dumps(get_daily_registration_dynamics_data(start_date, end_date))
+    user_chart_data = json.dumps(
+        get_daily_registration_dynamics_data(start_date, end_date)
+    )
     api_chart_data = json.dumps(get_daily_api_usage_by_key(start_date, end_date))
 
     api_performance_data = json.dumps(get_api_performance_data(start_date, end_date))
@@ -4935,33 +5625,39 @@ def admin_stats(request):
     # Расчеты для "Финансового Брифинга"
     financial_briefing_data = {}
 
-    payments_in_period = Payment.objects.filter(created_at__date__range=date_range, status='completed')
-    revenue = payments_in_period.aggregate(total=Sum('amount'))['total'] or 0
-    financial_briefing_data['revenue'] = revenue / 100
+    payments_in_period = Payment.objects.filter(
+        created_at__date__range=date_range, status="completed"
+    )
+    revenue = payments_in_period.aggregate(total=Sum("amount"))["total"] or 0
+    financial_briefing_data["revenue"] = revenue / 100
 
     first_time_payers_ids = []
-    new_paying_users = payments_in_period.order_by('staff_id', 'created_at').distinct('staff_id')
+    new_paying_users = payments_in_period.order_by("staff_id", "created_at").distinct(
+        "staff_id"
+    )
 
     for payment in new_paying_users:
         is_first_payment = not Payment.objects.filter(
             staff_id=payment.staff_id,
-            status='completed',
-            created_at__lt=payment.created_at
+            status="completed",
+            created_at__lt=payment.created_at,
         ).exists()
         if is_first_payment:
             first_time_payers_ids.append(payment.id)
 
     new_mrr_payments = payments_in_period.filter(id__in=first_time_payers_ids)
-    new_mrr = new_mrr_payments.aggregate(total=Sum('amount'))['total'] or 0
-    financial_briefing_data['new_mrr'] = new_mrr / 100
+    new_mrr = new_mrr_payments.aggregate(total=Sum("amount"))["total"] or 0
+    financial_briefing_data["new_mrr"] = new_mrr / 100
 
-    paying_users_count = payments_in_period.values('staff_id').distinct().count()
+    paying_users_count = payments_in_period.values("staff_id").distinct().count()
     arpu = (revenue / 100) / paying_users_count if paying_users_count > 0 else 0
-    financial_briefing_data['arpu'] = arpu
+    financial_briefing_data["arpu"] = arpu
 
     # --- История платежей ---
     payment_data = []
-    recent_payments = Payment.objects.select_related('subscription').order_by('-created_at')[:35]
+    recent_payments = Payment.objects.select_related("subscription").order_by(
+        "-created_at"
+    )[:35]
 
     staff_ids_from_payments = [p.staff_id for p in recent_payments]
 
@@ -4977,8 +5673,8 @@ def admin_stats(request):
 
         previous_payments_count = Payment.objects.filter(
             staff_id=user.id_staff,
-            status='completed',
-            created_at__lt=payment.created_at
+            status="completed",
+            created_at__lt=payment.created_at,
         ).count()
         payment_type = "Повторная" if previous_payments_count > 0 else "Первая"
 
@@ -4992,19 +5688,21 @@ def admin_stats(request):
         else:
             user_status = "Ветеран"
 
-        payment_data.append({
-            "name": user.username,
-            "plan_name": payment.subscription.plan_name,
-            "payment_status": payment.status,
-            "amount_raw": payment.amount / 100,
-            "amount": f"{get_format_number(payment.amount / 100)} руб.",
-            "date": payment.created_at,
-            "payment_type": payment_type,
-            "total_tests_created": total_tests_created,
-            "user_status": user_status,
-            "user_status_days": days_since_reg,
-            "order_id": payment.order_id
-        })
+        payment_data.append(
+            {
+                "name": user.username,
+                "plan_name": payment.subscription.plan_name,
+                "payment_status": payment.status,
+                "amount_raw": payment.amount / 100,
+                "amount": f"{get_format_number(payment.amount / 100)} руб.",
+                "date": payment.created_at,
+                "payment_type": payment_type,
+                "total_tests_created": total_tests_created,
+                "user_status": user_status,
+                "user_status_days": days_since_reg,
+                "order_id": payment.order_id,
+            }
+        )
 
     completed_payments = Payment.objects.filter(status="completed")
     total_revenue = completed_payments.aggregate(total=Sum("amount"))["total"] or 0
@@ -5016,8 +5714,14 @@ def admin_stats(request):
     today = timezone.now().date()
     start_date_str = request.GET.get("start_date")
     end_date_str = request.GET.get("end_date")
-    start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date() if start_date_str else today - timedelta(days=29)
-    end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date() if end_date_str else today
+    start_date = (
+        datetime.strptime(start_date_str, "%Y-%m-%d").date()
+        if start_date_str
+        else today - timedelta(days=29)
+    )
+    end_date = (
+        datetime.strptime(end_date_str, "%Y-%m-%d").date() if end_date_str else today
+    )
 
     main_gauge_data = get_main_gauge_data()
     daily_attempts_data = json.dumps(get_daily_attempts_chart_data())
@@ -5025,19 +5729,25 @@ def admin_stats(request):
     score_distribution_data = json.dumps(get_score_distribution_data())
 
     cyber_gauges_data = get_cyber_gauges_data()
-    total_api_usage_data = json.dumps(get_total_api_usage_chart_data(start_date, end_date))
+    total_api_usage_data = json.dumps(
+        get_total_api_usage_chart_data(start_date, end_date)
+    )
 
     time_to_payment_data = json.dumps(get_time_to_payment_data())
     user_value_matrix_data = json.dumps(get_user_value_matrix_data())
 
-    daily_token_usage_data = json.dumps(get_daily_token_usage_chart_data(start_date, end_date))
+    daily_token_usage_data = json.dumps(
+        get_daily_token_usage_chart_data(start_date, end_date)
+    )
 
     daily_revenue_data = json.dumps(get_daily_revenue_data(start_date, end_date))
     arpu_dynamics_data = json.dumps(get_arpu_dynamics_data(start_date, end_date))
     revenue_source_data = json.dumps(get_revenue_source_data(start_date, end_date))
     cohort_revenue_data = json.dumps(get_cohort_revenue_data())
 
-    daily_creation_data = json.dumps(get_daily_creation_dynamics_data(start_date, end_date))
+    daily_creation_data = json.dumps(
+        get_daily_creation_dynamics_data(start_date, end_date)
+    )
 
     churn_radar_data = get_churn_radar_data()
     growth_engine_data = get_growth_engine_data()
@@ -5046,7 +5756,9 @@ def admin_stats(request):
     anomaly_detector_data = get_anomaly_detector_data()
 
     cohort_quality_data = get_cohort_quality_data()
-    financial_pulse_data = get_financial_pulse_data(start_date - timedelta(days=60), end_date)
+    financial_pulse_data = get_financial_pulse_data(
+        start_date - timedelta(days=60), end_date
+    )
 
     weekly_pulse_data = get_weekly_pulse_data()
     daily_funnel_data = get_daily_funnel_trends_data()
@@ -5057,11 +5769,13 @@ def admin_stats(request):
     context = {
         "cockpit": cockpit_metrics,
         "cyber_gauges": cyber_gauges_data,
-        "cyber_tests_pulse_json": json.dumps(cyber_gauges_data['tests_pulse']['sparkline']),
+        "cyber_tests_pulse_json": json.dumps(
+            cyber_gauges_data["tests_pulse"]["sparkline"]
+        ),
         "weekly_pulse_data": weekly_pulse_data,
-        "weekly_pulse_chart_json": json.dumps(weekly_pulse_data['chart_data']),
-        "daily_funnel_chart_json": json.dumps(daily_funnel_data['chart']),
-        "daily_funnel_summary": daily_funnel_data['summary'],
+        "weekly_pulse_chart_json": json.dumps(weekly_pulse_data["chart_data"]),
+        "daily_funnel_chart_json": json.dumps(daily_funnel_data["chart"]),
+        "daily_funnel_summary": daily_funnel_data["summary"],
         "live_feed_data": live_feed_data,
         "hall_of_fame_data": hall_of_fame_data,
         "financial_briefing": financial_briefing_data,
@@ -5108,13 +5822,13 @@ def admin_stats(request):
         "daily_token_usage_data": daily_token_usage_data,
         "churn_radar_data": churn_radar_data,
         "growth_engine_data": growth_engine_data,
-        "churn_calendar_events_json": json.dumps(churn_radar_data['calendar_events']),
+        "churn_calendar_events_json": json.dumps(churn_radar_data["calendar_events"]),
         "activity_heatmap_data": json.dumps(activity_heatmap_data),
         "anomaly_detector_data": anomaly_detector_data,
         "cohort_quality_data": cohort_quality_data,
         "financial_pulse_data": financial_pulse_data,
-        "financial_pulse_chart_json": json.dumps(financial_pulse_data['chart']),
-        'username': get_username(request)
+        "financial_pulse_chart_json": json.dumps(financial_pulse_data["chart"]),
+        "username": get_username(request),
     }
 
     return render(request, "admin.html", context)
@@ -5123,9 +5837,9 @@ def admin_stats(request):
 @login_required
 def activate_api_key(request):
     try:
-        key_id = request.POST.get('activate_api_key_id')
+        key_id = request.POST.get("activate_api_key_id")
         if not key_id:
-            return JsonResponse({'status': False, 'message': 'Не указан ID ключа'})
+            return JsonResponse({"status": False, "message": "Не указан ID ключа"})
 
         key = APIKey.objects.get(id=key_id)
 
@@ -5134,24 +5848,29 @@ def activate_api_key(request):
         key.is_active = True
         key.save()
 
-        return JsonResponse({'status': True, 'message': f'Ключ {key.name} активирован для типа {key.purpose}'})
+        return JsonResponse(
+            {
+                "status": True,
+                "message": f"Ключ {key.name} активирован для типа {key.purpose}",
+            }
+        )
 
     except APIKey.DoesNotExist:
-        return JsonResponse({'status': False, 'message': 'Ключ не найден'})
+        return JsonResponse({"status": False, "message": "Ключ не найден"})
     except Exception as e:
-        return JsonResponse({'status': False, 'message': str(e)})
+        return JsonResponse({"status": False, "message": str(e)})
 
 
 MODEL_MAP = {
-    'Survey': ('📝 Тесты', Survey),
-    'SurveyView': ('📝 SurveyView', SurveyUniqueView),
-    'UserAnswers': ('📤 Ответы', UserAnswers),
-    'AuthUser': ('👥 Пользователи', AuthUser),
-    'Subscription': ('💰 Подписки', Subscription),
-    'Payment': ('💳 Платежи', Payment),
-    'BlockedUsers': ('🚫 Блокировки', BlockedUsers),
-    'BlogPost': ('📰 Статьи', BlogPost),
-    'TokensUsed': ('🪙 Токены', TokensUsed),
+    "Survey": ("📝 Тесты", Survey),
+    "SurveyView": ("📝 SurveyView", SurveyUniqueView),
+    "UserAnswers": ("📤 Ответы", UserAnswers),
+    "AuthUser": ("👥 Пользователи", AuthUser),
+    "Subscription": ("💰 Подписки", Subscription),
+    "Payment": ("💳 Платежи", Payment),
+    "BlockedUsers": ("🚫 Блокировки", BlockedUsers),
+    "BlogPost": ("📰 Статьи", BlogPost),
+    "TokensUsed": ("🪙 Токены", TokensUsed),
 }
 
 
@@ -5160,38 +5879,38 @@ def db_viewer(request):
     if not request.user.is_superuser:
         return HttpResponseForbidden("Ты не админ, дружок")
 
-    model_key = request.GET.get('model', 'AuthUser')
+    model_key = request.GET.get("model", "AuthUser")
     model_data = MODEL_MAP.get(model_key)
 
     if not model_data:
         return HttpResponse("Модель не найдена", status=404)
 
     model_class = model_data[1]
-    items = model_class.objects.all().order_by('-pk')
+    items = model_class.objects.all().order_by("-pk")
 
     context = {
-        'model_name': model_data[0],
-        'model_key': model_key,
-        'items': items,
-        'fields': [f.name for f in model_class._meta.fields],
-        'models': MODEL_MAP.items(),
+        "model_name": model_data[0],
+        "model_key": model_key,
+        "items": items,
+        "fields": [f.name for f in model_class._meta.fields],
+        "models": MODEL_MAP.items(),
     }
-    return render(request, 'askify_service/db_viewer.html', context)
+    return render(request, "askify_service/db_viewer.html", context)
 
 
 @login_required
 def db_search(request):
-    query = request.GET.get('q', '').strip()
+    query = request.GET.get("q", "").strip()
     if len(query) < 3:
         return JsonResponse([])
 
     models_to_search = [
-        (Survey, ['survey_id', 'title', 'description', 'id_staff']),
-        (AuthUser, ['username', 'email', 'first_name', 'last_name', 'id_staff']),
-        (UserAnswers, ['survey_id', 'id_staff', 'user_agent', 'answer_text']),
-        (Subscription, ['staff_id', 'plan_name', 'status', 'start_date', 'end_date']),
-        (Payment, ['user__username', 'amount', 'currency', 'status', 'transaction_id']),
-        (BlogPost, ['title', 'content', 'author__username']),
+        (Survey, ["survey_id", "title", "description", "id_staff"]),
+        (AuthUser, ["username", "email", "first_name", "last_name", "id_staff"]),
+        (UserAnswers, ["survey_id", "id_staff", "user_agent", "answer_text"]),
+        (Subscription, ["staff_id", "plan_name", "status", "start_date", "end_date"]),
+        (Payment, ["user__username", "amount", "currency", "status", "transaction_id"]),
+        (BlogPost, ["title", "content", "author__username"]),
     ]
 
     results = []
@@ -5199,23 +5918,25 @@ def db_search(request):
         q_objects = Q()
         for field in fields:
             try:
-                if '__' in field:
-                    model._meta.get_field(field.split('__')[0])
+                if "__" in field:
+                    model._meta.get_field(field.split("__")[0])
                 else:
                     model._meta.get_field(field)
-                q_objects |= Q(**{f'{field}__icontains': query})
+                q_objects |= Q(**{f"{field}__icontains": query})
             except Exception:
                 continue
 
         for item in model.objects.filter(q_objects)[:5]:
-            results.append({
-                'model': model.__name__,
-                'field': ', '.join(fields),
-                'value': str(item),
-                'source': get_related_info(item)
-            })
+            results.append(
+                {
+                    "model": model.__name__,
+                    "field": ", ".join(fields),
+                    "value": str(item),
+                    "source": get_related_info(item),
+                }
+            )
 
-    results.sort(key=lambda x: x['model'])
+    results.sort(key=lambda x: x["model"])
     return JsonResponse(results, safe=False)
 
 
@@ -5226,7 +5947,7 @@ def get_related_info(item):
     """
     info_parts = []
 
-    if hasattr(item, 'id_staff') and item.id_staff:
+    if hasattr(item, "id_staff") and item.id_staff:
         try:
             user = AuthUser.objects.get(id_staff=item.id_staff)
             info_parts.append(f"Пользователь: {user.username} ({user.email})")
@@ -5236,7 +5957,7 @@ def get_related_info(item):
             info_parts.append(f"ID юзера: {item.id_staff} (Не найден)")
         except Exception as e:
             pass
-    elif hasattr(item, 'staff_id') and item.staff_id:
+    elif hasattr(item, "staff_id") and item.staff_id:
         try:
             user = AuthUser.objects.get(id=item.staff_id)
             info_parts.append(f"Пользователь: {user.username} ({user.email})")
@@ -5247,7 +5968,7 @@ def get_related_info(item):
         except Exception as e:
             pass
 
-    if hasattr(item, 'user') and item.user:
+    if hasattr(item, "user") and item.user:
         try:
             user = item.user
             info_parts.append(f"Пользователь: {user.username} ({user.email})")
@@ -5256,7 +5977,7 @@ def get_related_info(item):
         except Exception as e:
             info_parts.append(f"Пользователь: Неизвестен")
 
-    if hasattr(item, 'survey_id') and item.survey_id:
+    if hasattr(item, "survey_id") and item.survey_id:
         try:
             survey = Survey.objects.get(survey_id=item.survey_id)
             info_parts.append(f"Тест: {survey.title} (ID: {survey.survey_id})")
@@ -5270,16 +5991,20 @@ def get_related_info(item):
             subscriptions = Subscription.objects.filter(staff_id=item.id)
             if subscriptions.exists():
                 for sub in subscriptions[:2]:
-                    info_parts.append(f"Подписка: {sub.plan_name} (Статус: {sub.status})")
+                    info_parts.append(
+                        f"Подписка: {sub.plan_name} (Статус: {sub.status})"
+                    )
 
             payments = Payment.objects.filter(user=item)
             if payments.exists():
                 for pay in payments[:2]:
-                    info_parts.append(f"Платеж: {pay.amount} {pay.currency} (Статус: {pay.status})")
+                    info_parts.append(
+                        f"Платеж: {pay.amount} {pay.currency} (Статус: {pay.status})"
+                    )
         except Exception as e:
             pass
 
-    if hasattr(item, 'blog_post') and item.blog_post:
+    if hasattr(item, "blog_post") and item.blog_post:
         try:
             info_parts.append(f"К посту: {item.blog_post.title}")
         except Exception as e:
@@ -5297,10 +6022,12 @@ def block_by_staff_id(request, id_staff):
 
     if maybe_admin.is_superuser:
         user = get_object_or_404(AuthUser, id_staff=id_staff)
-        BlockedUsers.objects.get_or_create(ip_address=get_client_ip(request), reason=f'Blocked user {user.username}')
-        return redirect('stats2975')
+        BlockedUsers.objects.get_or_create(
+            ip_address=get_client_ip(request), reason=f"Blocked user {user.username}"
+        )
+        return redirect("stats2975")
 
-    return redirect('login')
+    return redirect("login")
 
 
 @login_required
@@ -5309,9 +6036,9 @@ def block_by_ip(request, ip_address):
 
     if maybe_admin.is_superuser:
         BlockedUsers.objects.get_or_create(ip_address=ip_address)
-        return redirect(request.META.get('HTTP_REFERER', 'stats2975'))
+        return redirect(request.META.get("HTTP_REFERER", "stats2975"))
 
-    return redirect('login')
+    return redirect("login")
 
 
 def unblock_by_ip(request, ip_address):
@@ -5321,11 +6048,13 @@ def unblock_by_ip(request, ip_address):
         blocked_user = BlockedUsers.objects.filter(ip_address=ip_address)
         if blocked_user.exists():
             blocked_user.delete()
-            return redirect(request.META.get('HTTP_REFERER', 'stats2975'))
+            return redirect(request.META.get("HTTP_REFERER", "stats2975"))
         else:
-            return JsonResponse({"success": False, "message": "IP не найден в заблокированных."})
+            return JsonResponse(
+                {"success": False, "message": "IP не найден в заблокированных."}
+            )
 
-    return redirect('login')
+    return redirect("login")
 
 
 @login_required
@@ -5340,7 +6069,7 @@ def unblock_by_staff_id(request, id_staff):
         except Exception as e:
             return HttpResponse(f"Fail - {e}")
 
-    return redirect('login')
+    return redirect("login")
 
 
 @login_required
@@ -5348,103 +6077,177 @@ def create_payment(request):
     user_data = get_object_or_404(AuthUser, id_staff=get_staff_id(request))
     order_id = generate_payment_id()
 
-    tracer_l.info(f'USER. {request.user.username}: VIEW PAYMENT')
+    tracer_l.info(f"USER. {request.user.username}: VIEW PAYMENT")
 
     user_staff_id = get_staff_id(request)
 
     previous_payments_count = Payment.objects.filter(
-        staff_id=user_staff_id,
-        status='completed'
+        staff_id=user_staff_id, status="completed"
     ).count()
 
     is_veteran = previous_payments_count > 0
 
     context = {
-        'page_title': 'Выбор тарифного плана',
-        'username': get_username(request),
-        'email': '' if user_data.email is None else user_data.email,
-        'phone': '' if user_data.phone is None else user_data.phone,
-        'order_id': order_id,
-        'fullname': user_data.username,
-        'is_veteran': is_veteran,
-        'debug': DEBUG
+        "page_title": "Выбор тарифного плана",
+        "username": get_username(request),
+        "email": "" if user_data.email is None else user_data.email,
+        "phone": "" if user_data.phone is None else user_data.phone,
+        "order_id": order_id,
+        "fullname": user_data.username,
+        "is_veteran": is_veteran,
+        "debug": DEBUG,
     }
 
-    return render(request, 'payments/payment.html', context)
+    return render(request, "payments/payment.html", context)
+
+
+@require_POST
+def instant_buy_package(request):
+    """
+    Моментальная покупка пакета тестов (без аквайринга, для тестирования).
+    """
+    try:
+        data = json.loads(request.body)
+        package_type = data.get("package_type")  # small, medium, large
+        quantity = data.get("quantity", 1)
+    except json.JSONDecodeError:
+        return JsonResponse({"success": False, "error": "Неверный формат"}, status=400)
+
+    package_prices = {
+        "small": {"price": 90, "tests": 7},
+        "medium": {"price": 190, "tests": 15},
+        "large": {"price": 290, "tests": 30},
+    }
+
+    if package_type not in package_prices:
+        return JsonResponse(
+            {"success": False, "error": "Неизвестный пакет"}, status=400
+        )
+
+    package = package_prices[package_type]
+    staff_id = get_staff_id(request)
+
+    try:
+        user = AuthUser.objects.get(id_staff=staff_id)
+        user.test_balance += package["tests"] * quantity
+        user.save(update_fields=["test_balance"])
+
+        TransactionTracker.objects.create(
+            staff_id=staff_id,
+            payment_id=f"TEST-{generate_payment_id()}",
+            order_id=generate_payment_id(),
+            amount=package["price"] * quantity,
+            description=f"Пакет {package_type}: {package['tests'] * quantity} тестов (тестовая покупка)",
+        )
+
+        tracer_l.info(
+            f"USER {staff_id}: Куплен пакет {package_type}x{quantity}, зачислено {package['tests'] * quantity} тестов"
+        )
+
+        return JsonResponse(
+            {
+                "success": True,
+                "message": f"Зачислено {package['tests'] * quantity} тестов!",
+                "new_balance": user.test_balance,
+            }
+        )
+
+    except AuthUser.DoesNotExist:
+        return JsonResponse(
+            {"success": False, "error": "Пользователь не найден"}, status=404
+        )
+    except Exception as e:
+        tracer_l.error(f"Ошибка покупки пакета: {e}")
+        return JsonResponse(
+            {"success": False, "error": "Ошибка при покупке"}, status=500
+        )
 
 
 @require_POST
 def validate_promo_code_api(request):
     try:
         data = json.loads(request.body)
-        code = data.get('promo_code', '').strip().upper()
+        code = data.get("promo_code", "").strip().upper()
     except json.JSONDecodeError:
-        return JsonResponse({'valid': False, 'error': 'Неверный формат запроса.'}, status=400)
+        return JsonResponse(
+            {"valid": False, "error": "Неверный формат запроса."}, status=400
+        )
 
     if not code:
-        return JsonResponse({'valid': False, 'error': 'Введите промокод.'}, status=400)
+        return JsonResponse({"valid": False, "error": "Введите промокод."}, status=400)
 
     previous_payments_count = Payment.objects.filter(
-        staff_id=get_staff_id(request),
-        status='completed'
+        staff_id=get_staff_id(request), status="completed"
     ).count()
     is_veteran = previous_payments_count > 0
 
     if not is_veteran:
-        return JsonResponse({'valid': False, 'error': 'Промокод не действителен.'}, status=400)
+        return JsonResponse(
+            {"valid": False, "error": "Промокод не действителен."}, status=400
+        )
 
     try:
         promo = PromoCode.objects.get(code__iexact=code)
         print(code, promo.code)
 
         if promo.expires_at and timezone.now() > promo.expires_at:
-            return JsonResponse({'valid': False, 'error': 'Срок действия этого промокода истек.'})
+            return JsonResponse(
+                {"valid": False, "error": "Срок действия этого промокода истек."}
+            )
 
-        return JsonResponse({
-            'valid': True,
-            'code': promo.code,
-            'discount_percent': promo.discount_percent,
-            'message': f'Промокод на {promo.discount_percent}% успешно применен!'
-        })
+        return JsonResponse(
+            {
+                "valid": True,
+                "code": promo.code,
+                "discount_percent": promo.discount_percent,
+                "message": f"Промокод на {promo.discount_percent}% успешно применен!",
+            }
+        )
 
     except PromoCode.DoesNotExist:
-        return JsonResponse({'valid': False, 'error': 'Такого промокода не существует.'})
+        return JsonResponse(
+            {"valid": False, "error": "Такого промокода не существует."}
+        )
 
 
 class PaymentInitiateView(View):
     """
-        Вьюшка инициализации платежа.
+    Вьюшка инициализации платежа.
     """
+
     def post(self, request):
         data = json.loads(request.body)
         # Извлечение данных из запроса
-        amount = data['amount']
-        description = data['description']
-        order_id = data['orderId']
-        email = data['email']
-        phone = data['phone']
-        receipt = data['receipt']
+        amount = data["amount"]
+        description = data["description"]
+        order_id = data["orderId"]
+        email = data["email"]
+        phone = data["phone"]
+        receipt = data["receipt"]
 
         tracer_l.debug(
-            f"RECIEVED DATA:\n\nphone: {phone}, email: {email}, order_id: {order_id}, receipt: {receipt}")
+            f"RECIEVED DATA:\n\nphone: {phone}, email: {email}, order_id: {order_id}, receipt: {receipt}"
+        )
         tracer_l.debug(f"amount: {amount}")
 
         plan_prices = {
-            'Начальный': 0,
-            'Лайтовый': 99,
-            'Стандартный': 550,
-            'Премиум': 690,
-            'Стандартный 3 мес': 1470,
-            'Премиум 3 мес': 1440,
-            'Ультра': 990,
-            'Стандартный Год': 3900,
-            'Премиум Год': 4800,
-            'Премиум неделя': 390
+            "Начальный": 0,
+            "Лайтовый": 99,
+            "Стандартный": 550,
+            "Премиум": 690,
+            "Стандартный 3 мес": 1470,
+            "Премиум 3 мес": 1440,
+            "Ультра": 990,
+            "Стандартный Год": 3900,
+            "Премиум Год": 4800,
+            "Премиум неделя": 390,
+            "package-small": 90,
+            "package-medium": 190,
+            "package-large": 340
         }
 
         previous_payments_count = Payment.objects.filter(
-            staff_id=get_staff_id(request),
-            status='completed'
+            staff_id=get_staff_id(request), status="completed"
         ).count()
 
         is_veteran = previous_payments_count > 0
@@ -5465,7 +6268,7 @@ class PaymentInitiateView(View):
         #     return JsonResponse({'Success': False, 'Message': 'Неверная сумма.'}, status=400)
 
         order_id = generate_payment_id()
-        tracer_l.debug(f'{request.user.username}: Приход: {order_id}. ')
+        tracer_l.debug(f"{request.user.username}: Приход: {order_id}. ")
 
         items = [
             {
@@ -5473,22 +6276,24 @@ class PaymentInitiateView(View):
                 "Price": int(amount) * 100,
                 "Quantity": 1,
                 "Amount": int(amount) * 100,
-                "Tax": "none"
+                "Tax": "none",
             },
         ]
 
-        total_amount = sum(item['Amount'] for item in items)
+        total_amount = sum(item["Amount"] for item in items)
 
         data_token = [
             {"TerminalKey": TERMINAL_KEY},
             {"Amount": str(total_amount)},
             {"OrderId": order_id},
             {"Description": description},
-            {"Password": TERMINAL_PASSWORD}
+            {"Password": TERMINAL_PASSWORD},
         ]
 
-        tracer_l.warning(f'{request.user.username}\n\nWANT TO BUY!!!\n\nAmount: {amount}\n'
-                         f'About: {description}')
+        tracer_l.warning(
+            f"{request.user.username}\n\nWANT TO BUY!!!\n\nAmount: {amount}\n"
+            f"About: {description}"
+        )
 
         created_token = PaymentManager().generate_token_for_new_payment(data_token)
 
@@ -5498,16 +6303,13 @@ class PaymentInitiateView(View):
             "OrderId": order_id,
             "Description": description,
             "Token": created_token,
-            "DATA": {
-                "Phone": phone,
-                "Email": email
-            },
+            "DATA": {"Phone": phone, "Email": email},
             "Receipt": {
                 "Email": email,
                 "Phone": phone,
                 "Taxation": "osn",
-                "Items": items
-            }
+                "Items": items,
+            },
         }
 
         headers = {"Content-Type": "application/json"}
@@ -5522,6 +6324,13 @@ class PaymentInitiateView(View):
                 plan_name_for_db = 'Стандартный'
             elif 'премиум неделя' in description.lower():
                 plan_name_for_db = 'Премиум'
+
+            elif 'package-small' in description.lower():
+                plan_name_for_db = 'Пакет S'
+            elif 'package-medium' in description.lower():
+                plan_name_for_db = 'Пакет M'
+            elif 'package-large' in description.lower():
+                plan_name_for_db = 'Пакет L'
             else:
                 plan_name_for_db = 'Премиум'
 
@@ -5531,6 +6340,8 @@ class PaymentInitiateView(View):
                 billing_cycle = 'monthly3'
             elif 'неделя' in description.lower():
                 billing_cycle = 'weekly'
+            elif 'package' in description.lower():
+                billing_cycle = 'package'
             else:
                 billing_cycle = 'monthly'
 
@@ -5569,17 +6380,22 @@ class PaymentInitiateView(View):
             )
             new_trans.save()
 
-            return JsonResponse({
-                'Success': True,
-                'PaymentURL': response_data['PaymentURL'],
-                'Message': 'Платеж успешно инициирован.'
-            })
+            return JsonResponse(
+                {
+                    "Success": True,
+                    "PaymentURL": response_data["PaymentURL"],
+                    "Message": "Платеж успешно инициирован.",
+                }
+            )
         else:
-            return JsonResponse({
-                'Success': False,
-                'ErrorCode': response_data.get('ErrorCode'),
-                'Message': response_data.get('Message')
-            }, status=400)
+            return JsonResponse(
+                {
+                    "Success": False,
+                    "ErrorCode": response_data.get("ErrorCode"),
+                    "Message": response_data.get("Message"),
+                },
+                status=400,
+            )
 
 
 def get_payment_data(status, description, plan_name, end_date, payment_id, order_id, amount):
@@ -5592,12 +6408,12 @@ def get_payment_data(status, description, plan_name, end_date, payment_id, order
 
 class PaymentSuccessView(View):
     def get(self, request):
-        success = request.GET.get('Success')
-        error_code = request.GET.get('ErrorCode')
-        payment_id = request.GET.get('PaymentId')
-        amount = request.GET.get('Amount')
+        success = request.GET.get("Success")
+        error_code = request.GET.get("ErrorCode")
+        payment_id = request.GET.get("PaymentId")
+        amount = request.GET.get("Amount")
 
-        if success == 'true' and error_code == '0':
+        if success == "true" and error_code == "0":
             try:
                 payment = Payment.objects.get(payment_id=payment_id)
                 # subscription = Subscription.objects.get(staff_id=get_staff_id(request))
@@ -5605,10 +6421,10 @@ class PaymentSuccessView(View):
                 subscription, created = Subscription.objects.get_or_create(
                     staff_id=get_staff_id(request),
                     defaults={
-                        'plan_name': 'Стартовый',
-                        'status': 'inactive',
-                        'billing_cycle': 'monthly',
-                    }
+                        "plan_name": "Стартовый",
+                        "status": "inactive",
+                        "billing_cycle": "monthly",
+                    },
                 )
 
                 payment_manager = PaymentManager()
@@ -5637,18 +6453,32 @@ class PaymentSuccessView(View):
 
                     tracer_l.info(f'SUCCESS BUY - {request.user.username} - {description_payment}')
 
-                    if subscription.billing_cycle == 'yearly':
+                    cnt_tests = 0
+                    if subscription.billing_cycle == 'package':
+                        if subscription.plan_name == 'Пакет S':
+                            cnt_tests = 5
+                        elif subscription.plan_name == 'Пакет M':
+                            cnt_tests = 12
+                        elif subscription.plan_name == 'Пакет L':
+                            cnt_tests = 25
+
+                    # Начисление пакетов
+                    access_service = AccessService(get_staff_id(request))
+                    access_service.add_credits(cnt_tests)
+
+                    if subscription.billing_cycle == "yearly":
                         subscription.end_date = datetime.now() + timedelta(days=365)
-                    elif subscription.billing_cycle == 'monthly3':
+                    elif subscription.billing_cycle == "monthly3":
                         subscription.end_date = datetime.now() + timedelta(days=92)
-                    elif subscription.billing_cycle == 'weekly':
+                    elif subscription.billing_cycle == "weekly":
                         subscription.end_date = datetime.now() + timedelta(days=7)
                     else:
                         subscription.end_date = datetime.now() + timedelta(days=30)
 
-                    subscription.start_date = datetime.now()
-                    subscription.status = 'active'
-                    subscription.save()
+                    if subscription.billing_cycle != 'package':
+                        subscription.start_date = datetime.now()
+                        subscription.status = "active"
+                        subscription.save()
 
                     formatted_amount = f"{payment.amount / 100:,.2f}".replace(',', ' ').replace('.', ',') + " RUB"
 
@@ -5656,8 +6486,14 @@ class PaymentSuccessView(View):
                         {"label": "Сумма", "value": formatted_amount},
                         {"label": "ID платежа", "value": payment.payment_id},
                         {"label": "ID заказа", "value": payment.order_id},
-                        {"label": "Дата покупки", "value": only_datetime.date.today().strftime("%d.%m.%Y")},
-                        {"label": "Заканчивается", "value": get_formate_date(subscription.end_date)},
+                        {
+                            "label": "Дата покупки",
+                            "value": only_datetime.date.today().strftime("%d.%m.%Y"),
+                        },
+                        {
+                            "label": "Заканчивается",
+                            "value": get_formate_date(subscription.end_date),
+                        },
                     ]
 
                     payment_data = {
@@ -5666,48 +6502,61 @@ class PaymentSuccessView(View):
                         "text_status": "Спасибо за покупку!",
                         "plan_name": subscription.get_human_plan(),
                         "payment_details": payment_details,
-                        "username": get_username(request)
+                        "username": get_username(request),
                     }
 
                     # Запись в транзакции
                     new_transaction = TransactionTracker.objects.create(
                         staff_id=get_staff_id(request),
                         payment_id=payment.payment_id,
-                        description=f'{formatted_amount}, {subscription.get_human_plan()}, completed: {payment_status}',
+                        description=f"{formatted_amount}, {subscription.get_human_plan()}, completed: {payment_status}",
                         order_id=payment.order_id,
                         amount=int(amount),
                     )
                     new_transaction.save()
 
                     try:
-                        message = render_to_string('payments/payment_success_email.html', {
-                            'plan_name': subscription.get_human_plan(),
-                            'amount': f"{payment.amount / 100:,.2f}".replace(',', ' ').replace('.', ','),
-                            'payment_id': payment.payment_id,
-                            'order_id': payment.order_id,
-                            'end_date': get_formate_date(subscription.end_date),
-                            'next_url': 'https://letychka.ru/create/'
-                        })
+                        message = render_to_string(
+                            "payments/payment_success_email.html",
+                            {
+                                "plan_name": subscription.get_human_plan(),
+                                "amount": f"{payment.amount / 100:,.2f}".replace(
+                                    ",", " "
+                                ).replace(".", ","),
+                                "payment_id": payment.payment_id,
+                                "order_id": payment.order_id,
+                                "end_date": get_formate_date(subscription.end_date),
+                                "next_url": "https://letychka.ru/create/",
+                            },
+                        )
 
-                        user_data = AuthUser.objects.filter(id_staff=get_staff_id(request)).first()
+                        user_data = AuthUser.objects.filter(
+                            id_staff=get_staff_id(request)
+                        ).first()
 
                         if user_data.email:
                             send_mail(
-                                '✅ Спасибо за покупку! | Успешная оплата',
+                                "✅ Спасибо за покупку! | Успешная оплата",
                                 message,
-                                'support@letychka.ru',
+                                "support@letychka.ru",
                                 [user_data.email],
                                 fail_silently=False,
-                                html_message=message
+                                html_message=message,
                             )
-                        tracer_l.info(f'{request.user.username} Success send mail')
+                        tracer_l.info(f"{request.user.username} Success send mail")
 
                     except Exception as fail:
-                        tracer_l.warning(f'{request.user.username} Error to send check to email: {fail}')
+                        tracer_l.warning(
+                            f"{request.user.username} Error to send check to email: {fail}"
+                        )
 
                     try:
                         payment_details_text = "\n".join(
-                            [f"<b>{detail['label']}:</b> {detail['value']}" for detail in payment_details])
+                            [
+                                f"<b>{detail['label']}:</b> {detail['value']}"
+                                for detail in payment_details
+                            ]
+                        )
 
                         message = (
                             f"{CONFIRM_SYMBOL} Успешный платеж\n\n"
@@ -5720,46 +6569,65 @@ class PaymentSuccessView(View):
                         telegram_message_manager = ManageTelegramMessages()
                         telegram_message_manager.send_message(TELEGRAM_CHAT_ID, message)
 
-                        auth_user = AuthUser.objects.filter(id_staff=get_staff_id(request)).first()
+                        auth_user = AuthUser.objects.filter(
+                            id_staff=get_staff_id(request)
+                        ).first()
                         if auth_user:
-                            additional_auth_user = AuthAdditionalUser.objects.get(user=auth_user)
-                            telegram_message_manager.send_message(additional_auth_user.id_telegram, message)
+                            additional_auth_user = AuthAdditionalUser.objects.get(
+                                user=auth_user
+                            )
+                            telegram_message_manager.send_message(
+                                additional_auth_user.id_telegram, message
+                            )
 
-                            tracer_l.info(f'{request.user.username}\n\nSuccess send to Telegram')
+                            tracer_l.info(
+                                f"{request.user.username}\n\nSuccess send to Telegram"
+                            )
                     except Exception as fail:
-                        tracer_l.warning(f'{request.user.username}\n\nFail while send info about payment to Telegram: {fail}')
+                        tracer_l.warning(
+                            f"{request.user.username}\n\nFail while send info about payment to Telegram: {fail}"
+                        )
 
-                    return render(request, 'payments/pay_status.html', payment_data)
+                    return render(request, "payments/pay_status.html", payment_data)
                 else:
-                    tracer_l.debug(f'{request.user.username}\n\nСтатус платежа: {payment_status}')
+                    tracer_l.debug(
+                        f"{request.user.username}\n\nСтатус платежа: {payment_status}"
+                    )
 
-                    return render(request, 'payments/pay_status.html', error_payment_data)
+                    return render(
+                        request, "payments/pay_status.html", error_payment_data
+                    )
             except Payment.DoesNotExist as fatal:
                 error_payment_data = {
                     "page_title": "Ошибка оплаты",
                     "payment_status": "Неудача",
                     "text_status": "Платеж не существует",
                 }
-                tracer_l.error(f'{request.user.username}\n\nОшибка оплаты. Платеж не существует: {fatal}')
+                tracer_l.error(
+                    f"{request.user.username}\n\nОшибка оплаты. Платеж не существует: {fatal}"
+                )
 
-                return render(request, 'payments/pay_status.html', error_payment_data)
+                return render(request, "payments/pay_status.html", error_payment_data)
         else:
             subscription = Subscription.objects.get(staff_id=get_staff_id(request))
 
             payment_data = {
-                "payment_status": "Не удалось", "page_title": "Ошибка при оплате",
+                "payment_status": "Не удалось",
+                "page_title": "Ошибка при оплате",
                 "text_status": "Не удалось активировать план, попробуйте позже :(",
                 "plan_name": subscription.get_human_plan(),
             }
-            tracer_l.error(f'{request.user.username}\n\nОшибка при оплате. Не удалось активировать план')
+            tracer_l.error(
+                f"{request.user.username}\n\nОшибка при оплате. Не удалось активировать план"
+            )
 
-            return render(request, 'payments/pay_status.html', payment_data)
+            return render(request, "payments/pay_status.html", payment_data)
 
 
 @login_required
 def get_ip(request):
     ip = get_client_ip(request)
-    return JsonResponse({'ip': ip})
+    return JsonResponse({"ip": ip})
 
 
 class ManageTelegramMessages:
@@ -5770,11 +6638,7 @@ class ManageTelegramMessages:
         requests.post(url, json=payload)
 
     def send_message(self, user_id, message):
-        payload = {
-            'chat_id': user_id,
-            'text': message,
-            'parse_mode': 'HTML'
-        }
+        payload = {"chat_id": user_id, "text": message, "parse_mode": "HTML"}
 
         self.__base_send_message(payload)
 
@@ -5791,9 +6655,9 @@ class ManageTelegramMessages:
         }
 
         payload = {
-            'chat_id': user_id,
-            'text': message,
-            'reply_markup': json.dumps(keyboard)
+            "chat_id": user_id,
+            "text": message,
+            "reply_markup": json.dumps(keyboard),
         }
 
         self.__base_send_message(payload)
@@ -5806,22 +6670,24 @@ class ManageTelegramMessages:
 class TelegramAuthManagement:
     @staticmethod
     def auth_user(telegram_auth_data: dict):
-        telegram_user_id = telegram_auth_data.get('telegram_user_id')
-        phone_number = telegram_auth_data.get('phone_number')
-        first_name = telegram_auth_data.get('first_name')
-        last_name = telegram_auth_data.get('last_name')
-        username = telegram_auth_data.get('username')
+        telegram_user_id = telegram_auth_data.get("telegram_user_id")
+        phone_number = telegram_auth_data.get("phone_number")
+        first_name = telegram_auth_data.get("first_name")
+        last_name = telegram_auth_data.get("last_name")
+        username = telegram_auth_data.get("username")
 
-        additional_auth = AuthAdditionalUser.objects.filter(id_telegram=int(telegram_user_id)).first()
+        additional_auth = AuthAdditionalUser.objects.filter(
+            id_telegram=int(telegram_user_id)
+        ).first()
 
         user, created = AuthUser.objects.update_or_create(
             phone=phone_number,
             defaults={
-                'confirmed_user': True,
-                'first_name': first_name,
-                'last_name': last_name,
-                'username': username if username is not None else telegram_user_id,
-            }
+                "confirmed_user": True,
+                "first_name": first_name,
+                "last_name": last_name,
+                "username": username if username is not None else telegram_user_id,
+            },
         )
 
         if not additional_auth:
@@ -5831,16 +6697,20 @@ class TelegramAuthManagement:
             )
             new_auth_telegram.save()
 
-            tracer_l.debug(f'confirm_user: Created additional auth for user: {telegram_user_id}')
+            tracer_l.debug(
+                f"confirm_user: Created additional auth for user: {telegram_user_id}"
+            )
 
-            plan_name, end_date, status, billing_cycle, discount = init_free_subscription()
+            plan_name, end_date, status, billing_cycle, discount = (
+                init_free_subscription()
+            )
             subscription = Subscription.objects.create(
                 staff_id=user.id_staff,
                 plan_name=plan_name,
                 end_date=end_date,
                 status=status,
                 billing_cycle=billing_cycle,
-                discount=0.00
+                discount=0.00,
             )
             subscription.save()
 
@@ -5849,11 +6719,13 @@ class TelegramAuthManagement:
     @staticmethod
     def one_click_auth(telegram_user_id: int, first_name: str, last_name: str, username: str):
         """
-            Авторизация пользователя по telegram_user_id.
-            Если пользователь уже есть в системе, привязывает telegram_user_id к его аккаунту.
-            Если пользователя нет, создаёт новую запись.
+        Авторизация пользователя по telegram_user_id.
+        Если пользователь уже есть в системе, привязывает telegram_user_id к его аккаунту.
+        Если пользователя нет, создаёт новую запись.
         """
-        additional_auth = AuthAdditionalUser.objects.filter(id_telegram=int(telegram_user_id)).first()
+        additional_auth = AuthAdditionalUser.objects.filter(
+            id_telegram=int(telegram_user_id)
+        ).first()
 
         if additional_auth:
             user = additional_auth.user
@@ -5865,35 +6737,37 @@ class TelegramAuthManagement:
             new_auth_telegram, created = AuthAdditionalUser.objects.get_or_create(
                 user=user,
                 defaults={
-                    'id_telegram': int(telegram_user_id),
-                }
+                    "id_telegram": int(telegram_user_id),
+                },
             )
         else:
             user, created = AuthUser.objects.get_or_create(
                 username=username,
                 defaults={
-                    'first_name': first_name,
-                    'last_name': last_name,
-                }
+                    "first_name": first_name,
+                    "last_name": last_name,
+                },
             )
 
             new_auth_telegram, created = AuthAdditionalUser.objects.get_or_create(
                 user=user,
                 defaults={
-                    'id_telegram': int(telegram_user_id),
-                }
+                    "id_telegram": int(telegram_user_id),
+                },
             )
 
-            plan_name, end_date, status, billing_cycle, discount = init_free_subscription()
+            plan_name, end_date, status, billing_cycle, discount = (
+                init_free_subscription()
+            )
             subscription, created = Subscription.objects.get_or_create(
                 staff_id=user.id_staff,
                 defaults={
-                    'plan_name': plan_name,
-                    'end_date': end_date,
-                    'status': status,
-                    'billing_cycle': billing_cycle,
-                    'discount': 0.00
-                }
+                    "plan_name": plan_name,
+                    "end_date": end_date,
+                    "status": status,
+                    "billing_cycle": billing_cycle,
+                    "discount": 0.00,
+                },
             )
             subscription.save()
 
@@ -5903,19 +6777,23 @@ class TelegramAuthManagement:
 @csrf_exempt
 def one_click_auth_view(request, token: str, token_hash: str):
     """
-        Обработка одноразовой ссылки для авторизации через Telegram.
+    Обработка одноразовой ссылки для авторизации через Telegram.
     """
     if request.user.is_authenticated:
-        return redirect('create')
+        return redirect("create")
 
     try:
         expected_hash = hashlib.sha256(token.encode()).hexdigest()
         if expected_hash != token_hash:
-            return JsonResponse({"status": "error", "message": "Invalid token hash"}, status=400)
+            return JsonResponse(
+                {"status": "error", "message": "Invalid token hash"}, status=400
+            )
 
-        parts = token.split(':')
+        parts = token.split(":")
         if len(parts) != 3:
-            return JsonResponse({"status": "error", "message": "Invalid token format"}, status=400)
+            return JsonResponse(
+                {"status": "error", "message": "Invalid token format"}, status=400
+            )
 
         telegram_user_id, timestamp, _ = parts
         telegram_user_id = int(telegram_user_id)
@@ -5923,26 +6801,30 @@ def one_click_auth_view(request, token: str, token_hash: str):
 
         current_time = int(time.time())
         if current_time - timestamp > 300:
-            return JsonResponse({"status": "error", "message": "Link expired"}, status=400)
+            return JsonResponse(
+                {"status": "error", "message": "Link expired"}, status=400
+            )
 
         user = TelegramAuthManagement.one_click_auth(
             telegram_user_id=telegram_user_id,
             first_name="",
             last_name="",
-            username=f"{telegram_user_id}"
+            username=f"{telegram_user_id}",
         )
 
         login(request, user)
-        request.session['user_id'] = user.id
+        request.session["user_id"] = user.id
 
-        tracer_l.warning(f'ADMIN. LOGGED IN {telegram_user_id}')
+        tracer_l.warning(f"ADMIN. LOGGED IN {telegram_user_id}")
 
-        return redirect('create')
+        return redirect("create")
 
     except Exception as fail:
-        tracer_l.error(f'one_click_auth_view: {fail}')
+        tracer_l.error(f"one_click_auth_view: {fail}")
 
-        return JsonResponse({"status": "error", "message": f"Error: {fail}"}, status=500)
+        return JsonResponse(
+            {"status": "error", "message": f"Error: {fail}"}, status=500
+        )
 
 
 user_verify_code = {}
@@ -6023,39 +6905,44 @@ def confirm_user_v2(request):
         try:
             client_public_key = ECC.import_key(client_public_key_pem)
         except Exception as e:
-            return JsonResponse({'status': 'error', 'message': 'Invalid client public key'}, status=400)
+            return JsonResponse(
+                {"status": "error", "message": "Invalid client public key"}, status=400
+            )
 
         crypto_b.derive_shared_key(client_public_key)
 
         try:
             decrypted_data = crypto_b.decrypt_data(nonce, ciphertext, tag)
         except ValueError as e:
-            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+            return JsonResponse({"status": "error", "message": str(e)}, status=400)
 
         if hash_data(decrypted_data) != data_hash:
-            return JsonResponse({'status': 'error', 'message': 'Data integrity check failed'}, status=402)
+            return JsonResponse(
+                {"status": "error", "message": "Data integrity check failed"},
+                status=402,
+            )
 
-        telegram_user_id = decrypted_data.get('telegram_user_id')
-        phone_number = str(decrypted_data.get('phone_number'))
-        username = decrypted_data.get('username') or ''
-        first_name = decrypted_data.get('first_name')
-        last_name = decrypted_data.get('last_name') or ''
+        telegram_user_id = decrypted_data.get("telegram_user_id")
+        phone_number = str(decrypted_data.get("phone_number"))
+        username = decrypted_data.get("username") or ""
+        first_name = decrypted_data.get("first_name")
+        last_name = decrypted_data.get("last_name") or ""
 
         telegram_auth_data = {
-            'telegram_user_id': telegram_user_id,
-            'phone_number': phone_number,
-            'username': username,
-            'first_name': first_name,
-            'last_name': last_name,
+            "telegram_user_id": telegram_user_id,
+            "phone_number": phone_number,
+            "username": username,
+            "first_name": first_name,
+            "last_name": last_name,
         }
         user = TelegramAuthManagement.auth_user(telegram_auth_data)
 
         login(request, user)
-        request.session['user_id'] = user.id
+        request.session["user_id"] = user.id
 
-        return JsonResponse({'status': 'success', 'user_id': user.id})
+        return JsonResponse({"status": "success", "user_id": user.id})
 
-    return JsonResponse({'status': 'error'}, status=400)
+    return JsonResponse({"status": "error"}, status=400)
 
 
 def cleanup_old_keys():
@@ -6089,21 +6976,23 @@ def exchange_keys(request):
     try:
         public_key_a = ECC.import_key(public_key_a_pem)
     except Exception as e:
-        tracer_l.error(f'exchange_keys --- Invalid public key: {e}')
+        tracer_l.error(f"exchange_keys --- Invalid public key: {e}")
         return JsonResponse({"error": f"Invalid public key"}, status=400)
 
     client_public_keys[telegram_user_id] = {
-        'public_key': public_key_a_pem,
-        'timestamp': time.time()
+        "public_key": public_key_a_pem,
+        "timestamp": time.time(),
     }
 
     cleanup_old_keys()
     crypto_b.generate_keys_with_secret()
 
-    return JsonResponse({
-        "public_key": crypto_b.public_key.export_key(format='PEM'),
-        "status": "Keys generated successfully"
-    })
+    return JsonResponse(
+        {
+            "public_key": crypto_b.public_key.export_key(format="PEM"),
+            "status": "Keys generated successfully",
+        }
+    )
 
 
 @csrf_exempt
@@ -6138,20 +7027,24 @@ def verify_code_view(request):
 
 
 def check_telegram_hash(auth_data):
-    string_to_check = '\n'.join([
-        f"{key}={value}" for key, value in sorted(auth_data.items()) if key != 'hash'
-    ])
+    string_to_check = "\n".join(
+        [f"{key}={value}" for key, value in sorted(auth_data.items()) if key != "hash"]
+    )
 
-    secret = TELEGRAM_BOT_TOKEN.encode('UTF-8')
-    hash_check = hmac.new(secret, string_to_check.encode('UTF-8'), hashlib.sha256).hexdigest()
+    secret = TELEGRAM_BOT_TOKEN.encode("UTF-8")
+    hash_check = hmac.new(
+        secret, string_to_check.encode("UTF-8"), hashlib.sha256
+    ).hexdigest()
 
     return hash_check
 
 
-@method_decorator(csrf_exempt, name='dispatch')
+@method_decorator(csrf_exempt, name="dispatch")
 class TelegramAuthView(View):
     def dispatch(self, request, *args, **kwargs):
-        tracer_l.warning(f"TelegramAuthView dispatch method={request.method} GET={request.GET} POST={request.POST}")
+        tracer_l.warning(
+            f"TelegramAuthView dispatch method={request.method} GET={request.GET} POST={request.POST}"
+        )
         return super().dispatch(request, *args, **kwargs)
 
     def post(self, request):
@@ -6161,22 +7054,28 @@ class TelegramAuthView(View):
         tracer_l.warning(f"{auth_data}")
 
         try:
-            auth_date = auth_data.get('auth_date', 999)
-            first_name = auth_data.get('first_name', '')
-            last_name = auth_data.get('last_name', '')
-            telegram_id = auth_data.get('id', 0)
-            username = auth_data.get('username', None)
+            auth_date = auth_data.get("auth_date", 999)
+            first_name = auth_data.get("first_name", "")
+            last_name = auth_data.get("last_name", "")
+            telegram_id = auth_data.get("id", 0)
+            username = auth_data.get("username", None)
 
             if not check_telegram_hash(auth_data):
                 tracer_l.warning("Invalid hash")
-                return JsonResponse({'status': 'Error', 'message': 'Invalid auth'}, status=400)
+                return JsonResponse(
+                    {"status": "Error", "message": "Invalid auth"}, status=400
+                )
 
             if (int(time.time()) - int(auth_date) > 600) or (int(telegram_id) == 0):
                 tracer_l.warning("Invalid timestamp or ID")
-                return JsonResponse({'status': 'error', 'message': 'Invalid data'}, status=400)
+                return JsonResponse(
+                    {"status": "error", "message": "Invalid data"}, status=400
+                )
 
-            existing_user = AuthAdditionalUser.objects.filter(id_telegram=telegram_id).first()
-            tracer_l.debug(f'TelegramAuthView: existing_user: {existing_user}')
+            existing_user = AuthAdditionalUser.objects.filter(
+                id_telegram=telegram_id
+            ).first()
+            tracer_l.debug(f"TelegramAuthView: existing_user: {existing_user}")
 
             if existing_user:
                 auth_user = existing_user.user
@@ -6184,50 +7083,58 @@ class TelegramAuthView(View):
                 auth_user = AuthUser.objects.create(
                     username=str(telegram_id) if username is None else username,
                     first_name=first_name,
-                    last_name=last_name
+                    last_name=last_name,
                 )
                 auth_user.save()
 
                 telegram_auth = AuthAdditionalUser.objects.create(
-                    user=auth_user,
-                    id_telegram=telegram_id
+                    user=auth_user, id_telegram=telegram_id
                 )
                 telegram_auth.save()
 
-                plan_name, end_date, status, billing_cycle, discount = init_free_subscription()
+                plan_name, end_date, status, billing_cycle, discount = (
+                    init_free_subscription()
+                )
                 subscription = Subscription.objects.create(
                     staff_id=auth_user.id_staff,
                     plan_name=plan_name,
                     end_date=end_date,
                     status=status,
                     billing_cycle=billing_cycle,
-                    discount=0.00
+                    discount=0.00,
                 )
                 subscription.save()
 
             login(request, auth_user)
-            request.session['user_id'] = auth_user.id
+            request.session["user_id"] = auth_user.id
 
-            tracer_l.debug(f'TelegramAuthView: user has been login in')
+            tracer_l.debug(f"TelegramAuthView: user has been login in")
 
             auth_data = {
-                'id': telegram_id,
-                'first_name': first_name,
-                'last_name': last_name,
-                'username': username,
-                'auth_date': auth_date,
-                'hash': request.GET.get('hash') or request.POST.get('hash')
+                "id": telegram_id,
+                "first_name": first_name,
+                "last_name": last_name,
+                "username": username,
+                "auth_date": auth_date,
+                "hash": request.GET.get("hash") or request.POST.get("hash"),
             }
-            return render(request, "telegram.html", {
-                "target_url": reverse('create'),
-                "auth_data": auth_data  # Добавляем данные для шаблона
-            })
+            return render(
+                request,
+                "telegram.html",
+                {
+                    "target_url": reverse("create"),
+                    "auth_data": auth_data,  # Добавляем данные для шаблона
+                },
+            )
 
         except Exception as fail:
             import traceback
-            tracer_l.error(f'Error: {fail}\n{traceback.format_exc()}')
-            tracer_l.error(f'TelegramAuthView: error in tg auth: {fail}')
-            return JsonResponse({'status': 'error', 'message': 'Internal server error'}, status=500)
+
+            tracer_l.error(f"Error: {fail}\n{traceback.format_exc()}")
+            tracer_l.error(f"TelegramAuthView: error in tg auth: {fail}")
+            return JsonResponse(
+                {"status": "error", "message": "Internal server error"}, status=500
+            )
 
     def get(self, request):
         auth_data = request.GET
@@ -6236,20 +7143,26 @@ class TelegramAuthView(View):
         tracer_l.warning(f"{auth_data}")
 
         try:
-            auth_date = auth_data.get('auth_date', 999)
-            first_name = auth_data.get('first_name', '')
-            last_name = auth_data.get('last_name', '')
-            telegram_id = auth_data.get('id', 0)
-            username = auth_data.get('username', None)
+            auth_date = auth_data.get("auth_date", 999)
+            first_name = auth_data.get("first_name", "")
+            last_name = auth_data.get("last_name", "")
+            telegram_id = auth_data.get("id", 0)
+            username = auth_data.get("username", None)
 
             if not check_telegram_hash(auth_data):
                 print("Invalid hash")
-                return JsonResponse({'status': 'Error', 'message': 'Invalid auth'}, status=400)
+                return JsonResponse(
+                    {"status": "Error", "message": "Invalid auth"}, status=400
+                )
 
             if (int(time.time()) - int(auth_date) > 600) or (telegram_id == 0):
-                return JsonResponse({'status': 'error', 'message': 'Invalid data'}, status=400)
+                return JsonResponse(
+                    {"status": "error", "message": "Invalid data"}, status=400
+                )
 
-            existing_user = AuthAdditionalUser.objects.filter(id_telegram=telegram_id).first()
+            existing_user = AuthAdditionalUser.objects.filter(
+                id_telegram=telegram_id
+            ).first()
 
             if existing_user:
                 auth_user = existing_user.user
@@ -6257,80 +7170,89 @@ class TelegramAuthView(View):
                 auth_user = AuthUser.objects.create(
                     username=str(telegram_id) if username is None else username,
                     first_name=first_name,
-                    last_name=last_name
+                    last_name=last_name,
                 )
                 auth_user.save()
 
                 telegram_auth = AuthAdditionalUser.objects.create(
-                    user=auth_user,
-                    id_telegram=telegram_id
+                    user=auth_user, id_telegram=telegram_id
                 )
                 telegram_auth.save()
 
-                plan_name, end_date, status, billing_cycle, discount = init_free_subscription()
+                plan_name, end_date, status, billing_cycle, discount = (
+                    init_free_subscription()
+                )
                 subscription = Subscription.objects.create(
                     staff_id=auth_user.id_staff,
                     plan_name=plan_name,
                     end_date=end_date,
                     status=status,
                     billing_cycle=billing_cycle,
-                    discount=0.00
+                    discount=0.00,
                 )
                 subscription.save()
 
             login(request, auth_user)
-            request.session['user_id'] = auth_user.id
+            request.session["user_id"] = auth_user.id
 
-            tracer_l.debug(f'TelegramAuthView: success')
+            tracer_l.debug(f"TelegramAuthView: success")
 
             # return redirect('create')
             auth_data = {
-                'id': telegram_id,
-                'first_name': first_name,
-                'last_name': last_name,
-                'username': username,
-                'auth_date': auth_date,
-                'hash': request.GET.get('hash') or request.POST.get('hash')
+                "id": telegram_id,
+                "first_name": first_name,
+                "last_name": last_name,
+                "username": username,
+                "auth_date": auth_date,
+                "hash": request.GET.get("hash") or request.POST.get("hash"),
             }
-            return render(request, "telegram.html", {
-                "target_url": reverse('create'),
-                "auth_data": auth_data  # Добавляем данные для шаблона
-            })
+            return render(
+                request,
+                "telegram.html",
+                {
+                    "target_url": reverse("create"),
+                    "auth_data": auth_data,  # Добавляем данные для шаблона
+                },
+            )
 
         except Exception as fail:
             import traceback
-            tracer_l.error(f'Error: {fail}\n{traceback.format_exc()}')
-            tracer_l.error(f'TelegramAuthView: error in tg auth: {fail}')
-            return JsonResponse({'status': 'error', 'message': 'Internal server error'}, status=500)
+
+            tracer_l.error(f"Error: {fail}\n{traceback.format_exc()}")
+            tracer_l.error(f"TelegramAuthView: error in tg auth: {fail}")
+            return JsonResponse(
+                {"status": "error", "message": "Internal server error"}, status=500
+            )
 
 
 @check_legal_process
 def available_plans(request):
     context = {
-        'page_title': 'Выберите оптимальный план подписки | Летучка — создать тест онлайн бесплатно'
+        "page_title": "Выберите оптимальный план подписки | Летучка — создать тест онлайн бесплатно"
     }
-    return render(request, 'askify_service/avaible-plans.html', context)
+    return render(request, "askify_service/avaible-plans.html", context)
 
 
 @check_legal_process
 def document_view(request, slug):
-    file_path = os.path.join(BASE_DIR, 'docs', f'{slug}.md')
-    tracer_l.debug(f'file_path: file_path')
+    file_path = os.path.join(BASE_DIR, "docs", f"{slug}.md")
+    tracer_l.debug(f"file_path: file_path")
 
     if not os.path.exists(file_path):
-        return render(request, '404.html', status=404)
+        return render(request, "404.html", status=404)
 
-    with open(file_path, 'r', encoding='utf-8') as file:
+    with open(file_path, "r", encoding="utf-8") as file:
         content = file.read()
 
     content_html = markdown.markdown(content)
 
     content = {
-        'title': slug.replace('-', ' ').title(), 'content': content_html,
-        'year': get_year_now()
+        "title": slug.replace("-", " ").title(),
+        "content": content_html,
+        "year": get_year_now(),
     }
 
-    return render(request, 'document.html', content)
+    return render(request, "document.html", content)
 
 
 @check_legal_process
@@ -6341,68 +7263,74 @@ def blog_view(request, slug):
 
     post.add_unique_view(ip)
 
-    file_path = os.path.join(BASE_DIR, 'blog', f'{slug}.md')
+    file_path = os.path.join(BASE_DIR, "blog", f"{slug}.md")
 
     if not os.path.exists(file_path):
-        return render(request, '404.html', status=404)
+        return render(request, "404.html", status=404)
 
-    with open(file_path, 'r', encoding='utf-8') as file:
+    with open(file_path, "r", encoding="utf-8") as file:
         content = file.read()
 
-    title = content.splitlines()[0].lstrip('# ').strip()
+    title = content.splitlines()[0].lstrip("# ").strip()
     content_html = markdown.markdown(content)
 
     view_count_text = get_view_count_text(post.view_count)
 
-    other_posts = BlogPost.objects.exclude(
-        slug=slug
-    ).order_by('-created_at')[:4]
+    other_posts = BlogPost.objects.exclude(slug=slug).order_by("-created_at")[:4]
 
     context = {
-        'title': title,
-        'content': content_html,
-        'year': get_year_now(),
-        'view_count': f"{view_count_text} • {post.created_at.strftime('%d.%m.%Y')}",
-        'article_url': f"media/{slug}",
-        'other_posts': other_posts,
-        'username': get_username(request) if get_username(request) else 0,
-        'debug': DEBUG
+        "title": title,
+        "content": content_html,
+        "year": get_year_now(),
+        "view_count": f"{view_count_text} • {post.created_at.strftime('%d.%m.%Y')}",
+        "article_url": f"media/{slug}",
+        "other_posts": other_posts,
+        "username": get_username(request) if get_username(request) else 0,
+        "debug": DEBUG,
     }
 
-    return render(request, 'blog.html', context)
+    return render(request, "blog.html", context)
 
 
 @csrf_exempt
 def terminate_session(request):
-    if request.method == 'POST':
+    if request.method == "POST":
         data = json.loads(request.body)
-        user_id = int(data.get('user_id'))
-        received_hash = data.get('hash')
+        user_id = int(data.get("user_id"))
+        received_hash = data.get("hash")
 
-        message = json.dumps({'user_id': user_id, 'hash': received_hash}).encode()
+        message = json.dumps({"user_id": user_id, "hash": received_hash}).encode()
 
         manage_confident_fields = ManageConfidentFields("config.json")
         ghost_connection = manage_confident_fields.get_confident_key("ghost_connection")
-        expected_hash = hmac.new(ghost_connection.encode(), message, hashlib.sha256).hexdigest()
+        expected_hash = hmac.new(
+            ghost_connection.encode(), message, hashlib.sha256
+        ).hexdigest()
 
         if not hmac.compare_digest(received_hash, expected_hash):
-            return JsonResponse({'status': 'error', 'message': 'Invalid hash.'}, status=403)
+            return JsonResponse(
+                {"status": "error", "message": "Invalid hash."}, status=403
+            )
 
         selected_user = AuthUser.objects.filter(id=user_id).first()
 
         if selected_user:
             logout(request)
-            return JsonResponse({'success': True, 'message': 'Session closed successfully.'})
+            return JsonResponse(
+                {"success": True, "message": "Session closed successfully."}
+            )
 
-        return JsonResponse({'success': False, 'message': 'Fail in  close session.'})
+        return JsonResponse({"success": False, "message": "Fail in  close session."})
 
-    return JsonResponse({'status': 'error', 'message': 'Invalid request method.'}, status=400)
+    return JsonResponse(
+        {"status": "error", "message": "Invalid request method."}, status=400
+    )
 
 
 def send_verification_email(user):
-    token = signing.dumps(user.pk, salt='email-verification')
-    verification_link = reverse('verify_email', kwargs={'token': token})
-    full_link = f'https://letychka.ru{verification_link}'
+    token = signing.dumps(user.pk, salt="email-verification")
+    verification_link = reverse("verify_email", kwargs={"token": token})
+    full_link = f"https://letychka.ru{verification_link}"
 
     html_message = f"""
     <html>
@@ -6418,9 +7346,9 @@ def send_verification_email(user):
     """
 
     send_mail(
-        'Подтверждение почты',
-        'Это письмо в формате HTML. Пожалуйста, включите поддержку HTML.',
-        'support@letychka.ru',
+        "Подтверждение почты",
+        "Это письмо в формате HTML. Пожалуйста, включите поддержку HTML.",
+        "support@letychka.ru",
         [user.email],
         html_message=html_message,
         fail_silently=False,
@@ -6451,53 +7379,57 @@ class PasswordResetView(View):
         if user:
             token = default_token_generator.make_token(user)
             uid = urlsafe_base64_encode(force_bytes(user.pk))
-            link = request.build_absolute_uri(f'/password_reset_confirm/{uid}/{token}/')
+            link = request.build_absolute_uri(f"/password_reset_confirm/{uid}/{token}/")
 
-            message = render_to_string('confirmed_data/password_reset_email.html', {'link': link})
+            message = render_to_string(
+                "confirmed_data/password_reset_email.html", {"link": link}
+            )
             send_mail(
-                'Сброс пароля',
+                "Сброс пароля",
                 message,
-                'support@letychka.ru',
+                "support@letychka.ru",
                 [email],
                 fail_silently=False,
-                html_message=message
+                html_message=message,
             )
 
-        return redirect('password_reset_done')
+        return redirect("password_reset_done")
 
 
 class PasswordResetConfirmView(View):
     def get(self, request, uidb64, token):
-        return render(request, 'confirmed_data/password_reset_confirm.html', {'uidb64': uidb64, 'token': token})
+        return render(
+            request,
+            "confirmed_data/password_reset_confirm.html",
+            {"uidb64": uidb64, "token": token},
+        )
 
     def post(self, request, uidb64, token):
-        new_password = request.POST.get('new_password')
+        new_password = request.POST.get("new_password")
         user_id = urlsafe_base64_decode(uidb64).decode()
         user = AuthUser.objects.get(pk=user_id)
         print(new_password)
         if default_token_generator.check_token(user, token):
             user.set_password(new_password)
             user.save()
-            return redirect('password_reset_complete')
+            return redirect("password_reset_complete")
 
 
 def password_reset_complete(request):
-    return render(request, 'confirmed_data/password_reset_complete.html')
+    return render(request, "confirmed_data/password_reset_complete.html")
 
 
 def password_reset_email(request):
-    context = {
-        'page_title': 'Сброс пароля'
-    }
-    return render(request, 'confirmed_data/password_message_reset_email.html', context)
+    context = {"page_title": "Сброс пароля"}
+    return render(request, "confirmed_data/password_message_reset_email.html", context)
 
 
 def passwordless_auth_view(request):
     """
     Страница для беспарольного входа.
     """
-    if request.method == 'POST':
-        email = request.POST.get('email', '').strip()
+    if request.method == "POST":
+        email = request.POST.get("email", "").strip()
         user = AuthUser.objects.filter(email__iexact=email).first()
 
         if user:
@@ -6505,30 +7437,41 @@ def passwordless_auth_view(request):
                 MagicLinkToken.objects.filter(user=user).delete()
                 magic_token = MagicLinkToken.objects.create(user=user)
 
-                subject = 'Войти в Летучку'
+                subject = "Войти в Летучку"
 
                 login_url = request.build_absolute_uri(
-                    reverse('magic_link_login', args=[magic_token.token])
+                    reverse("magic_link_login", args=[magic_token.token])
                 )
-                message = render_to_string('confirmed_data/magic_link_auth.html', {'link': login_url})
+                message = render_to_string(
+                    "confirmed_data/magic_link_auth.html", {"link": login_url}
+                )
 
                 send_mail(
                     subject,
                     message,
-                    'support@letychka.ru',
+                    "support@letychka.ru",
                     [user.email],
                     fail_silently=False,
-                    html_message=message
+                    html_message=message,
                 )
 
             except SMTPException as e:
-                tracer_l.warning(f"Failed to send magic link to {email} synchronously: {e}")
-                return render(request, 'confirmed_data/passwordless_auth.html',
-                              {'error': 'Не удалось отправить ссылку. Пожалуйста, попробуйте через минуту.'})
+                tracer_l.warning(
+                    f"Failed to send magic link to {email} synchronously: {e}"
+                )
+                return render(
+                    request,
+                    "confirmed_data/passwordless_auth.html",
+                    {
+                        "error": "Не удалось отправить ссылку. Пожалуйста, попробуйте через минуту."
+                    },
+                )
 
-        return render(request, 'confirmed_data/passwordless_sent.html', {'email': email})
+        return render(
+            request, "confirmed_data/passwordless_sent.html", {"email": email}
+        )
 
-    return render(request, 'confirmed_data/passwordless_auth.html')
+    return render(request, "confirmed_data/passwordless_auth.html")
 
 
 def magic_link_login_view(request, token):
@@ -6542,16 +7485,17 @@ def magic_link_login_view(request, token):
         login(request, user)
         magic_token.delete()
         tracer_l.warning(f"Magic link email {user.username} success")
-        return redirect('create')
+        return redirect("create")
     else:
-        if magic_token: magic_token.delete()
-        return render(request, 'confirmed_data/magic_link_invalid.html')
+        if magic_token:
+            magic_token.delete()
+        return render(request, "confirmed_data/magic_link_invalid.html")
 
 
 @staff_member_required
 def user_ops_center_view(request):
-    tiny_api = env('TINY_API')
-    return render(request, 'admin/user_ops_center.html', context={'tiny_api': tiny_api})
+    tiny_api = env("TINY_API")
+    return render(request, "admin/user_ops_center.html", context={"tiny_api": tiny_api})
 
 
 @staff_member_required
@@ -6559,23 +7503,24 @@ def search_users_api(request):
     """
     API для поиска пользователей.
     """
-    query = request.GET.get('q', '').strip()
+    query = request.GET.get("q", "").strip()
     if len(query) < 2:
-        return JsonResponse({'users': []})
+        return JsonResponse({"users": []})
 
     users = AuthUser.objects.filter(
         Q(username__icontains=query) | Q(email__icontains=query)
-    ).values('id', 'username', 'email', 'date_joined')[:10]
+    ).values("id", "username", "email", "date_joined")[:10]
 
     user_list = [
         {
-            'id': user['id'],
-            'username': user['username'],
-            'email': user['email'],
-            'date_joined': user['date_joined'].strftime('%d.%m.%Y')
-        } for user in users
+            "id": user["id"],
+            "username": user["username"],
+            "email": user["email"],
+            "date_joined": user["date_joined"].strftime("%d.%m.%Y"),
+        }
+        for user in users
     ]
-    return JsonResponse({'users': user_list})
+    return JsonResponse({"users": user_list})
 
 
 @staff_member_required
@@ -6586,54 +7531,57 @@ def get_user_details_api(request, user_id):
     try:
         user = AuthUser.objects.get(id=user_id)
     except AuthUser.DoesNotExist:
-        return JsonResponse({'error': 'User not found'}, status=404)
+        return JsonResponse({"error": "User not found"}, status=404)
 
     subscription_data = {}
     sub = Subscription.objects.filter(staff_id=user.id_staff).first()
     if sub:
         subscription_data = {
-            'plan_name': sub.get_human_plan(),
-            'status': sub.status,
-            'end_date': sub.end_date.strftime('%d.%m.%Y') if sub.end_date else 'N/A'
+            "plan_name": sub.get_human_plan(),
+            "status": sub.status,
+            "end_date": sub.end_date.strftime("%d.%m.%Y") if sub.end_date else "N/A",
         }
 
-    payments = Payment.objects.filter(staff_id=user.id_staff, status='completed')
+    payments = Payment.objects.filter(staff_id=user.id_staff, status="completed")
     financial_data = payments.aggregate(
-        total_revenue=Sum('amount'),
-        payment_count=Count('id')
+        total_revenue=Sum("amount"), payment_count=Count("id")
     )
 
     surveys_created = Survey.objects.filter(id_staff=user.id_staff).count()
-    attempts_on_surveys = TestAttempt.objects.filter(survey__id_staff=user.id_staff).count()
+    attempts_on_surveys = TestAttempt.objects.filter(
+        survey__id_staff=user.id_staff
+    ).count()
 
-    last_surveys = Survey.objects.filter(id_staff=user.id_staff).order_by('-created_at')[:5]
+    last_surveys = Survey.objects.filter(id_staff=user.id_staff).order_by(
+        "-created_at"
+    )[:5]
 
     response_data = {
-        'id': user.id,
-        'username': user.username,
-        'email': user.email,
-        'id_staff': user.id_staff,
-        'date_joined': user.date_joined.strftime('%d.%m.%Y %H:%M'),
-        'is_staff': user.is_staff,
-        'subscription': subscription_data,
-        'financials': {
-            'total_revenue': float(financial_data['total_revenue'] or 0),
-            'payment_count': financial_data['payment_count']
+        "id": user.id,
+        "username": user.username,
+        "email": user.email,
+        "id_staff": user.id_staff,
+        "date_joined": user.date_joined.strftime("%d.%m.%Y %H:%M"),
+        "is_staff": user.is_staff,
+        "subscription": subscription_data,
+        "financials": {
+            "total_revenue": float(financial_data["total_revenue"] or 0),
+            "payment_count": financial_data["payment_count"],
         },
-        'activity': {
-            'surveys_created': surveys_created,
-            'attempts_on_surveys': attempts_on_surveys
+        "activity": {
+            "surveys_created": surveys_created,
+            "attempts_on_surveys": attempts_on_surveys,
         },
-        'last_surveys': [
+        "last_surveys": [
             {
-                'title': s.title,
-                'survey_id': s.survey_id,
-                'created_at': s.created_at.strftime('%d.%m.%Y'),
-                'view_count': s.view_count,
-                'attempts_count': TestAttempt.objects.filter(survey=s).count()
+                "title": s.title,
+                "survey_id": s.survey_id,
+                "created_at": s.created_at.strftime("%d.%m.%Y"),
+                "view_count": s.view_count,
+                "attempts_count": TestAttempt.objects.filter(survey=s).count(),
             }
             for s in last_surveys
-        ]
+        ],
     }
 
     return JsonResponse(response_data)
@@ -6733,11 +7681,11 @@ def get_new_users_api(request):
     week_start = today_start - timedelta(days=today_start.weekday())
 
     def get_formatted_top_users(start_date, end_date):
-        new_users = list(AuthUser.objects.filter(
-            date_joined__gte=start_date,
-            date_joined__lt=end_date,
-            is_staff=False
-        ).order_by('-date_joined'))
+        new_users = list(
+            AuthUser.objects.filter(
+                date_joined__gte=start_date, date_joined__lt=end_date, is_staff=False
+            ).order_by("-date_joined")
+        )
 
         if not new_users:
             return []
@@ -6757,21 +7705,25 @@ def get_new_users_api(request):
                 username_display = "НЕЛЕГАЛ"
                 continue
 
-            results.append({
-                'id': user.id,
-                'username': username_display,
-                'email': user.email,
-                'date_joined': user.date_joined.astimezone(tz).strftime('%d.%m %H:%M'),
-                'tests_created': counts_map.get(user.id_staff, 0)
-            })
+            results.append(
+                {
+                    "id": user.id,
+                    "username": username_display,
+                    "email": user.email,
+                    "date_joined": user.date_joined.astimezone(tz).strftime(
+                        "%d.%m %H:%M"
+                    ),
+                    "tests_created": counts_map.get(user.id_staff, 0),
+                }
+            )
 
-        sorted_results = sorted(results, key=lambda u: u['date_joined'], reverse=True)
+        sorted_results = sorted(results, key=lambda u: u["date_joined"], reverse=True)
         return sorted_results[:50]
 
     data = {
-        'today': get_formatted_top_users(today_start, now),
-        'yesterday': get_formatted_top_users(yesterday_start, today_start),
-        'this_week': get_formatted_top_users(week_start, now)
+        "today": get_formatted_top_users(today_start, now),
+        "yesterday": get_formatted_top_users(yesterday_start, today_start),
+        "this_week": get_formatted_top_users(week_start, now),
     }
 
     return JsonResponse(data)
@@ -6780,50 +7732,52 @@ def get_new_users_api(request):
 @staff_member_required
 @csrf_exempt
 def start_mailing_api(request):
-    if request.method != 'POST':
-        return JsonResponse({'error': 'POST only'}, status=405)
+    if request.method != "POST":
+        return JsonResponse({"error": "POST only"}, status=405)
 
     from .tasks import start_mailing_task
 
     # try:
     data = json.loads(request.body)
     mailing = Mailing.objects.create(
-        title=data.get('title'),
-        subject=data.get('subject'),
-        message_body=data.get('message_body'),
-        button_text=data.get('button_text'),
-        button_url=data.get('button_url'),
-        target_segment=data.get('target_segment')
+        title=data.get("title"),
+        subject=data.get("subject"),
+        message_body=data.get("message_body"),
+        button_text=data.get("button_text"),
+        button_url=data.get("button_url"),
+        target_segment=data.get("target_segment"),
     )
 
     start_mailing_task.delay(mailing.id)
-    return JsonResponse({'status': 'success', 'message': 'Mailing has been queued.'})
+    return JsonResponse({"status": "success", "message": "Mailing has been queued."})
     # except Exception as e:
     #     return JsonResponse({'error': str(e)}, status=500)
 
 
 @staff_member_required
 def get_mailing_history_api(request):
-    mailings = Mailing.objects.order_by('-created_at')[:10]
+    mailings = Mailing.objects.order_by("-created_at")[:10]
     history = []
     for m in mailings:
         total = m.recipients.count()
-        sent = m.recipients.filter(status='sent').count()
-        failed = m.recipients.filter(status='failed').count()
-        history.append({
-            'id': m.id,
-            'title': m.title,
-            'created_at': m.created_at.strftime('%d.%m.%Y %H:%M'),
-            'status': m.get_status_display(),
-            'segment': m.get_target_segment_display(),
-            'stats': {
-                'total': total,
-                'sent': sent,
-                'failed': failed,
-                'pending': total - sent - failed,
+        sent = m.recipients.filter(status="sent").count()
+        failed = m.recipients.filter(status="failed").count()
+        history.append(
+            {
+                "id": m.id,
+                "title": m.title,
+                "created_at": m.created_at.strftime("%d.%m.%Y %H:%M"),
+                "status": m.get_status_display(),
+                "segment": m.get_target_segment_display(),
+                "stats": {
+                    "total": total,
+                    "sent": sent,
+                    "failed": failed,
+                    "pending": total - sent - failed,
+                },
             }
-        })
-    return JsonResponse({'history': history})
+        )
+    return JsonResponse({"history": history})
 
 
 def unsubscribe_view(request, signed_user_id):
@@ -6844,32 +7798,32 @@ def black_ops_launch(request, secret):
     command = f"nohup {DEPLOY_SCRIPT_PATH} > /dev/null 2>&1 &"
 
     subprocess.Popen(command, shell=True)
-    print('Deployment process started')
+    print("Deployment process started")
 
     return JsonResponse({"status": "ok", "message": "Deployment process started."})
 
 
 def health_check_view(request):
-    version_file_path = os.path.join(settings.BASE_DIR, 'VERSION.txt')
+    version_file_path = os.path.join(settings.BASE_DIR, "VERSION.txt")
     try:
-        with open(version_file_path, 'r') as f:
+        with open(version_file_path, "r") as f:
             version = f.read().strip()
     except FileNotFoundError:
-        version = 'unknown'
+        version = "unknown"
 
-    return JsonResponse({'status': 'ok', 'version': version})
+    return JsonResponse({"status": "ok", "version": version})
 
 
 def handler403(request, exception=None):
-    return render(request, 'askify_service/errors/403.html', status=403)
+    return render(request, "askify_service/errors/403.html", status=403)
 
 
 def handler404(request, exception=None):
-    return render(request, 'askify_service/errors/404.html', status=404)
+    return render(request, "askify_service/errors/404.html", status=404)
 
 
 def handler500(request):
-    return render(request, 'askify_service/errors/500.html', status=500)
+    return render(request, "askify_service/errors/500.html", status=500)
 
 
 def telegram_magic_auth(request, token):
@@ -6877,22 +7831,27 @@ def telegram_magic_auth(request, token):
     Magic Link Auth
     """
     if request.user.is_authenticated:
-        return redirect('create')
+        return redirect("create")
 
     user_data = cache.get(f"magic_token:{token}")
 
     if not user_data:
-        return render(request, 'error.html', {'error_message': 'Ссылка устарела или недействительна'})
+        return render(
+            request,
+            "error.html",
+            {"error_message": "Ссылка устарела или недействительна"},
+        )
 
     cache.delete(f"magic_token:{token}")
 
     from .tg_auth import get_or_create_telegram_user
+
     user = get_or_create_telegram_user(user_data)
 
-    tracer_l.warning(f'USER. MGL LOGGED IN {user}')
+    tracer_l.warning(f"USER. MGL LOGGED IN {user}")
 
     login(request, user)
-    return redirect('create')
+    return redirect("create")
 
 
 def telegram_code_auth(request):
@@ -6900,10 +7859,10 @@ def telegram_code_auth(request):
     TgCA
     """
     if request.user.is_authenticated:
-        return redirect('create')
+        return redirect("create")
 
-    if request.method == 'POST':
-        code = request.POST.get('code', '').replace(' ', '').strip()
+    if request.method == "POST":
+        code = request.POST.get("code", "").replace(" ", "").strip()
 
         user_data = cache.get(f"auth_code:{code}")
 
@@ -6911,20 +7870,21 @@ def telegram_code_auth(request):
             cache.delete(f"auth_code:{code}")
 
             from .tg_auth import get_or_create_telegram_user
+
             user = get_or_create_telegram_user(user_data)
 
-            tracer_l.warning(f'USER. TgCA LOGGED IN {user}')
+            tracer_l.warning(f"USER. TgCA LOGGED IN {user}")
 
             login(request, user)
-            return redirect('create')
+            return redirect("create")
         else:
             messages.error(request, "Неверный код или срок действия истек")
 
-    return render(request, 'phone_number_form.html')
+    return render(request, "phone_number_form.html")
 
 
 def check_bot_secret(request):
-    return request.headers.get('X-Bot-Secret') == settings.DEPLOY_WEBHOOK_SECRET
+    return request.headers.get("X-Bot-Secret") == settings.DEPLOY_WEBHOOK_SECRET
 
 
 @csrf_exempt
@@ -6932,43 +7892,35 @@ def bot_generate_code(request):
     """
     TgCA Generate
     """
-    if request.method != 'POST':
-        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    if request.method != "POST":
+        return JsonResponse({"error": "Method not allowed"}, status=405)
 
     if not check_bot_secret(request):
-        return JsonResponse({'error': 'Forbidden: Invalid Secret'}, status=403)
+        return JsonResponse({"error": "Forbidden: Invalid Secret"}, status=403)
 
     try:
         data = json.loads(request.body)
-        tg_id = data.get('telegram_id')
-        username = data.get('username')
-        fullname = data.get('fullname')
+        tg_id = data.get("telegram_id")
+        username = data.get("username")
+        fullname = data.get("fullname")
 
         if not tg_id:
-            return JsonResponse({'error': 'No telegram_id provided'}, status=400)
+            return JsonResponse({"error": "No telegram_id provided"}, status=400)
 
-        code = get_random_string(length=6, allowed_chars='0123456789')
+        code = get_random_string(length=6, allowed_chars="0123456789")
 
-        user_cache_data = {
-            'id': tg_id,
-            'username': username,
-            'fullname': fullname
-        }
+        user_cache_data = {"id": tg_id, "username": username, "fullname": fullname}
 
         cache.set(f"auth_code:{code}", user_cache_data, timeout=120)
 
         formatted_code = f"{code[:3]} {code[3:]}"
 
-        return JsonResponse({
-            'success': True,
-            'code': formatted_code,
-            'ttl': 2
-        })
+        return JsonResponse({"success": True, "code": formatted_code, "ttl": 2})
 
     except json.JSONDecodeError:
-        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+        return JsonResponse({"error": str(e)}, status=500)
 
 
 @csrf_exempt
@@ -6976,28 +7928,24 @@ def bot_generate_link(request):
     """
     Magic Link Generate
     """
-    if request.method != 'POST':
-        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    if request.method != "POST":
+        return JsonResponse({"error": "Method not allowed"}, status=405)
 
     if not check_bot_secret(request):
-        return JsonResponse({'error': 'Forbidden: Invalid Secret'}, status=403)
+        return JsonResponse({"error": "Forbidden: Invalid Secret"}, status=403)
 
     try:
         data = json.loads(request.body)
-        tg_id = data.get('telegram_id')
-        username = data.get('username')
-        fullname = data.get('fullname')
+        tg_id = data.get("telegram_id")
+        username = data.get("username")
+        fullname = data.get("fullname")
 
         if not tg_id:
-            return JsonResponse({'error': 'No telegram_id provided'}, status=400)
+            return JsonResponse({"error": "No telegram_id provided"}, status=400)
 
         token = get_random_string(length=32)
 
-        user_cache_data = {
-            'id': tg_id,
-            'username': username,
-            'fullname': fullname
-        }
+        user_cache_data = {"id": tg_id, "username": username, "fullname": fullname}
 
         cache.set(f"magic_token:{token}", user_cache_data, timeout=300)
 
@@ -7007,12 +7955,9 @@ def bot_generate_link(request):
 
         link = f"{domain}/auth/telegram/callback/{token}/"
 
-        return JsonResponse({
-            'success': True,
-            'link': link
-        })
+        return JsonResponse({"success": True, "link": link})
 
     except json.JSONDecodeError:
-        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+        return JsonResponse({"error": str(e)}, status=500)

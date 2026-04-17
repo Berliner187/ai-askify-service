@@ -19,17 +19,23 @@
     {% endif %}
 
     <!-- Yandex.Metrika counter -->
-    <script type="text/javascript">
-        (function(m,e,t,r,i,k,a){
-            m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    <script type="text/javascript" >
+        setTimeout(function() {
+            (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
             m[i].l=1*new Date();
             for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
-            k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
-        })(window, document,'script','https://mc.yandex.ru/metrika/tag.js', 'ym');
-
-        ym(98829160, 'init', {webvisor:true, clickmap:true, accurateTrackBounce:true, trackLinks:true});
+            k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+            (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+        
+            ym(98823704, "init", {
+                clickmap:true,
+                trackLinks:true,
+                accurateTrackBounce:true,
+                webvisor:true
+            });
+        }, 1000);
     </script>
-    <noscript><div><img src="https://mc.yandex.ru/watch/98829160" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+    <noscript><div><img src="https://mc.yandex.ru/watch/98823704" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
     <!-- /Yandex.Metrika counter -->
 
     <style>
@@ -79,6 +85,28 @@
             border-color: var(--accent); background: var(--accent);
         }
         .plan-card.selected .text-lg, .plan-card.selected .text-sm { color: white; }
+
+        /* Стили для карточек пакетов */
+        .package-card {
+            position: relative;
+            padding: 20px;
+            border: 2px solid var(--surface);
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            user-select: none;
+        }
+        .package-card:hover {
+            transform: translateY(-4px);
+            border-color: #22c55e;
+            background: rgba(34, 197, 94, 0.1);
+        }
+        .package-card.selected {
+            border-color: #22c55e;
+            background: rgba(34, 197, 94, 0.2);
+        }
         .plan-badge {
             position: absolute; top: -12px; left: 50%;
             transform: translateX(-50%); background: var(--accent);
@@ -185,7 +213,25 @@
             <p class="mt-2 text-[var(--text-dim)] pricing-subtitle">Прекратите тратить вечера на рутину и освободите время для себя.</p>
         </div>
 
-        <div class="grid grid-cols-3 gap-2 mb-8 animate-fadeIn" style="animation-delay: 0.1s;" id="plans-container">
+        <!-- ПЕРЕКЛЮЧАТЕЛЬ: Подписки / Пакеты -->
+        <div class="flex justify-center mb-8 animate-fadeIn">
+            <div class="bg-[var(--surface)] p-1 rounded-full border border-[var(--color-border)] flex">
+                <button type="button" id="tab-subs" class="px-6 py-2 rounded-full text-sm font-bold transition-all bg-[var(--accent)] text-white" onclick="switchTab('subs')">
+                    Подписки
+                </button>
+                <button type="button" id="tab-packs" class="relative px-6 py-2 rounded-full text-sm font-bold transition-all text-gray-400 hover:text-white" onclick="switchTab('packs')">
+                    Пакеты тестов
+                    
+                    <span class="absolute -top-2 -right-3 bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-[0_0_8px_rgba(239,68,68,0.8)] animate-pulse border border-red-400 z-10">
+                        от 90 ₽
+                    </span>
+                </button>
+            </div>
+        </div>
+
+        <!-- КОНТЕЙНЕР ПОДПИСОК -->
+        <div id="container-subs">
+            <div class="grid grid-cols-3 gap-2 mb-8 animate-fadeIn" style="animation-delay: 0.1s;" id="plans-container">
         {% if is_veteran %}
             <!-- ГОД PREMIUM -->
             <div class="plan-card premium-neon" data-plan="premium-year" data-price="4800" data-original-price="4800" data-desc="Премиум Год">
@@ -239,6 +285,43 @@
 
         {% endif %}
         </div>
+        </div>
+
+        <!-- КОНТЕЙНЕР ПАКЕТОВ (скрыт по умолчанию) -->
+        <div id="container-packs" class="hidden">
+            <div class="text-center mb-6">
+                <h3 class="text-xl font-bold text-white">Пакеты тестов</h3>
+                <p class="text-sm text-gray-400 mt-1">Покупайте тесты поштучно — они не сгорают</p>
+            </div>
+            <div class="grid grid-cols-3 gap-4 mb-8 animate-fadeIn">
+                <!-- Пакет SMALL -->
+                <div class="plan-card package-card" data-package="small" data-desc="package-small" data-price="90" data-tests="5">
+                    <div class="plan-badge">Вход</div>
+                    <p class="text-2xl sm:text-3xl font-bold">5 тестов</p>
+                    <p class="text-lg sm:text-xl font-bold text-white/80">90 р</p>
+                    <p class="text-xs text-white/50">18 р / тест</p>
+                </div>
+
+                <!-- Пакет MEDIUM -->
+                <div class="plan-card package-card" data-package="medium" data-desc="package-medium" data-price="190" data-tests="12">
+                    <div class="plan-badge">Мастер</div>
+                    <p class="text-2xl sm:text-3xl font-bold">12 тестов</p>
+                    <p class="text-lg sm:text-xl font-bold text-white/80">190 р</p>
+                    <p class="text-xs text-white/50">~16 р / тест</p>
+                </div>
+
+                <!-- Пакет LARGE -->
+                <div class="plan-card package-card" data-package="large" data-desc="package-large" data-price="340" data-tests="25">
+                    <div class="plan-badge">Эксперт</div>
+                    <p class="text-2xl sm:text-3xl font-bold">25 тестов</p>
+                    <p class="text-lg sm:text-xl font-bold text-white/80">340 р</p>
+                    <p class="text-xs text-white/50">~14 р / тест</p>
+                </div>
+            </div>
+            <div class="text-center mt-4 mb-4 p-4 bg-green-500/10 rounded-xl border border-green-500/20">
+                <p class="text-sm text-green-400"><i class="fas fa-infinity mr-2"></i>Пакеты не сгорают – используйте когда удобно</p>
+            </div>
+        </div>
             
         <!-- БЛОК ПРОМОКОДА -->
         <!-- <div class="mt-8 max-w-sm mx-auto">
@@ -257,32 +340,36 @@
 
         <!-- СПИСОК ФИЧ PREMIUM -->
         <div class="space-y-3 animate-fadeIn">
+            
             <div class="feature-item">
-                <div class="feature-icon animate-fadeIn" style="animation-delay: 80ms;"><i class="fas fa-magic"></i></div>
-                <p class="feature-text text-sm sm:text-base"><strong>Полная автоматизация.</strong> Создавайте тесты напрямую из PDF и Word.</p>
+                <div class="feature-icon animate-fadeIn" style="animation-delay: 80ms;"><i class="fas fa-file-pdf"></i></div>
+                <p class="feature-text text-sm sm:text-base"><strong>Генерация из PDF и Word.</strong> Скормили документ — получили готовый тест. Никакой ручной копипасты.</p>
             </div>
 
             <div class="feature-item">
-                <div class="feature-icon animate-fadeIn" style="animation-delay: 160ms;"><i class="fas fa-tachometer-alt"></i></div>
-                <p class="feature-text text-sm sm:text-base"><strong>Аналитика на дашбордах.</strong> Отслеживайте прогресс учеников, сравнивайте тесты и смотрите детальную карту ошибок, а также просматривайте аналитику по всем тестам в профиле.</p>
+                <div class="feature-icon animate-fadeIn" style="animation-delay: 160ms;"><i class="fas fa-chart-pie"></i></div>
+                <p class="feature-text text-sm sm:text-base"><strong>Прозрачная аналитика.</strong> Детальная статистика по каждому человеку и карта ошибок. Сразу видно, кто вообще не читал материал.</p>
             </div>
 
             <div class="feature-item">
                 <div class="feature-icon animate-fadeIn" style="animation-delay: 240ms;"><i class="fas fa-file-excel"></i></div>
-                <p class="feature-text text-sm sm:text-base"><strong>Экспорт в Excel.</strong> Выгружайте результаты своих участников для отчётности и архива в один клик.</p>
+                <p class="feature-text text-sm sm:text-base"><strong>Экспорт в Excel.</strong> Готовые таблицы с оценками для деканата, руководства или личного архива в один клик.</p>
             </div>
 
             <div class="feature-item">
-                <div class="feature-icon animate-fadeIn" style="animation-delay: 320ms;"><i class="fas fa-bolt"></i></div>
-                <p class="feature-text"><strong>Максимальные лимиты.</strong> Создавайте до 50 тестов в сутки (до 15 вопросов в каждом).</p>
+                <div class="feature-icon animate-fadeIn" style="animation-delay: 320ms;"><i class="fas fa-check-double"></i></div>
+                <p class="feature-text text-sm sm:text-base"><strong>Режим самопроверки.</strong> Прокликайте тест сами перед отправкой, чтобы убедиться в идеальном качестве вопросов.</p>
             </div>
 
-            <div class="feature-item">
-                <div class="feature-icon animate-fadeIn" style="animation-delay: 480ms;"><i class="fas fa-user-check"></i></div>
-                <p class="feature-text">
-                    <strong>Самопроверка.</strong> Проходите тесты прямо на платформе, чтобы быстро проверить свои знания или убедиться в качестве сгенерированных вопросов.
+            <!-- ЭКсклюзив ПОДПИСКИ -->
+            <div class="feature-item bg-[var(--surface-hover)] p-2 rounded-2xl border border-[var(--accent)] mt-4">
+                <div class="feature-icon animate-fadeIn text-[var(--accent)]" style="animation-delay: 480ms;"><i class="fa-regular fa-gem" style="color: rgb(158, 178, 236);"></i></div>
+                <p class="feature-text text-sm sm:text-base">
+                    <span class="text-[var(--accent)] font-bold uppercase text-xs tracking-wider mb-1 block">Только в подписке</span>
+                    <strong>Промышленные лимиты.</strong> До 50 тестов в сутки (до 15 вопросов в каждом). Идеально для тех, у кого проверки стоят на потоке.
                 </p>
             </div>
+
         </div>
 
         <div class="mt-12 mb-8 text-center">
@@ -383,14 +470,189 @@
     </footer>
 
   <script>
+    // --- ПЕРЕКЛЮЧЕНИЕ ТАБОВ ---
+    function switchTab(tab) {
+        const tabSubs = document.getElementById('tab-subs');
+        const tabPacks = document.getElementById('tab-packs');
+        const containerSubs = document.getElementById('container-subs');
+        const containerPacks = document.getElementById('container-packs');
+        const paymentButton = document.getElementById('payment-button');
+
+        if (tab === 'subs') {
+            tabSubs.classList.add('bg-[var(--accent)]', 'text-white');
+            tabSubs.classList.remove('text-gray-400');
+            tabPacks.classList.remove('bg-[var(--accent)]', 'text-white');
+            tabPacks.classList.add('text-gray-400');
+            containerSubs.classList.remove('hidden');
+            containerPacks.classList.add('hidden');
+            // Сброс кнопки для подписки
+            paymentButton.textContent = 'Выберите тариф';
+            paymentButton.disabled = true;
+            paymentButton.classList.remove('bg-green-500', 'shadow-green-500/30');
+            paymentButton.classList.add('bg-[var(--accent)]', 'shadow-[var(--accent)]/30');
+            paymentButton.dataset.activeTab = 'subs';
+        } else {
+            tabPacks.classList.add('bg-[var(--accent)]', 'text-white');
+            tabPacks.classList.remove('text-gray-400');
+            tabSubs.classList.remove('bg-[var(--accent)]', 'text-white');
+            tabSubs.classList.add('text-gray-400');
+            containerPacks.classList.remove('hidden');
+            containerSubs.classList.add('hidden');
+            // Инициализация кнопки для пакетов
+            paymentButton.textContent = 'Выберите пакет';
+            paymentButton.disabled = true;
+            paymentButton.dataset.activeTab = 'packs';
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         const plansContainer = document.querySelector('main');
-        const featuresList = document.getElementById('features-list');
         const amountInput = document.getElementById('amount_price');
         const descInput = document.getElementById('description_order');
         const paymentButton = document.getElementById('payment-button');
         const payForm = document.getElementById('payform-tbank');
 
+        // === ИНИЦИАЛИЗАЦИЯ ПРИ ЗАГРУЗКЕ ===
+        // По умолчанию показываем подписки, инициализируем кнопку
+        paymentButton.dataset.activeTab = 'subs';
+        paymentButton.textContent = 'Выберите тариф';
+        paymentButton.disabled = true;
+
+        // --- ВЫБОР ПАКЕТА ---
+        document.querySelectorAll('.package-card').forEach(card => {
+            card.addEventListener('click', function() {
+                document.querySelectorAll('.package-card').forEach(c => c.classList.remove('selected'));
+                this.classList.add('selected');
+
+                const price = this.dataset.price;
+                const tests = this.dataset.tests;
+                const packageType = this.dataset.package;
+
+                paymentButton.textContent = `Купить ${tests} тестов за ${price} ₽`;
+                paymentButton.disabled = false;
+                paymentButton.dataset.packageType = packageType;
+                paymentButton.dataset.price = price;
+                paymentButton.dataset.tests = tests;
+            });
+        });
+
+        // --- МГНОВЕННАЯ ПОКУПКА (ТЕСТОВЫЙ РЕЖИМ) ---
+        paymentButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (this.disabled) return;
+
+            const containerPacks = document.getElementById('container-packs');
+
+            // === ВКЛАДКА ПОДПИСОК ===
+            const email = document.getElementById('user-email').value;
+            const phone = payForm.querySelector('input[name="phone"]').value;
+
+            if (!email) {
+                alert('Пожалуйста, укажите E-mail для отправки чека');
+                return;
+            }
+
+            const descValue = descInput.value;
+            const amountValue = amountInput.value;
+
+            if (!descValue || !amountValue) {
+                alert('Выберите тариф');
+                return;
+            }
+
+            const receiptData = {
+                EmailCompany: 'support@letychka.ru',
+                Taxation: 'patent',
+                FfdVersion: '1.2',
+                Items: [{
+                    Name: descValue,
+                    Price: amountValue + '00',
+                    Quantity: 1.0,
+                    Amount: parseFloat(amountValue).toFixed(2),
+                    PaymentMethod: 'full_prepayment',
+                    PaymentObject: 'service',
+                    Tax: 'none',
+                    MeasurementUnit: 'pc'
+                }]
+            };
+
+            const data = {
+                amount: amountValue,
+                orderId: payForm.querySelector('input[name="order"]').value,
+                description: descValue,
+                email: email,
+                phone: phone,
+                receipt: JSON.stringify(receiptData)
+            };
+
+            if (!containerPacks.classList.contains('hidden')) {
+                // === ВКЛАДКА ПАКЕТОВ ===
+                const packageType = this.dataset.packageType;
+                if (!packageType) {
+                    alert('Выберите пакет');
+                    return;
+                }
+
+                paymentButton.textContent = 'Покупка...';
+                paymentButton.disabled = true;
+
+
+                fetch('/api/payment/initiate/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify(data)
+                })
+                .then(r => r.json())
+                .then(resp => {
+                    if (resp.Success) {
+                        window.location.href = resp.PaymentURL;
+                    } else {
+                        alert(resp.Message || 'Ошибка инициации платежа');
+                        paymentButton.disabled = false;
+                        paymentButton.textContent = 'Оплатить';
+                    }
+                })
+                .catch(() => {
+                    alert('Ошибка сети. Пожалуйста, попробуйте еще раз.');
+                    paymentButton.disabled = false;
+                    paymentButton.textContent = 'Оплатить';
+                });
+
+                return;
+            }
+
+            paymentButton.textContent = 'Оплата...';
+            paymentButton.disabled = true;
+
+            fetch('/api/payment/initiate/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(r => r.json())
+            .then(resp => {
+                if (resp.Success) {
+                    window.location.href = resp.PaymentURL;
+                } else {
+                    alert(resp.Message || 'Ошибка инициации платежа');
+                    paymentButton.disabled = false;
+                    paymentButton.textContent = 'Оплатить';
+                }
+            })
+            .catch(() => {
+                alert('Ошибка сети. Пожалуйста, попробуйте еще раз.');
+                paymentButton.disabled = false;
+                paymentButton.textContent = 'Оплатить';
+            });
+        });
+
+        // --- ВЫБОР ПОДПИСКИ (существующая логика) ---
         function selectPlan(planCard) {
             if (!planCard) return;
 
@@ -416,6 +678,8 @@
                 ctaText = `Оплатить ${price} руб на месяц`;
                 paymentButton.style.background = 'var(--accent)';
                 paymentButton.style.shadow = 'none';
+            } else if (periodText.includes('/ тест')) {
+                ctaText = `Оплатить ${price} руб`;
             } else if (periodText.includes('Год')) {
                 ctaText = `Оплатить ${price} руб на год`;
                 paymentButton.style.background = 'linear-gradient(45deg, #7928CA, #FF0080)';
@@ -433,64 +697,6 @@
             if (planCard) {
                 selectPlan(planCard);
             }
-        });
-        
-        // --- Логика отправки платежа ---
-        payForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            if (paymentButton.disabled) return;
-
-            const email = document.getElementById('user-email').value;
-            const phone = payForm.querySelector('input[name="phone"]').value;
-            
-            if (!email) {
-                console.log('mail', email);
-                alert('Пожалуйста, укажите E-mail для отправки чека');
-                return;
-            }
-
-            const receiptData = {
-                EmailCompany: 'support@letychka.ru',
-                Taxation: 'patent',
-                FfdVersion: '1.2',
-                Items: [{
-                    Name: descInput.value || 'Оплата',
-                    Price: amountInput.value + '00',
-                    Quantity: 1.0,
-                    Amount: parseFloat(amountInput.value).toFixed(2),
-                    PaymentMethod: 'full_prepayment',
-                    PaymentObject: 'service',
-                    Tax: 'none',
-                    MeasurementUnit: 'pc'
-                }]
-            };
-
-            const data = {
-                amount: amountInput.value,
-                orderId: payForm.querySelector('input[name="order"]').value,
-                description: descInput.value,
-                email: email,
-                phone: phone,
-                receipt: JSON.stringify(receiptData)
-            };
-
-            fetch('/api/payment/initiate/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': '{{ csrf_token }}'
-                },
-                body: JSON.stringify(data)
-            })
-            .then(r => r.json())
-            .then(resp => {
-                if (resp.Success) {
-                    window.location.href = resp.PaymentURL;
-                } else {
-                    alert(resp.Message || 'Ошибка инициации платежа');
-                }
-            })
-            .catch(() => alert('Ошибка сети. Пожалуйста, попробуйте еще раз.'));
         });
 
         // --- Инициализация: предвыбираем Премиум 3 мес ---

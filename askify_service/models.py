@@ -10,6 +10,7 @@ from django.db.models.functions import Coalesce
 from django.conf import settings
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.db import transaction
 import secrets
 
 from datetime import timedelta, datetime
@@ -28,10 +29,36 @@ class Tag(models.Model):
         return self.name
 
 
+class SurveyManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset()
+
+    def get_user_stats(self, staff_id):
+        from django.db.models import Sum
+        from django.db.models.functions import Coalesce
+
+        today = timezone.now().date()
+        start_month = today.replace(day=1)
+
+        stats = self.filter(id_staff=staff_id, is_visible=False).aggregate(
+            total_tests=Count("id"),
+            tests_this_month=Count("id", filter=models.Q(created_at__gte=start_month)),
+            today_uploads=Count("id", filter=models.Q(created_at__date=today)),
+            total_questions=Coalesce(Sum("questions_count"), 0),
+        )
+
+        stats["avg_questions"] = (
+            round(stats["total_questions"] / stats["total_tests"], 1)
+            if stats["total_tests"] > 0
+            else 0
+        )
+
+        return stats
+
+
 class Survey(models.Model):
     survey_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     title = models.CharField(max_length=255)
-    # questions = models.JSONField()
     questions = models.TextField()
     updated_at = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -41,10 +68,17 @@ class Survey(models.Model):
     view_count = models.PositiveIntegerField(default=0)
     description = models.CharField(max_length=255, blank=True, null=True)
     is_private = models.BooleanField(default=False)
-    tags = models.ManyToManyField(Tag, blank=True, related_name='surveys')
-    is_visible = models.BooleanField(default=False, db_index=True, help_text="Мягкое удаление")
+    tags = models.ManyToManyField(Tag, blank=True, related_name="surveys")
+    is_visible = models.BooleanField(
+        default=False, db_index=True, help_text="Мягкое удаление"
+    )
     is_in_marketplace = models.BooleanField(default=False, db_index=True)
-    is_verified = models.BooleanField(default=False, help_text="Подтверждено редакцией Летучки")
+    is_verified = models.BooleanField(
+        default=False, help_text="Подтверждено редакцией Летучки"
+    )
+    questions_count = models.PositiveIntegerField(default=0, db_index=True)
+
+    objects = SurveyManager()
 
     def get_questions(self):
         return json.loads(self.questions)
@@ -62,20 +96,21 @@ class Survey(models.Model):
         """
         shuffled_questions = []
         for q_data in questions_data:
-            if 'options' in q_data and isinstance(q_data['options'], list):
-                options = list(q_data['options'])
+            if "options" in q_data and isinstance(q_data["options"], list):
+                options = list(q_data["options"])
                 random.shuffle(options)
 
                 new_q_data = {
-                    "question": q_data.get('question', ''),
+                    "question": q_data.get("question", ""),
                     "options": options,
-                    "correct_answer": q_data.get('correct_answer', '')
+                    "correct_answer": q_data.get("correct_answer", ""),
                 }
                 shuffled_questions.append(new_q_data)
             else:
                 shuffled_questions.append(q_data)
 
         self.questions = json.dumps(shuffled_questions, ensure_ascii=False)
+        self.questions_count = len(shuffled_questions)
 
     def generate_pdf(self, subscription_level):
         return PDFGenerator.generate_from_survey(self, subscription_level)
@@ -142,29 +177,32 @@ class UserAnswers(models.Model):
 
         for survey in surveys:
             result = survey_results.get(survey.survey_id)
-            if not result or result['total'] == 0:
+            if not result or result["total"] == 0:
                 continue
 
-            ratio = result['scored'] / result['total']
-            if result['scored'] > 0:
+            ratio = result["scored"] / result["total"]
+            if result["scored"] > 0:
                 passed_tests += 1
 
-            if best_result is None or ratio > (best_result['scored'] / best_result['total']):
+            if best_result is None or ratio > (
+                best_result["scored"] / best_result["total"]
+            ):
                 best_result = {
-                    'title': survey.title,
-                    'scored': result['scored'],
-                    'total': result['total']
+                    "title": survey.title,
+                    "scored": result["scored"],
+                    "total": result["total"],
                 }
 
         best_result_str = (
             f"{best_result['title']} – {best_result['scored']} из {best_result['total']}"
-            if best_result else "Пока пусто"
+            if best_result
+            else "Пока пусто"
         )
 
         return {
-            'total_tests': total_tests,
-            'passed_tests': passed_tests,
-            'best_result': best_result_str,
+            "total_tests": total_tests,
+            "passed_tests": passed_tests,
+            "best_result": best_result_str,
         }
 
 
@@ -174,12 +212,12 @@ class AuthUser(AbstractUser):
 
     groups = models.ManyToManyField(
         Group,
-        related_name='customuser_set',
+        related_name="customuser_set",
         blank=True,
     )
     user_permissions = models.ManyToManyField(
         Permission,
-        related_name='customuser_set',
+        related_name="customuser_set",
         blank=True,
     )
 
@@ -187,14 +225,19 @@ class AuthUser(AbstractUser):
     name = models.CharField(max_length=255, unique=False, null=True, blank=True)
     phone = models.CharField(max_length=20, null=True, blank=True)
     email = models.EmailField(unique=True, null=True, blank=True)
-    is_subscribed = models.BooleanField(default=True, help_text="Согласен ли пользователь получать рассылки")
+    is_subscribed = models.BooleanField(
+        default=True, help_text="Согласен ли пользователь получать рассылки"
+    )
+    test_balance = models.PositiveIntegerField(
+        default=0, help_text="Пакеты тестов (не сгорают)"
+    )
 
     def __str__(self):
         return self.username
 
     def save(self, *args, **kwargs):
         if not self.username:
-            self.username = str(self.email).split('@')[0]
+            self.username = str(self.email).split("@")[0]
         super().save(*args, **kwargs)
 
 
@@ -210,69 +253,76 @@ class Subscription(models.Model):
     plan_name = models.CharField(max_length=100)
     start_date = models.DateTimeField(auto_now_add=True)
     end_date = models.DateTimeField()
-    status = models.CharField(max_length=20, choices=[
-        ('active', 'Active'),
-        ('inactive', 'Inactive'),
-        ('canceled', 'Canceled'),
-    ])
-    billing_cycle = models.CharField(max_length=20, choices=[
-        ('weekly', 'Weekly'),
-        ('monthly', 'Monthly'),
-        ('yearly', 'Yearly'),
-    ])
+    status = models.CharField(
+        max_length=20,
+        choices=[
+            ("active", "Active"),
+            ("inactive", "Inactive"),
+            ("canceled", "Canceled"),
+        ],
+    )
+    billing_cycle = models.CharField(
+        max_length=20,
+        choices=[
+            ("weekly", "Weekly"),
+            ("monthly", "Monthly"),
+            ("yearly", "Yearly"),
+        ],
+    )
     discount = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
 
     def get_human_plan(self):
         plan_mapping = {
-            'free_plan': 'Стартовый на 7 дней',
-            'standard_plan': 'Стандартный план на 30 дней',
-            'premium_plan': 'Премиум план на 30 дней',
-            'standard_plan_year': 'Стандартный план на 365 дней',
-            'premium_plan_year': 'Премиум план на 365 дней',
-            'ultra_plan': 'Ультра план на 30 дней',
+            "free_plan": "Стартовый на 7 дней",
+            "standard_plan": "Стандартный план на 30 дней",
+            "premium_plan": "Премиум план на 30 дней",
+            "standard_plan_year": "Стандартный план на 365 дней",
+            "premium_plan_year": "Премиум план на 365 дней",
+            "ultra_plan": "Ультра план на 30 дней",
         }
         return plan_mapping.get(self.plan_name, self.plan_name)
 
     def check_sub_status(self, save=False):
         """
-            Проверяет, истекла ли подписка, и возвращает
-            актуальный статус: 'active' или 'inactive'/'canceled'.
+        Проверяет, истекла ли подписка, и возвращает
+        актуальный статус: 'active' или 'inactive'/'canceled'.
         """
         now = timezone.now()
 
         if self.end_date < now:
-            new_status = 'inactive'
+            new_status = "inactive"
         else:
-            new_status = 'active'
+            new_status = "active"
 
         if save and new_status != self.status:
             self.status = new_status
-            self.save(update_fields=['status'])
+            self.save(update_fields=["status"])
 
         return new_status
 
     def activate_subscription(self, duration_days, new_plan_name=None):
         now = timezone.now()
-        if self.status == 'active' and self.end_date > now:
+        if self.status == "active" and self.end_date > now:
             self.end_date = self.end_date + timedelta(days=duration_days)
         else:
             self.start_date = now
             self.end_date = now + timedelta(days=duration_days)
 
-        self.status = 'active'
-        if new_plan_name: self.plan_name = new_plan_name
-        self.save(update_fields=['status', 'start_date', 'end_date', 'plan_name'])
+        self.status = "active"
+        if new_plan_name:
+            self.plan_name = new_plan_name
+        self.save(update_fields=["status", "start_date", "end_date", "plan_name"])
 
     def __str__(self):
-        return f'Subscription {self.plan_name} for {self.staff_id}'
+        return f"Subscription {self.plan_name} for {self.staff_id}"
 
 
 class AvailableSubscription(models.Model):
     PLAN_TYPES = [
-        ('free_plan', 'Free – 7 days'),
-        ('standard_plan', 'Standard Plan – 30 days'),
-        ('premium_plan', 'Premium Plan – 30 days'),
-        ('tokens_plan', 'Tokens Package'),
+        ("free_plan", "Free – 7 days"),
+        ("standard_plan", "Standard Plan – 30 days"),
+        ("premium_plan", "Premium Plan – 30 days"),
+        ("tokens_plan", "Tokens Package"),
     ]
 
     plan_name = models.CharField(max_length=100, unique=True)
@@ -282,25 +332,25 @@ class AvailableSubscription(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):
-        if self.plan_type == 'free_plan':
+        if self.plan_type == "free_plan":
             self.amount = 0
             self.expiration_date = timezone.now() + timedelta(days=7)
-        elif self.plan_type == 'lite_plan':
+        elif self.plan_type == "lite_plan":
             self.amount = 99
             self.expiration_date = timezone.now() + timedelta(days=7)
-        elif self.plan_type == 'ultra_plan':
+        elif self.plan_type == "ultra_plan":
             self.amount = 990
             self.expiration_date = timezone.now() + timedelta(days=30)
-        elif self.plan_type in ['standard_plan', 'premium_plan']:
-            self.amount = 420 if self.plan_type == 'standard_plan' else 590
+        elif self.plan_type in ["standard_plan", "premium_plan"]:
+            self.amount = 420 if self.plan_type == "standard_plan" else 590
             self.expiration_date = timezone.now() + timedelta(days=30)
-        elif self.plan_type in ['standard_plan_year', 'premium_plan_year']:
-            self.amount = 2640 if self.plan_type == 'standard_plan_year' else 4800
+        elif self.plan_type in ["standard_plan_year", "premium_plan_year"]:
+            self.amount = 2640 if self.plan_type == "standard_plan_year" else 4800
             self.expiration_date = timezone.now() + timedelta(days=365)
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f'Available Subscription: {self.plan_name} - {self.amount} (Expires on: {self.expiration_date})'
+        return f"Available Subscription: {self.plan_name} - {self.amount} (Expires on: {self.expiration_date})"
 
 
 class Payment(models.Model):
@@ -310,14 +360,17 @@ class Payment(models.Model):
     order_id = models.CharField(max_length=100, unique=True)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     created_at = models.DateTimeField(auto_now_add=True)
-    status = models.CharField(max_length=20, choices=[
-        ('pending', 'Pending'),
-        ('completed', 'Completed'),
-        ('failed', 'Failed'),
-    ])
+    status = models.CharField(
+        max_length=20,
+        choices=[
+            ("pending", "Pending"),
+            ("completed", "Completed"),
+            ("failed", "Failed"),
+        ],
+    )
 
     def __str__(self):
-        return f'Payment {self.payment_id} for {self.subscription.plan_name} - {self.amount}'
+        return f"Payment {self.payment_id} for {self.subscription.plan_name} - {self.amount}"
 
 
 class TransactionTracker(models.Model):
@@ -329,8 +382,10 @@ class TransactionTracker(models.Model):
     date = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return (f"{self.staff_id}: {self.amount} on {self.date.strftime('%Y-%m-%d %H:%M:%S')}\n\n"
-                f"{self.payment_id} {self.order_id}")
+        return (
+            f"{self.staff_id}: {self.amount} on {self.date.strftime('%Y-%m-%d %H:%M:%S')}\n\n"
+            f"{self.payment_id} {self.order_id}"
+        )
 
 
 class BlockedUsers(models.Model):
@@ -356,7 +411,7 @@ def get_daily_test_limit(plan_name):
     Возвращает дневной лимит на количество создаваемых тестов для данного плана.
     """
     daily_test_limits = {
-        'стартовый': 5,
+        'стартовый': 3,
         'лайтовый': 15,
         'стандартный': 50,
         'премиум': 50,
@@ -367,16 +422,190 @@ def get_daily_test_limit(plan_name):
     return daily_test_limits.get(plan_name.lower(), 0)
 
 
+class AccessService:
+    """
+    Единый сервис для проверки прав на создание теста.
+    - Бак А (Подписка): проверяет дневной лимит подписки
+    - Бак Б (Кредиты): проверяет test_balance если Бак А пуст
+    """
+
+    def __init__(self, staff_id):
+        self.staff_id = staff_id
+
+    def _get_subscription(self):
+        try:
+            sub = Subscription.objects.get(staff_id=self.staff_id)
+            sub.status = sub.check_sub_status()
+            return sub
+        except Subscription.DoesNotExist:
+            return None
+
+    def _get_tests_used_today(self) -> int:
+        today = timezone.now().date()
+        return Survey.objects.filter(
+            id_staff=self.staff_id, created_at__date=today
+        ).count()
+
+    def check_access(self) -> dict:
+        """
+        Возвращает dict с информацией о доступе:
+        - can_generate: bool - можно ли создать тест
+        - source: str - откуда списывается ('subscription' или 'credits')
+        - tests_left_daily: int - остаток по подписке на сегодня
+        - extra_credits: int - остаток в пакетах (test_balance)
+        - reason: str - причина отказа (если can_generate=False)
+        """
+        import logging
+
+        logger = logging.getLogger(__name__)
+
+        subscription = self._get_subscription()
+
+        # Бак А: Подписка
+        daily_limit = 0
+        tests_used = self._get_tests_used_today()
+
+        if subscription:
+            sub_status = subscription.check_sub_status(save=False)
+            logger.warning(
+                f"DEBUG AccessService: subscription found, plan={subscription.plan_name}, end_date={subscription.end_date}, status={sub_status}"
+            )
+
+            if sub_status == "active":
+                daily_limit = get_daily_test_limit(subscription.plan_name)
+        else:
+            logger.warning(
+                f"DEBUG AccessService: subscription NOT FOUND for staff_id={self.staff_id}"
+            )
+
+        remaining_from_subscription = max(0, daily_limit - tests_used)
+
+        # Бак Б: Кредиты
+        try:
+            user = AuthUser.objects.get(id_staff=self.staff_id)
+            credits_balance = user.test_balance
+            logger.warning(f"DEBUG AccessService: credits_balance={credits_balance}")
+        except AuthUser.DoesNotExist:
+            credits_balance = 0
+
+        # Итоговое решение
+        can_generate = remaining_from_subscription > 0 or credits_balance > 0
+
+        # Определяем источник для отображения
+        if remaining_from_subscription > 0:
+            source = "subscription"
+        elif credits_balance > 0:
+            source = "credits"
+        else:
+            source = None
+
+        logger.warning(
+            f"DEBUG AccessService: daily_limit={daily_limit}, remaining={remaining_from_subscription}, credits={credits_balance}, source={source}"
+        )
+
+        return {
+            "can_generate": can_generate,
+            "source": source,
+            "tests_left_daily": remaining_from_subscription,
+            "extra_credits": credits_balance,
+            "daily_limit": daily_limit,
+            "tests_used_today": tests_used,
+            "reason": None
+            if can_generate
+            else ("Лимит подписки исчерпан и пакеты тестов отсутствуют"),
+        }
+
+    def consume_credits(self) -> bool:
+        """
+        Списывает кредит после успешной генерации.
+        Вызывается ТОЛЬКО если source == 'credits'.
+        """
+        access = self.check_access()
+        if access["source"] != "credits":
+            return False
+
+        try:
+            user = AuthUser.objects.get(id_staff=self.staff_id)
+            if user.test_balance > 0:
+                user.test_balance -= 1
+                user.save(update_fields=["test_balance"])
+                return True
+        except AuthUser.DoesNotExist:
+            pass
+
+        return False
+
+    def add_credits(self, amount: int) -> dict:
+        """
+        Начисляет пакеты тестов юзеру.
+        """
+        if amount <= 0:
+            return {"success": False, "error": "Amount must be positive"}
+
+        try:
+            with transaction.atomic():
+                updated_count = AuthUser.objects.filter(id_staff=self.staff_id).update(
+                    test_balance=F('test_balance') + amount
+                )
+
+                if not updated_count:
+                    return {"success": False, "error": "User not found"}
+
+                user = AuthUser.objects.get(id_staff=self.staff_id)
+
+                import logging
+                logging.getLogger(__name__).info(
+                    f"CREDIT_TOPUP: staff_id={self.staff_id}, added={amount}, total={user.test_balance}"
+                )
+
+                return {
+                    "success": True,
+                    "new_balance": user.test_balance,
+                    "added": amount
+                }
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+
 def slugify_title(title):
     translit_mapping = {
-        'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo',
-        'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm',
-        'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u',
-        'ф': 'f', 'х': 'kh', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'shch', 'ъ': '',
-        'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya', ' ': '-',
-        '-': '-',
-        ':': '',
-        '–': '-',
+        "а": "a",
+        "б": "b",
+        "в": "v",
+        "г": "g",
+        "д": "d",
+        "е": "e",
+        "ё": "yo",
+        "ж": "zh",
+        "з": "z",
+        "и": "i",
+        "й": "y",
+        "к": "k",
+        "л": "l",
+        "м": "m",
+        "н": "n",
+        "о": "o",
+        "п": "p",
+        "р": "r",
+        "с": "s",
+        "т": "t",
+        "у": "u",
+        "ф": "f",
+        "х": "kh",
+        "ц": "ts",
+        "ч": "ch",
+        "ш": "sh",
+        "щ": "shch",
+        "ъ": "",
+        "ы": "y",
+        "ь": "",
+        "э": "e",
+        "ю": "yu",
+        "я": "ya",
+        " ": "-",
+        "-": "-",
+        ":": "",
+        "–": "-",
     }
 
     title = str(title)
@@ -394,7 +623,7 @@ class BlogPost(models.Model):
     slug = models.SlugField(unique=True, blank=True)
     view_count = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
-    unique_ips = models.TextField(default='')
+    unique_ips = models.TextField(default="")
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -406,14 +635,14 @@ class BlogPost(models.Model):
 
     def is_unique_view(self, ip):
         hashed_ip = self.hash_ip(ip)
-        if hashed_ip in self.unique_ips.split(','):
+        if hashed_ip in self.unique_ips.split(","):
             return False
         return True
 
     def add_unique_view(self, ip):
         if self.is_unique_view(ip):
             self.view_count += 1
-            self.unique_ips += self.hash_ip(ip) + ','
+            self.unique_ips += self.hash_ip(ip) + ","
             self.save()
 
     def __str__(self):
@@ -430,33 +659,35 @@ class TokensUsed(models.Model):
     @classmethod
     def get_tokens_usage(cls, staff_id):
         """
-            Метод для получения использованных токенов для конкретного пользователя за последний месяц
-            (с начала предыдущего месяца до текущего дня включительно).
+        Метод для получения использованных токенов для конкретного пользователя за последний месяц
+        (с начала предыдущего месяца до текущего дня включительно).
         """
         today = timezone.now().date()
         first_day_of_current_month = today.replace(day=1)
 
-        first_day_of_last_month = (first_day_of_current_month - timedelta(days=1)).replace(day=1)
+        first_day_of_last_month = (
+            first_day_of_current_month - timedelta(days=1)
+        ).replace(day=1)
         tokens = cls.objects.filter(
             id_staff=staff_id,
             created_at__date__gte=first_day_of_last_month,
-            created_at__date__lte=today
+            created_at__date__lte=today,
         ).aggregate(
-            total_survey_tokens=Sum('tokens_survey_used'),
-            total_feedback_tokens=Sum('tokens_feedback_used')
+            total_survey_tokens=Sum("tokens_survey_used"),
+            total_feedback_tokens=Sum("tokens_feedback_used"),
         )
 
         return {
-            'tokens_survey_used': tokens['total_survey_tokens'] or 0,
-            'tokens_feedback_used': tokens['total_feedback_tokens'] or 0,
+            "tokens_survey_used": tokens["total_survey_tokens"] or 0,
+            "tokens_feedback_used": tokens["total_feedback_tokens"] or 0,
         }
 
     @classmethod
     def get_tokens_usage_last_months(cls, staff_id):
         """
-            Метод для получения использованных токенов для конкретного пользователя за последний месяц
-            (с начала предыдущего месяца до текущего дня включительно).
-            Используется для ОБЩЕЙ СТАТИСТИКИ использования токенов.
+        Метод для получения использованных токенов для конкретного пользователя за последний месяц
+        (с начала предыдущего месяца до текущего дня включительно).
+        Используется для ОБЩЕЙ СТАТИСТИКИ использования токенов.
         """
         today = timezone.now().date()
         first_day_of_current_month = today.replace(day=1)
@@ -466,38 +697,36 @@ class TokensUsed(models.Model):
         tokens = cls.objects.filter(
             id_staff=staff_id,
             created_at__date__gte=first_day_of_last_month,
-            created_at__date__lte=last_day_of_last_month
+            created_at__date__lte=last_day_of_last_month,
         ).aggregate(
-            total_survey_tokens=Sum('tokens_survey_used'),
-            total_feedback_tokens=Sum('tokens_feedback_used')
+            total_survey_tokens=Sum("tokens_survey_used"),
+            total_feedback_tokens=Sum("tokens_feedback_used"),
         )
 
         return {
-            'tokens_survey_used': tokens['total_survey_tokens'] or 0,
-            'tokens_feedback_used': tokens['total_feedback_tokens'] or 0,
+            "tokens_survey_used": tokens["total_survey_tokens"] or 0,
+            "tokens_feedback_used": tokens["total_feedback_tokens"] or 0,
         }
 
     @classmethod
     def get_tokens_usage_today(cls, staff_id):  # Переименованный метод
         """
-            Метод для получения использованных токенов для конкретного пользователя за последний месяц
-            (с начала предыдущего месяца до текущего дня включительно).
-            Используется для ОБЩЕЙ СТАТИСТИКИ использования токенов.
+        Метод для получения использованных токенов для конкретного пользователя за последний месяц
+        (с начала предыдущего месяца до текущего дня включительно).
+        Используется для ОБЩЕЙ СТАТИСТИКИ использования токенов.
         """
         today = timezone.now().date()
 
         tokens = cls.objects.filter(
-            id_staff=staff_id,
-            created_at__date__gte=today,
-            created_at__date__lte=today
+            id_staff=staff_id, created_at__date__gte=today, created_at__date__lte=today
         ).aggregate(
-            total_survey_tokens=Sum('tokens_survey_used'),
-            total_feedback_tokens=Sum('tokens_feedback_used')
+            total_survey_tokens=Sum("tokens_survey_used"),
+            total_feedback_tokens=Sum("tokens_feedback_used"),
         )
 
         return {
-            'tokens_survey_used': tokens['total_survey_tokens'] or 0,
-            'tokens_feedback_used': tokens['total_feedback_tokens'] or 0,
+            "tokens_survey_used": tokens["total_survey_tokens"] or 0,
+            "tokens_feedback_used": tokens["total_feedback_tokens"] or 0,
         }
 
     def add_tokens(self, survey_tokens=0, feedback_tokens=0):
@@ -521,11 +750,11 @@ class APIKey(models.Model):
         return f"{self.name} ({self.provider})"
 
     class Meta:
-        db_table = 'api_keys'
+        db_table = "api_keys"
 
 
 class APIKeyUsage(models.Model):
-    api_key = models.ForeignKey(APIKey, on_delete=models.CASCADE, related_name='usages')
+    api_key = models.ForeignKey(APIKey, on_delete=models.CASCADE, related_name="usages")
     timestamp = models.DateTimeField(default=timezone.now)
     success = models.BooleanField(default=True)
     endpoint = models.CharField(max_length=255, blank=True, null=True)
@@ -535,11 +764,13 @@ class APIKeyUsage(models.Model):
         return f"Usage of {self.api_key.name} at {self.timestamp}"
 
     class Meta:
-        db_table = 'api_key_usage'
+        db_table = "api_key_usage"
 
 
 class TestAttempt(models.Model):
-    survey = models.ForeignKey(Survey, on_delete=models.CASCADE, related_name='attempts')
+    survey = models.ForeignKey(
+        Survey, on_delete=models.CASCADE, related_name="attempts"
+    )
 
     student_name = models.CharField(max_length=100)
 
@@ -557,7 +788,9 @@ class TestAttempt(models.Model):
 
 
 class Question(models.Model):
-    survey = models.ForeignKey(Survey, on_delete=models.CASCADE, related_name='individual_questions')
+    survey = models.ForeignKey(
+        Survey, on_delete=models.CASCADE, related_name="individual_questions"
+    )
     text = models.TextField()
     options = models.JSONField()
     correct_answer = models.CharField(max_length=500)
@@ -567,7 +800,9 @@ class Question(models.Model):
 
 
 class ArenaProfile(models.Model):
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='arena_profile')
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="arena_profile"
+    )
     total_score = models.PositiveIntegerField(default=0)
     current_streak = models.PositiveIntegerField(default=0)
     max_streak = models.PositiveIntegerField(default=0)
@@ -589,28 +824,41 @@ class Mailing(models.Model):
     """Модель для хранения самой рассылки."""
 
     SEGMENT_CHOICES = [
-        ('all', 'Всем пользователям'),
-        ('active_subs', 'С активной подпиской'),
-        ('inactive_subs', 'Без активной подписки'),
-        ('no_tests', 'Кто не создал ни одного теста'),
+        ("all", "Всем пользователям"),
+        ("active_subs", "С активной подпиской"),
+        ("inactive_subs", "Без активной подписки"),
+        ("no_tests", "Кто не создал ни одного теста"),
     ]
 
-    title = models.CharField(max_length=255, help_text="Внутреннее название для админки")
+    title = models.CharField(
+        max_length=255, help_text="Внутреннее название для админки"
+    )
     subject = models.CharField(max_length=255, help_text="Тема письма для Email")
-    message_body = models.TextField(help_text="Основной текст сообщения (HTML для Email, Markdown для Telegram)")
+    message_body = models.TextField(
+        help_text="Основной текст сообщения (HTML для Email, Markdown для Telegram)"
+    )
 
     button_text = models.CharField(max_length=100, blank=True, null=True)
     button_url = models.URLField(max_length=500, blank=True, null=True)
 
-    target_segment = models.CharField(max_length=50, choices=SEGMENT_CHOICES, default='all')
+    target_segment = models.CharField(
+        max_length=50, choices=SEGMENT_CHOICES, default="all"
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
-    sent_at = models.DateTimeField(blank=True, null=True, help_text="Время начала фактической отправки")
+    sent_at = models.DateTimeField(
+        blank=True, null=True, help_text="Время начала фактической отправки"
+    )
 
     status = models.CharField(
         max_length=20,
-        default='draft',
-        choices=[('draft', 'Черновик'), ('processing', 'В процессе'), ('completed', 'Завершена')])
+        default="draft",
+        choices=[
+            ("draft", "Черновик"),
+            ("processing", "В процессе"),
+            ("completed", "Завершена"),
+        ],
+    )
 
     def __str__(self):
         return self.title
@@ -618,19 +866,31 @@ class Mailing(models.Model):
 
 class MailingRecipient(models.Model):
     """Модель для отслеживания статуса доставки для каждого получателя."""
-    mailing = models.ForeignKey(Mailing, on_delete=models.CASCADE, related_name='recipients')
+
+    mailing = models.ForeignKey(
+        Mailing, on_delete=models.CASCADE, related_name="recipients"
+    )
     user = models.ForeignKey(AuthUser, on_delete=models.CASCADE)
 
-    channel = models.CharField(max_length=10, choices=[('email', 'Email'), ('telegram', 'Telegram')])
+    channel = models.CharField(
+        max_length=10, choices=[("email", "Email"), ("telegram", "Telegram")]
+    )
 
-    status = models.CharField(max_length=20, default='pending',
-                              choices=[('pending', 'В очереди'), ('sent', 'Отправлено'), ('failed', 'Ошибка')])
+    status = models.CharField(
+        max_length=20,
+        default="pending",
+        choices=[
+            ("pending", "В очереди"),
+            ("sent", "Отправлено"),
+            ("failed", "Ошибка"),
+        ],
+    )
 
     sent_at = models.DateTimeField(blank=True, null=True)
     error_message = models.TextField(blank=True, null=True)
 
     class Meta:
-        unique_together = ('mailing', 'user')
+        unique_together = ("mailing", "user")
 
 
 class MagicLinkToken(models.Model):

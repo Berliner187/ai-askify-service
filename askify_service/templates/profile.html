@@ -10,17 +10,25 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- Yandex.Metrika counter -->
-    <script type="text/javascript">
-        (function(m,e,t,r,i,k,a){
-            m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    <script type="text/javascript" >
+        setTimeout(function() {
+            (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
             m[i].l=1*new Date();
             for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
-            k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
-        })(window, document,'script','https://mc.yandex.ru/metrika/tag.js', 'ym');
-        ym(98829160, 'init', {webvisor:true, clickmap:true, accurateTrackBounce:true, trackLinks:true});
+            k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+            (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+        
+            ym(98823704, "init", {
+                clickmap:true,
+                trackLinks:true,
+                accurateTrackBounce:true,
+                webvisor:true
+            });
+        }, 1000);
     </script>
-    <noscript><div><img src="https://mc.yandex.ru/watch/98829160" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+    <noscript><div><img src="https://mc.yandex.ru/watch/98823704" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
     <!-- /Yandex.Metrika counter -->
+     
 </head>
 <body>
     <script src="{% static 'js/second-loader.js' %}"></script>
@@ -38,17 +46,21 @@
             <div class="profile-stack">
                 <!-- Модуль 1: Подписка (акцент) -->
                 {% if subscription_level == 0 %}
-                    <div class="profile-section plan-starter">
+                    <div class="profile-section">
                 {% elif subscription_level == 1 %}
                     <div class="profile-section plan-standard">
                 {% else %}
                     <div class="profile-section plan-premium">
                 {% endif %}
 
+                {% if plan_type == 'package' %}
+                    <div class="profile-section plan-package">
+                {% endif %}
+
                 <div>
                     <div class="profile-section__header">
                         <h3><i class="fas fa-gem"></i> Активный план</h3>
-                        {% if subscription.status == 'active' %}
+                        {% if subscription.status == 'active' or tokens.tests_total_limit > 0 %}
                             <span class="status-badge status-badge--active">Активен</span>
                         {% else %}
                             <span class="status-badge status-badge--inactive">Неактивен</span>
@@ -57,12 +69,16 @@
                     <div class="profile-section__body">
                         <div class="plan-details">
                             <h2 class="plan-title">{{ subscription.plan_name }}</h2>
-                            <p class="plan-expiration">Действителен до: {{ subscription.plan_end_date }}</p>
+                            {% if plan_type == 'package' %}
+                                <p class="plan-expiration">Пакет: {{ extra_credits }} тестов</p>
+                            {% else %}
+                                <p class="plan-expiration">Действителен до: {{ subscription.plan_end_date }}</p>
+                            {% endif %}
                         </div>
                         
                         <div class="plan-highlights-grid">
                             <div class="plan-highlights-grid">
-                                {% if subscription_level == 0 %}
+                                {% if subscription_level == 0 and plan_type != 'package' %}
                                     <div class="highlight-card">
                                         <div class="highlight-card__header">
                                             <i class="fas fa-battery-quarter highlight-icon-bad"></i>
@@ -78,30 +94,7 @@
                                         <p class="highlight-card__value">С брендингом</p>
                                     </div>
                                     
-                                {% elif subscription_level == 1 %}
-                                    <div class="highlight-card">
-                                        <div class="highlight-card__header">
-                                            <i class="fas fa-bolt highlight-icon"></i>
-                                            <span class="highlight-card__label">Рабочая мощность</span>
-                                        </div>
-                                        <p class="highlight-card__value">До 30 тестов/день</p>
-                                    </div>
-                                    <div class="highlight-card">
-                                        <div class="highlight-card__header">
-                                            <i class="fas fa-brain highlight-icon"></i>
-                                            <span class="highlight-card__label">Умный ассистент</span>
-                                        </div>
-                                        <p class="highlight-card__value">Активен</p>
-                                    </div>
-                                    <div class="highlight-card">
-                                        <div class="highlight-card__header">
-                                            <i class="fas fa-file-invoice highlight-icon"></i>
-                                            <span class="highlight-card__label">Проф. экспорт</span>
-                                        </div>
-                                        <p class="highlight-card__value">Без брендинга</p>
-                                    </div>
-
-                                {% else %}
+                                {% elif subscription_level == 2 %}
                                     <div class="highlight-card">
                                         <div class="highlight-card__header">
                                             <i class="fas fa-crown highlight-icon-pro"></i>
@@ -134,13 +127,13 @@
                         
                     </div>
                     <div class="profile-section__footer">
-                        {% if subscription.days_until_end is not none and subscription.days_until_end < 7 %}
+                        {% if subscription.days_until_end is not none and subscription.days_until_end < 7 and plan_type != 'package' %}
                             <a class="button-medium button-accent" href="{% url 'payment' %}"><div><p>Продлить подписку 🔥</p></div></a>
-                        {% elif subscription_level < 2 %}
+                        {% elif subscription_level < 1 %}
                             <a href="{% url 'payment' %}" class="button-medium button-accent"><div><p>Улучшить до Премиум 💎</p></div></a>
                         {% endif %}
                     </div>
-                    {% if tests_today_limit == 0 %}
+                    {% if tests_today_limit == 0 and plan_type != 'package' %}
                         <div class="upgrade-prompt">
                             <div class="prompt-icon">
                                 <i class="fas fa-exclamation-circle"></i>
@@ -151,6 +144,19 @@
                             </div>
                             <a href="{% url 'payment' %}" class="button-medium button-accent">
                                 <div><i class="fas fa-arrow-up"></i><p>Апгрейд</p></div>
+                            </a>
+                        </div>
+                    {% elif tests_today_limit == 0 and plan_type == 'package' %}
+                        <div class="upgrade-prompt">
+                            <div class="prompt-icon">
+                                <i class="fas fa-exclamation-circle"></i>
+                            </div>
+                            <div class="prompt-text">
+                                <h4>Пакеты закончились</h4>
+                                <p>Приобретите новые пакеты тестов.</p>
+                            </div>
+                            <a href="{% url 'payment' %}" class="button-medium button-accent">
+                                <div><i class="fas fa-arrow-up"></i><p>Купить пакеты</p></div>
                             </a>
                         </div>
                     {% endif %}
@@ -166,13 +172,25 @@
                 <div class="profile-section__body">
                     <div class="usage-item">
                         <div class="usage-label">
-                            <span>Доступно тестов сегодня</span>
-                            <span class="usage-value accent-color-text">{{ tokens.tests_remaining_count_limit }} / {{ tokens.tests_total_limit }}</span>
+                            {% if plan_type == 'package' %}
+                                <span>Доступно тестов в пакетах</span>
+                                <span class="usage-value accent-color-text">{{ tokens.tests_total_limit }}</span>
+                            {% else %}
+                                <span>Доступно тестов сегодня</span>
+                                <span class="usage-value accent-color-text">{{ tokens.tests_remaining_count_limit }} / {{ tokens.tests_total_limit }}</span>
+                            {% endif %}
                         </div>
                         <div class="progress-bar {{ tokens.progress_bar_class }}">
                             <div class="progress-bar__fill" style="width: {{ tokens.tests_usage_percentage }}%;"></div>
                         </div>
                     </div>
+                    {% if plan_type == 'package' %}
+                    <div class="usage-item" style="margin-top: 10px;">
+                        <div class="usage-label">
+                            <span style="color: #22c55e;">Пакеты не сгорают</span>
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
 
