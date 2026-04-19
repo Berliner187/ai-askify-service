@@ -70,9 +70,6 @@ urlpatterns = [
     path('docs/<slug:slug>/', document_view, name='document_view'),
     path('media/<slug:slug>/', blog_view, name='media_view'),
 
-    path('vk-auth/', vk_auth, name='vk_auth'),
-    path('vk-auth-callback/', vk_auth_callback, name='vk_auth_callback'),
-
     path('get_ip/', get_ip, name='get_ip'),
 
     path('available-plans/', available_plans, name='available_plans'),

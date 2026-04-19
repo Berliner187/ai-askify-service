@@ -1,10 +1,7 @@
 import logging
 import requests
 from threading import Thread
-
 from django.conf import settings
-
-from askify_app.settings import DEBUG
 
 
 WARNING_SYMBOL = "🚧"
@@ -13,49 +10,60 @@ CRITICAL_SYMBOL = "⚡️☠️"
 CONFIRM_SYMBOL = "✅"
 
 
-class TelegramHandler(logging.Handler):
+class MaxHandler(logging.Handler):
     """
-        Кастомный обработчик для отправки логов в Telegram.
-        Работает в отдельном потоке, чтобы не блокировать основной процесс.
+    Новый хендлер для МАКС.
+    Заменяет старый TelegramHandler.
     """
 
     def __init__(self):
         super().__init__()
-        self.token = getattr(settings, 'TELEGRAM_BOT_TOKEN', None)
-        self.chat_id = getattr(settings, 'TELEGRAM_CHAT_ID', None)
+        self.token = getattr(settings, 'MAX_BOT_TOKEN', None)
+        self.user_id = getattr(settings, 'MAX_ALERT_USER_ID', None)
+        self.base_url = "https://platform-api.max.ru/messages"
 
     def emit(self, record):
-        if DEBUG:
-            return
-        if not self.token or not self.chat_id or record.levelno < logging.WARNING:
+        # Если нет токена или ID — выходим молча
+        if not self.token or not self.user_id:
             return
 
-        log_entry = self.format(record)
+        try:
+            log_entry = self.format(record)
 
-        if record.levelno == logging.CRITICAL:
-            icon = CRITICAL_SYMBOL
-        elif record.levelno == logging.ERROR:
-            icon = ERROR_SYMBOL
-        elif record.levelno == logging.WARNING:
-            icon = WARNING_SYMBOL
-        else:
             icon = ""
+            if record.levelno == logging.CRITICAL:
+                icon = CRITICAL_SYMBOL
+            elif record.levelno == logging.ERROR:
+                icon = ERROR_SYMBOL
+            elif record.levelno == logging.WARNING:
+                icon = WARNING_SYMBOL
 
-        message = f"{icon} <b>{record.levelname}</b>\n\n"
-        message += f"<pre>{log_entry}</pre>"
+            # Собираем месседж. Макс жрет HTML, судя по твоим тестам.
+            message = f"{icon} <b>{record.levelname}</b>\n\n<pre>{log_entry}</pre>"
 
-        thread = Thread(target=self.send_message, args=(message,))
-        thread.start()
+            # Запускаем в фоне
+            Thread(target=self.send_message, args=(message,), daemon=True).start()
+        except Exception:
+            self.handleError(record)
 
     def send_message(self, message):
-        """ Отправка сообщений в дежурный бот. Вызывается в отдельном потоке."""
-        url = f'https://api.telegram.org/bot{self.token}/sendMessage'
-        payload = {
-            'chat_id': self.chat_id,
-            'text': message,
-            'parse_mode': 'HTML'
+        # Тот самый URL с квери-параметром, который у тебя сработал
+        url = f"{self.base_url}?user_id={self.user_id}"
+
+        headers = {
+            "Authorization": self.token,
+            "Content-Type": "application/json"
         }
+
+        payload = {
+            "text": message,
+            "format": "html"
+        }
+
         try:
-            requests.post(url, json=payload, timeout=5)
+            r = requests.post(url, json=payload, headers=headers, timeout=10)
+            if r.status_code != 200:
+                # Если сервак Макса выплюнул ошибку — пишем в консоль
+                print(f"MAX_API_ERROR: {r.status_code} - {r.text}")
         except Exception as e:
-            print(f"CRITICAL: Failed to send log to Telegram. Error: {e}")
+            print(f"MAX_SEND_FAILED: {e}")

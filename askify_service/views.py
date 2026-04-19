@@ -159,6 +159,85 @@ def for_prepods(request):
     return render(request, 'askify_service/for_prepods.html', context)
 
 
+# @subscription_required
+@login_required
+def page_create_survey(request):
+    current_id_staff = get_staff_id(request)
+
+    access_service = AccessService(current_id_staff)
+    access_info = access_service.check_access()
+
+    survey_stats = Survey.objects.get_user_stats(current_id_staff)
+
+    stats = UserAnswers.calculate_user_statistics(current_id_staff)
+
+    dashboard_context = get_user_dashboard_context(request.user)
+
+    # Определяем уровень подписки для слайдера вопросов
+    subscription_level = 0
+    if access_info["daily_limit"] > 0:
+        if access_info["daily_limit"] >= 50:
+            subscription_level = 2
+        else:
+            subscription_level = 1
+
+    # Общее доступное количество
+    # Приоритет: подписка -> пакеты
+    if access_info["daily_limit"] > 0 and access_info["tests_left_daily"] > 0:
+        total_available = access_info["tests_left_daily"]
+    elif access_info["extra_credits"] > 0:
+        total_available = access_info["extra_credits"]
+    else:
+        total_available = 0
+
+    # Баннер: сколько осталось доступно
+    if total_available > 0:
+        if access_info["daily_limit"] > 0:
+            sub_level = get_subscription_level(request)
+            if sub_level == 0:
+                banner_text = f"Доступно {total_available} бесплатно"
+            else:
+                banner_text = f"Доступно {total_available} по подписке"
+        else:
+            banner_text = f"Доступно {total_available} в пакетах"
+    else:
+        banner_text = None
+
+    # Определяем тип тарифа для отображения
+    if access_info["daily_limit"] > 0:
+        plan_type = "subscription"
+    elif access_info["extra_credits"] > 0:
+        plan_type = "package"
+    else:
+        plan_type = "none"
+
+    context = {
+        "page_title": "Создать тест",
+        "tests_left_daily": access_info["tests_left_daily"],
+        "tests_today": access_info["tests_left_daily"],
+        "extra_credits": access_info["extra_credits"],
+        "total_available": total_available,
+        "banner_text": banner_text,
+        "can_generate": access_info["can_generate"],
+        "source": access_info["source"],
+        "username": get_username(request),
+        "subscription_active": access_info["daily_limit"] > 0,
+        "subscription_status": access_info["daily_limit"] > 0,
+        "subscription_level": subscription_level,
+        "plan_type": plan_type,
+        "total_tests": survey_stats["total_tests"],
+        "passed_tests": stats["passed_tests"],
+        "today_uploads": survey_stats["today_uploads"],
+        "total_questions": survey_stats["total_questions"],
+        "avg_questions": survey_stats["avg_questions"],
+        "tests_this_month": survey_stats["tests_this_month"],
+        "dashboard_context": dashboard_context,
+        "debug": DEBUG,
+    }
+
+    return render(request, "askify_service/text_input.html", context)
+
+
 def get_user_dashboard_context(user):
     """
     Ищет самый популярный тест пользователя и собирает для него детальную сводку.
@@ -205,81 +284,6 @@ def get_user_dashboard_context(user):
         }
 
     return {'type': 'default'}
-
-
-# @subscription_required
-@login_required
-def page_create_survey(request):
-    current_id_staff = get_staff_id(request)
-
-    access_service = AccessService(current_id_staff)
-    access_info = access_service.check_access()
-
-    survey_stats = Survey.objects.get_user_stats(current_id_staff)
-
-    stats = UserAnswers.calculate_user_statistics(current_id_staff)
-
-    dashboard_context = get_user_dashboard_context(request.user)
-
-    # Определяем уровень подписки для слайдера вопросов
-    subscription_level = 0
-    if access_info["daily_limit"] > 0:
-        if access_info["daily_limit"] >= 50:
-            subscription_level = 2
-        else:
-            subscription_level = 1
-
-    # Общее доступное количество
-    # Приоритет: подписка -> пакеты
-    if access_info["daily_limit"] > 0 and access_info["tests_left_daily"] > 0:
-        total_available = access_info["tests_left_daily"]
-    elif access_info["extra_credits"] > 0:
-        total_available = access_info["extra_credits"]
-    else:
-        total_available = 0
-
-    # Баннер: сколько осталось доступно
-    if total_available > 0:
-        if access_info["daily_limit"] > 0:
-            banner_text = f"Доступно {total_available} по подписке"
-        else:
-            banner_text = f"Доступно {total_available} в пакетах"
-    else:
-        banner_text = None
-
-    # Определяем тип тарифа для отображения
-    if access_info["daily_limit"] > 0:
-        plan_type = "subscription"
-    elif access_info["extra_credits"] > 0:
-        plan_type = "package"
-    else:
-        plan_type = "none"
-
-    context = {
-        "page_title": "Создать тест",
-        "tests_left_daily": access_info["tests_left_daily"],
-        "tests_today": access_info["tests_left_daily"],
-        "extra_credits": access_info["extra_credits"],
-        "total_available": total_available,
-        "banner_text": banner_text,
-        "can_generate": access_info["can_generate"],
-        "source": access_info["source"],
-        "username": get_username(request),
-        "subscription_active": access_info["daily_limit"] > 0,
-        "subscription_status": access_info["daily_limit"] > 0,
-        "subscription_level": subscription_level,
-        "plan_type": plan_type,
-        "total_tests": survey_stats["total_tests"],
-        "passed_tests": stats["passed_tests"],
-        "today_uploads": survey_stats["today_uploads"],
-        "total_questions": survey_stats["total_questions"],
-        "avg_questions": survey_stats["avg_questions"],
-        "tests_this_month": survey_stats["tests_this_month"],
-        "dashboard_context": dashboard_context,
-        "debug": DEBUG,
-    }
-
-    return render(request, "askify_service/text_input.html", context)
 
 
 @login_required
@@ -986,10 +990,10 @@ async def notify_admin_by_limit():
         ).aggregate(count=Count("id"))
         count_today = usage_count_for_active_key.get("count", 0)
 
-        LIMIT = 40
+        LIMIT = 45
         if count_today > LIMIT:
             tracer_l.info(f"--- [ RESET counter active key ] ---")
-            tracer_l.info(f"API [ FULL UP ] count_today: {count_today}")
+            tracer_l.warning(f"API [ FULL UP ] count_today: {count_today}")
             tracer_l.info(
                 f"Key: {active_api_key.name} ({active_api_key.provider}), "
                 f"Limit: {LIMIT} responses."
@@ -3139,131 +3143,18 @@ def login_view(request):
 
     context["next_url"] = request.GET.get("next", "/create")
     context["debug"] = DEBUG
-    tracer_l.info(f"{get_client_ip(request)} --- login [ LOAD ]")
     return render(request, "login.html", context)
 
 
 def logout_view(request):
+    tracer_l.info(f"USER. LOGOUT {request.user.username}")
     logout(request)
     request.session.flush()
-    tracer_l.info(f"USER. LOGOUT {request.user.username}")
     return redirect("login")
 
 
 def blocked_view(request):
     return render(request, "askify_service/blocked.html")
-
-
-VK_CLIENT_ID = env("VK_CLIENT_ID")
-VK_CLIENT_SECRET = env("VK_CLIENT_SECRET")
-VK_REDIRECT_URI = env("VK_REDIRECT_URI")
-VK_API_VERSION = env("VK_API_VERSION")
-
-
-def vk_auth(request):
-    if not request.session.session_key:
-        request.session.create()
-
-    tracer_l.warning(f"USER. VK_AUTH START. Session: {request.session.session_key}")
-
-    auth_url = (
-        f"https://oauth.vk.com/authorize?"
-        f"client_id={VK_CLIENT_ID}&"
-        f"display=page&"
-        f"redirect_uri={VK_REDIRECT_URI}&"
-        f"response_type=code&"
-        f"v={VK_API_VERSION}&"
-        f"state={request.session.session_key}&"
-        f"scope=email"
-    )
-    tracer_l.warning(f"USER. VK AUTH URL: {auth_url}")
-    return redirect(auth_url)
-
-
-@csrf_exempt
-def vk_auth_callback(request):
-    # Получаем код из GET или POST запроса
-    code = request.GET.get("code") or request.POST.get("code")
-    if not code:
-        return JsonResponse(
-            {"success": False, "error": "Authorization code missing"}, status=400
-        )
-
-    # Для VK ID SDK (code_v2)
-    if code.startswith("vk2.a."):
-        try:
-            # Получаем данные пользователя напрямую через service token
-            response = requests.get(
-                "https://api.vk.com/method/users.get",
-                params={
-                    "v": VK_API_VERSION,
-                    "access_token": "cf8db51fcf8db51fcf8db51f86ccaed8d3ccf8dcf8db51fa7f5bfa0b76655e0b9e7acae",
-                    "fields": "first_name,last_name,photo_200",
-                    "code": code,
-                },
-            )
-            data = response.json()
-
-            if "error" in data:
-                return JsonResponse(
-                    {"success": False, "error": data["error"]["error_msg"]}, status=400
-                )
-
-            # Проверяем что есть данные пользователя
-            if not data.get("response"):
-                return JsonResponse(
-                    {"success": False, "error": "No user data received"}, status=400
-                )
-
-            user_data = data["response"][0]
-            return JsonResponse(
-                {
-                    "success": True,
-                    "user_id": user_data["id"],
-                    "first_name": user_data["first_name"],
-                    "last_name": user_data["last_name"],
-                    "photo": user_data.get("photo_200", ""),
-                }
-            )
-
-        except Exception as e:
-            return JsonResponse({"success": False, "error": str(e)}, status=500)
-
-    # Для обычного OAuth
-    else:
-        try:
-            # Получаем access token
-            response = requests.post(
-                "https://oauth.vk.com/access_token",
-                data={
-                    "client_id": VK_CLIENT_ID,
-                    "client_secret": VK_CLIENT_SECRET,
-                    "redirect_uri": VK_REDIRECT_URI,
-                    "code": code,
-                },
-            )
-            data = response.json()
-
-            if "error" in data:
-                return JsonResponse(
-                    {
-                        "success": False,
-                        "error": data.get("error_description", "VK auth error"),
-                    },
-                    status=400,
-                )
-
-            return JsonResponse(
-                {
-                    "success": True,
-                    "access_token": data["access_token"],
-                    "user_id": data["user_id"],
-                    "email": data.get("email", ""),
-                }
-            )
-
-        except Exception as e:
-            return JsonResponse({"success": False, "error": str(e)}, status=500)
 
 
 def exchange_view(request):
@@ -3353,12 +3244,11 @@ def profile_view(request, username):
     print(tests_remaining)
     extra_credits = access_info["extra_credits"]
 
-    # Процент использования подписки
+    # Процент использования тестов
     tests_remaining_percentage = 0
     if tests_count_limit > 0:
         tests_remaining_percentage = (tests_remaining / tests_count_limit) * 100.0
     elif extra_credits > 0 and tests_count_limit == 0:
-        # Если только пакеты - показываем 100%
         tests_remaining_percentage = 100.0
 
     progress_bar_class = ""
@@ -4606,8 +4496,6 @@ def get_weekly_pulse_data():
     today = timezone.now().date()
     current_period_start = today - timedelta(days=6)
     current_period_end = today
-    previous_period_start = current_period_start - timedelta(days=7)
-    previous_period_end = current_period_start - timedelta(days=1)
 
     # Предыдущая неделя (7 дней до этого)
     previous_period_start = current_period_start - timedelta(days=7)
@@ -6099,68 +5987,6 @@ def create_payment(request):
     }
 
     return render(request, "payments/payment.html", context)
-
-
-@require_POST
-def instant_buy_package(request):
-    """
-    Моментальная покупка пакета тестов (без аквайринга, для тестирования).
-    """
-    try:
-        data = json.loads(request.body)
-        package_type = data.get("package_type")  # small, medium, large
-        quantity = data.get("quantity", 1)
-    except json.JSONDecodeError:
-        return JsonResponse({"success": False, "error": "Неверный формат"}, status=400)
-
-    package_prices = {
-        "small": {"price": 90, "tests": 7},
-        "medium": {"price": 190, "tests": 15},
-        "large": {"price": 290, "tests": 30},
-    }
-
-    if package_type not in package_prices:
-        return JsonResponse(
-            {"success": False, "error": "Неизвестный пакет"}, status=400
-        )
-
-    package = package_prices[package_type]
-    staff_id = get_staff_id(request)
-
-    try:
-        user = AuthUser.objects.get(id_staff=staff_id)
-        user.test_balance += package["tests"] * quantity
-        user.save(update_fields=["test_balance"])
-
-        TransactionTracker.objects.create(
-            staff_id=staff_id,
-            payment_id=f"TEST-{generate_payment_id()}",
-            order_id=generate_payment_id(),
-            amount=package["price"] * quantity,
-            description=f"Пакет {package_type}: {package['tests'] * quantity} тестов (тестовая покупка)",
-        )
-
-        tracer_l.info(
-            f"USER {staff_id}: Куплен пакет {package_type}x{quantity}, зачислено {package['tests'] * quantity} тестов"
-        )
-
-        return JsonResponse(
-            {
-                "success": True,
-                "message": f"Зачислено {package['tests'] * quantity} тестов!",
-                "new_balance": user.test_balance,
-            }
-        )
-
-    except AuthUser.DoesNotExist:
-        return JsonResponse(
-            {"success": False, "error": "Пользователь не найден"}, status=404
-        )
-    except Exception as e:
-        tracer_l.error(f"Ошибка покупки пакета: {e}")
-        return JsonResponse(
-            {"success": False, "error": "Ошибка при покупке"}, status=500
-        )
 
 
 @require_POST
