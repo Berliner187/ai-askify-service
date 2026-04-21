@@ -303,6 +303,16 @@
                     
                     <form method="post" class="mt-4 space-y-4">
                         {% csrf_token %}
+
+                        {% if error %}
+                        <div class="mb-4 p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm text-left animate-fadeIn">
+                            <div class="flex items-center gap-2">
+                                <i class="fas fa-exclamation-triangle mt-0.5"></i>
+                                <span><strong>Ошибка входа:</strong> {{ error }}</span>
+                            </div>
+                        </div>
+                        {% endif %}
+
                         <div>
                             <label for="id_email" class="text-sm font-semibold text-gray-300">Email</label>
                             <input type="email" name="email" id="id_email" required 
