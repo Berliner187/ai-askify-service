@@ -221,15 +221,14 @@
         <!-- ПЕРЕКЛЮЧАТЕЛЬ: Подписки / Пакеты -->
         <div class="flex justify-center mb-8 animate-fadeIn">
             <div class="bg-[var(--surface)] p-1 rounded-full border border-[var(--color-border)] flex">
-                <button type="button" id="tab-subs" class="px-6 py-2 rounded-full text-sm font-bold transition-all text-gray-400 hover:text-white" onclick="switchTab('subs')">
-                    Подписки
-                </button>
-
                 <button type="button" id="tab-packs" class="relative px-6 py-2 rounded-full text-sm font-bold transition-all bg-[var(--accent)] text-white" onclick="switchTab('packs')">
                     Пакеты тестов
-                    <span class="absolute -top-2 -right-3 bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-[0_0_8px_rgba(239,68,68,0.8)] animate-pulse border border-red-400 z-10">
+                    <span class="absolute -top-2 -right-3 bg-red-500 text-white text-[10px] uppercase font-black px-2 py-0.5 rounded-full shadow-[0_0_8px_rgba(239,68,68,0.8)] animate-pulse border border-red-400 z-10">
                         от 90 ₽
                     </span>
+                </button>
+                <button type="button" id="tab-subs" class="px-6 py-2 rounded-full text-sm font-bold transition-all text-gray-400 hover:text-white" onclick="switchTab('subs')">
+                    Подписки
                 </button>
             </div>
         </div>
@@ -300,7 +299,7 @@
             </div>
             <div class="grid grid-cols-3 gap-4 mb-8 animate-fadeIn">
                 <!-- Пакет SMALL -->
-                <div class="plan-card package-card" data-package="small" data-desc="package-small" data-price="90" data-tests="5">
+                <div class="plan-card package-card" data-package="package-small" data-desc="package-small" data-price="90" data-tests="5">
                     <div class="plan-badge">Вход</div>
                     <p class="text-2xl sm:text-3xl font-bold">5 тестов</p>
                     <p class="text-lg sm:text-xl font-bold text-white/80">90 р</p>
@@ -308,7 +307,7 @@
                 </div>
 
                 <!-- Пакет MEDIUM -->
-                <div class="plan-card package-card" data-package="medium" data-plan="package-medium" data-desc="package-medium" data-price="190" data-tests="12">
+                <div class="plan-card package-card" data-package="package-medium" data-plan="package-medium" data-desc="package-medium" data-price="190" data-tests="12">
                     <div class="plan-badge">Мастер</div>
                     <p class="text-2xl sm:text-3xl font-bold">12 тестов</p>
                     <p class="text-lg sm:text-xl font-bold text-white/80">190 р</p>
@@ -316,7 +315,7 @@
                 </div>
 
                 <!-- Пакет LARGE -->
-                <div class="plan-card package-card" data-package="large" data-desc="package-large" data-price="340" data-tests="25">
+                <div class="plan-card package-card" data-package="package-large" data-desc="package-large" data-price="340" data-tests="25">
                     <div class="plan-badge">Эксперт</div>
                     <p class="text-2xl sm:text-3xl font-bold">25 тестов</p>
                     <p class="text-lg sm:text-xl font-bold text-white/80">340 р</p>
@@ -327,21 +326,6 @@
                 <p class="text-sm text-green-400"><i class="fas fa-infinity mr-2"></i>Пакеты не сгорают – используйте когда удобно</p>
             </div>
         </div>
-            
-        <!-- БЛОК ПРОМОКОДА -->
-        <!-- <div class="mt-8 max-w-sm mx-auto">
-            <div id="promo-container" class="relative p-1 bg-[var(--color-surface)] rounded-full border border-[var(--color-border)] flex items-center gap-2">
-                <span class="promo-icon text-blue-300 text-xl pl-3">❄️</span>
-                <input type="text" id="promo-input" placeholder="Есть промокод?" 
-                    class="flex-grow bg-transparent text-white placeholder-gray-500 font-semibold focus:outline-none">
-                    
-                <button id="apply-promo-btn" 
-                        class="px-5 py-2 bg-[var(--color-accent-primary)] text-white font-bold rounded-full transition-transform hover:scale-105 active:scale-98">
-                    Применить
-                </button>
-            </div>
-            <p id="promo-message" class="text-center text-sm mt-2 h-12 mb-6"></p>
-        </div> -->
 
         <!-- СПИСОК ФИЧ PREMIUM -->
         <div class="space-y-3 animate-fadeIn">
@@ -354,6 +338,11 @@
             <div class="feature-item">
                 <div class="feature-icon animate-fadeIn" style="animation-delay: 320ms;"><i class="fas fa-check-double"></i></div>
                 <p class="feature-text text-sm sm:text-base"><strong>Больше вопросов.</strong> До 15 вопросов вместо 7 вопросов на тест.</p>
+            </div>
+
+            <div class="feature-item">
+                <div class="feature-icon animate-fadeIn" style="animation-delay: 480ms;"><i class="fas fa-print"></i></div>
+                <p class="feature-text"><strong>Тесты без водяных знаков.</strong> Скачивайте тесты, которые сразу готовы к печати.</p>
             </div>
 
             <div class="feature-item">
@@ -376,7 +365,7 @@
                 <div class="feature-icon animate-fadeIn text-[var(--accent)]" style="animation-delay: 480ms;"><i class="fa-regular fa-gem" style="color: rgb(158, 178, 236);"></i></div>
                 <p class="feature-text text-sm sm:text-base">
                     <span class="text-[var(--accent)] font-bold uppercase text-xs tracking-wider mb-1 block">Только в подписке</span>
-                    <strong>Промышленные лимиты.</strong> До 50 тестов в сутки. Идеально для тех, у кого проверки стоят на потоке.
+                    <strong>Расширенные лимиты.</strong> До 50 тестов в сутки. Идеально для тех, у кого проверки стоят на потоке.
                 </p>
             </div>
 
@@ -479,83 +468,108 @@
         </div>
     </footer>
 
-  <script>
-    // --- ПЕРЕКЛЮЧЕНИЕ ТАБОВ ---
-    function switchTab(tab) {
-        const tabSubs = document.getElementById('tab-subs');
-        const tabPacks = document.getElementById('tab-packs');
-        const containerSubs = document.getElementById('container-subs');
-        const containerPacks = document.getElementById('container-packs');
-        const paymentButton = document.getElementById('payment-button');
-
-        if (tab === 'subs') {
-            tabSubs.classList.add('bg-[var(--accent)]', 'text-white');
-            tabSubs.classList.remove('text-gray-400');
-            tabPacks.classList.remove('bg-[var(--accent)]', 'text-white');
-            tabPacks.classList.add('text-gray-400');
-            containerSubs.classList.remove('hidden');
-            containerPacks.classList.add('hidden');
-            // Сброс кнопки для подписки
-            paymentButton.textContent = 'Выберите тариф';
-            paymentButton.disabled = true;
-            paymentButton.classList.remove('bg-green-500', 'shadow-green-500/30');
-            paymentButton.classList.add('bg-[var(--accent)]', 'shadow-[var(--accent)]/30');
-            paymentButton.dataset.activeTab = 'subs';
-        } else {
-            tabPacks.classList.add('bg-[var(--accent)]', 'text-white');
-            tabPacks.classList.remove('text-gray-400');
-            tabSubs.classList.remove('bg-[var(--accent)]', 'text-white');
-            tabSubs.classList.add('text-gray-400');
-            containerPacks.classList.remove('hidden');
-            containerSubs.classList.add('hidden');
-            // Инициализация кнопки для пакетов
-            paymentButton.textContent = 'Выберите пакет';
-            paymentButton.disabled = true;
-            paymentButton.dataset.activeTab = 'packs';
-        }
-    }
-
+    <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const plansContainer = document.querySelector('main');
         const amountInput = document.getElementById('amount_price');
         const descInput = document.getElementById('description_order');
         const paymentButton = document.getElementById('payment-button');
         const payForm = document.getElementById('payform-tbank');
+        const containerSubs = document.getElementById('container-subs');
+        const containerPacks = document.getElementById('container-packs');
 
-        // === ИНИЦИАЛИЗАЦИЯ ПРИ ЗАГРУЗКЕ ===
-        // По умолчанию показываем подписки, инициализируем кнопку
-        paymentButton.dataset.activeTab = 'subs';
-        paymentButton.textContent = 'Выберите тариф';
-        paymentButton.disabled = true;
+        function selectPlan(card) {
+            if (!card) return;
 
-        // --- ВЫБОР ПАКЕТА ---
-        document.querySelectorAll('.package-card').forEach(card => {
-            card.addEventListener('click', function() {
-                document.querySelectorAll('.package-card').forEach(c => c.classList.remove('selected'));
-                this.classList.add('selected');
+            document.querySelectorAll('.plan-card, .package-card').forEach(c => c.classList.remove('selected'));
+            card.classList.add('selected');
 
-                const price = this.dataset.price;
-                const tests = this.dataset.tests;
-                const packageType = this.dataset.package;
+            const price = card.dataset.price;
+            paymentButton.disabled = false;
+            
+            if (card.classList.contains('package-card')) {
+                const pType = card.dataset.package; // например "package-small" или "small"
+                // Защита от дублирования "package-package-small"
+                const desc = pType.includes('package') ? pType : `package-${pType}`;
+                const tests = card.dataset.tests || 'несколько';
+                
+                amountInput.value = price;
+                descInput.value = desc; // СТРОГО "package-small", "package-medium" и т.д.
 
                 paymentButton.textContent = `Купить ${tests} тестов за ${price} ₽`;
-                paymentButton.disabled = false;
-                paymentButton.dataset.packageType = packageType;
-                paymentButton.dataset.price = price;
-                paymentButton.dataset.tests = tests;
-            });
+                paymentButton.style.background = 'var(--accent)';
+                paymentButton.style.boxShadow = 'none';
+            } 
+            // Логика для ПОДПИСОК
+            else {
+                amountInput.value = price;
+                descInput.value = card.dataset.desc; // "Премиум", "Премиум неделя" и т.д.
+                
+                const cardText = card.innerText;
+                if (cardText.includes('3 месяца')) {
+                    paymentButton.textContent = `Оплатить ${price} руб на 3 месяца`;
+                } else if (cardText.includes('Месяц')) {
+                    paymentButton.textContent = `Оплатить ${price} руб на месяц`;
+                } else if (cardText.includes('Год')) {
+                    paymentButton.textContent = `Оплатить ${price} руб на год`;
+                    paymentButton.style.background = 'linear-gradient(45deg, #7928CA, #FF0080)';
+                    paymentButton.style.boxShadow = '0 0 20px rgba(255, 0, 128, 0.4)';
+                    return; // Выходим, чтобы не сбить стили ниже
+                } else {
+                    paymentButton.textContent = `Оплатить ${price} руб на неделю`;
+                }
+                paymentButton.style.background = 'var(--accent)';
+                paymentButton.style.boxShadow = 'none';
+            }
+        }
+
+        // === 2. ПЕРЕКЛЮЧЕНИЕ ТАБОВ ===
+        window.switchTab = function(tab) {
+            const tabSubs = document.getElementById('tab-subs');
+            const tabPacks = document.getElementById('tab-packs');
+
+            if (tab === 'packs') {
+                tabPacks.classList.add('bg-[var(--accent)]', 'text-white');
+                tabPacks.classList.remove('text-gray-400');
+                tabSubs.classList.remove('bg-[var(--accent)]', 'text-white');
+                tabSubs.classList.add('text-gray-400');
+                
+                containerPacks.classList.remove('hidden');
+                containerSubs.classList.add('hidden');
+                
+                // Авто-выбор среднего пакета
+                const defaultPack = containerPacks.querySelector('.package-card[data-package="package-medium"]') || containerPacks.querySelector('.package-card');
+                selectPlan(defaultPack);
+            } else {
+                tabSubs.classList.add('bg-[var(--accent)]', 'text-white');
+                tabSubs.classList.remove('text-gray-400');
+                tabPacks.classList.remove('bg-[var(--accent)]', 'text-white');
+                tabPacks.classList.add('text-gray-400');
+                
+                containerSubs.classList.remove('hidden');
+                containerPacks.classList.add('hidden');
+                
+                // Авто-выбор первой подписки
+                const firstSub = containerSubs.querySelector('.plan-card');
+                selectPlan(firstSub);
+            }
+        };
+
+        // Слушаем клики по карточкам
+        document.querySelector('main').addEventListener('click', (e) => {
+            const card = e.target.closest('.plan-card, .package-card');
+            if (card) selectPlan(card);
         });
 
-        // --- МГНОВЕННАЯ ПОКУПКА ---
+        // === 3. ИНИЦИАЛИЗАЦИЯ: ПАКЕТЫ ПЕРВЫЕ ===
+        switchTab('packs');
+
+        // === 4. ОТПРАВКА ДАННЫХ ===
         paymentButton.addEventListener('click', function(e) {
             e.preventDefault();
             if (this.disabled) return;
 
-            const containerPacks = document.getElementById('container-packs');
-
-            // === ВКЛАДКА ПОДПИСОК ===
             const email = document.getElementById('user-email').value;
-            const phone = payForm.querySelector('input[name="phone"]').value;
+            const phone = payForm.querySelector('input[name="phone"]')?.value || '';
 
             if (!email) {
                 alert('Пожалуйста, укажите E-mail для отправки чека');
@@ -566,7 +580,7 @@
             const amountValue = amountInput.value;
 
             if (!descValue || !amountValue) {
-                alert('Выберите тариф');
+                alert('Выберите тариф или пакет');
                 return;
             }
 
@@ -595,49 +609,9 @@
                 receipt: JSON.stringify(receiptData)
             };
 
-            if (!containerPacks.classList.contains('hidden')) {
-                // === ВКЛАДКА ПАКЕТОВ ===
-                const packageType = this.dataset.packageType;
-
-                console.log('packageType', packageType);
-                if (!packageType) {
-                    alert('Выберите пакет');
-                    return;
-                }
-
-                paymentButton.textContent = 'Покупка...';
-                paymentButton.disabled = true;
-
-
-                fetch('/api/payment/initiate/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': '{{ csrf_token }}'
-                    },
-                    body: JSON.stringify(data)
-                })
-                .then(r => r.json())
-                .then(resp => {
-                    if (resp.Success) {
-                        window.location.href = resp.PaymentURL;
-                    } else {
-                        alert(resp.Message || 'Ошибка инициации платежа');
-                        paymentButton.disabled = false;
-                        paymentButton.textContent = 'Оплатить';
-                    }
-                })
-                .catch(() => {
-                    alert('Ошибка сети. Пожалуйста, попробуйте еще раз.');
-                    paymentButton.disabled = false;
-                    paymentButton.textContent = 'Оплатить';
-                });
-
-                return;
-            }
-
-            paymentButton.textContent = 'Оплата...';
-            paymentButton.disabled = true;
+            const originalText = this.textContent;
+            this.textContent = 'Инициализация оплаты...';
+            this.disabled = true;
 
             fetch('/api/payment/initiate/', {
                 method: 'POST',
@@ -653,250 +627,17 @@
                     window.location.href = resp.PaymentURL;
                 } else {
                     alert(resp.Message || 'Ошибка инициации платежа');
-                    paymentButton.disabled = false;
-                    paymentButton.textContent = 'Оплатить';
+                    this.disabled = false;
+                    this.textContent = originalText;
                 }
             })
             .catch(() => {
-                alert('Ошибка сети. Пожалуйста, попробуйте еще раз.');
-                paymentButton.disabled = false;
-                paymentButton.textContent = 'Оплатить';
+                alert('Ошибка сети. Попробуйте еще раз.');
+                this.disabled = false;
+                this.textContent = originalText;
             });
-        });
-
-        // --- ВЫБОР ПОДПИСКИ (существующая логика) ---
-        function selectPlan(planCard) {
-            if (!planCard) return;
-
-            const amountInput = document.getElementById('amount_price');
-            const descInput = document.getElementById('description_order');
-            const paymentButton = document.getElementById('payment-button');
-
-            document.querySelectorAll('.plan-card, .package-card').forEach(c => c.classList.remove('selected'));
-            planCard.classList.add('selected');
-            
-            const price = planCard.dataset.price;
-            const desc = planCard.dataset.desc;
-            
-            amountInput.value = price;
-            descInput.value = desc;
-
-            // ФИКС: Прописываем тип пакета в кнопку, чтобы обработчик платежа его увидел
-            if (planCard.dataset.package) {
-                paymentButton.dataset.packageType = planCard.dataset.package;
-            } else {
-                delete paymentButton.dataset.packageType; // Если это подписка, удаляем
-            }
-            
-            // Работа с текстом и стилем кнопки
-            const cardText = planCard.innerText;
-            let ctaText = `Перейти к оплате`;
-
-            if (cardText.includes('3 месяца')) {
-                ctaText = `Оплатить ${price} руб на 3 месяца`;
-                paymentButton.style.background = 'var(--accent)';
-                paymentButton.style.boxShadow = 'none';
-            } else if (cardText.includes('Месяц')) {
-                ctaText = `Оплатить ${price} руб на месяц`;
-                paymentButton.style.background = 'var(--accent)';
-                paymentButton.style.boxShadow = 'none';
-            } else if (planCard.classList.contains('package-card')) {
-                // Логика для пакетов
-                const tests = planCard.dataset.tests;
-                ctaText = `Купить ${tests} тестов за ${price} ₽`;
-                paymentButton.style.background = 'var(--accent)';
-                paymentButton.style.boxShadow = 'none';
-            } else if (cardText.includes('Год')) {
-                ctaText = `Оплатить ${price} руб на год`;
-                paymentButton.style.background = 'linear-gradient(45deg, #7928CA, #FF0080)';
-                paymentButton.style.boxShadow = '0 0 20px rgba(255, 0, 128, 0.4)';
-            } else {
-                ctaText = `Оплатить ${price} руб на неделю`;
-            }
-
-            paymentButton.textContent = ctaText;
-            paymentButton.disabled = false;
-        }
-
-        // --- Инициализация при загрузке ---
-        const defaultPlan = document.querySelector('.package-card[data-package="medium"]');
-        if (defaultPlan) {
-            selectPlan(defaultPlan);
-        } else {
-            const firstPlan = document.querySelector('.plan-card');
-            if(firstPlan) selectPlan(firstPlan);
-        }
-
-        // --- Обработчик кликов ---
-        plansContainer.addEventListener('click', (e) => {
-            const planCard = e.target.closest('.plan-card');
-            if (planCard) {
-                selectPlan(planCard);
-            }
         });
     });
-  </script>
-
-  <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const promoInput = document.getElementById('promo-input');
-            const applyBtn = document.getElementById('apply-promo-btn');
-            const promoMessage = document.getElementById('promo-message');
-            
-            // --- Цены тарифов ---
-            const originalPrices = {
-                week: 390,
-                month: 590,
-                three_months: 1440,
-            };
-            
-            const priceElements = {
-                month: document.getElementById('price-month'),
-                three_months: document.getElementById('price-three-months'),
-                year: document.getElementById('price-year')
-            };
-
-            applyBtn.addEventListener('click', async () => {
-                const code = promoInput.value.trim();
-                if (!code) return;
-
-                applyBtn.textContent = '...';
-                applyBtn.disabled = true;
-                promoMessage.textContent = '';
-                promoMessage.className = 'text-center text-sm mt-2 mb-8 h-8';
-
-                try {
-                    const response = await fetch("{% url 'api_validate_promo' %}", {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRFToken': '{{ csrf_token }}'
-                        },
-                        body: JSON.stringify({ promo_code: code })
-                    });
-
-                    const data = await response.json();
-
-                    if (data.valid) {
-                        // --- УСПЕХ ---
-                        promoMessage.textContent = data.message;
-                        promoMessage.classList.add('promo-success');
-                        
-                        // Пересчитываем и обновляем цены на странице
-                        const discountMultiplier = 1 - (data.discount_percent / 100);
-                        
-                        for (const plan in originalPrices) {
-                            const newPrice = Math.round(originalPrices[plan] * discountMultiplier);
-                            if (priceElements[plan]) {
-                                priceElements[plan].textContent = newPrice + ' ₽';
-                            }
-                        }
-                        
-                        // Деактивируем поле и кнопку
-                        promoInput.disabled = true;
-                        applyBtn.style.display = 'none';
-
-                    } else {
-                        // --- ОШИБКА ---
-                        throw new Error(data.error);
-                    }
-
-                } catch (error) {
-                    promoMessage.textContent = error.message;
-                    promoMessage.classList.add('promo-error');
-                } finally {
-                    if (!promoInput.disabled) {
-                        applyBtn.textContent = 'Применить';
-                        applyBtn.disabled = false;
-                    }
-                }
-            });
-
-            // Обработчик для Enter
-            promoInput.addEventListener('keydown', (event) => {
-                if (event.key === 'Enter') {
-                    event.preventDefault();
-                    applyBtn.click();
-                }
-            });
-        });
-        </script>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const applyBtn = document.getElementById('apply-promo-btn');
-            const promoInput = document.getElementById('promo-input');
-            const planCards = document.querySelectorAll('.plan-card');
-
-            applyBtn.addEventListener('click', async () => {
-                const code = promoInput.value.trim();
-                if (!code) return;
-
-                try {
-                    const response = await fetch("{% url 'api_validate_promo' %}", {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
-                        body: JSON.stringify({ promo_code: code })
-                    });
-                    const data = await response.json();
-
-                    if (data.valid) {
-                        promoMessage.textContent = data.message;
-                        promoMessage.classList.add('promo-success');
-                        
-                        // --- УНИВЕРСАЛЬНАЯ ЛОГИКА ОБНОВЛЕНИЯ ЦЕН ---
-                        const discountMultiplier = 1 - (data.discount_percent / 100);
-
-                        planCards.forEach(card => {
-                            const originalPrice = parseFloat(card.dataset.originalPrice);
-                            if (originalPrice) {
-                                const newPrice = Math.round(originalPrice * discountMultiplier);
-                                
-                                const priceEl = card.querySelector('[id^="price-"]');
-                                if (priceEl) {
-                                    priceEl.textContent = newPrice + ' р';
-                                }
-                                card.dataset.price = newPrice;
-                            }
-                        });
-
-                        document.querySelectorAll('.plan-card, .long-term-plan').forEach(c => c.classList.remove('selected'));
-                        planCard.classList.add('selected');
-                        
-                        const price = planCard.dataset.price;
-                        const desc = planCard.dataset.desc;
-                        
-                        amountInput.value = price;
-                        descInput.value = desc;
-                        
-                        let ctaText = `Перейти к оплате`;
-
-                        console.log(periodText);
-
-                        if (periodText.includes('3 месяца')) {
-                            ctaText = `Оплатить ${price} руб на 3 месяца`;
-                        } else if (periodText.includes('Месяц')) {
-                            ctaText = `Оплатить ${price} руб на месяц`;
-                        } else {
-                            ctaText = `Оплатить ${price} руб на неделю`;
-                        }
-                        paymentButton.textContent = ctaText;
-                        paymentButton.disabled = false;
-                        
-                        promoInput.disabled = true;
-                        applyBtn.style.display = 'none';
-
-                    } else {
-                        throw new Error(data.error);
-                    }
-                } catch (error) {
-                    // ... (обработка ошибок)
-                } finally {
-                    // ... (возвращение кнопки в исходное состояние)
-                }
-            });
-        });
-
     </script>
 
     {% include 'footer-s.html' %}

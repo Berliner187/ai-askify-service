@@ -38,13 +38,10 @@ def generate_qr_code(url):
 class PDFGenerator:
 
     @staticmethod
-    def _create_watermark_pdf(text_list=None):
+    def _create_watermark_pdf():
         """
-        Создает PDF с плотной, многослойной сеткой вотермарков.
+        Создает PDF со стильным, продающим вотермарком (Product-Led Growth).
         """
-        if text_list is None:
-            text_list = ["Letychka.ru • Free Version", "Не для коммерческого использования"]
-
         buffer = BytesIO()
         p = canvas.Canvas(buffer)
 
@@ -53,32 +50,21 @@ class PDFGenerator:
         width, height = p._pagesize
 
         p.saveState()
-        p.setFont('Unbounded-Brutal', 48)
-        p.setFillColor(colors.Color(97 / 255, 109 / 255, 240 / 255, alpha=0.5))
-        p.translate(width / 2, height / 2)
-        p.rotate(30)
+        p.setFont('Unbounded-Brutal', 36)
 
-        y_offset = -int(height / 2)
-        while y_offset < height:
-            p.drawCentredString(0, y_offset, "DEMO MODE • PROTECTED")
-            y_offset += 150
+        p.setFillColor(colors.Color(150 / 255, 150 / 255, 170 / 255, alpha=0.1))
+        p.translate(width / 2, height / 2)
+        p.rotate(45)
+        p.drawCentredString(0, 0, "СГЕНЕРИРОВАНО НА LETYCHKA.RU")
         p.restoreState()
 
         p.saveState()
-        p.setFont('Unbounded-Brutal', 12)
-        p.setFillColor(colors.Color(97 / 255, 109 / 255, 240 / 255, alpha=0.4))
-        p.translate(width / 2, height / 2)
-        p.rotate(-45)
+        p.setFont('Unbounded-Brutal', 10)
+        p.setFillColor(colors.Color(0, 0, 0, alpha=0.5))
 
-        text = "• ".join(text_list)
-        text_width = p.stringWidth(text)
-        spacing_x = text_width + 80
-        spacing_y = 60
+        cta_text = "[ создайте свой тест или шпору с помощью ИИ – letychka.ru ]"
 
-        for y in range(-int(height), int(height), spacing_y):
-            x_offset = (y // spacing_y) % 2 * (spacing_x / 2)
-            for x in range(-int(width) - int(x_offset), int(width) - int(x_offset), int(spacing_x)):
-                p.drawString(x, y, text)
+        p.drawCentredString(width / 2, 70, cta_text)
         p.restoreState()
 
         p.save()
@@ -127,8 +113,19 @@ class PDFGenerator:
         writer = PdfWriter()
         content_reader = PdfReader(content_pdf_buffer)
 
-        for page in content_reader.pages:
-            writer.add_page(page)
+        if subscription_level < 1:
+            writer.encrypt("", permissions_flag=0b000000000000000000001111110100)
+
+            watermark_pdf_buffer = PDFGenerator._create_watermark_pdf()
+            watermark_reader = PdfReader(watermark_pdf_buffer)
+            watermark_page = watermark_reader.pages[0]
+
+            for page in content_reader.pages:
+                page.merge_page(watermark_page, over=True)
+                writer.add_page(page)
+        else:
+            for page in content_reader.pages:
+                writer.add_page(page)
 
         writer.write(output_buffer)
         pdf_data = output_buffer.getvalue()
@@ -137,4 +134,3 @@ class PDFGenerator:
         safe_title = "".join(c for c in survey.title if c.isalnum() or c in (" ", "_")).rstrip()
         response['Content-Disposition'] = f'attachment; filename="{safe_title}.pdf"'
         return response
-
