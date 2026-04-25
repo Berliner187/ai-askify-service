@@ -27,3 +27,4 @@ app.log.3
 *.1
 /static
 *.dump
+/askify_service/static/vendor

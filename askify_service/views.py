@@ -48,8 +48,6 @@ from smtplib import SMTPException
 from askify_app.settings import EMAIL_HOST_USER
 
 
-from io import BytesIO
-
 from .utils import *
 from .models import *
 from .forms import *
@@ -104,11 +102,11 @@ import uuid
 import random
 import os
 import re
-import io
 import hmac
 import json
 import subprocess
 import traceback
+from io import BytesIO
 
 
 env = environ.Env()
@@ -159,7 +157,32 @@ def for_prepods(request):
     return render(request, 'askify_service/for_prepods.html', context)
 
 
-# @subscription_required
+def solving_tests_promo(request):
+    return render(request, 'landings/solving-tests.html')
+
+
+def teachers_promo(request):
+    return render(request, 'landings/teachers.html')
+
+
+def medicine_promo(request):
+    return render(request, 'landings/medicine.html')
+
+
+@check_legal_process
+def available_plans(request):
+    latest_posts = BlogPost.objects.all().order_by("-created_at")[:4]
+
+    context = {
+        "page_title": "Тарифы и пакеты | Летучка Ру — создать тест онлайн из PDF и Word",
+        "latest_posts": latest_posts,
+        "username": get_username(request) if request.user.is_authenticated else 0,
+        "debug": DEBUG,
+    }
+    return render(request, "askify_service/avaible-plans.html", context)
+
+
+# Начало внутреннего Сервиса
 @login_required
 def page_create_survey(request):
     current_id_staff = get_staff_id(request)
@@ -189,6 +212,12 @@ def page_create_survey(request):
         total_available = access_info["extra_credits"]
     else:
         total_available = 0
+
+    # Чекап доступа Стартовым
+    if get_subscription_level(request) == 0 and access_info["extra_credits"] < 1:
+        count_tests = Survey.objects.filter(id_staff=current_id_staff).count()
+        if count_tests > 3:
+            total_available = 0
 
     # Баннер: сколько осталось доступно
     if total_available > 0:
@@ -289,8 +318,7 @@ def get_user_dashboard_context(user):
 @login_required
 def user_stats_api(request):
     """
-    Полностью переработанная и оптимизированная API-вьюха для статистики пользователя.
-    Сводит тысячи потенциальных запросов к ~7 основным.
+    API-ручка для статистики пользователя в Пульсе.
     """
     staff_id = get_staff_id(request)
     today = date.today()
@@ -607,10 +635,10 @@ def single_test_charts_api(request, survey_id):
     staff_id = get_staff_id(request)
     today = timezone.now().date()
 
-    # try:
-    survey = Survey.objects.get(survey_id=survey_id)
-    # except Survey.DoesNotExist:
-    #     return JsonResponse({'error': 'Test not found or access denied'}, status=404)
+    try:
+        survey = Survey.objects.get(survey_id=survey_id)
+    except Survey.DoesNotExist:
+        return JsonResponse({'error': 'Test not found or access denied'}, status=404)
 
     activity_labels = []
     activity_data = []
@@ -670,18 +698,6 @@ def single_test_charts_api(request, survey_id):
     )
 
 
-def solving_tests_promo(request):
-    return render(request, 'landings/solving-tests.html')
-
-
-def teachers_promo(request):
-    return render(request, 'landings/teachers.html')
-
-
-def medicine_promo(request):
-    return render(request, 'landings/medicine.html')
-
-
 @login_required
 def page_history_surveys(request):
     surveys_data = {}
@@ -698,7 +714,6 @@ def page_history_surveys(request):
     tracer_l.info(f"{request.user.username} --- history page {page_number} [ LOADED ]")
     # except Exception as fatal:
     #     tracer_l.error(f"{request.user.username} --- {fatal}")
-    # Мы НЕ падаем. Мы просто оставим surveys_data пустым.
 
     context = {
         "page_title": "Предыдущие тесты",
@@ -1591,6 +1606,34 @@ def result_view(request, survey_id):
     return redirect(f"/c/{survey_id}/")
 
 
+def download_survey_pdf(request, survey_id):
+    try:
+        survey = get_object_or_404(Survey, survey_id=uuid.UUID(survey_id))
+
+        subscription_level = 0
+        try:
+            subscription_level = get_subscription_level(request)
+        except Subscription.DoesNotExist:
+            pass
+        except Exception as e:
+            tracer_l.warning(f"Error getting subscription for user {request.user.username}: {e}")
+
+        tracer_l.info(f'{request.user.username} --- PDF [ VIEW ], sub {subscription_level}')
+
+        response = survey.generate_pdf(subscription_level)
+
+        if not isinstance(response, HttpResponse):
+            raise ValueError("generate_pdf did not return an HttpResponse object.")
+
+        return response
+
+    except Exception as fatal:
+        return HttpResponse(
+            "Произошла внутренняя ошибка при генерации PDF. Пожалуйста, попробуйте позже или обратитесь в поддержку.",
+            status=500,
+        )
+
+
 def download_results_pdf(request, survey_id):
     try:
         from django.contrib.staticfiles import finders
@@ -1917,45 +1960,6 @@ def download_results_pdf(request, survey_id):
                 story.append(Spacer(1, 3))
             story.append(Spacer(1, 15))
 
-        # --- Фидбэк от ИИ ---
-        if feedback_obj:
-            feedback_text_raw = feedback_obj.feedback_data
-            cleaned_feedback_raw = re.sub(
-                r"think\s*", "", feedback_text_raw, flags=re.IGNORECASE
-            ).strip()
-            feedback_html = markdown.markdown(cleaned_feedback_raw)
-            soup = BeautifulSoup(feedback_html, "html.parser")
-
-            story.append(
-                Paragraph("Обратная связь от ИИ:", feedback_header_style)
-            )  # Исправлено: добавляем Paragraph, а не стиль
-            story.append(Spacer(1, 10))
-
-            for tag in soup.children:
-                if tag.name == "p":
-                    story.append(Paragraph(str(tag), feedback_text_style))
-                    story.append(Spacer(1, 6))
-                elif tag.name == "ul" or tag.name == "ol":
-                    for li in tag.find_all("li"):
-                        story.append(
-                            Paragraph(f"• {li.get_text()}", feedback_text_style)
-                        )
-                        story.append(Spacer(1, 3))
-                    story.append(Spacer(1, 6))
-                elif tag.name == "h1":
-                    story.append(Paragraph(tag.get_text(), styles["h1_feedback"]))
-                    story.append(Spacer(1, 8))
-                elif tag.name == "h2":
-                    story.append(Paragraph(tag.get_text(), styles["h2_feedback"]))
-                    story.append(Spacer(1, 8))
-                elif tag.name == "h3":
-                    story.append(Paragraph(tag.get_text(), styles["h3_feedback"]))
-                    story.append(Spacer(1, 6))
-
-            model_name_ai = f"{'Сгенерировано ' + survey.model_name.upper().replace('O', 'o') if survey.model_name else ''}"
-            story.append(Paragraph(model_name_ai, model_name_style))
-            story.append(Spacer(1, 20))
-
         # --- Футер ---
         story.append(
             Paragraph(f"Сгенерировано в Летучке • {get_year_now()}", footer_style)
@@ -2120,7 +2124,10 @@ def get_question_insights(questions_stats):
     return {"hardest": hardest_q, "easiest": easiest_q}
 
 
-def preview_test(request, survey_id):
+def main_test_card(request, survey_id):
+    """
+        Страница с карточкой теста.
+    """
     if not is_valid_uuid(survey_id):
         context = {
             'not_found': True,
@@ -2129,6 +2136,7 @@ def preview_test(request, survey_id):
         }
         return render(request, 'demo-view.html', context, status=404)
 
+    client_ip = get_client_ip(request)
     survey = Survey.objects.filter(survey_id=survey_id).first()
     if (not survey) or (not is_valid_uuid(survey_id)):
         context = {
@@ -2145,7 +2153,6 @@ def preview_test(request, survey_id):
     # if is_authenticated:
     #     current_user_id_staff = get_staff_id(request)
     # else:
-    client_ip = get_client_ip(request)
     anonymous_user = AuthUser.objects.filter(hash_user_id=client_ip).first()
     if anonymous_user:
         current_user_id_staff = anonymous_user.id_staff
@@ -2228,6 +2235,10 @@ def redirect_to_dashboard(request, survey_id):
 def view_results(request, survey_id):
     survey = get_object_or_404(Survey, survey_id=survey_id)
 
+    # TODO: Доделать заглушку: на фронт реализовать окно модальное с предупреждением
+    # if survey.id_staff != get_staff_id(request):
+    #     return
+
     attempts_qs = survey.attempts.all().order_by("-created_at")
     total_attempts = attempts_qs.count()
 
@@ -2281,6 +2292,7 @@ def view_results(request, survey_id):
                     mid2 = scores[count // 2]
                     median_score = (mid1 + mid2) / 2
         else:
+            # TODO: Подготовить к удалению т.к. не актуально
             stats = attempts_qs.aggregate(**base_aggregation)
             scores = list(attempts_qs.values_list("score", flat=True).order_by("score"))
             count = len(scores)
@@ -2692,7 +2704,7 @@ def export_results_to_excel(request, survey_id):
 
         sheet.append(row_data)
 
-    buffer = io.BytesIO()
+    buffer = BytesIO()
     workbook.save(buffer)
     buffer.seek(0)
 
@@ -2748,29 +2760,6 @@ def register_survey_view(request, survey_id):
             return JsonResponse({"success": False, "error": str(e)}, status=500)
 
     return JsonResponse({"success": False, "error": "Invalid request"}, status=400)
-
-
-def arena_view(request):
-    profile, _ = ArenaProfile.objects.get_or_create(user=request.user)
-
-    accuracy = (
-        (profile.questions_correct * 100 / profile.questions_answered)
-        if profile.questions_answered > 0
-        else 0
-    )
-
-    initial_stats = {
-        "score": profile.total_score,
-        "streak": profile.current_streak,
-        "accuracy": f"{accuracy:.0f}%",
-        "max_streak": profile.max_streak,
-        "answered": profile.questions_answered,
-        "percentile": "-%",
-    }
-
-    context = {"initial_stats_json": json.dumps(initial_stats)}
-
-    return render(request, "askify_service/arena.html", context)
 
 
 def get_next_question(request):
@@ -2835,172 +2824,6 @@ def get_next_question(request):
             "survey_id": next_question.survey.survey_id,
         }
     )
-
-
-@csrf_exempt
-def submit_arena_answer(request):
-    if not request.user.is_authenticated:
-        data = json.loads(request.body)
-        question = Question.objects.get(id=data.get("question_id"))
-        is_correct = data.get("user_answer") == question.correct_answer
-        return JsonResponse(
-            {"is_correct": is_correct, "correct_answer": question.correct_answer}
-        )
-
-    profile, _ = ArenaProfile.objects.get_or_create(user=request.user)
-    data = json.loads(request.body)
-    question = Question.objects.get(id=data.get("question_id"))
-    is_correct = data.get("user_answer") == question.correct_answer
-
-    profile.questions_answered += 1
-    if is_correct:
-        profile.total_score += 2
-        profile.current_streak += 1
-        profile.questions_correct += 1
-        if profile.current_streak > profile.max_streak:
-            profile.max_streak = profile.current_streak
-
-        for tag in question.survey.tags.all():
-            profile.interests[tag.name] = profile.interests.get(tag.name, 0) + 1
-    else:
-        profile.current_streak = 0
-        profile.total_score -= 1
-
-    profile.save()
-
-    accuracy = (
-        (profile.questions_correct * 100 / profile.questions_answered)
-        if profile.questions_answered > 0
-        else 0
-    )
-
-    return JsonResponse(
-        {
-            "is_correct": is_correct,
-            "correct_answer": question.correct_answer,
-            "updated_stats": {
-                "score": profile.total_score,
-                "streak": profile.current_streak,
-                "accuracy": f"{accuracy:.0f}%",
-                "max_streak": profile.max_streak,
-                "answered": profile.questions_answered,
-                # 'percentile': ... (тут заглушка)
-            },
-        }
-    )
-
-
-# @login_required
-def download_survey_pdf(request, survey_id):
-    try:
-        survey = get_object_or_404(Survey, survey_id=uuid.UUID(survey_id))
-
-        subscription_level = 0
-        try:
-            subscription_level = get_subscription_level(request)
-        except Subscription.DoesNotExist:
-            pass
-        except Exception as e:
-            tracer_l.warning(f"Error getting subscription for user {request.user.username}: {e}")
-
-        tracer_l.info(f'{request.user.username} --- PDF [ VIEW ], sub {subscription_level}')
-
-        response = survey.generate_pdf(subscription_level)
-
-        if not isinstance(response, HttpResponse):
-            raise ValueError("generate_pdf did not return an HttpResponse object.")
-
-        return response
-
-    except Exception as fatal:
-        return HttpResponse(
-            "Произошла внутренняя ошибка при генерации PDF. Пожалуйста, попробуйте позже или обратитесь в поддержку.",
-            status=500,
-        )
-
-
-def generate_username(email):
-    from django.utils.text import slugify
-    import random
-
-    base_username = email.split("@")[0]
-    base_username = slugify(base_username).replace("-", "_")
-
-    if not AuthUser.objects.filter(username=base_username).exists():
-        return base_username
-
-    return f"{base_username}_{random.randint(1000, 9999)}"
-
-
-@check_legal_process
-def register(request):
-    if request.user.is_authenticated:
-        return redirect("create")
-
-    if request.method == "POST":
-        form = CustomUserCreationForm(request.POST)
-
-        if form.is_valid():
-            email = form.cleaned_data.get("email")
-            if not is_allowed_email(email):
-                form.add_error(
-                    "email", "Регистрация с этого почтового домена не разрешена."
-                )
-            else:
-                try:
-                    with transaction.atomic():
-                        x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
-                        ip = (
-                            x_forwarded_for.split(",")[0]
-                            if x_forwarded_for
-                            else request.META.get("REMOTE_ADDR")
-                        )
-
-                        temporary_user = (
-                            AuthUser.objects.annotate(username_len=Length("username"))
-                            .filter(hash_user_id=ip, username_len__gt=20)
-                            .first()
-                        )
-
-                        if temporary_user:
-                            user = temporary_user
-                            user.username = email.split("@")[0]
-                            user.email = email
-                            user.set_password(form.cleaned_data.get("password1"))
-                            user.hash_user_id = None
-                            user.save()
-                        else:
-                            user = form.save()
-
-                        plan_name, end_date, status, billing_cycle, discount = (
-                            init_free_subscription()
-                        )
-                        Subscription.objects.get_or_create(
-                            staff_id=user.id_staff,
-                            defaults={
-                                "plan_name": plan_name,
-                                "end_date": end_date,
-                                "status": status,
-                                "billing_cycle": billing_cycle,
-                            },
-                        )
-
-                        login(request, user)
-                        tracer_l.info(f"USER. NEW USER {user.username}")
-                        return redirect("create")
-
-                except IntegrityError:
-                    form.add_error(None, "Пользователь с таким именем уже существует.")
-                except Exception as e:
-                    tracer_l.error(f"Registration error: {e}")
-                    form.add_error(None, "Произошла ошибка при регистрации.")
-
-    else:
-        form = CustomUserCreationForm()
-
-    tracer_l.info(f"{get_client_ip(request)} --- register [ LOAD ]")
-    context = {"form": form, "debug": DEBUG}
-    return render(request, "register.html", context)
 
 
 @transaction.atomic
@@ -3070,6 +2893,76 @@ def quick_register_api(request):
 
     login(request, user)
     return JsonResponse({"redirect": "/payment"})
+
+
+@check_legal_process
+def register_view(request):
+    if request.user.is_authenticated:
+        return redirect("create")
+
+    if request.method == "POST":
+        form = CustomUserCreationForm(request.POST)
+
+        if form.is_valid():
+            email = form.cleaned_data.get("email")
+            if not is_allowed_email(email):
+                form.add_error(
+                    "email", "Регистрация с этого почтового домена не разрешена."
+                )
+            else:
+                try:
+                    with transaction.atomic():
+                        x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
+                        ip = (
+                            x_forwarded_for.split(",")[0]
+                            if x_forwarded_for
+                            else request.META.get("REMOTE_ADDR")
+                        )
+
+                        temporary_user = (
+                            AuthUser.objects.annotate(username_len=Length("username"))
+                            .filter(hash_user_id=ip, username_len__gt=20)
+                            .first()
+                        )
+
+                        if temporary_user:
+                            user = temporary_user
+                            user.username = email.split("@")[0]
+                            user.email = email
+                            user.set_password(form.cleaned_data.get("password1"))
+                            user.hash_user_id = None
+                            user.save()
+                        else:
+                            user = form.save()
+
+                        plan_name, end_date, status, billing_cycle, discount = (
+                            init_free_subscription()
+                        )
+                        Subscription.objects.get_or_create(
+                            staff_id=user.id_staff,
+                            defaults={
+                                "plan_name": plan_name,
+                                "end_date": end_date,
+                                "status": status,
+                                "billing_cycle": billing_cycle,
+                            },
+                        )
+
+                        login(request, user)
+                        tracer_l.info(f"USER. NEW USER {user.username}")
+                        return redirect("create")
+
+                except IntegrityError:
+                    form.add_error(None, "Пользователь с таким именем уже существует.")
+                except Exception as e:
+                    tracer_l.error(f"Registration error: {e}")
+                    form.add_error(None, "Произошла ошибка при регистрации.")
+
+    else:
+        form = CustomUserCreationForm()
+
+    context = {"form": form, "debug": DEBUG}
+    return render(request, "register.html", context)
 
 
 @check_legal_process
@@ -3157,24 +3050,6 @@ def blocked_view(request):
     return render(request, "askify_service/blocked.html")
 
 
-def exchange_view(request):
-    # --- ДАННЫЕ ДЛЯ БЕГУЩЕЙ СТРОКИ ---
-    ticker_tapes = Survey.objects.filter(
-        is_in_marketplace=True,
-        # view_count__gt=5
-    ).order_by("-updated_at")[:10]
-
-    marketplace_surveys = Survey.objects.filter(is_in_marketplace=True).order_by(
-        "-view_count"
-    )
-
-    context = {
-        "ticker_tapes": ticker_tapes,
-        "marketplace_surveys": marketplace_surveys,
-    }
-    return render(request, "exchange.html", context)
-
-
 def get_survey_details_api(request, survey_id):
     survey = get_object_or_404(Survey, survey_id=survey_id, is_in_marketplace=True)
 
@@ -3200,7 +3075,7 @@ def get_survey_details_api(request, survey_id):
 @login_required
 def redirect_to_profile(request):
     """
-    Эта view просто берет залогиненного пользователя
+    Вьюха просто берет залогиненного пользователя
     и перенаправляет его на его личную страницу профиля.
     """
     user = request.user
@@ -5765,25 +5640,62 @@ MODEL_MAP = {
 @login_required
 def db_viewer(request):
     if not request.user.is_superuser:
-        return HttpResponseForbidden("Ты не админ, дружок")
+        return HttpResponseForbidden("Доступ закрыт")
 
     model_key = request.GET.get("model", "AuthUser")
     model_data = MODEL_MAP.get(model_key)
-
     if not model_data:
         return HttpResponse("Модель не найдена", status=404)
 
     model_class = model_data[1]
-    items = model_class.objects.all().order_by("-pk")
+
+    # ПАГИНАЦИЯ: по 50 записей на страницу
+    fields = [f.name for f in model_class._meta.fields]
+    all_items = model_class.objects.all().order_by("-pk")
+
+    # Пагинация
+    paginator = Paginator(all_items, 50)
+    page_obj = paginator.get_page(request.GET.get('page', 1))
+
+    # Готовим данные заранее: список списков [[val1, val2], [val1, val2]]
+    prepared_items = []
+    for item in page_obj:
+        row = {
+            'pk': item.pk,
+            'values': [getattr(item, field, "-") for field in fields]
+        }
+        prepared_items.append(row)
 
     context = {
         "model_name": model_data[0],
         "model_key": model_key,
-        "items": items,
-        "fields": [f.name for f in model_class._meta.fields],
+        "items": page_obj,
+        "rows": prepared_items,
+        "fields": fields,
         "models": MODEL_MAP.items(),
     }
     return render(request, "askify_service/db_viewer.html", context)
+
+
+# Новый метод для получения деталей в Drawer (AJAX)
+@login_required
+def get_item_details(request, model_key, item_id):
+    model_data = MODEL_MAP.get(model_key)
+    if not model_data: return JsonResponse({'error': 'No model'}, status=404)
+
+    model_class = model_data[1]
+    item = get_object_or_404(model_class, pk=item_id)
+
+    # Возвращаем все поля объекта как дикт
+    data = {}
+    for field in item._meta.fields:
+        val = getattr(item, field.name)
+        data[field.name] = str(val) if val is not None else None
+
+    return JsonResponse({
+        'data': data,
+        'related': get_related_info(item)
+    })
 
 
 @login_required
@@ -5792,39 +5704,36 @@ def db_search(request):
     if len(query) < 3:
         return JsonResponse([])
 
-    models_to_search = [
-        (Survey, ["survey_id", "title", "description", "id_staff"]),
-        (AuthUser, ["username", "email", "first_name", "last_name", "id_staff"]),
-        (UserAnswers, ["survey_id", "id_staff", "user_agent", "answer_text"]),
-        (Subscription, ["staff_id", "plan_name", "status", "start_date", "end_date"]),
-        (Payment, ["user__username", "amount", "currency", "status", "transaction_id"]),
-        (BlogPost, ["title", "content", "author__username"]),
+    # Модели для поиска.
+    search_config = [
+        ("AuthUser", AuthUser, ["username", "email", "first_name", "last_name"]),
+        ("Survey", Survey, ["title", "description", "survey_id"]),
+        ("Payment", Payment, ["payment_id", "order_id", "status"]),
+        ("Subscription", Subscription, ["plan_name", "status"]),
+        ("UserAnswers", UserAnswers, ["selected_answer"]),
     ]
 
     results = []
-    for model, fields in models_to_search:
+
+    for model_key, model_class, fields in search_config:
         q_objects = Q()
         for field in fields:
-            try:
-                if "__" in field:
-                    model._meta.get_field(field.split("__")[0])
-                else:
-                    model._meta.get_field(field)
-                q_objects |= Q(**{f"{field}__icontains": query})
-            except Exception:
-                continue
+            q_objects |= Q(**{f"{field}__icontains": query})
 
-        for item in model.objects.filter(q_objects)[:5]:
-            results.append(
-                {
-                    "model": model.__name__,
-                    "field": ", ".join(fields),
-                    "value": str(item),
-                    "source": get_related_info(item),
-                }
-            )
+        # Берем по 5 штук из каждой модели, чтоб не спамить
+        qs = model_class.objects.filter(q_objects)[:5]
 
+        for item in qs:
+            results.append({
+                "model": model_key,
+                "id": item.pk,
+                "value": str(item),
+                "source": get_related_info(item)
+            })
+
+    # Сортируем, чтоб было красиво
     results.sort(key=lambda x: x["model"])
+
     return JsonResponse(results, safe=False)
 
 
@@ -6078,15 +5987,6 @@ class PaymentInitiateView(View):
 
         is_veteran = previous_payments_count > 0
 
-        if is_veteran:
-            plan_prices = {
-                'Начальный': 0,
-                'Премиум неделя': 195,
-                'Премиум': 345,
-                'Премиум 3 мес': 720,
-                'Премиум Год': 2400,
-            }
-
         print(int(amount), description, plan_prices.get(description))
 
         # if int(amount) != plan_prices.get(description):
@@ -6142,86 +6042,86 @@ class PaymentInitiateView(View):
         response = requests.post("https://securepay.tinkoff.ru/v2/Init/", json=request_body, headers=headers)
         response_data = response.json()
 
-        if response_data.get('Success'):
+        # if response_data.get('Success'):
             
-            if 'премиум' in description.lower():
-                plan_name_for_db = 'Премиум'
-            elif 'стандарт' in description.lower():
-                plan_name_for_db = 'Стандартный'
-            elif 'премиум неделя' in description.lower():
-                plan_name_for_db = 'Премиум'
+        if 'премиум' in description.lower():
+            plan_name_for_db = 'Премиум'
+        elif 'стандарт' in description.lower():
+            plan_name_for_db = 'Стандартный'
+        elif 'премиум неделя' in description.lower():
+            plan_name_for_db = 'Премиум'
 
-            elif 'package-small' in description.lower():
-                plan_name_for_db = 'Пакет S'
-            elif 'package-medium' in description.lower():
-                plan_name_for_db = 'Пакет M'
-            elif 'package-large' in description.lower():
-                plan_name_for_db = 'Пакет L'
-            else:
-                plan_name_for_db = 'Премиум'
+        elif 'package-small' in description.lower():
+            plan_name_for_db = 'Пакет S'
+        elif 'package-medium' in description.lower():
+            plan_name_for_db = 'Пакет M'
+        elif 'package-large' in description.lower():
+            plan_name_for_db = 'Пакет L'
+        else:
+            plan_name_for_db = 'Премиум'
 
-            if 'год' in description.lower():
-                billing_cycle = 'yearly'
-            elif 'мес' in description.lower():
-                billing_cycle = 'monthly3'
-            elif 'неделя' in description.lower():
-                billing_cycle = 'weekly'
-            elif 'package' in description.lower():
-                billing_cycle = 'package'
-            else:
-                billing_cycle = 'monthly'
+        if 'год' in description.lower():
+            billing_cycle = 'yearly'
+        elif 'мес' in description.lower():
+            billing_cycle = 'monthly3'
+        elif 'неделя' in description.lower():
+            billing_cycle = 'weekly'
+        elif 'package' in description.lower():
+            billing_cycle = 'package'
+        else:
+            billing_cycle = 'monthly'
 
-            try:
-                subscription, created = Subscription.objects.update_or_create(
-                    staff_id=get_staff_id(request),
-                    defaults={
-                        'plan_name': plan_name_for_db,
-                        'status': 'inactive',
-                        'billing_cycle': billing_cycle,
-                        'end_date': timezone.now()
-                    }
-                )
-
-            except Exception as e:
-                tracer_l.critical(f"НЕ СМОГ СОЗДАТЬ ПОДПИСКУ: {e}")
-                return JsonResponse({'error': 'Ошибка при создании подписки'}, status=500)
-
-            new_payment = Payment.objects.create(
+        try:
+            subscription, created = Subscription.objects.update_or_create(
                 staff_id=get_staff_id(request),
-                payment_id=response_data.get('PaymentId'),
-                subscription=subscription,
-                order_id=order_id,
-                amount=int(amount) * 100,
-                status='pending'
-            )
-            new_payment.save()
-
-            # Запись в транзакции
-            new_trans = TransactionTracker.objects.create(
-                staff_id=get_staff_id(request),
-                payment_id=response_data.get('PaymentId'),
-                description=description,
-                order_id=order_id,
-                amount=int(amount) * 100,
-            )
-            new_trans.save()
-
-            return JsonResponse(
-                {
-                    "Success": True,
-                    "PaymentURL": response_data["PaymentURL"],
-                    "Message": "Платеж успешно инициирован.",
+                defaults={
+                    'plan_name': plan_name_for_db,
+                    'status': 'inactive',
+                    'billing_cycle': billing_cycle,
+                    'end_date': timezone.now()
                 }
             )
-        else:
-            return JsonResponse(
-                {
-                    "Success": False,
-                    "ErrorCode": response_data.get("ErrorCode"),
-                    "Message": response_data.get("Message"),
-                },
-                status=400,
-            )
+
+        except Exception as e:
+            tracer_l.critical(f"НЕ СМОГ СОЗДАТЬ ПОДПИСКУ: {e}")
+            return JsonResponse({'error': 'Ошибка при создании подписки'}, status=500)
+
+        new_payment = Payment.objects.create(
+            staff_id=get_staff_id(request),
+            payment_id=response_data.get('PaymentId'),
+            subscription=subscription,
+            order_id=order_id,
+            amount=int(amount) * 100,
+            status='pending'
+        )
+        new_payment.save()
+
+        # Запись в транзакции
+        new_trans = TransactionTracker.objects.create(
+            staff_id=get_staff_id(request),
+            payment_id=response_data.get('PaymentId'),
+            description=description,
+            order_id=order_id,
+            amount=int(amount) * 100,
+        )
+        new_trans.save()
+
+        return JsonResponse(
+            {
+                "Success": True,
+                "PaymentURL": response_data["PaymentURL"],
+                "Message": "Платеж успешно инициирован.",
+            }
+        )
+        # else:
+        #     return JsonResponse(
+        #         {
+        #             "Success": False,
+        #             "ErrorCode": response_data.get("ErrorCode"),
+        #             "Message": response_data.get("Message"),
+        #         },
+        #         status=400,
+        #     )
 
 
 def get_payment_data(status, description, plan_name, end_date, payment_id, order_id, amount):
@@ -6376,43 +6276,23 @@ class PaymentSuccessView(View):
                             f"{request.user.username} Error to send check to email: {fail}"
                         )
 
-                    try:
-                        payment_details_text = "\n".join(
-                            [
-                                f"<b>{detail['label']}:</b> {detail['value']}"
-                                for detail in payment_details
-                            ]
-                        )
+                    payment_details_text = "\n".join(
+                        [
+                            f"<b>{detail['label']}:</b> {detail['value']}"
+                            for detail in payment_details
+                        ]
+                    )
 
-                        message = (
-                            f"{CONFIRM_SYMBOL} Успешный платеж\n\n"
-                            f"<b>Статус платежа:</b> {payment_data['payment_status']}\n"
-                            f"<b>План:</b> {payment_data['plan_name']}\n\n"
-                            f"<b>Детали платежа:</b>\n"
-                            f"{payment_details_text}\n\n"
-                            f"<b>ID пользователя:</b> {get_staff_id(request)}"
-                        )
-                        telegram_message_manager = ManageTelegramMessages()
-                        telegram_message_manager.send_message(TELEGRAM_CHAT_ID, message)
+                    message = (
+                        f"{CONFIRM_SYMBOL} Успешный платеж\n\n"
+                        f"<b>Статус платежа:</b> {payment_data['payment_status']}\n"
+                        f"<b>План:</b> {payment_data['plan_name']}\n\n"
+                        f"<b>Детали платежа:</b>\n"
+                        f"{payment_details_text}\n\n"
+                        f"<b>ID пользователя:</b> {get_staff_id(request)}"
+                    )
 
-                        auth_user = AuthUser.objects.filter(
-                            id_staff=get_staff_id(request)
-                        ).first()
-                        if auth_user:
-                            additional_auth_user = AuthAdditionalUser.objects.get(
-                                user=auth_user
-                            )
-                            telegram_message_manager.send_message(
-                                additional_auth_user.id_telegram, message
-                            )
-
-                            tracer_l.info(
-                                f"{request.user.username}\n\nSuccess send to Telegram"
-                            )
-                    except Exception as fail:
-                        tracer_l.warning(
-                            f"{request.user.username}\n\nFail while send info about payment to Telegram: {fail}"
-                        )
+                    tracer_l.warning(f"{message}")
 
                     return render(request, "payments/pay_status.html", payment_data)
                 else:
@@ -7037,7 +6917,7 @@ class TelegramAuthView(View):
                 "telegram.html",
                 {
                     "target_url": reverse("create"),
-                    "auth_data": auth_data,  # Добавляем данные для шаблона
+                    "auth_data": auth_data,
                 },
             )
 
@@ -7049,14 +6929,6 @@ class TelegramAuthView(View):
             return JsonResponse(
                 {"status": "error", "message": "Internal server error"}, status=500
             )
-
-
-@check_legal_process
-def available_plans(request):
-    context = {
-        "page_title": "Выберите оптимальный план подписки | Летучка — создать тест онлайн бесплатно"
-    }
-    return render(request, "askify_service/avaible-plans.html", context)
 
 
 @check_legal_process
@@ -7378,9 +7250,10 @@ def get_user_details_api(request, user_id):
         survey__id_staff=user.id_staff
     ).count()
 
-    last_surveys = Survey.objects.filter(id_staff=user.id_staff).order_by(
-        "-created_at"
-    )[:5]
+    # В функции get_user_details_api
+    last_surveys = Survey.objects.filter(id_staff=user.id_staff) \
+        .annotate(cnt_attempts=Count('attempts')) \
+        .order_by("-created_at")[:5]
 
     response_data = {
         "id": user.id,
@@ -7404,7 +7277,7 @@ def get_user_details_api(request, user_id):
                 "survey_id": s.survey_id,
                 "created_at": s.created_at.strftime("%d.%m.%Y"),
                 "view_count": s.view_count,
-                "attempts_count": TestAttempt.objects.filter(survey=s).count(),
+                "attempts_count": s.cnt_attempts,
             }
             for s in last_surveys
         ],
@@ -7555,6 +7428,8 @@ def get_new_users_api(request):
     return JsonResponse(data)
 
 
+# -------------------------
+# Методы для Email рассылок
 @staff_member_required
 @csrf_exempt
 def start_mailing_api(request):
@@ -7604,6 +7479,7 @@ def get_mailing_history_api(request):
             }
         )
     return JsonResponse({"history": history})
+# -------------------------
 
 
 def unsubscribe_view(request, signed_user_id):
@@ -7638,18 +7514,6 @@ def health_check_view(request):
         version = "unknown"
 
     return JsonResponse({"status": "ok", "version": version})
-
-
-def handler403(request, exception=None):
-    return render(request, "askify_service/errors/403.html", status=403)
-
-
-def handler404(request, exception=None):
-    return render(request, "askify_service/errors/404.html", status=404)
-
-
-def handler500(request):
-    return render(request, "askify_service/errors/500.html", status=500)
 
 
 def telegram_magic_auth(request, token):
@@ -7787,3 +7651,103 @@ def bot_generate_link(request):
         return JsonResponse({"error": "Invalid JSON"}, status=400)
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
+
+
+# ----------------
+# ЭКСПЕРЕМЕНТАЛЬНО
+# ----------------
+
+# ----- Letychka Exchange
+def exchange_view(request):
+    # --- ДАННЫЕ ДЛЯ БЕГУЩЕЙ СТРОКИ ---
+    ticker_tapes = Survey.objects.filter(
+        is_in_marketplace=True,
+        # view_count__gt=5
+    ).order_by("-updated_at")[:10]
+
+    marketplace_surveys = Survey.objects.filter(is_in_marketplace=True).order_by(
+        "-view_count"
+    )
+
+    context = {
+        "ticker_tapes": ticker_tapes,
+        "marketplace_surveys": marketplace_surveys,
+    }
+    return render(request, "exchange.html", context)
+
+
+# ----- Arena
+def arena_view(request):
+    profile, _ = ArenaProfile.objects.get_or_create(user=request.user)
+
+    accuracy = (
+        (profile.questions_correct * 100 / profile.questions_answered)
+        if profile.questions_answered > 0
+        else 0
+    )
+
+    initial_stats = {
+        "score": profile.total_score,
+        "streak": profile.current_streak,
+        "accuracy": f"{accuracy:.0f}%",
+        "max_streak": profile.max_streak,
+        "answered": profile.questions_answered,
+        "percentile": "-%",
+    }
+
+    context = {"initial_stats_json": json.dumps(initial_stats)}
+
+    return render(request, "askify_service/arena.html", context)
+
+
+@csrf_exempt
+def submit_arena_answer(request):
+    if not request.user.is_authenticated:
+        data = json.loads(request.body)
+        question = Question.objects.get(id=data.get("question_id"))
+        is_correct = data.get("user_answer") == question.correct_answer
+        return JsonResponse(
+            {"is_correct": is_correct, "correct_answer": question.correct_answer}
+        )
+
+    profile, _ = ArenaProfile.objects.get_or_create(user=request.user)
+    data = json.loads(request.body)
+    question = Question.objects.get(id=data.get("question_id"))
+    is_correct = data.get("user_answer") == question.correct_answer
+
+    profile.questions_answered += 1
+    if is_correct:
+        profile.total_score += 2
+        profile.current_streak += 1
+        profile.questions_correct += 1
+        if profile.current_streak > profile.max_streak:
+            profile.max_streak = profile.current_streak
+
+        for tag in question.survey.tags.all():
+            profile.interests[tag.name] = profile.interests.get(tag.name, 0) + 1
+    else:
+        profile.current_streak = 0
+        profile.total_score -= 1
+
+    profile.save()
+
+    accuracy = (
+        (profile.questions_correct * 100 / profile.questions_answered)
+        if profile.questions_answered > 0
+        else 0
+    )
+
+    return JsonResponse(
+        {
+            "is_correct": is_correct,
+            "correct_answer": question.correct_answer,
+            "updated_stats": {
+                "score": profile.total_score,
+                "streak": profile.current_streak,
+                "accuracy": f"{accuracy:.0f}%",
+                "max_streak": profile.max_streak,
+                "answered": profile.questions_answered,
+                # 'percentile': ... (тут заглушка)
+            },
+        }
+    )

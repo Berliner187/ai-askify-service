@@ -10,8 +10,19 @@ from askify_service.views import telegram_magic_auth, telegram_code_auth, bot_ge
 
 urlpatterns = [
     path('', index, name='home'),
+
     path('dlya-prepodavateley/', for_prepods, name='for_prepods'),
     path('testirovanie-online/', pro_landing, name='pro_landing'),
+    path('solving-tests/', solving_tests_promo, name='solving_tests_promo'),
+    path('for-teachers/', teachers_promo, name='teachers_promo'),
+    path('for-medics/', medicine_promo, name='medicine_promo'),
+    path('available-plans/', available_plans, name='available_plans'),
+
+    path('api/quick-register/', quick_register_api, name='api_quick_register'),
+    path('register/', register_view, name='register'),
+    path('login/', login_view, name='login'),
+    path('logout/', logout_view, name='logout'),
+    path('blocked_view/', blocked_view, name='blocked_view'),
 
     path('create/', page_create_survey, name='create'),
     path('api-create-survey/', ManageSurveysView.as_view(), name='api-create-survey'),
@@ -22,7 +33,7 @@ urlpatterns = [
     path('result/<str:survey_id>/', result_view, name='result'),
     path('result/<uuid:survey_id>/download/', download_results_pdf, name='download-results_pdf'),
 
-    path('c/<str:survey_id>/', preview_test, name='preview_test'),
+    path('c/<str:survey_id>/', main_test_card, name='preview_test'),
     path('t/<str:survey_id>/', take_test, name='take_test'),
     path('c/<str:survey_id>/result/', redirect_to_dashboard, name='preview_test_inside'),
     path('c/<str:survey_id>/dashboard/', view_results, name='preview_test_result'),
@@ -39,40 +50,27 @@ urlpatterns = [
     path('api/t/<str:survey_id>/submit/', submit_answers, name='submit_answers'),
     path('api/c/<uuid:survey_id>/result/export/excel/', export_results_to_excel, name='export_results_to_excel'),
 
-    path('solving-tests/', solving_tests_promo, name='solving_tests_promo'),
-    path('for-teachers/', teachers_promo, name='teachers_promo'),
-    path('for-medics/', medicine_promo, name='medicine_promo'),
-
     path('drop-survey/<str:survey_id>/', drop_survey, name='drop-survey'),
     path('history/', page_history_surveys, name='history'),
     path('api/get-history/', api_get_history, name='api_history'),
     path('load-more-surveys/', load_more_surveys, name='load-more-surveys'),
 
-    path('api/quick-register/', quick_register_api, name='api_quick_register'),
-    path('register/', register, name='register'),
-    path('login/', login_view, name='login'),
-    path('logout/', logout_view, name='logout'),
-
-    path('stats2975/', admin_stats, name='stats2975'),
     path('api/admin/block_ip/', block_ip_api, name='api_block_ip'),
     path('api/admin/promote_user/', promote_user_api, name='api_promote_user'),
     path('api/admin/add_api_key/', add_api_key_api, name='api_add_key'),
     path('api/admin/activate_api_key/', activate_api_key_api, name='api_activate_key'),
     path('admin/activate-key/', activate_api_key, name='activate_api_key'),
-    path('db_viewer/', db_viewer, name='db_viewer'),
-    path('db-search/', db_search, name='db-search'),
+    path('db-viewer/', db_viewer, name='db_viewer'),
+    path('db-search/', db_search, name='db_search'),
+    path('get-details/<str:model_key>/<str:item_id>/', get_item_details, name='get_item_details'),
 
     path('profile/<str:username>/', profile_view, name='profile'),
     path('profile/', redirect_to_profile, name='profile_redirect'),
-
-    path('blocked_view/', blocked_view, name='blocked_view'),
 
     path('docs/<slug:slug>/', document_view, name='document_view'),
     path('media/<slug:slug>/', blog_view, name='media_view'),
 
     path('get_ip/', get_ip, name='get_ip'),
-
-    path('available-plans/', available_plans, name='available_plans'),
 
     path('api/payment/initiate/', PaymentInitiateView.as_view(), name='payment_initiate'),
     path('payment/', create_payment, name='payment'),
@@ -116,6 +114,7 @@ urlpatterns = [
     path('auth/', passwordless_auth_view, name='passwordless_auth'),
     path('auth/magic-link/<str:token>/', magic_link_login_view, name='magic_link_login'),
 
+    path('stats2975/', admin_stats, name='stats2975'),
     path('stats2975/crm/', user_ops_center_view, name='user_ops_center'),
     path('api/admin/search-users/', search_users_api, name='api_search_users'),
     path('api/admin/user-details/<int:user_id>/', get_user_details_api, name='api_get_user_details'),

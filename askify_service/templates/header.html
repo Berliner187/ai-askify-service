@@ -250,7 +250,7 @@
                                 <div class="nav-subtitle">Правовой статус Сервиса</div>
                             </div>
                         </li>
-                        <li class="vision-nav-item" data-view="more-info">
+                        <li class="vision-nav-item" data-view="about">
                             <div class="nav-icon"><img src="{% static 'img/icon-more.png' %}" alt=""></div>
                             <div class="nav-content">
                                 <div class="nav-title">О проекте</div>
@@ -523,6 +523,31 @@
                                 <div class="card-title">Вернуться на лендинг</div>
                                 <p>Перейти на главную страницу сервиса «Летучка» и узнать больше о возможностях</p>
                                 <a class="card-action" href='/'>На главную</a>
+                            </div>
+                        </div>
+                    `;
+                    break;
+                
+                case 'about':
+                    content.innerHTML = `
+                        <h2 class="content-header">О проекте</h2>
+                        <div class="content-grid">
+                            <div class="content-card">
+                                <div class="card-title">Что такое «Летучка»?</div>
+                                <p>Это AI-платформа, которая превращает тонны PDF-методичек и лекций в умные тесты за 30 секунд. Мы созданы, чтобы убить рутину преподавателей, HR и студентов.</p>
+                            </div>
+                            <div class="content-card">
+                                <div class="card-title">Наши цифры</div>
+                                <p>Более <b>3 000</b> пользователей, <b>40 000+</b> сгенерированных тестов и тысячи сэкономленных часов. Мы растем органически, потому что решаем реальную боль.</p>
+                            </div>
+                            <div class="content-card">
+                                <div class="card-title">Кто за этим стоит?</div>
+                                <p>Один человек – Kozak Developer. Моя цель — сделать инструмент, который диагностирует знания, а не просто ставит оценки.</p>
+                                <a class="card-action" href="https://t.me/gazi_hazi_stasi" target="_blank">Написать основателю</a>
+                            </div>
+                            <div class="content-card">
+                                <div class="card-title">Безопасность</div>
+                                <p>Летучка не использует Ваши материалы для дообучения, не передает данные зарубеж и они остаются на серверах в России.</p>
                             </div>
                         </div>
                     `;

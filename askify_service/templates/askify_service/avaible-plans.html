@@ -3,21 +3,22 @@
 <head>
     {% load static %}
     {% include 'components/meta_tags.html' %}
-    <meta name="description" content="Создание тестов онлайн. Подберите подходящий тариф: Автоматизируйте создание тестов и начните экономить до 10 часов в неделю уже сегодня">
-    <meta name="keywords" content="создать тест онлайн, создание тестов онлайн, генератор теста, составление тестов онлайн для студентов, тест создать, создать тест онлайн с результатами бесплатно, создать тест онлайн бесплатно">
-    <link rel="shortcut icon" href="{% static 'img/logo.png' %}" type="image/png">
-    <link rel="stylesheet" href="{% static 'css/start.css' %}?v=1.0">
+    <title>{{ page_title }}</title>
+    <link rel="icon" href="{% static 'img/favicon.ico' %}" type="image/ico">
+    <link rel="apple-touch-icon" sizes="180x180" href="{% static 'img/apple-touch-icon.png' %}">
+    <link rel="stylesheet" href="{% static 'css/start.css' %}?v=1.2">
     <link rel="stylesheet" href="{% static 'css/footer.css' %}">
+
     <script type="application/ld+json">
     {
         "@context": "https://schema.org",
         "@type": "WebPage",
-        "name": "Тарифы — Летучка",
+        "name": "Тарифы — Летучка Ру",
         "url": "https://letychka.ru/available-plans/",
         "description": "Автоматическое создание тестов онлайн. Выберите тариф и экономьте до 10 часов в неделю. Начните бесплатно прямо сейчас.",
         "mainEntity": {
             "@type": "Product",
-            "name": "Летучка — генератор тестов онлайн",
+            "name": "Летучка Ру — генератор тестов онлайн",
             "offers": {
             "@type": "Offer",
             "priceCurrency": "RUB",
@@ -48,647 +49,280 @@
     <noscript><div><img src="https://mc.yandex.ru/watch/98823704" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
     <!-- /Yandex.Metrika counter -->
 
-</head>
-
-<body class="bg-body">
-    <!-- Хедер -->
-    <header class="header" id="critical-header">
-        <div class="logo">
-            <a href="/">
-                <img src="{% static 'img/logo-header.webp' %}" alt="Логотип Летучка" class="logo-img">
-            </a>
-        </div>
-        <nav class="nav">
-            <div class="nav-links">
-                <a href="/" class="nav-link">На лендинг</a>
-                <a href="/#how-it-works" class="nav-link">Начать</a>
-                <a href="/#features" class="nav-link">Фичи</a>
-                <a href="/media/main" class="nav-link">Блог</a>
-                <a href="/login" class="nav-link login-button">Войти</a>
-            </div>
-            <div class="burger" id="burger">
-                <div class="burger-line"></div>
-                <div class="burger-line"></div>
-                <div class="burger-line"></div>
-            </div>
-        </nav>
-    </header>
-    
-    {% include 'components/made_in_russia.html' %}
-    
-    <div class="ios-pricing-container">
-        <div class="pricing-header">
-            <h1 class="pricing-title">Создать тест онлайн — проще с правильным тарифом</h1>
-            <p class="pricing-subtitle">Автоматизируйте создание тестов и освободите 80% времени</p>
-
-            <div class="payment-banner">
-                <svg class="payment-icon" width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <path d="M12 1C5.93 1 1 5.93 1 12s4.93 11 11 11 11-4.93 11-11S18.07 1 12 1Zm0 20c-4.96 0-9-4.04-9-9s4.04-9 9-9 9 4.04 9 9-4.04 9-9 9Z" fill="#79EF66"/>
-                <path d="M17 9.5 10.5 16 7 12.5" stroke="#79EF66" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                <div class="payment-text">
-                    <strong>Платите, как удобно:</strong> российские карты, <strong>СБП</strong>, <strong>SberPay</strong> и&nbsp;<strong>T-Pay</strong>&nbsp;&mdash; быстро и&nbsp;безопасно.
-                </div>
-            </div>
-            <h2>Выберите подходящий план</h2>
-        </div>
-
-        <div class="pricing-cards">
-            <!-- Премиум -->
-            <div class="pricing-card" data-plan="premium">
-                <div class="card-badge">ПОЛНЫЙ ПАКЕТ</div>
-                <h3 class="plan-name">Премиум</h3>
-                <div class="price-container">
-                    <span class="price">690₽</span>
-                    <span class="period">на месяц</span>
-                </div>
-                <div class="annual-price">4 800₽ за год (экономия 3360)</div>
-                
-                <ul class="features-list">
-                    <li class="feature-item">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                            <path d="M9 16.17L4.83 12L3.41 13.41L9 19L21 7L19.59 5.59L9 16.17Z" fill="#34C759"/>
-                        </svg>
-                        <span>Скачивание в PDF для печати без водяных знаков</span>
-                    </li>
-                    <li class="feature-item">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                            <path d="M9 16.17L4.83 12L3.41 13.41L9 19L21 7L19.59 5.59L9 16.17Z" fill="#34C759"/>
-                        </svg>
-                        <span>Аналитика результатов с графиками</span>
-                    </li>
-                    <li class="feature-item">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                            <path d="M9 16.17L4.83 12L3.41 13.41L9 19L21 7L19.59 5.59L9 16.17Z" fill="#34C759"/>
-                        </svg>
-                        <span>Можно пройти тесты на платформе</span>
-                    </li>
-                    <li class="feature-item">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                            <path d="M9 16.17L4.83 12L3.41 13.41L9 19L21 7L19.59 5.59L9 16.17Z" fill="#34C759"/>
-                        </svg>
-                        <span>Персональная обратная связь от ИИ</span>
-                    </li>
-                    <li class="feature-item">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                            <path d="M9 16.17L4.83 12L3.41 13.41L9 19L21 7L19.59 5.59L9 16.17Z" fill="#34C759"/>
-                        </svg>
-                        <span>Экспорт результатов прохождения в PDF</span>
-                    </li>
-                    <li class="feature-item">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                            <path d="M9 16.17L4.83 12L3.41 13.41L9 19L21 7L19.59 5.59L9 16.17Z" fill="#34C759"/>
-                        </svg>
-                        <span><strong>Создавайте до 50 тестов в день, а это 4 рубля за тест</strong></span>
-                    </li>
-                    <li class="feature-item">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                            <path d="M9 16.17L4.83 12L3.41 13.41L9 19L21 7L19.59 5.59L9 16.17Z" fill="#34C759"/>
-                        </svg>
-                        <span>Загрузка своих Word и PDF документов для генерации тестов</span>
-                    </li>
-                    <li class="feature-item">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                            <path d="M9 16.17L4.83 12L3.41 13.41L9 19L21 7L19.59 5.59L9 16.17Z" fill="#34C759"/>
-                        </svg>
-                        <span>Приоритетная поддержка</span>
-                    </li>
-                </ul>
-                <button class="ios-button" onclick="location.href='/payment'">Выбрать Премиум</button>
-            </div>
-
-            <!-- Стандарт -->
-            <div class="pricing-card featured" data-plan="standard">
-                <div class="card-badge">САМЫЙ ПОПУЛЯРНЫЙ</div>
-                <h3 class="plan-name">Стандарт</h3>
-                <div class="price-container">
-                    <span class="price">550₽</span>
-                    <span class="period">на месяц</span>
-                </div>
-                <div class="annual-price">3 900₽ за год (экономия 2700)</div>
-                
-                <ul class="features-list">
-                    <li class="feature-item">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                            <path d="M9 16.17L4.83 12L3.41 13.41L9 19L21 7L19.59 5.59L9 16.17Z" fill="#34C759"/>
-                        </svg>
-                        <span>Скачивание в PDF для печати без водяных знаков</span>
-                    </li>
-                    <li class="feature-item">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                            <path d="M9 16.17L4.83 12L3.41 13.41L9 19L21 7L19.59 5.59L9 16.17Z" fill="#34C759"/>
-                        </svg>
-                        <span>Аналитика результатов с графиками</span>
-                    </li>
-                    <li class="feature-item">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                            <path d="M9 16.17L4.83 12L3.41 13.41L9 19L21 7L19.59 5.59L9 16.17Z" fill="#34C759"/>
-                        </svg>
-                        <span>Можно пройти тесты на платформе</span>
-                    </li>
-                    <li class="feature-item">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                            <path d="M9 16.17L4.83 12L3.41 13.41L9 19L21 7L19.59 5.59L9 16.17Z" fill="#34C759"/>
-                        </svg>
-                        <span>Персональная обратная связь от ИИ</span>
-                    </li>
-                    <li class="feature-item">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                            <path d="M9 16.17L4.83 12L3.41 13.41L9 19L21 7L19.59 5.59L9 16.17Z" fill="#34C759"/>
-                        </svg>
-                        <span>Экспорт результатов прохождения в PDF</span>
-                    </li>
-                    <li class="feature-item">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                            <path d="M9 16.17L4.83 12L3.41 13.41L9 19L21 7L19.59 5.59L9 16.17Z" fill="#34C759"/>
-                        </svg>
-                        <span>Создавайте до 20 тестов в день, а это 6 рублей за тест</span>
-                    </li>
-                </ul>
-                <button class="ios-button primary" onclick="location.href='/payment/'">Выбрать Стандарт</button>
-            </div>
-
-            <!-- Стартовый -->
-            <div class="pricing-card" data-plan="ultra">
-                <h3 class="plan-name">Стартовый</h3>
-                <div class="price-container">
-                    <span class="price">0₽</span>
-                    <span class="period">на неделю</span>
-                </div>
-                
-                <ul class="features-list">
-                    <li class="feature-item">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                            <path d="M9 16.17L4.83 12L3.41 13.41L9 19L21 7L19.59 5.59L9 16.17Z" fill="#34C759"/>
-                        </svg>
-                        <span><strong>Создайте 5 бесплатных тестов</strong></span>
-                    </li>
-                    <li class="feature-item">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                            <path d="M9 16.17L4.83 12L3.41 13.41L9 19L21 7L19.59 5.59L9 16.17Z" fill="#34C759"/>
-                        </svg>
-                        <span>Можно пройти тесты на платформе</span>
-                    </li>
-                    <li class="feature-item">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                            <path d="M9 16.17L4.83 12L3.41 13.41L9 19L21 7L19.59 5.59L9 16.17Z" fill="#34C759"/>
-                        </svg>
-                        <span>Скачивание в PDF для печати с водяными знаками</span>
-                    </li>
-                </ul>
-                
-                <button class="ios-button" onclick="location.href='/login/'">Выбрать Стартовый</button>
-            </div>
-        </div>
-        
-        </div>
-
-        <div class="faq-section">
-            <h2>Часто задаваемые вопросы</h2>
-
-            <div class="faq-item">
-                <div class="faq-question">
-                    <span>Как работает Летучка? ↘</span>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                        <path d="M7.41 8.59L12 13.17L16.59 8.59L18 10L12 16L6 10L7.41 8.59Z" fill="#8E8E93"/>
-                    </svg>
-                </div>
-                <div class="faq-answer">
-                    Просто загрузите свои учебные материалы — конспекты, методички, записи — и за пару секунд получите готовые тесты: ИИ проанализирует контент и создаст вопросы. Также, Вы можете указать тему, на которую хотите создать тест.
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <div class="faq-question">
-                    <span>Могу ли я проходить тесты на платформе? ↘</span>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                        <path d="M7.41 8.59L12 13.17L16.59 8.59L18 10L12 16L6 10L7.41 8.59Z" fill="#8E8E93"/>
-                    </svg>
-                </div>
-                <div class="faq-answer">
-                    Да, тесты можно проходить на платформе и сразу же увидеть результат.
-                </div>
-            </div>
-            
-            <div class="faq-item">
-                <div class="faq-question">
-                    <span>Как генерируется обратная связь? ↘</span>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                        <path d="M7.41 8.59L12 13.17L16.59 8.59L18 10L12 16L6 10L7.41 8.59Z" fill="#8E8E93"/>
-                    </svg>
-                </div>
-                <div class="faq-answer">
-                    ИИ анализирует Ваши ответы и указывает на сильные и слабые стороны. С обратной связью от нейросети Вы получите рекомендации по улучшению своих знаний (начиная с тарифного плана Стандартный и выше). 
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <div class="faq-question">
-                    <span>Как задать кол-во вопросов в тесте? ↘</span>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                        <path d="M7.41 8.59L12 13.17L16.59 8.59L18 10L12 16L6 10L7.41 8.59Z" fill="#8E8E93"/>
-                    </svg>
-                </div>
-                <div class="faq-answer">
-                    Слайдер с кол-вом вопросов появится при загрузке файла или при вводе текста в поле, чтобы не перегружать интерфейс.
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <div class="faq-question">
-                    <span>Какая длина текста оптимальна? ↘</span>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                        <path d="M7.41 8.59L12 13.17L16.59 8.59L18 10L12 16L6 10L7.41 8.59Z" fill="#8E8E93"/>
-                    </svg>
-                </div>
-                <div class="faq-answer">
-                    До 2000 символов — идеально. Длиннее можно, но генерация займёт больше времени. Если текст огромный, лучше дробить на части.
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <div class="faq-question">
-                    <span>Как повысить точность вопросов? ↘</span>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                        <path d="M7.41 8.59L12 13.17L16.59 8.59L18 10L12 16L6 10L7.41 8.59Z" fill="#8E8E93"/>
-                    </svg>
-                </div>
-                <div class="faq-answer">
-                    Добавьте в текст чёткие определения, формулировки, даты, цифры. Чем конкретнее — тем умнее вопрос.
-                </div>
-            </div>
-
-        </div>
-    </div>
-    {% include 'footer.html' %}
-
     <style>
         :root {
-            --primary-gradient: linear-gradient(135deg, #616DF0 0%, rgb(131, 92, 230) 100%);
-            --background-base: #0F0818;
-            --glass-bg: rgba(78, 78, 119, 0.3);
-            --glass-border: rgba(48, 48, 75, 0.5);
-            --text-primary: #e5e5eb;
-            --text-secondary: #a9a9b4;
-            --card-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-            --featured-shadow: 0 8px 24px rgba(59, 10, 255, 0.2);
+            --accent: #616DF0;
+            --surface: rgba(255, 255, 255, 0.05);
+            --color-border: rgba(255, 255, 255, 0.1);
         }
+        .bg-body { background-color: #0F0818; color: #fff; font-family: 'Inter', sans-serif; }
+        .ios-pricing-container { max-width: 1100px; margin: 60px auto; padding: 20px; }
+        .pricing-header { text-align: center; margin-bottom: 40px; }
+        
+        /* ПЕРЕКЛЮЧАТЕЛЬ */
+        .tab-container { display: flex; justify-content: center; margin-bottom: 50px; }
+        .tab-wrapper { background: var(--surface); padding: 4px; border-radius: 99px; border: 1px solid var(--color-border); display: flex; }
+        .tab-btn { padding: 10px 24px; border-radius: 99px; border: none; background: transparent; color: #888; font-weight: 700; cursor: pointer; transition: 0.3s; font-size: 14px; position: relative; }
+        .tab-btn.active { background: var(--accent); color: #fff; }
+        .badge-new { position: absolute; top: -8px; right: -10px; background: #ff3b30; color: #fff; font-size: 9px; padding: 2px 6px; border-radius: 10px; animation: pulse 2s infinite; }
 
-        body {
-            background-color: var(--background-base);
-        }
+        /* КАРТОЧКИ */
+        .pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .price-card { background: var(--surface); border: 1px solid var(--color-border); border-radius: 24px; padding: 32px; transition: 0.3s; display: flex; flex-direction: column; position: relative; backdrop-filter: blur(10px); cursor: pointer; }
+        .price-card.selected { border-color: var(--accent); box-shadow: 0 0 20px rgba(97, 109, 240, 0.2); background: rgba(97, 109, 240, 0.05); }
+        
+        .plan-name { font-size: 18px; font-weight: 600; color: #888; margin-bottom: 8px; }
+        .plan-price { font-size: 42px; font-weight: 800; margin-bottom: 4px; }
+        .plan-price span { font-size: 16px; color: #888; font-weight: 400; }
+        .plan-desc { color: #30D158; font-size: 13px; font-weight: 600; margin-bottom: 24px; }
+        
+        .features-list { list-style: none; padding: 0; margin: 0 0 32px 0; flex-grow: 1; }
+        .feature-item { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; font-size: 14px; color: #ccc; text-align: left; }
 
-        .bg-body {
-            background-image: url("{% static 'img/bg-gradient-demo.webp' %}");
-            background-position: 0 center;
-        }
+        .payment-btn { width: 100%; max-width: 400px; padding: 20px; border-radius: 20px; border: none; background: var(--accent); color: #fff; font-weight: 800; font-size: 18px; cursor: pointer; transition: 0.3s; box-shadow: 0 10px 30px rgba(97, 109, 240, 0.3); }
+        .payment-btn:hover { transform: translateY(-3px); filter: brightness(1.1); }
 
-        .ios-pricing-container {
-            max-width: 1200px;
-            margin: 100px auto;
-            padding: 20px;
-            font-family: 'Namu Pro', sans-serif;
-        }
+        /* SEO И КОНТЕНТНЫЕ БЛОКИ */
+        .seo-section { margin-top: 100px; text-align: left; border-top: 1px solid var(--color-border); pt: 60px; }
+        .seo-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 40px; margin-top: 40px; }
+        .seo-h2 { font-size: 28px; font-weight: 800; margin-bottom: 20px; color: #fff; }
+        .seo-text { color: #aaa; line-height: 1.6; font-size: 15px; }
 
-        .pricing-header {
-            text-align: center;
-            margin-bottom: 40px;
-        }
+        .blog-links { margin-top: 60px; }
+        .blog-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 20px; }
+        .blog-card { background: var(--surface); padding: 20px; border-radius: 15px; text-decoration: none; transition: 0.2s; border: 1px solid transparent; }
+        .blog-card:hover { border-color: var(--accent); }
+        .blog-card h4 { font-size: 14px; color: #fff; margin-bottom: 5px; }
 
-        .pricing-title {
-            font-size: 36px;
-            font-weight: 700;
-            color: var(--text-primary);
-            margin-bottom: 12px;
-        }
-
-        .pricing-subtitle {
-            font-size: 18px;
-            color: var(--text-secondary);
-            margin-bottom: 48px;
-        }
-
-        .toggle-container {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 16px;
-            margin-top: 20px;
-        }
-
-        .toggle-label {
-            font-size: 16px;
-            color: var(--text-secondary);
-        }
-
-        .toggle-label.active {
-            color: var(--primary-color);
-            font-weight: 500;
-        }
-
-        .ios-toggle {
-            position: relative;
-            display: inline-block;
-            width: 52px;
-            height: 32px;
-        }
-
-        .ios-toggle input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-
-        .ios-toggle .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(48, 48, 75, .8);
-            transition: .4s;
-            border-radius: 34px;
-        }
-
-        .ios-toggle .slider:before {
-            position: absolute;
-            content: "";
-            height: 28px;
-            width: 28px;
-            left: 2px;
-            bottom: 2px;
-            background-color: white;
-            transition: .4s;
-            border-radius: 50%;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-        }
-
-        .ios-toggle input:checked + .slider {
-            background-color: var(--primary-color);
-        }
-
-        .ios-toggle input:checked + .slider:before {
-            transform: translateX(20px);
-        }
-
-        .pricing-cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 24px;
-            margin-bottom: 40px;
-        }
-
-        .pricing-card, .faq-section {
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-radius: 20px;
-            padding: 30px;
-            border: 0.5px solid var(--glass-border);
-            box-shadow: var(--card-shadow);
-            transition: all 0.3s ease;
-            position: relative;
-        }
-
-        .pricing-card.featured {
-            transform: translateY(-10px);
-            box-shadow: var(--featured-shadow);
-            border: 0.5px solid rgba(10, 132, 255, 0.3);
-        }
-
-        .card-badge {
-            position: absolute;
-            top: -12px;
-            right: 20px;
-            background: var(--primary-gradient);
-            color: white;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: 600;
-        }
-
-        .plan-name {
-            font-size: 24px;
-            font-weight: 700;
-            margin-bottom: 16px;
-            color: var(--text-primary);
-        }
-
-        .price-container {
-            display: flex;
-            align-items: baseline;
-            gap: 8px;
-            margin-bottom: 8px;
-            font-family: 'Unbounded Medium', sans-serif;
-        }
-
-        .price {
-            font-size: 36px;
-            font-weight: 800;
-            color: var(--text-primary);
-        }
-
-        .period {
-            font-size: 16px;
-            color: var(--text-secondary);
-        }
-
-        .annual-price {
-            font-family: 'Unbounded Medium';
-            font-size: 12px;
-            color: #30D158;
-            font-weight: 500;
-            margin-bottom: 24px;
-        }
-
-        .features-list {
-            list-style: none;
-            padding: 0;
-            margin: 0 0 24px 0;
-        }
-
-        .feature-item {
-            display: flex;
-            align-items: center;
-            margin: 0;
-            gap: 8px;
-            padding: 8px 0;
-            border-bottom: 0.5px solid rgba(0,0,0,0.05);
-        }
-
-        .feature-item:last-child {
-            border-bottom: none;
-        }
-
-        .feature-item span {
-            font-size: 16px;
-            color: var(--text-primary);
-        }
-
-        .ios-button {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 100%;
-            padding: 16px;
-            border-radius: 16px;
-            font-size: 17px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            border: none;
-            margin-bottom: 24px;
-            font-family: 'Namu Pro';
-        }
-
-        .ios-button.primary {
-            background: var(--primary-gradient);
-            color: white;
-            box-shadow: 0 4px 12px rgba(22, 10, 255, 0.3);
-        }
-
-        .ios-button.primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(83, 10, 255, 0.4);
-        }
-
-        .ios-button:hover {
-            transform: translateY(-2px);
-            color: white;
-            background-color: black;
-        }
-
-        .testimonials {
-            display: flex;
-            gap: 12px;
-            background: rgba(48, 48, 75,0.4);
-            border-radius: 12px;
-            padding: 16px;
-        }
-
-        .user-avatar {
-            width: 40px;
-            height: 40px;
-            background: var(--primary-gradient);
-            color: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            flex-shrink: 0;
-        }
-
-        .testimonial-text {
-            font-size: 14px;
-            color: var(--text-primary);
-        }
-
-        .user-info {
-            font-size: 12px;
-            color: var(--text-secondary);
-            margin-top: 4px;
-        }
-
-        .money-back {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            color: var(--primary-color);
-            font-size: 16px;
-            margin-bottom: 40px;
-        }
-
-        .faq-section {
-            max-width: 800px;
-            margin: 0 auto;
-        }
-
-        .faq-section h3 {
-            font-size: 20px;
-            color: var(--text-primary);
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        .faq-item {
-            border-bottom: 0.5px solid rgba(0,0,0,0.05);
-            padding: 16px 0;
-        }
-
-        .faq-question {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: pointer;
-            font-weight: 500;
-            color: var(--text-primary);
-        }
-
-        .faq-answer {
-            padding-top: 12px;
-            color: var(--text-secondary);
-            display: none;
-        }
-
-        .faq-item.active .faq-answer {
-            display: block;
-        }
-
-        .faq-item.active .faq-question svg {
-            transform: rotate(180deg);
-        }
-
-        @media (max-width: 768px) {
-            .pricing-title {
-                font-size: 28px;
-            }
-            
-            .pricing-subtitle {
-                font-size: 16px;
-            }
-            
-            .pricing-cards {
-                grid-template-columns: 1fr;
-            }
-            
-            .pricing-card.featured {
-                transform: none;
-            }
-        }
+        .hidden { display: none; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
     </style>
+</head>
+<body class="bg-body">
+    {% include 'header.html' %}
+
+    <div class="ios-pricing-container">
+        <div class="pricing-header">
+            <h1 class="text-4xl font-extrabold mb-4">Начните экономить время на тестах</h1>
+            <p class="text-gray-400">Выберите разовый пакет или подписочный доступ к Летучке</p>
+        </div>
+
+        <div class="tab-container">
+            <div class="tab-wrapper">
+                <button class="tab-btn active" id="btn-packs" onclick="switchTab('packs')">
+                    Пакеты <span class="badge-new">ОТ 90 ₽</span>
+                </button>
+                <button class="tab-btn" id="btn-subs" onclick="switchTab('subs')">Подписки</button>
+            </div>
+        </div>
+
+        <!-- ПАКЕТЫ -->
+        <div id="container-packs" class="pricing-grid">
+            <!-- Пакет 5 -->
+            <div class="price-card package-card" data-price="90" data-package="small" data-tests="5" data-desc="package-small">
+                <div class="plan-name">Для пробы</div>
+                <div class="plan-price">90₽</div>
+                <div class="plan-desc">18 руб за тест</div>
+                <ul class="features-list">
+                    <li class="feature-item">✅ 5 генераций тестов</li>
+                    <li class="feature-item">✅ Генерация из PDF и Word</li>
+                    <li class="feature-item">✅ Скачивание PDF без вотермарок</li>
+                    <li class="feature-item">✅ Полная аналитика и экспорт в Excel</li>
+                    <li class="feature-item">✅ Тесты не сгорают со временем</li>
+                </ul>
+            </div>
+            
+            <!-- Пакет 12 -->
+            <div class="price-card package-card selected" data-price="190" data-package="medium" data-tests="12" data-desc="package-medium">
+                <div class="plan-name">Популярный</div>
+                <div class="plan-price">190₽</div>
+                <div class="plan-desc">~16 руб за тест</div>
+                <ul class="features-list">
+                    <li class="feature-item">✅ 12 генераций тестов</li>
+                    <li class="feature-item">✅ Генерация из PDF и Word</li>
+                    <li class="feature-item">✅ Скачивание PDF без вотермарок</li>
+                    <li class="feature-item">✅ Полная аналитика и экспорт в Excel</li>
+                    <li class="feature-item">✅ Тесты не сгорают со временем</li>
+                </ul>
+            </div>
+            
+            <!-- Пакет 25 -->
+            <div class="price-card package-card" data-price="340" data-package="large" data-tests="25" data-desc="package-large">
+                <div class="plan-name">Максимальный</div>
+                <div class="plan-price">340₽</div>
+                <div class="plan-desc">~14 руб за тест</div>
+                <ul class="features-list">
+                    <li class="feature-item">✅ 25 генераций тестов</li>
+                    <li class="feature-item">✅ Генерация из PDF и Word</li>
+                    <li class="feature-item">✅ Скачивание PDF без вотермарок</li>
+                    <li class="feature-item">✅ Полная аналитика и экспорт в Excel</li>
+                    <li class="feature-item">✅ Тесты не сгорают со временем</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- ПОДПИСКИ -->
+        <div id="container-subs" class="pricing-grid hidden">
+            <!-- Неделя -->
+            <div class="price-card plan-card" data-price="390" data-desc="Премиум неделя">
+                <div class="plan-name">Неделя</div>
+                <div class="plan-price">390₽</div>
+                <div class="plan-desc">56 руб в день</div>
+                <ul class="features-list">
+                    <li class="feature-item">🚀 50 тестов в день</li>
+                    <li class="feature-item">✅ Генерация из PDF и Word</li>
+                    <li class="feature-item">✅ Скачивание PDF без вотермарок</li>
+                    <li class="feature-item">✅ Полная аналитика и экспорт в Excel</li>
+                </ul>
+            </div>
+            
+            <!-- Месяц -->
+            <div class="price-card plan-card selected" data-price="590" data-desc="Премиум">
+                <div class="plan-name">Месяц</div>
+                <div class="plan-price">590₽</div>
+                <div class="plan-desc">~20 руб в день</div>
+                <ul class="features-list">
+                    <li class="feature-item">🚀 50 тестов в день</li>
+                    <li class="feature-item">✅ Генерация из PDF и Word</li>
+                    <li class="feature-item">✅ Скачивание PDF без вотермарок</li>
+                    <li class="feature-item">✅ Полная аналитика и экспорт в Excel</li>
+                </ul>
+            </div>
+            
+            <!-- Год -->
+            <div class="price-card plan-card featured" data-price="4800" data-desc="Премиум Год">
+                <div class="plan-name">Год</div>
+                <div class="plan-price">4800₽</div>
+                <div class="plan-desc">~13 руб в день</div>
+                <ul class="features-list">
+                    <li class="feature-item">🚀 50 тестов в день</li>
+                    <li class="feature-item">✅ Генерация из PDF и Word</li>
+                    <li class="feature-item">✅ Скачивание PDF без вотермарок</li>
+                    <li class="feature-item">✅ Полная аналитика и экспорт в Excel</li>
+                </ul>
+            </div>
+        </div>
+
+        <div style="margin-top: 50px; text-align: center;">
+            <input type="hidden" id="amount_price" value="190">
+            <input type="hidden" id="description_order" value="package-medium">
+            <button id="payment-button" class="payment-btn">Купить 12 тестов за 190 ₽</button>
+            <input type="hidden" id="user-email" value="{{ user.email }}">
+        </div>
+
+        <!-- SEO: О ПРОЕКТЕ -->
+        <section class="seo-section">
+            <h2 class="seo-h2">О платформе «Летучка Ру»</h2>
+            <div class="seo-grid">
+                <div>
+                    <p class="seo-text">Мы разработали Летучку для тех, кто ценит своё время. Наша нейросеть анализирует ваши PDF, Word документы или просто текст лекций, выделяя ключевые факты и создавая на их основе проверочные задания. Это идеальное решение для преподавателей ВУЗов, HR-специалистов и студентов.</p>
+                </div>
+                <div>
+                    <p class="seo-text">В отличие от обычных конструкторов тестов, Летучка использует продвинутые LLM модели для генерации глубоких аналитических вопросов. Вы получаете не просто список вопросов, а полноценную систему диагностики знаний с аналитикой и экспортом в Excel.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ПЕРЕЛИНКОВКА: СТАТЬИ -->
+        <section class="blog-links">
+            <h3 class="seo-h2" style="font-size: 20px;">Полезные материалы</h3>
+            <div class="blog-grid">
+                {% for post in latest_posts %}
+                <a href="/media/{{ post.slug }}" class="blog-card">
+                    <h4>{{ post.title }}</h4>
+                    <span style="font-size: 11px; color: var(--accent);">Читать статью →</span>
+                </a>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+
+    <!-- МОДАЛКА АВТОРИЗАЦИИ -->
+    <div id="auth-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-md" onclick="closeAuthModal()"></div>
+        <div class="relative bg-[#1a1a2e] border border-white/10 p-8 rounded-3xl max-w-sm w-full text-center shadow-2xl">
+            <h3 class="text-2xl font-bold mb-2">Нужен аккаунт</h3>
+            <p class="text-gray-400 mb-8 text-sm">Авторизуйтесь, чтобы ваши тесты и пакеты сохранились в профиле.</p>
+            <button onclick="location.href='/login?next={{ request.path }}'" class="payment-btn" style="width:100%; margin-bottom:10px;">Войти</button>
+            <button onclick="location.href='/register?next={{ request.path }}'" class="payment-btn" style="width:100%; background:rgba(255,255,255,0.1);">Регистрация</button>
+        </div>
+    </div>
+
+    {% include 'footer.html' %}
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const pricingCards = document.querySelectorAll('.pricing-card');
+        function switchTab(tab) {
+            const btnPacks = document.getElementById('btn-packs');
+            const btnSubs = document.getElementById('btn-subs');
+            const contPacks = document.getElementById('container-packs');
+            const contSubs = document.getElementById('container-subs');
 
-            // Раскрытие FAQ
-            const faqItems = document.querySelectorAll('.faq-item');
-            faqItems.forEach(item => {
-                item.querySelector('.faq-question').addEventListener('click', () => {
-                    item.classList.toggle('active');
-                });
-            });
+            if (tab === 'packs') {
+                btnPacks.classList.add('active'); btnSubs.classList.remove('active');
+                contPacks.classList.remove('hidden'); contSubs.classList.add('hidden');
+                selectPlan(contPacks.querySelector('.selected'));
+            } else {
+                btnSubs.classList.add('active'); btnPacks.classList.remove('active');
+                contSubs.classList.remove('hidden'); contPacks.classList.add('hidden');
+                selectPlan(contSubs.querySelector('.selected') || contSubs.querySelector('.plan-card'));
+            }
+        }
 
-            function selectPlan() {
-                window.location.href = '/payment/'
+        function selectPlan(card) {
+            if (!card) return;
+            document.querySelectorAll('.price-card').forEach(c => c.classList.remove('selected'));
+            card.classList.add('selected');
+
+            const price = card.dataset.price;
+            const desc = card.dataset.desc;
+            const btn = document.getElementById('payment-button');
+            
+            document.getElementById('amount_price').value = price;
+            document.getElementById('description_order').value = desc;
+
+            if (card.classList.contains('package-card')) {
+                btn.textContent = `Купить ${card.dataset.tests} тестов за ${price} ₽`;
+            } else {
+                btn.textContent = `Оплатить ${price} ₽`;
+            }
+        }
+
+        document.querySelectorAll('.price-card').forEach(card => {
+            card.addEventListener('click', () => selectPlan(card));
+        });
+
+        window.closeAuthModal = () => document.getElementById('auth-modal').classList.add('hidden');
+
+        document.getElementById('payment-button').addEventListener('click', function() {
+            if ("{{ user.is_authenticated|yesno:'true,false' }}" === 'false') {
+                document.getElementById('auth-modal').classList.remove('hidden');
+                return;
             }
 
-            pricingCards.forEach((card, index) => {
-                card.style.opacity = '0';
-                card.style.transform = 'translateY(20px)';
-                card.style.transition = `opacity 0.3s ${index * 0.1}s ease, transform 0.3s ${index * 0.1}s ease`;
-                
-                setTimeout(() => {
-                    card.style.opacity = '1';
-                    card.style.transform = 'translateY(0)';
-                }, 100);
-            });
+            const data = {
+                amount: document.getElementById('amount_price').value,
+                description: document.getElementById('description_order').value,
+                orderId: "new_" + Math.random(),
+                email: document.getElementById('user-email').value,
+                phone: "",
+                receipt: "ignored"
+            };
+
+            this.disabled = true;
+            this.textContent = "Инициализация...";
+
+            fetch('/api/payment/initiate/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                body: JSON.stringify(data)
+            })
+            .then(r => r.json())
+            .then(resp => {
+                if (resp.Success) window.location.href = resp.PaymentURL;
+                else { alert(resp.Message); this.disabled = false; this.textContent = "Ошибка. Повторить"; }
+            })
+            .catch(() => { alert("Ошибка сети"); this.disabled = false; });
         });
     </script>
-    <!-- <script src="{% static 'js/start.js' %}" defer></script> -->
 </body>
 </html>

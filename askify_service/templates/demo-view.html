@@ -233,7 +233,7 @@
                 <div class="flex items-center justify-between gap-4 
                     bg-[var(--color-surface)]/80 backdrop-blur-xl 
                     rounded-[32px] border border-[var(--color-border)] 
-                    pl-4 pr-4 py-2 shadow-2xl shadow-black/50">
+                    pl-4 pr-4 ml-2 mr-2 py-2 shadow-2xl shadow-black/50">
                     <!-- Логотип -->
                     <a href="/" class="flex-shrink-0">
                         <img src="{% static 'img/logo.png' %}" alt="Летучка Логотип" class="w-8 h-auto">
@@ -287,7 +287,7 @@
             </div>
             {% if is_creator %}
                 {% if username != 0 %}
-                    <div class="mt-2 pt-1 pl-2 pr-2 flex justify-between items-center gap-3
+                    <div class="mt-2 pt-1 pl-2 pr-2 ml-2 mr-2 flex justify-between items-center gap-3
                     flex items-center justify-between gap-4 
                     bg-[var(--color-surface)]/80 backdrop-blur-xl 
                     rounded-[32px] border border-[var(--color-border)] 
@@ -323,7 +323,7 @@
                                     transition-all duration-300 ease-out 
                                     transform hover:-translate-y-0.5 hover:scale-105 active:scale-95">
                                 
-                                <span>Аналитика</span>
+                                <span class="text-xs">Аналитика</span>
                                 
                                 <i class="fas fa-arrow-right transition-transform duration-300 group-hover:translate-x-1"></i>
                             </a>
