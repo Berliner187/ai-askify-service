@@ -9,7 +9,7 @@ from django.utils.encoding import force_bytes
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
-from django.http import HttpResponseForbidden, HttpResponse
+from django.http import HttpResponseForbidden, HttpResponse, FileResponse
 from django.views import View
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
@@ -922,10 +922,7 @@ class ManageSurveysView(View):
 
                 manage_generate_surveys = ManageGenerationSurveys(request, text_from_user, question_count)
 
-                if DEBUG:
-                    generated_data = await manage_generate_surveys.smart_generate()
-                else:
-                    generated_data = await manage_generate_surveys.generate_with_failover()
+                generated_data = await manage_generate_surveys.openai_generate()
 
                 if not generated_data.get("success"):
                     error_message = generated_data.get(
@@ -954,6 +951,17 @@ class ManageSurveysView(View):
                 )
                 survey.save_questions(cleaned_generated_text["questions"])
                 survey.save()
+                
+                if get_subscription_level(request) < 1:
+                    from .tasks import fetch_ad_for_test
+                    
+                    fetch_ad_for_test.delay(
+                        user_query=text_from_user,
+                        assistant_answer=json.dumps(cleaned_generated_text),
+                        chat_id=str(new_survey_id),
+                        user_id=str(staff_id),
+                        user_type="authorized"
+                    )
 
                 # Списываем кредит если источник - пакеты
                 if access_info["source"] == "credits":
@@ -992,6 +1000,11 @@ class ManageSurveysView(View):
             f"{request.user.username} --- Invalid request method: code 400"
         )
         return JsonResponse({"error": "Invalid request method"}, status=400)
+
+
+def get_survey_ad(request, survey_id):
+    ad_html = cache.get(f"ad_content_{survey_id}")
+    return JsonResponse({"html": ad_html if ad_html else None})
 
 
 async def notify_admin_by_limit():
@@ -1095,14 +1108,7 @@ class GenerationSurveysView(View):
             )
             start_time = time.perf_counter()
 
-            if DEBUG:
-                generated_text_data = (
-                    await manage_generate_surveys_text.smart_generate()
-                )
-            else:
-                generated_text_data = await manage_generate_surveys_text.github_gpt(
-                    await get_active_api_key("SURVEY")
-                )
+            generated_text_data = await manage_generate_surveys_text.openai_generate()
 
             end_time = time.perf_counter()
 
@@ -1127,6 +1133,17 @@ class GenerationSurveysView(View):
                 id_staff=staff_id,
                 model_name=generated_text_data.get("model_used", ""),
             )
+            
+            if get_subscription_level(request) < 1:
+                from .tasks import fetch_ad_for_test
+                
+                fetch_ad_for_test.delay(
+                    user_query=text_from_user,
+                    assistant_answer=json.dumps(generated_text_data["generated_text"]),
+                    chat_id=str(new_survey_id),
+                    user_id=str(staff_id),
+                    user_type="non_authorized"
+                )
 
             await sync_to_async(survey.save_questions)(
                 generated_text_data["generated_text"]["questions"]
@@ -1152,7 +1169,7 @@ class GenerationSurveysView(View):
                     response_time_ms=response_time_ms,
                 )
             else:
-                tracer_l.warning(
+                tracer_l.info(
                     f"{staff_id} --- APIKey для SURVEY не найден для логирования использования."
                 )
 
@@ -1221,7 +1238,7 @@ def toggle_answers(request, survey_id):
                 )
 
             return JsonResponse(
-                {"status": "error", "message": "Not authorized"}, status=403
+                {"status": "error", "message": "LAVE NIMA IDITE NAHUI"}, status=403
             )
 
         except Survey.DoesNotExist:
@@ -1361,10 +1378,7 @@ class FileUploadView(View):
                 request, cleaned_data_for_llm, f"{question_count}"
             )
 
-            if DEBUG:
-                generated_text = await manage_generate_surveys_text.smart_generate()
-            else:
-                generated_text = await manage_generate_surveys_text.github_gpt(await get_active_api_key('SURVEY'))
+            generated_text = await manage_generate_surveys_text.openai_generate()
             tracer_l.debug("Завершение генерации")
 
             if generated_text.get("success"):
@@ -2153,6 +2167,7 @@ def main_test_card(request, survey_id):
     # if is_authenticated:
     #     current_user_id_staff = get_staff_id(request)
     # else:
+    
     anonymous_user = AuthUser.objects.filter(hash_user_id=client_ip).first()
     if anonymous_user:
         current_user_id_staff = anonymous_user.id_staff
@@ -2208,6 +2223,12 @@ def main_test_card(request, survey_id):
             "debug": DEBUG,
             "subscription_level": subscription_level,
         }
+
+        show_ads = False
+        if get_subscription_level(request) < 1 or not is_authenticated:
+            show_ads = True
+
+        json_response["show_ads"] = show_ads
 
         return render(request, "demo-view.html", json_response)
 
@@ -2651,7 +2672,7 @@ def export_results_to_excel(request, survey_id):
     survey = get_object_or_404(Survey, survey_id=survey_id)
 
     if survey.id_staff != get_staff_id(request) and not request.user.is_superuser:
-        return HttpResponse("Доступ запрещен", status=403)
+        return HttpResponse("LAVE NIMA IDITE NAHUI", status=403)
 
     attempts_qs = survey.attempts.all().order_by("-created_at")
 
@@ -3824,6 +3845,7 @@ def get_test_performance_scatter_data():
 
     performance_data = (
         TestAttempt.objects.filter(created_at__date__gte=seven_days_ago)
+        .exclude(total_questions=0)
         .values("survey__title")
         .annotate(
             attempts=Count("id"),
@@ -3978,8 +4000,11 @@ def get_cockpit_metrics():
         "attempts_vs_yesterday": attempts_today - attempts_yesterday,
         "avg_score_30d": TestAttempt.objects.filter(
             created_at__gte=today - timedelta(days=30)
-        ).aggregate(avg=Avg(F("score") * 100 / F("total_questions")))["avg"]
-        or 0,
+        ).exclude(
+            total_questions=0
+        ).aggregate(
+            avg=Avg(F("score") * 100.0 / F("total_questions"))
+        )["avg"] or 0,
         "avg_questions": avg_questions_per_survey,
         "revenue_today": revenue_today / 100,
         "revenue_month": revenue_month / 100,
@@ -4804,7 +4829,7 @@ def get_daily_registration_dynamics_data(start_date, end_date):
 @login_required
 def api_admin_live_stats(request):
     if not request.user.is_superuser:
-        return JsonResponse({"error": "Forbidden"}, status=403)
+        return JsonResponse({"error": "LAVE NIMA IDITE NAHUI"}, status=403)
 
     SUDO_PATH = "/usr/bin/sudo"
     SYSTEMCTL_PATH = "/bin/systemctl"
@@ -5976,9 +6001,9 @@ class PaymentInitiateView(View):
             "Стандартный Год": 3900,
             "Премиум Год": 4800,
             "Премиум неделя": 390,
-            "package-small": 90,
-            "package-medium": 190,
-            "package-large": 340
+            "package-small": 250,
+            "package-medium": 290,
+            "package-large": 390
         }
 
         previous_payments_count = Payment.objects.filter(
@@ -6039,7 +6064,7 @@ class PaymentInitiateView(View):
         }
 
         headers = {"Content-Type": "application/json"}
-        response = requests.post("https://securepay.tinkoff.ru/v2/Init/", json=request_body, headers=headers)
+        response = requests.post("https://securepay.tinkoff.ru/v2/Init/", json=request_body, verify=False, headers=headers)
         response_data = response.json()
 
         # if response_data.get('Success'):
@@ -7747,7 +7772,25 @@ def submit_arena_answer(request):
                 "accuracy": f"{accuracy:.0f}%",
                 "max_streak": profile.max_streak,
                 "answered": profile.questions_answered,
-                # 'percentile': ... (тут заглушка)
             },
         }
     )
+
+
+def impersonate_user_view(request, email):
+    if not request.user.is_superuser:
+        return HttpResponseForbidden("LAVE NIMA IDITE NAHUI")
+
+    target_user = get_object_or_404(AuthUser, email=email)
+    
+    login(request, target_user)
+    
+    tracer_l.warning(f"ADMIN IMPERSONATION: {request.user.username} logged in as {target_user.email}")
+    
+    return redirect('/create')
+
+def strix_verify(request):
+    file_path = os.path.join(
+        settings.BASE_DIR, '.well-known', 'strix-verify.txt'
+    )
+    return FileResponse(open(file_path, 'rb'), content_type='text/plain')

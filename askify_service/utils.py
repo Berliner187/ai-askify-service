@@ -30,6 +30,20 @@ import json_repair
 from .tracer import *
 from .constants import *
 
+from askify_app.settings import OPENAI_API_KEY, OPENAI_PROXY_URL
+from openai import AsyncOpenAI
+
+proxy_url = getattr(settings, 'OPENAI_PROXY_URL', None)
+http_client = httpx.AsyncClient(proxy=proxy_url) if proxy_url else None
+
+client = AsyncOpenAI(
+    api_key=OPENAI_API_KEY,
+    http_client=http_client
+)
+
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
 
 tracer_l = logging.getLogger('askify_app')
 
@@ -267,6 +281,78 @@ class ManageGenerationSurveys:
             pass
         except Exception:
             ctypes.string_at(0)
+    
+    async def openai_generate(self) -> dict:
+        """
+        Единый боевой метод генерации через официальный OpenAI (gpt-4o-mini) + Proxy.
+        """
+        api_key = getattr(settings, 'OPENAI_API_KEY', None) or os.getenv("OPENAI_API_KEY")
+        proxy_url = getattr(settings, 'OPENAI_PROXY_URL', None) or os.getenv("OPENAI_PROXY_URL")
+
+        if not api_key:
+            tracer_l.error("OPENAI_API_KEY не найден в settings или .env!")
+            return {'success': False, 'error': 'API ключ OpenAI не настроен.'}
+
+        # Настраиваем прокси через httpx
+        http_client = httpx.AsyncClient(proxy=proxy_url) if proxy_url else None
+
+        client = AsyncOpenAI(
+            api_key=api_key,
+            http_client=http_client,
+            timeout=45.0
+        )
+
+        try:
+            tracer_l.info(f"{self.request.user.username} --- OpenAI (gpt-4o-mini) Generation START")
+
+            system_prompt = f"{self.__get_confidential_key('system_prompt')}{self.count_questions}"
+            user_prompt = f"{self.data}{self.__get_confidential_key('user_prompt')}"
+
+            completion = await client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
+                ],
+                response_format={"type": "json_object"}, # Включаем жесткий JSON-режим OpenAI
+                temperature=0.3,
+                max_tokens=4096
+            )
+
+            generated_text = completion.choices[0].message.content
+            tokens_used = getattr(completion.usage, 'total_tokens', 0)
+
+            # Чистим от возможного маркдауна
+            cleaned_text = generated_text.replace("```json", "").replace("```", "").strip()
+
+            # Парсим JSON
+            try:
+                parsed_json = json.loads(cleaned_text)
+            except json.JSONDecodeError:
+                tracer_l.warning("OpenAI вернул кривой JSON. Включаем json_repair...")
+                parsed_json = json_repair.loads(cleaned_text)
+
+            if not isinstance(parsed_json, (dict, list)):
+                raise ValueError("Не удалось распарсить JSON даже через json_repair")
+
+            tracer_l.info(f"{self.request.user.username} --- OpenAI Generation SUCCESS")
+
+            return {
+                'success': True,
+                'generated_text': parsed_json,
+                'tokens_used': tokens_used,
+                'model_used': 'gpt-4o-mini'
+            }
+
+        except Exception as e:
+            tracer_l.error(f"OpenAI Generation Fatal Error: {e}", exc_info=True)
+            return {
+                'success': False,
+                'error': f'Сбой генерации OpenAI: {str(e)}'
+            }
+        finally:
+            if http_client:
+                await http_client.aclose()
 
     def process_generated_text(self, generated_text):
         # self._validate_json_buffer_encoding(generated_text)
@@ -298,7 +384,7 @@ class ManageGenerationSurveys:
     async def github_gpt(self, api_key) -> dict:
         self._validate_json_buffer_encoding(api_key)
         client = OpenAI(
-            base_url="https://models.inference.ai.azure.com",
+            base_url="https://models.github.ai/inference",
             api_key=api_key.key,
         )
 
@@ -315,7 +401,7 @@ class ManageGenerationSurveys:
                         "content": f"{self.text_from_user}{self.__get_confidential_key('user_prompt')}",
                     }
                 ],
-                model="gpt-4o",
+                model="openai/gpt-4o",
                 temperature=.3,
                 max_tokens=4096,
                 top_p=1
@@ -344,7 +430,7 @@ class ManageGenerationSurveys:
                 'success': True,
                 'generated_text': parsed_json,
                 'tokens_used': tokens_used,
-                'model_used': 'gpt-4o'
+                'model_used': 'openai/gpt-4o'
             }
 
         except Exception as fail:

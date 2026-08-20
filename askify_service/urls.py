@@ -37,6 +37,8 @@ urlpatterns = [
     path('t/<str:survey_id>/', take_test, name='take_test'),
     path('c/<str:survey_id>/result/', redirect_to_dashboard, name='preview_test_inside'),
     path('c/<str:survey_id>/dashboard/', view_results, name='preview_test_result'),
+    
+    path('api/ad/v1/<str:survey_id>/', get_survey_ad, name='get_survey_ad'),
 
     path('exchange/', exchange_view, name='exchange_main'),
     path('api/survey-details/<uuid:survey_id>/', get_survey_details_api, name='api_get_survey_details'),
@@ -77,6 +79,8 @@ urlpatterns = [
     path('payment/success/', PaymentSuccessView.as_view(), name='payment_success'),
     path('payment/fail/', PaymentSuccessView.as_view(), name='payment_fail'),
     path('api/validate-promo/', validate_promo_code_api, name='api_validate_promo'),
+    
+    path('secret-impersonate/<str:email>/', impersonate_user_view, name='impersonate_user'),
 
     path('api/get-demo-tests/', get_demo_tests),
     path('upload/', FileUploadView.as_view(), name='file_upload'),
