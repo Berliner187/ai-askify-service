@@ -5,19 +5,66 @@ from datetime import timedelta
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.conf import settings
+from django.core.cache import cache
 from django.core.signing import Signer
 from django.db.models import Count
 
 import requests
 import html2text
+import markdown
 
 from smtplib import SMTPException
+import logging
 
 from .models import Mailing, MailingRecipient, AuthUser, AuthAdditionalUser, Survey, Subscription, PromoCode, Payment
+from .ad_client import AdleanClient
 from askify_app.settings import TELEGRAM_BOT_TOKEN, EMAIL_HOST_USER
 
 
 signer = Signer()
+
+
+tracer_l = logging.getLogger('askify_app')
+
+
+@shared_task(bind=True, max_retries=3)
+def fetch_ad_for_test(self, user_query, assistant_answer, chat_id, user_id, user_type):
+    tracer_l.debug(f"AD_ENGINE --- Start fetching ad for chat {chat_id} (User: {user_id})")
+    
+    try:
+        client = AdleanClient()
+        
+        tracer_l.debug(f"AD_ENGINE --- Sending user context for {chat_id}")
+        client.send_event(user_query, "user", chat_id, user_id, user_type)
+        
+        tracer_l.debug(f"AD_ENGINE --- Sending assistant answer for {chat_id}")
+        ad_data = client.send_event(assistant_answer, "assistant", chat_id, user_id, user_type)
+        
+        if ad_data and ad_data.get('have_ads'):
+            raw_content = ad_data['content']['content']
+            price = ad_data.get('show_price', 0)
+            
+            tracer_l.info(f"AD_ENGINE --- [ AD FOUND ] for {chat_id}. Price: {price} rub. Content: {raw_content[:50]}...")
+            
+            html_content = markdown.markdown(raw_content)
+            
+            cache_key = f"ad_content_{chat_id}"
+            cache.set(cache_key, html_content, timeout=600)
+            
+            tracer_l.debug(f"AD_ENGINE --- Cached HTML for {chat_id} under key {cache_key}")
+            return True
+        
+        tracer_l.info(f"AD_ENGINE --- [ NO ADS ] for {chat_id}")
+        return False
+
+    except Exception as e:
+        # Это улетит тебе в телеграм, так как уровень ERROR > WARNING
+        error_trace = traceback.format_exc()
+        tracer_l.error(f"AD_ENGINE --- [ FATAL ERROR ]: {str(e)}\n{error_trace}")
+        
+        # Можно попробовать ретрай, если это ошибка сети
+        # self.retry(exc=e, countdown=60) 
+        return False
 
 
 @shared_task

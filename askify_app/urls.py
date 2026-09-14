@@ -8,9 +8,3 @@ urlpatterns = [
     path('scammer1337/', admin.site.urls),
     path('', include('askify_service.urls')),
 ]
-
-if DEBUG:
-    import debug_toolbar
-    urlpatterns = [
-        path('__debug__/', include(debug_toolbar.urls))
-    ] + urlpatterns

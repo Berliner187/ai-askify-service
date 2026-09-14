@@ -28,3 +28,4 @@ app.log.3
 /static
 *.dump
 /askify_service/static/vendor
+/askify_app/__pycache__

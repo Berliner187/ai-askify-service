@@ -36,7 +36,9 @@ environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 DEBUG = env.bool('DEBUG')
 SECRET_KEY = env('SECRET_KEY')
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS') + ['127.0.0.1', 'localhost']
-CSRF_TRUSTED_ORIGINS = ['https://letychka.ru', 'https://www.letychka.ru']
+CSRF_TRUSTED_ORIGINS = [
+    'http://letychka.test', 'https://letychka.ru', 'https://www.letychka.ru'
+]
 
 
 INSTALLED_APPS = [
@@ -78,7 +80,11 @@ CORS_ALLOWED_ORIGINS = [
 ]
 # CORS_ALLOW_ALL_ORIGINS = False
 # CSRF_COOKIE_SECURE = True
+
 SESSION_COOKIE_SECURE = True
+if DEBUG:
+    SESSION_COOKIE_SECURE = False
+
 CSRF_COOKIE_AGE = 86400
 
 ROOT_URLCONF = 'askify_app.urls'
@@ -105,23 +111,23 @@ WSGI_APPLICATION = 'askify_app.wsgi.application'
 
 
 # --- DATABASES
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': env('NAME_DB'),
-#         'USER': env('USER_DB'),
-#         'PASSWORD': env('PASSWORD_DB'),
-#         'HOST': env('HOST_DB'),
-#         'PORT': env('PORT_DB'),
-#         'CONN_MAX_AGE': 0
-#     }
-# }
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': env('NAME_DB'),
+        'USER': env('USER_DB'),
+        'PASSWORD': env('PASSWORD_DB'),
+        'HOST': env('HOST_DB'),
+        'PORT': env('PORT_DB'),
+        'CONN_MAX_AGE': 0
     }
 }
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
 
 CACHES = {
     'default': {
@@ -187,12 +193,20 @@ LOGIN_URL = '/login/'
 TELEGRAM_BOT_TOKEN = env('TELEGRAM_BOT_TOKEN')
 TELEGRAM_CHAT_ID = env('TELEGRAM_CHAT_ID')
 
+MAX_BOT_TOKEN = env('MAX_BOT_TOKEN')
+MAX_ALERT_USER_ID = env('MAX_ALERT_USER_ID')
+
+ADLEAN_API_KEY = os.getenv("AD_API_TOKEN") 
+ADLEAN_API_URL = os.getenv("AD_API_URL", "https://api.adlean.pro/engine/send_message")
 
 # --- SECRET webhook
 DEPLOY_WEBHOOK_SECRET = env('DEPLOY_WEBHOOK_SECRET')
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_PROXY_URL = os.getenv("OPENAI_PROXY_URL")
 
 # --- LOGGING
 LOGGING = {
@@ -242,7 +256,7 @@ LOGGING = {
         },
         'telegram': {
             'level': 'WARNING',
-            'class': 'askify_service.tracer.TelegramHandler',
+            'class': 'askify_service.tracer.MaxHandler',
             'formatter': 'telegram_format',
         },
     },

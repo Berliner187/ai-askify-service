@@ -356,6 +356,35 @@
                 <h1 class="text-xl sm:text-xl font-bold text-white text-center">{{ title }}</h1>
             </div>
 
+            <div id="ad-wrapper" class="mt-8 hidden animate-fadeIn">
+                <div class="flex items-center gap-2 mb-2 px-1">
+                    <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Партнерский контент</span>
+                    <div class="h-px flex-grow bg-white/5"></div>
+                </div>
+                <div id="ad-content" class="p-4 bg-white/5 border border-white/10 rounded-2xl backdrop-blur-sm">
+                    <!-- Сюда вставится реклама -->
+                </div>
+            </div>
+
+            <script>
+                async function loadAd() {
+                    try {
+                        const res = await fetch("{% url 'get_survey_ad' survey_id %}");
+                        const data = await res.json();
+                        if (data.html) {
+                            const container = document.getElementById('ad-content');
+                            const wrapper = document.getElementById('ad-wrapper');
+                            container.innerHTML = data.html;
+                            wrapper.classList.remove('hidden');
+                        }
+                    } catch (e) {
+                        console.error("Ad load failed", e);
+                    }
+                }
+                // Проверяем наличие рекламы через 1.5 секунды после загрузки страницы
+                setTimeout(loadAd, 1500);
+            </script>
+
             <!-- ГЛАВНЫЙ КОНТРОЛЛЕР -->
             {% if is_creator %}
             {% if username != 0 %}
@@ -597,12 +626,16 @@
                             <span class="uppercase tracking-widest text-sm">Создать новый тест</span>
                             <i class="fa-solid fa-plus text-lg"></i>
                         </a>
+
+                        {% if username == author %}
                         <div class="mt-8">
                             <button onclick="openDeleteModal('{{ survey_id }}', '{{ title|escapejs }}')"
                                     class="text-[10px] font-bold text-gray-600 uppercase tracking-widest hover:text-red-500 transition-colors">
                                 Удалить этот тест
                             </button>
                         </div>
+                        {% endif %}
+                        
                     </div>
                 </div>
             {% endif %}

@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>{% block title %}Lens OS | Admin{% endblock %}</title>
+
+    {% load filters %}
+    
+    <!-- Шрифты и Иконки -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg: #09090b;
+            --sidebar-bg: #0c0c0e;
+            --card-bg: #121214;
+            --accent: #3b82f6;
+            --text-primary: #fafafa;
+            --text-secondary: #a1a1aa;
+            --border: rgba(255, 255, 255, 0.08);
+            --sidebar-w: 72px;
+            --drawer-w: 480px;
+            --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-font-smoothing: antialiased; }
+
+        .hidden { display: none !important; }
+
+        .lens-search-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px);
+            z-index: 3000; display: flex; justify-content: center; padding-top: 10vh;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-primary);
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            overflow: hidden; /* Основной скролл внутри контента */
+            height: 100vh;
+        }
+
+        /* --- ОСНОВНОЙ ЛЕЙАУТ --- */
+        .lens-shell {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* САЙДБАР (Desktop) */
+        .lens-sidebar {
+            width: var(--sidebar-w);
+            background: var(--sidebar-bg);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 24px 0;
+            z-index: 50;
+        }
+
+        .lens-logo {
+            font-weight: 800;
+            font-size: 1.2rem;
+            color: var(--accent);
+            margin-bottom: 40px;
+            letter-spacing: -1px;
+        }
+
+        .nav-group {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            flex-grow: 1;
+        }
+
+        .nav-item {
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: var(--transition);
+            position: relative;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+        }
+
+        .nav-item.active {
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--accent);
+        }
+
+        .nav-item.active::after {
+            content: '';
+            position: absolute;
+            left: -14px;
+            width: 4px;
+            height: 20px;
+            background: var(--accent);
+            border-radius: 0 4px 4px 0;
+        }
+
+        /* ВЬЮПОРТ (Правая часть) */
+        .lens-viewport {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            position: relative;
+        }
+
+        /* ХЕДЕР С COMMAND BAR */
+        .lens-header {
+            height: 64px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 8px 24px;
+            background: rgba(9, 9, 11, 0.8);
+            justify-content: space-between;
+            z-index: 40;
+        }
+
+        .cmd-bar {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 6px 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 320px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .cmd-bar:hover { border-color: rgba(255, 255, 255, 0.2); }
+
+        .cmd-bar span { font-size: 0.85rem; color: var(--text-secondary); flex-grow: 1; }
+
+        .cmd-bar kbd {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-secondary);
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: inherit;
+        }
+
+        /* КОНТЕНТ */
+        .lens-content {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 24px;
+            scroll-behavior: smooth;
+        }
+
+        /* ШТОРКА (Drawer) */
+        .lens-drawer {
+            position: fixed;
+            top: 0;
+            right: calc(-1 * var(--drawer-w));
+            width: var(--drawer-w);
+            height: 100vh;
+            background: var(--sidebar-bg);
+            border-left: 1px solid var(--border);
+            z-index: 100;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            padding: 32px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: -20px 0 40px rgba(0,0,0,0.5);
+        }
+
+        .lens-drawer.open { transform: translateX(calc(-1 * var(--drawer-w))); }
+
+        /* Обновляем саму шторку */
+        .lens-drawer {
+            display: flex; /* Делаем флекс-контейнером */
+            flex-direction: column;
+            position: fixed; top: 0; right: -500px; width: 500px; height: 100vh;
+            background: var(--sidebar-bg); border-left: 1px solid var(--border);
+            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 2000;
+            box-shadow: -20px 0 50px rgba(0,0,0,0.5);
+        }
+
+        /* Область контента — вот тут должна быть прокрутка! */
+        .drawer-content {
+            flex: 1; /* Занимает всё свободное место */
+            overflow-y: auto; /* ВКЛЮЧАЕМ ПРОКРУТКУ */
+            overflow-x: hidden; /* Выключаем горизонтальный скролл */
+            padding: 0 32px 32px 32px; /* Убираем верхний паддинг, он в хедере */
+        }
+
+        /* Элементы данных */
+        .detail-item {
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 12px;
+        }
+
+        .detail-key {
+            display: block;
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 6px;
+        }
+
+        .detail-val {
+            font-size: 0.9rem;
+            color: #efeff4;
+            word-break: break-word; /* ЗАСТАВЛЯЕМ ТЕКСТ ПЕРЕНОСИТЬСЯ */
+            white-space: pre-wrap; /* Сохраняем переносы строк */
+        }
+
+        /* Красивый блок для JSON/Вопросов */
+        .json-block {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 12px;
+            border-radius: 8px;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 0.75rem;
+            color: #a1e5c1;
+            overflow-x: auto;
+            margin-top: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Кастомный скроллбар для шторки */
+        .drawer-content::-webkit-scrollbar { width: 4px; }
+        .drawer-content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+
+        .drawer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .drawer-close {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        /* --- МОБИЛЬНАЯ АДАПТАЦИЯ --- */
+        @media (max-width: 768px) {
+            :root { --sidebar-w: 0px; --drawer-w: 100%; }
+
+            .lens-sidebar { display: none; } /* Скрываем боковой на десктопе */
+
+            .lens-viewport { margin-left: 0; }
+
+            .cmd-bar { width: 180px; }
+
+            .lens-header { padding: 4px 16px; }
+
+            /* Нижний таб-бар для мобилок */
+            .mobile-nav {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                width: 100%;
+                height: 64px;
+                background: rgba(12, 12, 14, 0.95);
+                backdrop-filter: blur(10px);
+                border-top: 1px solid var(--border);
+                display: flex;
+                justify-content: space-around;
+                align-items: center;
+                z-index: 100;
+            }
+
+            .lens-content { padding: 16px; padding-bottom: 80px; }
+        }
+
+        @media (min-width: 769px) { .mobile-nav { display: none; } }
+
+        /* Кастомный скролл */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.15); }
+    </style>
+</head>
+<body>
+
+<div class="lens-shell">
+    <!-- Боковая панель (Desktop) -->
+    <aside class="lens-sidebar">
+        <div class="lens-logo">AeL</div>
+        <nav class="nav-group">
+            <a href="/stats2975" class="nav-item {% if 'dash' in request.path %}active{% endif %}" title="Дашборд">
+                <i class="fas fa-chart-pie"></i>
+            </a>
+            <a href="/stats2975/crm" class="nav-item {% if 'users' in request.path %}active{% endif %}" title="Юзеры">
+                <i class="fas fa-user-shield"></i>
+            </a>
+            <a href="/db-viewer" class="nav-item {% if 'db-viewer' in request.path %}active{% endif %}" title="База данных">
+                <i class="fas fa-database"></i>
+            </a>
+            <a href="/admin/payments" class="nav-item" title="Платежи">
+                <i class="fas fa-credit-card"></i>
+            </a>
+        </nav>
+        <div class="nav-bottom">
+            <a href="/logout" class="nav-item" title="Выйти"><i class="fas fa-sign-out-alt"></i></a>
+        </div>
+    </aside>
+
+    <div class="lens-viewport">
+        <header class="lens-header">
+            <div class="cmd-bar" id="global-search-trigger" onclick="openSearch();">
+                <i class="fas fa-search"></i>
+                <span>Команды и поиск...</span>
+                <kbd>⌘ K</kbd>
+            </div>
+            
+            <div class="header-user">
+                <span style="font-size: 0.8rem; color: var(--text-secondary); margin-right: 12px;">Admin Mode</span>
+                <img src="https://ui-avatars.com/api/?name=Admin&background=3b82f6&color=fff" style="width: 32px; height: 32px; border-radius: 8px;">
+            </div>
+        </header>
+
+        <main class="lens-content">
+            {% block admin_content %}
+            <!-- Тут будет контент db_viewer, dashboard и т.д. -->
+            {% endblock %}
+        </main>
+    </div>
+</div>
+
+<!-- Мобильная навигация -->
+<nav class="mobile-nav">
+    <a href="/admin/dash" class="nav-item {% if 'dash' in request.path %}active{% endif %}"><i class="fas fa-chart-pie"></i></a>
+    <a href="/admin/users" class="nav-item {% if 'users' in request.path %}active{% endif %}"><i class="fas fa-user-shield"></i></a>
+    <a href="/db-viewer" class="nav-item {% if 'db-viewer' in request.path %}active{% endif %}"><i class="fas fa-database"></i></a>
+    <button class="nav-item" onclick="toggleDrawer()"><i class="fas fa-bars"></i></button>
+</nav>
+
+<!-- 1. ГЛОБАЛЬНАЯ ШТОРКА (DRAWER) -->
+<div id="lens-drawer" class="lens-drawer">
+    <div class="drawer-header">
+        <h2 id="drawer-title" style="font-size: 1.2rem; font-weight: 800;">Детали</h2>
+        <button class="drawer-close" onclick="closeDrawer()">&times;</button>
+    </div>
+    <div id="drawer-body" class="drawer-content">
+        <!-- Сюда JS вставит данные -->
+    </div>
+</div>
+
+<!-- 2. ГЛОБАЛЬНЫЙ ПОИСК (CMD+K) -->
+<div id="lens-search-modal" class="lens-search-overlay hidden">
+    <div class="lens-search-window">
+        <div class="lens-search-header">
+            <i class="fas fa-terminal"></i>
+            <input type="text" id="lens-search-input" placeholder="Команды, юзеры, ID..." autocomplete="off">
+            <kbd>ESC</kbd>
+        </div>
+        <div id="lens-search-results" class="lens-search-results">
+            <!-- Сюда прилетят результаты -->
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Стили для шторки */
+    .lens-drawer {
+        position: fixed; top: 0; right: -500px; width: 500px; height: 100vh;
+        background: var(--sidebar-bg); border-left: 1px solid var(--border);
+        transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 2000; padding: 32px;
+        box-shadow: -20px 0 50px rgba(0,0,0,0.5);
+    }
+    .drawer-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+    .drawer-close { background: none; border: none; color: var(--text-secondary); font-size: 1.8rem; cursor: pointer; }
+    
+    /* Стили для поиска */
+    .lens-search-overlay {
+        position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px);
+        z-index: 3000; display: flex; justify-content: center; padding-top: 10vh;
+    }
+    .lens-search-window {
+        width: 650px; background: #121214; border: 1px solid var(--border);
+        border-radius: 18px; height: fit-content; max-height: 60vh; overflow: hidden;
+        box-shadow: 0 30px 60px rgba(0,0,0,0.6);
+    }
+    .lens-search-header { display: flex; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--border); gap: 14px; }
+    .lens-search-header input { flex-grow: 1; background: none; border: none; color: white; font-size: 1.1rem; outline: none; }
+    .lens-search-results { overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 6px; }
+    .search-res-item { padding: 12px 16px; border-radius: 10px; cursor: pointer; transition: 0.2s; border: 1px solid transparent; }
+    .search-res-item:hover { background: rgba(255,255,255,0.03); border-color: var(--border); }
+    .res-meta { font-size: 0.6rem; font-weight: 800; color: var(--accent); text-transform: uppercase; letter-spacing: 1px; }
+    .res-text { display: block; margin-top: 4px; font-size: 0.9rem; color: #eee; }
+</style>
+
+<script>
+    // --- УПРАВЛЕНИЕ ШТОРКОЙ ---
+    async function fetchItemDetails(modelKey, itemId) {
+        const drawer = document.getElementById('lens-drawer');
+        const body = document.getElementById('drawer-body');
+        const title = document.getElementById('drawer-title');
+
+        drawer.classList.add('open');
+        title.innerText = `Запись #${itemId}`;
+        body.innerHTML = '<div class="loader">Синхронизация...</div>';
+
+        try {
+            const response = await fetch(`/get-details/${modelKey}/${itemId}/`);
+            const result = await response.json();
+            
+            let html = '<div class="detail-grid">';
+            
+            for (const [key, val] of Object.entries(result.data)) {
+                // Функция для декодирования юникода и форматирования JSON
+                let displayValue = val;
+                
+                if (typeof val === 'string') {
+                    // Пытаемся распарсить как JSON, если похоже
+                    if ((val.startsWith('[') || val.startsWith('{'))) {
+                        try {
+                            const parsed = JSON.parse(val);
+                            displayValue = `<pre class="json-block">${JSON.stringify(parsed, null, 2)}</pre>`;
+                        } catch (e) {
+                            // Если не JSON, просто декодируем юникод-последовательности
+                            displayValue = val.replace(/\\u([\d\w]{4})/gi, (match, grp) => 
+                                String.fromCharCode(parseInt(grp, 16))
+                            );
+                        }
+                    } else {
+                        // Обычная строка: тоже прогоняем через декодер юникода
+                        displayValue = val.replace(/\\u([\d\w]{4})/gi, (match, grp) => 
+                            String.fromCharCode(parseInt(grp, 16))
+                        );
+                    }
+                }
+
+                html += `
+                    <div class="detail-item">
+                        <span class="detail-key">${key}</span>
+                        <div class="detail-val">${displayValue || '-'}</div>
+                    </div>`;
+            }
+            html += '</div>';
+
+            if (result.related && result.related !== "Нет связанных данных") {
+                html += `<div class="related-box"><strong>Связи:</strong><br>${result.related}</div>`;
+            }
+            body.innerHTML = html;
+        } catch (e) {
+            body.innerHTML = '<div style="color:var(--ios-red);">Критический сбой дешифровки.</div>';
+        }
+    }
+
+    function closeDrawer() {
+        document.getElementById('lens-drawer').classList.remove('open');
+    }
+
+    // --- ГЛОБАЛЬНЫЙ ПОИСК (CMD+K) ---
+    const searchModal = document.getElementById('lens-search-modal');
+    const searchInp = document.getElementById('lens-search-input');
+    const resList = document.getElementById('lens-search-results');
+
+    function openSearch() {
+        searchModal.classList.remove('hidden');
+        searchInp.focus();
+    }
+
+    // Выносим функцию закрытия отдельно, чтобы вызывать её отовсюду
+    function closeSearch() {
+        searchModal.classList.add('hidden');
+        searchInp.value = ''; // Чистим поле
+        resList.innerHTML = ''; // Чистим результаты
+    }
+
+    window.addEventListener('keydown', (e) => {
+        if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+            e.preventDefault();
+            openSearch();
+        }
+        if (e.key === 'Escape') {
+            closeSearch();
+            closeDrawer();
+        }
+    });
+
+    // Закрытие по клику на фон
+    searchModal.addEventListener('mousedown', (e) => {
+        if (e.target === searchModal) {
+            closeSearch();
+        }
+    });
+
+    function handleSearchSelect(model, id) {
+        console.log("Selected:", model, id);
+        closeSearch(); // ЗАКРЫВАЕМ ОКНО СРАЗУ
+        
+        // Если мы в db_viewer, открываем шторку. Если нет — редирект.
+        if (window.location.pathname.includes('db-viewer')) {
+            if (typeof fetchItemDetails === 'function') {
+                fetchItemDetails(model, id);
+            }
+        } else {
+            window.location.href = `/db-viewer/?model=${model}&highlight=${id}`;
+        }
+    }
+
+    let debounceTO;
+    searchInp.addEventListener('input', (e) => {
+        clearTimeout(debounceTO);
+        const q = e.target.value.trim();
+        if (q.length < 3) { resList.innerHTML = ''; return; }
+
+        debounceTO = setTimeout(async () => {
+            try {
+                const res = await fetch(`/db-search/?q=${encodeURIComponent(q)}`);
+                const data = await res.json();
+                resList.innerHTML = data.map(item => `
+                    <div class="search-res-item" onclick="handleSearchSelect('${item.model}', '${item.id}')">
+                        <div class="res-meta">${item.model}</div>
+                        <div class="res-text">${item.value}</div>
+                        <div style="font-size:0.7rem; opacity:0.4; margin-top:4px;">${item.source}</div>
+                    </div>
+                `).join('');
+            } catch (err) { console.error(err); }
+        }, 300);
+    });
+
+</script>
+</body>
+</html>
