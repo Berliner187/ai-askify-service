@@ -3,550 +3,650 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Пульс Летучки | Летучка</title>
+    <title>Пульс Летучки | Command Center</title>
     <meta name="robots" content="noindex, nofollow" />
     <meta name="csrf-token" content="{{ csrf_token }}">
     {% load static %}
     <link rel="shortcut icon" href="{% static 'img/logo.png' %}" type="image/png">
 
+    <!-- Стек шрифтов и библиотек -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
     <script>
         tailwind.config = {
-            theme: { extend: { fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] } } }
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        canvas: '#080B11',
+                        surface: '#0E131F',
+                        surfaceElevated: '#141B2D',
+                        borderSubtle: 'rgba(255, 255, 255, 0.07)',
+                        borderHover: 'rgba(255, 255, 255, 0.16)',
+                    }
+                }
+            }
         }
     </script>
 
     <style>
-        body { font-family: 'Inter', system-ui, sans-serif; }
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        body { background-color: #080B11; color: #F1F5F9; font-family: 'Inter', system-ui, sans-serif; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 8px; }
+        ::-webkit-scrollbar-thumb { background: #1E293B; border-radius: 9999px; }
         ::-webkit-scrollbar-thumb:hover { background: #334155; }
-        @keyframes pulse-dot {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6); }
-            50% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+
+        /* Пружинистый тактильный отклик карточек */
+        .card-spring {
+            background: #0E131F;
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 1rem;
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.2s ease, box-shadow 0.2s ease;
         }
-        .pulse-dot { animation: pulse-dot 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
-        .card-hover { transition: border-color .2s ease, transform .2s ease; }
-        .card-hover:hover { border-color: #334155; }
-        #toast { transition: opacity .25s ease, transform .25s ease; }
+        .card-spring:hover {
+            border-color: rgba(255, 255, 255, 0.16);
+            box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.7);
+        }
+        .card-spring:active {
+            transform: scale(0.99);
+        }
+
+        .btn-spring {
+            transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.15s ease, background-color 0.15s ease;
+        }
+        .btn-spring:active {
+            transform: scale(0.96);
+        }
+
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+        .pulse-live { animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        #toast { transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
     </style>
 </head>
-<body class="bg-[#0B0F17] text-slate-100 antialiased min-h-screen">
+<body class="antialiased min-h-screen selection:bg-blue-500/30 selection:text-white">
 <div class="max-w-[1600px] mx-auto px-4 lg:px-6 py-6">
 
     <!-- ============ HEADER ============ -->
-    <header class="flex flex-col gap-5 mb-6">
+    <header class="flex flex-col gap-4 mb-6">
         <div class="flex flex-wrap items-center justify-between gap-4">
-            <div class="flex items-center gap-4">
-                <h1 class="text-2xl font-extrabold tracking-tight text-slate-50">Пульс Летучки</h1>
-                <span class="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 text-xs font-semibold text-emerald-400">
-                    <span class="relative flex h-2 w-2">
-                        <span class="pulse-dot absolute inline-flex h-full w-full rounded-full bg-emerald-400"></span>
-                        <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
-                    </span>
+            <div class="flex items-center gap-3">
+                <h1 class="text-2xl font-extrabold tracking-tight text-white font-sans">Пульс Летучки</h1>
+                <span class="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 border border-emerald-500/25 px-3 py-1 text-xs font-semibold text-emerald-400 font-mono">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-live"></span>
                     Production OK
                 </span>
             </div>
 
             <div class="flex items-center gap-3 flex-wrap">
-                <a href="{% url 'stats2975' %}?range={{ range }}" class="text-xs text-slate-500 hover:text-slate-300 transition">Обновить</a>
-                <div class="flex items-center gap-1 rounded-lg bg-[#111827] border border-[#1E293B] p-0.5">
-                    <a href="{% url 'stats2975' %}" class="px-3 py-1.5 text-xs font-medium rounded-md bg-blue-600 text-white">Дашборд</a>
-                    <a href="{% url 'user_ops_center' %}" class="px-3 py-1.5 text-xs font-medium rounded-md text-slate-400 hover:text-slate-200 transition">CRM</a>
+                <a href="{% url 'stats2975' %}?range={{ range }}" class="text-xs text-slate-400 hover:text-white transition-colors flex items-center gap-1.5 btn-spring">
+                    <i class="fa-solid fa-rotate text-[11px]"></i> Обновить
+                </a>
+                <div class="flex items-center gap-1 rounded-xl bg-surface border border-borderSubtle p-1">
+                    <a href="{% url 'stats2975' %}" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white shadow-sm btn-spring">Дашборд</a>
+                    <a href="{% url 'user_ops_center' %}" class="px-3.5 py-1.5 text-xs font-medium rounded-lg text-slate-400 hover:text-white transition-colors btn-spring">CRM</a>
                 </div>
             </div>
         </div>
 
-        <!-- KPI mini badges + controls -->
-        <div class="flex flex-wrap items-center gap-3">
-            <div class="inline-flex items-center gap-2 rounded-lg bg-[#111827] border border-[#1E293B] px-3 py-2">
-                <i class="fa-solid fa-bolt text-amber-400 text-sm"></i>
+        <!-- KPI Индикаторы + Фильтр дат -->
+        <div class="flex flex-wrap items-center gap-2.5">
+            <div class="inline-flex items-center gap-2.5 rounded-xl bg-surface border border-borderSubtle px-3.5 py-2">
+                <i class="fa-solid fa-bolt text-amber-400 text-xs"></i>
                 <span class="text-xs text-slate-400">API Response</span>
-                <span class="text-sm font-semibold text-slate-100">{{ api_response_ms }} ms</span>
-                <span class="text-[11px] font-semibold {% if api_response_delta <= 0 %}text-emerald-400{% else %}text-red-400{% endif %}">
-                    {% if api_response_delta <= 0 %}↓{% else %}↑{% endif %} {{ api_response_delta|floatformat:0 }}%
+                <span class="text-xs font-bold font-mono text-white">{{ api_response_ms }} ms</span>
+                <span class="text-[11px] font-mono font-semibold {% if api_response_delta <= 0 %}text-emerald-400{% else %}text-rose-400{% endif %}">
+                    {% if api_response_delta <= 0 %}↓{% else %}↑{% endif %}{{ api_response_delta|floatformat:0 }}%
                 </span>
             </div>
 
-            <div class="inline-flex items-center gap-2 rounded-lg bg-[#111827] border border-[#1E293B] px-3 py-2">
-                <i class="fa-solid fa-shield-halved text-emerald-400 text-sm"></i>
-                <span class="text-xs text-slate-400">API Success Rate</span>
-                <span class="text-sm font-semibold text-slate-100">{{ api_success_rate }}%</span>
-                <span class="text-[11px] font-semibold {% if api_success_delta >= 0 %}text-emerald-400{% else %}text-red-400{% endif %}">
+            <div class="inline-flex items-center gap-2.5 rounded-xl bg-surface border border-borderSubtle px-3.5 py-2">
+                <i class="fa-solid fa-shield-halved text-emerald-400 text-xs"></i>
+                <span class="text-xs text-slate-400">API Success</span>
+                <span class="text-xs font-bold font-mono text-white">{{ api_success_rate }}%</span>
+                <span class="text-[11px] font-mono font-semibold {% if api_success_delta >= 0 %}text-emerald-400{% else %}text-rose-400{% endif %}">
                     {% if api_success_delta >= 0 %}+{% endif %}{{ api_success_delta|floatformat:1 }}%
                 </span>
             </div>
 
-            <div class="inline-flex items-center gap-2 rounded-lg bg-[#111827] border border-[#1E293B] px-3 py-2">
-                <i class="fa-solid fa-users text-blue-400 text-sm"></i>
-                <span class="text-xs text-slate-400">Active Users Online</span>
-                <span class="text-sm font-semibold text-slate-100">{{ active_users_online }}</span>
-                <span class="text-[11px] font-semibold {% if active_users_delta >= 0 %}text-emerald-400{% else %}text-red-400{% endif %}">
+            <div class="inline-flex items-center gap-2.5 rounded-xl bg-surface border border-borderSubtle px-3.5 py-2">
+                <i class="fa-solid fa-users text-blue-400 text-xs"></i>
+                <span class="text-xs text-slate-400">Online</span>
+                <span class="text-xs font-bold font-mono text-white">{{ active_users_online }}</span>
+                <span class="text-[11px] font-mono font-semibold {% if active_users_delta >= 0 %}text-emerald-400{% else %}text-rose-400{% endif %}">
                     {% if active_users_delta >= 0 %}+{% endif %}{{ active_users_delta|floatformat:0 }}%
                 </span>
             </div>
 
-            <!-- Date range -->
-            <form method="get" class="inline-flex items-center gap-2 rounded-lg bg-[#111827] border border-[#1E293B] px-3 py-1.5">
+            <!-- Date Range Selector -->
+            <form method="get" class="inline-flex items-center gap-2 rounded-xl bg-surface border border-borderSubtle px-3 py-1.5 ml-auto">
                 <i class="fa-solid fa-calendar-days text-slate-500 text-xs"></i>
-                <input type="date" name="start_date" value="{{ start_date }}" class="bg-transparent text-xs text-slate-200 outline-none border border-transparent focus:border-slate-600 rounded px-1 py-0.5">
+                <input type="date" name="start_date" value="{{ start_date }}" class="bg-transparent text-xs text-slate-200 outline-none rounded px-1 font-mono">
                 <span class="text-slate-600 text-xs">–</span>
-                <input type="date" name="end_date" value="{{ end_date }}" class="bg-transparent text-xs text-slate-200 outline-none border border-transparent focus:border-slate-600 rounded px-1 py-0.5">
-                <button type="submit" class="text-[11px] text-slate-400 hover:text-slate-200">Применить</button>
+                <input type="date" name="end_date" value="{{ end_date }}" class="bg-transparent text-xs text-slate-200 outline-none rounded px-1 font-mono">
+                <button type="submit" class="text-xs text-slate-400 hover:text-white font-medium ml-1 btn-spring">Применить</button>
             </form>
 
-            <a href="{% url 'user_ops_center' %}" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium px-4 py-2 transition">
-                <i class="fa-solid fa-plus text-xs"></i> New Mailing / Promo
+            <a href="{% url 'user_ops_center' %}" class="inline-flex items-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2.5 transition-colors shadow-lg shadow-blue-600/20 btn-spring">
+                <i class="fa-solid fa-plus text-[10px]"></i> Новая рассылка
             </a>
         </div>
     </header>
 
     <!-- ============ TOP ROW: 6 METRIC CARDS ============ -->
-    <section class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
+    <section class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3.5 mb-6">
 
         <!-- 1. Revenue / MRR -->
-        <div class="card-hover bg-[#111827] border border-[#1E293B] rounded-xl p-4 flex flex-col">
-            <div class="flex items-center justify-between mb-2">
-                <span class="text-xs font-medium text-slate-400">Revenue / MRR</span>
-                <i class="fa-solid fa-arrow-trend-up text-blue-400 text-sm"></i>
+        <div class="card-spring p-4 flex flex-col justify-between">
+            <div>
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-[11px] uppercase tracking-wider font-semibold text-slate-400">Revenue / MRR</span>
+                    <i class="fa-solid fa-arrow-trend-up text-blue-400 text-xs"></i>
+                </div>
+                <div class="text-2xl font-bold font-mono text-white tracking-tight">₽ {{ revenue_value }}</div>
+                <div class="mt-1 text-[11px] text-slate-400 flex items-center gap-1.5">
+                    За месяц
+                    <span class="font-mono font-semibold {% if revenue_delta >= 0 %}text-emerald-400{% else %}text-rose-400{% endif %}">
+                        {% if revenue_delta >= 0 %}+{% endif %}{{ revenue_delta|floatformat:0 }}%
+                    </span>
+                </div>
             </div>
-            <div class="text-2xl font-extrabold text-slate-50 tracking-tight">₽ {{ revenue_value }}</div>
-            <div class="mt-1 text-[11px] text-slate-500 flex items-center gap-1.5">
-                Current month income
-                <span class="{% if revenue_delta >= 0 %}text-emerald-400{% else %}text-red-400{% endif %} font-semibold">
-                    {% if revenue_delta >= 0 %}+{% endif %}{{ revenue_delta|floatformat:0 }}%
-                </span>
-            </div>
-            <div class="h-10 mt-3"><canvas id="spark-revenue"></canvas></div>
-            <div class="mt-2 pt-2 border-t border-[#1E293B] text-[11px] text-slate-500">
-                Today's Revenue: <span class="text-slate-300 font-semibold">₽ {{ revenue_today }}</span>
+            <div class="h-9 mt-3"><canvas id="spark-revenue"></canvas></div>
+            <div class="mt-2.5 pt-2.5 border-t border-borderSubtle text-[11px] text-slate-400 flex justify-between items-center">
+                <span>Сегодня:</span>
+                <span class="text-white font-mono font-semibold">₽ {{ revenue_today }}</span>
             </div>
         </div>
 
         <!-- 2. Active Subscriptions -->
-        <div class="card-hover bg-[#111827] border border-[#1E293B] rounded-xl p-4 flex flex-col">
-            <div class="flex items-center justify-between mb-2">
-                <span class="text-xs font-medium text-slate-400">Active Subscriptions</span>
-                <i class="fa-solid fa-users text-slate-400 text-sm"></i>
+        <div class="card-spring p-4 flex flex-col justify-between">
+            <div>
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-[11px] uppercase tracking-wider font-semibold text-slate-400">Подписки</span>
+                    <i class="fa-solid fa-crown text-amber-400 text-xs"></i>
+                </div>
+                <div class="text-2xl font-bold font-mono text-white tracking-tight">{{ subs_active }}</div>
+                <div class="mt-1 text-[11px] text-slate-400 flex items-center gap-1.5">
+                    Всего в базе
+                    <span class="font-mono font-semibold {% if subs_delta >= 0 %}text-emerald-400{% else %}text-rose-400{% endif %}">
+                        {% if subs_delta >= 0 %}+{% endif %}{{ subs_delta|floatformat:0 }}%
+                    </span>
+                </div>
             </div>
-            <div class="text-2xl font-extrabold text-slate-50 tracking-tight">{{ subs_active }}</div>
-            <div class="mt-1 text-[11px] text-slate-500 flex items-center gap-1.5">
-                Total subscriptions
-                <span class="{% if subs_delta >= 0 %}text-emerald-400{% else %}text-red-400{% endif %} font-semibold">
-                    {% if subs_delta >= 0 %}+{% endif %}{{ subs_delta|floatformat:0 }}%
-                </span>
+            <div class="mt-3">
+                <div class="flex h-2 w-full overflow-hidden rounded-full bg-slate-800/80">
+                    <div class="bg-emerald-500" style="width: {{ subs_active_pct }}%"></div>
+                    <div class="bg-amber-500" style="width: {{ subs_inactive_pct }}%"></div>
+                    <div class="bg-rose-500" style="width: {{ subs_canceled_pct }}%"></div>
+                </div>
+                <div class="mt-2.5 flex items-center justify-between text-[10px] font-mono text-slate-400">
+                    <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>{{ subs_active }}</span>
+                    <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>{{ subs_inactive }}</span>
+                    <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>{{ subs_canceled }}</span>
+                </div>
             </div>
-            <div class="mt-3 flex h-2.5 w-full overflow-hidden rounded-full bg-slate-800">
-                <div class="bg-emerald-500" style="width: {{ subs_active_pct }}%"></div>
-                <div class="bg-amber-500" style="width: {{ subs_inactive_pct }}%"></div>
-                <div class="bg-red-500" style="width: {{ subs_canceled_pct }}%"></div>
-            </div>
-            <div class="mt-2 flex items-center gap-3 text-[10px] text-slate-500">
-                <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>{{ subs_active }} Active</span>
-                <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-500"></span>{{ subs_inactive }} Inactive</span>
-                <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-red-500"></span>{{ subs_canceled }} Canceled</span>
+            <div class="mt-2.5 pt-2.5 border-t border-borderSubtle text-[11px] text-slate-400 flex justify-between items-center">
+                <span>Конверсия:</span>
+                <span class="text-white font-mono font-semibold">{{ subs_active_pct|floatformat:0 }}%</span>
             </div>
         </div>
 
         <!-- 3. Test Generation -->
-        <div class="card-hover bg-[#111827] border border-[#1E293B] rounded-xl p-4 flex flex-col">
-            <div class="flex items-center justify-between mb-2">
-                <span class="text-xs font-medium text-slate-400">Test Generation</span>
-                <i class="fa-solid fa-file-lines text-violet-400 text-sm"></i>
+        <div class="card-spring p-4 flex flex-col justify-between">
+            <div>
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-[11px] uppercase tracking-wider font-semibold text-slate-400">Генерации</span>
+                    <i class="fa-solid fa-file-lines text-violet-400 text-xs"></i>
+                </div>
+                <div class="text-2xl font-bold font-mono text-violet-400 tracking-tight">{{ tests_total }}</div>
+                <div class="mt-1 text-[11px] text-slate-400 flex items-center gap-1.5">
+                    Всего тестов
+                    <span class="font-mono font-semibold {% if tests_delta >= 0 %}text-emerald-400{% else %}text-rose-400{% endif %}">
+                        {% if tests_delta >= 0 %}+{% endif %}{{ tests_delta|floatformat:0 }}%
+                    </span>
+                </div>
             </div>
-            <div class="text-2xl font-extrabold text-violet-400 tracking-tight">{{ tests_total }}</div>
-            <div class="mt-1 text-[11px] text-slate-500 flex items-center gap-1.5">
-                Total tests created
-                <span class="{% if tests_delta >= 0 %}text-emerald-400{% else %}text-red-400{% endif %} font-semibold">
-                    {% if tests_delta >= 0 %}+{% endif %}{{ tests_delta|floatformat:0 }}%
-                </span>
-            </div>
-            <div class="h-10 mt-3"><canvas id="spark-creation"></canvas></div>
-            <div class="mt-2 pt-2 border-t border-[#1E293B] text-[11px] text-slate-500">
-                <span class="text-slate-300 font-semibold">{{ tests_today }}</span> vs <span class="text-slate-300 font-semibold">{{ tests_yesterday }}</span> (Today vs Yesterday)
-                <span class="{% if tests_today_delta >= 0 %}text-emerald-400{% else %}text-red-400{% endif %} font-semibold">
+            <div class="h-9 mt-3"><canvas id="spark-creation"></canvas></div>
+            <div class="mt-2.5 pt-2.5 border-t border-borderSubtle text-[11px] text-slate-400 flex justify-between items-center">
+                <span>{{ tests_today }} vs {{ tests_yesterday }}</span>
+                <span class="font-mono font-semibold {% if tests_today_delta >= 0 %}text-emerald-400{% else %}text-rose-400{% endif %}">
                     {% if tests_today_delta >= 0 %}+{% endif %}{{ tests_today_delta|floatformat:0 }}%
                 </span>
             </div>
         </div>
 
         <!-- 4. Test Attempts & Engagement -->
-        <div class="card-hover bg-[#111827] border border-[#1E293B] rounded-xl p-4 flex flex-col">
-            <div class="flex items-center justify-between mb-2">
-                <span class="text-xs font-medium text-slate-400">Test Attempts</span>
-                <i class="fa-solid fa-chart-line text-blue-400 text-sm"></i>
+        <div class="card-spring p-4 flex flex-col justify-between">
+            <div>
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-[11px] uppercase tracking-wider font-semibold text-slate-400">Попытки сдачи</span>
+                    <i class="fa-solid fa-circle-check text-blue-400 text-xs"></i>
+                </div>
+                <div class="text-2xl font-bold font-mono text-blue-400 tracking-tight">{{ attempts_total }}</div>
+                <div class="mt-1 text-[11px] text-slate-400 flex items-center gap-1.5">
+                    Прохождений
+                    <span class="font-mono font-semibold {% if attempts_delta >= 0 %}text-emerald-400{% else %}text-rose-400{% endif %}">
+                        {% if attempts_delta >= 0 %}+{% endif %}{{ attempts_delta|floatformat:0 }}%
+                    </span>
+                </div>
             </div>
-            <div class="text-2xl font-extrabold text-blue-400 tracking-tight">{{ attempts_total }}</div>
-            <div class="mt-1 text-[11px] text-slate-500 flex items-center gap-1.5">
-                Passing attempts
-                <span class="{% if attempts_delta >= 0 %}text-emerald-400{% else %}text-red-400{% endif %} font-semibold">
-                    {% if attempts_delta >= 0 %}+{% endif %}{{ attempts_delta|floatformat:0 }}%
-                </span>
-            </div>
-            <div class="h-10 mt-3"><canvas id="spark-attempts"></canvas></div>
-            <div class="mt-2 pt-2 border-t border-[#1E293B] text-[11px] text-slate-500">
-                <span class="text-slate-300 font-semibold">{{ avg_score|floatformat:0 }}%</span> Avg Score
-                <span class="{% if avg_score_delta >= 0 %}text-emerald-400{% else %}text-red-400{% endif %} font-semibold">
-                    {% if avg_score_delta >= 0 %}+{% endif %}{{ avg_score_delta|floatformat:0 }}%
-                </span>
+            <div class="h-9 mt-3"><canvas id="spark-attempts"></canvas></div>
+            <div class="mt-2.5 pt-2.5 border-t border-borderSubtle text-[11px] text-slate-400 flex justify-between items-center">
+                <span>Ср. балл:</span>
+                <span class="text-white font-mono font-semibold">{{ avg_score|floatformat:0 }}%</span>
             </div>
         </div>
 
         <!-- 5. User Acquisition -->
-        <div class="card-hover bg-[#111827] border border-[#1E293B] rounded-xl p-4 flex flex-col">
-            <div class="flex items-center justify-between mb-2">
-                <span class="text-xs font-medium text-slate-400">User Acquisition</span>
-                <i class="fa-solid fa-user-plus text-emerald-400 text-sm"></i>
+        <div class="card-spring p-4 flex flex-col justify-between">
+            <div>
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-[11px] uppercase tracking-wider font-semibold text-slate-400">Аудитория</span>
+                    <i class="fa-solid fa-user-plus text-emerald-400 text-xs"></i>
+                </div>
+                <div class="text-2xl font-bold font-mono text-white tracking-tight">{{ users_total }}</div>
+                <div class="mt-1 text-[11px] text-slate-400 flex items-center gap-1.5">
+                    Всего аккаунтов
+                    <span class="font-mono font-semibold {% if users_delta >= 0 %}text-emerald-400{% else %}text-rose-400{% endif %}">
+                        {% if users_delta >= 0 %}+{% endif %}{{ users_delta|floatformat:0 }}%
+                    </span>
+                </div>
             </div>
-            <div class="text-2xl font-extrabold text-slate-50 tracking-tight">{{ users_total }}</div>
-            <div class="mt-1 text-[11px] text-slate-500 flex items-center gap-1.5">
-                Total users
-                <span class="{% if users_delta >= 0 %}text-emerald-400{% else %}text-red-400{% endif %} font-semibold">
-                    {% if users_delta >= 0 %}+{% endif %}{{ users_delta|floatformat:0 }}%
-                </span>
-            </div>
-            <div class="h-10 mt-3"><canvas id="spark-acq"></canvas></div>
-            <div class="mt-2 pt-2 border-t border-[#1E293B] space-y-0.5 text-[10px] text-slate-500">
-                <div class="flex justify-between"><span>Registrations: <b class="text-slate-300">{{ registrations }}</b></span><span class="{% if registrations_delta >= 0 %}text-emerald-400{% else %}text-red-400{% endif %}">{% if registrations_delta >= 0 %}+{% endif %}{{ registrations_delta|floatformat:0 }}%</span></div>
-                <div class="flex justify-between"><span>DAU: <b class="text-slate-300">{{ dau }}</b></span><span class="{% if dau_delta >= 0 %}text-emerald-400{% else %}text-red-400{% endif %}">{% if dau_delta >= 0 %}+{% endif %}{{ dau_delta|floatformat:0 }}%</span></div>
-                <div class="flex justify-between"><span>WAU: <b class="text-slate-300">{{ wau }}</b></span><span class="{% if wau_delta >= 0 %}text-emerald-400{% else %}text-red-400{% endif %}">{% if wau_delta >= 0 %}+{% endif %}{{ wau_delta|floatformat:0 }}%</span></div>
-                <div class="flex justify-between"><span>MAU: <b class="text-slate-300">{{ mau }}</b></span><span class="{% if mau_delta >= 0 %}text-emerald-400{% else %}text-red-400{% endif %}">{% if mau_delta >= 0 %}+{% endif %}{{ mau_delta|floatformat:0 }}%</span></div>
+            <div class="h-9 mt-3"><canvas id="spark-acq"></canvas></div>
+            <div class="mt-2.5 pt-2.5 border-t border-borderSubtle grid grid-cols-2 gap-1 text-[10px] font-mono text-slate-400">
+                <div>DAU: <b class="text-white">{{ dau }}</b></div>
+                <div class="text-right">WAU: <b class="text-white">{{ wau }}</b></div>
+                <div>MAU: <b class="text-white">{{ mau }}</b></div>
+                <div class="text-right">Реги: <b class="text-white">{{ registrations }}</b></div>
             </div>
         </div>
 
         <!-- 6. Token Consumption & API -->
-        <div class="card-hover bg-[#111827] border border-[#1E293B] rounded-xl p-4 flex flex-col">
-            <div class="flex items-center justify-between mb-2">
-                <span class="text-xs font-medium text-slate-400">Tokens &amp; API</span>
-                <i class="fa-solid fa-database text-amber-400 text-sm"></i>
+        <div class="card-spring p-4 flex flex-col justify-between">
+            <div>
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-[11px] uppercase tracking-wider font-semibold text-slate-400">Токены / AI</span>
+                    <i class="fa-solid fa-microchip text-amber-400 text-xs"></i>
+                </div>
+                <div class="text-2xl font-bold font-mono text-white tracking-tight">{{ tokens_today }}</div>
+                <div class="mt-1 text-[11px] text-slate-400 flex items-center gap-1.5">
+                    Расход сегодня
+                    <span class="font-mono font-semibold {% if tokens_delta >= 0 %}text-emerald-400{% else %}text-rose-400{% endif %}">
+                        {% if tokens_delta >= 0 %}+{% endif %}{{ tokens_delta|floatformat:0 }}%
+                    </span>
+                </div>
             </div>
-            <div class="text-2xl font-extrabold text-slate-50 tracking-tight">{{ tokens_today }}</div>
-            <div class="mt-1 text-[11px] text-slate-500 flex items-center gap-1.5">
-                AI tokens used today
-                <span class="{% if tokens_delta >= 0 %}text-emerald-400{% else %}text-red-400{% endif %} font-semibold">
-                    {% if tokens_delta >= 0 %}+{% endif %}{{ tokens_delta|floatformat:0 }}%
-                </span>
-            </div>
-            <div class="h-10 mt-3"><canvas id="spark-tokens"></canvas></div>
-            <div class="mt-2 pt-2 border-t border-[#1E293B] text-[11px] text-slate-500">
-                <span class="text-slate-300 font-semibold">{{ api_latency_ms }} ms</span> Avg API latency
-                <span class="{% if api_latency_delta <= 0 %}text-emerald-400{% else %}text-red-400{% endif %} font-semibold">
-                    {% if api_latency_delta <= 0 %}↓{% else %}↑{% endif %} {{ api_latency_delta|floatformat:0 }}%
-                </span>
+            <div class="h-9 mt-3"><canvas id="spark-tokens"></canvas></div>
+            <div class="mt-2.5 pt-2.5 border-t border-borderSubtle text-[11px] text-slate-400 flex justify-between items-center">
+                <span>Latency:</span>
+                <span class="text-white font-mono font-semibold">{{ api_latency_ms }} ms</span>
             </div>
         </div>
     </section>
 
-    <!-- ============ MIDDLE ROW ============ -->
+    <!-- ============ MIDDLE ROW: РОСТ И ЗДОРОВЬЕ ПРОВАЙДЕРОВ ============ -->
     <section class="grid grid-cols-12 gap-4 mb-6">
 
         <!-- Revenue & Subscriptions Growth -->
-        <div class="col-span-12 lg:col-span-7 bg-[#111827] border border-[#1E293B] rounded-xl p-5">
+        <div class="col-span-12 lg:col-span-7 card-spring p-5">
             <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-                <h2 class="text-sm font-semibold text-slate-200">Revenue &amp; Subscriptions Growth</h2>
-                <div class="flex items-center gap-2">
-                    <div class="flex items-center gap-1 rounded-lg bg-slate-900 border border-[#1E293B] p-0.5">
-                        <a href="?range=7D" class="px-2.5 py-1 text-[11px] font-medium rounded-md {% if range == '7D' %}bg-blue-600 text-white{% else %}text-slate-400 hover:text-slate-200{% endif %}">7D</a>
-                        <a href="?range=30D" class="px-2.5 py-1 text-[11px] font-medium rounded-md {% if range == '30D' %}bg-blue-600 text-white{% else %}text-slate-400 hover:text-slate-200{% endif %}">30D</a>
-                        <a href="?range=90D" class="px-2.5 py-1 text-[11px] font-medium rounded-md {% if range == '90D' %}bg-blue-600 text-white{% else %}text-slate-400 hover:text-slate-200{% endif %}">90D</a>
-                        <a href="?range=1Y" class="px-2.5 py-1 text-[11px] font-medium rounded-md {% if range == '1Y' %}bg-blue-600 text-white{% else %}text-slate-400 hover:text-slate-200{% endif %}">1Y</a>
-                        <a href="?range=ALL" class="px-2.5 py-1 text-[11px] font-medium rounded-md {% if range == 'ALL' %}bg-blue-600 text-white{% else %}text-slate-400 hover:text-slate-200{% endif %}">ALL</a>
-                    </div>
+                <div>
+                    <h2 class="text-sm font-bold text-white tracking-tight">Выручка и динамика пакетов</h2>
+                    <p class="text-[11px] text-slate-400 font-mono mt-0.5">{{ date_range_label }}</p>
+                </div>
+                <div class="flex items-center gap-1 rounded-xl bg-canvas border border-borderSubtle p-1 font-mono">
+                    <a href="?range=7D" class="px-2.5 py-1 text-[11px] font-semibold rounded-lg btn-spring {% if range == '7D' %}bg-blue-600 text-white{% else %}text-slate-400 hover:text-white{% endif %}">7D</a>
+                    <a href="?range=30D" class="px-2.5 py-1 text-[11px] font-semibold rounded-lg btn-spring {% if range == '30D' %}bg-blue-600 text-white{% else %}text-slate-400 hover:text-white{% endif %}">30D</a>
+                    <a href="?range=90D" class="px-2.5 py-1 text-[11px] font-semibold rounded-lg btn-spring {% if range == '90D' %}bg-blue-600 text-white{% else %}text-slate-400 hover:text-white{% endif %}">90D</a>
+                    <a href="?range=1Y" class="px-2.5 py-1 text-[11px] font-semibold rounded-lg btn-spring {% if range == '1Y' %}bg-blue-600 text-white{% else %}text-slate-400 hover:text-white{% endif %}">1Y</a>
+                    <a href="?range=ALL" class="px-2.5 py-1 text-[11px] font-semibold rounded-lg btn-spring {% if range == 'ALL' %}bg-blue-600 text-white{% else %}text-slate-400 hover:text-white{% endif %}">ALL</a>
                 </div>
             </div>
-            <div class="flex items-center gap-4 mb-3 text-[11px] text-slate-400">
-                <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-cyan-400"></span>Пакет S</span>
-                <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span>Пакет M</span>
-                <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-orange-500"></span>Пакет L</span>
-                <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-violet-500"></span>Премиум</span>
-                <span class="ml-auto text-slate-500">{{ date_range_label }}</span>
+            <div class="flex items-center gap-4 mb-3 text-xs font-mono text-slate-400">
+                <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-cyan-400"></span>Пакет S</span>
+                <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-blue-500"></span>Пакет M</span>
+                <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-amber-500"></span>Пакет L</span>
+                <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-violet-500"></span>Премиум</span>
             </div>
             <div class="h-72"><canvas id="growth-chart"></canvas></div>
         </div>
 
         <!-- API & AI Provider Health -->
-        <div class="col-span-12 lg:col-span-5 bg-[#111827] border border-[#1E293B] rounded-xl p-5">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-sm font-semibold text-slate-200">API &amp; AI Provider Health</h2>
-                <a href="{% url 'stats2975' %}" class="text-[11px] text-blue-400 hover:text-blue-300">View Details →</a>
+        <div class="col-span-12 lg:col-span-5 card-spring p-5 flex flex-col justify-between">
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="text-sm font-bold text-white tracking-tight">Здоровье AI-провайдеров</h2>
+                <a href="{% url 'stats2975' %}" class="text-xs text-blue-400 hover:text-blue-300 font-medium btn-spring">Детали →</a>
             </div>
             {% if provider_health %}
             <div class="overflow-x-auto">
-                <table class="w-full text-left">
+                <table class="w-full text-left font-mono">
                     <thead>
-                        <tr class="text-[10px] uppercase tracking-wide text-slate-500 border-b border-[#1E293B]">
-                            <th class="pb-2 font-medium">Provider</th>
-                            <th class="pb-2 font-medium">Status</th>
-                            <th class="pb-2 font-medium">Success Rate</th>
-                            <th class="pb-2 font-medium">Load</th>
-                            <th class="pb-2 font-medium">Today</th>
+                        <tr class="text-[10px] uppercase tracking-wider text-slate-400 border-b border-borderSubtle">
+                            <th class="pb-2.5 font-semibold">Провайдер</th>
+                            <th class="pb-2.5 font-semibold">Статус</th>
+                            <th class="pb-2.5 font-semibold">Успешность</th>
+                            <th class="pb-2.5 font-semibold">Нагрузка</th>
+                            <th class="pb-2.5 font-semibold">Сегодня</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody class="divide-y divide-borderSubtle/60 text-xs">
                         {% for p in provider_health %}
-                        <tr class="border-b border-[#1E293B]/60 last:border-0">
-                            <td class="py-3 pr-3">
-                                <div class="font-medium text-slate-200">{{ p.provider }}</div>
-                                <div class="text-[10px] text-slate-500">{{ p.avg_response_ms }} ms avg</div>
+                        <tr class="hover:bg-surfaceElevated/50 transition-colors">
+                            <td class="py-3 pr-2">
+                                <div class="font-semibold text-white font-sans">{{ p.provider }}</div>
+                                <div class="text-[10px] text-slate-400">{{ p.avg_response_ms }} ms avg</div>
                             </td>
-                            <td class="py-3 pr-3">
-                                <span class="inline-flex items-center gap-1.5 text-xs font-medium
-                                    {% if p.status_key == 'healthy' %}text-emerald-400{% elif p.status_key == 'paused' %}text-amber-400{% else %}text-orange-400{% endif %}">
-                                    <span class="w-1.5 h-1.5 rounded-full {% if p.status_key == 'healthy' %}bg-emerald-400{% elif p.status_key == 'paused' %}bg-amber-400{% else %}bg-orange-400{% endif %}"></span>
+                            <td class="py-3 pr-2">
+                                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold
+                                    {% if p.status_key == 'healthy' %}bg-emerald-500/10 text-emerald-400 border border-emerald-500/20{% elif p.status_key == 'paused' %}bg-amber-500/10 text-amber-400 border border-amber-500/20{% else %}bg-rose-500/10 text-rose-400 border border-rose-500/20{% endif %}">
+                                    <span class="w-1.5 h-1.5 rounded-full {% if p.status_key == 'healthy' %}bg-emerald-400{% elif p.status_key == 'paused' %}bg-amber-400{% else %}bg-rose-400{% endif %}"></span>
                                     {{ p.status_label }}
                                 </span>
                             </td>
-                            <td class="py-3 pr-3 text-sm font-semibold text-slate-200">{{ p.success_rate }}%</td>
-                            <td class="py-3 pr-3">
+                            <td class="py-3 pr-2 font-bold text-white">{{ p.success_rate }}%</td>
+                            <td class="py-3 pr-2">
                                 <div class="flex items-center gap-2">
-                                    <div class="h-1.5 w-16 rounded-full bg-slate-800 overflow-hidden">
-                                        <div class="h-full rounded-full {% if p.load > 90 %}bg-red-500{% elif p.load > 70 %}bg-amber-500{% else %}bg-emerald-500{% endif %}" style="width: {{ p.load }}%"></div>
+                                    <div class="h-1.5 w-14 rounded-full bg-slate-800 overflow-hidden">
+                                        <div class="h-full rounded-full {% if p.load > 90 %}bg-rose-500{% elif p.load > 70 %}bg-amber-500{% else %}bg-emerald-500{% endif %}" style="width: {{ p.load }}%"></div>
                                     </div>
-                                    <span class="text-xs text-slate-400">{{ p.load }}%</span>
+                                    <span class="text-[11px] text-slate-400">{{ p.load }}%</span>
                                 </div>
                             </td>
-                            <td class="py-3 text-sm text-slate-300">{{ p.calls_today }}</td>
+                            <td class="py-3 text-slate-300">{{ p.calls_today }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
             {% else %}
-            <div class="text-sm text-slate-500 py-10 text-center">Нет данных о провайдерах</div>
+            <div class="text-xs text-slate-400 py-12 text-center font-mono">Нет данных о провайдерах</div>
             {% endif %}
         </div>
     </section>
 
-    <!-- ============ EXTRA CHARTS ============ -->
+    <!-- ============ СЕТКА АНАЛИТИЧЕСКИХ ГРАФИКОВ ============ -->
     <section class="grid grid-cols-12 gap-4 mb-6">
-        <div class="col-span-12 lg:col-span-8 bg-[#111827] border border-[#1E293B] rounded-xl p-5">
-            <h2 class="text-sm font-semibold text-slate-200 mb-3">Выручка по дням, ₽</h2>
+        
+        <!-- Выручка по дням -->
+        <div class="col-span-12 lg:col-span-8 card-spring p-5">
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="text-sm font-bold text-white tracking-tight">Выручка по дням, ₽</h2>
+                <i class="fa-solid fa-chart-line text-blue-400 text-xs"></i>
+            </div>
             <div class="h-56"><canvas id="chart-revenue-daily"></canvas></div>
         </div>
-        <div class="col-span-12 lg:col-span-4 bg-[#111827] border border-[#1E293B] rounded-xl p-5">
-            <h2 class="text-sm font-semibold text-slate-200 mb-3">Выручка по тарифам</h2>
+
+        <!-- Выручка по тарифам -->
+        <div class="col-span-12 lg:col-span-4 card-spring p-5">
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="text-sm font-bold text-white tracking-tight">Доли тарифов в выручке</h2>
+                <i class="fa-solid fa-chart-pie text-violet-400 text-xs"></i>
+            </div>
             <div class="h-56"><canvas id="chart-plan-revenue"></canvas></div>
         </div>
 
-        <div class="col-span-12 lg:col-span-6 bg-[#111827] border border-[#1E293B] rounded-xl p-5">
-            <h2 class="text-sm font-semibold text-slate-200 mb-3">Новая vs повторная выручка, ₽</h2>
+        <!-- Новая vs повторная выручка -->
+        <div class="col-span-12 lg:col-span-6 card-spring p-5">
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="text-sm font-bold text-white tracking-tight">Новые vs Повторные оплаты, ₽</h2>
+                <span class="text-[10px] font-mono text-slate-400">Expansion Revenue</span>
+            </div>
             <div class="h-56"><canvas id="chart-revenue-source"></canvas></div>
         </div>
-        <div class="col-span-12 lg:col-span-6 bg-[#111827] border border-[#1E293B] rounded-xl p-5">
-            <h2 class="text-sm font-semibold text-slate-200 mb-3">Новые подписки по тарифам</h2>
+
+        <!-- Новые подписки по тарифам -->
+        <div class="col-span-12 lg:col-span-6 card-spring p-5">
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="text-sm font-bold text-white tracking-tight">Новые подписки по тарифам</h2>
+                <i class="fa-solid fa-layer-group text-slate-400 text-xs"></i>
+            </div>
             <div class="h-56"><canvas id="chart-subs-growth"></canvas></div>
         </div>
 
-        <div class="col-span-12 lg:col-span-4 bg-[#111827] border border-[#1E293B] rounded-xl p-5">
-            <h2 class="text-sm font-semibold text-slate-200 mb-3">Подписки по тарифам (всего)</h2>
+        <!-- Подписки по тарифам (всего) -->
+        <div class="col-span-12 lg:col-span-4 card-spring p-5">
+            <h2 class="text-sm font-bold text-white tracking-tight mb-3">Всего подписок по типам</h2>
             <div class="h-56"><canvas id="chart-plan-subs"></canvas></div>
         </div>
-        <div class="col-span-12 lg:col-span-4 bg-[#111827] border border-[#1E293B] rounded-xl p-5">
-            <h2 class="text-sm font-semibold text-slate-200 mb-3">Динамика ARPU, ₽</h2>
+
+        <!-- Динамика ARPU -->
+        <div class="col-span-12 lg:col-span-4 card-spring p-5">
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="text-sm font-bold text-white tracking-tight">Динамика ARPU, ₽</h2>
+                <span class="text-[10px] font-mono text-cyan-400">Ср. чек</span>
+            </div>
             <div class="h-56"><canvas id="chart-arpu"></canvas></div>
         </div>
-        <div class="col-span-12 lg:col-span-4 bg-[#111827] border border-[#1E293B] rounded-xl p-5">
-            <h2 class="text-sm font-semibold text-slate-200 mb-3">Распределение оценок</h2>
+
+        <!-- Распределение оценок -->
+        <div class="col-span-12 lg:col-span-4 card-spring p-5">
+            <h2 class="text-sm font-bold text-white tracking-tight mb-3">Спектр оценок прохождения</h2>
             <div class="h-56"><canvas id="chart-scores"></canvas></div>
         </div>
 
-        <div class="col-span-12 lg:col-span-4 bg-[#111827] border border-[#1E293B] rounded-xl p-5">
-            <h2 class="text-sm font-semibold text-slate-200 mb-3">Воронка: регистрации — тест — попытка</h2>
+        <!-- Воронка: реги — тест — попытка -->
+        <div class="col-span-12 lg:col-span-4 card-spring p-5">
+            <h2 class="text-sm font-bold text-white tracking-tight mb-3">Воронка: Рега → Тест → Попытка</h2>
             <div class="h-56"><canvas id="chart-funnel"></canvas></div>
         </div>
-        <div class="col-span-12 lg:col-span-4 bg-[#111827] border border-[#1E293B] rounded-xl p-5">
-            <h2 class="text-sm font-semibold text-slate-200 mb-3">Попытки: 7д vs прошлые 7д</h2>
+
+        <!-- Попытки: 7д vs прошлые 7д -->
+        <div class="col-span-12 lg:col-span-4 card-spring p-5">
+            <h2 class="text-sm font-bold text-white tracking-tight mb-3">Попытки: 7д vs прошлые 7д</h2>
             <div class="h-56"><canvas id="chart-attempts"></canvas></div>
         </div>
-        <div class="col-span-12 lg:col-span-4 bg-[#111827] border border-[#1E293B] rounded-xl p-5">
-            <h2 class="text-sm font-semibold text-slate-200 mb-3">Регистрации: Email vs Telegram</h2>
+
+        <!-- Регистрации: Email vs Telegram -->
+        <div class="col-span-12 lg:col-span-4 card-spring p-5">
+            <h2 class="text-sm font-bold text-white tracking-tight mb-3">Каналы: Email vs Telegram</h2>
             <div class="h-56"><canvas id="chart-regs"></canvas></div>
         </div>
 
-        <div class="col-span-12 lg:col-span-6 bg-[#111827] border border-[#1E293B] rounded-xl p-5">
-            <h2 class="text-sm font-semibold text-slate-200 mb-3">Расход токенов по дням</h2>
+        <!-- Расход токенов по дням -->
+        <div class="col-span-12 lg:col-span-6 card-spring p-5">
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="text-sm font-bold text-white tracking-tight">Расход токенов по дням</h2>
+                <i class="fa-solid fa-microchip text-amber-400 text-xs"></i>
+            </div>
             <div class="h-56"><canvas id="chart-tokens"></canvas></div>
         </div>
-        <div class="col-span-12 lg:col-span-6 bg-[#111827] border border-[#1E293B] rounded-xl p-5">
-            <h2 class="text-sm font-semibold text-slate-200 mb-3">Создание тестов по дням</h2>
+
+        <!-- Создание тестов по дням -->
+        <div class="col-span-12 lg:col-span-6 card-spring p-5">
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="text-sm font-bold text-white tracking-tight">Создание тестов по дням</h2>
+                <i class="fa-solid fa-wand-magic-sparkles text-violet-400 text-xs"></i>
+            </div>
             <div class="h-56"><canvas id="chart-creation"></canvas></div>
         </div>
     </section>
 
-    <!-- ============ BOTTOM ROW ============ -->
+    <!-- ============ ТРАНЗАКЦИИ И LIVE-ЛЕНТА ============ -->
     <section class="grid grid-cols-12 gap-4 mb-6">
 
-        <!-- Recent Transactions -->
-        <div class="col-span-12 lg:col-span-6 bg-[#111827] border border-[#1E293B] rounded-xl p-5">
+        <!-- Последние транзакции -->
+        <div class="col-span-12 lg:col-span-6 card-spring p-5">
             <div class="flex items-center justify-between mb-4">
-                <h2 class="text-sm font-semibold text-slate-200">Recent Transactions &amp; Subscriptions</h2>
-                <a href="#transactions" class="text-[11px] text-blue-400 hover:text-blue-300">View All →</a>
+                <h2 class="text-sm font-bold text-white tracking-tight flex items-center gap-2">
+                    <i class="fa-solid fa-receipt text-slate-400 text-xs"></i> Последние оплаты
+                </h2>
+                <a href="#transactions" class="text-xs text-blue-400 hover:text-blue-300 font-medium btn-spring">Все транзакции →</a>
             </div>
             {% if recent_transactions %}
             <div class="overflow-x-auto">
-                <table class="w-full text-left">
+                <table class="w-full text-left font-mono">
                     <thead>
-                        <tr class="text-[10px] uppercase tracking-wide text-slate-500 border-b border-[#1E293B]">
-                            <th class="pb-2 font-medium">User</th>
-                            <th class="pb-2 font-medium">Plan</th>
-                            <th class="pb-2 font-medium">Cycle</th>
-                            <th class="pb-2 font-medium">Amount</th>
-                            <th class="pb-2 font-medium">Status</th>
-                            <th class="pb-2 font-medium">Date</th>
+                        <tr class="text-[10px] uppercase tracking-wider text-slate-400 border-b border-borderSubtle">
+                            <th class="pb-2.5 font-semibold font-sans">Клиент</th>
+                            <th class="pb-2.5 font-semibold">Тариф</th>
+                            <th class="pb-2.5 font-semibold">Цикл</th>
+                            <th class="pb-2.5 font-semibold">Сумма</th>
+                            <th class="pb-2.5 font-semibold">Статус</th>
+                            <th class="pb-2.5 font-semibold">Дата</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody class="divide-y divide-borderSubtle/60 text-xs">
                         {% for t in recent_transactions %}
-                        <tr class="border-b border-[#1E293B]/60 last:border-0">
-                            <td class="py-2.5 pr-3">
-                                <div class="text-sm text-slate-200 truncate max-w-[150px]">{{ t.username }}</div>
-                                <div class="text-[10px] text-slate-500 truncate max-w-[150px]">{{ t.email }}</div>
+                        <tr class="hover:bg-surfaceElevated/50 transition-colors">
+                            <td class="py-2.5 pr-2">
+                                <div class="font-semibold text-white font-sans truncate max-w-[140px]">{{ t.username }}</div>
+                                <div class="text-[10px] text-slate-400 truncate max-w-[140px]">{{ t.email }}</div>
                             </td>
-                            <td class="py-2.5 pr-3">
+                            <td class="py-2.5 pr-2">
                                 {% if t.plan_label == 'Пакет S' %}
-                                    <span class="text-[11px] font-semibold px-2 py-0.5 rounded bg-cyan-900/40 text-cyan-300 border border-cyan-700/40">{{ t.plan_label }}</span>
-                                    {% elif t.plan_label == 'Пакет M' %}
-                                    <span class="text-[11px] font-semibold px-2 py-0.5 rounded bg-sky-900/40 text-sky-300 border border-sky-700/40">{{ t.plan_label }}</span>
-                                    {% elif t.plan_label == 'Пакет L' %}
-                                    <span class="text-[11px] font-semibold px-2 py-0.5 rounded bg-amber-900/40 text-amber-300 border border-amber-700/40">{{ t.plan_label }}</span>
-                                    {% else %}
-                                    <span class="text-[11px] font-semibold px-2 py-0.5 rounded bg-violet-900/40 text-violet-300 border border-violet-700/40">{{ t.plan_label }}</span>
-                                    {% endif %}
-                            </td>
-                            <td class="py-2.5 pr-3 text-xs text-slate-400 capitalize">{{ t.billing_cycle }}</td>
-                            <td class="py-2.5 pr-3 text-sm font-semibold text-slate-200 whitespace-nowrap">₽ {{ t.amount_str }}</td>
-                            <td class="py-2.5 pr-3">
-                                {% if t.status == 'completed' %}
-                                <span class="inline-flex items-center gap-1 text-[11px] text-emerald-400"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>Active</span>
-                                {% elif t.status == 'pending' %}
-                                <span class="inline-flex items-center gap-1 text-[11px] text-amber-400"><span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>Pending</span>
+                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/25">{{ t.plan_label }}</span>
+                                {% elif t.plan_label == 'Пакет M' %}
+                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-300 border border-sky-500/25">{{ t.plan_label }}</span>
+                                {% elif t.plan_label == 'Пакет L' %}
+                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/25">{{ t.plan_label }}</span>
                                 {% else %}
-                                <span class="inline-flex items-center gap-1 text-[11px] text-red-400"><span class="w-1.5 h-1.5 rounded-full bg-red-400"></span>Failed</span>
+                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-300 border border-violet-500/25">{{ t.plan_label }}</span>
                                 {% endif %}
                             </td>
-                            <td class="py-2.5 text-xs text-slate-400 whitespace-nowrap">{{ t.created_at_str }}</td>
+                            <td class="py-2.5 pr-2 text-slate-400 capitalize">{{ t.billing_cycle }}</td>
+                            <td class="py-2.5 pr-2 font-bold text-white whitespace-nowrap">₽ {{ t.amount_str }}</td>
+                            <td class="py-2.5 pr-2">
+                                {% if t.status == 'completed' %}
+                                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/25">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>Active
+                                </span>
+                                {% elif t.status == 'pending' %}
+                                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/25">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>Pending
+                                </span>
+                                {% else %}
+                                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-400 border border-rose-500/25">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span>Failed
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td class="py-2.5 text-slate-400 whitespace-nowrap text-[11px]">{{ t.created_at_str }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
             {% else %}
-            <div class="text-sm text-slate-500 py-10 text-center">Нет транзакций</div>
+            <div class="text-xs text-slate-400 py-12 text-center font-mono">Нет транзакций</div>
             {% endif %}
         </div>
 
         <!-- Live Activity Feed -->
-        <div class="col-span-12 lg:col-span-6 bg-[#111827] border border-[#1E293B] rounded-xl p-5">
+        <div class="col-span-12 lg:col-span-6 card-spring p-5">
             <div class="flex items-center justify-between mb-4">
-                <h2 class="text-sm font-semibold text-slate-200 flex items-center gap-2">
-                    Live Activity Feed &amp; Survey Generation Log
-                    <span class="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 rounded-full px-2 py-0.5">
-                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>Live
+                <h2 class="text-sm font-bold text-white tracking-tight flex items-center gap-2">
+                    Живой лог генераций
+                    <span class="inline-flex items-center gap-1.5 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/25 rounded-full px-2 py-0.5 font-mono">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 pulse-live"></span>Live
                     </span>
                 </h2>
-                <a href="{% url 'stats2975' %}" class="text-[11px] text-blue-400 hover:text-blue-300">View All →</a>
+                <a href="{% url 'stats2975' %}" class="text-xs text-blue-400 hover:text-blue-300 font-medium btn-spring">Все →</a>
             </div>
             {% if live_feed %}
             <div class="overflow-x-auto">
-                <table class="w-full text-left">
+                <table class="w-full text-left font-mono">
                     <thead>
-                        <tr class="text-[10px] uppercase tracking-wide text-slate-500 border-b border-[#1E293B]">
-                            <th class="pb-2 font-medium">Time</th>
-                            <th class="pb-2 font-medium">Survey Title</th>
-                            <th class="pb-2 font-medium">Questions</th>
-                            <th class="pb-2 font-medium">Model</th>
-                            <th class="pb-2 font-medium">Views</th>
+                        <tr class="text-[10px] uppercase tracking-wider text-slate-400 border-b border-borderSubtle">
+                            <th class="pb-2.5 font-semibold">Время</th>
+                            <th class="pb-2.5 font-semibold font-sans">Тест</th>
+                            <th class="pb-2.5 font-semibold">Вопросы</th>
+                            <th class="pb-2.5 font-semibold">Модель</th>
+                            <th class="pb-2.5 font-semibold">Просмотры</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody class="divide-y divide-borderSubtle/60 text-xs">
                         {% for s in live_feed %}
-                        <tr class="border-b border-[#1E293B]/60 last:border-0">
-                            <td class="py-2.5 pr-3 text-xs text-slate-400 whitespace-nowrap">{{ s.time }}</td>
-                            <td class="py-2.5 pr-3 text-sm text-slate-200 truncate max-w-[200px]">{{ s.title }}</td>
-                            <td class="py-2.5 pr-3 text-xs text-slate-300">{{ s.questions_count }}</td>
-                            <td class="py-2.5 pr-3 text-xs text-slate-400">{{ s.model_name }}</td>
-                            <td class="py-2.5 text-xs text-slate-300">{{ s.views }}</td>
+                        <tr class="hover:bg-surfaceElevated/50 transition-colors">
+                            <td class="py-2.5 pr-2 text-slate-400 whitespace-nowrap text-[11px]">{{ s.time }}</td>
+                            <td class="py-2.5 pr-2 font-semibold text-white font-sans truncate max-w-[200px]">{{ s.title }}</td>
+                            <td class="py-2.5 pr-2 text-slate-300 font-bold">{{ s.questions_count }}</td>
+                            <td class="py-2.5 pr-2 text-slate-400 text-[11px]">{{ s.model_name }}</td>
+                            <td class="py-2.5 text-slate-300">{{ s.views }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
             {% else %}
-            <div class="text-sm text-slate-500 py-10 text-center">Нет сгенерированных тестов</div>
+            <div class="text-xs text-slate-400 py-12 text-center font-mono">Нет сгенерированных тестов</div>
             {% endif %}
         </div>
     </section>
 
-    <!-- ============ FULL TRANSACTIONS LIST ============ -->
-    <section id="transactions" class="bg-[#111827] border border-[#1E293B] rounded-xl p-5">
+    <!-- ============ ПОЛНАЯ ТАБЛИЦА ТРАНЗАКЦИЙ ============ -->
+    <section id="transactions" class="card-spring p-5 mb-8">
         <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
             <div>
-                <h2 class="text-sm font-semibold text-slate-200">Все транзакции</h2>
-                <p class="text-[11px] text-slate-500 mt-0.5">Всего: {{ transactions_total }} • Начисление тестов, выдача Премиума и смена статуса платежа</p>
+                <h2 class="text-sm font-bold text-white tracking-tight">Все транзакции платформы</h2>
+                <p class="text-xs text-slate-400 mt-0.5">Всего: <b class="text-white font-mono">{{ transactions_total }}</b> • Ручное начисление тестов, выдача Премиума и управление статусом</p>
             </div>
-            <span class="text-[11px] text-slate-500">Страница {{ page_number }} из {{ page_count }}</span>
+            <span class="text-xs font-mono text-slate-400 bg-canvas border border-borderSubtle px-2.5 py-1 rounded-lg">Стр. {{ page_number }} из {{ page_count }}</span>
         </div>
 
         {% if transactions %}
         <div class="overflow-x-auto">
-            <table class="w-full text-left min-w-[900px]">
+            <table class="w-full text-left min-w-[950px] font-mono">
                 <thead>
-                    <tr class="text-[10px] uppercase tracking-wide text-slate-500 border-b border-[#1E293B]">
-                        <th class="pb-2 font-medium">User</th>
-                        <th class="pb-2 font-medium">Plan</th>
-                        <th class="pb-2 font-medium">Cycle</th>
-                        <th class="pb-2 font-medium">Amount</th>
-                        <th class="pb-2 font-medium">Status</th>
-                        <th class="pb-2 font-medium">Date</th>
-                        <th class="pb-2 font-medium text-right">Actions</th>
+                    <tr class="text-[10px] uppercase tracking-wider text-slate-400 border-b border-borderSubtle">
+                        <th class="pb-2.5 font-semibold font-sans">Клиент</th>
+                        <th class="pb-2.5 font-semibold">Тариф</th>
+                        <th class="pb-2.5 font-semibold">Цикл</th>
+                        <th class="pb-2.5 font-semibold">Сумма</th>
+                        <th class="pb-2.5 font-semibold">Статус платежа</th>
+                        <th class="pb-2.5 font-semibold">Дата</th>
+                        <th class="pb-2.5 font-semibold text-right font-sans">Действия</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody class="divide-y divide-borderSubtle/60 text-xs">
                     {% for t in transactions %}
-                    <tr class="border-b border-[#1E293B]/60 last:border-0 hover:bg-slate-900/40 transition">
-                        <td class="py-3 pr-3">
-                            <div class="text-sm text-slate-200">{{ t.username }}</div>
-                            <div class="text-[10px] text-slate-500">{{ t.email }}</div>
+                    <tr class="hover:bg-surfaceElevated/50 transition-colors">
+                        <td class="py-3 pr-2">
+                            <div class="font-semibold text-white font-sans">{{ t.username }}</div>
+                            <div class="text-[10px] text-slate-400">{{ t.email }}</div>
                         </td>
-                        <td class="py-3 pr-3">
+                        <td class="py-3 pr-2">
                             {% if t.plan_label == 'Пакет S' %}
-                                <span class="text-[11px] font-semibold px-2 py-0.5 rounded bg-cyan-900/40 text-cyan-300 border border-cyan-700/40">{{ t.plan_label }}</span>
-                                {% elif t.plan_label == 'Пакет M' %}
-                                <span class="text-[11px] font-semibold px-2 py-0.5 rounded bg-sky-900/40 text-sky-300 border border-sky-700/40">{{ t.plan_label }}</span>
-                                {% elif t.plan_label == 'Пакет L' %}
-                                <span class="text-[11px] font-semibold px-2 py-0.5 rounded bg-amber-900/40 text-amber-300 border border-amber-700/40">{{ t.plan_label }}</span>
-                                {% else %}
-                                <span class="text-[11px] font-semibold px-2 py-0.5 rounded bg-violet-900/40 text-violet-300 border border-violet-700/40">{{ t.plan_label }}</span>
-                                {% endif %}
+                                <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/25">{{ t.plan_label }}</span>
+                            {% elif t.plan_label == 'Пакет M' %}
+                                <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-sky-500/10 text-sky-300 border border-sky-500/25">{{ t.plan_label }}</span>
+                            {% elif t.plan_label == 'Пакет L' %}
+                                <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/25">{{ t.plan_label }}</span>
+                            {% else %}
+                                <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-violet-500/10 text-violet-300 border border-violet-500/25">{{ t.plan_label }}</span>
+                            {% endif %}
                         </td>
-                        <td class="py-3 pr-3 text-xs text-slate-400 capitalize">{{ t.billing_cycle }}</td>
-                        <td class="py-3 pr-3 text-sm font-semibold text-slate-200 whitespace-nowrap">₽ {{ t.amount_str }}</td>
-                        <td class="py-3 pr-3">
+                        <td class="py-3 pr-2 text-slate-400 capitalize">{{ t.billing_cycle }}</td>
+                        <td class="py-3 pr-2 font-bold text-white whitespace-nowrap">₽ {{ t.amount_str }}</td>
+                        <td class="py-3 pr-2">
                             <select
-                                class="text-[11px] font-medium rounded-md px-2 py-1 bg-slate-900 border border-[#1E293B] outline-none
-                                {% if t.status == 'completed' %}text-emerald-400{% elif t.status == 'pending' %}text-amber-400{% else %}text-red-400{% endif %}"
+                                class="text-[11px] font-bold rounded-lg px-2.5 py-1 bg-canvas border border-borderSubtle outline-none transition-colors cursor-pointer hover:border-borderHover
+                                {% if t.status == 'completed' %}text-emerald-400{% elif t.status == 'pending' %}text-amber-400{% else %}text-rose-400{% endif %}"
                                 onchange="Pulse.setStatus({{ t.id }}, this.value)">
-                                <option value="pending" {% if t.status == 'pending' %}selected{% endif %}>pending</option>
-                                <option value="completed" {% if t.status == 'completed' %}selected{% endif %}>completed</option>
-                                <option value="failed" {% if t.status == 'failed' %}selected{% endif %}>failed</option>
+                                <option value="pending" class="bg-surface text-amber-400" {% if t.status == 'pending' %}selected{% endif %}>pending</option>
+                                <option value="completed" class="bg-surface text-emerald-400" {% if t.status == 'completed' %}selected{% endif %}>completed</option>
+                                <option value="failed" class="bg-surface text-rose-400" {% if t.status == 'failed' %}selected{% endif %}>failed</option>
                             </select>
                         </td>
-                        <td class="py-3 pr-3 text-xs text-slate-400 whitespace-nowrap">{{ t.created_at_str }}</td>
+                        <td class="py-3 pr-2 text-slate-400 whitespace-nowrap text-[11px]">{{ t.created_at_str }}</td>
                         <td class="py-3 text-right whitespace-nowrap">
                             <button
                                 onclick="Pulse.addTests('{{ t.staff_id }}', '{{ t.username|escapejs }}')"
-                                class="inline-flex items-center gap-1 text-[11px] font-medium text-blue-400 hover:text-blue-300 bg-blue-500/10 border border-blue-500/30 rounded-md px-2 py-1 mr-1">
+                                class="btn-spring inline-flex items-center gap-1.5 text-xs font-semibold text-blue-300 bg-blue-500/10 border border-blue-500/25 hover:bg-blue-500/20 rounded-lg px-2.5 py-1 mr-1">
                                 <i class="fa-solid fa-plus text-[9px]"></i> Тесты
                             </button>
                             <button
                                 onclick="Pulse.grantPremium('{{ t.staff_id }}', '{{ t.username|escapejs }}')"
-                                class="inline-flex items-center gap-1 text-[11px] font-medium text-violet-300 hover:text-violet-200 bg-violet-500/10 border border-violet-500/30 rounded-md px-2 py-1">
+                                class="btn-spring inline-flex items-center gap-1.5 text-xs font-semibold text-violet-300 bg-violet-500/10 border border-violet-500/25 hover:bg-violet-500/20 rounded-lg px-2.5 py-1">
                                 <i class="fa-solid fa-crown text-[9px]"></i> Премиум
                             </button>
                         </td>
@@ -556,30 +656,31 @@
             </table>
         </div>
 
-        <!-- Pagination -->
+        <!-- Пагинация -->
         {% if page_count > 1 %}
-        <div class="flex items-center justify-between mt-4 pt-3 border-t border-[#1E293B]">
+        <div class="flex items-center justify-between mt-4 pt-3.5 border-t border-borderSubtle">
             <a href="?page={{ page_number|add:'-1' }}&range={{ range }}&start_date={{ start_date }}&end_date={{ end_date }}"
-               class="text-xs text-slate-400 hover:text-slate-200 {% if not page_has_prev %}pointer-events-none opacity-40{% endif %}">
+               class="btn-spring text-xs font-medium text-slate-400 hover:text-white px-3 py-1.5 rounded-lg bg-surface border border-borderSubtle {% if not page_has_prev %}pointer-events-none opacity-40{% endif %}">
                 ← Назад
             </a>
-            <span class="text-xs text-slate-500">Страница {{ page_number }} / {{ page_count }}</span>
+            <span class="text-xs font-mono text-slate-400">Стр. {{ page_number }} / {{ page_count }}</span>
             <a href="?page={{ page_number|add:'1' }}&range={{ range }}&start_date={{ start_date }}&end_date={{ end_date }}"
-               class="text-xs text-slate-400 hover:text-slate-200 {% if not page_has_next %}pointer-events-none opacity-40{% endif %}">
+               class="btn-spring text-xs font-medium text-slate-400 hover:text-white px-3 py-1.5 rounded-lg bg-surface border border-borderSubtle {% if not page_has_next %}pointer-events-none opacity-40{% endif %}">
                 Вперёд →
             </a>
         </div>
         {% endif %}
         {% else %}
-        <div class="text-sm text-slate-500 py-12 text-center">Транзакций пока нет</div>
+        <div class="text-xs text-slate-400 py-14 text-center font-mono">Транзакций пока нет</div>
         {% endif %}
     </section>
 
 </div>
 
-<!-- Toast -->
-<div id="toast" class="fixed bottom-6 right-6 z-50 hidden rounded-lg bg-slate-800 border border-[#1E293B] px-4 py-3 text-sm text-slate-100 shadow-xl"></div>
+<!-- Тост уведомлений -->
+<div id="toast" class="fixed bottom-6 right-6 z-50 hidden rounded-xl bg-surfaceElevated border border-borderSubtle px-4 py-3 text-sm text-white shadow-2xl backdrop-blur-md"></div>
 
+<!-- ============ ДВИЖОК СКРИПТОВ И ГРАФИКОВ ============ -->
 <script>
 const CSRF = document.querySelector('meta[name="csrf-token"]')?.content || '';
 
@@ -587,13 +688,13 @@ function toast(msg, type) {
     const el = document.getElementById('toast');
     if (!el) return;
     el.textContent = msg;
-    el.className = 'fixed bottom-6 right-6 z-50 rounded-lg px-4 py-3 text-sm shadow-xl ' +
+    el.className = 'fixed bottom-6 right-6 z-50 rounded-xl px-4 py-3 text-xs font-medium shadow-2xl backdrop-blur-md border ' +
         (type === 'ok'
-            ? 'bg-emerald-600/90 text-white border border-emerald-500'
-            : 'bg-red-600/90 text-white border border-red-500');
+            ? 'bg-emerald-950/90 text-emerald-200 border-emerald-500/40'
+            : 'bg-rose-950/90 text-rose-200 border-rose-500/40');
     el.style.opacity = '1';
     el.style.transform = 'translateY(0)';
-    setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translateY(8px)'; }, 3000);
+    setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translateY(8px)'; }, 3200);
 }
 
 async function postJSON(url, body) {
@@ -610,10 +711,10 @@ window.Pulse = {
         const amount = prompt('Сколько тестов начислить пользователю «' + username + '»?');
         if (amount === null) return;
         const n = parseInt(amount, 10);
-        if (!n || n <= 0) { toast('Введите корректное положительное число', 'error'); return; }
+        if (!n || n <= 0) { toast('Введите корректное число больше 0', 'error'); return; }
         const r = await postJSON('/api/admin/add-tests/', { staff_id: staffId, amount: n });
         if (r.ok) toast('Начислено ' + r.added + ' тестов. Новый баланс: ' + r.new_balance, 'ok');
-        else toast(r.error || 'Ошибка', 'error');
+        else toast(r.error || 'Ошибка начисления', 'error');
     },
     async grantPremium(staffId, username) {
         const daysRaw = prompt('На сколько дней выдать Премиум «' + username + '»? (по умолчанию 30)');
@@ -623,16 +724,16 @@ window.Pulse = {
         if (!confirm('Выдать Премиум на ' + days + ' дн. пользователю «' + username + '»?')) return;
         const r = await postJSON('/api/admin/grant-premium/', { staff_id: staffId, days: days });
         if (r.ok) toast('Премиум выдан до ' + r.end_date, 'ok');
-        else toast(r.error || 'Ошибка', 'error');
+        else toast(r.error || 'Ошибка выдачи Премиума', 'error');
     },
     async setStatus(paymentId, status) {
         const r = await postJSON('/api/admin/set-payment-status/', { payment_id: paymentId, status: status });
-        if (r.ok) toast('Статус платежа изменён на «' + status + '»', 'ok');
-        else toast(r.error || 'Ошибка', 'error');
+        if (r.ok) toast('Статус изменен на «' + status + '»', 'ok');
+        else toast(r.error || 'Ошибка изменения статуса', 'error');
     },
 };
 
-// ---------- Charts ----------
+// ---------- Спарклайны (Чистый микро-стиль) ----------
 function sparkline(id, data, color, type) {
     const el = document.getElementById(id);
     if (!el || !window.Chart) return;
@@ -644,13 +745,14 @@ function sparkline(id, data, color, type) {
             datasets: [{
                 data: data,
                 borderColor: color,
-                backgroundColor: isBar ? color : (color + '30'),
+                backgroundColor: isBar ? color : (color + '22'),
                 fill: !isBar,
-                tension: 0.4,
+                tension: 0.45,
                 pointRadius: 0,
                 borderWidth: 1.5,
-                barPercentage: 0.7,
+                barPercentage: 0.65,
                 categoryPercentage: 0.85,
+                borderRadius: 2,
             }],
         },
         options: {
@@ -703,23 +805,29 @@ document.addEventListener('DOMContentLoaded', () => {
                     plugins: {
                         legend: { display: false },
                         tooltip: {
-                            backgroundColor: '#0f172a',
-                            borderColor: '#1e293b',
+                            backgroundColor: '#090A0F',
+                            borderColor: 'rgba(255,255,255,0.08)',
                             borderWidth: 1,
-                            titleColor: '#e2e8f0',
-                            bodyColor: '#cbd5e1',
+                            titleColor: '#F8FAFC',
+                            bodyColor: '#94A3B8',
+                            padding: 10,
+                            boxPadding: 4,
+                            cornerRadius: 8,
                             callbacks: {
-                                label: (ctx) => ctx.dataset.label + ': ₽ ' + Number(ctx.parsed.y).toLocaleString('ru-RU'),
+                                label: (ctx) => ' ' + ctx.dataset.label + ': ₽ ' + Number(ctx.parsed.y).toLocaleString('ru-RU'),
                             },
                         },
                     },
                     scales: {
-                        x: { grid: { color: 'rgba(30,41,59,0.4)' }, ticks: { color: '#64748b', font: { size: 10 }, maxTicksLimit: 10 } },
+                        x: { 
+                            grid: { color: 'rgba(255,255,255,0.04)' }, 
+                            ticks: { color: '#64748B', font: { size: 10, family: 'JetBrains Mono' }, maxTicksLimit: 10 } 
+                        },
                         y: {
-                            grid: { color: 'rgba(30,41,59,0.4)' },
+                            grid: { color: 'rgba(255,255,255,0.04)' },
                             ticks: {
-                                color: '#64748b',
-                                font: { size: 10 },
+                                color: '#64748B',
+                                font: { size: 10, family: 'JetBrains Mono' },
                                 callback: (v) => v >= 1e6 ? (v / 1e6).toFixed(1) + 'M ₽' : v >= 1e3 ? (v / 1e3).toFixed(0) + 'K ₽' : v + ' ₽',
                             },
                         },
@@ -734,16 +842,19 @@ document.addEventListener('DOMContentLoaded', () => {
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     if (!window.Chart) return;
-    var gridColor = 'rgba(30,41,59,0.4)';
-    var tickColor = '#64748b';
+    var gridColor = 'rgba(255, 255, 255, 0.04)';
+    var tickColor = '#64748B';
 
     function axes(money) {
         return {
-            x: { grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 10 }, maxTicksLimit: 10 } },
+            x: { 
+                grid: { color: gridColor }, 
+                ticks: { color: tickColor, font: { size: 10, family: 'JetBrains Mono' }, maxTicksLimit: 10 } 
+            },
             y: {
                 grid: { color: gridColor },
                 ticks: {
-                    color: tickColor, font: { size: 10 }, beginAtZero: true,
+                    color: tickColor, font: { size: 10, family: 'JetBrains Mono' }, beginAtZero: true,
                     callback: money ? function (v) { return v >= 1e6 ? (v / 1e6).toFixed(1) + 'M ₽' : v >= 1e3 ? (v / 1e3).toFixed(0) + 'K ₽' : v + ' ₽'; } : undefined
                 }
             }
@@ -760,7 +871,7 @@ document.addEventListener('DOMContentLoaded', function () {
         var rev = {{ revenue_sparkline_json|safe }};
         mk('chart-revenue-daily', {
             type: 'line',
-            data: { labels: rev.labels, datasets: [{ label: 'Выручка, ₽', data: rev.data, borderColor: '#3b82f6', backgroundColor: '#3b82f622', fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2 }] },
+            data: { labels: rev.labels, datasets: [{ label: 'Выручка, ₽', data: rev.data, borderColor: '#3B82F6', backgroundColor: '#3B82F618', fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2 }] },
             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: axes(true) }
         });
     } catch (e) { console.warn(e); }
@@ -769,8 +880,8 @@ document.addEventListener('DOMContentLoaded', function () {
         var planRev = {{ plan_revenue_json|safe }};
         mk('chart-plan-revenue', {
             type: 'doughnut',
-            data: { labels: planRev.labels, datasets: [{ data: planRev.data, backgroundColor: planRev.colors, borderColor: '#111827', borderWidth: 2 }] },
-            options: { responsive: true, maintainAspectRatio: false, cutout: '62%', plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 10 }, boxWidth: 10 } } } }
+            data: { labels: planRev.labels, datasets: [{ data: planRev.data, backgroundColor: planRev.colors, borderColor: '#0E131F', borderWidth: 3 }] },
+            options: { responsive: true, maintainAspectRatio: false, cutout: '68%', plugins: { legend: { position: 'bottom', labels: { color: '#94A3B8', font: { size: 10 }, boxWidth: 8, padding: 12 } } } }
         });
     } catch (e) { console.warn(e); }
 
@@ -779,10 +890,10 @@ document.addEventListener('DOMContentLoaded', function () {
         mk('chart-revenue-source', {
             type: 'line',
             data: { labels: src2.labels, datasets: [
-                { label: 'Новые', data: src2.new_revenue, borderColor: '#10b981', backgroundColor: '#10b98122', fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2 },
-                { label: 'Повторные', data: src2.expansion_revenue, borderColor: '#8b5cf6', backgroundColor: '#8b5cf622', fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2 }
+                { label: 'Новые', data: src2.new_revenue, borderColor: '#10B981', backgroundColor: '#10B98118', fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2 },
+                { label: 'Повторные', data: src2.expansion_revenue, borderColor: '#8B5CF6', backgroundColor: '#8B5CF618', fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2 }
             ] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#94a3b8', font: { size: 10 }, boxWidth: 10 } } }, scales: axes(true) }
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#94A3B8', font: { size: 10 }, boxWidth: 8 } } }, scales: axes(true) }
         });
     } catch (e) { console.warn(e); }
 
@@ -791,8 +902,8 @@ document.addEventListener('DOMContentLoaded', function () {
         mk('chart-subs-growth', {
             type: 'bar',
             data: { labels: sg.labels, datasets: sg.datasets },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#94a3b8', font: { size: 10 }, boxWidth: 10 } } },
-                scales: { x: { stacked: true, grid: { display: false }, ticks: { color: tickColor, font: { size: 10 }, maxTicksLimit: 10 } }, y: { stacked: true, grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 10 } }, beginAtZero: true } } }
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#94A3B8', font: { size: 10 }, boxWidth: 8 } } },
+                scales: { x: { stacked: true, grid: { display: false }, ticks: { color: tickColor, font: { size: 10, family: 'JetBrains Mono' }, maxTicksLimit: 10 } }, y: { stacked: true, grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 10, family: 'JetBrains Mono' } }, beginAtZero: true } } }
         });
     } catch (e) { console.warn(e); }
 
@@ -809,7 +920,7 @@ document.addEventListener('DOMContentLoaded', function () {
         var arpu = {{ arpu_json|safe }};
         mk('chart-arpu', {
             type: 'line',
-            data: { labels: arpu.labels, datasets: [{ label: 'ARPU, ₽', data: arpu.data, borderColor: '#22d3ee', backgroundColor: '#22d3ee22', fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2 }] },
+            data: { labels: arpu.labels, datasets: [{ label: 'ARPU, ₽', data: arpu.data, borderColor: '#22D3EE', backgroundColor: '#22D3EE18', fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2 }] },
             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: axes(true) }
         });
     } catch (e) { console.warn(e); }
@@ -818,8 +929,8 @@ document.addEventListener('DOMContentLoaded', function () {
         var sc = {{ score_distribution_json|safe }};
         mk('chart-scores', {
             type: 'doughnut',
-            data: { labels: sc.labels, datasets: [{ data: sc.data, backgroundColor: ['#10b981', '#f59e0b', '#ef4444'], borderColor: '#111827', borderWidth: 2 }] },
-            options: { responsive: true, maintainAspectRatio: false, cutout: '62%', plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 10 }, boxWidth: 10 } } } }
+            data: { labels: sc.labels, datasets: [{ data: sc.data, backgroundColor: ['#10B981', '#F59E0B', '#EF4444'], borderColor: '#0E131F', borderWidth: 3 }] },
+            options: { responsive: true, maintainAspectRatio: false, cutout: '68%', plugins: { legend: { position: 'bottom', labels: { color: '#94A3B8', font: { size: 10 }, boxWidth: 8, padding: 12 } } } }
         });
     } catch (e) { console.warn(e); }
 
@@ -827,9 +938,9 @@ document.addEventListener('DOMContentLoaded', function () {
         var fn = {{ funnel_json|safe }};
         mk('chart-funnel', {
             type: 'bar',
-            data: { labels: fn.labels, datasets: [{ label: 'Пользователей', data: fn.data, backgroundColor: '#6366f1', borderRadius: 4 }] },
+            data: { labels: fn.labels, datasets: [{ label: 'Пользователей', data: fn.data, backgroundColor: '#6366F1', borderRadius: 4 }] },
             options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
-                scales: { x: { grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 10 } }, beginAtZero: true }, y: { grid: { display: false }, ticks: { color: tickColor, font: { size: 10 } } } } }
+                scales: { x: { grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 10, family: 'JetBrains Mono' } }, beginAtZero: true }, y: { grid: { display: false }, ticks: { color: tickColor, font: { size: 10 } } } } }
         });
     } catch (e) { console.warn(e); }
 
@@ -838,10 +949,10 @@ document.addEventListener('DOMContentLoaded', function () {
         mk('chart-attempts', {
             type: 'bar',
             data: { labels: at.labels, datasets: [
-                { label: 'Текущие 7д', data: at.current_period_data, backgroundColor: '#3b82f6', borderRadius: 4 },
-                { label: 'Прошлые 7д', data: at.previous_period_data, backgroundColor: '#334155', borderRadius: 4 }
+                { label: 'Текущие 7д', data: at.current_period_data, backgroundColor: '#3B82F6', borderRadius: 4 },
+                { label: 'Прошлые 7д', data: at.previous_period_data, backgroundColor: '#1E293B', borderRadius: 4 }
             ] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#94a3b8', font: { size: 10 }, boxWidth: 10 } } }, scales: axes(false) }
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#94A3B8', font: { size: 10 }, boxWidth: 8 } } }, scales: axes(false) }
         });
     } catch (e) { console.warn(e); }
 
@@ -850,11 +961,11 @@ document.addEventListener('DOMContentLoaded', function () {
         mk('chart-regs', {
             type: 'bar',
             data: { labels: rg.labels, datasets: [
-                { label: 'Email', data: rg.email_data, backgroundColor: '#3b82f6' },
-                { label: 'Telegram', data: rg.telegram_data, backgroundColor: '#22d3ee' }
+                { label: 'Email', data: rg.email_data, backgroundColor: '#3B82F6', borderRadius: 3 },
+                { label: 'Telegram', data: rg.telegram_data, backgroundColor: '#22D3EE', borderRadius: 3 }
             ] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#94a3b8', font: { size: 10 }, boxWidth: 10 } } },
-                scales: { x: { stacked: true, grid: { display: false }, ticks: { color: tickColor, font: { size: 10 }, maxTicksLimit: 10 } }, y: { stacked: true, grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 10 } }, beginAtZero: true } } }
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#94A3B8', font: { size: 10 }, boxWidth: 8 } } },
+                scales: { x: { stacked: true, grid: { display: false }, ticks: { color: tickColor, font: { size: 10, family: 'JetBrains Mono' }, maxTicksLimit: 10 } }, y: { stacked: true, grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 10, family: 'JetBrains Mono' } }, beginAtZero: true } } }
         });
     } catch (e) { console.warn(e); }
 
@@ -862,7 +973,7 @@ document.addEventListener('DOMContentLoaded', function () {
         var tk = {{ tokens_sparkline_json|safe }};
         mk('chart-tokens', {
             type: 'line',
-            data: { labels: tk.labels, datasets: [{ label: 'Токены', data: tk.data, borderColor: '#f59e0b', backgroundColor: '#f59e0b22', fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2 }] },
+            data: { labels: tk.labels, datasets: [{ label: 'Токены', data: tk.data, borderColor: '#F59E0B', backgroundColor: '#F59E0B18', fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2 }] },
             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: axes(false) }
         });
     } catch (e) { console.warn(e); }
@@ -871,12 +982,11 @@ document.addEventListener('DOMContentLoaded', function () {
         var cr = {{ creation_sparkline_json|safe }};
         mk('chart-creation', {
             type: 'bar',
-            data: { labels: cr.labels, datasets: [{ label: 'Тестов', data: cr.data, backgroundColor: '#8b5cf6', borderRadius: 4 }] },
+            data: { labels: cr.labels, datasets: [{ label: 'Тестов', data: cr.data, backgroundColor: '#8B5CF6', borderRadius: 4 }] },
             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: axes(false) }
         });
     } catch (e) { console.warn(e); }
 });
 </script>
 </body>
-
 </html>
