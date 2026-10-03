@@ -5298,328 +5298,527 @@ def get_financial_pulse_data(start_date, end_date):
     }
 
 
+# =====================================================================
+# ПУЛЬС ЛЕТУЧКИ — новые хелперы, action-эндпоинты и переписанный admin_stats
+# =====================================================================
+
+
+def _pulse_pct_change(new, old):
+    if not old:
+        return 0.0 if not new else 100.0
+    return round((new - old) / old * 100.0, 1)
+
+
+def _pulse_compact(n):
+    n = float(n or 0)
+    if n >= 1_000_000:
+        return f"{n / 1_000_000:.1f}M"
+    if n >= 1_000:
+        return f"{n / 1_000:.1f}K"
+    return f"{int(round(n))}"
+
+
+def _pulse_model_label(raw):
+    if not raw:
+        return "—"
+    s = str(raw).strip()
+    if "/" in s:
+        s = s.split("/")[-1]
+    s = s.replace("_", " ").replace("-", " ")
+    known = {
+        "gpt 4o": "GPT-4o",
+        "gpt 4 o": "GPT-4o",
+        "gpt 4": "GPT-4",
+        "gpt 3 5 turbo": "GPT-3.5 Turbo",
+        "claude 3 5 sonnet": "Claude 3.5 Sonnet",
+        "claude 3 opus": "Claude 3 Opus",
+        "claude 3 sonnet": "Claude 3 Sonnet",
+        "claude 3 haiku": "Claude 3 Haiku",
+        "deepseek chat": "DeepSeek Chat",
+        "deepseek reasoner": "DeepSeek Reasoner",
+    }
+    return known.get(s.lower(), s.title())
+
+
+# Реально существующие виды тарифов (ровно 4, иначе не бывает):
+# package-small -> Пакет S, package-medium -> Пакет M, package-large -> Пакет L, всё остальное -> Премиум
+PULSE_PLAN_ORDER = ("Пакет S", "Пакет M", "Пакет L", "Премиум")
+
+PULSE_PLAN_COLORS = {
+    "Пакет S": "#22d3ee",
+    "Пакет M": "#3b82f6",
+    "Пакет L": "#f97316",
+    "Премиум": "#8b5cf6",
+}
+
+PULSE_PLAN_BADGE = {
+    "Пакет S": "bg-cyan-900/40 text-cyan-300 border-cyan-700/40",
+    "Пакет M": "bg-sky-900/40 text-sky-300 border-sky-700/40",
+    "Пакет L": "bg-amber-900/40 text-amber-300 border-amber-700/40",
+    "Премиум": "bg-violet-900/40 text-violet-300 border-violet-700/40",
+}
+
+
+def _pulse_plan_label(plan_name):
+    """Сводит любое название тарифа к 4 реально существующим видам:
+    Пакет S / Пакет M / Пакет L / Премиум."""
+    p = (plan_name or "").strip()
+    low = p.lower()
+    if p == "Пакет S" or "package-small" in low or low in ("small", "s", "пакет s"):
+        return "Пакет S"
+    if p == "Пакет M" or "package-medium" in low or low in ("medium", "m", "пакет m"):
+        return "Пакет M"
+    if p == "Пакет L" or "package-large" in low or low in ("large", "l", "пакет l"):
+        return "Пакет L"
+    return "Премиум"
+
+
+@require_POST
+@user_passes_test(lambda u: u.is_superuser)
+def admin_add_tests_api(request):
+    """Начислить N пакетов тестов конкретному пользователю (test_balance)."""
+    try:
+        data = json.loads(request.body or "{}")
+    except (json.JSONDecodeError, TypeError):
+        data = {}
+    staff_id = data.get("staff_id")
+    try:
+        amount = int(data.get("amount") or 0)
+    except (TypeError, ValueError):
+        amount = 0
+    if not staff_id or amount <= 0:
+        return JsonResponse({"ok": False, "error": "Не указан пользователь или количество тестов"}, status=400)
+    try:
+        user = AuthUser.objects.get(id_staff=staff_id)
+    except AuthUser.DoesNotExist:
+        return JsonResponse({"ok": False, "error": "Пользователь не найден"}, status=404)
+    result = AccessService(staff_id=str(staff_id)).add_credits(amount)
+    return JsonResponse({
+        "ok": bool(result.get("success")),
+        "new_balance": result.get("new_balance", user.test_balance),
+        "added": result.get("added", amount),
+        "error": result.get("error"),
+    })
+
+
+@require_POST
+@user_passes_test(lambda u: u.is_superuser)
+def admin_grant_premium_api(request):
+    """Выдать пользователю Премиум-подписку на N дней (по умолчанию 30)."""
+    try:
+        data = json.loads(request.body or "{}")
+    except (json.JSONDecodeError, TypeError):
+        data = {}
+    staff_id = data.get("staff_id")
+    try:
+        days = int(data.get("days") or 30)
+    except (TypeError, ValueError):
+        days = 30
+    if days <= 0:
+        days = 30
+    if not staff_id:
+        return JsonResponse({"ok": False, "error": "Не указан пользователь"}, status=400)
+    try:
+        user = AuthUser.objects.get(id_staff=staff_id)
+    except AuthUser.DoesNotExist:
+        return JsonResponse({"ok": False, "error": "Пользователь не найден"}, status=404)
+    now = timezone.now()
+    sub, created = Subscription.objects.get_or_create(
+        staff_id=str(user.id_staff),
+        defaults={
+            "plan_name": "premium_plan",
+            "end_date": now + timedelta(days=days),
+            "status": "active",
+            "billing_cycle": "monthly",
+        },
+    )
+    sub.activate_subscription(duration_days=days, new_plan_name="premium_plan")
+    return JsonResponse({
+        "ok": True,
+        "plan": "Premium",
+        "end_date": sub.end_date.strftime("%d.%m.%Y"),
+        "created": created,
+    })
+
+
+@require_POST
+@user_passes_test(lambda u: u.is_superuser)
+def admin_set_payment_status_api(request):
+    """Изменить статус платежа (pending / completed / failed)."""
+    try:
+        data = json.loads(request.body or "{}")
+    except (json.JSONDecodeError, TypeError):
+        data = {}
+    payment_id = data.get("payment_id")
+    status = data.get("status")
+    if status not in ("pending", "completed", "failed"):
+        return JsonResponse({"ok": False, "error": "Некорректный статус"}, status=400)
+    try:
+        payment = Payment.objects.get(id=payment_id)
+    except (Payment.DoesNotExist, ValueError, TypeError):
+        return JsonResponse({"ok": False, "error": "Платёж не найден"}, status=404)
+    payment.status = status
+    payment.save(update_fields=["status"])
+    return JsonResponse({"ok": True, "status": payment.status})
+
+
+
 @login_required
 def admin_stats(request):
     if not request.user.is_superuser:
         return redirect(f"/profile/{request.user.username}")
 
-    global total_revenue, completed_count
-
     today = timezone.now().date()
+    yesterday = today - timedelta(days=1)
+
+    # ---------------- Период для графиков ----------------
+    range_param = (request.GET.get("range") or "30D").upper()
     start_date_str = request.GET.get("start_date")
     end_date_str = request.GET.get("end_date")
-    start_date = (
-        datetime.strptime(start_date_str, "%Y-%m-%d").date()
-        if start_date_str
-        else today - timedelta(days=29)
-    )
-    end_date = (
-        datetime.strptime(end_date_str, "%Y-%m-%d").date() if end_date_str else today
-    )
-
-    date_range = (start_date, end_date)
+    if start_date_str and end_date_str:
+        try:
+            start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+            end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+        except ValueError:
+            start_date = today - timedelta(days=29)
+            end_date = today
+    else:
+        if range_param == "7D":
+            start_date = today - timedelta(days=6)
+        elif range_param == "90D":
+            start_date = today - timedelta(days=89)
+        elif range_param == "1Y":
+            start_date = today - timedelta(days=364)
+        elif range_param == "ALL":
+            start_date = today - timedelta(days=3650)
+        else:
+            range_param = "30D"
+            start_date = today - timedelta(days=29)
+        end_date = today
 
     real_users_qs = AuthUser.objects.annotate(username_len=Length("username")).filter(
-        username_len__lt=20
+        username_len__lt=40
     )
 
-    # --- Сбор данных для карточек (за период) ---
-    users_in_period = real_users_qs.filter(date_joined__date__range=date_range).count()
-    surveys_in_period = Survey.objects.filter(
-        updated_at__date__range=date_range,
-        id_staff__in=real_users_qs.values("id_staff"),
-    ).count()
-    answers_in_period = UserAnswers.objects.filter(
-        created_at__date__range=date_range
-    ).count()
-    subscriptions_in_period = Subscription.objects.filter(
-        start_date__date__range=date_range,
-        staff_id__in=real_users_qs.values("id_staff"),
-    ).count()
+    start_of_month = today.replace(day=1)
+    prev_month_end = start_of_month - timedelta(days=1)
+    start_of_prev_month = prev_month_end.replace(day=1)
 
-    # --- Сбор финансовых метрик (за все время) ---
-    completed_payments = Payment.objects.filter(status="completed")
-    total_revenue = completed_payments.aggregate(total=Sum("amount"))["total"] or 0
-    completed_count = completed_payments.count()
-    average_check = (total_revenue / completed_count) if completed_count > 0 else 0
-    total_attempts = Payment.objects.count()
-    payment_conversion = (
-        (completed_count / total_attempts * 100) if total_attempts > 0 else 0
+    # ---------------- Revenue / MRR ----------------
+    revenue_month = int(Payment.objects.filter(status="completed", created_at__date__gte=start_of_month).aggregate(s=Sum("amount"))["s"] or 0) / 100
+    revenue_prev_month = int(Payment.objects.filter(status="completed", created_at__date__range=(start_of_prev_month, prev_month_end)).aggregate(s=Sum("amount"))["s"] or 0) / 100
+    revenue_today = int(Payment.objects.filter(status="completed", created_at__date=today).aggregate(s=Sum("amount"))["s"] or 0) / 100
+
+    # ---------------- Active Subscriptions ----------------
+    subs_active = Subscription.objects.filter(status="active").count()
+    subs_inactive = Subscription.objects.filter(status="inactive").count()
+    subs_canceled = Subscription.objects.filter(status="canceled").count()
+    subs_total = subs_active + subs_inactive + subs_canceled
+    new_subs_month = Subscription.objects.filter(start_date__date__gte=start_of_month).count()
+    new_subs_prev_month = Subscription.objects.filter(start_date__date__range=(start_of_prev_month, prev_month_end)).count()
+
+    # ---------------- Test Generation ----------------
+    tests_total = Survey.objects.count()
+    tests_today = Survey.objects.filter(created_at__date=today).count()
+    tests_yesterday = Survey.objects.filter(created_at__date=yesterday).count()
+    tests_month = Survey.objects.filter(created_at__date__gte=start_of_month).count()
+    tests_prev_month = Survey.objects.filter(created_at__date__range=(start_of_prev_month, prev_month_end)).count()
+
+    # ---------------- Test Attempts & Engagement ----------------
+    attempts_total = TestAttempt.objects.count()
+    attempts_month = TestAttempt.objects.filter(created_at__date__gte=start_of_month).count()
+    attempts_prev_month = TestAttempt.objects.filter(created_at__date__range=(start_of_prev_month, prev_month_end)).count()
+    avg_score = TestAttempt.objects.filter(created_at__date__gte=today - timedelta(days=30)).exclude(total_questions=0).aggregate(a=Avg(F("score") * 100.0 / F("total_questions")))["a"] or 0
+    avg_score_prev = TestAttempt.objects.filter(created_at__date__range=(today - timedelta(days=59), today - timedelta(days=30))).exclude(total_questions=0).aggregate(a=Avg(F("score") * 100.0 / F("total_questions")))["a"] or 0
+
+    # ---------------- User Acquisition ----------------
+    total_real_users = real_users_qs.count()
+    new_users_month = real_users_qs.filter(date_joined__date__gte=start_of_month).count()
+    new_users_prev_month = real_users_qs.filter(date_joined__date__range=(start_of_prev_month, prev_month_end)).count()
+    dau = real_users_qs.filter(last_login__date=today).count()
+    dau_yesterday = real_users_qs.filter(last_login__date=yesterday).count()
+    wau = real_users_qs.filter(last_login__date__gte=today - timedelta(days=6)).count()
+    wau_prev = real_users_qs.filter(last_login__date__range=(today - timedelta(days=13), today - timedelta(days=7))).count()
+    mau = real_users_qs.filter(last_login__date__gte=today - timedelta(days=29)).count()
+    mau_prev = real_users_qs.filter(last_login__date__range=(today - timedelta(days=59), today - timedelta(days=30))).count()
+
+    # ---------------- Token Consumption & API ----------------
+    tokens_today = int(TokensUsed.objects.filter(created_at__date=today).aggregate(s=Sum("tokens_survey_used") + Sum("tokens_feedback_used"))["s"] or 0)
+    tokens_month = int(TokensUsed.objects.filter(created_at__date__gte=start_of_month).aggregate(s=Sum("tokens_survey_used") + Sum("tokens_feedback_used"))["s"] or 0)
+    tokens_prev_month = int(TokensUsed.objects.filter(created_at__date__range=(start_of_prev_month, prev_month_end)).aggregate(s=Sum("tokens_survey_used") + Sum("tokens_feedback_used"))["s"] or 0)
+
+    api_calls_today = APIKeyUsage.objects.filter(timestamp__date=today).count()
+    api_calls_yesterday = APIKeyUsage.objects.filter(timestamp__date=yesterday).count()
+    api_success_today = APIKeyUsage.objects.filter(timestamp__date=today, success=True).count()
+    api_success_yesterday = APIKeyUsage.objects.filter(timestamp__date=yesterday, success=True).count()
+    api_success_rate = round(api_success_today / api_calls_today * 100, 1) if api_calls_today else 100.0
+    api_success_rate_yesterday = round(api_success_yesterday / api_calls_yesterday * 100, 1) if api_calls_yesterday else 100.0
+    api_resp_today = int(APIKeyUsage.objects.filter(timestamp__date=today, response_time_ms__isnull=False).aggregate(a=Avg("response_time_ms"))["a"] or 0)
+    api_resp_yesterday = int(APIKeyUsage.objects.filter(timestamp__date=yesterday, response_time_ms__isnull=False).aggregate(a=Avg("response_time_ms"))["a"] or 0)
+
+    # ---------------- Графики (Chart.js) ----------------
+    revenue_chart = get_daily_revenue_data(start_date, end_date)
+    creation_chart = get_daily_creation_dynamics_data(start_date, end_date)
+    attempts_chart = get_daily_attempts_chart_data()
+    reg_chart = get_daily_registration_dynamics_data(start_date, end_date)
+    tokens_chart = get_daily_token_usage_chart_data(start_date, end_date)
+
+    # Рост: выручка по тарифам (Free / Standard / Premium / Ultra) по дням
+    day_labels = []
+    d = start_date
+    while d <= end_date:
+        day_labels.append(d.strftime("%d.%m"))
+        d += timedelta(days=1)
+    growth_rows = (
+        Payment.objects.filter(status="completed", created_at__date__range=(start_date, end_date))
+        .annotate(day=TruncDate("created_at"))
+        .values("day", "subscription__plan_name")
+        .annotate(total=Sum("amount"))
+        .order_by("day")
     )
-    failed_count = Payment.objects.filter(status="failed").count()
+    plan_accum = {label: {day: 0.0 for day in day_labels} for label in PULSE_PLAN_ORDER}
+    plan_revenue_total = {label: 0.0 for label in PULSE_PLAN_ORDER}
+    for row in growth_rows:
+        label = _pulse_plan_label(row["subscription__plan_name"])
+        if label not in plan_accum:
+            plan_accum[label] = {day: 0.0 for day in day_labels}
+            plan_revenue_total[label] = 0.0
+        amount_rub = float(row["total"] or 0) / 100.0
+        plan_accum[label][row["day"].strftime("%d.%m")] += amount_rub
+        plan_revenue_total[label] += amount_rub
+    growth_datasets = []
+    for label in PULSE_PLAN_ORDER:
+        growth_datasets.append({
+            "label": label,
+            "data": [round(plan_accum[label].get(day, 0.0), 2) for day in day_labels],
+            "borderColor": PULSE_PLAN_COLORS[label],
+            "backgroundColor": PULSE_PLAN_COLORS[label] + "22",
+            "fill": True,
+            "tension": 0.4,
+            "borderWidth": 2,
+            "pointRadius": 0,
+            "pointHitRadius": 8,
+        })
+    growth_chart = {"labels": day_labels, "datasets": growth_datasets}
 
-    # --- Сбор метрик по пользователям (общие) ---
-    total_users_count = AuthUser.objects.count()
-    telegram_users_count = AuthUser.objects.filter(
-        Q(hash_user_id__isnull=True) | Q(hash_user_id__exact=""), email__exact=""
-    ).count()
-    email_users_count = AuthUser.objects.exclude(email__exact="").count()
+    # ---------------- Дополнительные графики под Revenue & Subscriptions Growth ----------------
+    revenue_source_chart = get_revenue_source_data(start_date, end_date)
+    arpu_chart = get_arpu_dynamics_data(start_date, end_date)
+    score_chart = get_score_distribution_data() or {"labels": [], "data": []}
+    funnel_chart = get_user_journey_funnel_data(start_date, end_date)
 
-    thirty_days_ago = timezone.now() - timedelta(days=30)
-    mau_monthly_active_users = AuthUser.objects.filter(
-        last_login__gte=thirty_days_ago
-    ).count()
-    wau_weekly_active_users = AuthUser.objects.filter(
-        last_login__gte=timezone.now() - timedelta(days=7)
-    ).count()
-    dau_daily_active_users = AuthUser.objects.filter(last_login__date=today).count()
-
-    paid_users_count = (
-        Payment.objects.filter(status="completed").values("staff_id").distinct().count()
-    )
-    conversion_rate_to_paid = (
-        (paid_users_count / total_users_count * 100) if total_users_count > 0 else 0
-    )
-    stickiness_ratio = (
-        (dau_daily_active_users / mau_monthly_active_users * 100)
-        if mau_monthly_active_users > 0
-        else 0
-    )
-
-    # --- Сбор данных для графиков ---
-    user_chart_data = json.dumps(
-        get_daily_registration_dynamics_data(start_date, end_date)
-    )
-    api_chart_data = json.dumps(get_daily_api_usage_by_key(start_date, end_date))
-
-    api_performance_data = json.dumps(get_api_performance_data(start_date, end_date))
-    retention_data = get_retention_data()
-    user_activity_data = json.dumps(get_user_activity_distribution())
-    usage_by_sub_data = json.dumps(get_usage_by_subscription(start_date, end_date))
-    top_topics_data = json.dumps(get_top_test_topics(start_date, end_date))
-    user_journey_data = json.dumps(get_user_journey_funnel_data(start_date, end_date))
-
-    # --- Управление API ключами ---
-    api_keys = APIKey.objects.all().order_by("-created_at")
-    keys_by_purpose = defaultdict(list)
-    start_of_today = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
-
-    usage_counts_today = (
-        APIKeyUsage.objects.filter(timestamp__gte=start_of_today)
-        .values("api_key")
-        .annotate(count=Count("id"))
-    )
-    usage_map = {item["api_key"]: item["count"] for item in usage_counts_today}
-
-    for key in api_keys:
-        today_count = usage_map.get(key.id, 0)
-        max_requests = 50
-        percent = min(int((today_count / max_requests) * 100), 100)
-
-        key.usage_percent = percent
-        key.today_usage_count = today_count
-        keys_by_purpose[key.purpose].append(key)
-
-    # Расчеты для "Финансового Брифинга"
-    financial_briefing_data = {}
-
-    payments_in_period = Payment.objects.filter(
-        created_at__date__range=date_range, status="completed"
-    )
-    revenue = payments_in_period.aggregate(total=Sum("amount"))["total"] or 0
-    financial_briefing_data["revenue"] = revenue / 100
-
-    first_time_payers_ids = []
-    new_paying_users = payments_in_period.order_by("staff_id", "created_at").distinct(
-        "staff_id"
-    )
-
-    for payment in new_paying_users:
-        is_first_payment = not Payment.objects.filter(
-            staff_id=payment.staff_id,
-            status="completed",
-            created_at__lt=payment.created_at,
-        ).exists()
-        if is_first_payment:
-            first_time_payers_ids.append(payment.id)
-
-    new_mrr_payments = payments_in_period.filter(id__in=first_time_payers_ids)
-    new_mrr = new_mrr_payments.aggregate(total=Sum("amount"))["total"] or 0
-    financial_briefing_data["new_mrr"] = new_mrr / 100
-
-    paying_users_count = payments_in_period.values("staff_id").distinct().count()
-    arpu = (revenue / 100) / paying_users_count if paying_users_count > 0 else 0
-    financial_briefing_data["arpu"] = arpu
-
-    # --- История платежей ---
-    payment_data = []
-    recent_payments = Payment.objects.select_related("subscription").order_by(
-        "-created_at"
-    )[:35]
-
-    staff_ids_from_payments = [p.staff_id for p in recent_payments]
-
-    users_map = {
-        str(u.id_staff): u
-        for u in AuthUser.objects.filter(id_staff__in=staff_ids_from_payments)
+    # Выручка по 4 тарифам (донат)
+    plan_revenue_chart = {
+        "labels": list(PULSE_PLAN_ORDER),
+        "data": [round(plan_revenue_total.get(l, 0.0), 2) for l in PULSE_PLAN_ORDER],
+        "colors": [PULSE_PLAN_COLORS[l] for l in PULSE_PLAN_ORDER],
     }
 
-    for payment in recent_payments:
-        user = users_map.get(str(payment.staff_id))
-        if not user:
-            continue
+    # Подписки по 4 тарифам (бар)
+    plan_subs_counts = {label: 0 for label in PULSE_PLAN_ORDER}
+    for sub in Subscription.objects.only("plan_name"):
+        lbl = _pulse_plan_label(sub.plan_name)
+        plan_subs_counts[lbl] = plan_subs_counts.get(lbl, 0) + 1
+    plan_subs_chart = {
+        "labels": list(PULSE_PLAN_ORDER),
+        "data": [plan_subs_counts.get(l, 0) for l in PULSE_PLAN_ORDER],
+        "colors": [PULSE_PLAN_COLORS[l] for l in PULSE_PLAN_ORDER],
+    }
 
-        previous_payments_count = Payment.objects.filter(
-            staff_id=user.id_staff,
-            status="completed",
-            created_at__lt=payment.created_at,
-        ).count()
-        payment_type = "Повторная" if previous_payments_count > 0 else "Первая"
-
-        total_tests_created = Survey.objects.filter(id_staff=user.id_staff).count()
-
-        days_since_reg = (payment.created_at - user.date_joined).days
-        if days_since_reg <= 1:
-            user_status = "Импульсивная"
-        elif days_since_reg <= 7:
-            user_status = "Новичок"
-        else:
-            user_status = "Ветеран"
-
-        payment_data.append(
+    # Новые подписки по дням в разрезе 4 тарифов
+    subs_growth_rows = (
+        Subscription.objects.filter(start_date__date__range=(start_date, end_date))
+        .annotate(day=TruncDate("start_date"))
+        .values("day", "plan_name")
+        .annotate(cnt=Count("staff_id"))
+        .order_by("day")
+    )
+    subs_growth = {label: {day: 0 for day in day_labels} for label in PULSE_PLAN_ORDER}
+    for row in subs_growth_rows:
+        label = _pulse_plan_label(row["plan_name"])
+        if label not in subs_growth:
+            subs_growth[label] = {day: 0 for day in day_labels}
+        subs_growth[label][row["day"].strftime("%d.%m")] += row["cnt"]
+    subs_growth_chart = {
+        "labels": day_labels,
+        "datasets": [
             {
-                "name": user.username,
-                "plan_name": payment.subscription.plan_name,
-                "payment_status": payment.status,
-                "amount_raw": payment.amount / 100,
-                "amount": f"{get_format_number(payment.amount / 100)} руб.",
-                "date": payment.created_at,
-                "payment_type": payment_type,
-                "total_tests_created": total_tests_created,
-                "user_status": user_status,
-                "user_status_days": days_since_reg,
-                "order_id": payment.order_id,
+                "label": label,
+                "data": [subs_growth[label].get(day, 0) for day in day_labels],
+                "backgroundColor": PULSE_PLAN_COLORS[label],
+                "borderColor": PULSE_PLAN_COLORS[label],
             }
-        )
+            for label in PULSE_PLAN_ORDER
+        ],
+    }
 
-    completed_payments = Payment.objects.filter(status="completed")
-    total_revenue = completed_payments.aggregate(total=Sum("amount"))["total"] or 0
-    completed_count = completed_payments.count()
+    # ---------------- API & AI Provider Health ----------------
+    provider_health = []
+    provider_names = list(APIKey.objects.order_by("provider").values_list("provider", flat=True).distinct())
+    for prov in provider_names:
+        keys = APIKey.objects.filter(provider=prov)
+        key_ids = list(keys.values_list("id", flat=True))
+        usages = APIKeyUsage.objects.filter(api_key_id__in=key_ids)
+        total_today = usages.filter(timestamp__date=today).count()
+        success_today = usages.filter(timestamp__date=today, success=True).count()
+        total_period = usages.filter(timestamp__date__range=(start_date, end_date)).count()
+        success_period = usages.filter(timestamp__date__range=(start_date, end_date), success=True).count()
+        success_rate = round(success_period / total_period * 100, 1) if total_period else 0.0
+        load = min(round(total_today / 50 * 100), 100) if total_today else 0
+        avg_resp = int(usages.filter(timestamp__date=today, response_time_ms__isnull=False).aggregate(a=Avg("response_time_ms"))["a"] or 0)
+        is_active = keys.filter(is_active=True).exists()
+        if not is_active:
+            status_key, status_label = "paused", "Paused"
+        elif success_rate >= 99.0:
+            status_key, status_label = "healthy", "Healthy"
+        elif success_rate >= 90.0:
+            status_key, status_label = "healthy", "Healthy"
+        else:
+            status_key, status_label = "degraded", "Degraded"
+        provider_health.append({
+            "provider": prov or "Unknown",
+            "status_key": status_key,
+            "status_label": status_label,
+            "success_rate": success_rate,
+            "load": load,
+            "calls_today": total_today,
+            "avg_response_ms": avg_resp,
+        })
 
-    cockpit_metrics = get_cockpit_metrics()
+    # ---------------- Транзакции (все) ----------------
+    users_map = {u.id_staff: u for u in AuthUser.objects.all()}
+    transactions = []
+    for p in Payment.objects.select_related("subscription").order_by("-created_at"):
+        u = users_map.get(p.staff_id)
+        transactions.append({
+            "id": p.id,
+            "staff_id": str(p.staff_id),
+            "username": u.username if u else "—",
+            "email": u.email if u else "—",
+            "plan_label": _pulse_plan_label(p.subscription.plan_name if p.subscription else ""),
+            "billing_cycle": p.subscription.billing_cycle if p.subscription else "—",
+            "amount": round(float(p.amount) / 100.0, 2),
+            "amount_str": get_format_number(int(round(float(p.amount) / 100.0))),
+            "status": p.status,
+            "created_at": p.created_at,
+            "created_at_str": p.created_at.strftime("%d.%m.%Y %H:%M"),
+            "order_id": p.order_id,
+        })
 
-    # --- Данные для графиков и таблиц ---
-    today = timezone.now().date()
-    start_date_str = request.GET.get("start_date")
-    end_date_str = request.GET.get("end_date")
-    start_date = (
-        datetime.strptime(start_date_str, "%Y-%m-%d").date()
-        if start_date_str
-        else today - timedelta(days=29)
-    )
-    end_date = (
-        datetime.strptime(end_date_str, "%Y-%m-%d").date() if end_date_str else today
-    )
+    paginator = Paginator(transactions, 50)
+    try:
+        page_number = int(request.GET.get("page") or 1)
+    except ValueError:
+        page_number = 1
+    page_obj = paginator.get_page(page_number)
 
-    main_gauge_data = get_main_gauge_data()
-    daily_attempts_data = json.dumps(get_daily_attempts_chart_data())
-    test_performance_data = json.dumps(get_test_performance_scatter_data())
-    score_distribution_data = json.dumps(get_score_distribution_data())
-
-    cyber_gauges_data = get_cyber_gauges_data()
-    total_api_usage_data = json.dumps(
-        get_total_api_usage_chart_data(start_date, end_date)
-    )
-
-    time_to_payment_data = json.dumps(get_time_to_payment_data())
-    user_value_matrix_data = json.dumps(get_user_value_matrix_data())
-
-    daily_token_usage_data = json.dumps(
-        get_daily_token_usage_chart_data(start_date, end_date)
-    )
-
-    daily_revenue_data = json.dumps(get_daily_revenue_data(start_date, end_date))
-    arpu_dynamics_data = json.dumps(get_arpu_dynamics_data(start_date, end_date))
-    revenue_source_data = json.dumps(get_revenue_source_data(start_date, end_date))
-    cohort_revenue_data = json.dumps(get_cohort_revenue_data())
-
-    daily_creation_data = json.dumps(
-        get_daily_creation_dynamics_data(start_date, end_date)
-    )
-
-    churn_radar_data = get_churn_radar_data()
-    growth_engine_data = get_growth_engine_data()
-
-    activity_heatmap_data = get_activity_heatmap_data()
-    anomaly_detector_data = get_anomaly_detector_data()
-
-    cohort_quality_data = get_cohort_quality_data()
-    financial_pulse_data = get_financial_pulse_data(
-        start_date - timedelta(days=60), end_date
-    )
-
-    weekly_pulse_data = get_weekly_pulse_data()
-    daily_funnel_data = get_daily_funnel_trends_data()
-
-    live_feed_data = get_live_feed_data()
-    hall_of_fame_data = get_hall_of_fame_data()
+    # ---------------- Live Activity Feed ----------------
+    live_feed = []
+    for s in Survey.objects.annotate(attempts_count=Count("attempts")).order_by("-created_at")[:20]:
+        live_feed.append({
+            "title": s.title,
+            "survey_id": str(s.survey_id),
+            "time": s.created_at.strftime("%d.%m %H:%M"),
+            "questions_count": s.questions_count or 0,
+            "model_name": _pulse_model_label(s.model_name),
+            "views": s.view_count,
+            "attempts": s.attempts_count,
+        })
 
     context = {
-        "cockpit": cockpit_metrics,
-        "cyber_gauges": cyber_gauges_data,
-        "cyber_tests_pulse_json": json.dumps(
-            cyber_gauges_data["tests_pulse"]["sparkline"]
-        ),
-        "weekly_pulse_data": weekly_pulse_data,
-        "weekly_pulse_chart_json": json.dumps(weekly_pulse_data["chart_data"]),
-        "daily_funnel_chart_json": json.dumps(daily_funnel_data["chart"]),
-        "daily_funnel_summary": daily_funnel_data["summary"],
-        "live_feed_data": live_feed_data,
-        "hall_of_fame_data": hall_of_fame_data,
-        "financial_briefing": financial_briefing_data,
-        "daily_revenue_data": daily_revenue_data,
-        "arpu_dynamics_data": arpu_dynamics_data,
-        "revenue_source_data": revenue_source_data,
-        "cohort_revenue_data": cohort_revenue_data,
-        "time_to_payment_data": time_to_payment_data,
-        "user_value_matrix_data": user_value_matrix_data,
-        "main_gauge": main_gauge_data,
-        "daily_attempts_data": daily_attempts_data,
-        "score_distribution_data": score_distribution_data,
-        "test_performance_data": test_performance_data,
-        "total_api_usage_data": total_api_usage_data,
+        "username": get_username(request),
         "start_date": start_date.strftime("%Y-%m-%d"),
         "end_date": end_date.strftime("%Y-%m-%d"),
-        "users_in_period": users_in_period,
-        "subscriptions_in_period": subscriptions_in_period,
-        "email_users_count": email_users_count,
-        "telegram_users_count": telegram_users_count,
-        "wau_weekly_active_users": wau_weekly_active_users,
-        "mau_monthly_active_users": mau_monthly_active_users,
-        "stickiness_ratio": stickiness_ratio,
-        "conversion_rate_to_paid": conversion_rate_to_paid,
-        "surveys_in_period": surveys_in_period,
-        "answers_in_period": answers_in_period,
-        "total_api_calls_today": sum(usage_map.values()),
-        "total_users": total_users_count,
-        "total_revenue": total_revenue / 100,
-        "average_check": average_check / 100,
-        "payment_conversion": payment_conversion,
-        "failed_payments_count": failed_count,
-        "user_chart_data": user_chart_data,
-        "api_chart_data": api_chart_data,
-        "keys_by_purpose": dict(keys_by_purpose),
-        "payment_data": payment_data,
-        "api_performance_data": api_performance_data,
-        "retention_data": retention_data,
-        "user_activity_data": user_activity_data,
-        "usage_by_sub_data": usage_by_sub_data,
-        "top_topics_data": top_topics_data,
-        "user_journey_data": user_journey_data,
-        "daily_creation_data": daily_creation_data,
-        "daily_token_usage_data": daily_token_usage_data,
-        "churn_radar_data": churn_radar_data,
-        "growth_engine_data": growth_engine_data,
-        "churn_calendar_events_json": json.dumps(churn_radar_data["calendar_events"]),
-        "activity_heatmap_data": json.dumps(activity_heatmap_data),
-        "anomaly_detector_data": anomaly_detector_data,
-        "cohort_quality_data": cohort_quality_data,
-        "financial_pulse_data": financial_pulse_data,
-        "financial_pulse_chart_json": json.dumps(financial_pulse_data["chart"]),
-        "username": get_username(request),
+        "range": range_param,
+        "date_range_label": f"{start_date.strftime('%d.%m.%Y')} — {end_date.strftime('%d.%m.%Y')}",
+
+        # Header KPI
+        "api_response_ms": api_resp_today,
+        "api_response_delta": _pulse_pct_change(api_resp_today, api_resp_yesterday),
+        "api_success_rate": api_success_rate,
+        "api_success_delta": round(api_success_rate - api_success_rate_yesterday, 1),
+        "active_users_online": dau,
+        "active_users_delta": _pulse_pct_change(dau, dau_yesterday),
+
+        # Card 1 — Revenue / MRR
+        "revenue_value": get_format_number(int(round(revenue_month))),
+        "revenue_delta": _pulse_pct_change(revenue_month, revenue_prev_month),
+        "revenue_today": get_format_number(int(round(revenue_today))),
+
+        # Card 2 — Active Subscriptions
+        "subs_active": subs_active,
+        "subs_inactive": subs_inactive,
+        "subs_canceled": subs_canceled,
+        "subs_total": subs_total,
+        "subs_delta": _pulse_pct_change(new_subs_month, new_subs_prev_month),
+        "subs_active_pct": round(subs_active / subs_total * 100, 1) if subs_total else 0,
+        "subs_inactive_pct": round(subs_inactive / subs_total * 100, 1) if subs_total else 0,
+        "subs_canceled_pct": round(subs_canceled / subs_total * 100, 1) if subs_total else 0,
+
+        # Card 3 — Test Generation
+        "tests_total": get_format_number(tests_total),
+        "tests_delta": _pulse_pct_change(tests_month, tests_prev_month),
+        "tests_today": tests_today,
+        "tests_yesterday": tests_yesterday,
+        "tests_today_delta": _pulse_pct_change(tests_today, tests_yesterday),
+
+        # Card 4 — Test Attempts & Engagement
+        "attempts_total": get_format_number(attempts_total),
+        "attempts_delta": _pulse_pct_change(attempts_month, attempts_prev_month),
+        "avg_score": round(float(avg_score), 1),
+        "avg_score_delta": _pulse_pct_change(avg_score, avg_score_prev),
+
+        # Card 5 — User Acquisition
+        "users_total": get_format_number(total_real_users),
+        "users_delta": _pulse_pct_change(new_users_month, new_users_prev_month),
+        "registrations": new_users_month,
+        "registrations_delta": _pulse_pct_change(new_users_month, new_users_prev_month),
+        "dau": dau,
+        "dau_delta": _pulse_pct_change(dau, dau_yesterday),
+        "wau": wau,
+        "wau_delta": _pulse_pct_change(wau, wau_prev),
+        "mau": mau,
+        "mau_delta": _pulse_pct_change(mau, mau_prev),
+
+        # Card 6 — Token Consumption & API
+        "tokens_today": _pulse_compact(tokens_today),
+        "tokens_today_raw": tokens_today,
+        "tokens_delta": _pulse_pct_change(tokens_month, tokens_prev_month),
+        "api_latency_ms": api_resp_today,
+        "api_latency_delta": _pulse_pct_change(api_resp_today, api_resp_yesterday),
+
+        # Chart JSON
+        "revenue_sparkline_json": json.dumps(revenue_chart, ensure_ascii=False),
+        "creation_sparkline_json": json.dumps(creation_chart, ensure_ascii=False),
+        "attempts_sparkline_json": json.dumps(attempts_chart, ensure_ascii=False),
+        "acq_sparkline_json": json.dumps(reg_chart, ensure_ascii=False),
+        "tokens_sparkline_json": json.dumps(tokens_chart, ensure_ascii=False),
+        "growth_chart_json": json.dumps(growth_chart, ensure_ascii=False),
+        "revenue_source_json": json.dumps(revenue_source_chart, ensure_ascii=False),
+        "arpu_json": json.dumps(arpu_chart, ensure_ascii=False),
+        "score_distribution_json": json.dumps(score_chart, ensure_ascii=False),
+        "funnel_json": json.dumps(funnel_chart, ensure_ascii=False),
+        "plan_revenue_json": json.dumps(plan_revenue_chart, ensure_ascii=False),
+        "plan_subs_json": json.dumps(plan_subs_chart, ensure_ascii=False),
+        "subs_growth_json": json.dumps(subs_growth_chart, ensure_ascii=False),
+
+        # Tables
+        "provider_health": provider_health,
+        "recent_transactions": transactions[:10],
+        "live_feed": live_feed,
+
+        # Full transactions + pagination
+        "transactions": page_obj.object_list,
+        "transactions_total": len(transactions),
+        "page_obj": page_obj,
+        "page_has_prev": page_obj.has_previous(),
+        "page_has_next": page_obj.has_next(),
+        "page_number": page_obj.number,
+        "page_count": page_obj.paginator.num_pages,
     }
 
     return render(request, "admin.html", context)
+
 
 
 @login_required
@@ -7221,91 +7420,236 @@ def user_ops_center_view(request):
     return render(request, "admin/user_ops_center.html", context={"tiny_api": tiny_api})
 
 
+def _pulse_month_series(months_back, today):
+    """Список (year, month) за последние N месяцев, от старых к новым."""
+    months = []
+    y, m = today.year, today.month
+    for _ in range(months_back):
+        months.append((y, m))
+        m -= 1
+        if m == 0:
+            m = 12
+            y -= 1
+    return list(reversed(months))
+
+
+def _pulse_month_label(ym):
+    names = ["янв", "фев", "мар", "апр", "май", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"]
+    y, m = ym
+    return f"{names[m - 1]} {str(y)[2:]}"
+
+
 @staff_member_required
 def search_users_api(request):
-    """
-    API для поиска пользователей.
-    """
+    """Точечный поиск пользователей по username / email / id_staff."""
     query = request.GET.get("q", "").strip()
-    if len(query) < 2:
+    if not query:
         return JsonResponse({"users": []})
 
-    users = AuthUser.objects.filter(
-        Q(username__icontains=query) | Q(email__icontains=query)
-    ).values("id", "username", "email", "date_joined")[:10]
+    qs = AuthUser.objects.filter(Q(username__icontains=query) | Q(email__icontains=query))
+    try:
+        uuid.UUID(query)
+        qs = AuthUser.objects.filter(
+            Q(id_staff=query) | Q(username__icontains=query) | Q(email__icontains=query)
+        )
+    except (ValueError, AttributeError, TypeError):
+        pass
 
-    user_list = [
-        {
-            "id": user["id"],
-            "username": user["username"],
-            "email": user["email"],
-            "date_joined": user["date_joined"].strftime("%d.%m.%Y"),
+    users = list(qs.order_by("username")[:20])
+    exact = AuthUser.objects.filter(username__iexact=query).first()
+
+    staff_ids = [u.id_staff for u in users]
+    subs = {s.staff_id: s for s in Subscription.objects.filter(staff_id__in=staff_ids)}
+    revenue_map = {
+        row["staff_id"]: float(row["total"] or 0) / 100.0
+        for row in Payment.objects.filter(staff_id__in=staff_ids, status="completed")
+        .values("staff_id")
+        .annotate(total=Sum("amount"))
+    }
+
+    def build(u):
+        sub = subs.get(u.id_staff)
+        return {
+            "id": u.id,
+            "username": u.username,
+            "email": u.email or "—",
+            "date_joined": u.date_joined.strftime("%d.%m.%Y"),
+            "plan": _pulse_plan_label(sub.plan_name) if sub else "—",
+            "status": sub.status if sub else "none",
+            "test_balance": u.test_balance,
+            "revenue": round(revenue_map.get(u.id_staff, 0.0), 2),
         }
-        for user in users
-    ]
-    return JsonResponse({"users": user_list})
+
+    result, seen = [], set()
+    if exact:
+        result.append(build(exact))
+        seen.add(exact.id)
+    for u in users:
+        if u.id in seen:
+            continue
+        result.append(build(u))
+
+    return JsonResponse({"users": result[:20]})
 
 
 @staff_member_required
 def get_user_details_api(request, user_id):
-    """
-    API для получения полной информации о конкретном пользователе.
-    """
+    """Полное досье пользователя: профиль, подписка, деньги, покупки, тесты и 2 графика."""
     try:
         user = AuthUser.objects.get(id=user_id)
     except AuthUser.DoesNotExist:
         return JsonResponse({"error": "User not found"}, status=404)
 
-    subscription_data = {}
+    today = timezone.now().date()
+
+    # ---- Подписка ----
     sub = Subscription.objects.filter(staff_id=user.id_staff).first()
+    subscription_data = {}
     if sub:
+        days_left = (sub.end_date.date() - today).days if sub.end_date else None
         subscription_data = {
-            "plan_name": sub.get_human_plan(),
+            "plan_raw": sub.plan_name,
+            "plan_label": _pulse_plan_label(sub.plan_name),
+            "human_plan": sub.get_human_plan(),
             "status": sub.status,
-            "end_date": sub.end_date.strftime("%d.%m.%Y") if sub.end_date else "N/A",
+            "billing_cycle": sub.billing_cycle,
+            "start_date": sub.start_date.strftime("%d.%m.%Y") if sub.start_date else "—",
+            "end_date": sub.end_date.strftime("%d.%m.%Y") if sub.end_date else "—",
+            "days_left": days_left,
+            "discount": float(sub.discount or 0),
         }
 
-    payments = Payment.objects.filter(staff_id=user.id_staff, status="completed")
-    financial_data = payments.aggregate(
-        total_revenue=Sum("amount"), payment_count=Count("id")
+    # ---- Платежи ----
+    all_payments = (
+        Payment.objects.filter(staff_id=user.id_staff)
+        .select_related("subscription")
+        .order_by("-created_at")
     )
+    completed = all_payments.filter(status="completed")
+    agg = completed.aggregate(total=Sum("amount"), cnt=Count("id"))
+    total_revenue = float(agg["total"] or 0) / 100.0
+    payment_count = agg["cnt"] or 0
+    avg_check = (total_revenue / payment_count) if payment_count else 0.0
+    first_payment = completed.order_by("created_at").first()
+    last_payment = completed.order_by("-created_at").first()
 
-    surveys_created = Survey.objects.filter(id_staff=user.id_staff).count()
-    attempts_on_surveys = TestAttempt.objects.filter(
-        survey__id_staff=user.id_staff
-    ).count()
+    payments_list = []
+    for pay in all_payments[:100]:
+        payments_list.append({
+            "date": pay.created_at.strftime("%d.%m.%Y %H:%M"),
+            "date_short": pay.created_at.strftime("%d.%m.%Y"),
+            "amount": round(float(pay.amount) / 100.0, 2),
+            "amount_str": get_format_number(int(round(float(pay.amount) / 100.0))),
+            "plan_label": _pulse_plan_label(pay.subscription.plan_name if pay.subscription else ""),
+            "billing_cycle": pay.subscription.billing_cycle if pay.subscription else "—",
+            "status": pay.status,
+            "order_id": pay.order_id,
+            "payment_id": pay.payment_id,
+        })
 
-    # В функции get_user_details_api
-    last_surveys = Survey.objects.filter(id_staff=user.id_staff) \
-        .annotate(cnt_attempts=Count('attempts')) \
-        .order_by("-created_at")[:5]
+    # ---- Тесты ----
+    surveys_qs = (
+        Survey.objects.filter(id_staff=user.id_staff)
+        .annotate(cnt_attempts=Count("attempts"))
+        .order_by("-created_at")
+    )
+    surveys_created = surveys_qs.count()
+    surveys_list = []
+    total_views = 0
+    total_attempts = 0
+    for s in surveys_qs[:100]:
+        total_views += s.view_count or 0
+        total_attempts += s.cnt_attempts or 0
+        surveys_list.append({
+            "title": s.title,
+            "survey_id": str(s.survey_id),
+            "created_at": s.created_at.strftime("%d.%m.%Y %H:%M"),
+            "questions_count": s.questions_count or 0,
+            "model_name": _pulse_model_label(s.model_name),
+            "views": s.view_count,
+            "attempts": s.cnt_attempts,
+            "is_visible": s.is_visible,
+        })
+
+    attempts_on_surveys = TestAttempt.objects.filter(survey__id_staff=user.id_staff).count()
+
+    # ---- Токены ----
+    tokens = TokensUsed.objects.filter(id_staff=user.id_staff).aggregate(
+        s=Sum("tokens_survey_used"), f=Sum("tokens_feedback_used")
+    )
+    tokens_survey = tokens["s"] or 0
+    tokens_feedback = tokens["f"] or 0
+
+    # ---- Графики: 12 месяцев ----
+    months = _pulse_month_series(12, today)
+    labels = [_pulse_month_label(ym) for ym in months]
+    creations = [0] * 12
+    payments_amount = [0.0] * 12
+    payments_counts = [0] * 12
+    month_index = {ym: i for i, ym in enumerate(months)}
+
+    for s in Survey.objects.filter(id_staff=user.id_staff).only("created_at"):
+        idx = month_index.get((s.created_at.year, s.created_at.month))
+        if idx is not None:
+            creations[idx] += 1
+
+    for pay in Payment.objects.filter(staff_id=user.id_staff, status="completed").only("created_at", "amount"):
+        idx = month_index.get((pay.created_at.year, pay.created_at.month))
+        if idx is not None:
+            payments_amount[idx] += float(pay.amount) / 100.0
+            payments_counts[idx] += 1
+
+    # ---- Текущий доступ ----
+    access = AccessService(staff_id=str(user.id_staff)).check_access()
 
     response_data = {
         "id": user.id,
         "username": user.username,
-        "email": user.email,
-        "id_staff": user.id_staff,
+        "email": user.email or "—",
+        "id_staff": str(user.id_staff),
         "date_joined": user.date_joined.strftime("%d.%m.%Y %H:%M"),
+        "last_login": user.last_login.strftime("%d.%m.%Y %H:%M") if user.last_login else "—",
+        "is_active": user.is_active,
         "is_staff": user.is_staff,
+        "is_subscribed": user.is_subscribed,
+        "phone": user.phone or "—",
+        "test_balance": user.test_balance,
         "subscription": subscription_data,
-        "financials": {
-            "total_revenue": float(financial_data["total_revenue"] or 0),
-            "payment_count": financial_data["payment_count"],
-        },
-        "activity": {
+        "badges": {
+            "total_revenue": round(total_revenue, 2),
+            "total_revenue_str": get_format_number(int(round(total_revenue))),
+            "payment_count": payment_count,
+            "all_payments_count": all_payments.count(),
+            "avg_check": round(avg_check, 2),
+            "ltv": round(total_revenue, 2),
             "surveys_created": surveys_created,
             "attempts_on_surveys": attempts_on_surveys,
+            "total_views": total_views,
+            "total_attempts": total_attempts,
+            "tokens_survey": tokens_survey,
+            "tokens_feedback": tokens_feedback,
+            "tokens_total": tokens_survey + tokens_feedback,
+            "tests_left_daily": access.get("tests_left_daily", 0),
+            "extra_credits": access.get("extra_credits", 0),
+            "daily_limit": access.get("daily_limit", 0),
+            "can_generate": access.get("can_generate", False),
+            "first_payment": first_payment.created_at.strftime("%d.%m.%Y") if first_payment else "—",
+            "last_payment": last_payment.created_at.strftime("%d.%m.%Y") if last_payment else "—",
+            "registered_days": (today - user.date_joined.date()).days,
         },
-        "last_surveys": [
-            {
-                "title": s.title,
-                "survey_id": s.survey_id,
-                "created_at": s.created_at.strftime("%d.%m.%Y"),
-                "view_count": s.view_count,
-                "attempts_count": s.cnt_attempts,
-            }
-            for s in last_surveys
-        ],
+        "payments": payments_list,
+        "surveys": surveys_list,
+        "charts": {
+            "creations": {"labels": labels, "data": creations},
+            "payments": {
+                "labels": labels,
+                "data": [round(x, 2) for x in payments_amount],
+                "counts": payments_counts,
+            },
+        },
+        "financials": {"total_revenue": round(total_revenue, 2), "payment_count": payment_count},
+        "activity": {"surveys_created": surveys_created, "attempts_on_surveys": attempts_on_surveys},
+        "last_surveys": surveys_list[:5],
     }
 
     return JsonResponse(response_data)
@@ -7313,83 +7657,35 @@ def get_user_details_api(request, user_id):
 
 @staff_member_required
 def send_manual_email_api(request):
-    """
-    (СИНХРОННАЯ ВЕРСИЯ)
-    API-эндпоинт для ПРЯМОЙ отправки email из админки.
-    """
-    if request.method != 'POST':
-        return JsonResponse({'error': 'Only POST method is allowed'}, status=405)
+    """Ставит персональное письмо пользователю в очередь Celery."""
+    if request.method != "POST":
+        return JsonResponse({"error": "Only POST method is allowed"}, status=405)
 
     try:
-        data = json.loads(request.body)
+        data = json.loads(request.body or "{}")
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
 
-        recipient_email = data.get('recipient_email', '').strip()
-        subject = data.get('subject', '').strip()
-        html_body = data.get('html_body', '').strip()
-        button_text = data.get('button_text', '').strip()
-        button_url = data.get('button_url', '').strip()
+    recipient_email = (data.get("recipient_email") or "").strip()
+    subject = (data.get("subject") or "").strip()
+    html_body = (data.get("html_body") or "").strip()
+    button_text = (data.get("button_text") or "").strip()
+    button_url = (data.get("button_url") or "").strip()
 
-        if not all([recipient_email, subject, html_body]):
-            additional_info = AuthAdditionalUser.objects.filter(user=user).first()
-            if additional_info and additional_info.id_telegram:
-                try:
-                    import re
+    if not recipient_email and data.get("user_id"):
+        u = AuthUser.objects.filter(id=data.get("user_id")).first()
+        recipient_email = (u.email if u else "") or ""
 
-                    h = html2text.HTML2Text()
-                    h.body_width = 0
-                    text_body = h.handle(mailing.message_body)
+    if not all([recipient_email, subject, html_body]):
+        return JsonResponse({"error": "Нужны email, тема и текст письма"}, status=400)
 
-                    message = f"*{mailing.subject}*\n\n{text_body}"
-                    if mailing.button_text and mailing.button_url:
-                        message += f"\n\n[{mailing.button_text}]({mailing.button_url})"
-
-                        bot_token = TELEGRAM_BOT_TOKEN
-                        url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-
-                        payload = {
-                            'chat_id': additional_info.id_telegram,
-                            'text': message,
-                            'parse_mode': 'Markdown'
-                        }
-
-                        requests.post(url, json=payload)
-
-                    channel = 'telegram'
-                except Exception as e:
-                    raise e
-            return JsonResponse({'error': 'Missing required fields'}, status=400)
-
-        user = AuthUser.objects.filter(email=recipient_email).first()
-        context = {
-            'user': user,
-            'subject': subject,
-            'main_content': html_body,
-            'button_text': button_text,
-            'button_url': button_url,
-        }
-        final_html_message = render_to_string('emails/manual_dispatch.html', context)
-
-        send_mail(
-            subject=subject,
-            message='',
-            from_email=EMAIL_HOST_USER,
-            recipient_list=[recipient_email],
-            fail_silently=False,
-            html_message=final_html_message
-        )
-
-        return JsonResponse({
-            'status': 'success',
-            'message': f'Email for {recipient_email} has been sent successfully.'
-        })
-
-    except SMTPException as e:
-        return JsonResponse({'error': f"SMTP Error: {e}"}, status=500)
-
+    from .tasks import send_manual_email_task
+    try:
+        send_manual_email_task.delay(recipient_email, subject, html_body, button_text, button_url)
     except Exception as e:
-        error_traceback = traceback.format_exc()
-        print(f"!!! ERROR in SYNC send_manual_email_api: {error_traceback}")
-        return JsonResponse({'error': f'An unexpected error occurred: {e}'}, status=500)
+        return JsonResponse({"error": f"Celery брокер недоступен: {e}"}, status=503)
+
+    return JsonResponse({"status": "success", "message": f"Письмо для {recipient_email} поставлено в очередь."})
 
 
 @staff_member_required
@@ -7458,26 +7754,45 @@ def get_new_users_api(request):
 @staff_member_required
 @csrf_exempt
 def start_mailing_api(request):
+    """Создаёт рассылку и запускает её в Celery."""
     if request.method != "POST":
         return JsonResponse({"error": "POST only"}, status=405)
 
-    from .tasks import start_mailing_task
+    try:
+        data = json.loads(request.body or "{}")
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
 
-    # try:
-    data = json.loads(request.body)
+    title = (data.get("title") or "").strip() or "Без названия"
+    subject = (data.get("subject") or "").strip()
+    message_body = (data.get("message_body") or "").strip()
+    target_segment = data.get("target_segment") or "all"
+
+    if not subject or not message_body:
+        return JsonResponse({"error": "Нужны тема письма и текст сообщения"}, status=400)
+
     mailing = Mailing.objects.create(
-        title=data.get("title"),
-        subject=data.get("subject"),
-        message_body=data.get("message_body"),
-        button_text=data.get("button_text"),
-        button_url=data.get("button_url"),
-        target_segment=data.get("target_segment"),
+        title=title,
+        subject=subject,
+        message_body=message_body,
+        button_text=(data.get("button_text") or "").strip() or None,
+        button_url=(data.get("button_url") or "").strip() or None,
+        target_segment=target_segment,
     )
 
-    start_mailing_task.delay(mailing.id)
-    return JsonResponse({"status": "success", "message": "Mailing has been queued."})
-    # except Exception as e:
-    #     return JsonResponse({'error': str(e)}, status=500)
+    from .tasks import start_mailing_task
+    try:
+        start_mailing_task.delay(mailing.id)
+    except Exception as e:
+        mailing.status = "draft"
+        mailing.save(update_fields=["status"])
+        return JsonResponse({"error": f"Celery брокер недоступен: {e}"}, status=503)
+
+    return JsonResponse({
+        "status": "success",
+        "message": "Рассылка поставлена в очередь Celery.",
+        "mailing_id": mailing.id,
+    })
 
 
 @staff_member_required

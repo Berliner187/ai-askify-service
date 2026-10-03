@@ -189,79 +189,82 @@ def send_manual_email_task(self, recipient_email, subject, html_body, button_tex
         raise exc
 
 
-@shared_task(bind=True)
+@shared_task(bind=True, max_retries=3, default_retry_delay=60)
 def send_one_message_task(self, recipient_id, mailing_id):
     """
-    Отправляет одно сообщение одному юзеру.
+    Отправляет одно сообщение одному юзеру (email или telegram).
+    Ретраит временные ошибки, по исчерпанию попыток помечает получателя failed.
     """
-    try:
-        recipient = MailingRecipient.objects.get(id=recipient_id)
-        user = recipient.user
-        mailing = recipient.mailing
+    recipient = MailingRecipient.objects.get(id=recipient_id)
+    user = recipient.user
+    mailing = recipient.mailing
 
+    try:
         signed_user_id = signer.sign(user.pk)
         unsubscribe_url = f"https://letychka.ru/unsubscribe/{signed_user_id}/"
 
         channel = None
 
         if user.email:
-            try:
-                context = {
-                    'user': user, 'subject': mailing.subject,
-                    'main_content': mailing.message_body, 'button_text': mailing.button_text,
-                    'button_url': mailing.button_url, 'unsubscribe_url': unsubscribe_url
-                }
-
-                html_message = render_to_string('emails/manual_dispatch.html', context)
-                send_mail(
-                    subject=mailing.subject, message='', from_email=EMAIL_HOST_USER,
-                    recipient_list=[user.email], fail_silently=False, html_message=html_message
-                )
-                channel = 'email'
-            except SMTPException as e:
-                raise self.retry(exc=e, countdown=60)
-
+            context = {
+                'user': user,
+                'subject': mailing.subject,
+                'main_content': mailing.message_body,
+                'button_text': mailing.button_text,
+                'button_url': mailing.button_url,
+                'unsubscribe_url': unsubscribe_url,
+            }
+            html_message = render_to_string('emails/manual_dispatch.html', context)
+            send_mail(
+                subject=mailing.subject,
+                message='',
+                from_email=EMAIL_HOST_USER,
+                recipient_list=[user.email],
+                fail_silently=False,
+                html_message=html_message,
+            )
+            channel = 'email'
         else:
             additional_info = AuthAdditionalUser.objects.filter(user=user).first()
             if additional_info and additional_info.id_telegram:
-                try:
-                    import re
+                h = html2text.HTML2Text()
+                h.body_width = 0
+                text_body = h.handle(mailing.message_body)
 
-                    h = html2text.HTML2Text()
-                    h.body_width = 0
-                    text_body = h.handle(mailing.message_body)
+                message = f"*{mailing.subject}*\n\n{text_body}"
+                if mailing.button_text and mailing.button_url:
+                    message += f"\n\n[{mailing.button_text}]({mailing.button_url})"
 
-                    message = f"*{mailing.subject}*\n\n{text_body}"
-                    if mailing.button_text and mailing.button_url:
-                        message += f"\n\n[{mailing.button_text}]({mailing.button_url})"
+                url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+                payload = {
+                    'chat_id': additional_info.id_telegram,
+                    'text': message,
+                    'parse_mode': 'Markdown',
+                }
+                tg_response = requests.post(url, json=payload, timeout=15)
+                if tg_response.status_code >= 400:
+                    raise ValueError(f"Telegram API error: {tg_response.status_code} {tg_response.text[:200]}")
+                channel = 'telegram'
 
-                        url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-
-                        payload = {
-                            'chat_id': additional_info.id_telegram,
-                            'text': message,
-                            'parse_mode': 'Markdown'
-                        }
-
-                        requests.post(url, json=payload)
-
-                    channel = 'telegram'
-                except Exception as e:
-                    raise e
-
-        if channel:
-            recipient.status = 'sent'
-            recipient.channel = channel
-            recipient.sent_at = timezone.now()
-            recipient.save()
-        else:
+        if not channel:
             raise ValueError("No contact channel found (Email or Telegram)")
 
-    except Exception as e:
-        recipient.status = 'failed'
-        recipient.error_message = str(e)
-        recipient.save()
-        print(f"Failed to send message for recipient {recipient_id}. Error: {e}")
+        recipient.status = 'sent'
+        recipient.channel = channel
+        recipient.sent_at = timezone.now()
+        recipient.error_message = ''
+        recipient.save(update_fields=['status', 'channel', 'sent_at', 'error_message'])
+        tracer_l.info(f"MAILING: recipient {recipient_id} sent via {channel}")
+
+    except Exception as exc:
+        if self.request.retries >= self.max_retries:
+            recipient.status = 'failed'
+            recipient.error_message = str(exc)
+            recipient.save(update_fields=['status', 'error_message'])
+            tracer_l.error(f"MAILING: recipient {recipient_id} FAILED after retries: {exc}")
+            return f"failed: {exc}"
+        tracer_l.warning(f"MAILING: recipient {recipient_id} retry {self.request.retries + 1}: {exc}")
+        raise self.retry(exc=exc, countdown=60 * (self.request.retries + 1))
 
 
 @shared_task
@@ -313,8 +316,18 @@ def start_mailing_task(mailing_id):
         recipients = [MailingRecipient(mailing=mailing, user_id=user_id) for user_id in user_ids]
         MailingRecipient.objects.bulk_create(recipients, ignore_conflicts=True)
 
-        for recipient in MailingRecipient.objects.filter(mailing=mailing):
-            send_one_message_task.delay(recipient.id, mailing.id)
+        pending_recipients = list(MailingRecipient.objects.filter(mailing=mailing, status='pending'))
+        if not pending_recipients:
+            mailing.status = 'completed'
+            mailing.save(update_fields=['status'])
+            print(f"Mailing {mailing_id}: no pending recipients.")
+            return
+
+        for recipient in pending_recipients:
+            try:
+                send_one_message_task.delay(recipient.id, mailing.id)
+            except Exception as enqueue_error:
+                tracer_l.error(f"MAILING: failed to enqueue recipient {recipient.id}: {enqueue_error}")
 
         # Здесь можно проверить статус через N часов и пометит рассылку как 'completed'
 
