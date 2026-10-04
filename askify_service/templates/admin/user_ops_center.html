@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CRM | Пульс Летучки</title>
+    <title>CRM | Центр управления процессами CRM | ЦУП CRM Летучки</title>
     <meta name="robots" content="noindex, nofollow" />
     <meta name="csrf-token" content="{{ csrf_token }}">
     <link rel="shortcut icon" href="{% static 'img/logo.png' %}" type="image/png">
@@ -16,26 +16,40 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['Inter','system-ui','sans-serif'] } } } }</script>
     <style>
-        body { font-family: 'Inter', system-ui, sans-serif; }
+        body { background-color: #080811; color: #ebeff3; font-family: 'Inter', system-ui, sans-serif; }
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 8px; }
-        ::-webkit-scrollbar-thumb:hover { background: #334155; }
+        ::-webkit-scrollbar-thumb:hover { background: #101123; }
         @keyframes pulse-dot { 0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,.6);} 50%{box-shadow:0 0 0 6px rgba(16,185,129,0);} }
         .pulse-dot { animation: pulse-dot 1.8s cubic-bezier(.4,0,.6,1) infinite; }
         #toast { transition: opacity .25s ease, transform .25s ease; }
         .modal-backdrop { background: rgba(2,6,23,.75); backdrop-filter: blur(4px); }
+
+        .card-spring {
+            background: #101123;
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 2.2rem;
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .card-spring:hover {
+            border-color: rgba(255, 255, 255, 0.16);
+            box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.7);
+        }
+        .card-spring:active {
+            transform: scale(0.99);
+        }
     </style>
 </head>
-<body class="bg-[#0B0F17] text-slate-100 antialiased min-h-screen">
+<body class="text-slate-100 antialiased min-h-screen">
 <div class="max-w-[1700px] mx-auto px-4 lg:px-6 py-6">
 
     <header class="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div class="flex items-center gap-4">
-            <h1 class="text-2xl font-extrabold tracking-tight text-slate-50">Пульс Летучки</h1>
-            <div class="flex items-center gap-1 rounded-lg bg-[#111827] border border-[#1E293B] p-0.5">
-                <a href="{% url 'stats2975' %}" class="px-3 py-1.5 text-xs font-medium rounded-md text-slate-400 hover:text-slate-200 transition">Дашборд</a>
-                <a href="{% url 'user_ops_center' %}" class="px-3 py-1.5 text-xs font-medium rounded-md bg-blue-600 text-white">CRM</a>
+            <h1 class="text-2xl font-extrabold tracking-tight text-slate-50">Ситуационный центр Летучки</h1>
+            <div class="flex items-center gap-1 rounded-2xl bg-[#111827] border border-[#1E293B] p-0.5">
+                <a href="{% url 'stats2975' %}" class="px-3 py-1.5 text-xs font-medium rounded-[34px] text-slate-400 hover:text-slate-200 transition">Дашборд</a>
+                <a href="{% url 'user_ops_center' %}" class="px-3 py-1.5 text-xs font-medium rounded-2xl bg-[#5E6CF8] text-white">CRM</a>
             </div>
         </div>
         <div class="flex items-center gap-3">
@@ -54,7 +68,7 @@
 
         <aside class="col-span-12 xl:col-span-4 space-y-4">
 
-            <div class="bg-[#111827] border border-[#1E293B] rounded-xl overflow-hidden">
+            <div class="card-spring overflow-hidden">
                 <div class="flex items-center gap-3 px-4 py-3 border-b border-[#1E293B]">
                     <i class="fa-solid fa-magnifying-glass text-slate-500 text-sm"></i>
                     <input id="user-search" type="text" placeholder="Точечный поиск: username / email / id_staff"
@@ -64,20 +78,20 @@
                 <div id="search-results" class="max-h-[360px] overflow-y-auto divide-y divide-[#1E293B]"></div>
             </div>
 
-            <div class="bg-[#111827] border border-[#1E293B] rounded-xl p-4">
+            <div class="card-spring p-4">
                 <div class="flex items-center justify-between mb-3">
                     <span class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Новые регистрации</span>
                     <i class="fa-solid fa-user-plus text-emerald-400 text-xs"></i>
                 </div>
                 <div class="grid grid-cols-3 gap-1 bg-[#0B0F17] rounded-lg p-0.5 mb-3">
-                    <button class="reg-tab px-2 py-1.5 text-[11px] font-medium rounded-md bg-blue-600 text-white" data-period="today">24ч <b id="cnt-today">0</b></button>
-                    <button class="reg-tab px-2 py-1.5 text-[11px] font-medium rounded-md text-slate-400 hover:text-slate-200" data-period="yesterday">Вчера <b id="cnt-yesterday">0</b></button>
-                    <button class="reg-tab px-2 py-1.5 text-[11px] font-medium rounded-md text-slate-400 hover:text-slate-200" data-period="this_week">7д <b id="cnt-week">0</b></button>
+                    <button class="reg-tab px-2 py-1.5 text-[11px] font-medium rounded-xl bg-[#5E6CF8] text-white" data-period="today">24ч <b id="cnt-today">0</b></button>
+                    <button class="reg-tab px-2 py-1.5 text-[11px] font-medium rounded-xl text-slate-400 hover:text-slate-200" data-period="yesterday">Вчера <b id="cnt-yesterday">0</b></button>
+                    <button class="reg-tab px-2 py-1.5 text-[11px] font-medium rounded-xl text-slate-400 hover:text-slate-200" data-period="this_week">7д <b id="cnt-week">0</b></button>
                 </div>
                 <div id="new-users-list" class="max-h-[340px] overflow-y-auto space-y-1"></div>
             </div>
 
-            <div class="bg-[#111827] border border-[#1E293B] rounded-xl p-4">
+            <div class="card-spring p-4">
                 <div class="flex items-center justify-between mb-3">
                     <span class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Email-рассылка (Celery)</span>
                     <i class="fa-solid fa-paper-plane text-violet-400 text-xs"></i>
@@ -103,13 +117,13 @@
                         <option value="no_tests">Сегмент: 0 тестов</option>
                     </select>
                     <button id="start-mailing-btn" type="submit"
-                            class="w-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg py-2.5 transition">
+                            class="w-full bg-[#5E6CF8] hover:bg-[#5E6CF8]/20 text-white text-xs font-semibold rounded-2xl py-2.5 transition">
                         <i class="fa-solid fa-bolt mr-1"></i> Запустить рассылку через Celery
                     </button>
                 </form>
             </div>
 
-            <div class="bg-[#111827] border border-[#1E293B] rounded-xl p-4">
+            <div class="card-spring p-4">
                 <div class="flex items-center justify-between mb-3">
                     <span class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Лог кампаний</span>
                     <button id="refresh-history" class="text-[11px] text-slate-500 hover:text-slate-300"><i class="fa-solid fa-rotate"></i></button>
@@ -119,7 +133,7 @@
         </aside>
 
         <main class="col-span-12 xl:col-span-8">
-            <div id="dossier-placeholder" class="bg-[#111827] border border-[#1E293B] rounded-xl p-16 text-center">
+            <div id="dossier-placeholder" class="card-spring p-16 text-center">
                 <i class="fa-solid fa-address-card text-4xl text-slate-700 mb-4"></i>
                 <p class="text-sm text-slate-500">Найдите пользователя по username — здесь появится полное досье, покупки, тесты и 2 графика.</p>
             </div>
@@ -145,7 +159,7 @@
             <input id="email-cta-url" type="url" placeholder="https://..."
                    class="w-full bg-[#0B0F17] border border-[#1E293B] rounded-lg px-3 py-2 text-xs text-slate-100 placeholder-slate-500 outline-none focus:border-blue-500">
         </div>
-        <button id="email-send" class="w-full bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold rounded-lg py-2.5 transition">Отправить через Celery</button>
+        <button id="email-send" class="w-full bg-[#5E6CF8] hover:bg-blue-500 text-white text-sm font-semibold rounded-lg py-2.5 transition">Отправить через Celery</button>
     </div>
 </div>
 
@@ -202,7 +216,7 @@ function statusPill(status) {
 }
 
 function badge(label, value, accent) {
-    return '<div class="bg-[#0B0F17] border border-[#1E293B] rounded-lg p-3">' +
+    return '<div class="card-spring rounded-3xl p-3">' +
         '<div class="text-[10px] uppercase tracking-wide text-slate-500">' + esc(label) + '</div>' +
         '<div class="text-lg font-bold ' + (accent || 'text-slate-100') + ' mt-0.5">' + value + '</div>' +
         '</div>';
@@ -255,7 +269,7 @@ const Crm = {
             '</tr>';
         }).join('') || '<tr><td colspan="6" class="py-6 text-center text-sm text-slate-500">Тестов нет</td></tr>';
 
-        const head = '<div class="bg-[#111827] border border-[#1E293B] rounded-xl p-5">' +
+        const head = '<div class="card-spring p-5">' +
             '<div class="flex flex-wrap items-start justify-between gap-4">' +
                 '<div class="flex items-start gap-4">' +
                     '<div class="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400 font-bold text-lg">' +
@@ -295,17 +309,17 @@ const Crm = {
         '</div>';
 
         const chartsRow = '<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">' +
-            '<div class="bg-[#111827] border border-[#1E293B] rounded-xl p-5"><h3 class="text-sm font-semibold text-slate-200 mb-3">Создания тестов (12 мес.)</h3><div class="h-56"><canvas id="user-creations-chart"></canvas></div></div>' +
-            '<div class="bg-[#111827] border border-[#1E293B] rounded-xl p-5"><h3 class="text-sm font-semibold text-slate-200 mb-3">Платные оплаты, ₽ (12 мес.)</h3><div class="h-56"><canvas id="user-payments-chart"></canvas></div></div>' +
+            '<div class="card-spring p-5"><h3 class="text-sm font-semibold text-slate-200 mb-3">Создания тестов (12 мес.)</h3><div class="h-56"><canvas id="user-creations-chart"></canvas></div></div>' +
+            '<div class="card-spring p-5"><h3 class="text-sm font-semibold text-slate-200 mb-3">Платные оплаты, ₽ (12 мес.)</h3><div class="h-56"><canvas id="user-payments-chart"></canvas></div></div>' +
         '</div>';
 
-        const purchasesCard = '<div class="bg-[#111827] border border-[#1E293B] rounded-xl p-5">' +
+        const purchasesCard = '<div class="card-spring p-5">' +
             '<h3 class="text-sm font-semibold text-slate-200 mb-3">Что и когда покупал</h3>' +
             '<div class="overflow-x-auto"><table class="w-full text-left min-w-[720px]">' +
             '<thead><tr class="text-[10px] uppercase tracking-wide text-slate-500 border-b border-[#1E293B]"><th class="pb-2 font-medium">Дата</th><th class="pb-2 font-medium">Тариф</th><th class="pb-2 font-medium">Цикл</th><th class="pb-2 font-medium">Сумма</th><th class="pb-2 font-medium">Статус</th><th class="pb-2 font-medium">Заказ</th></tr></thead>' +
             '<tbody>' + purchases + '</tbody></table></div></div>';
 
-        const testsCard = '<div class="bg-[#111827] border border-[#1E293B] rounded-xl p-5">' +
+        const testsCard = '<div class="card-spring p-5">' +
             '<h3 class="text-sm font-semibold text-slate-200 mb-3">Какие тесты создавал (последние 100)</h3>' +
             '<div class="overflow-x-auto"><table class="w-full text-left min-w-[720px]">' +
             '<thead><tr class="text-[10px] uppercase tracking-wide text-slate-500 border-b border-[#1E293B]"><th class="pb-2 font-medium">Тест</th><th class="pb-2 font-medium">Создан</th><th class="pb-2 font-medium">Вопросов</th><th class="pb-2 font-medium">Модель</th><th class="pb-2 font-medium">Просм.</th><th class="pb-2 font-medium">Попыток</th></tr></thead>' +
@@ -441,7 +455,7 @@ function renderNewUsers() {
     const items = newcomerData[newcomerPeriod] || [];
     const box = document.getElementById('new-users-list');
     box.innerHTML = items.map(function (u) {
-        return '<button onclick="Crm.loadUser(' + u.id + ')" class="w-full text-left px-3 py-2 rounded-lg hover:bg-white/[0.03] border border-transparent hover:border-[#1E293B] transition">' +
+        return '<button onclick="Crm.loadUser(' + u.id + ')" class="w-full text-left px-3 py-2 rounded-xl hover:bg-white/[0.03] border border-transparent hover:border-[#1E293B] transition">' +
             '<div class="flex items-center justify-between gap-2">' +
                 '<span class="text-xs font-semibold text-slate-200 truncate">' + esc(u.username) + '</span>' +
                 '<span class="text-[10px] text-slate-500 font-mono whitespace-nowrap">' + esc(u.date_joined) + '</span>' +
@@ -468,7 +482,7 @@ async function loadHistory() {
         const data = await res.json();
         const box = document.getElementById('mailing-history');
         box.innerHTML = (data.history || []).map(function (m) {
-            return '<div class="bg-[#0B0F17] border border-[#1E293B] rounded-lg p-3">' +
+            return '<div class="card-spring p-3">' +
                 '<div class="flex items-center justify-between gap-2">' +
                     '<span class="text-xs font-semibold text-slate-200 truncate">' + esc(m.title) + '</span>' +
                     '<span class="text-[10px] text-slate-500">' + esc(m.created_at) + '</span>' +
@@ -520,10 +534,10 @@ document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('.reg-tab').forEach(function (btn) {
         btn.addEventListener('click', function () {
             document.querySelectorAll('.reg-tab').forEach(function (b) {
-                b.classList.remove('bg-blue-600', 'text-white');
+                b.classList.remove('bg-[#5E6CF8]', 'text-white');
                 b.classList.add('text-slate-400');
             });
-            btn.classList.add('bg-blue-600', 'text-white');
+            btn.classList.add('bg-[#5E6CF8]', 'text-white');
             btn.classList.remove('text-slate-400');
             newcomerPeriod = btn.dataset.period;
             renderNewUsers();

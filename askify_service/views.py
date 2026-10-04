@@ -107,6 +107,7 @@ import json
 import subprocess
 import traceback
 from io import BytesIO
+from zoneinfo import ZoneInfo
 
 
 env = environ.Env()
@@ -127,6 +128,8 @@ signer = Signer()
 # Параметры входа
 MAX_LOGIN_ATTEMPTS = 5
 LOCKOUT_TIME = 60 * 30
+
+MOSCOW_TZ = ZoneInfo("Europe/Moscow")
 
 
 @check_legal_process
@@ -5961,7 +5964,12 @@ def admin_stats(request):
     if not request.user.is_superuser:
         return redirect(f"/profile/{request.user.username}")
 
-    today = timezone.now().date()
+    # 1. Активируем Московскую таймзону для текущего потока
+    timezone.activate(MOSCOW_TZ)
+
+    # Точное текущее время и календарный день по Москве
+    now_moscow = timezone.localtime(timezone.now(), MOSCOW_TZ)
+    today = now_moscow.date()
     yesterday = today - timedelta(days=1)
 
     # ---------------- Период для графиков ----------------
@@ -6056,7 +6064,7 @@ def admin_stats(request):
     reg_chart = get_daily_registration_dynamics_data(start_date, end_date)
     tokens_chart = get_daily_token_usage_chart_data(start_date, end_date)
 
-    # Рост: выручка по тарифам (Free / Standard / Premium / Ultra) по дням
+    # Рост: выручка по тарифам по дням
     day_labels = []
     d = start_date
     while d <= end_date:
@@ -6094,20 +6102,20 @@ def admin_stats(request):
         })
     growth_chart = {"labels": day_labels, "datasets": growth_datasets}
 
-    # ---------------- Дополнительные графики под Revenue & Subscriptions Growth ----------------
+    # Дополнительные графики
     revenue_source_chart = get_revenue_source_data(start_date, end_date)
     arpu_chart = get_arpu_dynamics_data(start_date, end_date)
     score_chart = get_score_distribution_data() or {"labels": [], "data": []}
     funnel_chart = get_user_journey_funnel_data(start_date, end_date)
 
-    # Выручка по 4 тарифам (донат)
+    # Выручка по тарифам (донат)
     plan_revenue_chart = {
         "labels": list(PULSE_PLAN_ORDER),
         "data": [round(plan_revenue_total.get(l, 0.0), 2) for l in PULSE_PLAN_ORDER],
         "colors": [PULSE_PLAN_COLORS[l] for l in PULSE_PLAN_ORDER],
     }
 
-    # Подписки по 4 тарифам (бар)
+    # Подписки по тарифам (бар)
     plan_subs_counts = {label: 0 for label in PULSE_PLAN_ORDER}
     for sub in Subscription.objects.only("plan_name"):
         lbl = _pulse_plan_label(sub.plan_name)
@@ -6118,7 +6126,7 @@ def admin_stats(request):
         "colors": [PULSE_PLAN_COLORS[l] for l in PULSE_PLAN_ORDER],
     }
 
-    # Новые подписки по дням в разрезе 4 тарифов
+    # Новые подписки по дням
     subs_growth_rows = (
         Subscription.objects.filter(start_date__date__range=(start_date, end_date))
         .annotate(day=TruncDate("start_date"))
@@ -6146,36 +6154,20 @@ def admin_stats(request):
     }
 
     # ---------------- API & AI Provider Health ----------------
-    _ensure_system_key()
     provider_health = []
     provider_names = list(APIKey.objects.order_by("provider").values_list("provider", flat=True).distinct())
     for prov in provider_names:
-        keys = list(APIKey.objects.filter(provider=prov))
-        key_ids = [k.id for k in keys]
+        keys = APIKey.objects.filter(provider=prov)
+        key_ids = list(keys.values_list("id", flat=True))
         usages = APIKeyUsage.objects.filter(api_key_id__in=key_ids)
         total_today = usages.filter(timestamp__date=today).count()
+        success_today = usages.filter(timestamp__date=today, success=True).count()
         total_period = usages.filter(timestamp__date__range=(start_date, end_date)).count()
         success_period = usages.filter(timestamp__date__range=(start_date, end_date), success=True).count()
         success_rate = round(success_period / total_period * 100, 1) if total_period else 0.0
         load = min(round(total_today / 50 * 100), 100) if total_today else 0
         avg_resp = int(usages.filter(timestamp__date=today, response_time_ms__isnull=False).aggregate(a=Avg("response_time_ms"))["a"] or 0)
-        tokens_period = int(
-            usages.filter(timestamp__date__range=(start_date, end_date)).aggregate(s=Sum("tokens_used"))["s"] or 0
-        )
-        cost_period = round(
-            sum(
-                _cost_usd(
-                    usages.filter(
-                        api_key=k, timestamp__date__range=(start_date, end_date)
-                    ).aggregate(s=Sum("tokens_used"))["s"] or 0,
-                    _key_price_per_1m(k.model_name, k.provider, k.cost_per_1m_tokens),
-                )
-                for k in keys
-            ),
-            4,
-        )
-        active_keys = sum(1 for k in keys if k.is_active)
-        is_active = active_keys > 0
+        is_active = keys.filter(is_active=True).exists()
         if not is_active:
             status_key, status_label = "paused", "Paused"
         elif success_rate >= 90.0:
@@ -6189,19 +6181,15 @@ def admin_stats(request):
             "success_rate": success_rate,
             "load": load,
             "calls_today": total_today,
-            "calls_period": total_period,
-            "tokens_period": tokens_period,
-            "cost_period": cost_period,
-            "keys_count": len(keys),
-            "active_keys": active_keys,
             "avg_response_ms": avg_resp,
         })
 
-    # ---------------- Транзакции (все) ----------------
+    # ---------------- Транзакции (конвертируем время в МСК) ----------------
     users_map = {u.id_staff: u for u in AuthUser.objects.all()}
     transactions = []
     for p in Payment.objects.select_related("subscription").order_by("-created_at"):
         u = users_map.get(p.staff_id)
+        created_at_local = timezone.localtime(p.created_at, MOSCOW_TZ)
         transactions.append({
             "id": p.id,
             "staff_id": str(p.staff_id),
@@ -6212,8 +6200,8 @@ def admin_stats(request):
             "amount": round(float(p.amount) / 100.0, 2),
             "amount_str": get_format_number(int(round(float(p.amount) / 100.0))),
             "status": p.status,
-            "created_at": p.created_at,
-            "created_at_str": p.created_at.strftime("%d.%m.%Y %H:%M"),
+            "created_at": created_at_local,
+            "created_at_str": created_at_local.strftime("%d.%m.%Y %H:%M"),
             "order_id": p.order_id,
         })
 
@@ -6227,10 +6215,11 @@ def admin_stats(request):
     # ---------------- Live Activity Feed ----------------
     live_feed = []
     for s in Survey.objects.annotate(attempts_count=Count("attempts")).order_by("-created_at")[:20]:
+        survey_created_local = timezone.localtime(s.created_at, MOSCOW_TZ)
         live_feed.append({
             "title": s.title,
             "survey_id": str(s.survey_id),
-            "time": s.created_at.strftime("%d.%m %H:%M"),
+            "time": survey_created_local.strftime("%d.%m %H:%M"),
             "questions_count": s.questions_count or 0,
             "model_name": _pulse_model_label(s.model_name),
             "views": s.view_count,
@@ -6243,6 +6232,9 @@ def admin_stats(request):
         "end_date": end_date.strftime("%Y-%m-%d"),
         "range": range_param,
         "date_range_label": f"{start_date.strftime('%d.%m.%Y')} — {end_date.strftime('%d.%m.%Y')}",
+        
+        "is_production": False if DEBUG else True,
+        "is_production_text": "Local" if DEBUG else "Production",
 
         # Header KPI
         "api_response_ms": api_resp_today,
@@ -6330,7 +6322,6 @@ def admin_stats(request):
     }
 
     return render(request, "admin.html", context)
-
 
 
 @login_required
