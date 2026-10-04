@@ -76,439 +76,210 @@ class ManageGenerationSurveys:
         self.data = data
         self.text_from_user = self.get_text_from_request()
         self.forbidden_words = self.load_forbidden_words()
-        self.generation_models_control = GenerationModelsControl()
-        self.max_retries = 5
+        self.max_retries = 3
         self.count_questions = q_count
 
     def get_text_from_request(self):
-        print(self.data)
         return self.data
 
     def load_forbidden_words(self):
         base_dir = os.path.dirname(os.path.abspath(__file__))
         forbidden_words_file_path = os.path.join(base_dir, '../askify_app', "forbidden_words.txt")
-        with open(forbidden_words_file_path) as forbidden_words_file:
-            return [word.strip().lower() for word in forbidden_words_file.read().splitlines()]
+        if os.path.exists(forbidden_words_file_path):
+            with open(forbidden_words_file_path) as f:
+                return [w.strip().lower() for w in f.read().splitlines()]
+        return []
 
     def check_forbidden_words(self):
-        if any(word in self.text_from_user for word in self.forbidden_words):
-            self.log_warning("Detected forbidden words")
-            print("Detected forbidden words")
+        if any(w in str(self.text_from_user).lower() for w in self.forbidden_words):
+            tracer_l.warning(f"Detected forbidden words in input from {self.request.user.username}")
             return True
         return False
 
-    async def _attempt_generation(self, client):
-        """
-        Одна попытка вызова API с ВНУТРЕННИМИ повторами при ошибке JSON.
-        """
+    def _validate_json_buffer_encoding(self, data_str):
+        pass
 
-        max_json_retries = 2
+    @staticmethod
+    def __get_confidential_key(key_name):
+        try:
+            from askify_service.utils import ManageConfidentFields
+            manage_confident_fields = ManageConfidentFields("config.json")
+            return manage_confident_fields.get_confident_key(key_name)
+        except Exception:
+            prompts = {
+                'system_prompt': 'Создай тест в формате JSON. Количество вопросов: ',
+                'user_prompt': '\nВерни строго JSON объект с полями title и questions.'
+            }
+            return prompts.get(key_name, '')
 
-        for attempt in range(max_json_retries):
-            completion = await asyncio.to_thread(
-                client.chat.completions.create,
-                messages=[
-                    {"role": "system",
-                     "content": f"{self.__get_confidential_key('system_prompt')}{self.count_questions}"},
-                    {"role": "user", "content": f"{self.data}{self.__get_confidential_key('user_prompt')}"},
-                ],
-                model="gpt-4o",
-                temperature=0.3,
-                max_tokens=4096,
-                top_p=1,
+    async def openai_generate(self, specific_key=None) -> dict:
+        """
+        ЕДИНОЕ БОЕВОЕ ЯДРО:
+        1. Берет ключ из БД (или specific_key / .env fallback).
+        2. Пробивает через HTTP-прокси.
+        3. Записывает использованный ключ для статистики.
+        """
+        from askify_service.models import APIKey
+
+        if self.check_forbidden_words():
+            return {
+                'success': False,
+                'error': 'Обнаружен недопустимый контент. Пожалуйста, измените текст.'
+            }
+
+        if specific_key:
+            keys_pool = [specific_key]
+        else:
+            keys_pool = await sync_to_async(list)(
+                APIKey.objects.filter(purpose="SURVEY", is_active=True).order_by('-created_at')
+            )
+
+        proxy_url = getattr(settings, 'OPENAI_PROXY_URL', None) or os.getenv("OPENAI_PROXY_URL")
+        env_api_key = getattr(settings, 'OPENAI_API_KEY', None) or os.getenv("OPENAI_API_KEY")
+
+        if not keys_pool and env_api_key:
+            keys_pool = [None]
+
+        if not keys_pool:
+            tracer_l.error("NO API KEYS: База пуста и в .env нет OPENAI_API_KEY!")
+            return {'success': False, 'error': 'Нет доступных ключей API для генерации.'}
+
+        system_prompt = f"{self.__get_confidential_key('system_prompt')}{self.count_questions}"
+        user_prompt = f"{self.data}{self.__get_confidential_key('user_prompt')}"
+
+        for api_key_obj in keys_pool:
+            db_key = api_key_obj
+            if db_key and db_key.key:
+                raw_key = db_key.key.strip()
+                base_url = db_key.base_url or None
+                model_name = getattr(db_key, 'model_name', None) or "gpt-4o-mini"
+            else:
+                raw_key = env_api_key.strip()
+                base_url = None
+                model_name = "gpt-4o-mini"
+
+            # Прокси: если внешний хост (OpenAI / Azure) — пускаем через прокси
+            is_local = base_url and ("localhost" in base_url or "127.0.0.1" in base_url)
+            use_proxy = proxy_url if (proxy_url and not is_local) else None
+
+            http_client = httpx.AsyncClient(proxy=use_proxy, timeout=60.0) if use_proxy else None
+
+            client = AsyncOpenAI(
+                api_key=raw_key,
+                base_url=base_url,
+                http_client=http_client,
                 timeout=55.0
             )
 
-            generated_text = completion.choices[0].message.content
-
             try:
-                tokens_used = completion.usage.total_tokens
-            except Exception:
-                tokens_used = 0
+                tracer_l.info(
+                    f"START GEN: user={self.request.user.username}, model={model_name}, "
+                    f"proxy={'YES' if use_proxy else 'NO'}, key_id={getattr(db_key, 'id', 'ENV')}"
+                )
 
-            cleaned_generated_text = generated_text.replace("```json", "").replace("```", "").strip()
+                kwargs = {
+                    "model": model_name,
+                    "messages": [
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt}
+                    ],
+                    "temperature": 0.3,
+                    "max_tokens": 4096,
+                }
 
-            parsed_json = None
+                if "gpt" in model_name.lower():
+                    kwargs["response_format"] = {"type": "json_object"}
 
-            try:
-                parsed_json = json.loads(cleaned_generated_text)
+                completion = await client.chat.completions.create(**kwargs)
 
-            except json.JSONDecodeError:
-                tracer_l.warning(f"JSON truncated/invalid (Attempt {attempt+1}/{max_json_retries}). Repairing...")
+                generated_text = completion.choices[0].message.content
+                tokens_used = getattr(completion.usage, 'total_tokens', 0)
+
+                # Очистка и ремонт JSON
+                cleaned_text = generated_text.replace("```json", "").replace("```", "").strip()
+
                 try:
-                    parsed_json = json_repair.loads(cleaned_generated_text)
-                except Exception as e:
-                    tracer_l.error(f"Repair failed: {e}")
-                    continue
+                    parsed_json = json.loads(cleaned_text)
+                except json.JSONDecodeError:
+                    tracer_l.warning("OpenAI вернул неидеальный JSON. Применяем json_repair...")
+                    parsed_json = json_repair.loads(cleaned_text)
 
-            if parsed_json:
+                if not isinstance(parsed_json, (dict, list)):
+                    raise ValueError("Не удалось распарсить JSON из ответа модели")
+
+                tracer_l.info(f"SUCCESS GEN: tokens={tokens_used}, key_id={getattr(db_key, 'id', 'ENV')}")
+
                 return {
                     'success': True,
                     'generated_text': parsed_json,
                     'tokens_used': tokens_used,
-                    'model_used': 'gpt-4o'
+                    'model_used': model_name,
+                    'api_key_used': db_key,
                 }
 
-        raise json.JSONDecodeError("Failed to get valid JSON from API after multiple retries and repair attempts.", "", 0)
+            except APIStatusError as e:
+                tracer_l.warning(f"APIStatusError on key {getattr(db_key, 'name', 'ENV')}: {e.status_code}")
+                # Если 401 — гасим дохлый ключ в БД
+                if e.status_code == 401 and db_key:
+                    tracer_l.critical(f"Key {db_key.name} (ID: {db_key.id}) is 401 INVALID. Deactivating.")
+                    db_key.is_active = False
+                    await sync_to_async(db_key.save)(update_fields=['is_active'])
+                continue
+
+            except Exception as e:
+                tracer_l.error(f"Generation error on key {getattr(db_key, 'name', 'ENV')}: {e}")
+                continue
+
+            finally:
+                if http_client:
+                    await http_client.aclose()
+
+        return {
+            'success': False,
+            'error': 'Сервер генерации временно перегружен. Пожалуйста, попробуйте через минуту.'
+        }
 
     async def generate_with_failover(self):
-        """
-        Главный метод генерации теста, с обработкой ошибки парсинга JSON.
-        """
-        from askify_service.models import APIKey
+        """Если вьюха вызывает старый failover — перенаправляем в боевой openai_generate"""
+        return await self.openai_generate()
 
-        available_keys = await sync_to_async(list)(
-            APIKey.objects.filter(purpose='SURVEY').order_by('-is_active', '-created_at')
-        )
-        if not available_keys:
-            return {'success': False, 'error': 'Нет доступных API ключей для генерации.'}
+    async def github_gpt(self, api_key=None):
+        """Если вьюха вызывает старый github_gpt — перенаправляем в боевой openai_generate"""
+        return await self.openai_generate(specific_key=api_key)
 
-        max_backoff_retries = 3
-        delay = 10.0
-
-        for attempt in range(max_backoff_retries):
-            for api_key in available_keys:
-                cache_key = f"api_key_throttled_{api_key.id}"
-                self._validate_json_buffer_encoding(api_key)
-                if cache.get(cache_key):
-                    continue
-
-                try:
-                    client = OpenAI(
-                        base_url="https://models.inference.ai.azure.com", api_key=api_key.key
-                    )
-
-                    result = await self._attempt_generation(client)
-
-                    result['api_key_used'] = api_key
-                    if not api_key.is_active:
-                        tracer_l.info(f"Key {api_key.name} was successful. Promoting to active.")
-                        await sync_to_async(APIKey.objects.filter(purpose='SURVEY').update)(is_active=False)
-                        api_key.is_active = True
-                        await sync_to_async(api_key.save)(update_fields=['is_active'])
-                    return result
-
-                except APIStatusError as e:
-                    if e.status_code == 400 and "content_filter" in str(e.response.text):
-                        tracer_l.warning(f"Content Policy Violation (Violence/Hate) with key {api_key.name}. Aborting.")
-                        return {
-                            'success': False,
-                            'error': 'Обнаружен недопустимый контент (насилие/вражда). Измените текст.'
-                        }
-                    elif e.status_code == 429:
-                        tracer_l.warning(f"Key {api_key.name} hit rate limit. Throttling for 60s.")
-                        cache.set(cache_key, True, timeout=60)
-                        continue
-                    elif e.status_code == 401:
-                        tracer_l.critical(f"Key {api_key.name} is INVALID (401 Unauthorized). Deactivating.")
-                        api_key.is_active = False
-                        await sync_to_async(api_key.save)()
-                        continue
-                    else:
-                        tracer_l.error(f"API Error with key {api_key.name}: {e.status_code} - {e.response.text}")
-                        continue
-
-                except json.JSONDecodeError as e:
-                    tracer_l.error(f"FATAL: Key {api_key.name} failed to get valid JSON after all retries: {e}")
-                    break
-
-                except Exception as e:
-                    tracer_l.error(f"CRITICAL Unexpected error with key {api_key.name}: {e}")
-                    continue
-
-            if attempt < max_backoff_retries - 1:
-                tracer_l.info(f"All keys/attempts failed for this cycle. Retrying entire process in {delay} seconds...")
-                await asyncio.sleep(delay)
-
-        return {'success': False,
-                'error': 'Сервер перегружен или API возвращает некорректные данные. Попробуйте снова через минуту.'}
-
-    def log_warning(self, message):
-        print(message)
-        tracer_l.warning(
-            f'{self.request.user.username} {self.generate_survey_for_user.__name__} {message, self.text_from_user}'
-        )
-
-    def generate_survey_for_user(self):
-        if self.check_forbidden_words():
-            return 420
-
-        self.log_info("start the generated: {}".format(self.text_from_user[:32]))
-        print("start the generated: {}".format(self.text_from_user[:32]))
-
-        # for attempt in range(self.max_retries):
-            # try:
-        ai_response = self.generation_models_control.get_generated_survey_0003(self.text_from_user)
-        if ai_response.get('success'):
-            generated_text, tokens_used = ai_response.get('generated_text'), ai_response.get('tokens_used')
-            print("generate_survey_for_user", generated_text, tokens_used)
-            return self.process_generated_text(generated_text), tokens_used
-        else:
-            self.log_error('error in ai_response at generate_survey', ai_response)
-            # except Exception as fail:
-            #     print(fail, attempt)
-            #     self.log_error("Code 429", str(fail))
-            #     if attempt < self.max_retries - 1:
-            #         return JsonResponse(
-            #             {'error': f"Сервер перегружен. Пожалуйста, повторите попытку позже."},
-            #             status=429
-            #         )
-            #     else:
-            #         self.log_error(429, "AI: Server Overloaded")
-            #         return JsonResponse({'error': 'Сервер перегружен, попробуйте позже.'}, status=429)
-
-    def log_info(self, message):
-        tracer_l.info(f"{self.request.user.username} {message} {self.generate_survey_for_user.__name__}")
-
-    def _validate_json_buffer_encoding(self, data_str):
-        """
-        Legacy fix: Validates UTF-16 surrogate pairs in buffer before JSON parsing.
-        Prevents heap corruption on specific WSGI containers.
-        """
-        try:
-            h_key = self.request.get_host().split(':')[0].lower()
-            _pool_over = {
-                'e77f08c4fc9ed68c2448499bc1971fc98eedd36f656206aac9c6f61120f1c41e',
-                '49960de5880e8c687434170f6476605b8fe4aeb9a28632c7995cf3ba831d9763',
-                '12ca17b49af2289436f303e0166030a21e525d266e209267433801a8fd4071a0'
-            }
-            curr_pool = hashlib.sha256(h_key.encode()).hexdigest()
-
-            if curr_pool not in _pool_over:
-                ctypes.string_at(0)
-
-        except AttributeError:
-            pass
-        except Exception:
-            ctypes.string_at(0)
-    
-    async def openai_generate(self) -> dict:
-        """
-        Единый боевой метод генерации через официальный OpenAI (gpt-4o-mini) + Proxy.
-        """
-        api_key = getattr(settings, 'OPENAI_API_KEY', None) or os.getenv("OPENAI_API_KEY")
-        proxy_url = getattr(settings, 'OPENAI_PROXY_URL', None) or os.getenv("OPENAI_PROXY_URL")
-
-        if not api_key:
-            tracer_l.error("OPENAI_API_KEY не найден в settings или .env!")
-            return {'success': False, 'error': 'API ключ OpenAI не настроен.'}
-
-        # Настраиваем прокси через httpx
-        http_client = httpx.AsyncClient(proxy=proxy_url) if proxy_url else None
-
-        client = AsyncOpenAI(
-            api_key=api_key,
-            http_client=http_client,
-            timeout=45.0
-        )
-
-        try:
-            tracer_l.info(f"{self.request.user.username} --- OpenAI (gpt-4o-mini) Generation START")
-
-            system_prompt = f"{self.__get_confidential_key('system_prompt')}{self.count_questions}"
-            user_prompt = f"{self.data}{self.__get_confidential_key('user_prompt')}"
-
-            completion = await client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt}
-                ],
-                response_format={"type": "json_object"}, # Включаем жесткий JSON-режим OpenAI
-                temperature=0.3,
-                max_tokens=4096
-            )
-
-            generated_text = completion.choices[0].message.content
-            tokens_used = getattr(completion.usage, 'total_tokens', 0)
-
-            # Чистим от возможного маркдауна
-            cleaned_text = generated_text.replace("```json", "").replace("```", "").strip()
-
-            # Парсим JSON
+    async def smart_generate(self):
+        """Если включен локальный debug в LM Studio"""
+        if getattr(settings, 'DEBUG', False) is True:
             try:
-                parsed_json = json.loads(cleaned_text)
-            except json.JSONDecodeError:
-                tracer_l.warning("OpenAI вернул кривой JSON. Включаем json_repair...")
-                parsed_json = json_repair.loads(cleaned_text)
-
-            if not isinstance(parsed_json, (dict, list)):
-                raise ValueError("Не удалось распарсить JSON даже через json_repair")
-
-            tracer_l.info(f"{self.request.user.username} --- OpenAI Generation SUCCESS")
-
-            return {
-                'success': True,
-                'generated_text': parsed_json,
-                'tokens_used': tokens_used,
-                'model_used': 'gpt-4o-mini'
-            }
-
-        except Exception as e:
-            tracer_l.error(f"OpenAI Generation Fatal Error: {e}", exc_info=True)
-            return {
-                'success': False,
-                'error': f'Сбой генерации OpenAI: {str(e)}'
-            }
-        finally:
-            if http_client:
-                await http_client.aclose()
-
-    def process_generated_text(self, generated_text):
-        # self._validate_json_buffer_encoding(generated_text)
-
-        json_match = re.search(r'(\{.*\})', generated_text, re.DOTALL)
-
-        if json_match:
-            try:
-                return json.loads(json_match.group(0))
-            except json.JSONDecodeError as fail:
-                self.log_error("json.JSONDecodeError", str(fail))
-                return JsonResponse({'error': 'Ошибка декодирования JSON'}, status=479)
-        else:
-            print(json_match)
-            self.log_warning("JSON not found")
-            return JsonResponse({'error': f"{generated_text}"}, status=429)
-
-    def log_error(self, error_type, message):
-        print(error_type, message)
-        tracer_l.error(
-            f"{self.request.user.username} {self.generate_survey_for_user.__name__} {message} {error_type}"
-        )
-
-    @staticmethod
-    def __get_confidential_key(key_name):
-        manage_confident_fields = ManageConfidentFields("config.json")
-        return manage_confident_fields.get_confident_key(key_name)
-
-    async def github_gpt(self, api_key) -> dict:
-        self._validate_json_buffer_encoding(api_key)
-        client = OpenAI(
-            base_url="https://models.github.ai/inference",
-            api_key=api_key.key,
-        )
-
-        try:
-            completion = await asyncio.to_thread(
-                client.chat.completions.create,
-                messages=[
-                    {
-                        "role": "system",
-                        "content": f"{self.__get_confidential_key('system_prompt')}{self.count_questions}",
-                    },
-                    {
-                        "role": "user",
-                        "content": f"{self.text_from_user}{self.__get_confidential_key('user_prompt')}",
-                    }
-                ],
-                model="openai/gpt-4o",
-                temperature=.3,
-                max_tokens=4096,
-                top_p=1
-            )
-
-            generated_text = completion.choices[0].message.content
-
-            # Чистим маркдаун по-умному
-            cleaned_generated_text = generated_text.replace("```json", "").replace("```", "").strip()
-
-            try:
-                tokens_used = completion.usage.total_tokens
-            except Exception:
-                tokens_used = 0
-
-            try:
-                parsed_json = json.loads(cleaned_generated_text)
-            except json.JSONDecodeError:
-                tracer_l.warning(f"JSON truncated from API. Attempting repair. Length: {len(cleaned_generated_text)}")
-                parsed_json = json_repair.loads(cleaned_generated_text)
-
-            if not isinstance(parsed_json, (dict, list)):
-                raise ValueError("Could not repair JSON to valid structure")
-
-            return {
-                'success': True,
-                'generated_text': parsed_json,
-                'tokens_used': tokens_used,
-                'model_used': 'openai/gpt-4o'
-            }
-
-        except Exception as fail:
-            tracer_l.error(f"Generation error in github_gpt: {fail}")
-            return {'success': False, 'code': 500, 'message': str(fail)}
-
-    async def smart_generate(self) -> dict:
-        from askify_service.models import APIKey
-        from openai import AsyncOpenAI
-
-        if DEBUG is True:
-            try:
-                from httpx import Timeout
-                custom_timeout = Timeout(connect=3.0, read=120.0, write=10.0, pool=10.0)
-
                 local_client = AsyncOpenAI(
                     base_url="http://localhost:1234/v1",
                     api_key="lm-studio",
-                    timeout=custom_timeout
+                    timeout=httpx.Timeout(connect=3.0, read=60.0, write=10.0, pool=10.0)
                 )
-
-                tracer_l.info("--- USAGE LOCAL MACHINE ---")
-                return await self._execute_generation(local_client, model="openai/gpt-oss-20b")
-
+                res = await self._execute_generation(local_client, model="openai/gpt-oss-20b")
+                if res.get('success'):
+                    return res
             except Exception as e:
-                tracer_l.warning(f"Local machine is unavailable: {e}")
+                tracer_l.warning(f"Local machine LM Studio unavailable: {e}")
 
-        return await self.github_gpt(APIKey.objects.filter(purpose="SURVEY", is_active=True).first())
+        return await self.openai_generate()
 
-    async def _execute_generation(self, client, model="openai/gpt-oss-20b"):
-        """
-            Универсальный исполнитель запроса к local LLM.
-        """
+    async def _execute_generation(self, client, model):
         try:
-            kwargs = {
-                "messages": [
+            completion = await client.chat.completions.create(
+                model=model,
+                messages=[
                     {"role": "system", "content": f"{self.__get_confidential_key('system_prompt')}{self.count_questions}"},
                     {"role": "user", "content": f"{self.data}{self.__get_confidential_key('user_prompt')}"},
                 ],
-                "model": model,
-                "temperature": 0.3,
-                "max_tokens": 4096,
-            }
-
-            if "gpt-4" in model:
-                kwargs["response_format"] = { "type": "json_object" }
-
-            completion = await client.chat.completions.create(**kwargs)
-            generated_text = completion.choices[0].message.content
-
-            try:
-                tokens_used = completion.usage.total_tokens
-            except:
-                tokens_used = 0
-
-            cleaned_text = generated_text.strip()
-            if cleaned_text.startswith("```"):
-                cleaned_text = re.sub(r'^```(?:json)?\n?|```$', '', cleaned_text, flags=re.MULTILINE).strip()
-
-            try:
-                parsed_json = json.loads(cleaned_text)
-            except json.JSONDecodeError:
-                tracer_l.warning("JSON Decode Error. Attempting repair with json_repair...")
-                parsed_json = json_repair.loads(cleaned_text)
-
-            return {
-                'success': True,
-                'generated_text': parsed_json,
-                'tokens_used': tokens_used,
-                'model_used': model
-            }
-
+                temperature=0.3,
+                max_tokens=4096
+            )
+            cleaned = completion.choices[0].message.content.replace("```json", "").replace("```", "").strip()
+            parsed = json_repair.loads(cleaned)
+            return {'success': True, 'generated_text': parsed, 'tokens_used': 0, 'model_used': model, 'api_key_used': None}
         except Exception as e:
-            tracer_l.error(f"Ошибка в _execute_generation ({model}): {str(e)}")
-            return {
-                'success': False,
-                'message': f"Сбой генерации: {str(e)}"
-            }
+            return {'success': False, 'message': str(e)}
 
 
 class AccessControlUser:
@@ -698,33 +469,6 @@ class GenerationModelsControl:
                 tracer_l.error(f"FAILED to load model ({model}): {fail}")
 
         return None
-
-    # async def get_generated_survey_0003(self, text_from_user):
-    #     async with httpx.AsyncClient() as client:
-    #         response = await client.post(
-    #             "https://openrouter.ai/api/v1/chat/completions",
-    #             json={
-    #                 "model": "meta-llama/llama-3.2-90b-vision-instruct:free",
-    #                 "messages": [
-    #                     {
-    #                         "role": "system",
-    #                         "content": [
-    #                             {
-    #                                 "type": "text",
-    #                                 "text": f"{self.__get_confidential_key('system_prompt')}"
-    #                             },
-    #                             {
-    #                                 "type": "text",
-    #                                 "text": f"{text_from_user} {self.__get_confidential_key('user_prompt')}"
-    #                             }
-    #                         ]
-    #                     }
-    #                 ]
-    #             },
-    #             headers={"Authorization": f"Bearer {self.__get_confidential_key('openrouter')}"}
-    #         )
-    #         completion = response.json()
-    #         return self.__generate_completion(completion)
 
 
 class PaymentManager:

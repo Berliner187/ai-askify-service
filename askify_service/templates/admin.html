@@ -37,17 +37,17 @@
     </script>
 
     <style>
-        body { background-color: #080B11; color: #F1F5F9; font-family: 'Inter', system-ui, sans-serif; }
+        body { background-color: #080811; color: #F1F5F9; font-family: 'Inter', system-ui, sans-serif; }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #1E293B; border-radius: 9999px; }
         ::-webkit-scrollbar-thumb:hover { background: #334155; }
 
-        /* Пружинистый тактильный отклик карточек */
+        /* Пружинистый тактильный отклик карточек */ 
         .card-spring {
-            background: #0E131F;
+            background: #121023;
             border: 1px solid rgba(255, 255, 255, 0.07);
-            border-radius: 1rem;
+            border-radius: 2.2rem;
             transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.2s ease, box-shadow 0.2s ease;
         }
         .card-spring:hover {
@@ -84,7 +84,7 @@
                 <h1 class="text-2xl font-extrabold tracking-tight text-white font-sans">Пульс Летучки</h1>
                 <span class="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 border border-emerald-500/25 px-3 py-1 text-xs font-semibold text-emerald-400 font-mono">
                     <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-live"></span>
-                    Production OK
+                    Production
                 </span>
             </div>
 
@@ -93,7 +93,7 @@
                     <i class="fa-solid fa-rotate text-[11px]"></i> Обновить
                 </a>
                 <div class="flex items-center gap-1 rounded-xl bg-surface border border-borderSubtle p-1">
-                    <a href="{% url 'stats2975' %}" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white shadow-sm btn-spring">Дашборд</a>
+                    <a href="{% url 'stats2975' %}" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-[#5E6CF8] text-white shadow-sm btn-spring">Дашборд</a>
                     <a href="{% url 'user_ops_center' %}" class="px-3.5 py-1.5 text-xs font-medium rounded-lg text-slate-400 hover:text-white transition-colors btn-spring">CRM</a>
                 </div>
             </div>
@@ -137,7 +137,7 @@
                 <button type="submit" class="text-xs text-slate-400 hover:text-white font-medium ml-1 btn-spring">Применить</button>
             </form>
 
-            <a href="{% url 'user_ops_center' %}" class="inline-flex items-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2.5 transition-colors shadow-lg shadow-blue-600/20 btn-spring">
+            <a href="{% url 'user_ops_center' %}" class="inline-flex items-center gap-2 rounded-xl bg-[#5E6CF8] hover:bg-[#5E6CF8]/20 text-white text-xs font-semibold px-4 py-2.5 transition-colors shadow-lg shadow-[#5E6CF8]/20 btn-spring">
                 <i class="fa-solid fa-plus text-[10px]"></i> Новая рассылка
             </a>
         </div>
@@ -305,11 +305,11 @@
                     <p class="text-[11px] text-slate-400 font-mono mt-0.5">{{ date_range_label }}</p>
                 </div>
                 <div class="flex items-center gap-1 rounded-xl bg-canvas border border-borderSubtle p-1 font-mono">
-                    <a href="?range=7D" class="px-2.5 py-1 text-[11px] font-semibold rounded-lg btn-spring {% if range == '7D' %}bg-blue-600 text-white{% else %}text-slate-400 hover:text-white{% endif %}">7D</a>
-                    <a href="?range=30D" class="px-2.5 py-1 text-[11px] font-semibold rounded-lg btn-spring {% if range == '30D' %}bg-blue-600 text-white{% else %}text-slate-400 hover:text-white{% endif %}">30D</a>
-                    <a href="?range=90D" class="px-2.5 py-1 text-[11px] font-semibold rounded-lg btn-spring {% if range == '90D' %}bg-blue-600 text-white{% else %}text-slate-400 hover:text-white{% endif %}">90D</a>
-                    <a href="?range=1Y" class="px-2.5 py-1 text-[11px] font-semibold rounded-lg btn-spring {% if range == '1Y' %}bg-blue-600 text-white{% else %}text-slate-400 hover:text-white{% endif %}">1Y</a>
-                    <a href="?range=ALL" class="px-2.5 py-1 text-[11px] font-semibold rounded-lg btn-spring {% if range == 'ALL' %}bg-blue-600 text-white{% else %}text-slate-400 hover:text-white{% endif %}">ALL</a>
+                    <a href="?range=7D" class="px-2.5 py-1 text-[11px] font-semibold rounded-lg btn-spring {% if range == '7D' %}bg-[#5E6CF8] text-white{% else %}text-slate-400 hover:text-white{% endif %}">7D</a>
+                    <a href="?range=30D" class="px-2.5 py-1 text-[11px] font-semibold rounded-lg btn-spring {% if range == '30D' %}bg-[#5E6CF8] text-white{% else %}text-slate-400 hover:text-white{% endif %}">30D</a>
+                    <a href="?range=90D" class="px-2.5 py-1 text-[11px] font-semibold rounded-lg btn-spring {% if range == '90D' %}bg-[#5E6CF8] text-white{% else %}text-slate-400 hover:text-white{% endif %}">90D</a>
+                    <a href="?range=1Y" class="px-2.5 py-1 text-[11px] font-semibold rounded-lg btn-spring {% if range == '1Y' %}bg-[#5E6CF8] text-white{% else %}text-slate-400 hover:text-white{% endif %}">1Y</a>
+                    <a href="?range=ALL" class="px-2.5 py-1 text-[11px] font-semibold rounded-lg btn-spring {% if range == 'ALL' %}bg-[#5E6CF8] text-white{% else %}text-slate-400 hover:text-white{% endif %}">ALL</a>
                 </div>
             </div>
             <div class="flex items-center gap-4 mb-3 text-xs font-mono text-slate-400">
@@ -325,7 +325,7 @@
         <div class="col-span-12 lg:col-span-5 card-spring p-5 flex flex-col justify-between">
             <div class="flex items-center justify-between mb-3">
                 <h2 class="text-sm font-bold text-white tracking-tight">Здоровье AI-провайдеров</h2>
-                <a href="{% url 'stats2975' %}" class="text-xs text-blue-400 hover:text-blue-300 font-medium btn-spring">Детали →</a>
+                <button onclick="ProviderHealth.open()" class="text-xs text-blue-400 hover:text-blue-300 font-medium btn-spring">Управлять ключами →</button>
             </div>
             {% if provider_health %}
             <div class="overflow-x-auto">
@@ -334,17 +334,20 @@
                         <tr class="text-[10px] uppercase tracking-wider text-slate-400 border-b border-borderSubtle">
                             <th class="pb-2.5 font-semibold">Провайдер</th>
                             <th class="pb-2.5 font-semibold">Статус</th>
-                            <th class="pb-2.5 font-semibold">Успешность</th>
-                            <th class="pb-2.5 font-semibold">Нагрузка</th>
-                            <th class="pb-2.5 font-semibold">Сегодня</th>
+                            <th class="pb-2.5 font-semibold">Запросы</th>
+                            <th class="pb-2.5 font-semibold">Расход</th>
+                            <th class="pb-2.5 font-semibold">Успех</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-borderSubtle/60 text-xs">
                         {% for p in provider_health %}
-                        <tr class="hover:bg-surfaceElevated/50 transition-colors">
+                        <tr class="hover:bg-surfaceElevated/50 transition-colors cursor-pointer" onclick="ProviderHealth.open('{{ p.provider|escapejs }}')">
                             <td class="py-3 pr-2">
-                                <div class="font-semibold text-white font-sans">{{ p.provider }}</div>
-                                <div class="text-[10px] text-slate-400">{{ p.avg_response_ms }} ms avg</div>
+                                <div class="font-semibold text-white font-sans flex items-center gap-1.5">
+                                    {{ p.provider }}
+                                    {% if p.stale_keys %}<span class="text-[9px] px-1 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20" title="Есть неиспользуемые ключи">stale</span>{% endif %}
+                                </div>
+                                <div class="text-[10px] text-slate-400">{{ p.active_keys }}/{{ p.keys_count }} ключей · {{ p.avg_response_ms }} ms</div>
                             </td>
                             <td class="py-3 pr-2">
                                 <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold
@@ -353,16 +356,20 @@
                                     {{ p.status_label }}
                                 </span>
                             </td>
-                            <td class="py-3 pr-2 font-bold text-white">{{ p.success_rate }}%</td>
                             <td class="py-3 pr-2">
-                                <div class="flex items-center gap-2">
-                                    <div class="h-1.5 w-14 rounded-full bg-slate-800 overflow-hidden">
-                                        <div class="h-full rounded-full {% if p.load > 90 %}bg-rose-500{% elif p.load > 70 %}bg-amber-500{% else %}bg-emerald-500{% endif %}" style="width: {{ p.load }}%"></div>
-                                    </div>
-                                    <span class="text-[11px] text-slate-400">{{ p.load }}%</span>
+                                <div class="font-bold text-blue-300">{{ p.calls_period }}</div>
+                                <div class="text-[10px] text-slate-500">{{ p.calls_today }} сегодня</div>
+                            </td>
+                            <td class="py-3 pr-2">
+                                <div class="font-bold text-emerald-300">${{ p.cost_period|floatformat:4 }}</div>
+                                <div class="text-[10px] text-slate-500">{{ p.tokens_period }} ток.</div>
+                            </td>
+                            <td class="py-3">
+                                <div class="font-bold text-white">{{ p.success_rate }}%</div>
+                                <div class="h-1.5 w-14 rounded-full bg-slate-800 overflow-hidden mt-1">
+                                    <div class="h-full rounded-full {% if p.load > 90 %}bg-rose-500{% elif p.load > 70 %}bg-amber-500{% else %}bg-emerald-500{% endif %}" style="width: {{ p.load }}%"></div>
                                 </div>
                             </td>
-                            <td class="py-3 text-slate-300">{{ p.calls_today }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -678,6 +685,29 @@
 </div>
 
 <!-- Тост уведомлений -->
+<!-- ============ AI PROVIDERS MODAL ============ -->
+<div id="ph-modal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm items-start justify-center p-4 overflow-y-auto">
+    <div class="bg-surface border border-borderSubtle rounded-2xl w-full max-w-6xl my-8 shadow-2xl">
+        <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b border-borderSubtle">
+            <div class="flex items-center gap-3">
+                <h3 class="text-base font-bold text-white"><i class="fa-solid fa-key text-blue-400 mr-1"></i> Здоровье AI-провайдеров</h3>
+                <span id="ph-totals" class="text-[11px] text-slate-400 font-mono"></span>
+            </div>
+            <div class="flex items-center gap-2">
+                <div class="flex items-center gap-1 rounded-lg bg-canvas border border-borderSubtle p-0.5">
+                    <button class="ph-range px-2.5 py-1 text-[11px] font-medium rounded-md text-slate-400 hover:text-slate-200" data-range="7D" onclick="ProviderHealth.setRange('7D')">7D</button>
+                    <button class="ph-range px-2.5 py-1 text-[11px] font-medium rounded-md bg-[#5E6CF8] text-white" data-range="14D" onclick="ProviderHealth.setRange('14D')">14D</button>
+                    <button class="ph-range px-2.5 py-1 text-[11px] font-medium rounded-md text-slate-400 hover:text-slate-200" data-range="30D" onclick="ProviderHealth.setRange('30D')">30D</button>
+                    <button class="ph-range px-2.5 py-1 text-[11px] font-medium rounded-md text-slate-400 hover:text-slate-200" data-range="90D" onclick="ProviderHealth.setRange('90D')">90D</button>
+                </div>
+                <button onclick="ProviderHealth.close()" class="text-slate-400 hover:text-white px-2 btn-spring"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+        </div>
+        <div id="ph-tabs" class="flex flex-wrap gap-2 px-5 py-3 border-b border-borderSubtle"></div>
+        <div id="ph-body" class="p-5"></div>
+    </div>
+</div>
+
 <div id="toast" class="fixed bottom-6 right-6 z-50 hidden rounded-xl bg-surfaceElevated border border-borderSubtle px-4 py-3 text-sm text-white shadow-2xl backdrop-blur-md"></div>
 
 <!-- ============ ДВИЖОК СКРИПТОВ И ГРАФИКОВ ============ -->
@@ -988,5 +1018,8 @@ document.addEventListener('DOMContentLoaded', function () {
     } catch (e) { console.warn(e); }
 });
 </script>
+
+<!-- ============ AI PROVIDERS MODAL CONTROLLER ============ -->
+<script src="{% static 'js/provider-health.js' %}"></script>
 </body>
 </html>

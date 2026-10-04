@@ -741,10 +741,15 @@ class APIKey(models.Model):
     provider = models.CharField(max_length=50)
     purpose = models.CharField(max_length=20)
     base_url = models.CharField(max_length=255, blank=True, null=True)
-    key = models.TextField()
+    model_name = models.CharField(max_length=100, blank=True, null=True)
+    key = models.TextField(blank=True, default="")
     is_active = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     expires_at = models.DateTimeField(blank=True, null=True)
+    # Тариф в USD за 1M токенов. 0 = считается автоматически по модели/провайдеру.
+    cost_per_1m_tokens = models.DecimalField(max_digits=12, decimal_places=4, default=0)
+    # Системный ключ (например, OpenAI из .env). Не удаляется, редактируется частично.
+    is_system = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.name} ({self.provider})"
@@ -759,6 +764,8 @@ class APIKeyUsage(models.Model):
     success = models.BooleanField(default=True)
     endpoint = models.CharField(max_length=255, blank=True, null=True)
     response_time_ms = models.IntegerField(null=True, blank=True)
+    tokens_used = models.PositiveIntegerField(default=0)
+    model_name = models.CharField(max_length=100, blank=True, null=True)
 
     def __str__(self):
         return f"Usage of {self.api_key.name} at {self.timestamp}"

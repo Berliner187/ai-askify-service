@@ -1,596 +1,543 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User Ops Center | Летучка</title>
+    <title>CRM | Пульс Летучки</title>
     <meta name="robots" content="noindex, nofollow" />
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <link rel="shortcut icon" href="{% static 'img/logo.png' %}" type="image/png">
 
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-    <script src="https://cdn.tiny.cloud/1/МОЙ-API/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
-
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['Inter','system-ui','sans-serif'] } } } }</script>
     <style>
-        :root {
-            --color-bg: #0F0818;
-            --color-surface: rgba(30, 24, 48, 0.5);
-            --color-border: rgba(97, 109, 240, 0.2);
-            --color-text-primary: #f0f0f0;
-            --color-text-secondary: #a0a0b0;
-            --color-accent-primary: #616DF0;
-        }
-        body { background-color: var(--color-bg); color: var(--color-text-primary); font-family: 'Inter', sans-serif; }
-        h1, h2, h3 { font-family: 'Unbounded', sans-serif; }
-        /* Стили для кастомного скроллбара в редакторе */
-        .tox-edit-area__iframe::-webkit-scrollbar { width: 8px; }
-        .tox-edit-area__iframe::-webkit-scrollbar-track { background: #1a1625; }
-        .tox-edit-area__iframe::-webkit-scrollbar-thumb { background-color: var(--color-accent-primary); border-radius: 4px; }
-
-        .new-users-tab {
-            padding: 4px 12px;
-            border-bottom: 2px solid transparent;
-            color: var(--color-text-secondary);
-            font-weight: 600;
-            transition: all 0.2s ease;
-        }
-        .new-users-tab:hover {
-            color: white;
-        }
-        .new-users-tab.active {
-            color: var(--color-accent-primary);
-            border-bottom-color: var(--color-accent-primary);
-        }
+        body { font-family: 'Inter', system-ui, sans-serif; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 8px; }
+        ::-webkit-scrollbar-thumb:hover { background: #334155; }
+        @keyframes pulse-dot { 0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,.6);} 50%{box-shadow:0 0 0 6px rgba(16,185,129,0);} }
+        .pulse-dot { animation: pulse-dot 1.8s cubic-bezier(.4,0,.6,1) infinite; }
+        #toast { transition: opacity .25s ease, transform .25s ease; }
+        .modal-backdrop { background: rgba(2,6,23,.75); backdrop-filter: blur(4px); }
     </style>
 </head>
-<body class="bg-[var(--color-bg)] text-[var(--color-text-primary)]">
-    
-    <!-- Тут может быть твой include хедера, если он не часть base.html -->
-    {% include 'header.html' %} 
+<body class="bg-[#0B0F17] text-slate-100 antialiased min-h-screen">
+<div class="max-w-[1700px] mx-auto px-4 lg:px-6 py-6">
 
-    <main class="max-w-7xl mx-auto p-4 sm:p-8 space-y-8">
-        <h1 class="text-3xl font-bold text-white">User Ops Center</h1>
-
-        <div>
-            <a href="{% url 'stats2975' %}" class="w-auto px-4 py-2 font-bold text-center rounded-2xl bg-[var(--color-accent-primary)] text-white text-sm">Дашборды</a>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            
-            <!-- Левая колонка: Поиск и результаты -->
-            <div class="lg:col-span-1 space-y-4">
-                <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
-                    <h2 class="font-bold text-white text-lg">Поиск пользователя</h2>
-                    <div class="relative mt-2">
-                        <input type="text" id="user-search-input" placeholder="Имя, email..." class="w-full p-3 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-accent-primary)] outline-none">
-                        <div id="search-spinner" class="absolute top-3 right-3 hidden">
-                            <div class="w-5 h-5 border-2 border-t-[var(--color-accent-primary)] border-transparent rounded-full animate-spin"></div>
-                        </div>
-                    </div>
-                </div>
-                <div id="search-results-container" class="space-y-2"></div>
-
-                <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] mt-4">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="font-bold text-white text-lg">Новые пользователи</h2>
-                        <div id="new-users-spinner" class="w-5 h-5 border-2 border-t-[var(--color-accent-primary)] border-transparent rounded-full animate-spin"></div>
-                    </div>
-                    
-                    <div class="flex gap-2 mb-4 border-b border-[var(--color-border)]">
-                        <button class="new-users-tab active" data-period="today">Сегодня</button>
-                        <button class="new-users-tab" data-period="yesterday">Вчера</button>
-                        <button class="new-users-tab" data-period="this_week">Неделя</button>
-                    </div>
-                    
-                    <div id="new-users-content" class="space-y-3">
-                        <!-- Сюда JS будет вставлять контент -->
-                    </div>
-                </div>
-            </div>
-
-            <!-- Правая колонка: Карточка пользователя -->
-            <div class="lg:col-span-2">
-                <div id="user-card-container" class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] sticky top-8">
-                    <div id="user-card-placeholder" class="text-center text-[var(--color-text-secondary)] py-16">
-                        <i class="fas fa-search text-4xl mb-4"></i>
-                        <p>Найдите пользователя, чтобы увидеть его данные</p>
-                    </div>
-                    <div id="user-card-content" class="hidden"></div>
-                </div>
+    <header class="flex flex-wrap items-center justify-between gap-4 mb-6">
+        <div class="flex items-center gap-4">
+            <h1 class="text-2xl font-extrabold tracking-tight text-slate-50">Пульс Летучки</h1>
+            <div class="flex items-center gap-1 rounded-lg bg-[#111827] border border-[#1E293B] p-0.5">
+                <a href="{% url 'stats2975' %}" class="px-3 py-1.5 text-xs font-medium rounded-md text-slate-400 hover:text-slate-200 transition">Дашборд</a>
+                <a href="{% url 'user_ops_center' %}" class="px-3 py-1.5 text-xs font-medium rounded-md bg-blue-600 text-white">CRM</a>
             </div>
         </div>
+        <div class="flex items-center gap-3">
+            <span class="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 text-xs font-semibold text-emerald-400">
+                <span class="relative flex h-2 w-2">
+                    <span class="pulse-dot absolute inline-flex h-full w-full rounded-full bg-emerald-400"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
+                </span>
+                Celery / SMTP online
+            </span>
+            <a href="{% url 'stats2975' %}" class="text-xs text-slate-500 hover:text-slate-300">← Аналитика</a>
+        </div>
+    </header>
 
-        <!-- МАССОВАЯ РАССЫЛКА -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
-            <!-- Левая колонка: Форма создания -->
-            <div class="lg:col-span-1 bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
-                <h2 class="font-bold text-white text-lg mb-4">Новая рассылка</h2>
-                <form id="mailing-form" class="space-y-4">
-                    {% csrf_token %}
-                    <div>
-                        <label for="mailing-title" class="text-sm font-semibold text-gray-300">Название (для админки)</label>
-                        <input type="text" id="mailing-title" required class="mt-1 w-full p-2 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg">
+    <div class="grid grid-cols-12 gap-4">
+
+        <aside class="col-span-12 xl:col-span-4 space-y-4">
+
+            <div class="bg-[#111827] border border-[#1E293B] rounded-xl overflow-hidden">
+                <div class="flex items-center gap-3 px-4 py-3 border-b border-[#1E293B]">
+                    <i class="fa-solid fa-magnifying-glass text-slate-500 text-sm"></i>
+                    <input id="user-search" type="text" placeholder="Точечный поиск: username / email / id_staff"
+                           class="w-full bg-transparent outline-none text-sm text-slate-100 placeholder-slate-500" autocomplete="off">
+                    <button id="user-search-btn" class="text-[11px] text-blue-400 hover:text-blue-300 whitespace-nowrap">Найти</button>
+                </div>
+                <div id="search-results" class="max-h-[360px] overflow-y-auto divide-y divide-[#1E293B]"></div>
+            </div>
+
+            <div class="bg-[#111827] border border-[#1E293B] rounded-xl p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Новые регистрации</span>
+                    <i class="fa-solid fa-user-plus text-emerald-400 text-xs"></i>
+                </div>
+                <div class="grid grid-cols-3 gap-1 bg-[#0B0F17] rounded-lg p-0.5 mb-3">
+                    <button class="reg-tab px-2 py-1.5 text-[11px] font-medium rounded-md bg-blue-600 text-white" data-period="today">24ч <b id="cnt-today">0</b></button>
+                    <button class="reg-tab px-2 py-1.5 text-[11px] font-medium rounded-md text-slate-400 hover:text-slate-200" data-period="yesterday">Вчера <b id="cnt-yesterday">0</b></button>
+                    <button class="reg-tab px-2 py-1.5 text-[11px] font-medium rounded-md text-slate-400 hover:text-slate-200" data-period="this_week">7д <b id="cnt-week">0</b></button>
+                </div>
+                <div id="new-users-list" class="max-h-[340px] overflow-y-auto space-y-1"></div>
+            </div>
+
+            <div class="bg-[#111827] border border-[#1E293B] rounded-xl p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Email-рассылка (Celery)</span>
+                    <i class="fa-solid fa-paper-plane text-violet-400 text-xs"></i>
+                </div>
+                <form id="mailing-form" class="space-y-2">
+                    <input id="mailing-title" type="text" placeholder="Название кампании (внутреннее)"
+                           class="w-full bg-[#0B0F17] border border-[#1E293B] rounded-lg px-3 py-2 text-xs text-slate-100 placeholder-slate-500 outline-none focus:border-blue-500">
+                    <input id="mailing-subject" type="text" placeholder="Тема письма"
+                           class="w-full bg-[#0B0F17] border border-[#1E293B] rounded-lg px-3 py-2 text-xs text-slate-100 placeholder-slate-500 outline-none focus:border-blue-500">
+                    <textarea id="mailing-body" rows="4" placeholder="HTML-текст письма"
+                           class="w-full bg-[#0B0F17] border border-[#1E293B] rounded-lg px-3 py-2 text-xs text-slate-100 placeholder-slate-500 outline-none focus:border-blue-500 resize-y"></textarea>
+                    <div class="grid grid-cols-2 gap-2">
+                        <input id="mailing-cta-text" type="text" placeholder="Текст кнопки"
+                               class="w-full bg-[#0B0F17] border border-[#1E293B] rounded-lg px-3 py-2 text-xs text-slate-100 placeholder-slate-500 outline-none focus:border-blue-500">
+                        <input id="mailing-cta-url" type="url" placeholder="https://..."
+                               class="w-full bg-[#0B0F17] border border-[#1E293B] rounded-lg px-3 py-2 text-xs text-slate-100 placeholder-slate-500 outline-none focus:border-blue-500">
                     </div>
-                    <div>
-                        <label for="mailing-subject" class="text-sm font-semibold text-gray-300">Тема (для Email)</label>
-                        <input type="text" id="mailing-subject" required class="mt-1 w-full p-2 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg">
-                    </div>
-                    <div>
-                        <label class="text-sm font-semibold text-gray-300">Сообщение</label>
-                        <textarea id="mailing-body-editor" class="mt-1 w-full p-2 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg" rows="6"></textarea>
-                    </div>
-                    <div class="pt-2 border-t border-[var(--color-border)] space-y-3">
-                        <h4 class="font-semibold text-white text-sm">Кнопка-действие</h4>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <label for="mailing-cta-text" class="text-xs text-gray-300">Текст кнопки</label>
-                                <input type="text" id="mailing-cta-text" class="mt-1 w-full p-2 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg">
-                            </div>
-                            <div>
-                                <label for="mailing-cta-url" class="text-xs text-gray-300">URL-адрес</label>
-                                <input type="url" id="mailing-cta-url" class="mt-1 w-full p-2 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg">
-                            </div>
-                        </div>
-                    </div>
-                    <div>
-                        <label for="mailing-segment" class="text-sm font-semibold text-gray-300">Сегмент</label>
-                        <select id="mailing-segment" class="mt-1 w-full p-2 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg">
-                            <option value="all">Всем пользователям</option>
-                            <option value="active_subs">С активной подпиской</option>
-                            <option value="inactive_subs">Без активной подписки</option>
-                            <option value="no_tests">Кто не создал ни одного теста</option>
-                        </select>
-                    </div>
-                    <div class="pt-4">
-                        <button type="submit" id="start-mailing-btn" class="w-full p-3 font-bold text-center rounded-lg bg-[var(--color-accent-primary)] text-white hover:opacity-90">
-                            Запустить рассылку
-                        </button>
-                    </div>
+                    <select id="mailing-segment"
+                            class="w-full bg-[#0B0F17] border border-[#1E293B] rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:border-blue-500">
+                        <option value="all">Сегмент: Все пользователи</option>
+                        <option value="active_subs">Сегмент: С активной подпиской</option>
+                        <option value="inactive_subs">Сегмент: Без подписки</option>
+                        <option value="no_tests">Сегмент: 0 тестов</option>
+                    </select>
+                    <button id="start-mailing-btn" type="submit"
+                            class="w-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg py-2.5 transition">
+                        <i class="fa-solid fa-bolt mr-1"></i> Запустить рассылку через Celery
+                    </button>
                 </form>
             </div>
 
-            <!-- Правая колонка: Статус рассылок -->
-            <div class="lg:col-span-2 bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)]">
-                <h2 class="font-bold text-white text-lg mb-4">Последние рассылки</h2>
-                <div id="mailing-history-container" class="space-y-3">
-                    <!-- Сюда будем загружать историю рассылок -->
-                    <p class="text-gray-500">Загрузка...</p>
+            <div class="bg-[#111827] border border-[#1E293B] rounded-xl p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Лог кампаний</span>
+                    <button id="refresh-history" class="text-[11px] text-slate-500 hover:text-slate-300"><i class="fa-solid fa-rotate"></i></button>
                 </div>
+                <div id="mailing-history" class="space-y-2 max-h-[320px] overflow-y-auto"></div>
             </div>
-        </div>
-    </main>
+        </aside>
 
-    <!-- МОДАЛЬНОЕ ОКНО ДЛЯ ОТПРАВКИ EMAIL -->
-    <div id="email-modal-overlay" class="fixed inset-0 bg-black/80 z-50 hidden items-center justify-center p-4 transition-opacity duration-300 opacity-0">
-        <div id="email-modal-content" class="bg-[var(--color-surface)] w-full max-w-2xl p-6 sm:p-8 rounded-3xl border border-[var(--color-border)] transform scale-95 opacity-0 transition-all duration-300">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-2xl font-bold text-white">Новое сообщение</h3>
-                <button id="close-email-modal-btn" class="text-gray-500 hover:text-white text-3xl">&times;</button>
+        <main class="col-span-12 xl:col-span-8">
+            <div id="dossier-placeholder" class="bg-[#111827] border border-[#1E293B] rounded-xl p-16 text-center">
+                <i class="fa-solid fa-address-card text-4xl text-slate-700 mb-4"></i>
+                <p class="text-sm text-slate-500">Найдите пользователя по username — здесь появится полное досье, покупки, тесты и 2 графика.</p>
             </div>
-            <form id="manual-email-form" class="space-y-4">
-                {% csrf_token %}
-                <div>
-                    <label class="text-sm font-semibold text-gray-300">Кому</label>
-                    <input type="email" id="email-recipient" readonly class="mt-1 w-full p-3 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg text-gray-400 cursor-not-allowed">
-                </div>
-                <div>
-                    <label for="email-subject" class="text-sm font-semibold text-gray-300">Тема</label>
-                    <input type="text" id="email-subject" required class="mt-1 w-full p-3 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]">
-                </div>
-                <div>
-                    <label class="text-sm font-semibold text-gray-300">Сообщение</label>
-                    <textarea id="email-body-editor"></textarea>
-                </div>
-                <div class="pt-4 border-t border-[var(--color-border)] space-y-3">
-                    <h4 class="font-semibold text-white">Кнопка-действие (CTR)</h4>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label for="email-cta-text" class="text-xs font-semibold text-gray-300">Текст кнопки</label>
-                            <input type="text" id="email-cta-text" class="mt-1 w-full p-2 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg text-white">
-                        </div>
-                        <div>
-                            <label for="email-cta-url" class="text-xs font-semibold text-gray-300">URL-адрес (ссылка)</label>
-                            <input type="url" id="email-cta-url" class="mt-1 w-full p-2 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg text-white">
-                        </div>
-                    </div>
-                </div>
-                <div class="flex justify-end items-center gap-4 pt-4">
-                    <button type="button" id="cancel-email-btn" class="text-gray-400 hover:text-white">Отмена</button>
-                    <button type="submit" id="send-manual-email-btn" class="px-6 py-3 font-bold text-center rounded-lg bg-[var(--color-accent-primary)] text-white transition-opacity hover:opacity-90 flex items-center gap-2">
-                        <span id="send-btn-text">Отправить</span>
-                        <div id="send-btn-spinner" class="w-5 h-5 border-2 border-t-white border-transparent rounded-full animate-spin hidden"></div>
-                    </button>
-                </div>
-            </form>
-        </div>
+            <div id="dossier" class="hidden space-y-4"></div>
+        </main>
     </div>
+</div>
 
-    <!-- 2. НАШ КАСТОМНЫЙ JS-КОД В КОНЦЕ BODY -->
-    <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        // --- ОБЪЯВЛЕНИЕ ПЕРЕМЕННЫХ ---
-        const searchInput = document.getElementById('user-search-input');
-        const resultsContainer = document.getElementById('search-results-container');
-        const spinner = document.getElementById('search-spinner');
+<div id="email-modal" class="hidden fixed inset-0 z-50 modal-backdrop items-center justify-center p-4">
+    <div class="bg-[#111827] border border-[#1E293B] rounded-xl w-full max-w-lg p-5">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-sm font-semibold text-slate-200">Письмо пользователю</h3>
+            <button onclick="Crm.closeEmail()" class="text-slate-500 hover:text-slate-300"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <p id="email-target" class="text-[11px] text-slate-500 mb-3"></p>
+        <input id="email-subject" type="text" placeholder="Тема письма"
+               class="w-full bg-[#0B0F17] border border-[#1E293B] rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 outline-none focus:border-blue-500 mb-2">
+        <textarea id="email-body" rows="6" placeholder="HTML-текст письма"
+                  class="w-full bg-[#0B0F17] border border-[#1E293B] rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 outline-none focus:border-blue-500 resize-y mb-2"></textarea>
+        <div class="grid grid-cols-2 gap-2 mb-3">
+            <input id="email-cta-text" type="text" placeholder="Текст кнопки"
+                   class="w-full bg-[#0B0F17] border border-[#1E293B] rounded-lg px-3 py-2 text-xs text-slate-100 placeholder-slate-500 outline-none focus:border-blue-500">
+            <input id="email-cta-url" type="url" placeholder="https://..."
+                   class="w-full bg-[#0B0F17] border border-[#1E293B] rounded-lg px-3 py-2 text-xs text-slate-100 placeholder-slate-500 outline-none focus:border-blue-500">
+        </div>
+        <button id="email-send" class="w-full bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold rounded-lg py-2.5 transition">Отправить через Celery</button>
+    </div>
+</div>
 
-        const cardPlaceholder = document.getElementById('user-card-placeholder');
-        const cardContentContainer = document.getElementById('user-card-content');
-        
-        const emailModalOverlay = document.getElementById('email-modal-overlay');
-        const emailModalContent = document.getElementById('email-modal-content');
-        const closeEmailModalBtn = document.getElementById('close-email-modal-btn');
-        const cancelEmailBtn = document.getElementById('cancel-email-btn');
-        const emailForm = document.getElementById('manual-email-form');
-        const userCardContainer = document.getElementById('user-card-container');
-        const sendBtn = document.getElementById('send-manual-email-btn');
-        const sendBtnText = document.getElementById('send-btn-text');
-        const sendBtnSpinner = document.getElementById('send-btn-spinner');
+<div id="toast" class="fixed bottom-6 right-6 z-50 hidden rounded-lg bg-slate-800 border border-[#1E293B] px-4 py-3 text-sm text-slate-100 shadow-xl"></div>
 
-        let searchTimeout;
+<script>
+const CSRF = document.querySelector('meta[name="csrf-token"]') ? document.querySelector('meta[name="csrf-token"]').content : '';
+let currentUser = null;
+let newcomerData = {};
+let charts = { creations: null, payments: null };
 
-        // --- ИНИЦИАЛИЗАЦИЯ TINYMCE ---
-        // Теперь эта функция вызывается безопасно, т.к. библиотека уже загружена
-        tinymce.init({
-            selector: '#email-body-editor',
-            plugins: 'autolink lists link charmap searchreplace wordcount visualblocks code fullscreen',
-            toolbar: 'undo redo | blocks | bold italic | alignleft aligncenter alignright | bullist numlist | link',
-            skin: 'oxide-dark',
-            content_css: 'dark',
-            height: 250,
-            menubar: false,
-        });
+function toast(msg, type) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = 'fixed bottom-6 right-6 z-50 rounded-lg px-4 py-3 text-sm shadow-xl ' +
+        (type === 'ok' ? 'bg-emerald-600/90 text-white border border-emerald-500'
+                       : 'bg-red-600/90 text-white border border-red-500');
+    el.style.opacity = '1';
+    el.style.transform = 'translateY(0)';
+    setTimeout(function () { el.style.opacity = '0'; el.style.transform = 'translateY(8px)'; }, 3200);
+}
 
-        tinymce.init({
-            selector: '#mailing-body-editor',
-            plugins: 'autolink lists link charmap searchreplace wordcount visualblocks code fullscreen',
-            toolbar: 'undo redo | blocks | bold italic | alignleft aligncenter alignright | bullist numlist | link',
-            skin: 'oxide-dark',
-            content_css: 'dark',
-            height: 300,
-            menubar: false,
-        });
-
-        // --- ЛОГИКА ПОИСКА ---
-        searchInput.addEventListener('keyup', () => {
-            clearTimeout(searchTimeout);
-            const query = searchInput.value.trim();
-            if (query.length < 2) {
-                resultsContainer.innerHTML = '';
-                return;
-            }
-            spinner.classList.remove('hidden');
-            searchTimeout = setTimeout(() => searchUsers(query), 300);
-        });
-
-        async function searchUsers(query) {
-            try {
-                const response = await fetch(`/api/admin/search-users/?q=${encodeURIComponent(query)}`);
-                const data = await response.json();
-                renderSearchResults(data.users);
-            } catch (error) {
-                console.error("Search failed:", error);
-                resultsContainer.innerHTML = '<p class="text-red-400">Ошибка поиска</p>';
-            } finally {
-                spinner.classList.add('hidden');
-            }
-        }
-
-        function renderSearchResults(users) {
-            if (!users || users.length === 0) {
-                resultsContainer.innerHTML = '<div class="text-center text-gray-500 p-4 bg-[var(--color-bg)] rounded-lg border border-[var(--color-border)]">Ничего не найдено</div>';
-                return;
-            }
-            resultsContainer.innerHTML = users.map(user => `
-                <button class="w-full text-left bg-[var(--color-bg)] p-3 rounded-lg border border-[var(--color-border)] hover:border-[var(--color-accent-primary)] transition-colors user-select-btn" data-user-id="${user.id}">
-                    <p class="font-bold text-white">${user.username}</p>
-                    <p class="text-xs text-gray-400">${user.email}</p>
-                </button>
-            `).join('');
-        }
-
-        // --- ЛОГИКА КАРТОЧКИ ПОЛЬЗОВАТЕЛЯ ---
-        resultsContainer.addEventListener('click', (event) => {
-            const button = event.target.closest('.user-select-btn');
-            if (button) {
-                const userId = button.dataset.userId;
-                fetchUserDetails(userId);
-            }
-        });
-
-        async function fetchUserDetails(userId) {
-            // Правильный подход: Прячем заглушку, показываем контейнер контента и кладЕМ спиннер ВНУТРЬ него
-            cardPlaceholder.classList.add('hidden');
-            cardContentContainer.classList.remove('hidden'); // Показываем контейнер
-            cardContentContainer.innerHTML = '<div class="text-center py-16"><div class="w-8 h-8 border-4 border-t-[var(--color-accent-primary)] border-transparent rounded-full animate-spin mx-auto"></div></div>'; // А вот теперь кладем спиннер внутрь
-            
-            try {
-                const response = await fetch(`/api/admin/user-details/${userId}/`);
-                const data = await response.json();
-                if (response.ok) {
-                    renderUserCard(data);
-                } else {
-                    throw new Error(data.error || 'Failed to fetch user details');
-                }
-            } catch (error) {
-                console.error("Fetch details failed:", error);
-                cardPlaceholder.classList.remove('hidden');
-                cardContentContainer.innerHTML = '';
-                cardPlaceholder.innerHTML = '<p class="text-red-400">Не удалось загрузить данные</p>';
-            }
-        }
-
-        function renderUserCard(data) {
-            const subStatusClass = data.subscription && data.subscription.status === 'active' ? 'text-green-400' : 'text-red-400';
-            const subPlan = (data.subscription && data.subscription.plan_name) || 'Нет подписки';
-            const subInfo = (data.subscription && data.subscription.status) ? `Статус: ${data.subscription.status} (до ${data.subscription.end_date})` : '';
-
-            const surveysHTML = data.last_surveys.length > 0
-                ? data.last_surveys.map(s => `
-                    <div class="p-2 bg-black/20 rounded-lg flex justify-between items-center gap-2">
-                        <div class="truncate">
-                            <a href="/c/${s.survey_id}/" target="_blank" class="text-white hover:underline" title="${s.title}">${s.title}</a>
-                            <p class="text-xs text-gray-500">${s.created_at}</p>
-                        </div>
-                        <div class="flex-shrink-0 text-right text-xs">
-                            <p title="Просмотры"><i class="fas fa-eye mr-1 opacity-50"></i> ${s.view_count}</p>
-                            <p title="Попытки"><i class="fas fa-tasks mr-1 opacity-50"></i> ${s.attempts_count}</p>
-                        </div>
-                    </div>`).join('')
-                : '<p class="text-xs text-gray-500">Пока нет созданных тестов.</p>';
-            
-            const usernameDisplay = data.username.length > 40 ? '<span class="text-red-400 font-mono">НЕЛЕГАЛ</span>' : data.username;
-
-            cardContentContainer.innerHTML = `
-                <div class="flex justify-between items-start">
-                    <div>
-                        <h2 class="text-2xl font-bold text-white">${usernameDisplay}</h2>
-                        <p class="text-sm text-[var(--color-text-secondary)]">${data.email}</p>
-                        <p class="text-xs text-gray-500 mt-1">ID Staff: <span class="font-mono">${data.id_staff}</span></p>
-                    </div>
-                    <div class="text-right">
-                        <p class="text-sm font-semibold">${subPlan}</p>
-                        <p class="text-xs ${subStatusClass}">${subInfo}</p>
-                    </div>
-                </div>
-                <div class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                    <div><p class="text-2xl font-bold">${data.activity.surveys_created}</p><p class="text-xs text-gray-400">Тестов создано</p></div>
-                    <div><p class="text-2xl font-bold">${data.activity.attempts_on_surveys}</p><p class="text-xs text-gray-400">Прохождений</p></div>
-                    <div><p class="text-2xl font-bold">${(data.financials.total_revenue / 100).toFixed(0)} ₽</p><p class="text-xs text-gray-400">Доход</p></div>
-                    <div><p class="text-2xl font-bold">${data.financials.payment_count}</p><p class="text-xs text-gray-400">Платежей</p></div>
-                </div>
-                <div class="mt-6 pt-4 border-t border-[var(--color-border)]">
-                    <h3 class="font-semibold text-white mb-2">Последние тесты</h3>
-                    <div class="space-y-2 text-sm">${surveysHTML}</div>
-                </div>
-                <div class="mt-6 pt-4 border-t border-[var(--color-border)] flex gap-2">
-                    <button id="open-email-modal-btn" data-email="${data.email}" class="flex-grow p-2 bg-[var(--color-accent-primary)] hover:opacity-90 rounded-lg font-bold">Написать Email</button>
-                    <button class="p-2 bg-red-800/80 hover:bg-red-700/80 rounded-lg font-bold">Заблокировать</button>
-                </div>
-            `;
-
-            // Заглушку скрываем, а контейнер с контентом мы уже показали до этого
-            cardPlaceholder.classList.add('hidden');
-        }
-
-        // --- ЛОГИКА МОДАЛКИ EMAIL ---
-        userCardContainer.addEventListener('click', (event) => {
-            if (event.target.id === 'open-email-modal-btn') {
-                const userEmail = event.target.dataset.email;
-                openEmailModal(userEmail);
-            }
-        });
-
-        function openEmailModal(email) {
-            const defaultSubject = 'Есть вопрос по Летучке';
-            const defaultBody = `<p>Привет!</p><p>Я из команды Летучки. Увидел вашу активность и хотел спросить, все ли понятно в работе с сервисом? Может, есть какие-то вопросы или идеи, как сделать Летучку еще лучше?</p><p>Мы сейчас активно собираем фидбек, чтобы сфокусироваться на самых важных вещах для наших пользователей.</p><p>Буду рад помочь!</p>`;
-            const defaultCtaText = 'Посмотреть все возможности';
-            const defaultCtaUrl = 'https://letychka.ru/#professional-manifesto';
-
-            document.getElementById('email-recipient').value = email;
-            document.getElementById('email-subject').value = defaultSubject;
-            tinymce.get('email-body-editor').setContent(defaultBody);
-            document.getElementById('email-cta-text').value = defaultCtaText;
-            document.getElementById('email-cta-url').value = defaultCtaUrl;
-
-            emailModalOverlay.classList.remove('hidden', 'opacity-0');
-            emailModalOverlay.classList.add('flex');
-            setTimeout(() => {
-                emailModalContent.classList.remove('scale-95', 'opacity-0');
-            }, 10);
-        }
-
-        function closeEmailModal() {
-            emailModalOverlay.classList.add('opacity-0');
-            emailModalContent.classList.add('scale-95', 'opacity-0');
-            setTimeout(() => {
-                emailModalOverlay.classList.add('hidden');
-                emailModalOverlay.classList.remove('flex');
-            }, 300);
-        }
-
-        closeEmailModalBtn.addEventListener('click', closeEmailModal);
-        cancelEmailBtn.addEventListener('click', closeEmailModal);
-
-        emailForm.addEventListener('submit', async (event) => {
-            event.preventDefault();
-            sendBtn.disabled = true;
-            sendBtnText.classList.add('hidden');
-            sendBtnSpinner.classList.remove('hidden');
-
-            const data = {
-                recipient_email: document.getElementById('email-recipient').value.trim(),
-                subject: document.getElementById('email-subject').value,
-                html_body: tinymce.get('email-body-editor').getContent(),
-                button_text: document.getElementById('email-cta-text').value,
-                button_url: document.getElementById('email-cta-url').value,
-            };
-
-            try {
-                const response = await fetch('/api/admin/send-manual-email/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-                    },
-                    body: JSON.stringify(data)
-                });
-                const result = await response.json();
-                if (response.ok) {
-                    alert('Сообщение успешно отправлено!');
-                    closeEmailModal();
-                } else { throw new Error(result.error || 'Ошибка на сервере'); }
-            } catch (error) {
-                alert(`Не удалось отправить: ${error.message}`);
-            } finally {
-                sendBtn.disabled = false;
-                sendBtnText.classList.remove('hidden');
-                sendBtnSpinner.classList.add('hidden');
-            }
-        });
-
-        const newUsersSpinner = document.getElementById('new-users-spinner');
-        const newUsersContent = document.getElementById('new-users-content');
-        const tabButtons = document.querySelectorAll('.new-users-tab');
-        let newUsersData = {};
-
-        async function fetchNewUsers() {
-            newUsersSpinner.classList.remove('hidden');
-            try {
-                const response = await fetch('/api/admin/new-users/');
-                if (!response.ok) throw new Error('Network response was not ok');
-                newUsersData = await response.json();
-                // По умолчанию показываем "Сегодня"
-                renderNewUsers('today'); 
-            } catch (error) {
-                console.error("Failed to fetch new users:", error);
-                newUsersContent.innerHTML = '<p class="text-red-400 text-sm">Не удалось загрузить данные.</p>';
-            } finally {
-                newUsersSpinner.classList.add('hidden');
-            }
-        }
-
-        function renderNewUsers(period) {
-            const users = newUsersData[period];
-            if (!users || users.length === 0) {
-                newUsersContent.innerHTML = '<p class="text-gray-500 text-sm text-center py-4">За этот период нет новых пользователей.</p>';
-                return;
-            }
-
-            newUsersContent.innerHTML = users.map(user => `
-                <button class="w-full text-left p-2 bg-black/20 rounded-lg hover:bg-black/40 transition-colors new-user-card-btn" data-user-id="${user.id}">
-                    <div class="flex justify-between items-center pointer-events-none">
-                        <p class="font-bold text-white truncate pr-2">${user.username}</p>
-                        <span class="text-xs text-gray-400">${user.date_joined}</span>
-                    </div>
-                    <div class="flex justify-between items-center text-xs text-gray-500 mt-1 pointer-events-none">
-                        <span>${user.email || 'No email'}</span>
-                        <span class="font-mono bg-black/30 px-2 py-0.5 rounded-md">Тестов: ${user.tests_created}</span>
-                    </div>
-                </button>
-            `).join('');
-        }
-
-        tabButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                tabButtons.forEach(btn => btn.classList.remove('active'));
-                button.classList.add('active');
-                const period = button.dataset.period;
-                renderNewUsers(period);
-            });
-        });
-
-        newUsersContent.addEventListener('click', (event) => {
-            const cardButton = event.target.closest('.new-user-card-btn');
-            if (cardButton) {
-                const userId = cardButton.dataset.userId;
-                
-                const userCardElement = document.getElementById('user-card-container');
-                userCardElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-                fetchUserDetails(userId);
-            }
-        });
-
-        fetchNewUsers();
-
-
-        const mailingForm = document.getElementById('mailing-form');
-        const startMailingBtn = document.getElementById('start-mailing-btn');
-        const mailingHistoryContainer = document.getElementById('mailing-history-container');
-
-        mailingForm.addEventListener('submit', async (event) => {
-            event.preventDefault();
-            
-            if (!confirm('Вы уверены, что хотите запустить эту рассылку?')) return;
-
-            startMailingBtn.disabled = true;
-            startMailingBtn.textContent = 'Запускаем...';
-
-            const data = {
-                title: document.getElementById('mailing-title').value,
-                subject: document.getElementById('mailing-subject').value,
-                message_body: tinymce.get('mailing-body-editor').getContent(),
-                button_text: document.getElementById('mailing-cta-text').value,
-                button_url: document.getElementById('mailing-cta-url').value,
-                target_segment: document.getElementById('mailing-segment').value,
-            };
-
-            try {
-                const response = await fetch('/api/admin/mailings/start/', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
-                    body: JSON.stringify(data)
-                });
-                const result = await response.json();
-                if (!response.ok) throw new Error(result.error);
-                
-                alert('Рассылка успешно поставлена в очередь!');
-                mailingForm.reset();
-                fetchMailingHistory();
-            } catch (error) {
-                alert(`Ошибка запуска: ${error.message}`);
-            } finally {
-                startMailingBtn.disabled = false;
-                startMailingBtn.textContent = 'Запустить рассылку';
-            }
-        });
-
-        async function fetchMailingHistory() {
-            try {
-                const response = await fetch('/api/admin/mailings/history/');
-                const data = await response.json();
-                renderMailingHistory(data.history);
-            } catch (error) {
-                mailingHistoryContainer.innerHTML = '<p class="text-red-400">Не удалось загрузить историю.</p>';
-            }
-        }
-
-        function renderMailingHistory(history) {
-            if (history.length === 0) {
-                mailingHistoryContainer.innerHTML = '<p class="text-gray-500">Пока нет рассылок.</p>';
-                return;
-            }
-            mailingHistoryContainer.innerHTML = history.map(m => `
-                <div class="p-4 bg-black/20 rounded-lg border border-transparent">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <p class="font-bold text-white">${m.title}</p>
-                            <p class="text-xs text-gray-400">${m.created_at} &bull; ${m.segment}</p>
-                        </div>
-                        <span class="text-xs font-mono px-2 py-1 rounded-full ${m.status === 'В процессе' ? 'bg-yellow-400/20 text-yellow-300' : 'bg-green-400/20 text-green-300'}">${m.status}</span>
-                    </div>
-                    <div class="mt-3 text-xs flex justify-between items-center bg-black/30 p-2 rounded-md">
-                        <span>Всего: ${m.stats.total}</span>
-                        <span class="text-green-400">Отправлено: ${m.stats.sent}</span>
-                        <span class="text-yellow-400">В очереди: ${m.stats.pending}</span>
-                        <span class="text-red-400">Ошибок: ${m.stats.failed}</span>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        fetchMailingHistory();
-        setInterval(fetchMailingHistory, 15000);
+async function postJSON(url, body) {
+    const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+        body: JSON.stringify(body || {}),
     });
-    </script>
+    return res.json();
+}
+
+function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+}
+
+function planBadge(label) {
+    const map = {
+        'Пакет S': 'bg-cyan-900/40 text-cyan-300 border-cyan-700/40',
+        'Пакет M': 'bg-sky-900/40 text-sky-300 border-sky-700/40',
+        'Пакет L': 'bg-amber-900/40 text-amber-300 border-amber-700/40',
+        'Премиум': 'bg-violet-900/40 text-violet-300 border-violet-700/40'
+    };
+    const cls = map[label] || 'bg-slate-700/40 text-slate-300 border-slate-600/40';
+    return '<span class="text-[11px] font-semibold px-2 py-0.5 rounded border ' + cls + '">' + esc(label) + '</span>';
+}
+
+function statusPill(status) {
+    if (status === 'completed') return '<span class="inline-flex items-center gap-1 text-[11px] text-emerald-400"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>completed</span>';
+    if (status === 'pending') return '<span class="inline-flex items-center gap-1 text-[11px] text-amber-400"><span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>pending</span>';
+    if (status === 'failed') return '<span class="inline-flex items-center gap-1 text-[11px] text-red-400"><span class="w-1.5 h-1.5 rounded-full bg-red-400"></span>failed</span>';
+    return '<span class="text-[11px] text-slate-500">' + esc(status) + '</span>';
+}
+
+function badge(label, value, accent) {
+    return '<div class="bg-[#0B0F17] border border-[#1E293B] rounded-lg p-3">' +
+        '<div class="text-[10px] uppercase tracking-wide text-slate-500">' + esc(label) + '</div>' +
+        '<div class="text-lg font-bold ' + (accent || 'text-slate-100') + ' mt-0.5">' + value + '</div>' +
+        '</div>';
+}
+
+const Crm = {
+    async loadUser(userId) {
+        document.getElementById('dossier-placeholder').classList.add('hidden');
+        const dossier = document.getElementById('dossier');
+        dossier.classList.remove('hidden');
+        dossier.innerHTML = '<div class="bg-[#111827] border border-[#1E293B] rounded-xl p-10 text-center text-sm text-slate-500">Загрузка досье…</div>';
+        try {
+            const res = await fetch('/api/admin/user-details/' + userId + '/');
+            const u = await res.json();
+            if (!res.ok) { toast(u.error || 'Ошибка загрузки', 'error'); return; }
+            currentUser = u;
+            this.render(u);
+        } catch (e) {
+            console.error(e);
+            toast('Ошибка сети', 'error');
+        }
+    },
+
+    render(u) {
+        const sub = u.subscription || {};
+        const b = u.badges || {};
+        const subStatus = sub.status === 'active' ? 'text-emerald-400' : 'text-red-400';
+        const access = (b.tests_left_daily || 0) + (b.extra_credits || 0);
+
+        const purchases = (u.payments || []).map(function (p) {
+            return '<tr class="border-b border-[#1E293B]/60 last:border-0">' +
+                '<td class="py-2 pr-3 text-xs text-slate-400 whitespace-nowrap">' + esc(p.date) + '</td>' +
+                '<td class="py-2 pr-3">' + planBadge(p.plan_label) + '</td>' +
+                '<td class="py-2 pr-3 text-xs text-slate-400 capitalize">' + esc(p.billing_cycle) + '</td>' +
+                '<td class="py-2 pr-3 text-sm font-semibold text-slate-200 whitespace-nowrap">₽ ' + esc(p.amount_str) + '</td>' +
+                '<td class="py-2 pr-3">' + statusPill(p.status) + '</td>' +
+                '<td class="py-2 text-[10px] text-slate-500 whitespace-nowrap">' + esc(p.order_id) + '</td>' +
+            '</tr>';
+        }).join('') || '<tr><td colspan="6" class="py-6 text-center text-sm text-slate-500">Покупок нет</td></tr>';
+
+        const tests = (u.surveys || []).map(function (s) {
+            return '<tr class="border-b border-[#1E293B]/60 last:border-0">' +
+                '<td class="py-2 pr-3"><a href="/c/' + esc(s.survey_id) + '/" target="_blank" class="text-sm text-slate-200 hover:text-blue-400 truncate inline-block max-w-[240px] align-bottom">' + esc(s.title) + '</a>' +
+                    (s.is_visible ? '<span class="ml-2 text-[10px] text-red-400">удалён</span>' : '') + '</td>' +
+                '<td class="py-2 pr-3 text-[11px] text-slate-500 whitespace-nowrap">' + esc(s.created_at) + '</td>' +
+                '<td class="py-2 pr-3 text-xs text-slate-300">' + s.questions_count + '</td>' +
+                '<td class="py-2 pr-3 text-xs text-slate-400">' + esc(s.model_name) + '</td>' +
+                '<td class="py-2 pr-3 text-xs text-slate-300">' + s.views + '</td>' +
+                '<td class="py-2 text-xs text-slate-300">' + s.attempts + '</td>' +
+            '</tr>';
+        }).join('') || '<tr><td colspan="6" class="py-6 text-center text-sm text-slate-500">Тестов нет</td></tr>';
+
+        const head = '<div class="bg-[#111827] border border-[#1E293B] rounded-xl p-5">' +
+            '<div class="flex flex-wrap items-start justify-between gap-4">' +
+                '<div class="flex items-start gap-4">' +
+                    '<div class="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400 font-bold text-lg">' +
+                        esc((u.username || '?').slice(0, 2).toUpperCase()) + '</div>' +
+                    '<div>' +
+                        '<h2 class="text-lg font-bold text-slate-100">' + esc(u.username) + '</h2>' +
+                        '<div class="text-xs text-slate-500">' + esc(u.email) + ' • <span class="font-mono">' + esc(u.id_staff) + '</span></div>' +
+                        '<div class="text-[11px] text-slate-500 mt-1">Регистрация: ' + esc(u.date_joined) + ' • Последний вход: ' + esc(u.last_login) + ' • Телефон: ' + esc(u.phone) + '</div>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="text-right">' + planBadge(sub.plan_label || 'Нет подписки') +
+                    '<div class="text-[11px] mt-1 ' + subStatus + ' font-semibold">' + esc(sub.status || 'none') + (sub.end_date ? ' • до ' + esc(sub.end_date) : '') + '</div>' +
+                    '<div class="text-[10px] text-slate-500 mt-0.5">' + (sub.days_left != null ? sub.days_left + ' дн. осталось' : '') + (sub.billing_cycle ? ' • ' + esc(sub.billing_cycle) : '') + '</div>' +
+                '</div>' +
+            '</div>' +
+            '<div class="flex flex-wrap gap-2 mt-4 pt-4 border-t border-[#1E293B]">' +
+                '<button onclick="Crm.addTests()" class="inline-flex items-center gap-1.5 text-xs font-medium text-blue-300 hover:text-blue-200 bg-blue-500/10 border border-blue-500/30 rounded-lg px-3 py-2"><i class="fa-solid fa-plus text-[10px]"></i> Начислить тесты</button>' +
+                '<button onclick="Crm.grantPremium()" class="inline-flex items-center gap-1.5 text-xs font-medium text-violet-300 hover:text-violet-200 bg-violet-500/10 border border-violet-500/30 rounded-lg px-3 py-2"><i class="fa-solid fa-crown text-[10px]"></i> Выдать Премиум</button>' +
+                '<button onclick="Crm.openEmail()" class="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-300 hover:text-emerald-200 bg-emerald-500/10 border border-emerald-500/30 rounded-lg px-3 py-2"><i class="fa-solid fa-envelope text-[10px]"></i> Написать письмо</button>' +
+                (u.email && u.email.indexOf('@') > -1 ? '<a href="/secret-impersonate/' + encodeURIComponent(u.email) + '/" class="inline-flex items-center gap-1.5 text-xs font-medium text-slate-300 hover:text-white bg-slate-500/10 border border-slate-600/40 rounded-lg px-3 py-2"><i class="fa-solid fa-user-secret text-[10px]"></i> войти как</a>' : '') +
+            '</div>' +
+        '</div>';
+
+        const badgesGrid = '<div class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-6 gap-2">' +
+            badge('Принёс всего', '₽ ' + esc(b.total_revenue_str), 'text-emerald-400') +
+            badge('Покупок', b.payment_count) +
+            badge('Средний чек', '₽ ' + Math.round(b.avg_check || 0)) +
+            badge('LTV', '₽ ' + Math.round(b.ltv || 0), 'text-emerald-400') +
+            badge('Тестов создано', b.surveys_created, 'text-violet-400') +
+            badge('Попыток', b.attempts_on_surveys, 'text-blue-400') +
+            badge('Просмотров тестов', b.total_views) +
+            badge('Токенов сожжено', b.tokens_total) +
+            badge('Баланс тестов', u.test_balance, 'text-amber-400') +
+            badge('Доступно сейчас', access, 'text-amber-400') +
+            badge('Первая покупка', esc(b.first_payment)) +
+            badge('Последняя покупка', esc(b.last_payment)) +
+        '</div>';
+
+        const chartsRow = '<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">' +
+            '<div class="bg-[#111827] border border-[#1E293B] rounded-xl p-5"><h3 class="text-sm font-semibold text-slate-200 mb-3">Создания тестов (12 мес.)</h3><div class="h-56"><canvas id="user-creations-chart"></canvas></div></div>' +
+            '<div class="bg-[#111827] border border-[#1E293B] rounded-xl p-5"><h3 class="text-sm font-semibold text-slate-200 mb-3">Платные оплаты, ₽ (12 мес.)</h3><div class="h-56"><canvas id="user-payments-chart"></canvas></div></div>' +
+        '</div>';
+
+        const purchasesCard = '<div class="bg-[#111827] border border-[#1E293B] rounded-xl p-5">' +
+            '<h3 class="text-sm font-semibold text-slate-200 mb-3">Что и когда покупал</h3>' +
+            '<div class="overflow-x-auto"><table class="w-full text-left min-w-[720px]">' +
+            '<thead><tr class="text-[10px] uppercase tracking-wide text-slate-500 border-b border-[#1E293B]"><th class="pb-2 font-medium">Дата</th><th class="pb-2 font-medium">Тариф</th><th class="pb-2 font-medium">Цикл</th><th class="pb-2 font-medium">Сумма</th><th class="pb-2 font-medium">Статус</th><th class="pb-2 font-medium">Заказ</th></tr></thead>' +
+            '<tbody>' + purchases + '</tbody></table></div></div>';
+
+        const testsCard = '<div class="bg-[#111827] border border-[#1E293B] rounded-xl p-5">' +
+            '<h3 class="text-sm font-semibold text-slate-200 mb-3">Какие тесты создавал (последние 100)</h3>' +
+            '<div class="overflow-x-auto"><table class="w-full text-left min-w-[720px]">' +
+            '<thead><tr class="text-[10px] uppercase tracking-wide text-slate-500 border-b border-[#1E293B]"><th class="pb-2 font-medium">Тест</th><th class="pb-2 font-medium">Создан</th><th class="pb-2 font-medium">Вопросов</th><th class="pb-2 font-medium">Модель</th><th class="pb-2 font-medium">Просм.</th><th class="pb-2 font-medium">Попыток</th></tr></thead>' +
+            '<tbody>' + tests + '</tbody></table></div></div>';
+
+        document.getElementById('dossier').innerHTML = head + badgesGrid + chartsRow + purchasesCard + testsCard;
+        this.renderCharts(u);
+    },
+
+    renderCharts(u) {
+        if (!window.Chart) return;
+        const creations = u.charts.creations;
+        const payments = u.charts.payments;
+        if (charts.creations) charts.creations.destroy();
+        if (charts.payments) charts.payments.destroy();
+
+        const commonOpts = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { grid: { color: 'rgba(30,41,59,0.4)' }, ticks: { color: '#64748b', font: { size: 10 } } },
+                y: { grid: { color: 'rgba(30,41,59,0.4)' }, ticks: { color: '#64748b', font: { size: 10 } }, beginAtZero: true }
+            }
+        };
+
+        charts.creations = new Chart(document.getElementById('user-creations-chart').getContext('2d'), {
+            type: 'bar',
+            data: { labels: creations.labels, datasets: [{ label: 'Создано тестов', data: creations.data, backgroundColor: '#8b5cf6', borderRadius: 4 }] },
+            options: commonOpts
+        });
+
+        charts.payments = new Chart(document.getElementById('user-payments-chart').getContext('2d'), {
+            type: 'bar',
+            data: { labels: payments.labels, datasets: [{ label: 'Оплаты, ₽', data: payments.data, backgroundColor: '#10b981', borderRadius: 4, counts: payments.counts }] },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: function (ctx) { return '₽ ' + Number(ctx.parsed.y).toLocaleString('ru-RU') + ' • ' + ((ctx.dataset.counts && ctx.dataset.counts[ctx.dataIndex]) || 0) + ' шт.'; } } }
+                },
+                scales: {
+                    x: { grid: { color: 'rgba(30,41,59,0.4)' }, ticks: { color: '#64748b', font: { size: 10 } } },
+                    y: { grid: { color: 'rgba(30,41,59,0.4)' }, ticks: { color: '#64748b', font: { size: 10 } }, beginAtZero: true }
+                }
+            }
+        });
+    },
+
+    async addTests() {
+        if (!currentUser) return;
+        const amount = prompt('Сколько тестов начислить «' + currentUser.username + '»?');
+        if (amount === null) return;
+        const n = parseInt(amount, 10);
+        if (!n || n <= 0) { toast('Введите положительное число', 'error'); return; }
+        const r = await postJSON('/api/admin/add-tests/', { staff_id: currentUser.id_staff, amount: n });
+        if (r.ok) { toast('Начислено ' + r.added + ' тестов. Новый баланс: ' + r.new_balance, 'ok'); this.loadUser(currentUser.id); }
+        else toast(r.error || 'Ошибка', 'error');
+    },
+
+    async grantPremium() {
+        if (!currentUser) return;
+        const daysRaw = prompt('На сколько дней выдать Премиум «' + currentUser.username + '»? (по умолчанию 30)');
+        if (daysRaw === null) return;
+        let days = parseInt(daysRaw, 10);
+        if (!days || days <= 0) days = 30;
+        const r = await postJSON('/api/admin/grant-premium/', { staff_id: currentUser.id_staff, days: days });
+        if (r.ok) { toast('Премиум выдан до ' + r.end_date, 'ok'); this.loadUser(currentUser.id); }
+        else toast(r.error || 'Ошибка', 'error');
+    },
+
+    openEmail() {
+        if (!currentUser) return;
+        document.getElementById('email-target').textContent = 'Кому: ' + currentUser.email + ' (' + currentUser.username + ')';
+        const m = document.getElementById('email-modal');
+        m.classList.remove('hidden');
+        m.classList.add('flex');
+    },
+
+    closeEmail() {
+        const m = document.getElementById('email-modal');
+        m.classList.add('hidden');
+        m.classList.remove('flex');
+    },
+
+    async sendEmail() {
+        if (!currentUser) return;
+        const subject = document.getElementById('email-subject').value.trim();
+        const body = document.getElementById('email-body').value.trim();
+        if (!subject || !body) { toast('Нужны тема и текст письма', 'error'); return; }
+        const r = await postJSON('/api/admin/send-manual-email/', {
+            user_id: currentUser.id,
+            recipient_email: currentUser.email,
+            subject: subject,
+            html_body: body,
+            button_text: document.getElementById('email-cta-text').value.trim(),
+            button_url: document.getElementById('email-cta-url').value.trim()
+        });
+        if (r.status === 'success') { toast(r.message, 'ok'); this.closeEmail(); }
+        else toast(r.error || 'Ошибка', 'error');
+    },
+
+    async startMailing(e) {
+        e.preventDefault();
+        const subject = document.getElementById('mailing-subject').value.trim();
+        const body = document.getElementById('mailing-body').value.trim();
+        if (!subject || !body) { toast('Нужны тема письма и текст', 'error'); return; }
+        const btn = document.getElementById('start-mailing-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Ставлю в очередь…';
+        try {
+            const r = await postJSON('/api/admin/mailings/start/', {
+                title: document.getElementById('mailing-title').value.trim(),
+                subject: subject,
+                message_body: body,
+                button_text: document.getElementById('mailing-cta-text').value.trim(),
+                button_url: document.getElementById('mailing-cta-url').value.trim(),
+                target_segment: document.getElementById('mailing-segment').value
+            });
+            if (r.status === 'success') { toast(r.message + ' ID: ' + r.mailing_id, 'ok'); loadHistory(); }
+            else toast(r.error || 'Ошибка', 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-bolt mr-1"></i> Запустить рассылку через Celery';
+        }
+    }
+};
+window.Crm = Crm;
+
+let newcomerPeriod = 'today';
+function renderNewUsers() {
+    const items = newcomerData[newcomerPeriod] || [];
+    const box = document.getElementById('new-users-list');
+    box.innerHTML = items.map(function (u) {
+        return '<button onclick="Crm.loadUser(' + u.id + ')" class="w-full text-left px-3 py-2 rounded-lg hover:bg-white/[0.03] border border-transparent hover:border-[#1E293B] transition">' +
+            '<div class="flex items-center justify-between gap-2">' +
+                '<span class="text-xs font-semibold text-slate-200 truncate">' + esc(u.username) + '</span>' +
+                '<span class="text-[10px] text-slate-500 font-mono whitespace-nowrap">' + esc(u.date_joined) + '</span>' +
+            '</div>' +
+            '<div class="text-[10px] text-slate-500 truncate">' + esc(u.email) + ' • тестов: ' + u.tests_created + '</div>' +
+        '</button>';
+    }).join('') || '<div class="text-xs text-slate-500 text-center py-6">Пусто</div>';
+}
+
+async function loadNewcomers() {
+    try {
+        const res = await fetch('/api/admin/new-users/');
+        newcomerData = await res.json();
+        document.getElementById('cnt-today').textContent = (newcomerData.today || []).length;
+        document.getElementById('cnt-yesterday').textContent = (newcomerData.yesterday || []).length;
+        document.getElementById('cnt-week').textContent = (newcomerData.this_week || []).length;
+        renderNewUsers();
+    } catch (e) { console.error(e); }
+}
+
+async function loadHistory() {
+    try {
+        const res = await fetch('/api/admin/mailings/history/');
+        const data = await res.json();
+        const box = document.getElementById('mailing-history');
+        box.innerHTML = (data.history || []).map(function (m) {
+            return '<div class="bg-[#0B0F17] border border-[#1E293B] rounded-lg p-3">' +
+                '<div class="flex items-center justify-between gap-2">' +
+                    '<span class="text-xs font-semibold text-slate-200 truncate">' + esc(m.title) + '</span>' +
+                    '<span class="text-[10px] text-slate-500">' + esc(m.created_at) + '</span>' +
+                '</div>' +
+                '<div class="text-[10px] text-slate-500 mt-1">' + esc(m.segment) + ' • ' + esc(m.status) + '</div>' +
+                '<div class="flex gap-3 mt-1.5 text-[10px]">' +
+                    '<span class="text-slate-400">Всего: ' + m.stats.total + '</span>' +
+                    '<span class="text-emerald-400">Отпр: ' + m.stats.sent + '</span>' +
+                    '<span class="text-red-400">Ошиб: ' + m.stats.failed + '</span>' +
+                    '<span class="text-amber-400">Ожид: ' + m.stats.pending + '</span>' +
+                '</div>' +
+            '</div>';
+        }).join('') || '<div class="text-xs text-slate-500 text-center py-6">Кампаний пока нет</div>';
+    } catch (e) { console.error(e); }
+}
+
+let searchTimer;
+async function runSearch() {
+    const q = document.getElementById('user-search').value.trim();
+    const box = document.getElementById('search-results');
+    if (!q) { box.innerHTML = ''; return; }
+    try {
+        const res = await fetch('/api/admin/search-users/?q=' + encodeURIComponent(q));
+        const data = await res.json();
+        box.innerHTML = (data.users || []).map(function (u) {
+            return '<button onclick="Crm.loadUser(' + u.id + ')" class="w-full text-left px-4 py-3 hover:bg-white/[0.03] transition">' +
+                '<div class="flex items-center justify-between gap-2">' +
+                    '<span class="text-sm font-semibold text-slate-200">' + esc(u.username) + '</span>' + planBadge(u.plan) +
+                '</div>' +
+                '<div class="flex items-center justify-between gap-2 mt-0.5">' +
+                    '<span class="text-[11px] text-slate-500 truncate">' + esc(u.email) + '</span>' +
+                    '<span class="text-[10px] text-slate-500 whitespace-nowrap">тестов: ' + u.test_balance + ' • ₽ ' + u.revenue + '</span>' +
+                '</div>' +
+            '</button>';
+        }).join('') || '<div class="text-xs text-slate-500 text-center py-6">Ничего не найдено</div>';
+    } catch (e) { console.error(e); }
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    document.getElementById('user-search').addEventListener('input', function () {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(runSearch, 300);
+    });
+    document.getElementById('user-search').addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { clearTimeout(searchTimer); runSearch(); }
+    });
+    document.getElementById('user-search-btn').addEventListener('click', runSearch);
+
+    document.querySelectorAll('.reg-tab').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            document.querySelectorAll('.reg-tab').forEach(function (b) {
+                b.classList.remove('bg-blue-600', 'text-white');
+                b.classList.add('text-slate-400');
+            });
+            btn.classList.add('bg-blue-600', 'text-white');
+            btn.classList.remove('text-slate-400');
+            newcomerPeriod = btn.dataset.period;
+            renderNewUsers();
+        });
+    });
+
+    document.getElementById('mailing-form').addEventListener('submit', Crm.startMailing);
+    document.getElementById('refresh-history').addEventListener('click', loadHistory);
+    document.getElementById('email-send').addEventListener('click', function () { Crm.sendEmail(); });
+    document.getElementById('email-modal').addEventListener('click', function (e) { if (e.target.id === 'email-modal') Crm.closeEmail(); });
+
+    loadNewcomers();
+    loadHistory();
+});
+</script>
 </body>
 </html>

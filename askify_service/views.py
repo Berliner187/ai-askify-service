@@ -110,7 +110,6 @@ from io import BytesIO
 
 
 env = environ.Env()
-
 environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 
@@ -974,9 +973,15 @@ class ManageSurveysView(View):
                     status=400,
                 )
 
-            APIKeyUsage.objects.create(
-                api_key=api_key_used, success=True, response_time_ms=response_time_ms
-            )
+            log_api_key = api_key_used or APIKey.objects.filter(purpose="SURVEY", is_active=True).first()
+            if log_api_key:
+                APIKeyUsage.objects.create(
+                    api_key=log_api_key,
+                    success=True,
+                    response_time_ms=response_time_ms,
+                    tokens_used=int(tokens_used or 0),
+                    model_name=generated_data.get("model_used", "") or "",
+                )
 
             try:
                 _tokens_used = TokensUsed(
@@ -1167,6 +1172,8 @@ class GenerationSurveysView(View):
                     api_key=api_key_manage,
                     success=True,
                     response_time_ms=response_time_ms,
+                    tokens_used=int(generated_text_data.get("tokens_used") or 0),
+                    model_name=generated_text_data.get("model_used", "") or "",
                 )
             else:
                 tracer_l.info(
@@ -1421,6 +1428,8 @@ class FileUploadView(View):
                     await sync_to_async(APIKeyUsage.objects.create)(
                         api_key=api_key_manage,
                         success=True,
+                        tokens_used=int(tokens_used or 0),
+                        model_name=generated_text.get("model_used", "") or "",
                     )
 
         except Exception as fatal:
@@ -3531,6 +3540,490 @@ def activate_api_key_api(request):
         return JsonResponse(
             {"status": False, "message": f"Ошибка: {str(e)}"}, status=500
         )
+
+
+def _mask_key(key):
+    if not key:
+        return "—"
+    k = str(key)
+    if len(k) <= 10:
+        return k[:2] + "•" * 6 + k[-2:]
+    return k[:6] + "…" + k[-4:]
+
+
+def _key_price_per_1m(model_name, provider, override=0):
+    """USD за 1M токенов: ручной тариф важнее модели, модель важнее провайдера."""
+    try:
+        override = float(override or 0)
+    except (TypeError, ValueError):
+        override = 0.0
+    if override > 0:
+        return override
+    model = (model_name or "").lower()
+    for needle, price in AI_MODEL_PRICING.items():
+        if needle in model:
+            return float(price)
+    return float(AI_PROVIDER_DEFAULT_PRICE.get((provider or "").lower(), 0.0))
+
+
+def _cost_usd(tokens, price):
+    try:
+        return round((int(tokens or 0) / 1_000_000) * float(price or 0), 4)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _env_openai_key_value():
+    return getattr(settings, "OPENAI_API_KEY", None) or os.getenv("OPENAI_API_KEY")
+
+
+def _ensure_system_key():
+    """Гарантирует системный ключ OpenAI из .env, чтобы он был виден и учитывался в модалке."""
+    existing = APIKey.objects.filter(is_system=True).first()
+    if existing:
+        return existing
+    if not _env_openai_key_value():
+        return None
+    active_exists = APIKey.objects.filter(purpose="SURVEY", is_active=True).exists()
+    model_name = "gpt-4o-mini"
+    return APIKey.objects.create(
+        name="OpenAI (.env)",
+        provider="openai",
+        purpose="SURVEY",
+        base_url=getattr(settings, "OPENAI_BASE_URL", None) or None,
+        model_name=model_name,
+        key="",
+        is_active=not active_exists,
+        is_system=True,
+        cost_per_1m_tokens=_key_price_per_1m(model_name, "openai"),
+    )
+
+
+def _serialize_key(api_key, start_date, today):
+    usages = APIKeyUsage.objects.filter(api_key=api_key)
+    u_period = usages.filter(timestamp__date__range=(start_date, today))
+    period = u_period.count()
+    success = u_period.filter(success=True).count()
+    tokens_period = int(u_period.aggregate(s=Sum("tokens_used"))["s"] or 0)
+    tokens_today = int(
+        u_period.filter(timestamp__date=today).aggregate(s=Sum("tokens_used"))["s"] or 0
+    )
+    tokens_total = int(usages.aggregate(s=Sum("tokens_used"))["s"] or 0)
+    calls_total = usages.count()
+    calls_today = usages.filter(timestamp__date=today).count()
+    avg_resp = usages.filter(response_time_ms__isnull=False).aggregate(
+        a=Avg("response_time_ms")
+    )["a"]
+    last = usages.order_by("-timestamp").values_list("timestamp", flat=True).first()
+    models = list(
+        u_period.exclude(model_name__isnull=True)
+        .exclude(model_name__exact="")
+        .values_list("model_name", flat=True)
+        .distinct()
+    )
+    price = _key_price_per_1m(
+        api_key.model_name, api_key.provider, api_key.cost_per_1m_tokens
+    )
+    days_since = (today - last.date()).days if last else None
+    return {
+        "id": api_key.id,
+        "name": api_key.name,
+        "provider": api_key.provider,
+        "purpose": api_key.purpose,
+        "base_url": api_key.base_url or "",
+        "model_name": api_key.model_name or "",
+        "masked_key": _mask_key(api_key.key),
+        "has_key": bool(api_key.key),
+        "is_active": api_key.is_active,
+        "is_system": api_key.is_system,
+        "created_at": api_key.created_at.strftime("%d.%m.%Y %H:%M"),
+        "expires_at": api_key.expires_at.strftime("%Y-%m-%d")
+        if api_key.expires_at
+        else None,
+        "calls_total": calls_total,
+        "calls_period": period,
+        "calls_today": calls_today,
+        "success_rate": round(success / period * 100, 1) if period else 0.0,
+        "tokens_period": tokens_period,
+        "tokens_today": tokens_today,
+        "tokens_total": tokens_total,
+        "price_per_1m": price,
+        "cost_period": _cost_usd(tokens_period, price),
+        "cost_today": _cost_usd(tokens_today, price),
+        "cost_total": _cost_usd(tokens_total, price),
+        "avg_response_ms": int(avg_resp or 0),
+        "last_used": last.strftime("%d.%m.%Y %H:%M") if last else None,
+        "last_used_ts": last.isoformat() if last else None,
+        "days_since_used": days_since,
+        "never_used": last is None,
+        "stale": (last is None) or (days_since is not None and days_since > 30),
+        "models": models,
+    }
+
+
+def _provider_payload(provider_name, keys, start_date, today):
+    keys_data = [_serialize_key(k, start_date, today) for k in keys]
+    prov_calls = sum(k["calls_period"] for k in keys_data)
+    prov_tokens = sum(k["tokens_period"] for k in keys_data)
+    prov_cost = round(sum(k["cost_period"] for k in keys_data), 4)
+    prov_success = prov_calls and round(
+        sum(k["success_rate"] * k["calls_period"] for k in keys_data) / prov_calls, 1
+    )
+    responses = [k["avg_response_ms"] for k in keys_data if k["avg_response_ms"]]
+    last_ts = max(
+        [k["last_used_ts"] for k in keys_data if k["last_used_ts"]] or [None]
+    )
+    last_display = None
+    if last_ts:
+        for k in keys_data:
+            if k["last_used_ts"] == last_ts:
+                last_display = k["last_used"]
+                break
+    # Средневзвешенная цена провайдера (USD за 1M токенов) для дневного графика.
+    blended_price = (prov_cost / prov_tokens * 1_000_000) if prov_tokens else (
+        keys_data[0]["price_per_1m"] if keys_data else 0.0
+    )
+    rows = (
+        APIKeyUsage.objects.filter(
+            api_key__provider=provider_name, timestamp__date__range=(start_date, today)
+        )
+        .annotate(day=TruncDate("timestamp"))
+        .values("day")
+        .annotate(calls=Count("id"), tokens=Sum("tokens_used"))
+        .order_by("day")
+    )
+    row_map = {r["day"]: r for r in rows}
+    labels, calls_series, tokens_series, cost_series = [], [], [], []
+    cursor = start_date
+    while cursor <= today:
+        labels.append(cursor.strftime("%d.%m"))
+        r = row_map.get(cursor)
+        day_tokens = int(r["tokens"] or 0) if r else 0
+        day_calls = r["calls"] if r else 0
+        calls_series.append(day_calls)
+        tokens_series.append(day_tokens)
+        cost_series.append(_cost_usd(day_tokens, blended_price))
+        cursor += timedelta(days=1)
+    active_keys = keys.filter(is_active=True).count()
+    return {
+        "provider": provider_name or "Unknown",
+        "keys_count": len(keys_data),
+        "active_keys": active_keys,
+        "is_active": active_keys > 0,
+        "calls_period": prov_calls,
+        "tokens_period": prov_tokens,
+        "cost_period": prov_cost,
+        "success_rate": prov_success or 0.0,
+        "avg_response_ms": int(sum(responses) / len(responses)) if responses else 0,
+        "last_used": last_display,
+        "stale_keys": sum(1 for k in keys_data if k["stale"]),
+        "models": sorted({m for k in keys_data for m in k["models"]}),
+        "keys": keys_data,
+        "series": {
+            "labels": labels,
+            "calls": calls_series,
+            "tokens": tokens_series,
+            "cost": cost_series,
+        },
+    }
+
+
+@staff_member_required
+def provider_health_api(request):
+    """Детальная статистика по AI-провайдерам и их ключам (для модалки)."""
+    if not request.user.is_superuser:
+        return JsonResponse({"error": "forbidden"}, status=403)
+
+    _ensure_system_key()
+
+    today = timezone.now().date()
+    range_param = (request.GET.get("range") or "14D").upper()
+    days = {"7D": 7, "14D": 14, "30D": 30, "90D": 90}.get(range_param, 14)
+    start_date = today - timedelta(days=days - 1)
+
+    providers = list(
+        APIKey.objects.order_by("provider").values_list("provider", flat=True).distinct()
+    )
+    result = []
+    for prov in providers:
+        keys = APIKey.objects.filter(provider=prov).order_by(
+            "-is_active", "-created_at"
+        )
+        result.append(_provider_payload(prov, keys, start_date, today))
+
+    result.sort(
+        key=lambda x: (not x["is_active"], -x["calls_period"], x["provider"].lower())
+    )
+
+    all_keys = APIKey.objects.all()
+    period_usages = APIKeyUsage.objects.filter(
+        timestamp__date__range=(start_date, today)
+    )
+    total_tokens = int(period_usages.aggregate(s=Sum("tokens_used"))["s"] or 0)
+    total_cost = 0.0
+    for k in all_keys:
+        price = _key_price_per_1m(k.model_name, k.provider, k.cost_per_1m_tokens)
+        key_tokens = int(
+            APIKeyUsage.objects.filter(
+                api_key=k, timestamp__date__range=(start_date, today)
+            ).aggregate(s=Sum("tokens_used"))["s"] or 0
+        )
+        total_cost += _cost_usd(key_tokens, price)
+
+    return JsonResponse({
+        "range": range_param,
+        "start_date": start_date.strftime("%Y-%m-%d"),
+        "end_date": today.strftime("%Y-%m-%d"),
+        "purposes": AI_KEY_PURPOSES,
+        "presets": AI_PROVIDER_PRESETS,
+        "pricing": AI_MODEL_PRICING,
+        "providers": result,
+        "stale_keys": sum(
+            1 for p in result for k in p["keys"] if k["stale"]
+        ),
+        "totals": {
+            "keys": all_keys.count(),
+            "active_keys": all_keys.filter(is_active=True).count(),
+            "calls_period": period_usages.count(),
+            "tokens_period": total_tokens,
+            "cost_period": round(total_cost, 4),
+            "errors_period": period_usages.filter(success=False).count(),
+        },
+    })
+
+
+@require_POST
+@user_passes_test(lambda u: u.is_superuser)
+def api_key_save_api(request):
+    """Создать или обновить API-ключ из модалки провайдеров."""
+    try:
+        data = json.loads(request.body or "{}")
+    except json.JSONDecodeError:
+        return JsonResponse({"ok": False, "error": "Invalid JSON"}, status=400)
+
+    key_id = data.get("id")
+    name = (data.get("name") or "").strip()
+    provider = (data.get("provider") or "").strip()
+    purpose = (data.get("purpose") or "SURVEY").strip()
+    base_url = (data.get("base_url") or "").strip() or None
+    model_name = (data.get("model_name") or "").strip() or None
+    raw_key = (data.get("key") or "").strip()
+    is_active = bool(data.get("is_active"))
+    use_env = bool(data.get("use_env"))
+    expires_raw = (data.get("expires_at") or "").strip() or None
+    cost_raw = data.get("cost_per_1m_tokens")
+
+    if not name or not provider:
+        return JsonResponse({"ok": False, "error": "Нужны название и провайдер"}, status=400)
+
+    parsed_expires = None
+    if expires_raw:
+        try:
+            parsed_expires = timezone.make_aware(datetime.strptime(expires_raw, "%Y-%m-%d"))
+        except ValueError:
+            return JsonResponse({"ok": False, "error": "Дата должна быть в формате ГГГГ-ММ-ДД"}, status=400)
+
+    parsed_cost = None
+    if cost_raw not in (None, ""):
+        try:
+            parsed_cost = Decimal(str(cost_raw).replace(",", "."))
+            if parsed_cost < 0:
+                raise ValueError
+        except Exception:
+            return JsonResponse({"ok": False, "error": "Тариф должен быть положительным числом"}, status=400)
+
+    if key_id:
+        try:
+            obj = APIKey.objects.get(id=key_id)
+        except APIKey.DoesNotExist:
+            return JsonResponse({"ok": False, "error": "Ключ не найден"}, status=404)
+        created = False
+    else:
+        if not raw_key and not use_env:
+            return JsonResponse({"ok": False, "error": "Нужно значение ключа"}, status=400)
+        obj = APIKey(key="")
+        created = True
+
+    obj.name = name
+    obj.provider = provider
+    obj.purpose = purpose
+    obj.base_url = base_url
+    obj.model_name = model_name
+    obj.expires_at = parsed_expires
+    obj.is_active = is_active
+    if raw_key:
+        obj.key = raw_key
+        obj.is_system = False
+    if use_env:
+        obj.key = ""
+        obj.is_system = True
+    if parsed_cost is not None:
+        obj.cost_per_1m_tokens = parsed_cost
+    elif created:
+        obj.cost_per_1m_tokens = Decimal(
+            str(_key_price_per_1m(model_name, provider))
+        )
+    obj.save()
+
+    if is_active:
+        APIKey.objects.filter(purpose=purpose).exclude(id=obj.id).update(is_active=False)
+
+    price = _key_price_per_1m(obj.model_name, obj.provider, obj.cost_per_1m_tokens)
+    return JsonResponse({
+        "ok": True,
+        "id": obj.id,
+        "created": created,
+        "price_per_1m": price,
+    })
+
+
+@require_POST
+@user_passes_test(lambda u: u.is_superuser)
+def api_key_delete_api(request, pk):
+    try:
+        obj = APIKey.objects.get(id=pk)
+    except APIKey.DoesNotExist:
+        return JsonResponse({"ok": False, "error": "Ключ не найден"}, status=404)
+    if obj.is_system:
+        return JsonResponse(
+            {"ok": False, "error": "Системный ключ .env нельзя удалить — только отключить"},
+            status=400,
+        )
+    label = obj.name
+    obj.delete()
+    return JsonResponse({"ok": True, "deleted": label})
+
+
+@require_POST
+@user_passes_test(lambda u: u.is_superuser)
+def api_key_toggle_api(request, pk):
+    try:
+        obj = APIKey.objects.get(id=pk)
+    except APIKey.DoesNotExist:
+        return JsonResponse({"ok": False, "error": "Ключ не найден"}, status=404)
+    new_state = not obj.is_active
+    if new_state:
+        APIKey.objects.filter(purpose=obj.purpose).exclude(id=obj.id).update(is_active=False)
+    obj.is_active = new_state
+    obj.save(update_fields=["is_active"])
+    return JsonResponse({"ok": True, "is_active": obj.is_active, "purpose": obj.purpose, "id": obj.id})
+
+
+@require_POST
+@user_passes_test(lambda u: u.is_superuser)
+def api_key_test_api(request, pk):
+    """Проверка ключа реальным минимальным запросом (пинг провайдера через прокси)."""
+    try:
+        obj = APIKey.objects.get(id=pk)
+    except APIKey.DoesNotExist:
+        return JsonResponse({"ok": False, "error": "Ключ не найден"}, status=404)
+
+    key_value = obj.key or _env_openai_key_value()
+    if not key_value:
+        return JsonResponse(
+            {"ok": False, "error": "У ключа нет значения и нет OPENAI_API_KEY в .env"},
+            status=400,
+        )
+
+    model = obj.model_name or "gpt-4o-mini"
+    base_url = obj.base_url or None
+    
+    proxy_url = getattr(settings, 'OPENAI_PROXY_URL', None) or os.getenv("OPENAI_PROXY_URL")
+    
+    is_local = base_url and ("localhost" in base_url or "127.0.0.1" in base_url)
+    use_proxy = proxy_url if (proxy_url and not is_local) else None
+
+    started = time.perf_counter()
+    
+    http_client = httpx.Client(proxy=use_proxy, timeout=20.0) if use_proxy else None
+
+    try:
+        client = openai.OpenAI(
+            api_key=key_value.strip(),
+            base_url=base_url,
+            http_client=http_client,
+            timeout=20.0,
+        )
+        completion = client.chat.completions.create(
+            model=model,
+            messages=[{"role": "user", "content": "ping"}],
+            max_tokens=1,
+            temperature=0,
+        )
+        elapsed = int((time.perf_counter() - started) * 1000)
+        tokens = int(getattr(completion.usage, "total_tokens", 0) or 0)
+        APIKeyUsage.objects.create(
+            api_key=obj,
+            success=True,
+            endpoint="healthcheck",
+            response_time_ms=elapsed,
+            tokens_used=tokens,
+            model_name=model,
+        )
+        return JsonResponse({"ok": True, "response_ms": elapsed, "model": model})
+    except Exception as exc:
+        elapsed = int((time.perf_counter() - started) * 1000)
+        APIKeyUsage.objects.create(
+            api_key=obj,
+            success=False,
+            endpoint="healthcheck",
+            response_time_ms=elapsed,
+            tokens_used=0,
+            model_name=model,
+        )
+        return JsonResponse(
+            {"ok": False, "error": str(exc)[:300], "response_ms": elapsed},
+            status=400,
+        )
+    finally:
+        if http_client:
+            http_client.close()
+
+
+@require_POST
+@user_passes_test(lambda u: u.is_superuser)
+def api_key_cleanup_api(request):
+    """Массовая чистка: отключить/удалить ключи, не использованные N дней."""
+    try:
+        data = json.loads(request.body or "{}")
+    except json.JSONDecodeError:
+        data = {}
+
+    try:
+        days = max(int(data.get("days") or 30), 1)
+    except (TypeError, ValueError):
+        days = 30
+    mode = data.get("mode") or "deactivate"
+    include_active = bool(data.get("include_active"))
+
+    threshold = timezone.now() - timedelta(days=days)
+    candidates = []
+    for key in APIKey.objects.filter(is_system=False):
+        if key.is_active and not include_active:
+            continue
+        last = (
+            APIKeyUsage.objects.filter(api_key=key)
+            .order_by("-timestamp")
+            .values_list("timestamp", flat=True)
+            .first()
+        )
+        if last is None or last < threshold:
+            candidates.append(key)
+
+    ids = [k.id for k in candidates]
+    names = [k.name for k in candidates]
+    if mode == "delete":
+        APIKey.objects.filter(id__in=ids).delete()
+    else:
+        APIKey.objects.filter(id__in=ids).update(is_active=False)
+
+    return JsonResponse({
+        "ok": True,
+        "mode": mode,
+        "days": days,
+        "count": len(ids),
+        "names": names[:25],
+    })
 
 
 def get_retention_data():
@@ -5653,24 +6146,38 @@ def admin_stats(request):
     }
 
     # ---------------- API & AI Provider Health ----------------
+    _ensure_system_key()
     provider_health = []
     provider_names = list(APIKey.objects.order_by("provider").values_list("provider", flat=True).distinct())
     for prov in provider_names:
-        keys = APIKey.objects.filter(provider=prov)
-        key_ids = list(keys.values_list("id", flat=True))
+        keys = list(APIKey.objects.filter(provider=prov))
+        key_ids = [k.id for k in keys]
         usages = APIKeyUsage.objects.filter(api_key_id__in=key_ids)
         total_today = usages.filter(timestamp__date=today).count()
-        success_today = usages.filter(timestamp__date=today, success=True).count()
         total_period = usages.filter(timestamp__date__range=(start_date, end_date)).count()
         success_period = usages.filter(timestamp__date__range=(start_date, end_date), success=True).count()
         success_rate = round(success_period / total_period * 100, 1) if total_period else 0.0
         load = min(round(total_today / 50 * 100), 100) if total_today else 0
         avg_resp = int(usages.filter(timestamp__date=today, response_time_ms__isnull=False).aggregate(a=Avg("response_time_ms"))["a"] or 0)
-        is_active = keys.filter(is_active=True).exists()
+        tokens_period = int(
+            usages.filter(timestamp__date__range=(start_date, end_date)).aggregate(s=Sum("tokens_used"))["s"] or 0
+        )
+        cost_period = round(
+            sum(
+                _cost_usd(
+                    usages.filter(
+                        api_key=k, timestamp__date__range=(start_date, end_date)
+                    ).aggregate(s=Sum("tokens_used"))["s"] or 0,
+                    _key_price_per_1m(k.model_name, k.provider, k.cost_per_1m_tokens),
+                )
+                for k in keys
+            ),
+            4,
+        )
+        active_keys = sum(1 for k in keys if k.is_active)
+        is_active = active_keys > 0
         if not is_active:
             status_key, status_label = "paused", "Paused"
-        elif success_rate >= 99.0:
-            status_key, status_label = "healthy", "Healthy"
         elif success_rate >= 90.0:
             status_key, status_label = "healthy", "Healthy"
         else:
@@ -5682,6 +6189,11 @@ def admin_stats(request):
             "success_rate": success_rate,
             "load": load,
             "calls_today": total_today,
+            "calls_period": total_period,
+            "tokens_period": tokens_period,
+            "cost_period": cost_period,
+            "keys_count": len(keys),
+            "active_keys": active_keys,
             "avg_response_ms": avg_resp,
         })
 
