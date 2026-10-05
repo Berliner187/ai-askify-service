@@ -77,6 +77,14 @@ class Survey(models.Model):
         default=False, help_text="Подтверждено редакцией Летучки"
     )
     questions_count = models.PositiveIntegerField(default=0, db_index=True)
+    source_text = models.TextField(
+        blank=True, null=True, 
+        help_text="Исходный текст пользователя для перегенерации"
+    )
+    generation_params = models.JSONField(
+        default=dict, blank=True, 
+        help_text="Параметры генерации (сложность, типы вопросов и т.д.)"
+    )
 
     objects = SurveyManager()
 
@@ -85,35 +93,77 @@ class Survey(models.Model):
 
     def __str__(self):
         return self.title
-
-    def save_questions(self, questions_data):
+    
+    def save_questions(self, questions_data, shuffle=False):
         """
-        Сохраняет вопросы в формате JSON, предварительно перемешивая варианты ответов.
-
+        Сохраняет вопросы в формате JSON.
+        Если shuffle=True — перемешивает порядок самих вопросов.
+        Варианты ответов перемешиваются всегда для исключения предсказуемости.
+        
         Args:
             questions_data (list): Список словарей вопросов. Каждый словарь должен
                                    содержать 'question', 'options' и 'correct_answer'.
         """
         shuffled_questions = []
+
         for q_data in questions_data:
             if "options" in q_data and isinstance(q_data["options"], list):
                 options = list(q_data["options"])
                 random.shuffle(options)
 
+                correct = q_data.get("correct_answer") or q_data.get("correct_answers")
+                q_type = q_data.get("type")
+                if not q_type:
+                    q_type = "multiple" if isinstance(correct, list) and len(correct) > 1 else "single"
+
                 new_q_data = {
                     "question": q_data.get("question", ""),
                     "options": options,
-                    "correct_answer": q_data.get("correct_answer", ""),
+                    "correct_answer": correct,
+                    "type": q_type
                 }
                 shuffled_questions.append(new_q_data)
             else:
                 shuffled_questions.append(q_data)
+
+        if shuffle:
+            random.shuffle(shuffled_questions)
 
         self.questions = json.dumps(shuffled_questions, ensure_ascii=False)
         self.questions_count = len(shuffled_questions)
 
     def generate_pdf(self, subscription_level):
         return PDFGenerator.generate_from_survey(self, subscription_level)
+    
+    def get_normalized_questions(self):
+        """
+        Возвращает вопросы с гарантированной структурой:
+        - type: 'single' | 'multiple'
+        - correct_answers: list[str]
+        """
+        raw = self.get_questions()
+        normalized = []
+        for q in raw:
+            # Обратная совместимость с correct_answer (строка или список)
+            raw_correct = q.get("correct_answer") or q.get("correct_answers") or []
+            if isinstance(raw_correct, str):
+                correct_list = [raw_correct]
+            elif isinstance(raw_correct, list):
+                correct_list = raw_correct
+            else:
+                correct_list = []
+
+            q_type = q.get("type")
+            if not q_type:
+                q_type = "multiple" if len(correct_list) > 1 else "single"
+
+            normalized.append({
+                "question": q.get("question", ""),
+                "options": q.get("options", []),
+                "correct_answers": correct_list,
+                "type": q_type,
+            })
+        return normalized
 
 
 class PromoCode(models.Model):
@@ -415,7 +465,6 @@ def get_daily_test_limit(plan_name):
         'лайтовый': 15,
         'стандартный': 50,
         'премиум': 50,
-        'ультра': 800,
         'стандартный год': 50,
         'премиум год': 50,
     }

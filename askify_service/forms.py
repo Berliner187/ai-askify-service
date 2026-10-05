@@ -43,7 +43,7 @@ class VerificationCodeForm(forms.Form):
 
 
 class FileUploadForm(forms.Form):
-    question_count = forms.IntegerField(min_value=1, max_value=15)
+    question_count = forms.IntegerField(min_value=1, max_value=30)
     file = forms.FileField(
         max_length=100,
         allow_empty_file=False,

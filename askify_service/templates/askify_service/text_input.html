@@ -1,20 +1,14 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" class="h-full">
 <head>
     {% include 'components/meta_tags.html' %}
-    <meta name="description" content="Создайте персонализированные тесты за считанные минуты с помощью ИИ. Загружайте учебные материалы и получайте мгновенные квизы для эффективной подготовки к экзаменам.">
-    <meta name="keywords" content="создание тестов, генерация тестов, тесты с ИИ, персонализированные квизы, подготовка к экзаменам, учебные материалы, онлайн тесты">
-    <meta name="author" content="Летучка/Letychka by Kozak Developer">
-    <meta property="og:title" content="Создание тестов с ИИ - Летучка">
-    <meta property="og:description" content="Используйте ИИ для создания тестов на основе ваших учебных материалов. Быстро, удобно и эффективно!">
+    {% include 'components/linker.html' %}
+
+    <meta name="description" content="Создайте персонализированные тесты за считанные секунды с помощью ИИ. Загружайте учебные материалы и получайте готовые квизы.">
     <meta name="csrf-token" content="{{ csrf_token }}">
     {% load static %}
-    <link rel="shortcut icon" href="{% static 'img/logo.png' %}" type="image/png">
+    <link rel="icon" href="{% static 'img/logo.png' %}" type="image/png">
     
-    {% include 'components/linker.html' %}
-    <link rel="stylesheet" href="{% static 'css/upload-styles.css' %}?v=1.11">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
     <!-- Yandex.Metrika counter -->
     <script type="text/javascript" >
         setTimeout(function() {
@@ -34,753 +28,1578 @@
     </script>
     <noscript><div><img src="https://mc.yandex.ru/watch/98823704" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
     <!-- /Yandex.Metrika counter -->
+    
+    {% if debug %}
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    {% else %}
+        <script src="{% static 'vendor/tailwind.full.min.js' %}"></script>
+        <script src="{% static 'vendor/jquery.min.js' %}"></script>
+    {% endif %}
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&family=Wix+Madefor+Display:wght@600;700;800&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --bg-main: #111119;
+            --card-bg: #212024;
+            --card-border: rgba(255, 255, 255, 0.07);
+            --card-border-hover: rgba(255, 255, 255, 0.15);
+            --accent-indigo: #4F46E5;
+            --accent-emerald: #10B981;
+            --accent-rose: #EF4444;
+            --spring-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+            --spring-smooth: cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        body {
+            background-color: var(--bg-main);
+            font-family: 'Golos Text', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: #F3F4F6;
+            letter-spacing: -0.01em;
+        }
+
+        h1, h2, h3, .font-display {
+            font-family: 'Wix Madefor Display', sans-serif;
+            letter-spacing: -0.025em;
+        }
+
+        .font-mono-nums {
+            font-family: 'JetBrains Mono', monospace;
+            letter-spacing: -0.03em;
+        }
+
+        .glass-panel {
+            background: rgba(33, 32, 36, 0.5);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid var(--card-border);
+        }
+
+        /* ==========================================================================
+           СДЕРЖАННАЯ КИНЕТИКА ПОЯВЛЕНИЯ (APPLE MOTION SYSTEM)
+           ========================================================================== */
+        .motion-fade-up {
+            opacity: 0;
+            transform: translateY(12px) scale(0.99);
+            filter: blur(4px);
+            animation: quietArrival 0.45s var(--spring-smooth) forwards;
+            will-change: transform, opacity, filter;
+        }
+
+        @keyframes quietArrival {
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+                filter: blur(0);
+            }
+        }
+
+        .motion-delay-dock   { animation-delay: 0.03s; }
+        .motion-delay-island { animation-delay: 0.05s; }
+        .motion-delay-hero   { animation-delay: 0.09s; }
+        .motion-delay-bento  { animation-delay: 0.14s; }
+        .motion-delay-recent { animation-delay: 0.20s; }
+
+        /* ==========================================================================
+           APPLE DYNAMIC ISLAND ENGINE (MORPHING)
+           ========================================================================== */
+        .island-capsule {
+            background: rgba(24, 23, 26, 0.92);
+            backdrop-filter: blur(28px);
+            -webkit-backdrop-filter: blur(28px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.8);
+            border-radius: 9999px;
+            transition: 
+                max-width 0.45s var(--spring-bounce),
+                padding 0.35s var(--spring-smooth),
+                background-color 0.3s ease,
+                border-color 0.3s ease,
+                box-shadow 0.3s ease,
+                transform 0.4s var(--spring-bounce);
+            will-change: max-width, transform, border-color, box-shadow;
+        }
+
+        .island-capsule.mode-header {
+            max-width: 56rem; /* 896px = max-w-4xl */
+            width: 100%;
+            padding: 0.625rem 1.25rem;
+        }
+
+        .island-capsule.mode-notify {
+            max-width: 25rem;
+            width: auto;
+            padding: 0.5rem 1.25rem;
+            transform: scale(1.02);
+            background: rgba(18, 17, 20, 0.98);
+        }
+
+        .island-capsule.theme-success {
+            border-color: rgba(16, 185, 129, 0.45);
+            box-shadow: 0 15px 35px -8px rgba(16, 185, 129, 0.3), 0 0 0 1px rgba(16, 185, 129, 0.15);
+        }
+        .island-capsule.theme-error {
+            border-color: rgba(239, 68, 68, 0.45);
+            box-shadow: 0 15px 35px -8px rgba(239, 68, 68, 0.3), 0 0 0 1px rgba(239, 68, 68, 0.15);
+        }
+        .island-capsule.theme-warning {
+            border-color: rgba(245, 158, 11, 0.45);
+            box-shadow: 0 15px 35px -8px rgba(245, 158, 11, 0.3), 0 0 0 1px rgba(245, 158, 11, 0.15);
+        }
+        .island-capsule.theme-info {
+            border-color: rgba(79, 70, 229, 0.45);
+            box-shadow: 0 15px 35px -8px rgba(79, 70, 229, 0.3), 0 0 0 1px rgba(79, 70, 229, 0.15);
+        }
+
+        .island-content-layer {
+            transition: opacity 0.25s var(--spring-smooth), transform 0.3s var(--spring-bounce);
+        }
+
+        /* Тактильные кнопки */
+        .spring-btn {
+            transition: transform 0.2s var(--spring-bounce), background-color 0.15s, border-color 0.15s, box-shadow 0.15s;
+        }
+        .spring-btn:hover { transform: translateY(-1px); }
+        .spring-btn:active { transform: scale(0.98) translateY(1px); }
+
+        .spring-modal {
+            transition: transform 0.35s var(--spring-bounce), opacity 0.25s var(--spring-smooth);
+        }
+
+        /* Кастомный слайдер */
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
+        }
+        input[type=range]:focus { outline: none; }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #ffffff;
+            cursor: pointer;
+            border: 2.5px solid #4F46E5;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+            transition: transform 0.2s var(--spring-bounce);
+            margin-top: -7px;
+        }
+        input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 6px;
+            cursor: pointer;
+            border-radius: 9999px;
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        /* Кастомные чекбоксы Apple Style */
+        .apple-checkbox {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 1.25rem;
+            height: 1.25rem;
+            border-radius: 0.375rem;
+            background-color: #18171A;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            display: inline-grid;
+            place-content: center;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .apple-checkbox::before {
+            content: "\f00c";
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            font-size: 0.65rem;
+            color: #ffffff;
+            transform: scale(0);
+            transition: transform 0.2s var(--spring-bounce);
+        }
+        .apple-checkbox:checked {
+            background-color: #4F46E5;
+            border-color: #4F46E5;
+        }
+        .apple-checkbox:checked::before {
+            transform: scale(1);
+        }
+        .apple-checkbox:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        /* Лоадер генерации */
+        @keyframes shimmerMove {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        .animate-shimmer {
+            animation: shimmerMove 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        }
+        .animate-thought { animation: thoughtFade 2.4s ease-in-out infinite; }
+
+        /* Отдельная кинематика для левого вертикального дока (держит translateY(-50%)) */
+        .motion-dock-desktop {
+            opacity: 0;
+            transform: translateY(calc(-50% + 12px)) scale(0.99);
+            filter: blur(4px);
+            animation: dockDesktopArrival 0.45s var(--spring-smooth) forwards;
+            will-change: transform, opacity, filter;
+        }
+
+        @keyframes dockDesktopArrival {
+            to {
+                opacity: 1;
+                transform: translateY(-50%) scale(1);
+                filter: blur(0);
+            }
+        }
+
+        /* Кинематика для мобильного нижнего дока (держит translateX(-50%)) */
+        .motion-dock-mobile {
+            opacity: 0;
+            transform: translate(-50%, 12px) scale(0.99);
+            filter: blur(4px);
+            animation: dockMobileArrival 0.45s var(--spring-smooth) forwards;
+            will-change: transform, opacity, filter;
+        }
+
+        @keyframes dockMobileArrival {
+            to {
+                opacity: 1;
+                transform: translate(-50%, 0) scale(1);
+                filter: blur(0);
+            }
+        }
+
+        .custom-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 9999px;
+            background: #212026;
+            outline: none;
+            transition: background 0.1s ease;
+        }
+
+        .custom-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #ffffff;
+            cursor: pointer;
+            border: 2px solid #4F46E5;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+            transition: transform 0.15s var(--spring-bounce), box-shadow 0.15s ease;
+        }
+
+        .custom-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.18);
+            box-shadow: 0 0 0 6px rgba(79, 70, 229, 0.15);
+        }
+
+        .custom-slider::-webkit-slider-thumb:active {
+            transform: scale(0.95);
+        }
+
+        .custom-slider::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #ffffff;
+            cursor: pointer;
+            border: 2px solid #4F46E5;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+            transition: transform 0.15s var(--spring-bounce);
+        }
+
+        /* MASTER TRIGGER BUTTON */
+        .master-launch-pill {
+            background: linear-gradient(180deg, #4F46E5 0%, #4338CA 100%);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            box-shadow: 
+                0 10px 24px -6px rgba(0, 0, 0, 0.45),
+                0 2px 6px -1px rgba(0, 0, 0, 0.25),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            transform: translateY(0);
+        }
+
+        .master-launch-pill:hover {
+            background: linear-gradient(180deg, #554BF0 0%, #4639D4 100%);
+            border-color: rgba(255, 255, 255, 0.24);
+            box-shadow: 
+                0 14px 28px -6px rgba(0, 0, 0, 0.55),
+                0 4px 10px -2px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .master-launch-pill:active {
+            transform: scale(0.985) translateY(1px);
+            box-shadow: 
+                0 4px 12px -2px rgba(0, 0, 0, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.15);
+        }
+
+        /* HAPTIC SHAKE APPLE STYLE */
+        @keyframes launchPillShake {
+            0%, 100% { transform: translateX(0); }
+            18% { transform: translateX(-6px); }
+            36% { transform: translateX(5px); }
+            54% { transform: translateX(-4px); }
+            72% { transform: translateX(2px); }
+            90% { transform: translateX(-1px); }
+        }
+        .pill-shake-active {
+            animation: launchPillShake 0.42s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+        }
+    </style>
 </head>
+<body class="min-h-full flex flex-col antialiased selection:bg-indigo-600 selection:text-white">
 
-<style>
-    footer {
-        margin-top: 0;
-    }
-    #overlay {
-        display: none;
-    }
-    @keyframes fadeInOut {
-        0% { opacity: 0; transform: translateY(10px); }
-        20% { opacity: 1; transform: translateY(0); }
-        80% { opacity: 1; transform: translateY(0); }
-        100% { opacity: 0; transform: translateY(-10px); }
-    }
-    #loader-text {
-        animation: fadeInOut 2.5s ease-in-out infinite;
-    }
-</style>
+    <!-- ОВЕРЛЕЙ ГЕНЕРАЦИИ (GATEWAY FLOW CORE) -->
+    <div id="overlay" class="fixed inset-0 bg-[#0B0A0E]/95 backdrop-blur-3xl z-[9999] hidden flex-col items-center justify-center p-6 select-none overflow-hidden">
+        
+        <!-- Живой холст схождения потоков частиц в сингулярность -->
+        <canvas id="gateway-canvas" class="absolute inset-0 w-full h-full pointer-events-auto cursor-crosshair z-0"></canvas>
 
-<body class="bg-create">
-    <div id="toast" class="copy-notification hidden">
-        <span id="toast-message">Сообщение</span>
-    </div>
+        <!-- Тонкая дизер-сетка (Grain Texture) для киношной текстуры -->
+        <div class="absolute inset-0 pointer-events-none opacity-[0.03] z-1" style="background-image: url('data:image/svg+xml,%3Csvg viewBox=%220 0 2 2%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Crect width=%221%22 height=%221%22 fill=%22%23ffffff%22/%3E%3C/svg%3E'); background-size: 3px 3px;"></div>
 
-    <script src="{% static 'js/second-loader.js' %}"></script>
-
-    {% include 'components/loader.html' %}
-    
-    <div id="overlay" class="fixed inset-0 bg-black/90 backdrop-blur-sm z-[999] hidden flex-col items-center justify-center p-4">
-        <canvas id="matrix-canvas" class="absolute inset-0 z-0 w-full h-full"></canvas>
-        <div id="loader-text-container" class="relative z-10 text-center">
-            <h2 id="loader-text" class="text-2xl font-bold text-white transition-opacity duration-500">
-                <!-- Сюда JS будет вставлять текст -->
-            </h2>
-            <p class="text-gray-400 mt-2">Создаём магию...</p>
-        </div>
-    </div>
-    
-    <div id="page-container" class="fade" style="display: none;">
-        {% include 'header.html' %}
-
-        <div class="main-content-create">
-            {% if total_tests == 0 %}
-                <h1 class="text-3xl md:text-4xl font-black text-white tracking-tight">
-                    Превратите текст в умный тест
-                </h1>
-                <p class="mt-3 text-gray-400 text-base md:text-lg leading-relaxed">
-                    Вставьте лекцию, статью или методичку в поле ниже. <br class="hidden md:block">
-                    Летучка сама выделит главное и создаст вопросы.
-                </p>
-            {% else %}
-                <h1 class="text-3xl md:text-4xl font-black text-white tracking-tight">
-                    С возвращением!
-                </h1>
-                <p class="mt-3 text-gray-400 text-base md:text-lg leading-relaxed">
-                    Готовы создать новый тест? <br class="hidden md:block"> 
-                    Просто загрузите свежий материал.
-                </p>
-            {% endif %}
-        </div>
-
-        <div class="container features-container">
-            <section class="py-2">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    
-                    <!-- Шаг 1: Дайте текст -->
-                    <div class="feature-card-pressable group" onclick="document.getElementById('user-text').focus()">
-                        <div class="feature-icon-wrapper">
-                            <i class="fas fa-file-signature text-indigo-400"></i>
-                        </div>
-                        <div class="feature-content">
-                            <h3>1. Загрузите текст</h3>
-                            <p>Вставьте тему, лекцию или загрузите PDF, Word. Летучка выделит главное.</p>
-                        </div>
-                    </div>
-
-                    <!-- Шаг 2: Магия ИИ -->
-                    <div class="feature-card-pressable group">
-                        <div class="feature-icon-wrapper">
-                            <i class="fas fa-wand-magic-sparkles text-indigo-400"></i>
-                        </div>
-                        <div class="feature-content">
-                            <h3>2. Получите тест</h3>
-                            <p>Летучка создаст качественный тест.</p>
-                        </div>
-                    </div>
-
-                    <!-- Шаг 3: Прогресс -->
-                    <div class="feature-card-pressable group">
-                        <div class="feature-icon-wrapper">
-                            <i class="fas fa-chart-line text-indigo-400"></i>
-                        </div>
-                        <div class="feature-content">
-                            <h3>3. Наблюдайте</h3>
-                            <p>Наблюдайте за результатами, поделившись ссылкой и смотрите карту ошибок респондентов.</p>
-                        </div>
-                    </div>
-                    
-                </div>
-            </section>
-
-            <style>
-                /* Наследуем твой Bottom Medium для карточек */
-                .feature-card-pressable {
-                    display: flex;
-                    align-items: center;
-                    gap: 16px;
-                    padding: 16px;
-                    background: rgba(40, 39, 47, 0.4);
-                    border: 1px solid rgba(255, 255, 255, 0.08);
-                    border-radius: 20px;
-                    backdrop-filter: blur(12px);
-                    -webkit-backdrop-filter: blur(12px);
-                    transition: all 0.2s ease;
-                    cursor: pointer;
-                    user-select: none;
-                }
-
-                .feature-card-pressable:hover {
-                    background: rgba(60, 59, 67, 0.5);
-                    border-color: rgba(99, 102, 241, 0.3);
-                    transform: translateY(-2px);
-                }
-
-                /* Эффект продавливания как у твоих кнопок */
-                .feature-card-pressable:active {
-                    transform: scale(0.97) translateY(1px);
-                    box-shadow: inset 0 4px 12px rgba(0, 0, 0, 0.4);
-                    background: rgba(30, 29, 36, 0.8);
-                }
-
-                .feature-icon-wrapper {
-                    flex-shrink: 0;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    width: 44px;
-                    height: 44px;
-                    border-radius: 12px;
-                    background: rgba(99, 102, 241, 0.1);
-                    border: 1px solid rgba(99, 102, 241, 0.2);
-                    transition: all 0.3s ease;
-                }
-
-                .feature-card-pressable:hover .feature-icon-wrapper {
-                    background: rgba(99, 102, 241, 0.2);
-                    transform: rotate(-5deg) scale(1.1);
-                }
-
-                .feature-content h3 {
-                    color: #fff;
-                    font-size: 0.9rem;
-                    font-weight: 800;
-                    margin: 0;
-                    letter-spacing: -0.02em;
-                }
-
-                .feature-content p {
-                    color: #9ca3af;
-                    font-size: 0.75rem;
-                    line-height: 1.3;
-                    margin: 2px 0 0 0;
-                }
-
-                @media (max-width: 768px) {
-                    .feature-card-pressable {
-                        padding: 12px;
-                    }
-                }
-            </style>
-        </div>
-
-        <section class="container mt-8" id="recent-history-container">
-            <div class="flex items-center justify-between mb-4 px-2">
-                <h3 class="text-white font-black opacity-60">
-                    <i class="fas fa-history mr-2 text-indigo-500"></i> Недавние тесты
-                </h3>
-                <a href="{% url 'history' %}" class="text-[10px] font-bold text-indigo-400 hover:text-indigo-300 uppercase tracking-tighter transition-colors">
-                    Все тесты &rarr;
-                </a>
+        <!-- Центральный модуль статуса (в фокусе схождения потоков) -->
+        <div class="relative z-10 flex flex-col items-center max-w-sm w-full text-center pointer-events-none">
+            
+            <!-- Ядро конвергенции с мягким пульсирующим свечением -->
+            <div class="relative w-14 h-14 rounded-full bg-[#18171C]/90 border border-white/15 backdrop-blur-xl flex items-center justify-center shadow-2xl mb-7">
+                <div class="absolute inset-0 rounded-full border border-indigo-500/40 animate-ping opacity-25"></div>
+                <svg class="w-6 h-6 text-indigo-300 transition-transform duration-700" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M8 0L9.4 6.6L16 8L9.4 9.4L8 16L6.6 9.4L0 8L6.6 6.6L8 0Z" />
+                </svg>
             </div>
 
-            <div id="history-content" class="grid grid-cols-1 gap-2.5">
-                <!-- Пример того, как JavaScript должен рендерить одну карточку -->
-                <!-- Повтори эту структуру в своем JS-цикле отрисовки истории -->
-                {% for survey in recent_surveys %}
-                <a href="{% url 'result' survey.survey_id %}" class="history-item-pressable group">
-                    <div class="flex items-center justify-between w-full">
-                        <div class="flex items-center gap-4 overflow-hidden">
-                            <div class="history-icon-box">
-                                <i class="fas fa-file-alt"></i>
-                            </div>
-                            <div class="flex flex-col overflow-hidden">
-                                <span class="history-item-title truncate">{{ survey.title }}</span>
-                                <span class="history-item-date">{{ survey.created_at|date:"d.m.Y" }}</span>
-                            </div>
+            <!-- Человечный статус текущего действия -->
+            <h2 id="loader-step-text" class="text-base sm:text-lg font-bold text-white tracking-tight mb-2 min-h-[1.75rem] transition-opacity duration-200">
+                Вчитываемся в материал...
+            </h2>
+
+            <!-- Динамический подстатус (подтягивает РЕАЛЬНЫЕ параметры без хардкода) -->
+            <p id="loader-meta-text" class="text-[11px] text-gray-400 font-mono-nums mb-6 transition-all">
+                Синтез: 5 вопросов • Средняя сложность
+            </p>
+
+            <!-- КИНЕТИЧЕСКИЙ ПРОГРЕСС-БАР -->
+            <div class="w-full max-w-[280px] space-y-2">
+                <div class="relative w-full h-1.5 bg-[#1F1E26] rounded-full overflow-hidden p-[1px] border border-white/5">
+                    <div id="loader-progress-fill" 
+                         class="relative h-full bg-indigo-500 rounded-full transition-all duration-300 ease-out overflow-hidden" 
+                         style="width: 5%;">
+                        <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent animate-shimmer"></div>
+                    </div>
+                </div>
+
+                <!-- Подпись фазы и реальный процент -->
+                <div class="flex items-center justify-between text-[11px] font-mono-nums px-0.5">
+                    <span id="loader-status-sub" class="text-gray-500 text-[10px]">Анализ структуры</span>
+                    <span id="loader-percent" class="text-indigo-300 font-bold">5%</span>
+                </div>
+            </div>
+
+            <p class="text-[10px] text-gray-500/80 mt-6 tracking-wide">
+                Кликните по экрану для импульса
+            </p>
+
+        </div>
+    </div>
+
+    <!-- ЛЕВЫЙ ВЕРТИКАЛЬНЫЙ ДОК (DESKTOP) -->
+    <aside class="motion-dock-desktop motion-delay-dock hidden lg:flex fixed left-5 top-1/2 flex-col items-center gap-6 py-6 px-3.5 glass-panel rounded-[28px] z-40 shadow-2xl">
+        <a href="/" class="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors" title="Главная">
+            <img src="{% static 'img/logo.png' %}" alt="Logo" class="w-5 h-auto">
+        </a>
+        <div class="w-6 h-px bg-white/10"></div>
+        <nav class="flex flex-col gap-4">
+            <a href="{% url 'create' %}" class="w-11 h-11 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-600/30 spring-btn" title="Создать тест">
+                <i class="fas fa-plus text-sm"></i>
+            </a>
+            {% if request.user.is_authenticated %}
+                <a href="{% url 'history' %}" class="w-11 h-11 rounded-2xl bg-white/5 border border-white/5 text-gray-400 flex items-center justify-center hover:text-white hover:bg-white/10 spring-btn" title="Мои тесты">
+                    <i class="fa-sharp fa-solid fa-clock-rotate-left fa-layer-group text-sm"></i>
+                </a>
+                <a href="{% url 'profile_redirect' %}" class="w-11 h-11 rounded-2xl bg-white/5 border border-white/5 text-gray-400 flex items-center justify-center hover:text-white hover:bg-white/10 spring-btn" title="Профиль">
+                    <i class="fas fa-user-astronaut text-sm"></i>
+                </a>
+            {% endif %}
+        </nav>
+        {% if request.user.is_authenticated %}
+            <div class="w-6 h-px bg-white/10 mt-auto"></div>
+            <a href="{% url 'logout' %}" class="w-11 h-11 rounded-2xl text-gray-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors flex items-center justify-center" title="Выйти">
+                <i class="fas fa-arrow-right-from-bracket text-sm"></i>
+            </a>
+        {% endif %}
+    </aside>
+
+    <!-- МОБИЛЬНЫЙ НИЖНИЙ DOCK -->
+    <nav class="motion-dock-mobile motion-delay-dock lg:hidden fixed bottom-4 left-1/2 island-capsule rounded-full px-6 py-3 flex items-center gap-6 z-40 shadow-2xl">
+        <a href="/" class="text-gray-400 hover:text-white"><i class="fas fa-home text-base"></i></a>
+        <a href="{% url 'create' %}" class="w-9 h-9 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-600/30"><i class="fas fa-plus text-sm"></i></a>
+        {% if request.user.is_authenticated %}
+            <a href="{% url 'history' %}" class="text-gray-400 hover:text-white"><i class="fas fa-layer-group text-base"></i></a>
+            <a href="{% url 'profile_redirect' %}" class="text-gray-400 hover:text-white"><i class="fas fa-user text-base"></i></a>
+        {% else %}
+            <a href="/login" class="text-xs font-semibold text-indigo-400">Войти</a>
+        {% endif %}
+    </nav>
+
+    <!-- КОНТЕНТНАЯ ЗОНА -->
+    <div class="lg:pl-28 flex-grow flex flex-col">
+
+        <!-- DYNAMIC ISLAND HEADER -->
+        <header class="motion-fade-up motion-delay-island sticky top-4 z-40 w-full px-4 flex justify-center pointer-events-none">
+            <div id="dynamic-island" class="island-capsule mode-header pointer-events-auto flex items-center justify-center relative overflow-hidden min-h-[48px]">
+                
+                <!-- 1. ДЕФОЛТНЫЙ СЛОЙ УПРАВЛЕНИЯ -->
+                <div id="island-controls" class="island-content-layer w-full flex items-center justify-between gap-4 opacity-100 scale-100">
+                    <div class="flex items-center gap-3">
+                        <div class="flex items-center gap-2.5 text-xs font-semibold">
+                            <a href="/" class="flex-shrink-0 transition-opacity hover:opacity-80 mr-1">
+                                <img src="{% static 'img/logo.png' %}" alt="Logo" class="w-5 h-auto">
+                            </a>
+                            <span class="text-gray-500 select-none">/</span>
+                            <span class="text-gray-400">Летучка</span>
+                            <span class="text-gray-600 select-none">/</span>
+                            <span class="text-white font-medium">Создание теста</span>
                         </div>
-                        
-                        <!-- Бейдж, если тест популярный (добавь условие, если нужно) -->
-                        {% if survey.view_count > 10 %}
-                        <div class="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
-                            <i class="fas fa-fire text-[10px] text-indigo-400"></i>
-                            <span class="text-[9px] font-black text-indigo-300 uppercase">{{ survey.view_count }}</span>
-                        </div>
+                    </div>
+
+                    <!-- ДИНАМИЧЕСКИЙ БАЛАНС В ОСТРОВКЕ (СТРОГИЙ СТИЛЬ) -->
+                    <div class="flex items-center font-mono-nums">
+                        {% if can_generate and total_available > 0 %}
+                            <div class="flex items-center gap-2 pl-2.5 pr-3 py-1 rounded-full bg-[#18171C] border border-white/10 text-xs">
+                                <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 flex-shrink-0"></span>
+                                <div class="flex items-center gap-1.5 text-[11px] tracking-tight">
+                                    <span class="text-white font-bold">{{ total_available }}</span>
+                                    <span class="text-gray-500 font-sans text-[10px] uppercase font-semibold">
+                                        {% if plan_type == 'package' %}
+                                            пакет
+                                        {% elif subscription_level >= 1 %}
+                                            Доступно
+                                        {% else %}
+                                            тест
+                                        {% endif %}
+                                    </span>
+                                </div>
+                            </div>
+                        {% else %}
+                            <a href="{% url 'payment' %}" class="flex items-center gap-2 pl-2.5 pr-3 py-1 rounded-full bg-rose-500/10 hover:bg-rose-500/15 border border-rose-500/20 text-rose-400 text-xs transition-all spring-btn">
+                                <span class="w-1.5 h-1.5 rounded-full bg-rose-500 flex-shrink-0"></span>
+                                <span class="text-[11px] font-sans font-semibold tracking-tight text-white">0 доступно</span>
+                                <span class="text-[10px] font-sans text-rose-400 font-bold ml-0.5">Купить &rarr;</span>
+                            </a>
                         {% endif %}
                     </div>
-                </a>
-                {% endfor %}
+                </div>
+
+                <!-- 2. СЛОЙ МОРФИНГА УВЕДОМЛЕНИЙ -->
+                <div id="island-notice" class="island-content-layer hidden w-full items-center justify-center gap-3 opacity-0 scale-75 select-none">
+                    <span id="island-icon-box" class="w-6 h-6 rounded-full flex items-center justify-center text-xs flex-shrink-0">
+                        <i id="island-icon" class="fas fa-check"></i>
+                    </span>
+                    <span id="island-text" class="text-xs sm:text-sm font-semibold text-white tracking-wide truncate"></span>
+                </div>
+
             </div>
-        </section>
+        </header>
 
-        <style>
-            .history-item-pressable {
-                display: flex;
-                padding: 14px 18px;
-                background: rgba(40, 39, 47, 0.4);
-                border: 1px solid rgba(255, 255, 255, 0.06);
-                border-radius: 18px;
-                backdrop-filter: blur(8px);
-                -webkit-backdrop-filter: blur(8px);
-                transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-                text-decoration: none;
-                will-change: transform;
-            }
-
-            .history-item-pressable:hover {
-                background: rgba(60, 59, 67, 0.5);
-                border-color: rgba(255, 255, 255, 0.15);
-                transform: scale(1.01);
-            }
-
-            /* Твой фирменный прожим */
-            .history-item-pressable:active {
-                transform: scale(0.97) translateY(2px);
-                box-shadow: inset 0 4px 12px rgba(0, 0, 0, 0.5);
-                background: rgba(30, 29, 36, 0.8);
-            }
-
-            .history-icon-box {
-                flex-shrink: 0;
-                width: 36px;
-                height: 36px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                background: rgba(255, 255, 255, 0.03);
-                border: 1px solid rgba(255, 255, 255, 0.05);
-                border-radius: 10px;
-                color: #6366f1;
-                font-size: 14px;
-                transition: all 0.3s ease;
-            }
-
-            .history-item-pressable:hover .history-icon-box {
-                background: rgba(99, 102, 241, 0.15);
-                color: #fff;
-            }
-
-            .history-item-title {
-                color: #efeff1;
-                font-size: 0.85rem;
-                font-weight: 700;
-                letter-spacing: -0.01em;
-            }
-
-            .history-item-date {
-                color: #6b7280;
-                font-size: 0.65rem;
-                font-weight: 600;
-                text-transform: uppercase;
-                letter-spacing: 0.05em;
-                margin-top: 1px;
-            }
-
-            /* Убираем скроллбар у контейнера истории, если он будет */
-            #history-content {
-                scrollbar-width: none; /* Firefox */
-            }
-            #history-content::-webkit-scrollbar {
-                display: none; /* Chrome/Safari */
-            }
-        </style>
-
-        <style>
-            .features-container {
-                margin-top: 20px;
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-                gap: 24px;
-            }
-            .feature-block {
-                position: relative;
-                overflow: hidden;
-                background: rgba(93, 86, 110, 0.12);
-                border-radius: 18px;
-                padding: 24px;
-                text-align: center;
-                transition: all 0.25s ease;
-                text-decoration: none;
-            }
-            .feature-block:hover {
-                transform: translateY(-4px);
-                background: rgba(93, 86, 110, 0.2);
-            }
-            .feature-icon {
-                width: 48px;
-                height: 48px;
-                margin: 0 auto 16px;
-            }
-            .feature-block h3 {
-                font-size: 16px;
-                font-weight: 600;
-                margin-bottom: 8px;
-                color: #ffffff;
-            }
-            .feature-block p {
-                font-size: 13px;
-                color: #c0c0c0;
-                line-height: 1.6;
-                margin: 0;
-            }
-
-            .feature-badge {
-                position: absolute;
-                top: 12px;
-                right: -40px;
-                background-color: var(--color-accent-secondary);
-                color: white;
-                padding: 4px 40px;
-                font-size: 10px;
-                font-weight: 700;
-                text-transform: uppercase;
-                transform: rotate(45deg);
-                box-shadow: 0 0 10px rgba(0,0,0,0.5);
-            }
-            .feature-block.premium-feature {
-                opacity: 0.7;
-            }
-            .feature-block.premium-feature:hover {
-                opacity: 1;
-            }
-
-            .feature-block.quick-link h3 {
-                color: var(--secondary-color);
-            }
-            .feature-block.quick-link .accent {
-                color: var(--primary-color);
-            }
-
-            /* Модалка лимитов */
-            @keyframes modalIn {
-                from { transform: scale(0.9) translateY(20px); opacity: 0; }
-                to { transform: scale(1) translateY(0); opacity: 1; }
-            }
-            .animate-modalIn {
-                animation: modalIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-            }
+        <!-- РАБОЧАЯ ОБЛАСТЬ (СТУДИЯ) -->
+        <main class="max-w-4xl w-full mx-auto px-4 sm:px-6 py-6 flex-grow space-y-6">
             
-            #limit-exceeded-modal:not(.hidden) {
-                display: flex !important;
-            }
-        </style>
-
-        {% if dashboard_context.type == 'popular_test' %}
-        <div class="container p-6 max-w-auto bg-[var(--color-surface)] rounded-3xl border border-[var(--color-border)]">
-            <div class="flex justify-between flex-wrap items-start">
-                <div>
-                    <p class="text-xs text-gray-400 uppercase tracking-wider">Популярный за 30 дней</p>
-                    <h2 class="text-base font-bold text-white mt-1 truncate">
-                        {{ dashboard_context.test_title }}
-                    </h2>
-                </div>
-                <a href="{% url 'preview_test_result' dashboard_context.survey_id %}" 
-                class="group flex-shrink-0 flex items-center gap-2 px-3 py-1.5 bg-black/20 rounded-full
-                        hover:bg-[var(--color-accent-primary)] transition-colors">
-                    <span class="text-xs font-semibold text-white">Аналитика</span>
-                    <i class="fas fa-arrow-right text-gray-400 transition-transform group-hover:translate-x-1 group-hover:text-white"></i>
-                </a>
-            </div>
-            <!-- Сетка с KPI -->
-            <div class="mt-4 grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
-                <!-- Просмотры -->
-                <div class="bg-black/20 p-3 rounded-xl">
-                    <p class="text-2xl font-bold text-white">{{ dashboard_context.total_views }}</p>
-                    <p class="text-xs text-gray-500">Просмотров</p>
-                </div>
-                <!-- Прохождения -->
-                <div class="bg-black/20 p-3 rounded-xl">
-                    <p class="text-2xl font-bold text-white">{{ dashboard_context.total_attempts }}</p>
-                    <p class="text-xs text-gray-500">Прохождений</p>
-                </div>
-                <!-- Средний балл -->
-                <div class="bg-black/20 p-3 rounded-xl">
-                    <p class="text-2xl font-bold text-white">{{ dashboard_context.avg_score_percent }}<span class="text-lg">%</span></p>
-                    <p class="text-xs text-gray-500">Средний балл</p>
-                </div>
-                <!-- Последний участник -->
-                <div class="bg-black/20 p-3 rounded-xl">
-                    {% if dashboard_context.last_participant.name %}
-                        <p class="text-lg font-bold text-white truncate">{{ dashboard_context.last_participant.name }}</p>
-                        <p class="text-xs text-gray-500">
-                            {{ dashboard_context.last_participant.time|timesince }} назад
-                        </p>
+            <!-- HERO / СТУДИЯ ОНБОРДИНГ -->
+            <div class="motion-fade-up motion-delay-hero pt-6 sm:pt-10 pb-2 text-center space-y-3.5 max-w-2xl mx-auto">
+                
+                <!-- Заголовок с фокусом на результат -->
+                <h1 class="text-2xl sm:text-3xl md:text-4xl font-extrabold text-white tracking-tight leading-tight">
+                    {% if request.user.is_authenticated %}
+                        Собрать новый тест
                     {% else %}
-                        <p class="text-lg font-bold text-gray-600">-</p>
-                        <p class="text-xs text-gray-500">Последний участник</p>
+                        Превратите материал в готовый тест
                     {% endif %}
+                </h1>
+
+                <!-- Заботливый сабтайтл-подсказка -->
+                <p class="text-xs sm:text-sm text-gray-400 font-normal leading-relaxed max-w-lg mx-auto">
+                    Вставьте конспект лекции, ключевые тезисы или прикрепите документ — нейросеть выделит главное и сформирует варианты.
+                </p>
+
+                <!-- WORKFLOW PILL (СЕГМЕНТИРОВАННЫЙ ЭТАПНЫЙ ТРЕКЕР) -->
+                <div class="pt-1.5 flex items-center justify-center">
+                    <div class="inline-flex items-center p-1 rounded-full bg-[#18171C] border border-white/[0.08] shadow-inner text-[11px] font-medium text-gray-400">
+                        
+                        <!-- Шаг 1: Активный -->
+                        <div class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-600/15 border border-indigo-500/30 text-indigo-300 font-semibold shadow-sm">
+                            <span class="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
+                            <span>1. Материал</span>
+                        </div>
+
+                        <!-- Разделитель -->
+                        <span class="w-2.5 h-px bg-white/10 mx-1"></span>
+
+                        <!-- Шаг 2 -->
+                        <div class="flex items-center gap-1.5 px-2.5 py-1 text-gray-500">
+                            <span>2. Параметры</span>
+                        </div>
+
+                        <!-- Разделитель -->
+                        <span class="w-2.5 h-px bg-white/10 mx-1"></span>
+
+                        <!-- Шаг 3 -->
+                        <div class="flex items-center gap-1.5 px-2.5 py-1 text-gray-500">
+                            <span>3. Результат</span>
+                        </div>
+                    </div>
                 </div>
+
             </div>
-        </div>
-        {% endif %}
-        
-        <div class="mb-12"> </div>
 
-        <!-- ПАРЯЩИЙ ОСТРОВ ГЕНЕРАЦИИ -->
-        <div id="floating-island-wrapper" class="fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-1.5rem)] sm:w-full max-w-4xl px-0 sm:px-4 z-[9999] animate-fadeIn" style="z-index: 10;">
-            <div class="relative flex flex-col shadow-[0_8px_32px_rgba(40,39,47,.1)] rounded-[1.8rem] sm:rounded-[2.2rem] overflow-hidden border border-white/10 bg-[40,39,47,.5]/80 backdrop-blur-xl">
-                <div id="notice-hub">
-                    {% if not can_generate %}
-                        <div class="bg-red-500/10 px-4 sm:px-6 py-2 flex items-center justify-between border-b border-white/5">
-                            <div class="flex items-center gap-2">
-                                <i class="fas fa-bolt text-red-500 text-xs"></i>
-                                <span class="text-white text-[10px] sm:text-[11px] font-black uppercase tracking-wider">Создание недоступно</span>
-                            </div>
-                            <a href="{% url 'payment' %}" class="text-[9px] sm:text-[10px] font-black text-red-400 uppercase hover:text-red-300 transition-colors">Восстановить &rarr;</a>
+            <!-- ГЛАВНЫЙ БЕНТО-БЛОК КОНФИГУРАЦИИ -->
+            <div class="motion-fade-up motion-delay-bento glass-panel rounded-[32px] p-6 sm:p-8 shadow-2xl space-y-6 border border-white/[0.08]">
+
+                <!-- КВОТА И СТРОГИЙ ПРОГРЕСС-БАР ЛИМИТА -->
+                <div class="w-full bg-[#16151A] border border-white/[0.06] rounded-[22px] p-3.5 sm:px-4 sm:py-3 transition-colors hover:border-white/10">
+                    <div class="flex items-center justify-between gap-3 text-xs mb-2.5">
+                        
+                        <!-- Левая часть: статус квоты -->
+                        <div class="flex items-center gap-2 min-w-0">
+                            <span class="w-2 h-2 rounded-full {% if not can_generate or total_available == 0 %}bg-rose-500{% else %}bg-indigo-500{% endif %} flex-shrink-0"></span>
+                            <span class="text-gray-300 font-medium text-xs truncate">
+                                {% if not can_generate or total_available == 0 %}
+                                    Квота исчерпана
+                                {% else %}
+                                    {{ banner_text|default:"Доступный лимит генераций" }}
+                                {% endif %}
+                            </span>
                         </div>
-                    {% elif banner_text %}
-                        <div class="bg-green-500/10 px-4 sm:px-6 py-2 flex items-center justify-between border-b border-white/5">
-                            <div class="flex items-center gap-2">
-                                <i class="fas fa-check-circle text-green-500 text-xs"></i>
-                                <span class="text-white text-[10px] sm:text-[11px] font-black uppercase tracking-wider">{{ banner_text }}</span>
+
+                        <!-- Правая часть: счетчик и экшен -->
+                        <div class="flex items-center gap-3 font-mono-nums flex-shrink-0">
+                            <div class="text-[11px] font-semibold tracking-tight">
+                                <span id="quota-val-cur" class="{% if not can_generate or total_available == 0 %}text-rose-400{% else %}text-white{% endif %}">
+                                    {{ total_available }}
+                                </span>
+                                <span class="text-gray-600">/</span>
+                                <span id="quota-val-max" class="text-gray-500">{% if subscription_level >= 1 %}50{% elif plan_type == 'package' %}10{% else %}3{% endif %}</span>
                             </div>
-                            <a href="{% url 'payment' %}" class="text-[9px] sm:text-[10px] font-black text-green-400 uppercase hover:text-green-300 transition-colors">Купить ещё &rarr;</a>
+
+                            {% if not can_generate or total_available == 0 %}
+                                <a href="{% url 'payment' %}" class="px-2.5 py-1 rounded-full bg-rose-500/15 hover:bg-rose-500 text-rose-300 hover:text-white text-[11px] font-bold font-sans transition-all spring-btn">
+                                    Пополнить &rarr;
+                                </a>
+                            {% else %}
+                                <a href="{% url 'payment' %}" class="px-2.5 py-1 rounded-full bg-white/5 hover:bg-indigo-600 text-gray-300 hover:text-white text-[11px] font-medium font-sans border border-white/5 hover:border-transparent transition-all spring-btn">
+                                    + Докупить
+                                </a>
+                            {% endif %}
                         </div>
-                    {% endif %}
+                    </div>
+
+                    <!-- Сам трек прогресс-бара -->
+                    <div class="w-full h-1.5 bg-[#212026] rounded-full overflow-hidden p-[1px]">
+                        <div id="quota-progress-bar" 
+                            class="h-full rounded-full {% if not can_generate or total_available == 0 %}bg-rose-500{% else %}bg-indigo-600{% endif %}"
+                            style="width: 0%; will-change: width;">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- ТАБЛЕТКА-ПЕРЕКЛЮЧАТЕЛЬ -->
+                <div class="flex items-center justify-between border-b border-white/10 pb-4">
+                    <div class="flex items-center p-1 rounded-2xl bg-[#18171A] border border-white/10">
+                        <button type="button" id="tab-btn-text" onclick="switchSourceTab('text')" class="px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 text-white transition-all spring-btn">
+                            <i class="fas fa-align-left mr-1.5"></i> Текст
+                        </button>
+                        <button type="button" id="tab-btn-file" onclick="switchSourceTab('file')" class="px-4 py-2 rounded-xl text-xs font-semibold text-gray-400 hover:text-white transition-all spring-btn">
+                            <i class="fas fa-file-arrow-up mr-1.5"></i> Документ (PDF/DOCX)
+                        </button>
+                    </div>
+
+                    <!-- СЧЁТЧИК СИМВОЛОВ -->
+                    <div id="char-counter-badge" class="hidden sm:inline-flex items-center text-[11px] font-mono-nums select-none" style="direction: ltr !important;">
+                        <span id="txt-counter-val" class="font-bold text-gray-300 transition-colors">0</span>
+                        <span class="text-gray-600 mx-1">/</span>
+                        <span class="text-gray-500">100 000</span>
+                        <span class="text-[10px] text-gray-600 font-sans ml-1">символов</span>
+                    </div>
                 </div>
 
-                <!-- ПРИМАГНИЧЕННЫЙ ПРЕВЬЮ ФАЙЛА -->
-                <div id="file-preview-container" style="display: none;">
-                    <div class="bg-indigo-200/10 px-4 sm:px-6 py-2 flex items-center justify-between border-b border-white/5 backdrop-blur-xl">
-                        <div class="flex items-center gap-3 overflow-hidden">
-                            <!-- Иконка файла -->
-                            <div class="flex-shrink-0 h-7 w-7 rounded-lg bg-indigo-500/20 flex items-center justify-center">
-                                <i class="fas fa-file-alt text-indigo-400 text-xs"></i>
+                <!-- 1. ВВОД ТЕКСТА -->
+                <div id="source-text-zone" class="space-y-2">
+                    <textarea id="user-text" rows="7" placeholder="Вставьте сюда текст лекции, методички, параграфа или ключевые тезисы..." 
+                              class="w-full bg-[#111119] border border-white/10 rounded-2xl p-4 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 transition-colors resize-none leading-relaxed"></textarea>
+                </div>
+
+                <!-- 2. ДРОПЗОНА ДОКУМЕНТА -->
+                <div id="source-file-zone" class="hidden space-y-4">
+                    {% if subscription_level >= 1 or total_available > 0 or plan_type == 'package' %}
+                        <div id="drop-area" onclick="document.getElementById('hidden-file-input').click()" 
+                             class="border-2 border-dashed border-white/15 hover:border-indigo-500/60 rounded-2xl p-8 sm:p-12 text-center cursor-pointer bg-[#18171A]/50 transition-all group">
+                            <div class="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 group-hover:bg-indigo-600/10 group-hover:border-indigo-500/30 flex items-center justify-center mx-auto mb-3 transition-all">
+                                <i class="fas fa-cloud-arrow-up text-xl text-gray-400 group-hover:text-indigo-400 transition-colors"></i>
                             </div>
-                            
-                            <div class="flex flex-col overflow-hidden leading-tight">
-                                <!-- Название файла с авто-обрезанием (truncate) -->
-                                <span id="preview-file-name" class="text-white text-[10px] sm:text-[11px] font-black uppercase tracking-wider truncate max-w-[140px] sm:max-w-[300px]">
-                                    Название файла...
-                                </span>
-                                <span id="preview-file-size" class="text-gray-400 text-[9px] font-mono uppercase tracking-tighter">
-                                    0 KB
-                                </span>
+                            <p class="text-sm font-semibold text-white mb-1">Нажмите для выбора или перетащите файл</p>
+                            <p class="text-xs text-gray-500 font-mono-nums">PDF, DOCX, TXT до 25 МБ</p>
+                            <input type="file" id="hidden-file-input" accept=".pdf, .doc, .docx, .txt" class="hidden" onchange="handleFileSelect(this.files)">
+                        </div>
+                    {% else %}
+                        <div onclick="openPaywallModal('file')" class="border-2 border-dashed border-white/10 rounded-2xl p-8 text-center cursor-pointer bg-[#18171A]/30 hover:border-indigo-500/30 transition-all group">
+                            <div class="w-10 h-10 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center mx-auto mb-3 text-indigo-400">
+                                <i class="fas fa-lock text-sm"></i>
+                            </div>
+                            <h3 class="text-sm font-bold text-white mb-1">Загрузка документов в тарифе Премиум</h3>
+                            <p class="text-xs text-gray-400 max-w-sm mx-auto mb-4 leading-relaxed">
+                                Анализируйте файлы без необходимости вручную копировать текст.
+                            </p>
+                            <span class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold spring-btn">
+                                Перейти на Премиум &rarr;
+                            </span>
+                        </div>
+                    {% endif %}
+
+                    <!-- Чип прикрепленного файла -->
+                    <div id="file-preview-card" class="hidden items-center justify-between p-3.5 bg-[#18171A] border border-white/10 rounded-2xl">
+                        <div class="flex items-center gap-3 overflow-hidden">
+                            <div class="w-9 h-9 rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center flex-shrink-0 text-indigo-400">
+                                <i class="fas fa-file-lines text-sm"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <p id="preview-filename" class="text-xs font-bold text-white truncate max-w-[200px] sm:max-w-md"></p>
+                                <span id="preview-filesize" class="text-[10px] text-gray-500 font-mono-nums"></span>
                             </div>
                         </div>
-
-                        <!-- Кнопка открепить -->
-                        <button type="button" onclick="removeUploadedFile()" 
-                                class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 hover:bg-red-500/20 text-gray-400 hover:text-red-400 transition-all border border-white/5">
-                            <span class="text-[9px] font-black uppercase tracking-widest">Открепить</span>
-                            <i class="fas fa-times text-[10px]"></i>
+                        <button type="button" onclick="removeSelectedFile()" class="p-2 text-gray-500 hover:text-rose-400 transition-colors" title="Открепить">
+                            <i class="fas fa-xmark text-sm"></i>
                         </button>
                     </div>
                 </div>
 
-                <div class="p-3 sm:p-4" id="block-generate">
+                <!-- НАСТРОЙКИ (BENTO CONTROLS) -->
+                <div class="pt-4 border-t border-white/10 grid grid-cols-1 md:grid-cols-2 gap-6">
                     
-                    <form id="text-form" method="post" onsubmit="event.preventDefault(); submitText();">
-                        {% csrf_token %}
-                        
-                        <div class="relative flex items-end gap-2 bg-white/5 rounded-[1.4rem] sm:rounded-[1.8rem] border border-white/5 p-1.5 sm:p-2 focus-within:border-indigo-500/30 transition-all">
-                            <textarea id="user-text" 
-                                    rows="1" 
-                                    placeholder="Вставьте текст для теста сюда..."
-                                    class="w-full bg-transparent border-none text-white text-sm sm:text-base p-2 sm:p-3 outline-none focus:ring-0 resize-none custom-scrollbar min-h-[44px] sm:min-h-[60px] max-h-48"></textarea>
+                    <!-- 1. СЛОЖНОСТЬ -->
+                    <div class="space-y-2">
+                        <label class="block text-xs font-semibold text-gray-400">Сложность вопросов</label>
+                        <div class="grid grid-cols-3 gap-1.5 p-1 rounded-2xl bg-[#18171A] border border-white/10">
+                            <button type="button" onclick="setDifficulty('easy')" data-diff="easy" class="diff-btn py-2 rounded-xl text-xs font-semibold text-gray-400 hover:text-white transition-all">Лёгкий</button>
+                            <button type="button" onclick="setDifficulty('medium')" data-diff="medium" class="diff-btn py-2 rounded-xl text-xs font-bold bg-indigo-600 text-white transition-all">Средний</button>
+                            <button type="button" onclick="setDifficulty('hard')" data-diff="hard" class="diff-btn py-2 rounded-xl text-xs font-semibold text-gray-400 hover:text-white transition-all">Сложный</button>
+                        </div>
+                    </div>
+
+                    <!-- 2. СЛАЙДЕР КОЛИЧЕСТВА ВОПРОСОВ (PRECISION CONTROLLER) -->
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <label for="question-slider" class="text-xs font-semibold text-gray-400">Количество вопросов</label>
                             
-                            <div class="flex gap-1.5 sm:gap-2 pb-0.5 sm:pb-1 pr-0.5 sm:pr-1">
-                                {% if subscription_level > 1 and subscription_level < 50 or plan_type == 'package' %}
-                                    <button type="button" class="h-9 w-9 sm:h-12 sm:w-12 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-gray-400 transition-all" onclick="document.getElementById('hidden-file-input').click();">
-                                        <i class="fas fa-paperclip text-sm sm:text-lg"></i>
-                                    </button>
-                                {% else %}
-                                    <a id="premium-upload-trigger" class="h-9 w-9 sm:h-12 sm:w-12 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-gray-400 cursor-pointer">
-                                        <i class="fas fa-paperclip text-sm sm:text-lg"></i>
-                                    </a>
-                                {% endif %}
-                                <button type="button" class="h-9 w-9 sm:h-12 sm:w-12 flex items-center justify-center rounded-full bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg transition-all active:scale-90" onclick="submitText()">
-                                    <i class="fas fa-paper-plane text-sm sm:text-lg"></i>
-                                </button>
+                            <!-- Монолитный дисплей значения (не прыгает при изменении) -->
+                            <div class="flex items-center gap-2 px-2.5 py-1 rounded-full bg-[#18171C] border border-white/[0.08] font-mono-nums">
+                                <span id="slider-pro-pill" class="opacity-0 scale-90 -mr-1 transition-all duration-200 text-[10px] font-sans font-bold text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded-full border border-indigo-500/20">
+                                    $
+                                </span>
+                                <span id="slider-count-display" class="text-xs font-bold text-white min-w-[14px] text-center">5</span>
+                                <span class="text-[11px] text-gray-500 font-sans">вопросов</span>
                             </div>
                         </div>
 
-                        <div class="flex justify-between items-center mt-2 sm:mt-4 px-2 sm:px-4">
-                            <div class="flex items-center">
-                                <div class="w-16 sm:w-24 flex-shrink-0 text-[9px] sm:text-[10px] font-black text-indigo-400 uppercase tracking-widest">
-                                    <span id="slider-value">5</span> вопр.
-                                </div>
-                                <input type="range" id="question-slider" class="w-20 sm:w-32 h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-indigo-500 ml-1" 
-                                    min="1" max="{% if subscription_level > 1 or plan_type == 'package' %}15{% else %}7{% endif %}" value="5">
-                            </div>
-                            <div id="char-count" class="text-[8px] sm:text-[10px] font-mono text-gray-500 uppercase">0 / 16384</div>
+                        <!-- Интерактивный трек -->
+                        <div class="relative flex items-center py-1">
+                            <input type="range" id="question-slider" min="1" max="30" value="5" class="custom-slider w-full cursor-pointer">
                         </div>
-                        <!-- ТЕ САМЫЕ КНОПКИ "BOTTOM MEDIUM" -->
-                        <div class="grid grid-cols-2 gap-1 mt-3 px-1 pb-1">
-                            <a class="button-medium !flex !justify-center !m-1 !py-3 !rounded-2xl" href="{% url 'history' %}">
-                                <div>
-                                    <img src="{% static 'img/icon-history.png' %}" alt="">
-                                    <p class="!text-[10px] !uppercase !tracking-widest">История</p>
-                                </div>
-                            </a>
-                            
-                            <a class="button-medium !flex !justify-center !m-1 !py-3 !rounded-2xl" href="{% url 'payment' %}">
-                                <div>
-                                    <i class="fas fa-star text-amber-400 text-xs"></i>
-                                    {% if total_available > 0 %}
-                                        <p class="!text-[10px] !uppercase !tracking-widest">Лимит {{ total_available }}</p>
-                                    {% else %}
-                                        <p class="!text-[10px] !uppercase !tracking-widest">Купить</p>
-                                    {% endif %}
-                                </div>
-                            </a>
+
+                        <!-- Лаконичная шкала значений без цыганщины -->
+                        <div class="flex justify-between items-center text-[10px] text-gray-500 font-mono-nums px-1 select-none">
+                            <span>1</span>
+                            <span class="flex items-center gap-1 text-gray-400">
+                                <span>7</span>
+                                <span class="w-1 h-1 rounded-full bg-indigo-500/60" title="Базовый лимит"></span>
+                            </span>
+                            <span>15</span>
+                            <span>22</span>
+                            <span>30</span>
                         </div>
+                    </div>
+
+                    <!-- 3. ТИПЫ ВОПРОСОВ (КАСТОМНЫЕ ЧЕКБОКСЫ) -->
+                    <div class="space-y-2.5">
+                        <label class="block text-xs font-semibold text-gray-400">Типы заданий</label>
+                        <div class="space-y-2">
+                            <label class="flex items-center justify-between p-3 rounded-2xl bg-[#18171A] border border-white/5 cursor-pointer">
+                                <span class="text-xs font-medium text-gray-200">Один правильный ответ</span>
+                                <input type="checkbox" id="type-single" checked disabled class="apple-checkbox">
+                            </label>
+                            <label class="flex items-center justify-between p-3 rounded-2xl bg-[#18171A] border border-white/5 cursor-pointer hover:border-white/15 transition-colors">
+                                <span class="text-xs font-medium text-gray-200">Несколько правильных ответов</span>
+                                <input type="checkbox" id="type-multiple" class="apple-checkbox">
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 4. ОПЦИИ -->
+                    <div class="space-y-2.5">
+                        <label class="block text-xs font-semibold text-gray-400">Параметры теста</label>
+                        <div class="space-y-2">
+                            <label class="flex items-center justify-between p-3 rounded-2xl bg-[#18171A] border border-white/5 cursor-pointer hover:border-white/15 transition-colors">
+                                <div>
+                                    <span class="text-xs font-medium text-gray-200 block">Перемешивать вопросы</span>
+                                    <span class="text-[10px] text-gray-500">Уникальный порядок для участников</span>
+                                </div>
+                                <input type="checkbox" id="opt-shuffle" class="apple-checkbox">
+                            </label>
+                        </div>
+                    </div>
+
+                </div>
+                
+                <!-- ГЛАВНАЯ КНОПКА ЗАПУСКА ГЕНЕРАЦИИ (PRECISION LAUNCH PILL) -->
+                <div class="pt-5 border-t border-white/[0.08]">
+                    <button type="button" id="btn-generate-main" onclick="startGenerationProcess()" 
+                            class="master-launch-pill group relative w-full h-[54px] sm:h-[56px] rounded-full px-5 sm:px-7 flex items-center justify-center select-none overflow-hidden cursor-pointer transition-all duration-300">
                         
-                        {% if subscription_level > 1 and subscription_level < 50 or plan_type == 'package' %}
-                            <input type="file" id="hidden-file-input" accept=".pdf, .doc, .docx, .txt" style="display: none;" onchange="handleFiles(this.files)">
-                        {% endif %}
-                    </form>
-                </div>
-            </div>
-        </div>
+                        <!-- Внутренний зеркальный хайлайт по верхнему ребру -->
+                        <div class="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none z-20"></div>
 
-        <style>
-            .animate-fadeIn {
-                animation: islandFloatUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-            }
-            @keyframes islandFloatUp {
-                from { transform: translate(-50%, 40px); opacity: 0; }
-                to { transform: translate(-50%, 0); opacity: 1; }
-            }
+                        <!-- МЯГКИЙ ЯНТАРНЫЙ СЛОЙ ПРЕДУПРЕЖДЕНИЯ (ТАЕТ ПЛАВНО, БЕЗ СКАЧКОВ) -->
+                        <div id="btn-trigger-warn-bg" class="absolute inset-0 bg-[#201C16] border border-amber-500/40 rounded-full opacity-0 pointer-events-none transition-opacity duration-500 ease-out z-10 shadow-[inset_0_1px_0_rgba(245,158,11,0.25)]"></div>
 
-            input[type=range]::-webkit-slider-thumb {
-                -webkit-appearance: none;
-                height: 14px;
-                width: 14px;
-                border-radius: 50%;
-                background: #6366f1;
-                cursor: pointer;
-                border: 2px solid #fff;
-                box-shadow: 0 0 10px rgba(99, 102, 241, 0.4);
-            }
-
-            #user-text::-webkit-scrollbar { width: 3px; }
-            #user-text::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
-            
-            textarea, button, a { -webkit-tap-highlight-color: transparent; }
-        </style>
-
-        <script>
-            document.querySelectorAll('.faq-question').forEach(item => {
-                item.addEventListener('click', () => {
-                    const answer = item.nextElementSibling;
-            
-                    if (answer.style.display === "block") {
-                        answer.style.display = "none";
-                    } else {
-                        answer.style.display = "block";
-                    }
-                });
-            });
-        </script>        
-    </div>
-    {% include 'footer-s.html' %}
-
-    <div class="mt-48 opacity-0"> 
-        <p>Dev</p>
-    </div>
-
-    <!-- МОДАЛЬНОЕ ОКНО ЛИМИТОВ -->
-    <div id="limit-exceeded-modal" class="fixed inset-0 z-[10001] hidden items-center justify-center p-4">
-        <div class="absolute inset-0 bg-black/60 backdrop-blur-md" onclick="document.getElementById('limit-exceeded-modal').classList.add('hidden'); document.getElementById('limit-exceeded-modal').classList.remove('flex');"></div>
-        
-        <div class="relative w-full max-w-sm bg-[#121119]/95 border border-white/10 rounded-[2.5rem] p-8 shadow-[0_20px_50px_rgba(0,0,0,0.5)] animate-modalIn">
-            
-            <div class="flex flex-col items-center text-center">
-                <div class="w-20 h-20 bg-amber-500/10 rounded-full flex items-center justify-center mb-6 border border-amber-500/20 shadow-[0_0_30px_rgba(245,158,11,0.1)]">
-                    <i class="fas fa-battery-empty text-3xl text-amber-500"></i>
-                </div>
-                
-                <h3 class="text-2xl font-black text-white uppercase tracking-widest mb-3">Лимит исчерпан</h3>
-                
-                <p id="limit-modal-text" class="text-gray-400 text-sm leading-relaxed mb-10 px-2">
-                    Вы использовали все доступные генерации на тарифе <span class="text-white font-bold">«Стартовый»</span>. 
-                    Перейдите на Премиум, чтобы работать без ограничений.
-                </p>
-
-                <div class="flex flex-col w-full gap-3">
-                    <a href="{% url 'payment' %}" class="button-medium button-accent !flex !justify-center !py-4 !rounded-2xl !m-0 !w-full shadow-lg shadow-indigo-600/20">
-                        <div>
-                            <i class="fas fa-rocket text-white"></i>
-                            <p class="!text-xs !uppercase !tracking-widest !text-white">Снять все ограничения</p>
+                        <!-- 1. ДЕФОЛТНЫЙ СЛОЙ ДЕЙСТВИЯ (ИНДИГО) -->
+                        <div id="btn-content-default" class="flex items-center gap-2.5 z-20 transition-all duration-300 ease-out opacity-100 scale-100">
+                            <span class="w-6 h-6 rounded-full bg-black/25 border border-white/10 flex items-center justify-center flex-shrink-0 transition-colors">
+                                <svg class="w-3.5 h-3.5 text-indigo-200 transition-transform group-hover:rotate-45 duration-300" viewBox="0 0 16 16" fill="currentColor">
+                                    <path d="M8 0L9.4 6.6L16 8L9.4 9.4L8 16L6.6 9.4L0 8L6.6 6.6L8 0Z" />
+                                </svg>
+                            </span>
+                            <span class="text-xs sm:text-sm font-semibold tracking-tight text-white antialiased">
+                                Сгенерировать тест
+                            </span>
                         </div>
-                    </a>
-                    
-                    <button id="close-limit-modal-btn" class="button-medium !flex !justify-center !py-4 !rounded-2xl !m-0 !w-full !bg-white/5 border-none">
-                        <div>
-                            <p class="!text-xs !uppercase !tracking-widest !text-gray-400">Вернуться позже</p>
+
+                        <!-- 2. СЛОЙ ПРЕДУПРЕЖДЕНИЯ (ТЕПЛЫЙ ЯНТАРЬ / AMBER) -->
+                        <div id="btn-content-warn" class="absolute inset-0 flex items-center justify-center gap-2.5 z-20 transition-all duration-300 ease-out opacity-0 scale-95 pointer-events-none">
+                            <span class="w-6 h-6 rounded-full bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 text-xs flex-shrink-0">
+                                <i class="fas fa-triangle-exclamation text-[11px]"></i>
+                            </span>
+                            <span id="btn-warn-text" class="text-xs sm:text-sm font-semibold tracking-tight text-amber-200 antialiased">
+                                Добавьте текст для теста
+                            </span>
+                        </div>
+
+                        <!-- ХОТКЕЙ ⌘ ENTER СПРАВА -->
+                        <div id="btn-trigger-action-box" class="absolute right-4 sm:right-5 top-1/2 -translate-y-1/2 hidden sm:flex items-center gap-1.5 pointer-events-none opacity-80 group-hover:opacity-100 transition-opacity duration-300 z-20">
+                            <kbd class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-black/25 border border-white/10 text-[10px] text-indigo-200 font-mono-nums font-semibold tracking-wider">
+                                <span>⌘</span>Enter
+                            </kbd>
+                            <i class="fas fa-arrow-right text-[10px] text-indigo-300/70 group-hover:translate-x-0.5 transition-transform"></i>
+                        </div>
+
+                        <!-- 3. БАР ИНИЦИАЛИЗАЦИИ ПРИ ЗАПУСКЕ -->
+                        <div id="btn-trigger-progress" class="absolute inset-0 bg-[#3730A3] -translate-x-full transition-transform duration-500 ease-out pointer-events-none flex items-center justify-center z-30">
+                            <div class="flex items-center gap-2 text-xs font-semibold text-white">
+                                <span class="w-1.5 h-1.5 rounded-full bg-indigo-300 animate-ping"></span>
+                                <span>Инициализация нейросети...</span>
+                            </div>
                         </div>
                     </button>
                 </div>
+
             </div>
-        </div>
-    </div>
 
-    <script src="{% static 'js/main.js' %}?v=1.7"></script>
-    <script src="{% static 'js/auto-scroll.js' %}?v=1.2"></script>
-
-    <!-- Модалка Premium -->
-    <div id="premium-upload-modal" class="action-modal">
-        <div class="action-modal__content">
-            <div class="action-modal__header">
-                <div class="action-modal__icon">
-                    <i class="fas fa-gem"></i>
+            <!-- НЕ ДАВНИЕ ТЕСТЫ -->
+            <section class="motion-fade-up motion-delay-recent space-y-3 pt-2">
+                <div class="flex items-center justify-between px-2">
+                    <span class="text-xs font-bold uppercase tracking-wider text-gray-400">Недавние тесты</span>
+                    {% if request.user.is_authenticated %}
+                        <a href="{% url 'history' %}" class="text-xs font-semibold text-indigo-400 hover:text-indigo-300">История &rarr;</a>
+                    {% endif %}
                 </div>
-                <h3>Для загрузки файлов требуется Премиум</h3>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="recent-surveys-container">
+                    {% for survey in recent_surveys|slice:":4" %}
+                    <a href="{% url 'preview_test' survey.survey_id %}" class="glass-panel p-4 rounded-2xl hover:border-white/20 transition-all flex items-center justify-between group spring-btn">
+                        <div class="min-w-0 pr-3 text-left">
+                            <p class="text-xs font-bold text-white truncate group-hover:text-indigo-400 transition-colors">{{ survey.title }}</p>
+                            <span class="text-[10px] text-gray-500 font-mono-nums">{{ survey.created_at|date:"d.m.Y" }}</span>
+                        </div>
+                        <i class="fas fa-arrow-right text-xs text-gray-600 group-hover:text-white transition-colors"></i>
+                    </a>
+                    {% empty %}
+                    <div class="sm:col-span-2 text-center py-6 glass-panel rounded-2xl border border-white/5">
+                        <p class="text-xs text-gray-500">Здесь появятся ваши первые сгенерированные тесты</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </section>
+
+        </main>
+
+        <footer class="mt-16 sm:mt-24">
+            <div class="max-w-3xl mx-auto px-4 sm:px-8">
+                <div class="mt-8 mb-4 pt-8 border-t border-white/5 flex flex-col sm:flex-row justify-between items-center text-xs text-gray-600 text-center">
+                    <p>2024-2026 Летучка AI. Design & Development <a class="text-gray-500 hover:text-indigo-400" rel='nofollow' href="https://dprofile.ru/kozak_developer" target="_blank">by Kozak</a></p>
+                    <div class="mt-2 sm:mt-0">
+                        <a href="/docs/public-offer" class="hover:text-gray-400">Публичная оферта</a>
+                        <span class="mx-2">|</span>
+                        <a href="/docs/privacy-policy" class="hover:text-gray-400">Политика конфиденциальности</a>
+                    </div>
+                </div>
             </div>
-            <div class="action-modal__body">
-                <p>Расширьте свои возможности и начните работать эффективнее. <br><br>До 69% выгоды при оплате за 3 месяца!</p>
+        </footer>
+    </div>
+
+    <!-- МОДАЛКА ПЕЙВОЛЛА -->
+    <div id="paywall-modal" class="fixed inset-0 z-[10000] hidden items-center justify-center p-4">
+        <div class="fixed inset-0 bg-black/80 backdrop-blur-md" onclick="closePaywallModal()"></div>
+        <div class="relative w-full max-w-sm glass-panel rounded-[32px] p-6 sm:p-8 shadow-2xl z-10 text-center spring-modal">
+            <div class="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-crown text-xl"></i>
             </div>
-            <div class="action-modal__footer">
-                <div id="action-modal-cancel" class="button-medium"><div><p>Позже</p></div></div>
-                <div id="action-modal-confirm" class="button-medium button-accent"><div><p>Купить</p></div></div>
+            <h3 class="text-base font-bold text-white mb-2" id="paywall-modal-title">Тариф Премиум</h3>
+            <p class="text-xs text-gray-400 mb-6 leading-relaxed" id="paywall-modal-desc">
+                Создавайте подробные тесты до 30 заданий и загружайте файлы PDF и Word напрямую.
+            </p>
+            <div class="space-y-2">
+                <a href="{% url 'payment' %}" class="w-full block py-3.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold spring-btn">
+                    Оформить Премиум
+                </a>
+                <button type="button" onclick="closePaywallModal()" class="w-full py-2 text-xs font-semibold text-gray-500 hover:text-white transition-colors">
+                    Позже
+                </button>
             </div>
         </div>
     </div>
 
-    <script>
-        function setupActionModal(modalId, triggerId, confirmId, cancelId, confirmUrl) {
-            const modal = document.getElementById(modalId);
-            const triggerButton = document.getElementById(triggerId);
-            const confirmButton = document.getElementById(confirmId);
-            const cancelButton = document.getElementById(cancelId);
-            const islandWrapper = document.getElementById('floating-island-wrapper');
+    <!-- МОДАЛКА ИСЧЕРПАНИЯ ЛИМИТА (429) -->
+    <div id="limit-exceeded-modal" class="fixed inset-0 z-[10001] hidden items-center justify-center p-4">
+        <div class="fixed inset-0 bg-black/80 backdrop-blur-md" onclick="closeLimitModal()"></div>
+        <div class="relative w-full max-w-sm glass-panel rounded-[32px] p-6 sm:p-8 shadow-2xl z-10 text-center spring-modal">
+            <div class="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-battery-empty text-xl"></i>
+            </div>
+            <h3 class="text-base font-bold text-white mb-2">Лимит исчерпан</h3>
+            <p id="limit-modal-text" class="text-xs text-gray-400 mb-6 leading-relaxed">
+                Вы израсходовали лимит генераций. Перейдите на Премиум или приобретите пакет тестов.
+            </p>
+            <div class="space-y-2">
+                <a href="{% url 'payment' %}" class="w-full block py-3.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold spring-btn">
+                    Пополнить баланс
+                </a>
+                <button type="button" onclick="closeLimitModal()" class="w-full py-2 text-xs font-semibold text-gray-500 hover:text-white transition-colors">
+                    Понятно
+                </button>
+            </div>
+        </div>
+    </div>
 
-            if (!modal || !triggerButton || !confirmButton || !cancelButton) {
-                console.error('Modal setup failed: elements not found.');
-                return;
+    <!-- СКРИПТ: УСКОРЯЮЩИЙСЯ ПРОГРЕСС-БАР -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const bar = document.getElementById('quota-progress-bar');
+            if (!bar) return;
+
+            const curEl = document.getElementById('quota-val-cur');
+            const maxEl = document.getElementById('quota-val-max');
+
+            const cur = parseFloat(curEl?.innerText.trim() || '0');
+            const max = parseFloat(maxEl?.innerText.trim() || '1');
+
+            let targetPercent = 0;
+
+            if (cur <= 0) {
+                targetPercent = 100;
+            } else if (!isNaN(cur) && !isNaN(max) && max > 0) {
+                targetPercent = Math.min(Math.max((cur / max) * 100, 6), 100);
             }
 
-            const showModal = () => {
-                modal.classList.add('is-visible');
-                modal.classList.remove('hidden');
-                if (islandWrapper) islandWrapper.style.display = 'none';
-            };
+            bar.style.width = '0%';
+            bar.style.transition = 'none';
 
-            const hideModal = () => {
-                modal.classList.remove('is-visible');
-                modal.classList.add('hidden');
-                if (islandWrapper) islandWrapper.style.display = 'block';
-            };
-
-            triggerButton.addEventListener('click', (e) => {
-                e.preventDefault();
-                showModal();
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    bar.style.transition = 'width 0.85s cubic-bezier(0.75, 0, 0.2, 1)';
+                    bar.style.width = targetPercent + '%';
+                });
             });
+        });
+    </script>
 
-            cancelButton.addEventListener('click', hideModal);
+    <!-- СКРИПТ: АВТОПОДГРУЗКА ИСТОРИИ -->
+    <script>
+        $(document).ready(function() {
+            const $container = $('#recent-surveys-container');
+            if ($container.find('.sm\\:col-span-2').length > 0) {
+                fetch('/api/get-history/')
+                    .then(res => res.json())
+                    .then(res => {
+                        const surveys = res.data;
+                        if (surveys && Object.keys(surveys).length > 0) {
+                            let html = '';
+                            const entries = Object.entries(surveys).slice(0, 4);
+                            entries.forEach(([id, item]) => {
+                                html += `
+                                    <a href="/c/${id}/" class="glass-panel p-4 rounded-2xl hover:border-white/20 transition-all flex items-center justify-between group spring-btn">
+                                        <div class="min-w-0 pr-3">
+                                            <p class="text-xs font-bold text-white truncate group-hover:text-indigo-400 transition-colors">${item.title}</p>
+                                            <span class="text-[10px] text-gray-500 font-mono-nums">${item.create}</span>
+                                        </div>
+                                        <i class="fas fa-arrow-right text-xs text-gray-600 group-hover:text-white transition-colors"></i>
+                                    </a>
+                                `;
+                            });
+                            $container.html(html);
+                        }
+                    })
+                    .catch(() => {});
+            }
+        });
+    </script>
 
-            modal.addEventListener('click', (event) => {
-                if (event.target === modal) {
-                    hideModal();
+    <!-- СИСТЕМНЫЙ JS (ОСТРОВОК, ФОРМА, СЛАЙДЕР) -->
+    <!-- СИСТЕМНЫЙ JS (ОСТРОВОК, ФОРМА, СЛАЙДЕР, GATEWAY FLOW, ГЕНЕРАЦИЯ) -->
+    <script>
+        const isUserPremium = {{ subscription_level|default:0 }} >= 1 || {{ total_available|default:0 }} > 0;
+        let activeSourceTab = 'text';
+        let currentDifficulty = 'medium';
+        let attachedFile = null;
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
                 }
-            });
+            }
+            return cookieValue;
+        }
 
-            confirmButton.addEventListener('click', () => {
-                window.location.href = confirmUrl;
+        /* ==========================================================================
+           1. APPLE DYNAMIC ISLAND ENGINE (ШИНА УВЕДОМЛЕНИЙ)
+           ========================================================================== */
+        const Island = (() => {
+            const $island = $('#dynamic-island');
+            const $controls = $('#island-controls');
+            const $notice = $('#island-notice');
+            const $text = $('#island-text');
+            const $icon = $('#island-icon');
+            const $iconBox = $('#island-icon-box');
+
+            let timer = null;
+
+            const THEMES = {
+                success: { themeClass: 'theme-success', icon: 'fa-check', iconBg: 'bg-emerald-500 text-black font-bold' },
+                error: { themeClass: 'theme-error', icon: 'fa-xmark', iconBg: 'bg-rose-500 text-white font-bold' },
+                warning: { themeClass: 'theme-warning', icon: 'fa-triangle-exclamation', iconBg: 'bg-amber-500 text-black font-bold' },
+                info: { themeClass: 'theme-info', icon: 'fa-info', iconBg: 'bg-indigo-600 text-white' }
+            };
+
+            function notify(message, type = 'info', customIcon = null, duration = 2600) {
+                if (timer) clearTimeout(timer);
+
+                const config = THEMES[type] || THEMES.info;
+                const chosenIcon = customIcon || config.icon;
+
+                $island.removeClass('theme-success theme-error theme-warning theme-info');
+                $controls.addClass('opacity-0 scale-90 blur-sm pointer-events-none');
+
+                setTimeout(() => {
+                    $controls.addClass('hidden').removeClass('flex');
+
+                    $text.text(message);
+                    $icon.attr('class', `fas ${chosenIcon}`);
+                    $iconBox.attr('class', `w-6 h-6 rounded-full flex items-center justify-center text-[11px] flex-shrink-0 ${config.iconBg}`);
+
+                    $island.removeClass('mode-header').addClass(`mode-notify ${config.themeClass}`);
+
+                    $notice.removeClass('hidden').addClass('flex');
+                    setTimeout(() => {
+                        $notice.removeClass('opacity-0 scale-75').addClass('opacity-100 scale-100');
+                    }, 20);
+                }, 140);
+
+                timer = setTimeout(() => {
+                    dismiss();
+                }, duration);
+            }
+
+            function dismiss() {
+                $notice.removeClass('opacity-100 scale-100').addClass('opacity-0 scale-75');
+
+                setTimeout(() => {
+                    $notice.addClass('hidden').removeClass('flex');
+
+                    $island
+                        .removeClass('mode-notify theme-success theme-error theme-warning theme-info')
+                        .addClass('mode-header');
+
+                    $controls.removeClass('hidden').addClass('flex');
+                    setTimeout(() => {
+                        $controls.removeClass('opacity-0 scale-90 blur-sm pointer-events-none').addClass('opacity-100 scale-100');
+                    }, 20);
+
+                    timer = null;
+                }, 160);
+            }
+
+            return {
+                notify,
+                dismiss,
+                success: (msg, icon, dur) => notify(msg, 'success', icon, dur),
+                error: (msg, icon, dur) => notify(msg, 'error', icon, dur),
+                warn: (msg, icon, dur) => notify(msg, 'warning', icon, dur),
+                info: (msg, icon, dur) => notify(msg, 'info', icon, dur)
+            };
+        })();
+
+        /* ==========================================================================
+           2. ИНТЕРФЕЙСНЫЕ ПЕРЕКЛЮЧАТЕЛИ (ВКЛАДКИ, СЛОЖНОСТЬ, СЧЁТЧИК)
+           ========================================================================== */
+        function switchSourceTab(tab) {
+            activeSourceTab = tab;
+            if (tab === 'text') {
+                $('#tab-btn-text').addClass('bg-indigo-600 text-white').removeClass('text-gray-400');
+                $('#tab-btn-file').removeClass('bg-indigo-600 text-white').addClass('text-gray-400');
+                $('#source-text-zone').removeClass('hidden');
+                $('#source-file-zone').addClass('hidden');
+                $('#char-counter-badge').removeClass('hidden');
+            } else {
+                $('#tab-btn-file').addClass('bg-indigo-600 text-white').removeClass('text-gray-400');
+                $('#tab-btn-text').removeClass('bg-indigo-600 text-white').addClass('text-gray-400');
+                $('#source-file-zone').removeClass('hidden');
+                $('#source-text-zone').addClass('hidden');
+                $('#char-counter-badge').addClass('hidden');
+            }
+        }
+
+        function setDifficulty(diff) {
+            currentDifficulty = diff;
+            $('.diff-btn').removeClass('bg-indigo-600 text-white font-bold').addClass('text-gray-400 font-semibold');
+            $(`[data-diff="${diff}"]`).addClass('bg-indigo-600 text-white font-bold').removeClass('text-gray-400');
+        }
+
+        // Счётчик символов (L-to-R порядок)
+        $('#user-text').off('input.counter').on('input.counter', function() {
+            const len = this.value.length;
+            const $val = $('#txt-counter-val');
+            const $badge = $('#char-counter-badge');
+
+            $val.text(len.toLocaleString('ru-RU'));
+
+            if (len > 100000) {
+                $val.addClass('text-rose-400').removeClass('text-gray-300');
+                $badge.addClass('text-rose-400');
+            } else {
+                $val.removeClass('text-rose-400').addClass('text-gray-300');
+                $badge.removeClass('text-rose-400');
+            }
+        });
+        $('#user-text').trigger('input.counter');
+
+        /* ==========================================================================
+           3. ПРЕЦИЗИОННЫЙ СЛАЙДЕР
+           ========================================================================== */
+        const $slider = $('#question-slider');
+        const $sliderDisplay = $('#slider-count-display');
+        const $proPill = $('#slider-pro-pill');
+
+        function updateSliderFill(val) {
+            const min = parseFloat($slider.attr('min')) || 1;
+            const max = parseFloat($slider.attr('max')) || 30;
+            const percentage = ((val - min) / (max - min)) * 100;
+            $slider.css('background', `linear-gradient(to right, #4F46E5 0%, #4F46E5 ${percentage}%, #212026 ${percentage}%, #212026 100%)`);
+        }
+
+        $slider.on('input', function() {
+            const val = parseInt(this.value, 10);
+            $sliderDisplay.text(val);
+            updateSliderFill(val);
+
+            if (val > 7) {
+                $proPill.removeClass('opacity-0 scale-90 -mr-1').addClass('opacity-100 scale-100 mr-0');
+            } else {
+                $proPill.addClass('opacity-0 scale-90 -mr-1').removeClass('opacity-100 scale-100 mr-0');
+            }
+        });
+
+        $slider.on('change', function() {
+            const val = parseInt(this.value, 10);
+            if (!isUserPremium && val > 7) {
+                Island.warn('Тесты от 8 вопросов доступны в Премиум');
+                openPaywallModal('slider');
+                this.value = 7;
+                $sliderDisplay.text(7);
+                $proPill.addClass('opacity-0 scale-90 -mr-1').removeClass('opacity-100 scale-100 mr-0');
+                updateSliderFill(7);
+            }
+        });
+        updateSliderFill($slider.val());
+
+        /* ==========================================================================
+           4. МОДАЛКИ И ФАЙЛЫ
+           ========================================================================== */
+        function openPaywallModal(triggerType) {
+            if (triggerType === 'slider') {
+                $('#paywall-modal-title').text('Тесты до 30 заданий');
+                $('#paywall-modal-desc').text('Глубокие и подробные тесты с расширенным количеством вопросов доступны на тарифе Премиум.');
+            } else {
+                $('#paywall-modal-title').text('Загрузка документов');
+                $('#paywall-modal-desc').text('Анализируйте PDF и Word файлы напрямую без ручного копирования на тарифе Премиум.');
+            }
+            $('#paywall-modal').removeClass('hidden').addClass('flex');
+        }
+        function closePaywallModal() {
+            $('#paywall-modal').addClass('hidden').removeClass('flex');
+        }
+
+        function openLimitModal(msg) {
+            if (msg) $('#limit-modal-text').text(msg);
+            $('#limit-exceeded-modal').removeClass('hidden').addClass('flex');
+        }
+        function closeLimitModal() {
+            $('#limit-exceeded-modal').addClass('hidden').removeClass('flex');
+        }
+
+        function handleFileSelect(files) {
+            const file = files[0];
+            if (!file) return;
+            attachedFile = file;
+
+            $('#preview-filename').text(file.name);
+            $('#preview-filesize').text((file.size / 1024 / 1024).toFixed(2) + ' MB');
+            $('#file-preview-card').removeClass('hidden').addClass('flex');
+            $('#drop-area').addClass('hidden');
+            Island.success('Файл прикреплен', 'fa-file-lines');
+        }
+
+        function removeSelectedFile() {
+            attachedFile = null;
+            $('#hidden-file-input').val('');
+            $('#file-preview-card').addClass('hidden').removeClass('flex');
+            $('#drop-area').removeClass('hidden');
+            Island.info('Файл откреплен');
+        }
+
+        const dropArea = document.getElementById('drop-area');
+        if (dropArea) {
+            ['dragenter', 'dragover'].forEach(name => {
+                dropArea.addEventListener(name, (e) => { e.preventDefault(); dropArea.classList.add('border-indigo-500', 'bg-indigo-600/5'); });
+            });
+            ['dragleave', 'drop'].forEach(name => {
+                dropArea.addEventListener(name, (e) => { e.preventDefault(); dropArea.classList.remove('border-indigo-500', 'bg-indigo-600/5'); });
+            });
+            dropArea.addEventListener('drop', (e) => {
+                const dt = e.dataTransfer;
+                if (dt.files && dt.files.length) handleFileSelect(dt.files);
             });
         }
 
-        setupActionModal(
-            'premium-upload-modal', 
-            'premium-upload-trigger',
-            'action-modal-confirm',
-            'action-modal-cancel',
-            "{% url 'payment' %}"
-        );
-    </script>
+        /* ==========================================================================
+           5. GATEWAY FLOW ANIMATION (БЕЗЬЕ-ПОТОКИ ЧАСТИЦ НА CANVAS)
+           ========================================================================== */
+        const GatewayFlow = (() => {
+            const canvas = document.getElementById('gateway-canvas');
+            if (!canvas) return { start: () => {}, stop: () => {} };
 
-    <script>
-    // Фикс для iOS - предотвращение масштабирования
-    document.addEventListener('DOMContentLoaded', function() {
-        const textarea = document.getElementById('user-text');
-        
-        textarea.addEventListener('focus', function() {
-            document.querySelector('meta[name="viewport"]').content = 
-                'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
-        });
-        
-        textarea.addEventListener('blur', function() {
-            document.querySelector('meta[name="viewport"]').content = 
-                'width=device-width, initial-scale=1.0';
-        });
-        
-        textarea.addEventListener('input', function() {
-            document.getElementById('char-count').textContent = 
-                this.value.length + '/ 16384';
-        });
-        
-    });
-    </script>
-    
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const inspirationCards = document.querySelectorAll('.inspiration-card');
-            const userText = document.getElementById('user-text');
-            const textForm = document.getElementById('text-form');
+            const ctx = canvas.getContext('2d');
+            let animId = null;
+            let width, height;
+            let explosions = [];
+            let paths = [];
+            const numPaths = 72;
 
-            if (userText) {
-                userText.addEventListener('input', function() {
-                    this.style.height = 'auto';
-                    this.style.height = `${this.scrollHeight}px`;
-                });
+            function resize() {
+                const dpr = window.devicePixelRatio || 1;
+                width = window.innerWidth;
+                height = window.innerHeight;
+                canvas.width = width * dpr;
+                canvas.height = height * dpr;
+                ctx.scale(dpr, dpr);
             }
 
-            inspirationCards.forEach(card => {
-                card.addEventListener('click', () => {
-                    const inspirationText = card.dataset.inspirationText;
-                    
-                    userText.value = inspirationText;
-                    
-                    userText.dispatchEvent(new Event('input', { bubbles: true }));
-                    
-                    setTimeout(() => {
-                        userText.focus();
-                    }, 500);
+            function initPaths() {
+                paths = [];
+                for (let i = 0; i < numPaths; i++) {
+                    paths.push({
+                        isLeft: i % 2 === 0,
+                        startY: (i / numPaths) * height * 1.3 - height * 0.15,
+                        particles: [{
+                            t: Math.random(),
+                            speed: 0.0018 + Math.random() * 0.0022
+                        }]
+                    });
+                }
+            }
+
+            function getBezierPoint(t, p0, p1, p2, p3) {
+                const u = 1 - t;
+                return {
+                    x: u**3 * p0.x + 3 * u**2 * t * p1.x + 3 * u * t**2 * p2.x + t**3 * p3.x,
+                    y: u**3 * p0.y + 3 * u**2 * t * p1.y + 3 * u * t**2 * p2.y + t**3 * p3.y
+                };
+            }
+
+            function render() {
+                ctx.clearRect(0, 0, width, height);
+                const centerX = width / 2;
+                const centerY = height / 2;
+
+                explosions.forEach(exp => {
+                    exp.radius += 14;
+                    exp.life -= 0.02;
                 });
-            });
-        });
-    </script>
-    <script>
-        window.addEventListener('pageshow', function(event) {
-            if (event.persisted) {
-                console.log('Page was loaded from bfcache. Forcing reload...');
-                window.location.reload();
+                explosions = explosions.filter(exp => exp.life > 0);
+
+                paths.forEach(path => {
+                    const p0 = { x: path.isLeft ? 0 : width, y: path.startY };
+                    const p1 = { x: path.isLeft ? centerX * 0.45 : width - centerX * 0.45, y: path.startY };
+                    const p2 = { x: path.isLeft ? centerX * 0.8 : width - centerX * 0.8, y: centerY };
+                    const p3 = { x: centerX, y: centerY };
+
+                    ctx.beginPath();
+                    ctx.moveTo(p0.x, p0.y);
+                    ctx.bezierCurveTo(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
+                    ctx.lineWidth = 1;
+                    ctx.setLineDash([1, 5]);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+
+                    path.particles.forEach(p => {
+                        p.t += p.speed;
+                        if (p.t > 1) {
+                            p.t = 0;
+                            path.startY += (Math.random() - 0.5) * 12;
+                        }
+
+                        let pos = getBezierPoint(p.t, p0, p1, p2, p3);
+
+                        explosions.forEach(exp => {
+                            let dx = pos.x - exp.x;
+                            let dy = pos.y - exp.y;
+                            let dist = Math.hypot(dx, dy);
+                            if (dist < exp.radius + 100 && dist > exp.radius - 100) {
+                                let force = (1 - Math.abs(dist - exp.radius) / 100) * exp.life;
+                                pos.x += (dx / dist) * force * 60;
+                                pos.y += (dy / dist) * force * 60;
+                            }
+                        });
+
+                        const alpha = 0.2 + p.t * 0.8;
+                        ctx.fillStyle = `rgba(165, 180, 252, ${alpha})`;
+                        ctx.fillRect(pos.x - 1, pos.y - 1, 2.5, 2.5);
+                    });
+                });
+
+                animId = requestAnimationFrame(render);
+            }
+
+            function onCanvasClick(e) {
+                explosions.push({ x: e.clientX, y: e.clientY, radius: 0, life: 1 });
+            }
+
+            function start() {
+                resize();
+                initPaths();
+                window.addEventListener('resize', resize);
+                canvas.addEventListener('click', onCanvasClick);
+                if (!animId) render();
+            }
+
+            function stop() {
+                if (animId) cancelAnimationFrame(animId);
+                animId = null;
+                window.removeEventListener('resize', resize);
+                canvas.removeEventListener('click', onCanvasClick);
+            }
+
+            return { start, stop };
+        })();
+
+        /* ==========================================================================
+           6. SMART ASYMPTOTIC PROGRESS (УПРАВЛЕНИЕ ЛОАДЕРОМ)
+           ========================================================================== */
+        const SmartLoader = (() => {
+            const $overlay = $('#overlay');
+            const $fill = $('#loader-progress-fill');
+            const $percent = $('#loader-percent');
+            const $step = $('#loader-step-text');
+            const $meta = $('#loader-meta-text');
+            const $sub = $('#loader-status-sub');
+
+            let progress = 5;
+            let progressTimer = null;
+
+            const PHASES = [
+                { at: 10, title: "Вчитываемся в материал...", sub: "Извлечение ключевых тезисов" },
+                { at: 35, title: "Формируем суть вопросов...", sub: "Отсекаем воду" },
+                { at: 60, title: "Генерируем варианты ответов...", sub: "Подбор правдоподобных дистракторов" },
+                { at: 80, title: "Проверяем логику и калибруем сложность...", sub: "Контроль качества" },
+                { at: 92, title: "Финальная упаковка теста...", sub: "Почти у цели" }
+            ];
+
+            function start(questionCount, difficultyLabel) {
+                progress = 5;
+                updateView(progress);
+
+                $meta.text(`Синтез: ${questionCount} вопросов • ${difficultyLabel}`);
+                $step.text(PHASES[0].title);
+                $sub.text(PHASES[0].sub);
+
+                $overlay.removeClass('hidden').addClass('flex');
+                GatewayFlow.start();
+
+                progressTimer = setInterval(() => {
+                    if (progress < 30) {
+                        progress += Math.random() * 3.5 + 1.5;
+                    } else if (progress < 65) {
+                        progress += Math.random() * 2 + 0.8;
+                    } else if (progress < 85) {
+                        progress += Math.random() * 1.2 + 0.3;
+                    } else if (progress < 94) {
+                        progress += Math.random() * 0.3 + 0.08;
+                    }
+
+                    if (progress > 95) progress = 95;
+
+                    updateView(Math.floor(progress));
+                    checkPhase(progress);
+                }, 170);
+            }
+
+            function checkPhase(current) {
+                for (let i = PHASES.length - 1; i >= 0; i--) {
+                    if (current >= PHASES[i].at) {
+                        if ($step.text() !== PHASES[i].title) {
+                            $step.css('opacity', 0);
+                            setTimeout(() => {
+                                $step.text(PHASES[i].title).css('opacity', 1);
+                                $sub.text(PHASES[i].sub);
+                            }, 140);
+                        }
+                        break;
+                    }
+                }
+            }
+
+            function updateView(val) {
+                $fill.css('width', `${val}%`);
+                $percent.text(`${val}%`);
+            }
+
+            function complete() {
+                clearInterval(progressTimer);
+                updateView(100);
+                $step.text("Тест готов!");
+                $sub.text("Открываем студию...");
+                $fill.removeClass('bg-indigo-500').addClass('bg-emerald-500');
+            }
+
+            function stop() {
+                clearInterval(progressTimer);
+                GatewayFlow.stop();
+                $overlay.addClass('hidden').removeClass('flex');
+                $fill.removeClass('bg-emerald-500').addClass('bg-indigo-500');
+            }
+
+            return { start, complete, stop };
+        })();
+
+        /* ==========================================================================
+           7. КИНЕТИКА КНОПКИ ЗАПУСКА (HAPTIC SHAKE & DUAL LAYER)
+           ========================================================================== */
+        const $mainBtn = $('#btn-generate-main');
+        const $warnBg = $('#btn-trigger-warn-bg');
+        const $contentDefault = $('#btn-content-default');
+        const $contentWarn = $('#btn-content-warn');
+        const $warnText = $('#btn-warn-text');
+        const $actionBox = $('#btn-trigger-action-box');
+        const $btnProgress = $('#btn-trigger-progress');
+
+        let buttonWarnTimer = null;
+
+        function triggerButtonError(warningText) {
+            if (buttonWarnTimer) clearTimeout(buttonWarnTimer);
+
+            if (warningText) {
+                $warnText.text(warningText);
+            }
+
+            $mainBtn.removeClass('pill-shake-active');
+            void $mainBtn[0].offsetWidth;
+            $mainBtn.addClass('pill-shake-active');
+
+            $warnBg.removeClass('opacity-0').addClass('opacity-100');
+            $contentDefault.removeClass('opacity-100 scale-100').addClass('opacity-0 scale-95 pointer-events-none');
+            $contentWarn.removeClass('opacity-0 scale-95 pointer-events-none').addClass('opacity-100 scale-100');
+            $actionBox.addClass('opacity-0');
+
+            buttonWarnTimer = setTimeout(() => {
+                $mainBtn.removeClass('pill-shake-active');
+                $warnBg.removeClass('opacity-100').addClass('opacity-0');
+                $contentWarn.removeClass('opacity-100 scale-100').addClass('opacity-0 scale-95 pointer-events-none');
+                $contentDefault.removeClass('opacity-0 scale-95 pointer-events-none').addClass('opacity-100 scale-100');
+                $actionBox.removeClass('opacity-0');
+                buttonWarnTimer = null;
+            }, 1800);
+        }
+
+        function triggerButtonLoading() {
+            $btnProgress.removeClass('-translate-x-full').addClass('translate-x-0');
+        }
+
+        function resetButtonLoading() {
+            $btnProgress.removeClass('translate-x-0').addClass('-translate-x-full');
+        }
+
+        $('#user-text').on('keydown', function(e) {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+                e.preventDefault();
+                startGenerationProcess();
             }
         });
+
+        /* ==========================================================================
+           8. ГЛАВНАЯ ТОЧКА ВХОДА ГЕНЕРАЦИИ (САБМИТ С ОБРАБОТКОЙ ОШИБОК)
+           ========================================================================== */
+        async function startGenerationProcess() {
+            const questionCount = parseInt($('#question-slider').val(), 10) || 5;
+            const csrftoken = getCookie('csrftoken');
+
+            const questionTypes = ['single'];
+            if ($('#type-multiple').is(':checked')) questionTypes.push('multiple');
+            const shuffle = $('#opt-shuffle').is(':checked');
+
+            const diffLabels = {
+                easy: 'Лёгкая сложность',
+                medium: 'Средняя сложность',
+                hard: 'Сложный уровень'
+            };
+            const currentDiffLabel = diffLabels[currentDifficulty] || 'Средняя сложность';
+
+            // ВЕТКА ТЕКСТА
+            if (activeSourceTab === 'text') {
+                const text = $('#user-text').val().trim();
+                
+                if (!text || text.length < 15) {
+                    triggerButtonError('Добавьте текст для теста');
+                    Island.warn('Введите текст не короче 15 символов');
+                    $('#user-text').focus();
+                    return;
+                }
+
+                triggerButtonLoading();
+                SmartLoader.start(questionCount, currentDiffLabel);
+
+                try {
+                    const res = await fetch('/api-create-survey/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': csrftoken
+                        },
+                        body: JSON.stringify({
+                            text: text,
+                            questions: String(questionCount),
+                            difficulty: currentDifficulty,
+                            question_types: questionTypes,
+                            shuffle_questions: shuffle
+                        })
+                    });
+
+                    const data = await res.json();
+
+                    if (res.status === 429) {
+                        resetButtonLoading();
+                        SmartLoader.stop();
+                        openLimitModal(data.error);
+                        return;
+                    }
+
+                    if (res.ok && data.survey_id) {
+                        SmartLoader.complete();
+                        setTimeout(() => {
+                            window.location.href = `/c/${data.survey_id}/`;
+                        }, 450);
+                    } else {
+                        resetButtonLoading();
+                        SmartLoader.stop();
+                        Island.error(data.error || 'Ошибка генерации');
+                    }
+                } catch (err) {
+                    resetButtonLoading();
+                    SmartLoader.stop();
+                    Island.error('Сбой отправки');
+                }
+
+            // ВЕТКА ФАЙЛА
+            } else {
+                if (!attachedFile) {
+                    triggerButtonError('Прикрепите документ');
+                    Island.warn('Выберите файл PDF или Word');
+                    return;
+                }
+
+                triggerButtonLoading();
+                SmartLoader.start(questionCount, currentDiffLabel);
+
+                const formData = new FormData();
+                formData.append('file', attachedFile);
+                formData.append('question_count', questionCount);
+                formData.append('difficulty', currentDifficulty);
+                formData.append('question_types', JSON.stringify(questionTypes));
+                formData.append('shuffle_questions', shuffle);
+
+                try {
+                    const res = await fetch('/upload/', {
+                        method: 'POST',
+                        headers: { 'X-CSRFToken': csrftoken },
+                        body: formData
+                    });
+
+                    const data = await res.json();
+
+                    if (res.status === 429) {
+                        resetButtonLoading();
+                        SmartLoader.stop();
+                        openLimitModal(data.error);
+                        return;
+                    }
+
+                    if (res.ok && (data.survey_id || data.success)) {
+                        const sId = data.survey_id;
+                        SmartLoader.complete();
+                        setTimeout(() => {
+                            window.location.href = `/c/${sId}/`;
+                        }, 450);
+                    } else {
+                        resetButtonLoading();
+                        SmartLoader.stop();
+                        Island.error(data.error || 'Ошибка обработки файла');
+                    }
+                } catch (err) {
+                    resetButtonLoading();
+                    SmartLoader.stop();
+                    Island.error('Сбой загрузки файла');
+                }
+            }
+        }
     </script>
 </body>
 </html>

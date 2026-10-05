@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ru" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Управление рассылкой | Летучка</title>
+    {% load static %}
+    <link rel="icon" href="{% static 'img/logo.png' %}" type="image/png">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=Wix+Madefor+Display:wght@700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        body {
+            background-color: #111119;
+            font-family: 'Golos Text', sans-serif;
+            color: #F3F4F6;
+        }
+        h1, h2, .font-display {
+            font-family: 'Wix Madefor Display', sans-serif;
+        }
+        .spring-btn {
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.15s;
+        }
+        .spring-btn:hover { transform: translateY(-1px); }
+        .spring-btn:active { transform: scale(0.98) translateY(1px); }
+    </style>
+</head>
+<body class="min-h-full flex items-center justify-center p-4">
+
+    <main class="max-w-md w-full bg-[#212024] border border-white/10 rounded-[32px] p-8 text-center shadow-2xl relative overflow-hidden">
+        
+        <!-- Верхний логотип -->
+        <a href="/" class="inline-block mb-6 transition-opacity hover:opacity-80">
+            <img src="{% static 'img/logo.png' %}" alt="Летучка" class="w-8 h-auto mx-auto">
+        </a>
+
+        {% if status == 'unsubscribed' %}
+            <!-- УСПЕШНАЯ ОТПИСКА -->
+            <div class="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-4 text-gray-400">
+                <i class="fas fa-bell-slash text-xl"></i>
+            </div>
+            
+            <h1 class="text-xl font-bold text-white mb-2">Вы отписались от рассылки</h1>
+            <p class="text-xs text-gray-400 leading-relaxed mb-6">
+                Мы больше не будем присылать вам уведомления об обновлениях продукта на почту <span class="text-gray-200 font-semibold">{{ user.email }}</span>.
+            </p>
+
+            <div class="space-y-3">
+                <a href="/" class="w-full block py-3.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold spring-btn shadow-lg shadow-indigo-600/30">
+                    На главную Летучки
+                </a>
+
+                <!-- Кнопка вернуть назад (если кликнул случайно) -->
+                <form method="post" action="{% url 'unsubscribe' signed_user_id %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="resubscribe">
+                    <button type="submit" class="w-full py-2.5 text-xs text-gray-500 hover:text-gray-300 transition-colors">
+                        Нажали случайно? Подписаться обратно
+                    </button>
+                </form>
+            </div>
+
+        {% elif status == 'resubscribed' %}
+            <!-- ПОВТОРНАЯ ПОДПИСКА -->
+            <div class="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto mb-4 text-emerald-400">
+                <i class="fas fa-check text-xl"></i>
+            </div>
+
+            <h1 class="text-xl font-bold text-white mb-2">Подписка восстановлена!</h1>
+            <p class="text-xs text-gray-400 leading-relaxed mb-6">
+                Рады, что вы с нами. Вы снова будете первыми узнавать о новых релизах и фичах нейросети.
+            </p>
+
+            <a href="/" class="w-full block py-3.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold spring-btn">
+                Перейти в конструктор тестов
+            </a>
+
+        {% else %}
+            <!-- ОШИБКА ТОКЕНА -->
+            <div class="w-14 h-14 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center mx-auto mb-4 text-rose-500">
+                <i class="fas fa-triangle-exclamation text-xl"></i>
+            </div>
+
+            <h1 class="text-xl font-bold text-white mb-2">Недействительная ссылка</h1>
+            <p class="text-xs text-gray-400 leading-relaxed mb-6">
+                {{ message|default:"Ссылка повреждена или устарела. Возможно, вы уже отписались ранее." }}
+            </p>
+
+            <a href="/" class="w-full block py-3.5 px-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white text-xs font-semibold spring-btn">
+                Вернуться на сайт
+            </a>
+        {% endif %}
+
+    </main>
+
+</body>
+</html>

@@ -1,12 +1,26 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" class="h-full">
 <head>
     {% include 'components/meta_tags.html' %}
     <meta name="description" content="Профиль пользователя {{ user.username }}">
-    <meta name="keywords" content="профиль, пользователь, {{ user.username }}">
+    <meta name="csrf-token" content="{{ csrf_token }}">
     {% load static %}
-    {% include 'components/linker.html' %}
+    <link rel="icon" href="{% static 'img/logo.png' %}" type="image/png">
+
+    {% if debug %}
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    {% else %}
+        <script src="{% static 'vendor/tailwind.full.min.js' %}"></script>
+        <script src="{% static 'vendor/jquery.min.js' %}"></script>
+    {% endif %}
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=Golos:wght@400;500;600;700&family=Wix+Madefor+Display:wght@600;700;800&display=swap" rel="stylesheet">
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- Yandex.Metrika counter -->
@@ -17,674 +31,560 @@
             for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
             k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
             (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
-        
-            ym(98823704, "init", {
-                clickmap:true,
-                trackLinks:true,
-                accurateTrackBounce:true,
-                webvisor:true
-            });
+            ym(98823704, "init", { clickmap:true, trackLinks:true, accurateTrackBounce:true, webvisor:true });
         }, 1000);
     </script>
     <noscript><div><img src="https://mc.yandex.ru/watch/98823704" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
-    <!-- /Yandex.Metrika counter -->
-     
+
+    <style>
+        :root {
+            --bg-main: #111119;
+            --card-bg: #212024;
+            --card-border: rgba(255, 255, 255, 0.07);
+            --card-border-hover: rgba(255, 255, 255, 0.15);
+            --accent-indigo: #4F46E5;
+            --accent-emerald: #10B981;
+            --accent-rose: #EF4444;
+            --spring-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+            --spring-smooth: cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        body {
+            background-color: var(--bg-main);
+            font-family: 'Golos Text', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: #F3F4F6;
+            letter-spacing: -0.01em;
+        }
+
+        h1, h2, h3, h4, .font-display {
+            font-family: 'Wix Madefor Display', sans-serif;
+            letter-spacing: -0.02em;
+        }
+
+        .font-mono-nums { 
+            font-family: 'Golos', monospace; 
+        }
+
+        .glass-panel {
+            background: rgba(33, 32, 36, 0.5);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid var(--card-border);
+        }
+
+        /* DYNAMIC ISLAND CAPSULE */
+        .island-capsule {
+            background: rgba(24, 23, 26, 0.92);
+            backdrop-filter: blur(28px);
+            -webkit-backdrop-filter: blur(28px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.8);
+            border-radius: 9999px;
+            transition: max-width 0.45s var(--spring-bounce), padding 0.35s var(--spring-smooth), transform 0.4s var(--spring-bounce);
+            will-change: max-width, transform;
+        }
+        .island-capsule.mode-header { max-width: 52rem; width: 100%; padding: 0.5rem 1.25rem; }
+        .island-capsule.mode-notify { max-width: 24rem; width: auto; padding: 0.5rem 1.25rem; transform: scale(1.02); background: rgba(18, 17, 20, 0.98); }
+
+        .island-capsule.theme-success { border-color: rgba(16, 185, 129, 0.45); }
+        .island-capsule.theme-error { border-color: rgba(239, 68, 68, 0.45); }
+        .island-capsule.theme-info { border-color: rgba(79, 70, 229, 0.45); }
+
+        .spring-btn {
+            transition: transform 0.2s var(--spring-bounce), background-color 0.15s, border-color 0.15s;
+        }
+        .spring-btn:hover { transform: translateY(-1px); }
+        .spring-btn:active { transform: scale(0.97) translateY(1px); }
+    </style>
 </head>
-<body>
-    <script src="{% static 'js/second-loader.js' %}"></script>
-    {% include 'components/loader.html' %}
+<body class="min-h-full flex flex-col antialiased selection:bg-indigo-600 selection:text-white">
 
-    <div id="page-container" class="fade" style="display: none;">
-        {% include 'header.html' %}
+    <!-- ЛЕВЫЙ ВЕРТИКАЛЬНЫЙ ДОК (DESKTOP) -->
+    <aside class="hidden lg:flex fixed left-5 top-1/2 -translate-y-1/2 flex-col items-center gap-6 py-6 px-3.5 glass-panel rounded-[28px] z-40 shadow-2xl">
+        <a href="/" class="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors" title="Главная">
+            <img src="{% static 'img/logo.png' %}" alt="Logo" class="w-5 h-auto">
+        </a>
+        <div class="w-6 h-px bg-white/10"></div>
+        <nav class="flex flex-col gap-4">
+            <a href="{% url 'create' %}" class="w-11 h-11 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 flex items-center justify-center hover:bg-indigo-600 hover:text-white spring-btn group" title="Создать тест">
+                <i class="fas fa-plus text-sm group-hover:rotate-90 transition-transform duration-300"></i>
+            </a>
+            <a href="{% url 'history' %}" class="w-11 h-11 rounded-2xl bg-white/5 text-white flex items-center justify-center shadow-lg shadow-indigo-600/30 spring-btn" title="История тестов">
+                <i class="fa-sharp fa-solid fa-clock-rotate-left fa-layer-group text-sm"></i>
+            </a>
+            <a href="{% url 'profile_redirect' %}" class="w-11 h-11 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-600/30 spring-btn" title="Профиль">
+                <i class="fas fa-user-astronaut text-sm"></i>
+            </a>
+        </nav>
+        <div class="w-6 h-px bg-white/10 mt-auto"></div>
+        <button onclick="openLogoutModal()" class="w-11 h-11 rounded-2xl text-gray-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors flex items-center justify-center" title="Выйти">
+            <i class="fas fa-arrow-right-from-bracket text-sm"></i>
+        </button>
+    </aside>
 
-        <main class="profile-main">
-            <div class="profile-header">
-                <h1>{{ username }}</h1>
-                <p>Ваш личный кабинет и статистика</p>
-            </div>
+    <!-- МОБИЛЬНЫЙ DOCK -->
+    <nav class="lg:hidden fixed bottom-4 left-1/2 -translate-x-1/2 island-capsule rounded-full px-6 py-3 flex items-center gap-6 z-40 shadow-2xl">
+        <a href="/" class="text-gray-400 hover:text-white"><i class="fas fa-home text-base"></i></a>
+        <a href="{% url 'create' %}" class="text-gray-400 hover:text-white"><i class="fas fa-plus text-base"></i></a>
+        <a href="{% url 'history' %}" class="text-gray-400 hover:text-white"><i class="fas fa-layer-group text-base"></i></a>
+        <a href="{% url 'profile_redirect' %}" class="w-9 h-9 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-600/30"><i class="fas fa-user text-sm"></i></a>
+    </nav>
 
-            <div class="profile-stack">
-                <!-- Модуль 1: Подписка (акцент) -->
-                {% if subscription_level == 0 %}
-                    <div class="profile-section">
-                {% elif subscription_level == 1 %}
-                    <div class="profile-section plan-standard">
-                {% else %}
-                    <div class="profile-section plan-premium">
-                {% endif %}
+    <!-- ОСНОВНОЙ КОНТЕНТНЫЙ БЛОК -->
+    <div class="lg:pl-28 flex-grow flex flex-col">
 
-                {% if plan_type == 'package' %}
-                    <div class="profile-section plan-package">
-                {% endif %}
+        <!-- DYNAMIC ISLAND HEADER: UNIX PATH STYLE -->
+        <header class="sticky top-4 z-40 w-full px-4 flex justify-center pointer-events-none">
+            <div id="dynamic-island" class="island-capsule mode-header pointer-events-auto flex items-center justify-between relative overflow-hidden min-h-[44px]">
+                
+                <div id="island-controls" class="w-full flex items-center justify-between gap-4">
+                    <div class="flex items-center gap-3">
+                        <div class="flex items-center gap-2.5 text-xs font-semibold">
+                            <a href="/" class="flex-shrink-0 transition-opacity hover:opacity-80 mr-1">
+                                <img src="{% static 'img/logo.png' %}" alt="Logo" class="w-5 h-auto">
+                            </a>
+                            <span class="text-gray-500 select-none">/</span>
+                            <span class="text-gray-400">Летучка</span>
+                            <span class="text-gray-600 select-none">/</span>
+                            <span class="text-white font-medium">Профиль</span>
+                        </div>
+                    </div>
 
-                <div>
-                    <div class="profile-section__header">
-                        <h3><i class="fas fa-gem"></i> Активный план</h3>
-                        {% if subscription.status == 'active' or tokens.tests_total_limit > 0 %}
-                            <span class="status-badge status-badge--active">Активен</span>
-                        {% else %}
-                            <span class="status-badge status-badge--inactive">Неактивен</span>
+                    <div class="flex items-center gap-2 font-mono-nums text-xs">
+                        <span class="text-gray-400 font-semibold truncate max-w-[140px] sm:max-w-xs">{{ username }}</span>
+                        {% if user.is_superuser %}
+                            <span class="px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-[10px] font-bold uppercase">Root</span>
                         {% endif %}
                     </div>
-                    <div class="profile-section__body">
-                        <div class="plan-details">
-                            <h2 class="plan-title">{{ subscription.plan_name }}</h2>
-                            {% if plan_type == 'package' %}
-                                <p class="plan-expiration">Пакет: {{ extra_credits }} тестов</p>
+                </div>
+
+                <div id="island-notice" class="hidden w-full items-center justify-center gap-3 select-none">
+                    <span id="island-icon-box" class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] flex-shrink-0">
+                        <i id="island-icon" class="fas fa-check"></i>
+                    </span>
+                    <span id="island-text" class="text-xs font-semibold text-white tracking-wide truncate"></span>
+                </div>
+
+            </div>
+        </header>
+
+        <!-- BENTO WORKSPACE -->
+        <main class="max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 flex-grow space-y-6 mt-12">
+            
+            <!-- ВЕРХНИЙ BENTO-РЯД: ТАРИФ И КВОТЫ ИСПОЛЬЗОВАНИЯ -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                
+                <!-- КАРТОЧКА ПЛАНА / БАЛАНСА (col-span-7) -->
+                <section class="lg:col-span-7 glass-panel rounded-[28px] p-6 sm:p-7 relative overflow-hidden flex flex-col justify-between space-y-6">
+                    <div>
+                        <div class="flex items-center justify-between gap-4 mb-4">
+                            <span class="text-xs font-bold uppercase tracking-wider text-gray-400 font-display flex items-center gap-2">
+                                <i class="fas fa-gem text-indigo-400 text-xs"></i> Текущий план
+                            </span>
+                            
+                            {% if subscription_level >= 1 %}
+                                <span class="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono-nums">
+                                    Премиум активен
+                                </span>
+                            {% elif plan_type == 'package' or tokens.tests_total_limit > 0 %}
+                                <span class="px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 font-mono-nums">
+                                    Пакетный доступ
+                                </span>
                             {% else %}
-                                <p class="plan-expiration">Действителен до: {{ subscription.plan_end_date }}</p>
+                                <span class="px-3 py-1 rounded-full text-xs font-semibold bg-white/5 border border-white/10 text-gray-400 font-mono-nums">
+                                    Базовый тариф
+                                </span>
                             {% endif %}
                         </div>
-                        
-                        <div class="plan-highlights-grid">
-                            <div class="plan-highlights-grid">
-                                {% if subscription_level == 0 and plan_type != 'package' %}
-                                    <div class="highlight-card">
-                                        <div class="highlight-card__header">
-                                            <i class="fas fa-battery-quarter highlight-icon-bad"></i>
-                                            <span class="highlight-card__label">Лимит</span>
-                                        </div>
-                                        <p class="highlight-card__value">5 генераций</p>
-                                    </div>
-                                    <div class="highlight-card">
-                                        <div class="highlight-card__header">
-                                            <i class="fas fa-tint highlight-icon-bad"></i>
-                                            <span class="highlight-card__label">Экспорт PDF</span>
-                                        </div>
-                                        <p class="highlight-card__value">С брендингом</p>
-                                    </div>
-                                    
-                                {% elif subscription_level == 2 %}
-                                    <div class="highlight-card">
-                                        <div class="highlight-card__header">
-                                            <i class="fas fa-crown highlight-icon-pro"></i>
-                                            <span class="highlight-card__label">Про-лимит</span>
-                                        </div>
-                                        <p class="highlight-card__value">До 50 тестов/день</p>
-                                    </div>
-                                    <div class="highlight-card">
-                                        <div class="highlight-card__header">
-                                            <i class="fas fa-magic highlight-icon-pro"></i>
-                                            <span class="highlight-card__label">Автоматизация</span>
-                                        </div>
-                                        <p class="highlight-card__value">Из Word и PDF</p>
-                                    </div>
-                                    <div class="highlight-card">
-                                        <div class="highlight-card__header">
-                                            <i class="fas fa-chart-pie highlight-icon-pro"></i>
-                                            <span class="highlight-card__label">Полная аналитика</span>
-                                        </div>
-                                        <p class="highlight-card__value">Активна</p>
-                                    </div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        {% if subscription_level == 0 %}
-                        <div class="plan-upsell-hint">
-                            <p>Перейдите на <a href="{% url 'payment' %}">Премиум</a> для загрузки Word/PDF и лимита в 50 тестов.</p>
-                        </div>
-                        {% endif %}
-                        
-                    </div>
-                    <div class="profile-section__footer">
-                        {% if subscription.days_until_end is not none and subscription.days_until_end < 7 and plan_type != 'package' %}
-                            <a class="button-medium button-accent" href="{% url 'payment' %}"><div><p>Продлить подписку 🔥</p></div></a>
-                        {% elif subscription_level < 1 %}
-                            <a href="{% url 'payment' %}" class="button-medium button-accent"><div><p>Улучшить до Премиум 💎</p></div></a>
-                        {% endif %}
-                    </div>
-                    {% if tests_today_limit == 0 and plan_type != 'package' %}
-                        <div class="upgrade-prompt">
-                            <div class="prompt-icon">
-                                <i class="fas fa-exclamation-circle"></i>
-                            </div>
-                            <div class="prompt-text">
-                                <h4>Лимит исчерпан</h4>
-                                <p>Снимите ограничения и продолжайте работу, улучшив свой план.</p>
-                            </div>
-                            <a href="{% url 'payment' %}" class="button-medium button-accent">
-                                <div><i class="fas fa-arrow-up"></i><p>Апгрейд</p></div>
-                            </a>
-                        </div>
-                    {% elif tests_today_limit == 0 and plan_type == 'package' %}
-                        <div class="upgrade-prompt">
-                            <div class="prompt-icon">
-                                <i class="fas fa-exclamation-circle"></i>
-                            </div>
-                            <div class="prompt-text">
-                                <h4>Пакеты закончились</h4>
-                                <p>Приобретите новые пакеты тестов.</p>
-                            </div>
-                            <a href="{% url 'payment' %}" class="button-medium button-accent">
-                                <div><i class="fas fa-arrow-up"></i><p>Купить пакеты</p></div>
-                            </a>
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
 
-            <!-- Модуль Лимиты -->
-            <div class="profile-section">
-                <div class="profile-section__header">
-                    <h3><i class="fas fa-sliders-h"></i> Использование</h3>
-                </div>
-
-                <div class="profile-section__body">
-                    <div class="usage-item">
-                        <div class="usage-label">
-                            {% if plan_type == 'package' %}
-                                <span>Доступно тестов в пакетах</span>
-                                <span class="usage-value accent-color-text">{{ tokens.tests_total_limit }}</span>
-                            {% else %}
-                                <span>Доступно тестов сегодня</span>
-                                <span class="usage-value accent-color-text">{{ tokens.tests_remaining_count_limit }} / {{ tokens.tests_total_limit }}</span>
-                            {% endif %}
-                        </div>
-                        <div class="progress-bar {{ tokens.progress_bar_class }}">
-                            <div class="progress-bar__fill" style="width: {{ tokens.tests_usage_percentage }}%;"></div>
-                        </div>
-                    </div>
-                    {% if plan_type == 'package' %}
-                    <div class="usage-item" style="margin-top: 10px;">
-                        <div class="usage-label">
-                            <span style="color: #22c55e;">Пакеты не сгорают</span>
-                        </div>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-
-            <!-- Модуль Статистика -->
-            <div class="profile-section">
-                <div class="profile-section__header">
-                    <h3><i class="fas fa-user-chart"></i> Ваша активность</h3>
-                </div>
-                <div class="profile-section__body">
-                    <div class="stats-container">
-                        {% if subscription_level == 0 %}
-                            <div class="stats-blur-overlay">
-                                <div class="stats-upsell">
-                                    <i class="fas fa-lock"></i><h4>Расширенная аналитика</h4>
-                                    <p>Визуальные графики Вашей активности доступны на платных тарифах.</p>
-                                    <a href="{% url 'payment' %}" class="button-medium button-accent"><div><p>Разблокировать 💎</p></div></a>
-                                </div>
-                            </div>
-                        {% endif %}
-                        <div class="charts-grid">
-                            <div class="chart-card">
-                                <h4>Создано тестов</h4>
-                                <p>за 7 дней</p>
-                                <div class="chart-wrapper"><canvas id="personalActivityChart"></canvas></div>
-                            </div>
-                            <div class="chart-card">
-                                <h4>Просмотры тестов</h4>
-                                <p>за 7 дней</p>
-                                <div class="chart-wrapper"><canvas id="personalViewsChart"></canvas></div>
-                            </div>
-                            <div class="chart-card">
-                                <h4>Качество тестов</h4>
-                                <p>По количеству вопросов</p>
-                                <div class="chart-wrapper"><canvas id="qualityChart"></canvas></div>
-                            </div>
-                            <div class="chart-card">
-                                <h4>Типы вопросов</h4>
-                                <p>Анализ по всем вашим тестам</p>
-                                <div class="chart-wrapper"><canvas id="questionTypesChart"></canvas></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Модуль Статистика учеников -->
-            <div class="profile-section">
-                <div class="profile-section__header">
-                    <h3><i class="fas fa-users"></i> Статистика Прохождений</h3>
-                </div>
-                <div class="profile-section__body">
-                    <div class="stats-container">
-                        {% if subscription_level == 0 %}
-                            <div class="stats-blur-overlay">
-                                <div class="stats-upsell">
-                                    <i class="fas fa-lock"></i><h4>Аналитика по ответам</h4>
-                                    <p>Отслеживайте активность и качество прохождений на платных тарифах.</p>
-                                    <a href="{% url 'payment' %}" class="button-medium button-accent"><div><p>Разблокировать 💎</p></div></a>
-                                </div>
-                            </div>
-                        {% endif %}
-                        <div class="charts-grid">
-                            <div class="chart-card">
-                                <h4>Прохождений тестов за 7 дней</h4>
-                                <div class="chart-wrapper"><canvas id="studentActivityChart"></canvas></div>
-                            </div>
-                            <div class="chart-card">
-                                <h4>Распределение результатов</h4>
-                                <div class="chart-wrapper"><canvas id="studentScoresChart"></canvas></div>
-                            </div>
-                            <div class="chart-card">
-                                <h4>Активность по часам</h4>
-                                <p>за 7 дней</p>
-                                <div class="chart-wrapper"><canvas id="hourlyActivityChart"></canvas></div>
-                            </div>
-                            <div class="chart-card">
-                                <h4>Популярные тесты</h4>
-                                <p>по количеству прохождений</p>
-                                <div class="chart-wrapper"><canvas id="surveyEngagementChart"></canvas></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                {% if top_surveys %}
-                    <div class="top-surveys-container">
-                        <h4><i class="fas fa-fire"></i> Самые популярные тесты</h4>
-                        <ul class="top-surveys-list">
-                            {% for survey in top_surveys %}
-                            <li>
-                                <a href="{% url 'preview_test_result' survey.survey_id %}">
-                                    <div class="survey-info">
-                                        <span class="survey-title">{{ survey.title }}</span>
-                                        <span class="survey-meta">Создан: {{ survey.created_at }}</span>
-                                    </div>
-                                    <div class="survey-stats">
-                                        <i class="fas fa-eye"></i>
-                                        <span>{{ survey.view_count }}</span>
-                                    </div>
-                                </a>
-                            </li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                    {% endif %}
-            </div>
-
-            <!-- Модуль История Транзакций -->
-            <div class="profile-section">
-                <div class="profile-section__header">
-                    <h3><i class="fas fa-receipt"></i> История платежей</h3>
-                </div>
-                <div class="profile-section__body">
-                    {% if payments %}
-                        <div class="transaction-log">
-                            {% for payment in payments %}
-                                {% if payment.status == 'completed' %}
-                                    <div class="transaction-log__item --success">
-                                {% elif payment.status == 'failed' %}
-                                    <div class="transaction-log__item --failed">
+                        <div class="space-y-1">
+                            <h2 class="text-xl sm:text-2xl font-black text-white tracking-tight">
+                                {% if plan_type == 'package' %}
+                                    Пакет генераций
                                 {% else %}
-                                    <div class="transaction-log__item --pending">
+                                    {{ subscription.plan_name|default:"Стартовый" }}
                                 {% endif %}
-                                        <div class="transaction-log__status-dot"></div>
-                                        <div class="transaction-log__info">
-                                            <p class="transaction-log__title">Покупка «{{ payment.subscription.get_human_plan }}»</p>
-                                            <p class="transaction-log__subtitle">{{ payment.created_at|date:"d M Y, H:i" }} • Заказ {{ payment.order_id }}</p>
-                                        </div>
-                                        <p class="transaction-log__amount">{{ payment.amount_display }} ₽</p>
-                                    </div>
-                            {% endfor %}
+                            </h2>
+                            <p class="text-xs text-gray-400 font-mono-nums">
+                                {% if plan_type == 'package' %}
+                                    Остаток: {{ extra_credits|default:tokens.tests_total_limit }} тестов (не сгорают)
+                                {% elif subscription.plan_end_date %}
+                                    Действует до: {{ subscription.plan_end_date }}
+                                {% else %}
+                                    Лимит до 7 вопросов на тест
+                                {% endif %}
+                            </p>
                         </div>
-                    {% else %}
-                        <div class="no-data-message-final">
-                            <i class="fas fa-receipt"></i>
-                            <h3>Нет транзакций</h3>
-                            <p>Когда вы совершите покупку, она появится здесь.</p>
+                    </div>
+
+                    <!-- Фичи активного тарифа -->
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-4 border-t border-white/5">
+                        <div class="p-3 rounded-2xl bg-[#18171A] border border-white/5">
+                            <span class="text-[10px] text-gray-500 uppercase font-mono-nums block">Лимит теста</span>
+                            <span class="text-sm font-bold text-white">
+                                {% if subscription_level >= 1 %}до 30 вопр.{% else %}до 7 вопр.{% endif %}
+                            </span>
                         </div>
-                    {% endif %}
-                </div>
+                        <div class="p-3 rounded-2xl bg-[#18171A] border border-white/5">
+                            <span class="text-[10px] text-gray-500 uppercase font-mono-nums block">Импорт файлов</span>
+                            <span class="text-sm font-bold {% if subscription_level >= 1 or plan_type == 'package' %}text-emerald-400{% else %}text-gray-500{% endif %}">
+                                {% if subscription_level >= 1 or plan_type == 'package' %}Word, PDF, TXT{% else %}Заблокирован{% endif %}
+                            </span>
+                        </div>
+                        <div class="p-3 rounded-2xl bg-[#18171A] border border-white/5 col-span-2 sm:col-span-1">
+                            <span class="text-[10px] text-gray-500 uppercase font-mono-nums block">Аналитика ответов</span>
+                            <span class="text-sm font-bold {% if subscription_level >= 1 %}text-emerald-400{% else %}text-gray-500{% endif %}">
+                                {% if subscription_level >= 1 %}Включена{% else %}Базовая{% endif %}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Действие -->
+                    <div class="pt-2 flex flex-wrap items-center gap-3">
+                        {% if subscription_level == 0 %}
+                            <a href="{% url 'payment' %}" class="px-5 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-lg shadow-indigo-600/30 spring-btn">
+                                Перейти на Премиум &rarr;
+                            </a>
+                        {% else %}
+                            <a href="{% url 'payment' %}" class="px-5 py-3 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-white text-xs font-semibold spring-btn">
+                                Управление подпиской
+                            </a>
+                        {% endif %}
+                    </div>
+                </section>
+
+                <!-- КАРТОЧКА КВОТ И ЛИМИТОВ (col-span-5) -->
+                <section class="lg:col-span-5 glass-panel rounded-[28px] p-6 sm:p-7 flex flex-col justify-between space-y-6">
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-wider text-gray-400 font-display flex items-center gap-2 mb-4">
+                            <i class="fas fa-gauge-high text-indigo-400 text-xs"></i> Расход квот
+                        </span>
+
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between font-mono-nums text-xs">
+                                <span class="text-gray-400">
+                                    {% if plan_type == 'package' %}Баланс пакета{% else %}Генерации сегодня{% endif %}
+                                </span>
+                                <span class="font-bold text-white">
+                                    {% if plan_type == 'package' %}
+                                        {{ tokens.tests_total_limit }} тестов
+                                    {% else %}
+                                        {{ tokens.tests_remaining_count_limit }} / {{ tokens.tests_total_limit }}
+                                    {% endif %}
+                                </span>
+                            </div>
+
+                            <!-- Прогресс-бар -->
+                            <div class="w-full bg-[#18171A] rounded-full h-2.5 overflow-hidden border border-white/5 p-0.5">
+                                <div class="bg-indigo-500 h-full rounded-full transition-all duration-500" 
+                                     style="width: {% if plan_type == 'package' %}100{% else %}{{ tokens.tests_usage_percentage|default:0 }}{% endif %}%;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-4 rounded-2xl bg-[#18171A] border border-white/5 space-y-2">
+                        <div class="flex items-center justify-between text-xs font-mono-nums">
+                            <span class="text-gray-500">Сброс счетчика:</span>
+                            <span class="text-gray-300">Каждые 24 часа</span>
+                        </div>
+                        <div class="flex items-center justify-between text-xs font-mono-nums">
+                            <span class="text-gray-500">Скорость генерации:</span>
+                            <span class="text-emerald-400 font-medium">~12 секунд</span>
+                        </div>
+                    </div>
+
+                    <a href="{% url 'payment' %}" class="w-full block py-3 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-center text-xs font-semibold text-gray-300 hover:text-white spring-btn">
+                        Докупить пакет тестов
+                    </a>
+                </section>
+
             </div>
 
-            <!-- Модуль Управление аккаунтом -->
-            <div class="profile-section">
-                <div class="profile-section__header">
-                    <h3><i class="fas fa-user-cog"></i> Аккаунт</h3>
-                </div>
-                <div class="profile-section__body">
-                    <ul class="profile-list">
-                        {% if user.email %}<li><span class="label">E-mail</span><span class="value">{{ user.email }}</span></li>{% endif %}
-                        {% if phone != 'Телефон: Не указан' %}<li><span class="label">Телефон</span><span class="value">{{ user.phone }}</span></li>{% endif %}
-                    </ul>
-                </div>
-                <div class="profile-section__footer action-buttons">
-                    {% if password != '' %}
-                        <form method="post" action="{% url 'password_reset' %}">
-                            {% csrf_token %}
-                            <button type="submit" class="button-medium"><div><p>Сбросить пароль</p></div></button>
-                        </form>
+            <!-- СРЕДНИЙ РЯД: АНАЛИТИКА И АКТИВНОСТЬ (ЧАРТЫ) -->
+            <section class="glass-panel rounded-[28px] p-6 sm:p-7 space-y-6">
+                <div class="flex flex-wrap items-center justify-between gap-4 border-b border-white/5 pb-4">
+                    <div>
+                        <h3 class="text-base font-bold text-white tracking-tight">Аналитика платформы</h3>
+                        <p class="text-xs text-gray-400">Сводная динамика генераций и вовлеченности участников</p>
+                    </div>
+
+                    {% if subscription_level == 0 %}
+                        <span class="px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+                            Демо-режим
+                        </span>
                     {% endif %}
-                    <div class="button-medium button-red" id="logout-button"><div><p>Выйти из аккаунта</p></div></div>
                 </div>
+
+                <!-- 2 ГЛАВНЫХ ГРАФИКА В BENTO СЕТКЕ -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 relative">
+                    {% if subscription_level == 0 %}
+                        <div class="absolute inset-0 bg-[#111119]/80 backdrop-blur-sm z-10 rounded-2xl flex flex-col items-center justify-center p-6 text-center">
+                            <div class="w-12 h-12 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 flex items-center justify-center mb-3">
+                                <i class="fas fa-chart-line text-lg"></i>
+                            </div>
+                            <h4 class="text-sm font-bold text-white mb-1">Детальная статистика доступна в Премиум</h4>
+                            <p class="text-xs text-gray-400 max-w-sm mb-4">
+                                Отслеживайте количество попыток, средние баллы учеников и пиковые часы прохождения.
+                            </p>
+                            <a href="{% url 'payment' %}" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold spring-btn">
+                                Разблокировать графики
+                            </a>
+                        </div>
+                    {% endif %}
+
+                    <!-- График 1: Активность создания и просмотров -->
+                    <div class="p-4 sm:p-5 rounded-2xl bg-[#18171A] border border-white/5 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-gray-300 font-display">Динамика создания тестов (7 дней)</span>
+                            <span class="text-[10px] font-mono-nums text-gray-500">Кол-во</span>
+                        </div>
+                        <div class="h-56 relative w-full">
+                            <canvas id="personalActivityChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- График 2: Результаты прохождений учеников -->
+                    <div class="p-4 sm:p-5 rounded-2xl bg-[#18171A] border border-white/5 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-gray-300 font-display">Распределение оценок участников</span>
+                            <span class="text-[10px] font-mono-nums text-gray-500">Баллы</span>
+                        </div>
+                        <div class="h-56 relative w-full">
+                            <canvas id="studentScoresChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- НИЖНИЙ РЯД: БЕЗОПАСНОСТЬ, ПЛАТЕЖИ И СЛУЖЕБНЫЙ СТЕК -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                
+                <!-- УЧЕТНЫЕ ДАННЫЕ И БЕЗОПАСНОСТЬ (col-span-6) -->
+                <section class="lg:col-span-6 glass-panel rounded-[28px] p-6 space-y-5">
+                    <span class="text-xs font-bold uppercase tracking-wider text-gray-400 font-display block">
+                        Учетная запись
+                    </span>
+
+                    <div class="space-y-3">
+                        <div class="p-3.5 rounded-2xl bg-[#18171A] border border-white/5 flex items-center justify-between">
+                            <div>
+                                <span class="text-[10px] text-gray-500 uppercase font-mono-nums block">Логин</span>
+                                <span class="text-sm font-semibold text-white font-mono-nums">{{ username }}</span>
+                            </div>
+                            <span class="px-2.5 py-1 rounded-lg bg-white/5 text-gray-400 text-xs font-mono-nums">UID: {{ user.id_staff|stringformat:".8s" }}</span>
+                        </div>
+
+                        {% if user.email %}
+                        <div class="p-3.5 rounded-2xl bg-[#18171A] border border-white/5 flex items-center justify-between">
+                            <div>
+                                <span class="text-[10px] text-gray-500 uppercase font-mono-nums block">E-mail</span>
+                                <span class="text-sm font-semibold text-white">{{ user.email }}</span>
+                            </div>
+                            <i class="fas fa-check-circle text-emerald-400 text-xs" title="Подтвержден"></i>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Кнопки безопасности -->
+                    <div class="pt-2 flex flex-wrap items-center gap-3">
+                        <form method="post" action="{% url 'password_reset' %}" class="m-0">
+                            {% csrf_token %}
+                            <button type="submit" class="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-gray-300 hover:text-white spring-btn">
+                                Сбросить пароль
+                            </button>
+                        </form>
+
+                        <button onclick="openLogoutModal()" class="px-4 py-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-xs font-semibold text-rose-400 spring-btn">
+                            Выйти из системы
+                        </button>
+                    </div>
+
+                    <!-- ЗОНА АДМИНИСТРАТОРА (ROOT COCKPIT) -->
                     {% if user.is_superuser %}
-                    <a class="button-medium admin-button" href="{% url 'db_viewer' %}"><div><p>Админ-панель 👑</p></div></a>
-                    <a class="button-medium admin-button" href="{% url 'user_ops_center' %}"><div><p>CRM-машина</p></div></a>
-                {% endif %}
+                    <div class="pt-4 border-t border-white/5 space-y-3">
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-400 font-mono-nums block">
+                            Инженерный терминал
+                        </span>
+                        <div class="grid grid-cols-2 gap-2.5">
+                            <a href="{% url 'stats2975' %}" class="p-3 rounded-xl bg-indigo-600/10 border border-indigo-500/20 text-indigo-300 hover:bg-indigo-600/20 text-xs font-semibold flex items-center gap-2 transition-colors">
+                                <i class="fas fa-shield-halved text-xs"></i>
+                                <span>Панель управления</span>
+                            </a>
+                            <a href="{% url 'user_ops_center' %}" class="p-3 rounded-xl bg-indigo-600/10 border border-indigo-500/20 text-indigo-300 hover:bg-indigo-600/20 text-xs font-semibold flex items-center gap-2 transition-colors">
+                                <i class="fas fa-users-gear text-xs"></i>
+                                <span>Центр операций CRM</span>
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                </section>
+
+                <!-- ИСТОРИЯ ОПЕРАЦИЙ И ПЛАТЕЖЕЙ (col-span-6) -->
+                <section class="lg:col-span-6 glass-panel rounded-[28px] p-6 space-y-4 flex flex-col justify-between">
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-wider text-gray-400 font-display block mb-4">
+                            История транзакций
+                        </span>
+
+                        <div class="space-y-2.5 max-h-72 overflow-y-auto pr-1">
+                            {% for payment in payments %}
+                            <div class="p-3.5 rounded-2xl bg-[#18171A] border border-white/5 flex items-center justify-between gap-3">
+                                <div class="flex items-center gap-3 min-w-0">
+                                    <span class="w-2 h-2 rounded-full flex-shrink-0 
+                                        {% if payment.status == 'completed' %}bg-emerald-500 shadow-[0_0_6px_#10B981]
+                                        {% elif payment.status == 'failed' %}bg-rose-500
+                                        {% else %}bg-amber-500{% endif %}">
+                                    </span>
+                                    <div class="min-w-0">
+                                        <p class="text-xs font-bold text-white truncate">{{ payment.subscription.get_human_plan|default:"Пополнение" }}</p>
+                                        <span class="text-[10px] text-gray-500 font-mono-nums">{{ payment.created_at|date:"d.m.Y, H:i" }}</span>
+                                    </div>
+                                </div>
+                                <span class="text-xs font-bold font-mono-nums text-white flex-shrink-0">
+                                    {{ payment.amount_display }} ₽
+                                </span>
+                            </div>
+                            {% empty %}
+                            <div class="text-center py-10 text-gray-500 space-y-1">
+                                <i class="fas fa-receipt text-lg opacity-40"></i>
+                                <p class="text-xs font-medium">Платежи отсутствуют</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <p class="text-[10px] text-gray-500 font-mono-nums text-center pt-2">
+                        Все чеки отправляются на указанный при оплате email
+                    </p>
+                </section>
+
             </div>
-            </div>
+
         </main>
+
+        <footer class="mt-16 sm:mt-24">
+            <div class="max-w-3xl mx-auto px-4 sm:px-8">
+                <div class="mt-8 mb-4 pt-8 border-t border-white/5 flex flex-col sm:flex-row justify-between items-center text-xs text-gray-600 text-center">
+                    <p>2024-2026 Летучка AI. Design & Development <a class="text-gray-500 hover:text-indigo-400" rel='nofollow' href="https://dprofile.ru/kozak_developer" target="_blank">by Kozak</a></p>
+                    <div class="mt-2 sm:mt-0">
+                        <a href="/docs/public-offer" class="hover:text-gray-400">Публичная оферта</a>
+                        <span class="mx-2">|</span>
+                        <a href="/docs/privacy-policy" class="hover:text-gray-400">Политика конфиденциальности</a>
+                    </div>
+                </div>
+            </div>
+        </footer>
     </div>
 
-    <!-- Модалка logout -->
-    <div id="logout-modal" class="action-modal">
-        <div class="action-modal__content">
-            <div class="action-modal__header">
-                <div class="action-modal__icon">
-                    <i class="fas fa-sign-out-alt"></i>
-                </div>
-                <h3>Выход из аккаунта</h3>
+    <!-- МОДАЛКА LOGOUT (APPLE STYLE) -->
+    <div id="logout-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+        <div class="fixed inset-0 bg-black/80 backdrop-blur-md" onclick="closeLogoutModal()"></div>
+        <div class="relative w-full max-w-xs glass-panel rounded-[28px] p-6 text-center shadow-2xl z-10">
+            <div class="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-500 flex items-center justify-center mx-auto mb-3">
+                <i class="fas fa-arrow-right-from-bracket text-base"></i>
             </div>
-            <div class="action-modal__body">
-                <p>Вы будете перенаправлены на страницу входа. Уверены, что хотите продолжить?</p>
-            </div>
-            <div class="action-modal__footer">
-                <div id="action-modal-cancel" class="button-medium"><div><p>Отмена</p></div></div>
-                <div id="action-modal-confirm" class="button-medium button-red"><div><p>Выйти</p></div></div>
+            <h3 class="text-sm font-bold text-white mb-1.5">Выйти из аккаунта?</h3>
+            <p class="text-xs text-gray-400 mb-5 leading-relaxed">
+                Потребуется повторная авторизация для доступа к вашим тестам.
+            </p>
+            <div class="grid grid-cols-2 gap-2.5">
+                <button onclick="closeLogoutModal()" class="py-2.5 rounded-xl bg-white/5 text-xs font-semibold text-gray-300 hover:bg-white/10">Отмена</button>
+                <a href="{% url 'logout' %}" class="py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-xs font-bold text-white text-center spring-btn">Выйти</a>
             </div>
         </div>
     </div>
 
     <script>
-        function setupActionModal(modalId, triggerId, confirmId, cancelId, confirmUrl) {
-            const modal = document.getElementById(modalId);
-            const triggerButton = document.getElementById(triggerId);
-            const confirmButton = document.getElementById(confirmId);
-            const cancelButton = document.getElementById(cancelId);
-
-            if (!modal || !triggerButton || !confirmButton || !cancelButton) {
-                console.error('Modal setup failed: one or more elements not found.');
-                return;
-            }
-
-            const showModal = () => modal.classList.add('is-visible');
-            const hideModal = () => modal.classList.remove('is-visible');
-
-            triggerButton.addEventListener('click', showModal);
-            cancelButton.addEventListener('click', hideModal);
-
-            modal.addEventListener('click', (event) => {
-                if (event.target === modal) {
-                    hideModal();
-                }
-            });
-
-            confirmButton.addEventListener('click', () => {
-                window.location.href = confirmUrl;
-            });
+        function openLogoutModal() {
+            $('#logout-modal').removeClass('hidden').addClass('flex');
+        }
+        function closeLogoutModal() {
+            $('#logout-modal').addClass('hidden').removeClass('flex');
         }
 
-        setupActionModal(
-            'logout-modal', 
-            'logout-button',
-            'action-modal-confirm',
-            'action-modal-cancel',
-            "{% url 'logout' %}"
-        );
-    </script>
-    
-    <script>
-        const chartInstances = {};
-
-        function destroyChart(chartId) {
-            if (chartInstances[chartId]) {
-                chartInstances[chartId].destroy();
-                delete chartInstances[chartId];
-            }
-        }
-
-        const barChartOptions = {
+        // КОНФИГУРАЦИЯ ДВУХ КЛЮЧЕВЫХ ГРАФИКОВ
+        const chartFont = { family: 'Golos Text', size: 10 };
+        const baseOptions = {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: { 
-                legend: { display: false },
-                tooltip: {
-                    backgroundColor: 'rgba(18, 17, 25, 0.8)',
-                    titleFont: { family: 'Unbounded Medium' },
-                    bodyFont: { family: 'Namu Pro' },
-                    padding: 10,
-                    cornerRadius: 4
-                }
-            },
+            plugins: { legend: { display: false } },
             scales: {
-                y: { 
-                    beginAtZero: true, 
-                    ticks: { color: '#8e8d93', precision: 0 },
-                    grid: { color: 'rgba(255, 255, 255, 0.05)' }
+                y: {
+                    beginAtZero: true,
+                    ticks: { color: '#6B7280', font: chartFont, precision: 0 },
+                    grid: { color: 'rgba(255, 255, 255, 0.04)' }
                 },
-                x: { 
-                    ticks: { color: '#8e8d93' },
+                x: {
+                    ticks: { color: '#6B7280', font: chartFont },
                     grid: { display: false }
                 }
             }
         };
 
-        const lineChartOptions = {
-            ...barChartOptions,
-            interaction: {
-                intersect: false,
-                mode: 'index',
-            },
-        };
+        function initDashboardCharts() {
+            const subLevel = {{ subscription_level|default:0 }};
+            if (subLevel === 0) return;
 
-        const doughnutChartOptions = {
-            responsive: true,
-            maintainAspectRatio: false,
-            cutout: '70%',
-            plugins: {
-                legend: { 
-                    display: true,
-                    position: 'bottom',
-                    labels: { 
-                        color: '#bab8c1', 
-                        boxWidth: 12, 
-                        padding: 20,
-                        font: { family: 'Namu Pro' }
-                    }
-                },
-                tooltip: {
-                    backgroundColor: 'rgba(18, 17, 25, 0.8)',
-                    titleFont: { family: 'Unbounded Medium' },
-                    bodyFont: { family: 'Namu Pro' },
-                    padding: 10,
-                    cornerRadius: 4
-                }
-            }
-        };
-
-
-        function initializeProfileCharts() {
-            const subscriptionLevel = {{ subscription_level }};
-            if (subscriptionLevel === 0) {
-                Object.keys(chartInstances).forEach(destroyChart);
-                return;
-            }
-
+            // 1. График активности создания
             fetch("{% url 'personal_charts_api' %}")
-                .then(response => response.json())
-                .then(data => {
-                    destroyChart('personalActivityChart');
-                    destroyChart('personalViewsChart');
-                    
-                    const activityCtx = document.getElementById('personalActivityChart')?.getContext('2d');
-                    if (activityCtx) {
-                        chartInstances.personalActivityChart = new Chart(activityCtx, {
+                .then(r => r.json())
+                .then(d => {
+                    const ctx = document.getElementById('personalActivityChart')?.getContext('2d');
+                    if (ctx && d.activity_chart) {
+                        new Chart(ctx, {
                             type: 'bar',
                             data: {
-                                labels: data.activity_chart.labels,
+                                labels: d.activity_chart.labels,
                                 datasets: [{
-                                    label: 'Создано',
-                                    data: data.activity_chart.data,
-                                    backgroundColor: 'rgba(97, 109, 240, 0.6)',
-                                    borderColor: 'rgba(97, 109, 240, 1)',
-                                    borderRadius: 4,
-                                    hoverBackgroundColor: 'rgba(97, 109, 240, 0.8)'
+                                    data: d.activity_chart.data,
+                                    backgroundColor: '#4F46E5',
+                                    borderRadius: 8,
+                                    hoverBackgroundColor: '#4338CA'
                                 }]
                             },
-                            options: barChartOptions
+                            options: baseOptions
                         });
                     }
+                })
+                .catch(() => {});
 
-                    const viewsCtx = document.getElementById('personalViewsChart')?.getContext('2d');
-                    if (viewsCtx) {
-                        chartInstances.personalViewsChart = new Chart(viewsCtx, {
-                            type: 'line',
-                            data: {
-                                labels: data.views_chart.labels,
-                                datasets: [{
-                                    label: 'Просмотры',
-                                    data: data.views_chart.data,
-                                    backgroundColor: 'rgba(121, 239, 102, 0.1)',
-                                    borderColor: 'rgba(121, 239, 102, 1)',
-                                    tension: 0.3,
-                                    fill: true,
-                                    pointBackgroundColor: 'rgba(121, 239, 102, 1)',
-                                    pointBorderColor: '#fff',
-                                    pointHoverRadius: 6
-                                }]
-                            },
-                            options: lineChartOptions
-                        });
-                    }
-
-                    destroyChart('qualityChart');
-                    const qualityCtx = document.getElementById('qualityChart')?.getContext('2d');
-                    if (qualityCtx) {
-                        chartInstances.qualityChart = new Chart(qualityCtx, {
-                            type: 'doughnut',
-                            data: {
-                                labels: data.quality_chart.labels,
-                                datasets: [{
-                                    data: data.quality_chart.data,
-                                    backgroundColor: ['rgba(231, 76, 117, 0.7)', 'rgba(121, 239, 102, 0.7)', 'rgba(255, 199, 0, 0.7)'],
-                                    borderColor: '#121119',
-                                    borderWidth: 3,
-                                }]
-                            },
-                            options: doughnutChartOptions
-                        });
-                    }
-
-                    destroyChart('questionTypesChart');
-                    const questionTypesCtx = document.getElementById('questionTypesChart')?.getContext('2d');
-                    if (questionTypesCtx && data.question_types_chart.data.length > 0) {
-                        chartInstances.questionTypesChart = new Chart(questionTypesCtx, {
-                            type: 'pie',
-                            data: {
-                                labels: data.question_types_chart.labels,
-                                datasets: [{
-                                    data: data.question_types_chart.data,
-                                    backgroundColor: ['#616DF0', '#36A2EB', '#FFCD56', '#8e8d93'],
-                                    borderColor: '#121119',
-                                    borderWidth: 3,
-                                }]
-                            },
-                            options: doughnutChartOptions
-                        });
-                    }
-
-                }).catch(error => console.error('Personal charts error:', error));
-
+            // 2. График результатов прохождений учеников
             fetch("{% url 'student_charts_api' %}")
-                .then(response => response.json())
-                .then(data => {
-                    destroyChart('studentActivityChart');
-                    destroyChart('studentScoresChart');
-
-                    const studentActivityCtx = document.getElementById('studentActivityChart')?.getContext('2d');
-                    if(studentActivityCtx) {
-                        chartInstances.studentActivityChart = new Chart(studentActivityCtx, {
-                            type: 'bar',
-                            data: {
-                                labels: data.attempts_activity_chart.labels,
-                                datasets: [{
-                                    label: 'Прохождений',
-                                    data: data.attempts_activity_chart.data,
-                                    backgroundColor: 'rgba(97, 109, 240, 0.6)',
-                                    borderColor: 'rgba(97, 109, 240, 1)',
-                                    borderRadius: 4,
-                                    hoverBackgroundColor: 'rgba(97, 109, 240, 0.8)'
-                                }]
-                            },
-                            options: barChartOptions
-                        });
-                    }
-
-                    const studentScoresCtx = document.getElementById('studentScoresChart')?.getContext('2d');
-                    if (studentScoresCtx) {
-                        chartInstances.studentScoresChart = new Chart(studentScoresCtx, {
+                .then(r => r.json())
+                .then(d => {
+                    const ctx = document.getElementById('studentScoresChart')?.getContext('2d');
+                    if (ctx && d.scores_chart) {
+                        new Chart(ctx, {
                             type: 'doughnut',
                             data: {
-                                labels: data.scores_chart.labels,
+                                labels: d.scores_chart.labels,
                                 datasets: [{
-                                    data: data.scores_chart.data,
-                                    backgroundColor: ['rgba(121, 239, 102, 0.7)', 'rgba(255, 199, 0, 0.7)', 'rgba(231, 76, 117, 0.7)'],
-                                    borderColor: '#121119',
-                                    borderWidth: 3,
-                                    hoverOffset: 8,
-                                    hoverBorderColor: '#121119'
-                                }]
-                            },
-                            options: doughnutChartOptions
-                        });
-                    }
-
-                    destroyChart('hourlyActivityChart');
-                    const hourlyActivityCtx = document.getElementById('hourlyActivityChart')?.getContext('2d');
-                    if (hourlyActivityCtx && data.hourly_activity_chart.data.length > 0) {
-                        chartInstances.hourlyActivityChart = new Chart(hourlyActivityCtx, {
-                            type: 'line',
-                            data: {
-                                labels: data.hourly_activity_chart.labels,
-                                datasets: [{
-                                    label: 'Прохождений',
-                                    data: data.hourly_activity_chart.data,
-                                    borderColor: 'rgba(255, 159, 64, 1)',
-                                    backgroundColor: 'rgba(255, 159, 64, 0.2)',
-                                    fill: true,
-                                    tension: 0.4,
-                                }]
-                            },
-                            options: lineChartOptions
-                        });
-                    }
-
-                    destroyChart('surveyEngagementChart');
-                    const surveyEngagementCtx = document.getElementById('surveyEngagementChart')?.getContext('2d');
-                    if (surveyEngagementCtx && data.survey_engagement_chart.data.length > 0) {
-                        chartInstances.surveyEngagementChart = new Chart(surveyEngagementCtx, {
-                            type: 'polarArea',
-                            data: {
-                                labels: data.survey_engagement_chart.labels,
-                                datasets: [{
-                                    label: 'Кол-во прохождений',
-                                    data: data.survey_engagement_chart.data,
-                                    backgroundColor: [
-                                        'rgba(97, 109, 240, 0.7)',
-                                        'rgba(121, 239, 102, 0.7)',
-                                        'rgba(255, 205, 86, 0.7)',
-                                        'rgba(255, 99, 132, 0.7)',
-                                        'rgba(54, 162, 235, 0.7)',
-                                        'rgba(153, 102, 255, 0.7)',
-                                        'rgba(255, 159, 64, 0.7)'
-                                    ],
-                                    borderWidth: 0
+                                    data: d.scores_chart.data,
+                                    backgroundColor: ['#10B981', '#F59E0B', '#EF4444'],
+                                    borderColor: '#18171A',
+                                    borderWidth: 4,
+                                    hoverOffset: 4
                                 }]
                             },
                             options: {
                                 responsive: true,
                                 maintainAspectRatio: false,
-                                plugins: { legend: { display: false } },
-                                scales: {
-                                    r: {
-                                        ticks: { display: false },
-                                        grid: { color: 'rgba(255, 255, 255, 0.05)' }
+                                cutout: '75%',
+                                plugins: {
+                                    legend: {
+                                        display: true,
+                                        position: 'bottom',
+                                        labels: { color: '#9CA3AF', font: chartFont, boxWidth: 10, padding: 12 }
                                     }
                                 }
                             }
                         });
                     }
-
-                }).catch(error => console.error('Student charts error:', error));
+                })
+                .catch(() => {});
         }
 
-        document.addEventListener('DOMContentLoaded', initializeProfileCharts);
-        </script>
-
+        document.addEventListener('DOMContentLoaded', initDashboardCharts);
+    </script>
 </body>
 </html>

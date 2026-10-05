@@ -41,6 +41,9 @@ from django.utils.crypto import get_random_string
 from django.conf import settings
 from django.db.models.functions import Length, TruncDate
 from django.db.models.functions import TruncHour, TruncWeek, TruncDay, ExtractWeekDay
+from celery import shared_task
+from django.core.signing import TimestampSigner, BadSignature, SignatureExpired
+from django.views.decorators.http import require_http_methods
 
 
 from smtplib import SMTPException
@@ -241,6 +244,13 @@ def page_create_survey(request):
         plan_type = "package"
     else:
         plan_type = "none"
+    
+    recent_surveys = []
+    if current_id_staff:
+        recent_surveys = Survey.objects.filter(
+            id_staff=current_id_staff, 
+            is_visible=False
+        ).order_by('-created_at')[:4]
 
     context = {
         "page_title": "Создать тест",
@@ -263,6 +273,7 @@ def page_create_survey(request):
         "avg_questions": survey_stats["avg_questions"],
         "tests_this_month": survey_stats["tests_this_month"],
         "dashboard_context": dashboard_context,
+        "recent_surveys": recent_surveys,
         "debug": DEBUG,
     }
 
@@ -702,30 +713,145 @@ def single_test_charts_api(request, survey_id):
 
 @login_required
 def page_history_surveys(request):
-    surveys_data = {}
-    page_obj = None
-
-    # try:
+    """Главная страница истории тестов с аналитикой и поиском."""
+    staff_id = get_staff_id(request)
+    search_query = request.GET.get("q", "").strip()
     page_number = request.GET.get("page", 1)
-    data_from_backend = get_all_surveys(request, page=page_number)
 
-    if data_from_backend:
-        surveys_data = data_from_backend.get("results", {})
-        page_obj = data_from_backend.get("page_obj")
+    # Базовый кверисет с учетом перевертыша (is_visible=False -> живые тесты)
+    surveys_qs = Survey.objects.filter(
+        id_staff=staff_id, 
+        is_visible=False
+    ).order_by("-created_at")
 
-    tracer_l.info(f"{request.user.username} --- history page {page_number} [ LOADED ]")
-    # except Exception as fatal:
-    #     tracer_l.error(f"{request.user.username} --- {fatal}")
+    if search_query:
+        surveys_qs = surveys_qs.filter(title__icontains=search_query)
+
+    # Пагинация (по 8 тестов на страницу для красивой сетки)
+    paginator = Paginator(surveys_qs, 8)
+    try:
+        page_obj = paginator.page(page_number)
+    except (EmptyPage, PageNotAnInteger):
+        page_obj = paginator.page(1)
+
+    # Быстрая сводная статистика для правого виджета (1 легкий SQL-запрос)
+    total_stats = Survey.objects.filter(id_staff=staff_id, is_visible=False).aggregate(
+        total_count=Count("id"),
+        total_views=Sum("view_count"),
+        total_questions=Sum("questions_count")
+    )
+
+    # Самый популярный тест пользователя
+    top_survey = Survey.objects.filter(
+        id_staff=staff_id, 
+        is_visible=False,
+        view_count__gt=0
+    ).order_by("-view_count").first()
 
     context = {
-        "page_title": "Предыдущие тесты",
-        "surveys_data": surveys_data,
-        "username": get_username(request),
+        "page_title": "История тестов | Летучка",
         "page_obj": page_obj,
-        "total_surveys": Survey.objects.filter(id_staff=get_staff_id(request)).count(),
+        "search_query": search_query,
+        "total_surveys": total_stats["total_count"] or 0,
+        "total_views": total_stats["total_views"] or 0,
+        "total_questions": total_stats["total_questions"] or 0,
+        "top_survey": top_survey,
+        "subscription_level": get_subscription_level(request),
+        "total_available": getattr(request.user, "test_balance", 0),
     }
 
     return render(request, "askify_service/history.html", context)
+
+
+@login_required
+def api_search_history(request):
+    """Живой поиск и AJAX-пагинация для бесконечного скролла/быстрой фильтрации."""
+    staff_id = get_staff_id(request)
+    search_query = request.GET.get("q", "").strip()
+    page_number = request.GET.get("page", 1)
+
+    surveys_qs = Survey.objects.filter(
+        id_staff=staff_id, 
+        is_visible=False
+    ).order_by("-created_at")
+
+    if search_query:
+        surveys_qs = surveys_qs.filter(title__icontains=search_query)
+
+    paginator = Paginator(surveys_qs, 8)
+    try:
+        page_obj = paginator.page(page_number)
+    except (EmptyPage, PageNotAnInteger):
+        return JsonResponse({"surveys": [], "has_next": False})
+
+    surveys_list = []
+    for s in page_obj.object_list:
+        surveys_list.append({
+            "survey_id": str(s.survey_id),
+            "title": s.title,
+            "created_at": s.created_at.strftime("%d.%m.%Y"),
+            "questions_count": s.questions_count or len(s.get_questions() if hasattr(s, 'get_questions') else []),
+            "view_count": s.view_count,
+        })
+
+    return JsonResponse({
+        "surveys": surveys_list,
+        "has_next": page_obj.has_next(),
+        "total_found": paginator.count
+    })
+
+
+
+@login_required
+def get_all_surveys(request, page=1, per_page=10):
+    if request is None:
+        return {}
+
+    surveys_queryset = Survey.objects.filter(
+        id_staff=get_staff_id(request), is_visible=False
+    ).order_by("-created_at")
+
+    paginator = Paginator(surveys_queryset, per_page)
+    try:
+        surveys_page = paginator.page(page)
+    except (EmptyPage, PageNotAnInteger):
+        surveys_page = paginator.page(paginator.num_pages)
+
+    tokens_entries = TokensUsed.objects.filter(id_staff=get_staff_id(request))
+
+    results = {}
+    time_margin = timedelta(seconds=5)
+
+    from django.db.models.functions import Abs, Extract
+
+    for survey in surveys_page.object_list:
+        nearby_tokens = (
+            tokens_entries.filter(
+                created_at__range=(
+                    survey.updated_at - time_margin,
+                    survey.updated_at + time_margin,
+                )
+            )
+            .annotate(
+                time_diff=ExpressionWrapper(
+                    Abs(Extract(F("created_at") - survey.updated_at, "epoch")),
+                    output_field=DurationField(),
+                )
+            )
+            .order_by("time_diff")
+            .first()
+        )
+
+        tokens_used = nearby_tokens.tokens_survey_used if nearby_tokens else None
+
+        results[str(survey.survey_id)] = {
+            "title": survey.title,
+            "update": survey.updated_at.strftime("%d.%m.%Y"),
+            "create": survey.created_at.strftime("%d.%m.%Y"),
+            "tokens": tokens_used,
+        }
+
+    return {"results": results, "paginator": paginator, "page_obj": surveys_page}
 
 
 @login_required
@@ -877,137 +1003,376 @@ def create_api_key_usage(api_key_id, staff_id, purpose):
 @method_decorator(check_blocked, name="dispatch")
 class ManageSurveysView(View):
     async def post(self, request):
-        if request.method == "POST":
-            request_from_user = json.loads(request.body)
-            question_count = request_from_user["questions"]
-            text_from_user = request_from_user["text"]
+        if request.method != "POST":
+            return JsonResponse({"error": "Invalid request method"}, status=400)
 
-            tracer_l.debug(
-                f"{request.user.username} --- question_count: {question_count} text_from_user: {text_from_user}"
+        try:
+            payload = json.loads(request.body)
+        except Exception:
+            return JsonResponse({"error": "Некорректный JSON-пейлоад"}, status=400)
+
+        question_count_raw = payload.get("questions", 5)
+        text_from_user = payload.get("text", "").strip()
+        difficulty = payload.get("difficulty", "medium")
+        question_types = payload.get("question_types", ["single"])
+        shuffle_questions = bool(payload.get("shuffle_questions", False))
+
+        if not str(question_count_raw).isdigit():
+            return JsonResponse({"error": "Количество вопросов должно быть числом"}, status=400)
+
+        question_count = int(question_count_raw)
+
+        # Проверка лимитов тарифа на бэке
+        sub_level = get_subscription_level(request)
+        user_balance = getattr(request.user, "test_balance", 0) if request.user.is_authenticated else 0
+        is_paid = (sub_level >= 1) or (user_balance > 0)
+
+        if not is_paid and question_count > 7:
+            return JsonResponse(
+                {"error": "Создание тестов более 7 вопросов доступно только на тарифе Премиум."},
+                status=403
             )
 
-            if question_count.isdigit():
-                if int(question_count) > 30 or int(question_count) < 0:
-                    return JsonResponse(
-                        {"error": "Недоступное кол-во вопросов :("}, status=400
-                    )
+        if question_count < 1 or question_count > 30:
+            return JsonResponse({"error": "Количество вопросов должно быть от 1 до 30"}, status=400)
+
+        staff_id = get_staff_id(request)
+        access_service = AccessService(staff_id)
+        access_info = access_service.check_access()
+
+        if not access_info["can_generate"]:
+            if access_info.get("source") == "credits" and access_info.get("extra_credits", 0) > 0:
+                return JsonResponse({"error": "Лимит исчерпан. Будет использован пакет тестов."}, status=429)
+            return JsonResponse({"error": "Дневной лимит исчерпан. Перейдите на Премиум или докупите тесты."}, status=429)
+
+        try:
+            start_time = time.perf_counter()
+
+            # Передаем расширенные параметры в генератор
+            manage_generate_surveys = ManageGenerationSurveys(
+                request, 
+                text_from_user, 
+                question_count,
+                difficulty=difficulty,
+                question_types=question_types
+            )
+
+            generated_data = await manage_generate_surveys.openai_generate()
+
+            if not generated_data.get("success"):
+                error_msg = generated_data.get("error", "Не удалось составить тест. Попробуйте снова через несколько минут.")
+                return JsonResponse({"error": error_msg}, status=429)
+
+            cleaned_text = generated_data.get("generated_text")
+            tokens_used = generated_data.get("tokens_used", 0)
+            api_key_used = generated_data.get("api_key_used")
+            end_time = time.perf_counter()
+            response_time_ms = int((end_time - start_time) * 1000)
+
+            new_survey_id = uuid.uuid4()
+
+            survey = Survey(
+                survey_id=new_survey_id,
+                title=cleaned_text.get("title", "Тест без названия"),
+                id_staff=staff_id,
+                model_name=generated_data.get("model_used", ""),
+                source_text=text_from_user,
+                generation_params={
+                    "difficulty": difficulty,
+                    "question_types": question_types,
+                    "shuffle_questions": shuffle_questions
+                },
+                is_visible=False
+            )
+
+            # Сохраняем вопросы с поддержкой флага перемешивания
+            survey.save_questions(cleaned_text["questions"], shuffle=shuffle_questions)
+            survey.save()
+
+            # Списание кредита если юзер на пакетах
+            if access_info["source"] == "credits":
+                access_service.consume_credits()
+
+            # Рекламный таск для бесплатных
+            if sub_level < 1:
+                from .tasks import fetch_ad_for_test
+                fetch_ad_for_test.delay(
+                    user_query=text_from_user,
+                    assistant_answer=json.dumps(cleaned_text),
+                    chat_id=str(new_survey_id),
+                    user_id=str(staff_id),
+                    user_type="authorized" if request.user.is_authenticated else "anonymous"
+                )
+
+        except Exception as fail:
+            tracer_l.error(f"{getattr(request.user, 'username', 'anon')} --- Ошибка генерации: {fail}")
+            return JsonResponse({"error": "Ошибка при создании теста. Пожалуйста, попробуйте еще раз."}, status=400)
+
+        # Логирование API токенов
+        log_api_key = api_key_used or APIKey.objects.filter(purpose="SURVEY", is_active=True).first()
+        if log_api_key:
+            APIKeyUsage.objects.create(
+                api_key=log_api_key,
+                success=True,
+                response_time_ms=response_time_ms,
+                tokens_used=int(tokens_used or 0),
+                model_name=generated_data.get("model_used", "") or "",
+            )
+
+        try:
+            TokensUsed.objects.create(id_staff=staff_id, tokens_survey_used=tokens_used)
+        except Exception:
+            pass
+
+        return JsonResponse({
+            "status": "success",
+            "survey_id": str(new_survey_id)
+        }, status=200)
+
+
+def check_survey_edit_permissions(request, survey):
+    """Проверяет права: автор + (Премиум ИЛИ положительный баланс тестов)."""
+    if not request.user.is_authenticated:
+        return False, "Требуется авторизация"
+    if survey.id_staff != request.user.id_staff:
+        return False, "Вы не являетесь автором теста"
+    
+    is_premium = get_subscription_level(request) >= 1
+    has_balance = getattr(request.user, "test_balance", 0) > 0
+
+    if not (is_premium or has_balance):
+        return False, "Редактирование доступно только на тарифе PRO или при наличии пакетов тестов"
+    
+    return True, None
+
+
+@login_required
+@require_POST
+def api_update_survey_title(request, survey_id):
+    """Быстрое редактирование названия теста."""
+    survey = Survey.objects.filter(survey_id=survey_id).first()
+    if not survey:
+        return JsonResponse({"error": "Тест не найден"}, status=404)
+
+    allowed, error_msg = check_survey_edit_permissions(request, survey)
+    if not allowed:
+        return JsonResponse({"error": error_msg}, status=403)
+
+    try:
+        data = json.loads(request.body)
+        new_title = data.get("title", "").strip()
+        if not new_title or len(new_title) > 255:
+            return JsonResponse({"error": "Некорректная длина названия (1-255 символов)"}, status=400)
+
+        survey.title = new_title
+        survey.save(update_fields=["title", "updated_at"])
+        return JsonResponse({"status": "success", "title": survey.title})
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=400)
+
+
+@login_required
+@require_POST
+def api_save_question(request, survey_id):
+    """
+    Универсальное добавление/обновление вопроса:
+    Если передан 'index' -> редактируем существующий, иначе добавляем новый.
+    Поддерживает type: 'single' и 'multiple'.
+    """
+    with transaction.atomic():
+        survey = Survey.objects.select_for_update().filter(survey_id=survey_id).first()
+        if not survey:
+            return JsonResponse({"error": "Тест не найден"}, status=404)
+
+        allowed, error_msg = check_survey_edit_permissions(request, survey)
+        if not allowed:
+            return JsonResponse({"error": error_msg}, status=403)
+
+        try:
+            data = json.loads(request.body)
+            q_index = data.get("index")  # int or None
+            q_text = data.get("question", "").strip()
+            options = [opt.strip() for opt in data.get("options", []) if opt.strip()]
+            correct_answers = data.get("correct_answers", [])
+            q_type = data.get("type", "single")
+
+            if not q_text:
+                return JsonResponse({"error": "Текст вопроса не может быть пустым"}, status=400)
+            if len(options) < 2:
+                return JsonResponse({"error": "Должно быть минимум 2 варианта ответа"}, status=400)
+            if not correct_answers:
+                return JsonResponse({"error": "Укажите хотя бы один правильный ответ"}, status=400)
+
+            # Проверяем, что все правильные ответы действительно есть в вариантах
+            for ca in correct_answers:
+                if ca not in options:
+                    return JsonResponse({"error": f"Ответ '{ca}' отсутствует в списке вариантов"}, status=400)
+
+            questions = survey.get_questions()
+
+            question_payload = {
+                "question": q_text,
+                "options": options,
+                "correct_answer": correct_answers if q_type == "multiple" else correct_answers[0],
+                "type": q_type
+            }
+
+            if q_index is not None and 0 <= int(q_index) < len(questions):
+                questions[int(q_index)] = question_payload
             else:
-                return JsonResponse(
-                    {"error": "Кол-во вопросов должно быть число"}, status=400
-                )
+                questions.append(question_payload)
 
-            staff_id = get_staff_id(request)
+            survey.questions = json.dumps(questions, ensure_ascii=False)
+            survey.questions_count = len(questions)
+            survey.save(update_fields=["questions", "questions_count", "updated_at"])
 
-            # Используем AccessService для проверки доступа
-            access_service = AccessService(staff_id)
-            access_info = access_service.check_access()
+            return JsonResponse({
+                "status": "success",
+                "questions_count": survey.questions_count
+            })
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=400)
 
-            if not access_info["can_generate"]:
-                if (
-                    access_info["source"] == "credits"
-                    and access_info["extra_credits"] > 0
-                ):
-                    return JsonResponse(
-                        {
-                            "error": "Лимит подписки исчерпан. Будет использован пакет тестов."
-                        },
-                        status=429,
-                    )
-                return JsonResponse(
-                    {"error": "Лимит исчерпан. Приобретите подписку или пакет тестов."},
-                    status=429,
-                )
 
-            try:
-                tracer_l.debug(f"{request.user.username} --- GEN STAAAART")
-                start_time = time.perf_counter()
+@login_required
+@require_POST
+async def api_regenerate_survey(request, survey_id):
+    """
+    Боевая перегенерация теста:
+    1. Проверяет права автора и тариф.
+    2. Берет source_text, а если его нет — генерирует контекст из старых вопросов (fallback).
+    3. Вызывает OpenAI и атомарно перезаписывает вопросы.
+    """
+    tracer_l.info(f"REGENERATE: Запрос от user={request.user.username} для survey_id={survey_id}")
 
-                manage_generate_surveys = ManageGenerationSurveys(request, text_from_user, question_count)
+    # 1. Поиск теста в БД
+    survey = await sync_to_async(Survey.objects.filter(survey_id=survey_id).first)()
+    if not survey:
+        tracer_l.warning(f"REGENERATE: Тест {survey_id} не найден в БД")
+        return JsonResponse({"error": "Тест не найден"}, status=404)
 
-                generated_data = await manage_generate_surveys.openai_generate()
+    # 2. Проверка авторства
+    user_staff_id = get_staff_id(request)
+    if survey.id_staff != user_staff_id:
+        tracer_l.warning(f"REGENERATE: Отказ в доступе. user_staff={user_staff_id} != survey_staff={survey.id_staff}")
+        return JsonResponse({"error": "Вы не являетесь автором этого теста"}, status=403)
 
-                if not generated_data.get("success"):
-                    error_message = generated_data.get(
-                        "error",
-                        "Не удалось составить тест, попробуйте снова через 15 минут",
-                    )
-                    return JsonResponse({"error": error_message}, status=429)
+    # 3. Проверка тарифа (Премиум или пакетный баланс)
+    sub_level = get_subscription_level(request)
+    user_balance = getattr(request.user, "test_balance", 0)
+    if sub_level < 1 and user_balance == 0:
+        tracer_l.warning(f"REGENERATE: Попытка перегенерации на бесплатном тарифе user={request.user.username}")
+        return JsonResponse({"error": "Перегенерация доступна на тарифе Премиум или при наличии пакетов тестов"}, status=403)
 
-                cleaned_generated_text = generated_data.get("generated_text")
-                tokens_used = generated_data.get("tokens_used")
-                api_key_used = generated_data.get("api_key_used")
+    # 4. Проверка кредитов через AccessService
+    access_service = AccessService(user_staff_id)
+    access_info = access_service.check_access()
+    if not access_info.get("can_generate", True):
+        tracer_l.warning(f"REGENERATE: Исчерпан лимит генераций для user={request.user.username}")
+        return JsonResponse({"error": "Дневной лимит генераций исчерпан"}, status=429)
 
-                tracer_l.debug(
-                    f"{request.user.username} --- generated_text: {cleaned_generated_text}"
-                )
-                end_time = time.perf_counter()
-                response_time_ms = int((end_time - start_time) * 1000)
+    # 5. Извлечение исходного текста с УМНЫМ ФОЛЛБЭКОМ
+    source_material = survey.source_text
+    old_questions = survey.get_questions() if hasattr(survey, 'get_questions') else []
 
-                new_survey_id = uuid.uuid4()
+    if not source_material or len(str(source_material).strip()) < 15:
+        tracer_l.info(f"REGENERATE: source_text пуст, активирован fallback на основе заголовка и {len(old_questions)} старых вопросов")
+        if old_questions:
+            q_titles = [f"- {q.get('question')}" for q in old_questions if q.get('question')]
+            source_material = f"Тема теста: «{survey.title}».\nОсновные тезисы и направления вопросов:\n" + "\n".join(q_titles)
+        else:
+            source_material = f"Тема для теста: {survey.title}"
 
-                survey = Survey(
-                    survey_id=new_survey_id,
-                    title=cleaned_generated_text["title"],
-                    id_staff=get_staff_id(request),
-                    model_name=generated_data.get("model_used", ""),
-                )
-                survey.save_questions(cleaned_generated_text["questions"])
-                survey.save()
-                
-                if get_subscription_level(request) < 1:
-                    from .tasks import fetch_ad_for_test
-                    
-                    fetch_ad_for_test.delay(
-                        user_query=text_from_user,
-                        assistant_answer=json.dumps(cleaned_generated_text),
-                        chat_id=str(new_survey_id),
-                        user_id=str(staff_id),
-                        user_type="authorized"
-                    )
+    # 6. Извлечение сохраненных параметров генерации
+    gen_params = survey.generation_params or {}
+    q_count = survey.questions_count or len(old_questions) or 5
+    difficulty = gen_params.get("difficulty", "medium")
+    question_types = gen_params.get("question_types", ["single"])
+    shuffle_questions = gen_params.get("shuffle_questions", False)
 
-                # Списываем кредит если источник - пакеты
-                if access_info["source"] == "credits":
-                    access_service.consume_credits()
+    tracer_l.info(
+        f"REGENERATE START: title='{survey.title}', q_count={q_count}, diff={difficulty}, types={question_types}"
+    )
 
-            except Exception as fail:
-                tracer_l.error(f"{request.user.username} --- {fail}")
-                return JsonResponse(
-                    {"error": "Опаньки :(\n\nК сожалению, не удалось составить тест"},
-                    status=400,
-                )
+    # 7. Вызов ядра генерации
+    try:
+        start_time = time.perf_counter()
+        generator = ManageGenerationSurveys(
+            request,
+            source_material,
+            q_count,
+            difficulty=difficulty,
+            question_types=question_types
+        )
 
+        generated_data = await generator.openai_generate()
+
+        if not generated_data.get("success"):
+            err = generated_data.get("error", "Сбой генерации нейросетью")
+            tracer_l.error(f"REGENERATE FAIL: OpenAI вернул ошибку: {err}")
+            return JsonResponse({"error": err}, status=429)
+
+        cleaned_text = generated_data.get("generated_text")
+        tokens_used = generated_data.get("tokens_used", 0)
+        api_key_used = generated_data.get("api_key_used")
+        model_used = generated_data.get("model_used", "")
+
+        # 8. Атомарное сохранение новых вопросов в БД
+        def update_survey_tx():
+            survey.title = cleaned_text.get("title", survey.title)
+            survey.model_name = model_used
+            # Обновляем questions через метод модели с перемешиванием
+            survey.save_questions(cleaned_text["questions"], shuffle=shuffle_questions)
+            survey.save(update_fields=["title", "questions", "questions_count", "model_name", "updated_at"])
+
+            # Логируем токены
+            TokensUsed.objects.create(id_staff=user_staff_id, tokens_survey_used=tokens_used)
+
+            # Логируем использование ключа
             log_api_key = api_key_used or APIKey.objects.filter(purpose="SURVEY", is_active=True).first()
             if log_api_key:
                 APIKeyUsage.objects.create(
                     api_key=log_api_key,
                     success=True,
-                    response_time_ms=response_time_ms,
                     tokens_used=int(tokens_used or 0),
-                    model_name=generated_data.get("model_used", "") or "",
+                    model_name=model_used or "",
                 )
-
-            try:
-                _tokens_used = TokensUsed(
-                    id_staff=get_staff_id(request),
-                    tokens_survey_used=tokens_used,
-                )
-                _tokens_used.save()
-                await notify_admin_by_limit()
-            except Exception as fail:
-                tracer_l.warning(f"{request.user.username} --- чут чут фейл: {fail}")
-
-            tracer_l.info(
-                f"{request.user.username} --- {Survey.objects.get(survey_id=new_survey_id).title} [ SAVED ]"
-            )
-            return JsonResponse(
-                {"survey": cleaned_generated_text, "survey_id": f"{new_survey_id}"},
-                status=200,
+            
+        def commit_billing_and_save():
+            # 1. Записываем потраченные токены и факт генерации
+            # Именно эта запись часто используется счетчиками для подсчета дневного лимита!
+            TokensUsed.objects.create(
+                id_staff=user_staff_id, 
+                tokens_survey_used=tokens_used
             )
 
-        tracer_l.warning(
-            f"{request.user.username} --- Invalid request method: code 400"
-        )
-        return JsonResponse({"error": "Invalid request method"}, status=400)
+            # 2. Если у AccessService есть метод списания дневного лимита подписки — вызываем его
+            if hasattr(access_service, "consume_subscription"):
+                access_service.consume_subscription()
+            elif hasattr(access_service, "register_generation"):
+                access_service.register_generation()
+
+            # 3. Если генерация идет за счет штучных пакетов (Credits) — списываем 1 тест с баланса
+            if access_info.get("source") == "credits" or access_info.get("extra_credits", 0) > 0:
+                access_service.consume_credits()
+                tracer_l.info(f"BILLING: Списан 1 кредитный тест у {request.user.username}")
+            else:
+                tracer_l.info(f"BILLING: Списана 1 квота из суточной подписки у {request.user.username}")
+
+        await sync_to_async(commit_billing_and_save)()
+
+        await sync_to_async(update_survey_tx)()
+
+        # Списание кредита (если пакеты)
+        if access_info.get("source") == "credits":
+            await sync_to_async(access_service.consume_credits)()
+
+        tracer_l.info(f"REGENERATE SUCCESS: Тест {survey_id} успешно обновлен. Затрачено токенов: {tokens_used}")
+        return JsonResponse({"status": "success", "survey_id": str(survey.survey_id)})
+
+    except Exception as e:
+        tracer_l.error(f"REGENERATE CRITICAL: Исключение при перегенерации: {e}", exc_info=True)
+        return JsonResponse({"error": f"Ошибка перегенерации: {str(e)}"}, status=500)
 
 
 def get_survey_ad(request, survey_id):
@@ -1257,71 +1622,19 @@ def toggle_answers(request, survey_id):
             )
 
 
-@login_required
-def get_all_surveys(request, page=1, per_page=10):
-    if request is None:
-        return {}
-
-    surveys_queryset = Survey.objects.filter(
-        id_staff=get_staff_id(request), is_visible=False
-    ).order_by("-created_at")
-
-    paginator = Paginator(surveys_queryset, per_page)
-    try:
-        surveys_page = paginator.page(page)
-    except (EmptyPage, PageNotAnInteger):
-        surveys_page = paginator.page(paginator.num_pages)
-
-    tokens_entries = TokensUsed.objects.filter(id_staff=get_staff_id(request))
-
-    results = {}
-    time_margin = timedelta(seconds=5)
-
-    from django.db.models.functions import Abs, Extract
-
-    for survey in surveys_page.object_list:
-        nearby_tokens = (
-            tokens_entries.filter(
-                created_at__range=(
-                    survey.updated_at - time_margin,
-                    survey.updated_at + time_margin,
-                )
-            )
-            .annotate(
-                time_diff=ExpressionWrapper(
-                    Abs(Extract(F("created_at") - survey.updated_at, "epoch")),
-                    output_field=DurationField(),
-                )
-            )
-            .order_by("time_diff")
-            .first()
-        )
-
-        tokens_used = nearby_tokens.tokens_survey_used if nearby_tokens else None
-
-        results[str(survey.survey_id)] = {
-            "title": survey.title,
-            "update": survey.updated_at.strftime("%d.%m.%Y"),
-            "create": survey.created_at.strftime("%d.%m.%Y"),
-            "tokens": tokens_used,
-        }
-
-    return {"results": results, "paginator": paginator, "page_obj": surveys_page}
-
-
 # @method_decorator(login_required, name='dispatch')
 # @method_decorator(subscription_required, name='dispatch')
 class FileUploadView(View):
     async def post(self, request):
         if not request.user.is_authenticated:
-            return HttpResponseForbidden()
+            return HttpResponseForbidden("Требуется авторизация")
 
         staff_id = get_staff_id(request)
 
         form = FileUploadForm(request.POST, request.FILES)
         if not form.is_valid():
-            tracer_l.error(f'Загружен невалидный файл: {form.errors.as_text()}')
-            return JsonResponse({'errors': form.errors}, status=400)
+            tracer_l.error(f'Загружен невалидный файл/параметры: {form.errors.as_text()}')
+            return JsonResponse({'error': 'Некорректные параметры: ' + form.errors.as_text()}, status=400)
 
         available_file_types = [
             "application/pdf",
@@ -1332,129 +1645,148 @@ class FileUploadView(View):
 
         question_count = form.cleaned_data['question_count']
         uploaded_file = form.cleaned_data['file']
+        difficulty = form.cleaned_data.get('difficulty') or "medium"
+        shuffle_questions = form.cleaned_data.get('shuffle_questions', False)
 
-        tracer_l.info(f'question_count {question_count} uploaded_file {uploaded_file}')
+        # Парсим question_types из JSON-строки фронта
+        raw_types = form.cleaned_data.get('question_types')
+        try:
+            question_types = json.loads(raw_types) if raw_types else ["single"]
+        except Exception:
+            question_types = ["single"]
+
+        tracer_l.info(f'UPLOAD: staff_id={staff_id}, q_count={question_count}, file={uploaded_file.name}, diff={difficulty}')
 
         if uploaded_file.content_type not in available_file_types:
-            tracer_l.error('Недопустимый файл')
-            return JsonResponse({'error': 'Недопустимый файл'}, status=400)
+            tracer_l.error('Недопустимый MIME-тип файла')
+            return JsonResponse({'error': 'Недопустимый формат файла. Поддерживаются PDF, DOCX, TXT'}, status=400)
 
         if uploaded_file.size > 50 * 1024 * 1024:
-            tracer_l.error('No file provided')
             return JsonResponse({'error': 'Файл слишком большой. Максимальный размер: 50 МБ'}, status=400)
 
+        # Читаем данные файла (до 150 000 символов!)
         data = self.read_file_data(uploaded_file)
 
-        if not data or data == -1:
-            tracer_l.error('Файл пуст или не удалось прочитать')
-            return JsonResponse({'error': 'Файл пуст или содержит недопустимые данные.'})
+        if not data or data == -1 or len(data.strip()) < 20:
+            tracer_l.error('Файл пуст или текст не распознан')
+            return JsonResponse({'error': 'Не удалось извлечь текст из файла. Убедитесь, что файл содержит текстовый слой (не скан).'}, status=400)
 
-        # Проверка кредитов
+        # Проверка прав доступа и квот
         access_service = AccessService(staff_id)
         access_info = access_service.check_access()
-        extra_credits = access_info["extra_credits"]
+        extra_credits = access_info.get("extra_credits", 0)
 
         subscription_object = await sync_to_async(Subscription.objects.filter(staff_id=staff_id).first)()
-        if subscription_object.check_sub_status() != 'active' and extra_credits == 0:
+        is_sub_active = subscription_object.check_sub_status() == 'active' if subscription_object else False
+
+        if not is_sub_active and extra_credits == 0:
             return JsonResponse({
-                'error': 'Ваша подписка закончилась :(\n\nОзнакомьтесь с тарифами на странице профиля.'
+                'error': 'Лимит генераций исчерпан. Пополните баланс на странице профиля.'
             }, status=400)
 
+        # Жесткая проверка: больше 7 вопросов — только для платных
+        sub_level = get_subscription_level(request)
+        user_balance = getattr(request.user, "test_balance", 0)
+        if (sub_level < 1 and user_balance == 0) and question_count > 7:
+            return JsonResponse({'error': 'Генерация тестов более 7 вопросов доступна только в тарифе Премиум.'}, status=403)
+
+        cleaned_data_for_llm = clean_text_for_llm(data)
+
+        tracer_l.debug("--- НАЧАЛО ГЕНЕРАЦИИ ТЕСТА ИЗ ФАЙЛА ---")
         try:
-            prompts_tokens = 479
-            cleaned_data_for_llm = clean_text_for_llm(data)
-            num_tokens = count_tokens(cleaned_data_for_llm) + prompts_tokens
-            tracer_l.info(f"Кол-во токенов в файле: {num_tokens}")
-
-            max_tokens = 64000 if DEBUG is True else 8000
-
-            # if max_tokens > 8000:
-            #     tracer_l.error(f'Слишком большой объем текста в файле ({num_tokens} токенов). ')
-            #     error_message = (
-            #         f'Слишком большой объем текста в файле ({num_tokens} токенов). '
-            #         f'Максимально допустимо {8000} токенов. '
-            #         'Пожалуйста, сократите документ.'
-            #     )
-            #     return JsonResponse({'error': error_message}, status=400)
-
-        except Exception as e:
-            tracer_l.error(f"Error counting tokens: {e}")
-            # return JsonResponse({'error': 'Не удалось обработать текст файла.'}, status=500)
-
-        tracer_l.debug("--- ТЕСТ ГЕНЕРИРУЕТСЯ ---")
-        try:
-            tracer_l.debug("Начало генерации")
-            manage_generate_surveys_text = ManageGenerationSurveys(
-                request, cleaned_data_for_llm, f"{question_count}"
+            manage_generate_surveys = ManageGenerationSurveys(
+                request, 
+                cleaned_data_for_llm, 
+                question_count,
+                difficulty=difficulty,
+                question_types=question_types
             )
 
-            generated_text = await manage_generate_surveys_text.openai_generate()
-            tracer_l.debug("Завершение генерации")
+            generated_data = await manage_generate_surveys.openai_generate()
 
-            if generated_text.get("success"):
-                tokens_used = generated_text.get("tokens_used")
-                cleaned_generated_text = generated_text.get("generated_text")
-            else:
-                tracer_l.critical(f"Произошла ошибка: {generated_text.get('message')}")
-                return JsonResponse(
-                    {"error": f"Произошла ошибка: {generated_text.get('message')}"},
-                    status=429,
-                )
+            if not generated_data.get("success"):
+                err_msg = generated_data.get("error", "Ошибка при обработке документа нейросетью")
+                tracer_l.critical(f"Ошибка LLM: {err_msg}")
+                return JsonResponse({"error": err_msg}, status=429)
+
+            tokens_used = generated_data.get("tokens_used", 0)
+            cleaned_generated_text = generated_data.get("generated_text")
+            model_used = generated_data.get("model_used", "")
+            api_key_used = generated_data.get("api_key_used")
+
         except Exception as fatal:
             error_msg = self.__remove_surrogates(str(fatal))
-            return JsonResponse(
-                {"error": f"Не удалось выполнить запрос: {error_msg}"}, status=400
-            )
+            tracer_l.error(f"Сбой генерации из файла: {error_msg}")
+            return JsonResponse({"error": f"Сбой генерации: {error_msg}"}, status=400)
 
+        # Сохранение в БД в асинхронном режиме
         try:
-            with transaction.atomic():
-                staff_id = get_staff_id(request)
-                new_survey_id = uuid.uuid4()
+            new_survey_id = uuid.uuid4()
 
-                survey = Survey(
-                    survey_id=new_survey_id,
-                    title=cleaned_generated_text['title'],
-                    id_staff=staff_id
-                )
-                await sync_to_async(survey.save_questions)(cleaned_generated_text['questions'])
-                await sync_to_async(survey.save)()
-
-                _tokens_used = TokensUsed(
-                    id_staff=staff_id,
-                    tokens_survey_used=tokens_used
-                )
-                await sync_to_async(_tokens_used.save)()
-                await notify_admin_by_limit()
-
-                api_key_manage = await sync_to_async(APIKey.objects.filter(purpose='SURVEY', is_active=True).first)()
-                if api_key_manage:
-                    await sync_to_async(APIKeyUsage.objects.create)(
-                        api_key=api_key_manage,
-                        success=True,
-                        tokens_used=int(tokens_used or 0),
-                        model_name=generated_text.get("model_used", "") or "",
+            def save_survey_tx():
+                with transaction.atomic():
+                    survey = Survey(
+                        survey_id=new_survey_id,
+                        title=cleaned_generated_text.get('title', uploaded_file.name[:60]),
+                        id_staff=staff_id,
+                        model_name=model_used,
+                        source_text=cleaned_data_for_llm[:50000], # Сохраняем исходник для перегенерации
+                        generation_params={
+                            "difficulty": difficulty,
+                            "question_types": question_types,
+                            "shuffle_questions": shuffle_questions,
+                            "source_file": uploaded_file.name
+                        },
+                        is_visible=False # Твой перевертыш: False = активен
                     )
+                    # Сохраняем с перемешиванием если тумблер включен
+                    survey.save_questions(cleaned_generated_text['questions'], shuffle=shuffle_questions)
+                    survey.save()
+
+                    # Логируем токены
+                    TokensUsed.objects.create(id_staff=staff_id, tokens_survey_used=tokens_used)
+
+                    # Логируем использование ключа
+                    log_api_key = api_key_used or APIKey.objects.filter(purpose='SURVEY', is_active=True).first()
+                    if log_api_key:
+                        APIKeyUsage.objects.create(
+                            api_key=log_api_key,
+                            success=True,
+                            tokens_used=int(tokens_used or 0),
+                            model_name=model_used or "",
+                        )
+
+            await sync_to_async(save_survey_tx)()
+
+            # Списываем кредит если источник - пакеты
+            if access_info.get("source") == "credits":
+                await sync_to_async(access_service.consume_credits)()
+
+            await notify_admin_by_limit()
 
         except Exception as fatal:
-            tracer_l.error(f"Failed to create survey: {fatal}")
-            return JsonResponse({'error': 'Произошла ошибка при сохранении теста'}, status=500)
+            tracer_l.error(f"Failed to save survey from file: {fatal}")
+            return JsonResponse({'error': 'Произошла ошибка при сохранении сгенерированного теста'}, status=500)
 
-        tracer_l.info(f'Успешно создан тест: {new_survey_id}')
-        return JsonResponse({'success': True, 'message': 'Success create survey', 'survey_id': f"{new_survey_id}"})
+        tracer_l.info(f'Успешно создан тест из файла: {new_survey_id}')
+        return JsonResponse({
+            'success': True, 
+            'survey_id': str(new_survey_id)
+        }, status=200)
 
     async def get(self, request):
-        if not request.user.is_authenticated:
-            return HttpResponseForbidden()
-        return JsonResponse({'error': True, 'message': 'Invalid method'})
+        return JsonResponse({'error': 'Метод GET не поддерживается'}, status=405)
 
     def __remove_surrogates(self, text):
         return "".join(c for c in text if not (0xD800 <= ord(c) <= 0xDFFF))
 
     def read_file_data(self, uploaded_file):
+        """Парсинг документов с лимитом до 150 000 символов."""
         full_text = ""
         ext = os.path.splitext(str(uploaded_file.name))[1].lower()
 
-        read_symbols_count = 2 ** 13
+        # ПОДНЯЛИ ЛИМИТ: ~150 000 символов (вместо кастрированных 8 192)
+        read_symbols_count = 150000 
 
         if ext == ".pdf":
             try:
@@ -1462,10 +1794,10 @@ class FileUploadView(View):
                 for page in reader.pages:
                     if text := page.extract_text():
                         full_text += text.strip() + "\n"
+                    if len(full_text) >= read_symbols_count:
+                        break
 
-                if isinstance(full_text, str):
-                    full_text = self.__remove_surrogates(full_text)
-
+                full_text = self.__remove_surrogates(full_text)
                 return full_text[:read_symbols_count]
             except Exception as e:
                 tracer_l.error(f"Error reading PDF: {e}")
@@ -1474,8 +1806,9 @@ class FileUploadView(View):
         elif ext == ".txt":
             try:
                 uploaded_file.seek(0)
-                encoding = chardet.detect_encoding(uploaded_file)
-                return uploaded_file.read().decode(encoding)[:read_symbols_count]
+                raw_bytes = uploaded_file.read(read_symbols_count * 2)
+                encoding = chardet.detect(raw_bytes).get("encoding") or "utf-8"
+                return raw_bytes.decode(encoding, errors='ignore')[:read_symbols_count]
             except Exception as e:
                 tracer_l.error(f"Error reading TXT: {e}")
                 return -1
@@ -1483,34 +1816,27 @@ class FileUploadView(View):
         elif ext in [".doc", ".docx"]:
             try:
                 with NamedTemporaryFile(delete=True, suffix=ext) as tmp:
-                    tmp.write(uploaded_file.read())
+                    for chunk in uploaded_file.chunks():
+                        tmp.write(chunk)
                     tmp.seek(0)
 
-                    if isinstance(full_text, str):
-                        full_text = self.__remove_surrogates(full_text)
-
-                    return self.extract_text_from_word(tmp.name)[:read_symbols_count]
+                    extracted = self.extract_text_from_word(tmp.name)
+                    extracted = self.__remove_surrogates(extracted)
+                    return extracted[:read_symbols_count]
             except Exception as e:
-                tracer_l.error(f"Error reading Word: {e}")
+                tracer_l.error(f"Error reading Word file: {e}")
                 return -1
 
         return -1
-
-    def detect_encoding(file_obj):
-        """Определение кодировки текстовых файлов"""
-        sample = file_obj.read(1024)
-        file_obj.seek(0)
-        result = chardet.detect(sample)
-        return result["encoding"] or "utf-8"
 
     def extract_text_from_word(self, file_path):
         """Извлечение текста из Word документов"""
         if file_path.endswith(".docx"):
             try:
                 doc = docx.Document(file_path)
-                return "\n".join([para.text for para in doc.paragraphs])
+                return "\n".join([para.text for para in doc.paragraphs if para.text.strip()])
             except Exception as e:
-                print(f".docx extraction error: {e}")
+                tracer_l.error(f".docx extraction error: {e}")
                 return ""
         elif file_path.endswith(".doc"):
             try:
@@ -1518,17 +1844,8 @@ class FileUploadView(View):
                     ["antiword", file_path], capture_output=True, text=True, check=True
                 )
                 return process.stdout
-            except FileNotFoundError:
-                print(
-                    "ERROR: 'antiword' command not found. Please install it using 'sudo apt-get install antiword'"
-                )
-                return "Ошибка: не найден обработчик для .doc файлов."
-            except subprocess.CalledProcessError as e:
-                print(f".doc extraction error with antiword: {e}")
-                print(f"Antiword stderr: {e.stderr}")
-                return ""
             except Exception as e:
-                print(f"Generic .doc extraction error: {e}")
+                tracer_l.error(f".doc antiword extraction error: {e}")
                 return ""
 
         return ""
@@ -1630,6 +1947,76 @@ class TakeSurvey(View):
 @login_required
 def result_view(request, survey_id):
     return redirect(f"/c/{survey_id}/")
+
+
+@login_required
+@require_POST
+def survey_delete_question(request, survey_id, question_index):
+    """Удаление вопроса по индексу (только автор + Premium)."""
+    survey = Survey.objects.filter(survey_id=survey_id).first()
+    if not survey:
+        return JsonResponse({"error": "Тест не найден"}, status=404)
+
+    # Проверка прав авторства и подписки
+    if survey.id_staff != request.user.id_staff:
+        return JsonResponse({"error": "Доступ запрещен"}, status=403)
+        
+    if get_subscription_level(request) < 1:
+        return JsonResponse({"error": "Требуется Premium-подписка"}, status=403)
+
+    questions = survey.get_questions()
+    idx = int(question_index)
+    if idx < 0 or idx >= len(questions):
+        return JsonResponse({"error": "Неверный индекс вопроса"}, status=400)
+
+    if len(questions) <= 1:
+        return JsonResponse({"error": "В тесте должен оставаться хотя бы один вопрос"}, status=400)
+
+    # Удаляем и сохраняем через метод модели
+    questions.pop(idx)
+    survey.save_questions(questions)
+    survey.save(update_fields=["questions", "questions_count", "updated_at"])
+
+    return JsonResponse({"status": "success", "questions_count": survey.questions_count})
+
+
+@login_required
+@require_POST
+def survey_add_question(request, survey_id):
+    """Ручное добавление вопроса в существующий тест."""
+    survey = Survey.objects.filter(survey_id=survey_id).first()
+    if not survey:
+        return JsonResponse({"error": "Тест не найден"}, status=404)
+
+    if survey.id_staff != request.user.id_staff:
+        return JsonResponse({"error": "Доступ запрещен"}, status=403)
+
+    if get_subscription_level(request) < 1:
+        return JsonResponse({"error": "Требуется Premium-подписка"}, status=403)
+
+    try:
+        data = json.loads(request.body)
+        q_text = data.get("question", "").strip()
+        options = data.get("options", [])
+        correct_answer = data.get("correct_answer", "").strip()
+
+        if not q_text or len(options) < 2 or not correct_answer:
+            return JsonResponse({"error": "Невалидные данные вопроса"}, status=400)
+
+        questions = survey.get_questions()
+        questions.append({
+            "question": q_text,
+            "options": options,
+            "correct_answer": correct_answer
+        })
+
+        survey.save_questions(questions)
+        survey.save(update_fields=["questions", "questions_count", "updated_at"])
+
+        return JsonResponse({"status": "success", "questions_count": survey.questions_count})
+
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=400)
 
 
 def download_survey_pdf(request, survey_id):
@@ -1988,7 +2375,7 @@ def download_results_pdf(request, survey_id):
 
         # --- Футер ---
         story.append(
-            Paragraph(f"Сгенерировано в Летучке • {get_year_now()}", footer_style)
+            Paragraph(f"Создано в Летучке • {get_year_now()}", footer_style)
         )
 
         # --- Генерация PDF ---
@@ -2170,7 +2557,7 @@ def main_test_card(request, survey_id):
             'page_title': 'Тест не найден | Летучка',
         }
         return render(request, 'demo-view.html', context, status=404)
-
+    
     survey_creator_id_staff = survey.id_staff
 
     current_user_id_staff = None
@@ -2225,7 +2612,7 @@ def main_test_card(request, survey_id):
             "questions": questions,
             "author": author_username if len(author_username) < 40 else "Аноним",
             "username": request.user.username if request.user.is_authenticated else 0,
-            "model_name": f"{'Сгенерировано ' + survey.model_name.upper().replace('O', 'o') if survey.model_name else 'Сгенерировано в Летучке'}",
+            "model_name": f"{'Создано в Летучке'} • {date_create}",
             "view_count": view_count,
             "date_create": date_create,
             "is_creator": is_creator,
@@ -2235,6 +2622,13 @@ def main_test_card(request, survey_id):
             "debug": DEBUG,
             "subscription_level": subscription_level,
         }
+
+        can_edit = False
+        if request.user.is_authenticated and survey.id_staff == request.user.id_staff:
+            can_edit = (subscription_level >= 1) or (getattr(request.user, "test_balance", 0) > 0)
+
+        json_response["questions"] = survey.get_normalized_questions()
+        json_response["can_edit"] = can_edit
 
         show_ads = False
         if get_subscription_level(request) < 1 or not is_authenticated:
@@ -6703,9 +7097,9 @@ class PaymentInitiateView(View):
             "Стандартный Год": 3900,
             "Премиум Год": 4800,
             "Премиум неделя": 390,
-            "package-small": 250,
-            "package-medium": 290,
-            "package-large": 390
+            "package-small": 290,
+            "package-medium": 450,
+            "package-large": 690
         }
 
         previous_payments_count = Payment.objects.filter(
@@ -6911,9 +7305,9 @@ class PaymentSuccessView(View):
                         if subscription.plan_name == 'Пакет S':
                             cnt_tests = 5
                         elif subscription.plan_name == 'Пакет M':
-                            cnt_tests = 12
+                            cnt_tests = 15
                         elif subscription.plan_name == 'Пакет L':
-                            cnt_tests = 25
+                            cnt_tests = 35
 
                     # Начисление пакетов
                     access_service = AccessService(get_staff_id(request))
@@ -7795,49 +8189,91 @@ def verify_email(request, token):
     return redirect('create')
 
 
+@shared_task(bind=True, max_retries=3, default_retry_delay=30)
+def send_password_reset_email_task(self, email: str, link: str):
+    """Фоновая асинхронная отправка письма сброса пароля без блокировки HTTP."""
+    try:
+        html_message = render_to_string(
+            "confirmed_data/password_reset_email.html", 
+            {"link": link}
+        )
+        plain_message = f"Для сброса пароля перейдите по ссылке:\n{link}\n\nЕсли вы не запрашивали сброс, проигнорируйте это письмо."
+
+        send_mail(
+            subject="Восстановление доступа | Летучка",
+            message=plain_message,
+            from_email="support@letychka.ru",
+            recipient_list=[email],
+            fail_silently=False,
+            html_message=html_message,
+        )
+        tracer_l.info(f"Password reset email sent to {email}")
+        return True
+    except Exception as exc:
+        tracer_l.error(f"Failed to send reset email to {email}: {exc}")
+        raise self.retry(exc=exc)
+
+
 class PasswordResetView(View):
     def post(self, request):
         staff_id = get_staff_id(request)
-        user = AuthUser.objects.get(id_staff=staff_id)
-        email = user.email
+        user = AuthUser.objects.filter(id_staff=staff_id).first()
 
-        if user:
+        if user and user.email:
             token = default_token_generator.make_token(user)
             uid = urlsafe_base64_encode(force_bytes(user.pk))
             link = request.build_absolute_uri(f"/password_reset_confirm/{uid}/{token}/")
 
-            message = render_to_string(
-                "confirmed_data/password_reset_email.html", {"link": link}
-            )
-            send_mail(
-                "Сброс пароля",
-                message,
-                "support@letychka.ru",
-                [email],
-                fail_silently=False,
-                html_message=message,
-            )
+            # Отправка улетает в очередь Celery мгновенно
+            send_password_reset_email_task.delay(user.email, link)
 
+        # Мгновенный ответ клиенту без задержки SMTP
         return redirect("password_reset_done")
 
 
 class PasswordResetConfirmView(View):
     def get(self, request, uidb64, token):
+        try:
+            user_id = urlsafe_base64_decode(uidb64).decode()
+            user = AuthUser.objects.filter(pk=user_id).first()
+        except (TypeError, ValueError, OverflowError):
+            user = None
+
+        if user and default_token_generator.check_token(user, token):
+            return render(
+                request,
+                "confirmed_data/password_reset_confirm.html",
+                {"uidb64": uidb64, "token": token, "validlink": True},
+            )
         return render(
             request,
             "confirmed_data/password_reset_confirm.html",
-            {"uidb64": uidb64, "token": token},
+            {"validlink": False},
         )
 
     def post(self, request, uidb64, token):
-        new_password = request.POST.get("new_password")
-        user_id = urlsafe_base64_decode(uidb64).decode()
-        user = AuthUser.objects.get(pk=user_id)
-        print(new_password)
-        if default_token_generator.check_token(user, token):
+        new_password = request.POST.get("new_password", "").strip()
+
+        if not new_password or len(new_password) < 6:
+            messages.error(request, "Пароль должен содержать минимум 6 символов.")
+            return redirect("password_reset_confirm", uidb64=uidb64, token=token)
+
+        try:
+            user_id = urlsafe_base64_decode(uidb64).decode()
+            user = AuthUser.objects.filter(pk=user_id).first()
+        except (TypeError, ValueError, OverflowError):
+            user = None
+
+        if user and default_token_generator.check_token(user, token):
             user.set_password(new_password)
             user.save()
             return redirect("password_reset_complete")
+
+        return render(
+            request,
+            "confirmed_data/password_reset_confirm.html",
+            {"validlink": False},
+        )
 
 
 def password_reset_complete(request):
@@ -7972,11 +8408,13 @@ def search_users_api(request):
 
     def build(u):
         sub = subs.get(u.id_staff)
+        # Приводим дату регистрации к Московскому времени
+        joined_local = u.date_joined.astimezone(MOSCOW_TZ) if u.date_joined else None
         return {
             "id": u.id,
             "username": u.username,
             "email": u.email or "—",
-            "date_joined": u.date_joined.strftime("%d.%m.%Y"),
+            "date_joined": joined_local.strftime("%d.%m.%Y") if joined_local else "—",
             "plan": _pulse_plan_label(sub.plan_name) if sub else "—",
             "status": sub.status if sub else "none",
             "test_balance": u.test_balance,
@@ -7997,27 +8435,32 @@ def search_users_api(request):
 
 @staff_member_required
 def get_user_details_api(request, user_id):
-    """Полное досье пользователя: профиль, подписка, деньги, покупки, тесты и 2 графика."""
+    """Полное досье пользователя: профиль, подписка, деньги, покупки, тесты и 2 графика (MSK TimeZone)."""
     try:
         user = AuthUser.objects.get(id=user_id)
     except AuthUser.DoesNotExist:
         return JsonResponse({"error": "User not found"}, status=404)
 
-    today = timezone.now().date()
+    # Текущая дата строго по Москве
+    now_msk = timezone.now().astimezone(MOSCOW_TZ)
+    today = now_msk.date()
 
     # ---- Подписка ----
     sub = Subscription.objects.filter(staff_id=user.id_staff).first()
     subscription_data = {}
     if sub:
-        days_left = (sub.end_date.date() - today).days if sub.end_date else None
+        sub_start_local = sub.start_date.astimezone(MOSCOW_TZ) if sub.start_date else None
+        sub_end_local = sub.end_date.astimezone(MOSCOW_TZ) if sub.end_date else None
+        
+        days_left = (sub_end_local.date() - today).days if sub_end_local else None
         subscription_data = {
             "plan_raw": sub.plan_name,
             "plan_label": _pulse_plan_label(sub.plan_name),
             "human_plan": sub.get_human_plan(),
             "status": sub.status,
             "billing_cycle": sub.billing_cycle,
-            "start_date": sub.start_date.strftime("%d.%m.%Y") if sub.start_date else "—",
-            "end_date": sub.end_date.strftime("%d.%m.%Y") if sub.end_date else "—",
+            "start_date": sub_start_local.strftime("%d.%m.%Y") if sub_start_local else "—",
+            "end_date": sub_end_local.strftime("%d.%m.%Y") if sub_end_local else "—",
             "days_left": days_left,
             "discount": float(sub.discount or 0),
         }
@@ -8038,9 +8481,10 @@ def get_user_details_api(request, user_id):
 
     payments_list = []
     for pay in all_payments[:100]:
+        pay_created_local = pay.created_at.astimezone(MOSCOW_TZ)
         payments_list.append({
-            "date": pay.created_at.strftime("%d.%m.%Y %H:%M"),
-            "date_short": pay.created_at.strftime("%d.%m.%Y"),
+            "date": pay_created_local.strftime("%d.%m.%Y %H:%M"),
+            "date_short": pay_created_local.strftime("%d.%m.%Y"),
             "amount": round(float(pay.amount) / 100.0, 2),
             "amount_str": get_format_number(int(round(float(pay.amount) / 100.0))),
             "plan_label": _pulse_plan_label(pay.subscription.plan_name if pay.subscription else ""),
@@ -8063,10 +8507,11 @@ def get_user_details_api(request, user_id):
     for s in surveys_qs[:100]:
         total_views += s.view_count or 0
         total_attempts += s.cnt_attempts or 0
+        s_created_local = s.created_at.astimezone(MOSCOW_TZ)
         surveys_list.append({
             "title": s.title,
             "survey_id": str(s.survey_id),
-            "created_at": s.created_at.strftime("%d.%m.%Y %H:%M"),
+            "created_at": s_created_local.strftime("%d.%m.%Y %H:%M"),
             "questions_count": s.questions_count or 0,
             "model_name": _pulse_model_label(s.model_name),
             "views": s.view_count,
@@ -8083,7 +8528,7 @@ def get_user_details_api(request, user_id):
     tokens_survey = tokens["s"] or 0
     tokens_feedback = tokens["f"] or 0
 
-    # ---- Графики: 12 месяцев ----
+    # ---- Графики: 12 месяцев (с подгоном под MSK) ----
     months = _pulse_month_series(12, today)
     labels = [_pulse_month_label(ym) for ym in months]
     creations = [0] * 12
@@ -8092,12 +8537,14 @@ def get_user_details_api(request, user_id):
     month_index = {ym: i for i, ym in enumerate(months)}
 
     for s in Survey.objects.filter(id_staff=user.id_staff).only("created_at"):
-        idx = month_index.get((s.created_at.year, s.created_at.month))
+        s_local = s.created_at.astimezone(MOSCOW_TZ)
+        idx = month_index.get((s_local.year, s_local.month))
         if idx is not None:
             creations[idx] += 1
 
     for pay in Payment.objects.filter(staff_id=user.id_staff, status="completed").only("created_at", "amount"):
-        idx = month_index.get((pay.created_at.year, pay.created_at.month))
+        pay_local = pay.created_at.astimezone(MOSCOW_TZ)
+        idx = month_index.get((pay_local.year, pay_local.month))
         if idx is not None:
             payments_amount[idx] += float(pay.amount) / 100.0
             payments_counts[idx] += 1
@@ -8105,13 +8552,18 @@ def get_user_details_api(request, user_id):
     # ---- Текущий доступ ----
     access = AccessService(staff_id=str(user.id_staff)).check_access()
 
+    user_joined_local = user.date_joined.astimezone(MOSCOW_TZ)
+    user_last_login_local = user.last_login.astimezone(MOSCOW_TZ) if user.last_login else None
+    first_payment_local = first_payment.created_at.astimezone(MOSCOW_TZ) if first_payment else None
+    last_payment_local = last_payment.created_at.astimezone(MOSCOW_TZ) if last_payment else None
+
     response_data = {
         "id": user.id,
         "username": user.username,
         "email": user.email or "—",
         "id_staff": str(user.id_staff),
-        "date_joined": user.date_joined.strftime("%d.%m.%Y %H:%M"),
-        "last_login": user.last_login.strftime("%d.%m.%Y %H:%M") if user.last_login else "—",
+        "date_joined": user_joined_local.strftime("%d.%m.%Y %H:%M"),
+        "last_login": user_last_login_local.strftime("%d.%m.%Y %H:%M") if user_last_login_local else "—",
         "is_active": user.is_active,
         "is_staff": user.is_staff,
         "is_subscribed": user.is_subscribed,
@@ -8136,9 +8588,9 @@ def get_user_details_api(request, user_id):
             "extra_credits": access.get("extra_credits", 0),
             "daily_limit": access.get("daily_limit", 0),
             "can_generate": access.get("can_generate", False),
-            "first_payment": first_payment.created_at.strftime("%d.%m.%Y") if first_payment else "—",
-            "last_payment": last_payment.created_at.strftime("%d.%m.%Y") if last_payment else "—",
-            "registered_days": (today - user.date_joined.date()).days,
+            "first_payment": first_payment_local.strftime("%d.%m.%Y") if first_payment_local else "—",
+            "last_payment": last_payment_local.strftime("%d.%m.%Y") if last_payment_local else "—",
+            "registered_days": (today - user_joined_local.date()).days,
         },
         "payments": payments_list,
         "surveys": surveys_list,
@@ -8322,18 +8774,6 @@ def get_mailing_history_api(request):
             }
         )
     return JsonResponse({"history": history})
-# -------------------------
-
-
-def unsubscribe_view(request, signed_user_id):
-    try:
-        user_id = signer.unsign(signed_user_id)
-        user = get_object_or_404(AuthUser, pk=user_id)
-        user.is_subscribed = False
-        user.save()
-        return HttpResponse("Вы успешно отписались от рассылок.")
-    except (BadSignature, AuthUser.DoesNotExist):
-        return HttpResponse("Неверная или устаревшая ссылка для отписки.", status=400)
 
 
 def black_ops_launch(request, secret):
@@ -8607,8 +9047,118 @@ def impersonate_user_view(request, email):
     
     return redirect('/create')
 
+
 def strix_verify(request):
     file_path = os.path.join(
         settings.BASE_DIR, '.well-known', 'strix-verify.txt'
     )
     return FileResponse(open(file_path, 'rb'), content_type='text/plain')
+
+
+signer = TimestampSigner(salt="email-unsubscribe-salt-v6")
+
+
+def get_unsubscribe_token(user: AuthUser) -> str:
+    """Генератор защищенного токена отписки для конкретного юзера."""
+    return signer.sign(str(user.pk))
+
+
+@require_http_methods(["GET", "POST"])
+def unsubscribe_view(request, signed_user_id):
+    """
+    Обработка отписки от рассылок.
+    Поддерживает отмену отписки (resubscribe) и безопасный парсинг подписи.
+    """
+    
+    try:
+        user_id = signer.unsign(signed_user_id)
+        user = AuthUser.objects.filter(pk=user_id).first()
+        if not user:
+            raise AuthUser.DoesNotExist
+    except (BadSignature, SignatureExpired, AuthUser.DoesNotExist, ValueError):
+        return render(
+            request, 
+            "unsubscribe_status.html", 
+            {"status": "error", "message": "Ссылка для отписки недействительна или устарела."},
+            status=400
+        )
+
+    if request.method == "POST" and request.POST.get("action") == "resubscribe":
+        user.is_subscribed = True
+        user.save(update_fields=["is_subscribed"])
+        return render(
+            request, 
+            "unsubscribe_status.html", 
+            {"status": "resubscribed", "user": user, "signed_user_id": signed_user_id}
+        )
+
+    user.is_subscribed = False
+    user.save(update_fields=["is_subscribed"])
+
+    return render(
+        request, 
+        "unsubscribe_status.html",
+        {"status": "unsubscribed", "user": user, "signed_user_id": signed_user_id}
+    )
+
+
+def preview_release_email(request):
+    """Тестовая ручка для рендера email-шаблона в браузере."""
+    # Берем текущего юзера или первого из базы для генерации живого токена
+    if request.user.is_authenticated:
+        user = request.user
+    else:
+        user = AuthUser.objects.first()
+
+    token = get_unsubscribe_token(user) if user else "demo_preview_token"
+
+    context = {
+        "user_name": user.username if user else "Создатель",
+        "user_unsubscribe_token": token,
+    }
+    return render(request, "emails/email.html", context)
+
+
+@csrf_exempt
+@require_POST
+def unisender_webhook_view(request):
+    """
+    Прием вебхуков от Unisender (отписка, спам-жалобы).
+    Гасит флаг is_subscribed у пользователя в БД без авторизации.
+    """
+    try:
+        email = None
+
+        # 1. Если прилетел стандартный application/x-www-form-urlencoded
+        if request.POST:
+            email = request.POST.get("email") or request.POST.get("event_data[email]")
+            # Иногда Unisender шлет событие списком: events_by_user[0][email]
+            if not email:
+                for key, val in request.POST.items():
+                    if "email" in key.lower() and "@" in str(val):
+                        email = val
+                        break
+
+        # 2. Если Unisender прислал raw JSON payload
+        if not email and request.body:
+            try:
+                payload = json.loads(request.body.decode("utf-8"))
+                if isinstance(payload, dict):
+                    email = payload.get("email") or payload.get("event_data", {}).get("email")
+                elif isinstance(payload, list) and len(payload) > 0:
+                    email = payload[0].get("email")
+            except Exception:
+                pass
+
+        # 3. Гасим подписку в базе данных
+        if email:
+            normalized_email = email.strip().lower()
+            updated_count = AuthUser.objects.filter(email=normalized_email).update(is_subscribed=False)
+            tracer_l.info(f"UNISENDER WEBHOOK: {normalized_email} отписан от рассылки (затронуто записей: {updated_count})")
+        else:
+            tracer_l.warning(f"UNISENDER WEBHOOK: Получен запрос без email. Body: {request.body[:200]}")
+
+    except Exception as e:
+        tracer_l.error(f"UNISENDER WEBHOOK ERROR: {e}", exc_info=True)
+
+    return HttpResponse("OK", status=200)

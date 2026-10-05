@@ -1,7 +1,7 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" class="h-full">
 <head>
-    {% include 'components/meta_tags.html' %} 
+    {% include 'components/meta_tags.html' %}
     <meta name="csrf-token" content="{{ csrf_token }}">
     {% load static %}
     <link rel="icon" href="{% static 'img/favicon.ico' %}" type="image/ico">
@@ -14,15 +14,6 @@
         <script src="{% static 'vendor/jquery.min.js' %}"></script>
     {% endif %}
 
-    {% if view_count < 2 %}
-        <meta name="robots" content="noindex, nofollow" />
-    {% endif %}
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=Unbounded:wght@500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
     <!-- Yandex.Metrika counter -->
     <script type="text/javascript" >
         setTimeout(function() {
@@ -42,1324 +33,1032 @@
     </script>
     <noscript><div><img src="https://mc.yandex.ru/watch/98823704" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
     <!-- /Yandex.Metrika counter -->
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&family=Wix+Madefor+Display:wght@600;700;800&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
         :root {
-            --color-bg: #0F0818;
-            --color-surface: rgba(32, 31, 52, 0.5);
-            --color-border: rgba(97, 109, 240, 0.2);
-            --color-text-primary: #f0f0f0;
-            --color-text-secondary: #a0a0b0;
-            --color-accent-primary: #616DF0;
-            --color-accent-secondary: #70dd60;
-        }
-        body { background-color: var(--color-bg); font-family: 'Inter', sans-serif; }
-        h1, h2, h3 { font-family: 'Unbounded', sans-serif; }
-        .gradient-text {
-            background: linear-gradient(45deg, var(--color-accent-primary), var(--color-accent-secondary));
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            --bg-main: #111119;
+            --card-bg: rgba(24, 24, 36, 0.7);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --spring-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+            --spring-smooth: cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        .toggle-switch input:checked + .slider { background-color: var(--color-accent-secondary); }
-        .toggle-switch input:checked + .slider:before { transform: translateX(26px); }
-        .toggle-switch input:disabled + .slider { opacity: 0.5; cursor: not-allowed; }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(15px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fadeIn {
-            animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+        body {
+            background: var(--bg-main);
+            font-family: 'Golos Text', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: #F3F4F6;
+            letter-spacing: -0.01em;
         }
 
-        .floating-action-bar {
-            position: fixed;
-            bottom: 1.25rem;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 0.5rem;
-            padding: 0.5rem;
-            background: linear-gradient(135deg, rgba(30, 24, 48, 0.4), rgba(30, 24, 48, 0.2));
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
+        h1, h2, h3, .font-display {
+            font-family: 'Wix Madefor Display', sans-serif;
+            letter-spacing: -0.025em;
+        }
+
+        .font-mono-nums {
+            font-family: 'JetBrains Mono', monospace;
+            letter-spacing: -0.03em;
+        }
+
+        .font-mono-nums { font-family: 'JetBrains Mono', monospace; }
+
+        .glass-panel {
+            background: var(--card-bg);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid var(--card-border);
+        }
+
+        /* ==========================================================================
+           TRUE APPLE DYNAMIC ISLAND MORPHING
+           ========================================================================== */
+        .island-capsule {
+            background: rgba(24, 23, 26, 0.92);
+            backdrop-filter: blur(28px);
+            -webkit-backdrop-filter: blur(28px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.8);
             border-radius: 9999px;
-            border: 1px solid transparent;
-            background-clip: padding-box;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), 
-                        inset 0 1px 1px rgba(255, 255, 255, 0.05);
-            z-index: 50;
-            transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+            
+            /* Фирменная пружина Apple для ширины и скейла */
+            transition: 
+                max-width 0.45s var(--spring-bounce),
+                padding 0.35s var(--spring-smooth),
+                background-color 0.3s ease,
+                border-color 0.3s ease,
+                box-shadow 0.3s ease,
+                transform 0.4s var(--spring-bounce);
+            will-change: max-width, transform, border-color, box-shadow;
         }
 
-        .floating-action-bar a, .floating-action-bar button {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.75rem;
-            height: 3rem;
-            padding: 0 1.25rem;
-            border: none;
-            border-radius: 9999px;
-            font-size: 1rem;
-            font-weight: 600;
-            text-decoration: none;
-            white-space: nowrap;
-            cursor: pointer;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        /* Состояние 1: Дефолтный широкий хедер */
+        .island-capsule.mode-header {
+            max-width: 56rem; /* 896px = max-w-4xl */
+            width: 100%;
+            padding: 0.625rem 1.25rem;
         }
 
-        .floating-action-bar .copy-btn,
-        .floating-action-bar a[title="Создать свой"] {
-            width: 3rem;
-            padding: 0;
+        /* Состояние 2: Остров сжался под уведомление (Компактная пилюля) */
+        .island-capsule.mode-notify {
+            max-width: 25rem; /* ~400px под сообщение */
+            width: auto;
+            padding: 0.5rem 1.25rem;
+            transform: scale(1.02);
+            background: rgba(18, 17, 20, 0.98);
         }
 
-        .floating-action-bar a:hover, 
-        .floating-action-bar button:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        /* Акцентные ауры типов уведомлений */
+        .island-capsule.theme-success {
+            border-color: rgba(16, 185, 129, 0.45);
+            box-shadow: 0 15px 35px -8px rgba(16, 185, 129, 0.3), 0 0 0 1px rgba(16, 185, 129, 0.15);
+        }
+        .island-capsule.theme-error {
+            border-color: rgba(244, 63, 94, 0.45);
+            box-shadow: 0 15px 35px -8px rgba(244, 63, 94, 0.3), 0 0 0 1px rgba(244, 63, 94, 0.15);
+        }
+        .island-capsule.theme-warning {
+            border-color: rgba(245, 158, 11, 0.45);
+            box-shadow: 0 15px 35px -8px rgba(245, 158, 11, 0.3), 0 0 0 1px rgba(245, 158, 11, 0.15);
+        }
+        .island-capsule.theme-info {
+            border-color: rgba(99, 102, 241, 0.45);
+            box-shadow: 0 15px 35px -8px rgba(99, 102, 241, 0.3), 0 0 0 1px rgba(99, 102, 241, 0.15);
         }
 
-        .floating-action-bar a:active,
-        .floating-action-bar button:active {
-            transform: translateY(-1px) scale(0.98);
+        /* Переходы внутреннего контента */
+        .island-content-layer {
+            transition: opacity 0.25s var(--spring-smooth), transform 0.3s var(--spring-bounce), filter 0.25s;
         }
 
-        .floating-action-bar a[href*="take_test"],
-        .floating-action-bar button.bg-\[\--color-accent-primary\] {
-            background-color: var(--color-accent-primary);
-            color: white;
+        /* Пружинистые кнопки страницы */
+        .spring-btn {
+            transition: transform 0.25s var(--spring-bounce), background-color 0.2s, box-shadow 0.2s;
         }
+        .spring-btn:hover { transform: scale(1.03) translateY(-1px); }
+        .spring-btn:active { transform: scale(0.96) translateY(0); }
 
-        .floating-action-bar a[href*="preview_test_result"],
-        .floating-action-bar button.bg-\[\--color-accent-secondary\] {
-            background-color: var(--color-accent-secondary);
-            color: var(--color-bg);
-        }
-
-        .floating-action-bar a.copy-btn,
-        .floating-action-bar a[title="Создать свой"] {
-            background-color: rgba(255, 255, 255, 0.1);
-            color: white;
-        }
-        .floating-action-bar a.copy-btn:hover,
-        .floating-action-bar a[title="Создать свой"]:hover {
-            background-color: rgba(255, 255, 255, 0.2);
-        }
-
-        .apple-toast {
-            position: fixed;
-            top: -100px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            padding: 0.75rem 1rem;
-            background: linear-gradient(135deg, rgba(40, 35, 60, 0.7), rgba(30, 24, 48, 0.6));
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            color: white;
-            font-weight: 600;
-            font-size: 0.9rem;
-            border-radius: 9999px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4),
-                        inset 0 1px 1px rgba(255, 255, 255, 0.05);
-            z-index: 1000;
-            transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
-            width: max-content;
-        }
-
-        .apple-toast--visible {
-            transform: translateX(-50%) translateY(220px);
-        }
-
-        .apple-toast .icon-success {
-            font-size: 1.1rem;
-            color: var(--color-accent-secondary);
-        }
-
-        .apple-toast .icon-error {
-            font-size: 1.1rem;
-            color: #EF4444;
-        }
-
-        /* Модалка при удалении */
-        @keyframes modalIn {
-            from { transform: scale(0.9); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-        }
-        .animate-modalIn {
-            animation: modalIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        
-        .button-red:hover {
-            background: rgba(231, 76, 117, 0.6) !important;
-            border-color: rgba(231, 76, 117, 0.8) !important;
+        .spring-modal-content {
+            transition: transform 0.35s var(--spring-bounce), opacity 0.25s var(--spring-smooth);
         }
     </style>
 </head>
-<body class="text-[var(--color-text-primary)]">
+<body class="min-h-full flex flex-col antialiased selection:bg-indigo-600 selection:text-white">
 
-    {% if not_found %}
-        <main class="max-w-xl mx-auto text-center py-24 px-4">
-            <div class="flex justify-center mb-6">
-                <div class="flex items-center justify-center h-20 w-20 rounded-full bg-red-500/10 border border-red-500/30">
-                    <i class="fas fa-exclamation-triangle text-4xl text-red-400"></i>
-                </div>
-            </div>
-            <h1 class="text-3xl sm:text-4xl font-extrabold text-white">Тест не найден</h1>
-            <p class="mt-4 text-lg text-gray-400">
-                Возможно, ссылка устарела или была удалена.
-            </p>
-            <div class="mt-8">
-                <a href="/#create-now" class="inline-block bg-[var(--color-accent-primary)] text-white px-10 py-4 font-bold rounded-full transition-transform hover:scale-105 shadow-lg shadow-[var(--color-accent-primary)]/20">
-                    Создать свой тест
+    <!-- ЛЕВЫЙ ВЕРТИКАЛЬНЫЙ ДОК (DESKTOP) -->
+    <aside class="hidden lg:flex fixed left-5 top-1/2 -translate-y-1/2 flex-col items-center gap-6 py-6 px-3.5 glass-panel rounded-[28px] z-40 shadow-2xl">
+        <a href="/" class="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors" title="Главная">
+            <img src="{% static 'img/logo.png' %}" alt="Logo" class="w-5 h-auto">
+        </a>
+        <div class="w-6 h-px bg-white/10"></div>
+        <nav class="flex flex-col gap-4">
+            <a href="{% url 'create' %}" class="w-11 h-11 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 flex items-center justify-center hover:bg-indigo-600 hover:text-white spring-btn group" title="Создать тест">
+                <i class="fas fa-plus text-sm group-hover:rotate-90 transition-transform duration-300"></i>
+            </a>
+            {% if username != 0 %}
+                <a href="{% url 'history' %}" class="w-11 h-11 rounded-2xl bg-white/5 border border-white/5 text-gray-400 flex items-center justify-center hover:text-white hover:bg-white/10 spring-btn" title="История тестов">
+                    <i class="fa-sharp fa-solid fa-clock-rotate-left fa-layer-group text-sm"></i>
                 </a>
-            </div>
-        </main>
+                <a href="{% url 'profile_redirect' %}" class="w-11 h-11 rounded-2xl bg-white/5 border border-white/5 text-gray-400 flex items-center justify-center hover:text-white hover:bg-white/10 spring-btn" title="Профиль">
+                    <i class="fas fa-user-astronaut text-sm"></i>
+                </a>
+            {% endif %}
+        </nav>
+        {% if username != 0 %}
+            <div class="w-6 h-px bg-white/10 mt-auto"></div>
+            <a href="{% url 'logout' %}" class="w-11 h-11 rounded-2xl text-gray-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors flex items-center justify-center" title="Выйти">
+                <i class="fas fa-arrow-right-from-bracket text-sm"></i>
+            </a>
+        {% endif %}
+    </aside>
 
-    {% else %}
+    <!-- МОБИЛЬНЫЙ НИЖНИЙ DOCK -->
+    <nav class="lg:hidden fixed bottom-4 left-1/2 -translate-x-1/2 island-capsule rounded-full px-6 py-3 flex items-center gap-6 z-40 shadow-2xl">
+        <a href="/" class="text-gray-400 hover:text-white"><i class="fas fa-home text-base"></i></a>
+        <a href="{% url 'create' %}" class="w-9 h-9 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-600/30"><i class="fas fa-plus text-sm"></i></a>
+        {% if username != 0 %}
+            <a href="{% url 'history' %}" class="text-gray-400 hover:text-white"><i class="fas fa-layer-group text-base"></i></a>
+            <a href="{% url 'profile_redirect' %}" class="text-gray-400 hover:text-white"><i class="fas fa-user text-base"></i></a>
+        {% else %}
+            <a href="/login" class="text-xs font-semibold text-indigo-400">Войти</a>
+        {% endif %}
+    </nav>
 
-        <div id="scrollProgress" class="fixed top-0 left-0 h-1 bg-[var(--color-accent-primary)] z-50" style="width: 0%;"></div>
+    <!-- КОНТЕНТНАЯ ЗОНА -->
+    <div class="lg:pl-28 flex-grow flex flex-col">
 
-        <header class="sticky top-4 z-40 max-w-3xl  mx-auto">
-            <div class="relative max-w-3xl mx-auto">
-                <!-- Основная панель хедера -->
-                <div class="flex items-center justify-between gap-4 
-                    bg-[var(--color-surface)]/80 backdrop-blur-xl 
-                    rounded-[32px] border border-[var(--color-border)] 
-                    pl-4 pr-4 ml-2 mr-2 py-2 shadow-2xl shadow-black/50">
-                    <!-- Логотип -->
-                    <a href="/" class="flex-shrink-0">
-                        <img src="{% static 'img/logo.png' %}" alt="Летучка Логотип" class="w-8 h-auto">
-                    </a>
-                    <!-- Контекстная информация (скрыта на мобильных) -->
-                    <div class="hidden sm:flex flex-col items-center min-w-0">
-                        <h1 class="text-sm font-bold text-white truncate" title="{{ title }}">{{ title | truncatechars:40  }}</h1>
-                        <div class="flex items-center gap-2 text-xs text-gray-400">
-                            <span>{{ author }}</span>
-                            <span class="text-gray-600">•</span>
-                            <div class="flex items-center gap-1.5" title="{{ view_count }} просмотров">
-                                <i class="fas fa-eye text-xs"></i>
-                                <span>{{ view_count }}</span>
-                            </div>
+        <!-- DYNAMIC ISLAND HEADER -->
+        <header class="sticky top-4 z-40 w-full px-4 flex justify-center pointer-events-none">
+            <div id="dynamic-island" class="island-capsule mode-header pointer-events-auto flex items-center justify-center relative overflow-hidden min-h-[48px]">
+                
+                <!-- 1. ДЕФОЛТНЫЙ СЛОЙ: ЭЛЕМЕНТЫ УПРАВЛЕНИЯ ТЕСТОМ -->
+                <div id="island-controls" class="island-content-layer w-full flex items-center justify-between gap-4 opacity-100 scale-100">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <a href="/" class="flex-shrink-0 transition-opacity hover:opacity-80">
+                            <img src="{% static 'img/logo.png' %}" alt="Летучка" class="w-7 h-auto">
+                        </a>
+                        <div class="min-w-0 flex items-center gap-2">
+                            <h1 id="header-survey-title" class="text-xs sm:text-sm font-semibold text-white truncate max-w-[170px] sm:max-w-xs md:max-w-md">
+                                {{ title }}
+                            </h1>
+                            {% if can_edit %}
+                                <button onclick="openEditTitleModal()" class="text-gray-500 hover:text-indigo-400 transition-colors p-1" title="Переименовать тест">
+                                    <i class="fas fa-pen text-[10px]"></i>
+                                </button>
+                            {% endif %}
                         </div>
                     </div>
-                    <!-- "Кнопка Действий" (Action Button) -->
-                    <div class="flex-shrink-0">
-                        <button id="action-menu-btn" class="h-12 w-12 flex items-center justify-center bg-black/20 rounded-full hover:bg-black/40 transition-colors transition-transform active:scale-[.95]">
-                            <i class="fas fa-ellipsis-h text-[var(--color-accent-primary)]"></i>
-                        </button>
+
+                    <div class="flex items-center gap-2.5 flex-shrink-0">
+                        <div class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/5 text-[11px] text-gray-300 font-mono-nums">
+                            <i class="fas fa-eye text-gray-500"></i>
+                            <span>{{ view_count }}</span>
+                        </div>
+
+                        {% if is_creator and username != 0 %}
+                            <a href="{% url 'preview_test_result' survey_id %}" class="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-indigo-600/10 border border-indigo-500/20 text-indigo-400 hover:bg-indigo-600/20 text-xs font-semibold transition-colors spring-btn">
+                                <i class="fas fa-chart-pie text-[10px]"></i>
+                                <span>Аналитика</span>
+                            </a>
+                        {% endif %}
                     </div>
                 </div>
-                <!-- Выпадающее меню -->
-                <div id="action-menu" class="hidden absolute top-full right-0 mt-2 w-64
-                                            bg-[var(--color-surface)]/90 backdrop-blur-xl 
-                                            rounded-3xl border border-[var(--color-border)]
-                                            p-2 shadow-2xl shadow-black/50
-                                            origin-top-right transition-all duration-200 ease-out 
-                                            transform opacity-0 scale-95 z-50">
-                    <nav class="flex flex-col">
-                        {% if username != 0 %}
-                            
-                            <a href="{% url 'create' %}" class="flex items-center gap-3 px-4 py-3 text-white font-semibold rounded-3xl hover:bg-white/5 transition-transform active:scale-[.97]"><i class="fas fa-plus w-5 text-center text-gray-400"></i><span>Создать новый</span></a>
-                            <a href="{% url 'history' %}" class="flex items-center gap-3 px-4 py-3 text-white font-semibold rounded-3xl hover:bg-white/5 transition-transform active:scale-[.97]"><i class="fas fa-history w-5 text-center text-gray-400"></i><span>История тестов</span></a>
-                            <a href="{% url 'profile_redirect' %}" class="flex items-center gap-3 px-4 py-3 text-white font-semibold rounded-3xl hover:bg-white/5 transition-transform active:scale-[.97]"><i class="fas fa-user-circle w-5 text-center text-gray-400"></i><span>Мой профиль</span></a>
-                            
-                            <hr class="border-t border-[var(--color-border)] my-1">
-                            <a href="{% url 'logout' %}" class="flex items-center gap-3 px-4 py-3 text-red-400 font-semibold rounded-3xl hover:bg-white/5 transition-transform active:scale-[.97]"><i class="fas fa-sign-out-alt w-5 text-center"></i><span>Выйти</span></a>
 
-                        {% else %}
-                            <a href="/#transformation-engine" class="px-4 py-3 text-white font-semibold rounded-3xl hover:bg-white/5 transition-transform active:scale-[.97]">Как начать</a>
-                            <a href="/#use-cases" class="px-4 py-3 text-white font-semibold rounded-3xl hover:bg-white/5 transition-transform active:scale-[.97]">Кейсы</a>
-                            <a href="/#analytics-showcase" class="px-4 py-3 text-white font-semibold rounded-3xl hover:bg-white/5 transition-transform active:scale-[.97]">Аналитика</a>
-                            <a href="/#faq" class="px-4 py-3 text-white font-semibold rounded-3xl hover:bg-white/5 transition-transform active:scale-[.97]">FAQ</a>
-                            <hr class="border-t border-[var(--color-border)] my-1">
-                            <a href="/register" class="block text-center bg-[var(--color-accent-primary)] text-white px-5 py-3 font-bold rounded-3xl mt-1">Зарегистрироваться</a>
-                        {% endif %}
-                    </nav>
+                <!-- 2. СЛОЙ УВЕДОМЛЕНИЙ: ПОЯВЛЯЕТСЯ ВМЕСТО ЭЛЕМЕНТОВ УПРАВЛЕНИЯ -->
+                <div id="island-notice" class="island-content-layer hidden w-full items-center justify-center gap-3 opacity-0 scale-75 select-none">
+                    <span id="island-icon-box" class="w-6 h-6 rounded-full flex items-center justify-center text-xs flex-shrink-0">
+                        <i id="island-icon" class="fas fa-check"></i>
+                    </span>
+                    <span id="island-text" class="text-xs sm:text-sm font-semibold text-white tracking-wide truncate"></span>
                 </div>
+
             </div>
-            {% if is_creator %}
-                {% if username != 0 %}
-                    <div class="mt-2 pt-1 pl-2 pr-2 ml-2 mr-2 flex justify-between items-center gap-3
-                    flex items-center justify-between gap-4 
-                    bg-[var(--color-surface)]/80 backdrop-blur-xl 
-                    rounded-[32px] border border-[var(--color-border)] 
-                    pl-4 pr-4 py-2 shadow-2xl shadow-black/50">
-                        <div class="flex items-center gap-3">
-                            <label class="toggle-switch relative inline-block w-[52px] h-[28px]">
-                                <input type="checkbox" id="answersToggle" class="opacity-0 w-0 h-0" {% if show_answers %}checked{% endif %}>
-                                <span class="slider absolute cursor-pointer top-0 left-0 right-0 bottom-0 bg-gray-600 rounded-full transition-colors before:absolute before:content-[''] before:h-[20px] before:w-[20px] before:left-[4px] before:bottom-[4px] before:bg-white before:rounded-full before:transition-transform"></span>
-                            </label>
-                            <span class="text-sm font-semibold text-white">Ответы</span>
-                            <div class="group relative flex items-center">
-                                <i class="fas fa-question-circle text-gray-500 cursor-pointer"></i>
-                                
-                                <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 
-                                            bg-black p-3 rounded-xl border border-gray-700 shadow-lg
-                                            opacity-0 group-hover:opacity-100 group-focus:opacity-100 
-                                            transition-opacity duration-300 pointer-events-none">
-                                    
-                                    <p class="text-sm text-gray-300 leading-relaxed">
-                                        <strong class="text-white">Если опция включена,</strong> правильные ответы будут видны всем участникам.
-                                    </p>
-                                    <div class="absolute left-1/2 -translate-x-1/2 bottom-[-6px] w-3 h-3 bg-black border-b border-r border-gray-700 transform rotate-45"></div>
+        </header>
+
+        <!-- BENTO GRID -->
+        <main class="max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 mt-8 flex-grow">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                
+                <!-- ЛЕВАЯ СЕКЦИЯ: ВОПРОСЫ (col-span-8) -->
+                <section class="lg:col-span-8 space-y-4">
+                    <div class="flex items-center justify-between px-2 pb-2">
+                        <div class="flex items-center gap-2.5">
+                            <span class="text-xs font-bold uppercase tracking-wider text-gray-400">Вопросы</span>
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold font-mono-nums bg-white/5 border border-white/10 text-gray-300" id="total-questions-badge">
+                                {{ questions|length }}
+                            </span>
+                        </div>
+                        <span class="text-xs text-gray-500 font-medium">{{ model_name }}</span>
+                    </div>
+
+                    <div id="questions-stream" class="space-y-4">
+                        {% for question in questions %}
+                        <article class="question-card glass-panel rounded-[28px] p-6 transition-all relative border border-white/[0.08]" data-question-index="{{ forloop.counter0 }}">
+                            <div class="flex items-start justify-between gap-4 mb-4">
+                                <div class="flex items-center gap-2.5">
+                                    <span class="w-8 h-8 rounded-xl bg-[#18171A] border border-white/10 font-mono-nums text-xs font-bold text-gray-300 flex items-center justify-center">
+                                        {{ forloop.counter }}
+                                    </span>
+                                    {% if question.type == 'multiple' %}
+                                        <span class="px-2.5 py-1 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[11px] font-semibold flex items-center gap-1.5">
+                                            <i class="fas fa-list-check text-[10px]"></i> Несколько вариантов
+                                        </span>
+                                    {% else %}
+                                        <span class="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-gray-400 text-[11px] font-medium">
+                                            Один вариант
+                                        </span>
+                                    {% endif %}
+                                </div>
+
+                                <div class="edit-actions hidden items-center gap-1">
+                                    <button type="button" class="text-gray-400 hover:text-indigo-400 p-2 rounded-xl hover:bg-white/5 transition-colors spring-btn" onclick="editExistingQuestion({{ forloop.counter0 }})" title="Редактировать">
+                                        <i class="fas fa-pen-to-square text-xs"></i>
+                                    </button>
+                                    <button type="button" class="text-gray-400 hover:text-rose-400 p-2 rounded-xl hover:bg-rose-500/10 transition-colors spring-btn" onclick="deleteQuestion({{ forloop.counter0 }})" title="Удалить">
+                                        <i class="fas fa-trash-can text-xs"></i>
+                                    </button>
                                 </div>
                             </div>
-                        </div>
-                        
-                        <div class="flex justify-end">
-                            <a href="{% url 'preview_test_result' survey_id %}" 
-                            class="group inline-flex items-center gap-2 
-                                    bg-indigo-600 hover:bg-indigo-500 
-                                    text-white text-sm font-bold 
-                                    py-2.5 px-6 rounded-full hover:shadow-indigo-500/60 
-                                    transition-all duration-300 ease-out 
-                                    transform hover:-translate-y-0.5 hover:scale-105 active:scale-95">
-                                
-                                <span class="text-xs">Аналитика</span>
-                                
-                                <i class="fas fa-arrow-right transition-transform duration-300 group-hover:translate-x-1"></i>
+
+                            <h3 class="text-base font-semibold text-white mb-5 leading-snug">
+                                {{ question.question }}
+                            </h3>
+
+                            <div class="space-y-2.5">
+                                {% for option in question.options %}
+                                <div class="option-row flex items-center gap-3 p-3.5 rounded-2xl border text-sm transition-all
+                                    {% if show_answers and option in question.correct_answers %}
+                                        is-correct bg-emerald-500/10 border-emerald-500/30 text-emerald-300 font-medium
+                                    {% else %}
+                                        {% if option in question.correct_answers %}is-correct{% endif %} bg-[#18171A]/70 border-white/[0.04] text-gray-300
+                                    {% endif %}"
+                                    data-is-correct="{% if option in question.correct_answers %}true{% else %}false{% endif %}">
+                                    
+                                    <span class="opt-badge w-6 h-6 rounded-lg flex items-center justify-center text-xs flex-shrink-0
+                                        {% if show_answers and option in question.correct_answers %}
+                                            bg-emerald-500 text-black font-bold
+                                        {% else %}
+                                            bg-white/5 border border-white/10 text-gray-400
+                                        {% endif %}">
+                                        {% if question.type == 'multiple' %}
+                                            <i class="opt-icon fas {% if show_answers and option in question.correct_answers %}fa-check{% else %}fa-square text-[9px] opacity-40{% endif %}"></i>
+                                        {% else %}
+                                            <i class="opt-icon fas {% if show_answers and option in question.correct_answers %}fa-check{% else %}fa-circle text-[7px] opacity-40{% endif %}"></i>
+                                        {% endif %}
+                                    </span>
+                                    
+                                    <span class="flex-grow">{{ option }}</span>
+
+                                    <span class="opt-label text-[11px] font-mono-nums uppercase tracking-wider text-emerald-400 font-bold {% if not show_answers or option not in question.correct_answers %}hidden{% endif %}">
+                                        Верно
+                                    </span>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </article>
+                        {% endfor %}
+                    </div>
+
+                    <div id="add-question-box" class="hidden p-6 border-2 border-dashed border-white/10 hover:border-indigo-500/50 rounded-[28px] bg-white/[0.02] transition-colors">
+                        <button type="button" onclick="openNewQuestionModal()" class="w-full flex items-center justify-center gap-2.5 py-3 text-sm font-semibold text-indigo-400 hover:text-indigo-300 spring-btn">
+                            <i class="fas fa-plus-circle text-base"></i> Добавить вопрос
+                        </button>
+                    </div>
+                </section>
+
+                <!-- ПРАВАЯ СЕКЦИЯ: ПАНЕЛЬ ДЕЙСТВИЙ (col-span-4) -->
+                <aside class="lg:col-span-4 space-y-5 lg:sticky lg:top-24">
+                    
+                    <div class="glass-panel rounded-[32px] p-6 shadow-2xl space-y-4">
+                        <a href="{% url 'take_test' survey_id %}" class="w-full flex items-center justify-center gap-3 py-4 px-5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold shadow-lg shadow-indigo-600/30 spring-btn">
+                            <i class="fas fa-play text-xs"></i>
+                            <span>Запустить прохождение</span>
+                        </a>
+
+                        <button type="button" data-action="share" data-share-url="{% url 'take_test' survey_id %}" class="w-full flex items-center justify-center gap-3 py-3.5 px-4 rounded-2xl bg-[#18171A] hover:bg-white/5 border border-white/10 text-gray-200 text-xs font-semibold spring-btn">
+                            <i class="fas fa-share-nodes text-gray-400"></i>
+                            <span>Поделиться ссылкой</span>
+                        </button>
+
+                        <div class="grid grid-cols-2 gap-2 pt-2 border-t border-white/10">
+                            <button onclick="showClassroomQR()" class="flex items-center justify-center gap-2 py-3 rounded-xl bg-[#18171A] border border-white/5 text-xs font-medium text-gray-300 hover:text-white spring-btn">
+                                <i class="fas fa-qrcode text-gray-400"></i> QR-код
+                            </button>
+                            <a href="{% url 'download-survey_pdf' survey_id %}" class="flex items-center justify-center gap-2 py-3 rounded-xl bg-[#18171A] border border-white/5 text-xs font-medium text-gray-300 hover:text-white spring-btn">
+                                <i class="fas fa-file-pdf text-gray-400"></i> PDF
                             </a>
                         </div>
                     </div>
-                {% else %}
-                    <div class="mt-4 p-4 bg-[var(--color-surface)] rounded-2xl border border-[var(--color-border)] text-center text-sm text-[var(--color-text-secondary)]">
-                        <i class="fas fa-user-plus text-[var(--color-accent-primary)] mr-2"></i>
-                        <button data-trigger-modal="register" class="font-semibold text-white hover:underline">Создайте аккаунт</button>, чтобы видеть ответы, сохранять свои тесты, делиться ими и&nbsp;скачивать в&nbsp;PDF для печати.
-                    </div>
-                {% endif %}
-            {% else %}
-                <div class="mt-3 text-center text-sm gap-4 
-                            bg-[var(--color-surface)]/80 backdrop-blur-xl 
-                            rounded-3xl border border-[var(--color-border)] 
-                            p-3 sm:p-4 shadow-2xl shadow-black/50">
-                    {% if show_answers %}
-                        <i class="fas fa-eye text-green-400"></i> Автор разрешил просмотр ответов.
-                    {% else %}
-                        <i class="fas fa-eye-slash text-red-400"></i> Автор скрыл ответы.
-                    {% endif %}
-                </div>
-            {% endif %}
-        </header>
 
-        <div class="max-w-3xl mx-auto p-4 sm:p-8">
+                    {% if is_creator %}
+                    <div class="glass-panel rounded-[32px] p-6 space-y-5">
+                        <span class="text-xs font-bold uppercase tracking-wider text-gray-400 block">Управление тестом</span>
 
-            <div class="mt-4">
-                <span class="text-xs flex justify-center text-white/75">{{ date_create }}</span>
-                <h1 class="text-xl sm:text-xl font-bold text-white text-center">{{ title }}</h1>
-            </div>
-
-            <div id="ad-wrapper" class="mt-8 hidden animate-fadeIn">
-                <div class="flex items-center gap-2 mb-2 px-1">
-                    <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Партнерский контент</span>
-                    <div class="h-px flex-grow bg-white/5"></div>
-                </div>
-                <div id="ad-content" class="p-4 bg-white/5 border border-white/10 rounded-2xl backdrop-blur-sm">
-                    <!-- Сюда вставится реклама -->
-                </div>
-            </div>
-
-            <script>
-                async function loadAd() {
-                    try {
-                        const res = await fetch("{% url 'get_survey_ad' survey_id %}");
-                        const data = await res.json();
-                        if (data.html) {
-                            const container = document.getElementById('ad-content');
-                            const wrapper = document.getElementById('ad-wrapper');
-                            container.innerHTML = data.html;
-                            wrapper.classList.remove('hidden');
-                        }
-                    } catch (e) {
-                        console.error("Ad load failed", e);
-                    }
-                }
-                // Проверяем наличие рекламы через 1.5 секунды после загрузки страницы
-                setTimeout(loadAd, 1500);
-            </script>
-
-            <!-- ГЛАВНЫЙ КОНТРОЛЛЕР -->
-            {% if is_creator %}
-            {% if username != 0 %}
-            <div class="mx-auto mt-8">
-                <div class="bg-[var(--color-surface)] p-6 rounded-[2rem] border border-[var(--color-border)] shadow-2xl">
-                    
-                    <!-- Основные CTA кнопки -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
-                        <!-- ПРОЙТИ ТЕСТ -->
-                        <a href="{% url 'take_test' survey_id %}" 
-                        class="flex items-center justify-center gap-3 py-4 bg-indigo-600 text-white font-black rounded-2xl
-                                transition-all hover:bg-indigo-500 hover:scale-[1.02] active:scale-[0.95] shadow-lg shadow-indigo-500/20">
-                            <i class="fas fa-play text-sm"></i>
-                            <span class="uppercase tracking-widest text-xs">Пройти тест</span>
-                        </a>
-                        <!-- ПОДЕЛИТЬСЯ -->
-                        <button data-action="share" data-share-url="{% url 'take_test' survey_id %}" 
-                                class="flex items-center justify-center gap-3 py-4 bg-[var(--color-accent-secondary)] text-black font-black rounded-2xl
-                                    transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-[var(--color-accent-secondary)]/20">
-                            <i class="fas fa-share-alt text-sm"></i>
-                            <span class="uppercase tracking-widest text-xs">Поделиться</span>
-                        </button>
-                    </div>
-
-                    <!-- Вспомогательные инструменты -->
-                    <div class="flex items-center justify-around border-t border-white/5 pt-5">
-                        <!-- QR -->
-                        <button onclick="showClassroomQR()" class="flex flex-col items-center gap-2 group transition-transform active:scale-[0.95]">
-                            <div class="h-10 w-10 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-white/10 transition-colors">
-                                <i class="fas fa-qrcode text-gray-400 group-hover:text-indigo-400"></i>
+                        <!-- Тумблер ответов -->
+                        <div class="flex items-center justify-between gap-4 py-2 border-b border-white/5">
+                            <div>
+                                <span class="text-xs font-semibold text-white block">Показ ответов</span>
+                                <span class="text-[11px] text-gray-500">Видны участникам теста</span>
                             </div>
-                            <span class="text-[9px] font-bold text-gray-500 uppercase tracking-tighter">QR-код</span>
-                        </button>
+                            <label class="relative inline-block w-11 h-6 cursor-pointer">
+                                <input type="checkbox" id="answersToggle" class="sr-only peer" {% if show_answers %}checked{% endif %}>
+                                <div class="w-11 h-6 bg-[#18171A] border border-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-400 peer-checked:after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                            </label>
+                        </div>
 
-                        <!-- PDF -->
-                        <a href="{% url 'download-survey_pdf' survey_id %}" class="flex flex-col items-center gap-2 group transition-transform active:scale-[0.95]">
-                            <div class="h-10 w-10 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-white/10 transition-colors">
-                                <i class="fas fa-file-pdf text-gray-400 group-hover:text-indigo-400"></i>
+                        <!-- Режим правки -->
+                        <div class="flex items-center justify-between py-2 border-b border-white/5">
+                            <div>
+                                <span class="text-xs font-semibold text-white block">Редактирование</span>
+                                <span class="text-[11px] text-gray-500">Правка вопросов и ответов</span>
                             </div>
-                            <span class="text-[9px] font-bold text-gray-500 uppercase tracking-tighter">Скачать PDF</span>
-                        </a>
-
-
-                        {% if is_creator %}
-                            {% if username != 0 %}
-                                <!-- ПЕРЕДЕЛАТЬ -->
-                                <button onclick="regenerateSurvey('{{ survey_id }}')" class="flex flex-col items-center gap-2 group transition-transform active:scale-[0.95]">
-                                    <div class="h-10 w-10 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-white/10 transition-colors">
-                                        <i class="fas fa-sync-alt text-gray-400 group-hover:text-indigo-400"></i>
-                                    </div>
-                                    <span class="text-[9px] font-bold text-gray-500 uppercase tracking-tighter">Переделать</span>
+                            {% if can_edit %}
+                                <button type="button" id="toggle-edit-mode-btn" class="px-3.5 py-1.5 rounded-xl bg-[#18171A] border border-white/10 text-xs font-semibold text-gray-300 hover:text-white spring-btn">
+                                    Править
                                 </button>
-                            {% endif %}
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-            {% endif %}
-            {% endif %}
-
-            {% if is_creator and username == 0 %}
-            <!-- СПИСОК ВОПРОСОВ (АВТОРАМ) -->
-            <div class="mt-8 relative">
-                {% if username == 0 %}
-                    <div class="space-y-4 select-none filter blur-[2px] pointer-events-none opacity-60 max-h-[800px] overflow-hidden">
-                        {% for question in questions %}
-                        <div class="question-card bg-[var(--color-surface)] rounded-[2rem] border border-[var(--color-border)] p-5">
-                            <div class="flex items-center gap-3 mb-3">
-                                <span class="px-3 py-1 text-xs font-semibold bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)] rounded-full">Вопрос {{ forloop.counter }}</span>
-                            </div>
-                            <p class="text-lg font-semibold text-white">{{ question.question }}</p>
-                            <div class="mt-4 space-y-3">
-                                {% for option in question.options %}
-                                <div class="flex items-start gap-3">
-                                    <div class="flex-shrink-0 flex items-center justify-center h-7 w-7 bg-black/20 rounded-full border border-[var(--color-border)] text-sm font-semibold text-[var(--color-text-secondary)]">
-                                        {{ forloop.counter }}
-                                    </div>
-                                    <div class="pt-0.5 text-white">{{ option }}</div>
-                                </div>
-                                {% endfor %}
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                    <div class="absolute inset-0 z-10 flex flex-col items-center justify-end pb-0 sm:justify-center sm:pb-0">
-                        <div class="absolute inset-0 bg-gradient-to-t from-[var(--color-bg)] via-[var(--color-bg)]/90 to-transparent"></div>
-
-                        <div class="relative w-full max-w-md p-4 animate-fadeIn">
-                            <div class="bg-[var(--color-surface)] backdrop-blur-xl border border-[var(--color-border)] p-8 rounded-[2rem] text-center shadow-2xl shadow-black/80">
-                                
-                                <div class="mx-auto w-16 h-16 bg-gradient-to-br from-[var(--color-accent-primary)] to-purple-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-purple-500/30 rotate-3 hover:rotate-6 transition-transform">
-                                    <i class="fas fa-lock text-3xl text-white"></i>
-                                </div>
-                                
-                                <h3 class="text-2xl font-black text-white mb-3">
-                                    Откройте полный доступ
-                                </h3>
-                                <p class="text-gray-400 mb-6 text-sm leading-relaxed">
-                                    Создайте бесплатный аккаунт, чтобы пройти тест до конца и получить базовые возможности.
-                                </p>
-
-                                <!-- Три ключевые фичи РЕГИСТРАЦИИ -->
-                                <div class="space-y-3 text-left mb-8">
-                                    <div class="bg-black/20 p-3 rounded-xl flex items-center gap-3 border border-transparent">
-                                        <div class="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-[var(--color-accent-primary)]/20 text-[var(--color-accent-primary)]">
-                                            <i class="fas fa-share-alt"></i>
-                                        </div>
-                                        <div>
-                                            <p class="font-semibold text-white">Делиться тестом</p>
-                                            <p class="text-xs text-gray-500">Получите публичную ссылку на ваш тест.</p>
-                                        </div>
-                                    </div>
-                                    <div class="bg-black/20 p-3 rounded-xl flex items-center gap-3 border border-transparent">
-                                        <div class="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-[var(--color-accent-primary)]/20 text-[var(--color-accent-primary)]">
-                                            <i class="fas fa-file-pdf"></i>
-                                        </div>
-                                        <div>
-                                            <p class="font-semibold text-white">Скачивать в PDF</p>
-                                            <p class="text-xs text-gray-500">Готовые к печати материалы.</p>
-                                        </div>
-                                    </div>
-                                    <div class="bg-black/20 p-3 rounded-xl flex items-center gap-3 border border-transparent">
-                                        <div class="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-[var(--color-accent-primary)]/20 text-[var(--color-accent-primary)]">
-                                            <i class="fas fa-gift"></i>
-                                        </div>
-                                        <div>
-                                            <p class="font-semibold text-white">5 бонусных генераций</p>
-                                            <p class="text-xs text-gray-500">Дополнительно к бесплатным лимитам.</p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <button data-trigger-modal="register" class="group w-full bg-[var(--color-accent-primary)] text-white font-bold py-4 rounded-2xl transition-all hover:scale-[1.02] active:scale-[0.98] shadow-xl shadow-[var(--color-accent-primary)]/20 flex items-center justify-center gap-3">
-                                    <span>Зарегистрироваться</span>
-                                    <i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
-                                </button>
-                                <p class="mt-4 text-xs text-gray-500">
-                                    Уже есть аккаунт? <a href="/login" class="text-[var(--color-accent-secondary)] hover:underline font-semibold">Войти</a>
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                <!-- Если автор ЗАРЕГАН - показываем как обычно -->
-                {% else %}
-                    <div class="space-y-4 {% if is_creator == 0 %}select-none{% endif %}">
-                        {% for question in questions %}
-                        <div class="question-card bg-[var(--color-surface)] rounded-[2rem] border border-[var(--color-border)] p-5 animate-fadeIn">
-                            <div class="flex items-center gap-3 mb-3">
-                                <span class="px-3 py-1 text-xs font-semibold bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)] rounded-full">Вопрос {{ forloop.counter }}</span>
-                            </div>
-                            <p class="text-lg font-semibold text-white">{{ question.question }}</p>
-                            
-                            <div class="mt-4 space-y-3">
-                                {% for option in question.options %}
-                                <div class="flex items-start gap-3">
-                                    <div class="flex-shrink-0 flex items-center justify-center h-7 w-7 bg-black/20 rounded-full border border-[var(--color-border)] text-sm font-semibold text-[var(--color-text-secondary)]">
-                                        {{ forloop.counter }}
-                                    </div>
-                                    <div class="pt-0.5 text-white">
-                                        {{ option }}
-                                    </div>
-                                </div>
-                                {% endfor %}
-                            </div>
-
-                            {% if question.correct_answer %}
-                                <div class="correct-answer mt-4 p-3 bg-green-500/10 border border-green-500/20 rounded-2xl flex items-center gap-3" style="display: {% if show_answers %}flex{% else %}none{% endif %};">
-                                    <i class="fas fa-check-circle text-green-400"></i>
-                                    <p class="text-sm text-gray-300">Правильный ответ: <strong class="text-white">{{ question.correct_answer }}</strong></p>
-                                </div>
-                            {% endif %}
-                        </div>
-                        {% endfor %}
-                    </div>
-                {% endif %}
-            </div>
-            {% else %}
-            <!-- СПИСОК ВОПРОСОВ -->
-            <div class="mt-8 space-y-4 {% if is_creator == 0 %}select-none{% endif %}">
-                {% for question in questions %}
-                <div class="question-card bg-[var(--color-surface)] rounded-[2rem] border border-[var(--color-border)] p-5 animate-fadeIn">
-                    <div class="flex items-center gap-3 mb-3">
-                        <span class="px-3 py-1 text-xs font-semibold bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)] rounded-full">Вопрос {{ forloop.counter }}</span>
-                    </div>
-                    <p class="text-lg font-semibold text-white">{{ question.question }}</p>
-                    
-                    <div class="mt-4 space-y-2">
-                        {% for option in question.options %}
-                        <div class="flex items-center gap-3 p-2 rounded-2xl transition-all border 
-                            {% if show_answers and option == question.correct_answer %}
-                                bg-green-500/20 border-green-500/50 shadow-[0_0_15px_rgba(34,197,94,0.1)]
                             {% else %}
-                                border-transparent
-                            {% endif %}">
-                            
-                            <div class="flex-shrink-0 flex items-center justify-center h-7 w-7 rounded-full border text-sm font-semibold 
-                                {% if show_answers and option == question.correct_answer %}
-                                    bg-green-500 border-green-400 text-white
-                                {% else %}
-                                    bg-black/20 border-[var(--color-border)] text-[var(--color-text-secondary)]
-                                {% endif %}">
-                                {{ forloop.counter }}
-                            </div>
-                            
-                            <div class="text-white font-medium">
-                                {{ option }}
-                                {% if show_answers and option == question.correct_answer %}
-                                    <i class="fas fa-check-circle ml-2 text-green-400"></i>
-                                {% endif %}
-                            </div>
+                                <a href="{% url 'payment' %}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-bold hover:bg-indigo-500/20 spring-btn">
+                                    <i class="fas fa-lock text-[10px]"></i> PRO
+                                </a>
+                            {% endif %}
                         </div>
-                        {% endfor %}
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-            {% endif %}
 
-            <div id="privacy-notice" class="mt-8 flex items-start gap-4 bg-[var(--color-surface)] rounded-3xl border border-[var(--color-border)] p-5 animate-fadeIn">
-                <div class="flex-shrink-0">
-                    <i class="fas fa-globe-americas text-xl text-[var(--color-accent-primary)] mt-1"></i>
-                </div>
-                <div>
-                    <p class="mt-1 text-sm text-[var(--color-text-secondary)] leading-relaxed">
-                        Этот тест является публичным. Любой сможет его просмотреть и&nbsp;пройти.
-                        <span class="block mt-2 opacity-70">Приватные тесты для внутреннего использования появятся в будущих обновлениях.</span>
-                    </p>
-                </div>
-            </div>
-
-            {% if username != 0 %}
-                <hr class="mt-12 border-[var(--color-border)]">
-                
-                <div class="mt-8 space-y-4">
-                    <div class="max-w-xl mx-auto mt-12 px-4 text-center mb-0">
-                        <a href="{% url 'create' %}" 
-                        class="group inline-flex items-center justify-center gap-4 px-12 py-4 bg-white text-black font-black rounded-[2rem]
-                                transition-all hover:bg-gray-100 hover:scale-[1.05] active:scale-[0.98] shadow-xl">
-                            <span class="uppercase tracking-widest text-sm">Создать новый тест</span>
-                            <i class="fa-solid fa-plus text-lg"></i>
-                        </a>
+                        <!-- Перегенерация -->
+                        <div class="flex items-center justify-between py-2 border-b border-white/5">
+                            <div>
+                                <span class="text-xs font-semibold text-white block">Пересобрать тест</span>
+                                <span class="text-[11px] text-gray-500">Нейросеть составит новые</span>
+                            </div>
+                            {% if can_edit %}
+                                <button type="button" onclick="triggerRegenerateSurvey()" class="px-3.5 py-1.5 rounded-xl bg-white/5 border border-white/10 text-xs font-semibold text-indigo-400 hover:bg-indigo-600 hover:text-white spring-btn">
+                                    <i class="fas fa-rotate mr-1"></i> Сгенерировать
+                                </button>
+                            {% else %}
+                                <a href="{% url 'payment' %}" class="text-xs text-gray-500 hover:text-gray-300">Платная опция</a>
+                            {% endif %}
+                        </div>
 
                         {% if username == author %}
-                        <div class="mt-8">
-                            <button onclick="openDeleteModal('{{ survey_id }}', '{{ title|escapejs }}')"
-                                    class="text-[10px] font-bold text-gray-600 uppercase tracking-widest hover:text-red-500 transition-colors">
+                        <div class="pt-1">
+                            <button onclick="openDeleteModal('{{ survey_id }}', '{{ title|escapejs }}')" class="w-full py-2.5 rounded-xl text-xs font-semibold text-gray-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors text-center block">
                                 Удалить этот тест
                             </button>
                         </div>
                         {% endif %}
-                        
+                    </div>
+                    {% endif %}
+
+                </aside>
+            </div>
+
+            <footer class="mt-16 sm:mt-24">
+                <div class="max-w-3xl mx-auto px-4 sm:px-8">
+                    <div class="mt-8 mb-4 pt-8 border-t border-[var(--color-border)] flex flex-col sm:flex-row justify-between items-center text-xs text-gray-600 text-center">
+                        <p>2024-2026 Летучка AI. Design & Development <a class="text-gray-500 hover:text-[var(--color-accent-primary)]" rel='nofollow' href="https://dprofile.ru/kozak_developer" target="_blank">by Kozak</a></p>
+                        <div class="mt-2 sm:mt-0">
+                            <a href="/docs/public-offer" class="hover:text-gray-400">Публичная оферта</a>
+                            <span class="mx-2">|</span>
+                            <a href="/docs/privacy-policy" class="hover:text-gray-400">Политика конфиденциальности</a>
+                        </div>
                     </div>
                 </div>
-            {% endif %}
+            </footer>
+        </main>
 
-            {% if is_creator %}
-                {% if subscription_level == 0 %}
-                    {% if username == 0 %}
-                        <div id="guest-upgrade-banner" class="mt-16 bg-[var(--color-surface)] backdrop-blur-sm border border-[var(--color-border)] rounded-3xl p-6 animate-fadeIn">
-                            <div class="flex justify-between items-center">
-                                <h3 class="text-lg font-bold text-white">Это Демо-версия</h3>
-                                <div class="flex items-center gap-2 text-sm font-medium text-purple-300">
-                                    <i class="fas fa-eye"></i>
-                                    <span>Только просмотр</span>
-                                </div>
-                            </div>
-                            
-                            <div class="mt-4">
-                                <div class="flex justify-between text-xs font-medium text-gray-400 mb-2">
-                                    <span class="font-bold text-white">Показано 5 вопросов</span>
-                                    <span class="opacity-70">Максимум 15 на Премиуме</span>
-                                </div>
-                                <div class="w-full bg-black/30 rounded-full h-2.5 overflow-hidden">
-                                    <div class="bg-gradient-to-r from-indigo-500 to-purple-600 h-2.5 rounded-full" style="width: 33%;"></div>
-                                </div>
-                            </div>
+        <!-- МОДАЛКА: СОЗДАНИЕ / РЕДАКТИРОВАНИЕ ВОПРОСА -->
+        <div id="question-editor-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+            <div class="fixed inset-0 bg-black/80 backdrop-blur-md" onclick="closeQuestionModal()"></div>
+            <div class="relative w-full max-w-xl glass-panel rounded-[32px] p-6 sm:p-8 shadow-2xl z-10 space-y-5 spring-modal-content">
+                <div class="flex items-center justify-between pb-3 border-b border-white/10">
+                    <h3 id="modal-editor-title" class="text-sm font-bold text-white uppercase tracking-wider">Новый вопрос</h3>
+                    <button type="button" onclick="closeQuestionModal()" class="text-gray-500 hover:text-white">
+                        <i class="fas fa-xmark text-lg"></i>
+                    </button>
+                </div>
 
-                            <p class="mt-4 text-sm text-gray-300 leading-relaxed">
-                                Это сокращенная версия. <button data-trigger-modal="register" class="font-bold text-[var(--color-accent-secondary)] hover:underline">Создайте бесплатный аккаунт</button>, чтобы:
-                            </p>
-                            <ul class="mt-2 ml-4 list-disc list-inside text-[var(--color-accent-secondary)] space-y-1 text-sm">
-                                <li><span class="text-white">Сохранить</span> этот тест и не потерять его.</li>
-                                <li>Создавать тесты до <span class="text-white">7 вопросов</span>.</li>
-                                <li>Получить еще <span class="text-white">5 генераций</span> в подарок.</li>
-                            </ul>
+                <form id="question-editor-form" class="space-y-4">
+                    <input type="hidden" id="edit-q-index" value="">
 
-                            <button data-trigger-modal="register" class="mt-6 w-full bg-[var(--color-accent-secondary)] text-black px-10 py-4 text-base font-bold rounded-full transition-transform hover:scale-[1.03] active:scale-[.97] shadow-lg shadow-[var(--color-accent-secondary)]/20">
-                                Зарегистрироваться и получить бонусы
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-400 mb-2">Тип вопроса</label>
+                        <div class="grid grid-cols-2 gap-2 bg-[#18171A] p-1 rounded-2xl border border-white/10">
+                            <button type="button" id="btn-type-single" onclick="setQuestionType('single')" class="py-2 rounded-xl text-xs font-semibold bg-indigo-600 text-white transition-all">Один правильный</button>
+                            <button type="button" id="btn-type-multiple" onclick="setQuestionType('multiple')" class="py-2 rounded-xl text-xs font-semibold text-gray-400 hover:text-white transition-all">Несколько вариантов</button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-400 mb-1.5">Суть вопроса</label>
+                        <textarea id="modal-q-text" rows="2" required placeholder="Введите формулировку вопроса..." class="w-full bg-[#18171A] border border-white/10 rounded-2xl p-3.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 transition-colors"></textarea>
+                    </div>
+
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <label class="text-xs font-semibold text-gray-400">Варианты ответа</label>
+                            <button type="button" onclick="addOptionRow()" class="text-xs font-semibold text-indigo-400 hover:underline">
+                                + Вариант
                             </button>
                         </div>
-                    {% else %}
-                        <!-- Блок для ЗАРЕГИСТРИРОВАННЫХ, но бесплатных -->
-                        <div id="free-user-upgrade-banner" class="mt-16 bg-[var(--color-surface)] backdrop-blur-sm border border-[var(--color-border)] rounded-3xl p-6 animate-fadeIn">
-                            <div class="flex justify-between items-center">
-                                <h3 class="text-lg font-bold text-white">Ваш Стартовый План</h3>
-                                <a href="{% url 'payment' %}" class="flex items-center gap-2 text-sm font-medium text-indigo-300 hover:underline">
-                                    <i class="fas fa-rocket"></i>
-                                    <span>Перейти на Премиум</span>
-                                </a>
-                            </div>
-
-                            <div class="mt-4">
-                                <div class="flex justify-between text-xs font-medium text-gray-400 mb-2">
-                                    <span class="font-bold text-white">Лимит 7 вопросов</span>
-                                    <span class="opacity-70">20 вопросов в Премиуме</span>
-                                </div>
-                                <div class="w-full bg-black/30 rounded-full h-2.5 overflow-hidden">
-                                    <div class="bg-gradient-to-r from-indigo-500 to-purple-600 h-2.5 rounded-full" style="width: 35%;"></div>
-                                </div>
-                            </div>
-
-                            <p class="mt-4 text-sm text-gray-300 leading-relaxed">
-                                Перейдите на <a href="{% url 'payment' %}" class="font-bold text-[var(--color-accent-secondary)] hover:underline">Премиум</a>, чтобы разблокировать:
-                            </p>
-                            <ul class="mt-2 ml-4 list-disc list-inside text-[var(--color-accent-secondary)] space-y-1 text-sm">
-                                <li><span class="text-white">Создание тестов</span> до 15 вопросов.</li>
-                                <li>Полную аналитику <span class="text-white">по ответам участников.</span></li>
-                                <li><span class="text-white">Загрузку</span> PDF и Word файлов.</li>
-                                <li>50 генераций тестов <span class="text-white">в сутки.</span></li>
-                            </ul>
-
-                            <a href="{% url 'payment' %}" class="mt-6 block w-full bg-[var(--color-accent-primary)] text-white text-center px-10 py-4 font-bold rounded-full transition-transform hover:scale-[1.03] active:scale-[.97] shadow-lg shadow-[var(--color-accent-primary)]/30">
-                                Разблокировать все возможности
-                            </a>
-                        </div>
-                    {% endif %}
-            {% endif %}
-            {% endif %}
-
-            <!-- ДЕМО -->
-            {% if is_creator and subscription_level == 0 %}
-                <div id="analytics-paywall" class="mt-16 animate-fadeIn">
-                    <div class="text-center">
-                        <h2 class="text-3xl font-bold text-white">Ваш центр аналитики</h2>
-                        <p class="mt-2 text-gray-400 max-w-2xl mx-auto">
-                            Принимайте решения на основе данных. Узнайте, какие тесты популярнее и как ваша аудитория справляется с заданиями.
-                        </p>
+                        <div class="space-y-2 max-h-56 overflow-y-auto pr-1" id="modal-options-list"></div>
                     </div>
 
-                    <div class="mt-8 relative p-6 bg-[var(--color-surface)] rounded-3xl border border-[var(--color-border)] overflow-hidden">
-                        
-                        <!-- Заблюренный фон: намек на дашборд -->
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 filter blur-sm select-none pointer-events-none">
-                            <!-- KPI-Карточка 1 -->
-                            <div class="bg-black/20 p-4 rounded-xl">
-                                <h4 class="text-sm font-semibold text-gray-500 mb-3">Всего прохождений</h4>
-                                <div class="h-8 w-1/2 bg-gray-700/50 rounded-lg"></div>
-                            </div>
-                            <!-- KPI-Карточка 2 -->
-                            <div class="bg-black/20 p-4 rounded-xl">
-                                <h4 class="text-sm font-semibold text-gray-500 mb-3">Средний балл</h4>
-                                <div class="h-8 w-1/3 bg-gray-700/50 rounded-lg"></div>
-                            </div>
-                            <!-- KPI-Карточка 3 -->
-                            <div class="bg-black/20 p-4 rounded-xl">
-                                <h4 class="text-sm font-semibold text-gray-500 mb-3">Новых (7 дн)</h4>
-                                <div class="h-8 w-1/4 bg-gray-700/50 rounded-lg"></div>
-                            </div>
-                        </div>
-                        <div class="mt-6 bg-black/20 p-4 rounded-xl filter blur-sm select-none pointer-events-none">
-                            <h4 class="text-sm font-semibold text-gray-500 mb-4">Динамика прохождений</h4>
-                            <div class="flex items-end gap-2 h-32">
-                                <div class="w-full h-1/4 bg-gray-700/50 rounded-t-lg"></div>
-                                <div class="w-full h-1/2 bg-gray-700/50 rounded-t-lg"></div>
-                                <div class="w-full h-3/4 bg-gray-700/50 rounded-t-lg"></div>
-                                <div class="w-full h-1/3 bg-gray-700/50 rounded-t-lg"></div>
-                            </div>
-                        </div>
-
-                        <!-- ПРОДАЮЩИЙ ОВЕРЛЕЙ -->
-                        <div class="absolute inset-0 bg-gradient-to-t from-[var(--color-bg)] via-[var(--color-bg)]/80 to-transparent flex flex-col items-center justify-center text-center p-4">
-                            <div class="flex items-center justify-center h-16 w-16 rounded-full bg-[var(--color-accent-primary)]/10 border-2 border-[var(--color-accent-primary)]/30 mb-4">
-                                <i class="fas fa-chart-line text-3xl text-[var(--color-accent-primary)]"></i>
-                            </div>
-                            <h3 class="text-2xl font-bold text-white">Аналитика — ваш ключ к росту</h3>
-                            <p class="mt-2 text-gray-300 max-w-sm mx-auto">
-                                Получите доступ ко всем данным: отслеживайте популярность тестов, средний балл и динамику прохождений.
-                            </p>
-                            
-                            {% if username == 0 %}
-                                <button data-trigger-modal="register" class="mt-6 inline-block bg-[var(--color-accent-primary)] text-white px-8 py-3 font-bold rounded-full transition-transform hover:scale-[1.03] active:scale-[.97] shadow-lg shadow-[var(--color-accent-primary)]/30">
-                                    Разблокировать аналитику
-                                </button>
-                            {% else %}
-                                <a href="{% url 'payment' %}" class="mt-6 inline-block bg-[var(--color-accent-primary)] text-white px-8 py-3 font-bold rounded-full transition-transform hover:scale-[1.03] active:scale-[.97] shadow-lg shadow-[var(--color-accent-primary)]/30">
-                                    Разблокировать аналитику
-                                </a>
-                            {% endif %}
-                        </div>
+                    <div class="flex justify-end gap-3 pt-3 border-t border-white/10">
+                        <button type="button" onclick="closeQuestionModal()" class="px-5 py-3 rounded-2xl bg-white/5 text-xs font-semibold text-gray-300 hover:bg-white/10">Отмена</button>
+                        <button type="submit" class="px-6 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white shadow-lg shadow-indigo-600/30 spring-btn">Сохранить</button>
                     </div>
-                </div>
-            {% endif %}
-        </div>
-
-        <footer class="mt-16 sm:mt-24">
-            <div class="max-w-3xl mx-auto px-4 sm:px-8">
-                <div class="mt-8 mb-4 pt-8 border-t border-[var(--color-border)] flex flex-col sm:flex-row justify-between items-center text-xs text-gray-600 text-center">
-                    <p>2024-2026 Летучка AI. Design & Development <a class="text-gray-500 hover:text-[var(--color-accent-primary)]" rel='nofollow' href="https://dprofile.ru/kozak_developer" target="_blank">by Kozak</a></p>
-                    <div class="mt-2 sm:mt-0">
-                        <a href="/docs/public-offer" class="hover:text-gray-400">Публичная оферта</a>
-                        <span class="mx-2">|</span>
-                        <a href="/docs/privacy-policy" class="hover:text-gray-400">Политика конфиденциальности</a>
-                    </div>
-                </div>
-            </div>
-        </footer>
-
-        <!--         THE MODAL QR-CODE        -->
-        <div id="qrModal" class="fixed inset-0 bg-black/90 z-[9999] hidden flex-col items-center justify-center backdrop-blur-sm" onclick="this.classList.add('hidden')">
-            <h2 class="text-white text-3xl text-center font-bold mb-8">Отсканируйте, чтобы пройти тест</h2>
-            <div class="bg-white p-6 rounded-3xl shadow-2xl shadow-white/20">
-                <div id="qrcode"></div>
-            </div>
-            <p class="text-gray-400 mt-8 text-xl font-mono" id="qrLinkText"></p>
-            <p class="text-gray-500 mt-2 text-sm">Нажмите в любом месте, чтобы закрыть</p>
-        </div>
-
-        <!-- МОДАЛЬНОЕ ОКНО ПОДТВЕРЖДЕНИЯ УДАЛЕНИЯ -->
-        <div id="delete-modal" class="fixed inset-0 z-[10000] hidden items-center justify-center p-4">
-            <!-- Задник с блюром -->
-            <div class="absolute inset-0 bg-black/60 backdrop-blur-md" onclick="closeDeleteModal()"></div>
-            
-            <!-- Сама карточка -->
-            <div class="relative w-full max-w-sm bg-[#121119]/90 border border-white/10 rounded-[2rem] p-8 shadow-2xl animate-modalIn">
-                <div class="flex flex-col items-center text-center">
-                    <!-- Иконка предупреждения -->
-                    <div class="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-6 border border-red-500/20">
-                        <i class="fas fa-exclamation-triangle text-2xl text-red-500"></i>
-                    </div>
-                    
-                    <h3 class="text-xl font-black text-white uppercase tracking-wider mb-2">Удалить тест?</h3>
-                    <p class="text-gray-400 text-sm leading-relaxed mb-8">
-                        Вы собираетесь безвозвратно удалить тест <br>
-                        <span id="modal-survey-title" class="text-white font-bold"></span>. <br>
-                        Это действие нельзя отменить.
-                    </p>
-
-                    <!-- Кнопки в твоем стиле Bottom Medium -->
-                    <div class="flex flex-col w-full gap-3">
-                        <a id="confirm-delete-link" href="" class="button-medium button-red !flex !justify-center !py-4 !rounded-2xl !m-0">
-                            <div>
-                                <p class="!text-xs !uppercase !tracking-widest !text-white">Удалить навсегда</p>
-                            </div>
-                        </a>
-                        
-                        <button onclick="closeDeleteModal()" class="button-medium !flex !justify-center !py-4 !rounded-2xl !m-0">
-                            <div>
-                                <p class="!text-xs !uppercase !tracking-widest">Отмена</p>
-                            </div>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- МОДАЛКА "В РАЗРАБОТКЕ" -->
-        <div id="soon-modal" class="fixed inset-0 z-[10000] hidden items-center justify-center p-4">
-            <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeSoonModal()"></div>
-            
-            <div class="relative w-full max-w-xs bg-[#121119]/95 border border-indigo-500/30 rounded-[2rem] p-6 shadow-2xl animate-modalIn">
-                <div class="flex flex-col items-center text-center">
-                    <div class="w-12 h-12 bg-indigo-500/20 rounded-full flex items-center justify-center mb-4 border border-indigo-500/40">
-                        <i class="fas fa-tools text-lg text-indigo-400"></i>
-                    </div>
-                    
-                    <h3 class="text-sm font-black text-white uppercase tracking-widest mb-2">В лаборатории</h3>
-                    <p class="text-gray-400 text-[11px] leading-relaxed mb-6">
-                        Мы обучаем нейросеть пересобирать тесты еще точнее. Функция обновления станет доступна в ближайшем патче.
-                    </p>
-
-                    <button onclick="closeSoonModal()" class="button-medium !w-full !justify-center !m-0 !py-3 !rounded-xl">
-                        <div><p class="!text-[10px] !uppercase !tracking-widest">Принято</p></div>
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- ====================================================== -->
-        <!--         THE MODAL. THE WHOLE FUCKING THING.            -->
-        <!-- ====================================================== -->
-        <div id="register-modal" class="fixed inset-0 bg-black/80 z-50 hidden items-center justify-center p-4">
-            <div id="modal-content" class="bg-[var(--color-surface)] w-full max-w-md p-6 rounded-3xl border border-[var(--color-border)] transform scale-95 opacity-0 transition-all duration-300 backdrop-blur-xl">
-                <div class="flex justify-between items-center">
-                    <h3 class="text-2xl font-bold text-white">Регистрация</h3>
-                    <button id="close-modal-btn" class="text-gray-500 hover:text-white text-2xl">&times;</button>
-                </div>
-                <p class="mt-2 text-sm text-gray-400">Создайте аккаунт, чтобы видеть ответы, просматривать статистику прохождений и сохранять тесты.</p>
-                
-                <form id="quick-register-form" class="mt-6 space-y-4" method="POST" action="/api/quick-register/">
-                    {% csrf_token %}
-                    <div>
-                        <label for="id_email" class="text-sm font-semibold text-gray-300">Ваш Email</label>
-                        <input type="email" name="email" id="id_email" required class="mt-1 w-full p-3 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]">
-                    </div>
-                    <div>
-                        <label for="id_password1" class="text-sm font-semibold text-gray-300">Придумайте пароль</label>
-                        <input type="password" name="password1" id="id_password1" required class="mt-1 w-full p-3 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]">
-                    </div>
-                    <div>
-                        <label for="id_password2" class="text-sm font-semibold text-gray-300">Повторите пароль</label>
-                        <input type="password" name="password2" id="id_password2" required class="mt-1 w-full p-3 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]">
-                    </div>
-
-                    <div class="pt-2">
-                        <label class="flex items-start gap-3 cursor-pointer">
-                            <input type="checkbox" id="terms-checkbox" class="mt-1 h-4 w-4 rounded border-gray-500 bg-gray-700 text-[var(--color-accent-primary)] focus:ring-[var(--color-accent-primary)]">
-                            <span class="text-xs text-gray-400">
-                                Я принимаю условия
-                                <a href="/docs/public-offer" target="_blank" rel="noopener noreferrer" class="text-[var(--color-accent-primary)] hover:underline">Публичной оферты</a>
-                                и
-                                <a href="/docs/privacy-policy" target="_blank" rel="noopener noreferrer" class="text-[var(--color-accent-primary)] hover:underline">Политики конфиденциальности</a>.
-                            </span>
-                        </label>
-                    </div>
-                    
-                    <p id="form-error" class="text-red-500 text-sm hidden"></p>
-                    
-                    <button type="submit" id="submit-register-btn" disabled 
-                            class="w-full py-3 font-bold text-center rounded-full bg-[var(--color-accent-primary)] text-white transition-opacity duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                            data-loading-text="Создаем аккаунт...">
-                        Зарегистрироваться
-                    </button>
                 </form>
             </div>
         </div>
-    {% endif %}
 
-    <div class="fixed bottom-5 left-1/2 -translate-x-1/2 flex space-x-2 p-2 rounded-full 
-             bg-black/40 backdrop-blur-lg 
-             border border-gray-700/60 
-             shadow-lg shadow-[0_0_20px_rgba(139,92,246,0.2)] z-30">
+        <!-- МОДАЛКА: РЕДАКТИРОВАНИЕ НАЗВАНИЯ ТЕСТА -->
+        <div id="title-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+            <div class="fixed inset-0 bg-black/80 backdrop-blur-md" onclick="closeEditTitleModal()"></div>
+            <div class="relative w-full max-w-md glass-panel rounded-[32px] p-6 shadow-2xl z-10 space-y-4 spring-modal-content">
+                <h3 class="text-sm font-bold text-white uppercase tracking-wider">Название теста</h3>
+                <input type="text" id="input-new-title" class="w-full bg-[#18171A] border border-white/10 rounded-2xl p-3.5 text-sm text-white focus:outline-none focus:border-indigo-500" value="{{ title }}">
+                <div class="flex justify-end gap-2 pt-2">
+                    <button onclick="closeEditTitleModal()" class="px-4 py-2.5 rounded-xl bg-white/5 text-xs font-semibold text-gray-400">Отмена</button>
+                    <button onclick="saveSurveyTitle()" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white spring-btn">Сохранить</button>
+                </div>
+            </div>
+        </div>
 
-        {% if is_creator %}
+        <!-- МОДАЛКА УДАЛЕНИЯ -->
+        <div id="delete-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+            <div class="fixed inset-0 bg-black/80 backdrop-blur-md" onclick="closeDeleteModal()"></div>
+            <div class="relative w-full max-w-sm glass-panel rounded-[32px] p-6 sm:p-8 shadow-2xl z-10 text-center spring-modal-content">
+                <div class="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-500 flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-trash-can text-lg"></i>
+                </div>
+                <h3 class="text-base font-bold text-white mb-2">Удалить тест безвозвратно?</h3>
+                <p class="text-xs text-gray-400 mb-6 leading-relaxed">
+                    Тест <span id="modal-survey-title" class="text-white font-semibold"></span> будет стерт без возможности восстановления.
+                </p>
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="closeDeleteModal()" class="py-3 rounded-2xl bg-white/5 text-xs font-semibold text-gray-300">Отмена</button>
+                    <a id="confirm-delete-link" href="" class="py-3 rounded-2xl bg-rose-600 hover:bg-rose-500 text-xs font-bold text-white text-center spring-btn">Удалить</a>
+                </div>
+            </div>
+        </div>
 
-            {% if username == 0 %}
-                <button data-trigger-modal="register" 
-                    class="group flex items-center h-12 rounded-full text-white font-bold transition-all duration-300 overflow-hidden 
-                        bg-indigo-600 
-                        hover:opacity-90 hover:scale-[1.05] active:scale-[0.98] shadow-lg shadow-indigo-500/30">
-                    
-                    <i class="fas fa-play h-12 w-12 flex items-center justify-center flex-shrink-0"></i> 
-                    
-                    <span class="max-w-0 group-hover:max-w-xs opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out pr-0 group-hover:pr-4 whitespace-nowrap text-sm">
-                        Открыть ответы
-                    </span>
-                </button>
-            {% else %}
-                <a href="{% url 'preview_test_result' survey_id %}" title="Перейти к аналитике"
-                    class="group flex items-center h-12 rounded-full text-gray-400 transition-all duration-300 overflow-hidden 
-                        bg-gray-800/50 hover:bg-gray-700/70 hover:scale-[1.05] active:scale-[0.98]">
-                    
-                    <i class="fas fa-chart-simple h-12 w-12 flex items-center justify-center flex-shrink-0 transition-colors group-hover:text-white"></i>
-                    
-                    <span class="max-w-0 group-hover:max-w-xs opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out pr-0 group-hover:pr-4 whitespace-nowrap text-sm font-semibold text-white">
-                        Аналитика
-                    </span>
-                </a>
-
-                <a href="{% url 'take_test' survey_id %}" title="Пройти тест" 
-                    class="group flex items-center h-12 rounded-full text-white font-bold transition-all duration-300 overflow-hidden 
-                        bg-gray-800/50 
-                        hover:opacity-90 hover:scale-[1.05] active:scale-[0.98]">
-                    
-                    <i class="fas fa-play h-12 w-12 flex items-center justify-center flex-shrink-0"></i>
-                    
-                    <span class="max-w-0 group-hover:max-w-xs opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out pr-0 group-hover:pr-4 whitespace-nowrap text-sm">
-                        Пройти тест
-                    </span>
-                </a>
-            {% endif %}
-                
-        {% else %}
-            <a href="{% url 'take_test' survey_id %}" title="Пройти тест"
-                class="group flex items-center h-12 rounded-full text-white font-bold transition-all duration-300 overflow-hidden 
-                    bg-indigo-600 
-                    hover:opacity-90 hover:scale-[1.05] active:scale-[0.98] shadow-lg shadow-indigo-500/30">
-                
-                <i class="fas fa-play h-12 w-12 flex items-center justify-center flex-shrink-0"></i> 
-                
-                <span class="max-w-0 group-hover:max-w-xs opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out pr-0 group-hover:pr-4 whitespace-nowrap text-sm">
-                    Пройти тест
-                </span>
-            </a>
-
-        {% endif %}
+        <!-- QR МОДАЛКА -->
+        <div id="qrModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex-col items-center justify-center p-4" onclick="this.classList.add('hidden'); this.classList.remove('flex');">
+            <div class="bg-white p-6 rounded-[28px] shadow-2xl mb-4" onclick="event.stopPropagation()">
+                <div id="qrcode"></div>
+            </div>
+            <p class="text-sm font-semibold text-white" id="qrLinkText"></p>
+        </div>
 
     </div>
 
-    <div class="pb-32"></div>
+    {{ questions|json_script:"questions-data" }}
 
     <script>
-        function showClassroomQR() {
-            console.log(window.location.host)
-            const link = window.location.protocol + window.location.host + "{% url 'take_test' survey_id %}";
-            const modal = document.getElementById('qrModal');
-            const container = document.getElementById('qrcode');
-            
-            container.innerHTML = "";
-            
-            new QRCode(container, {
-                text: link,
-                width: 350,
-                height: 350,
-                colorDark : "#000000",
-                colorLight : "#ffffff",
-                correctLevel : QRCode.CorrectLevel.H
-            });
-            
-            document.getElementById('qrLinkText').innerText = "{{ title }}";
-            
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-        }
-    </script>
+        const surveyId = '{{ survey_id }}';
+        let rawQuestions = JSON.parse(document.getElementById('questions-data').textContent || '[]');
+        let currentQuestionType = 'single';
 
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-    <script>
-        function copyLinkAndNotify(event) {
-            const shareUrl = $(event.currentTarget).data('share-url');
-            const urlToCopy = 'https://' + window.location.host + shareUrl;
-
-            navigator.clipboard.writeText(urlToCopy).then(function() {
-                if ($('.apple-toast').length > 0) {
-                    return; 
-                }
-
-                const toast = $('<div/>', {
-                    class: 'apple-toast',
-                    html: `
-                        <i class="fas fa-check-circle icon"></i>
-                        <span>Ссылка скопирована</span>
-                    `
-                }).appendTo('body');
-
-                setTimeout(() => {
-                    toast.addClass('apple-toast--visible');
-                    if (window.navigator && window.navigator.vibrate) {
-                        window.navigator.vibrate(200);
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
                     }
-                }, 10);
-                
-                setTimeout(() => {
-                    toast.removeClass('apple-toast--visible');
-                    toast.one('transitionend', function() {
-                        $(this).remove();
-                    });
-                }, 2500);
-
-            }, function(err) {
-                console.error('Ошибка копирования: ', err);
-
-                if ($('.apple-toast').length > 0) return;
-                const errorToast = $('<div/>', {
-                    class: 'apple-toast',
-                    html: `
-                        <i class="fas fa-times-circle text-red-500"></i>
-                        <span>Ошибка копирования</span>
-                    `
-                }).appendTo('body');
-                setTimeout(() => errorToast.addClass('apple-toast--visible'), 10);
-                setTimeout(() => {
-                    errorToast.removeClass('apple-toast--visible');
-                    errorToast.one('transitionend', function() { $(this).remove(); });
-                }, 3000);
-            });
+                }
+            }
+            return cookieValue;
         }
 
-        $('button[data-action="share"]').on('click', function(event) {
-            copyLinkAndNotify(event);
+        /* ==========================================================================
+           APPLE DYNAMIC ISLAND ENGINE (ШИНА УВЕДОМЛЕНИЙ)
+           ========================================================================== */
+        const Island = (() => {
+            const $island = $('#dynamic-island');
+            const $controls = $('#island-controls');
+            const $notice = $('#island-notice');
+            const $text = $('#island-text');
+            const $icon = $('#island-icon');
+            const $iconBox = $('#island-icon-box');
+
+            let timer = null;
+
+            const THEMES = {
+                success: {
+                    themeClass: 'theme-success',
+                    icon: 'fa-check',
+                    iconBg: 'bg-emerald-500 text-black font-bold'
+                },
+                error: {
+                    themeClass: 'theme-error',
+                    icon: 'fa-xmark',
+                    iconBg: 'bg-rose-500 text-white font-bold'
+                },
+                warning: {
+                    themeClass: 'theme-warning',
+                    icon: 'fa-exclamation',
+                    iconBg: 'bg-amber-500 text-black font-bold'
+                },
+                info: {
+                    themeClass: 'theme-info',
+                    icon: 'fa-bolt',
+                    iconBg: 'bg-indigo-500 text-white'
+                }
+            };
+
+            function notify(message, type = 'success', customIcon = null, duration = 2600) {
+                if (timer) clearTimeout(timer);
+
+                const config = THEMES[type] || THEMES.info;
+                const chosenIcon = customIcon || config.icon;
+
+                // 1. Убираем старые темы
+                $island.removeClass('theme-success theme-error theme-warning theme-info');
+
+                // 2. Фаза растворения элементов управления
+                $controls.addClass('opacity-0 scale-90 blur-sm pointer-events-none');
+
+                setTimeout(() => {
+                    $controls.addClass('hidden').removeClass('flex');
+
+                    // 3. Подготовка контента нотификации
+                    $text.text(message);
+                    $icon.attr('class', `fas ${chosenIcon}`);
+                    $iconBox.attr('class', `w-6 h-6 rounded-full flex items-center justify-center text-[11px] flex-shrink-0 ${config.iconBg}`);
+
+                    // 4. Схлопывание островка в компактную пилюлю
+                    $island.removeClass('mode-header').addClass(`mode-notify ${config.themeClass}`);
+
+                    // 5. Пружинистый взрыв контента уведомления
+                    $notice.removeClass('hidden').addClass('flex');
+                    setTimeout(() => {
+                        $notice.removeClass('opacity-0 scale-75').addClass('opacity-100 scale-100');
+                    }, 20);
+
+                }, 200);
+
+                // 6. Таймер возврата в дефолтный хедер
+                timer = setTimeout(() => {
+                    dismiss();
+                }, duration);
+            }
+
+            function dismiss() {
+                $notice.removeClass('opacity-100 scale-100').addClass('opacity-0 scale-75');
+
+                setTimeout(() => {
+                    $notice.addClass('hidden').removeClass('flex');
+
+                    $island
+                        .removeClass('mode-notify theme-success theme-error theme-warning theme-info')
+                        .addClass('mode-header');
+
+                    $controls.removeClass('hidden').addClass('flex');
+                    setTimeout(() => {
+                        $controls.removeClass('opacity-0 scale-90 blur-sm pointer-events-none').addClass('opacity-100 scale-100');
+                    }, 20);
+
+                    timer = null;
+                }, 180);
+            }
+
+            return {
+                notify,
+                dismiss,
+                success: (msg, icon, dur) => notify(msg, 'success', icon, dur),
+                error: (msg, icon, dur) => notify(msg, 'error', icon, dur),
+                warn: (msg, icon, dur) => notify(msg, 'warning', icon, dur),
+                info: (msg, icon, dur) => notify(msg, 'info', icon, dur)
+            };
+        })();
+
+        // РЕЖИМ ПРАВКИ (TOGGLE)
+        let isEditMode = false;
+
+        $('#toggle-edit-mode-btn').on('click', function() {
+            isEditMode = !isEditMode;
+
+            if (isEditMode) {
+                $(this)
+                    .text('Готово')
+                    .removeClass('bg-[#18171A] text-gray-300 border-white/10')
+                    .addClass('bg-indigo-600 text-white border-transparent');
+
+                $('.edit-actions').removeClass('hidden').addClass('flex');
+                $('#add-question-box').removeClass('hidden');
+                Island.info('Режим правки активен', 'fa-pen-to-square');
+            } else {
+                $(this)
+                    .text('Править')
+                    .removeClass('bg-indigo-600 text-white border-transparent')
+                    .addClass('bg-[#18171A] text-gray-300 border-white/10');
+
+                $('.edit-actions').addClass('hidden').removeClass('flex');
+                $('#add-question-box').addClass('hidden');
+                Island.info('Редактирование завершено');
+            }
         });
 
-        $(document).ready(function() {
-            // Выпадающее меню в хедере
-            const actionMenuBtn = $('#action-menu-btn');
-            const actionMenu = $('#action-menu');
+        // ПЕРЕКЛЮЧАТЕЛЬ ТИПА ВОПРОСА
+        function setQuestionType(type) {
+            currentQuestionType = type;
+            if (type === 'single') {
+                $('#btn-type-single').addClass('bg-indigo-600 text-white').removeClass('text-gray-400');
+                $('#btn-type-multiple').removeClass('bg-indigo-600 text-white').addClass('text-gray-400');
+                $('.opt-check').attr('type', 'radio').attr('name', 'correct_opt');
+            } else {
+                $('#btn-type-multiple').addClass('bg-indigo-600 text-white').removeClass('text-gray-400');
+                $('#btn-type-single').removeClass('bg-indigo-600 text-white').addClass('text-gray-400');
+                $('.opt-check').attr('type', 'checkbox').removeAttr('name');
+            }
+        }
 
-            actionMenuBtn.on('click', function(e) {
-                e.stopPropagation();
-                
-                if (actionMenu.hasClass('hidden')) {
-                    actionMenu.removeClass('hidden');
-                    setTimeout(() => {
-                        actionMenu.removeClass('opacity-0 scale-95').addClass('opacity-100 scale-100');
-                    }, 10);
+        function addOptionRow(value = '', isChecked = false) {
+            const rowId = 'opt-row-' + Math.random().toString(36).substring(2, 9);
+            const inputType = (currentQuestionType === 'single') ? 'radio' : 'checkbox';
+            const nameAttr = (currentQuestionType === 'single') ? 'name="correct_opt"' : '';
+
+            const rowHtml = `
+                <div class="flex items-center gap-2.5 bg-[#18171A] border border-white/10 rounded-2xl p-2.5" id="${rowId}">
+                    <input type="${inputType}" ${nameAttr} ${isChecked ? 'checked' : ''} class="opt-check text-indigo-600 focus:ring-0 ml-1 rounded">
+                    <input type="text" required value="${value}" class="opt-val flex-grow bg-transparent border-0 text-sm text-white focus:outline-none" placeholder="Текст ответа">
+                    <button type="button" onclick="$('#${rowId}').remove()" class="text-gray-500 hover:text-rose-400 p-1 text-xs">
+                        <i class="fas fa-xmark"></i>
+                    </button>
+                </div>
+            `;
+            $('#modal-options-list').append(rowHtml);
+        }
+
+        function openNewQuestionModal() {
+            $('#modal-editor-title').text('Новый вопрос');
+            $('#edit-q-index').val('');
+            $('#modal-q-text').val('');
+            $('#modal-options-list').empty();
+            setQuestionType('single');
+            addOptionRow('', true);
+            addOptionRow('', false);
+            $('#question-editor-modal').removeClass('hidden').addClass('flex');
+        }
+
+        function editExistingQuestion(index) {
+            const q = rawQuestions[index];
+            if (!q) return;
+
+            $('#modal-editor-title').text(`Правка вопроса #${index + 1}`);
+            $('#edit-q-index').val(index);
+            $('#modal-q-text').val(q.question);
+            $('#modal-options-list').empty();
+            setQuestionType(q.type || 'single');
+
+            q.options.forEach(opt => {
+                const isCorrect = q.correct_answers.includes(opt);
+                addOptionRow(opt, isCorrect);
+            });
+
+            $('#question-editor-modal').removeClass('hidden').addClass('flex');
+        }
+
+        function closeQuestionModal() {
+            $('#question-editor-modal').addClass('hidden').removeClass('flex');
+        }
+
+        // САБМИТ РЕДАКТОРА ВОПРОСОВ
+        $('#question-editor-form').on('submit', async function(e) {
+            e.preventDefault();
+            const qIndexVal = $('#edit-q-index').val();
+            const questionIndex = qIndexVal !== '' ? parseInt(qIndexVal, 10) : null;
+            const questionText = $('#modal-q-text').val().trim();
+
+            const options = [];
+            const correctAnswers = [];
+
+            $('#modal-options-list > div').each(function() {
+                const text = $(this).find('.opt-val').val().trim();
+                const isChecked = $(this).find('.opt-check').is(':checked');
+                if (text) {
+                    options.push(text);
+                    if (isChecked) correctAnswers.push(text);
+                }
+            });
+
+            if (options.length < 2) {
+                Island.warn('Нужно минимум 2 варианта');
+                return;
+            }
+            if (correctAnswers.length === 0) {
+                Island.warn('Отметьте правильный ответ');
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/surveys/${surveyId}/questions/save/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({
+                        index: questionIndex,
+                        question: questionText,
+                        options: options,
+                        correct_answers: correctAnswers,
+                        type: currentQuestionType
+                    })
+                });
+
+                const data = await res.json();
+                if (res.ok && data.status === 'success') {
+                    closeQuestionModal();
+                    Island.success('Вопрос сохранен');
+                    setTimeout(() => window.location.reload(), 1100);
                 } else {
-                    actionMenu.removeClass('opacity-100 scale-100').addClass('opacity-0 scale-95');
+                    Island.error(data.error || 'Ошибка при сохранении');
+                }
+            } catch (err) {
+                Island.error('Сбой соединения с сервером');
+            }
+        });
+
+        // УДАЛЕНИЕ ВОПРОСА
+        async function deleteQuestion(index) {
+            if (!confirm('Удалить этот вопрос?')) return;
+            try {
+                const res = await fetch(`/api/surveys/${surveyId}/questions/${index}/delete/`, {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': getCookie('csrftoken') }
+                });
+                const data = await res.json();
+                if (res.ok && data.status === 'success') {
+                    Island.success('Вопрос удален');
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    Island.error(data.error || 'Ошибка при удалении');
+                }
+            } catch (err) {
+                Island.error('Сбой удаления вопроса');
+            }
+        }
+
+        // РЕДАКТИРОВАНИЕ TITLE
+        function openEditTitleModal() {
+            $('#title-modal').removeClass('hidden').addClass('flex');
+        }
+        function closeEditTitleModal() {
+            $('#title-modal').addClass('hidden').removeClass('flex');
+        }
+        async function saveSurveyTitle() {
+            const newTitle = $('#input-new-title').val().trim();
+            if (!newTitle) {
+                Island.warn('Введите название теста');
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/surveys/${surveyId}/title/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({ title: newTitle })
+                });
+                const data = await res.json();
+                if (res.ok && data.status === 'success') {
+                    $('#header-survey-title').text(data.title);
+                    closeEditTitleModal();
+                    Island.success('Название обновлено', 'fa-pen');
+                } else {
+                    Island.error(data.error || 'Не удалось обновить');
+                }
+            } catch (err) {
+                Island.error('Сетевой сбой при обновлении');
+            }
+        }
+
+        // ПЕРЕГЕНЕРАЦИЯ
+        async function triggerRegenerateSurvey() {
+            if (!confirm('Нейросеть составит совершенно новые вопросы по этой теме. Текущие вопросы будут заменены. Продолжить?')) return;
+
+            // Сворачиваем Dynamic Island в индикатор загрузки
+            Island.info('ИИ пересобирает тест...', 'fa-rotate fa-spin', 25000);
+
+            try {
+                const res = await fetch(`/api/surveys/${surveyId}/regenerate/`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken') 
+                    }
+                });
+
+                const data = await res.json();
+
+                if (res.ok && data.status === 'success') {
+                    Island.success('Тест успешно пересобран!', 'fa-check');
                     setTimeout(() => {
-                        actionMenu.addClass('hidden');
-                    }, 200);
+                        window.location.reload();
+                    }, 800);
+                } else {
+                    Island.error(data.error || 'Ошибка перегенерации');
+                }
+            } catch (err) {
+                Island.error('Сетевой сбой при отправке');
+            }
+        }
+
+        // ТУМБЛЕР ОТВЕТОВ
+        $('#answersToggle').on('change', async function() {
+            const showAnswers = this.checked;
+            const surveyId = '{{ survey_id }}';
+            const csrftoken = getCookie('csrftoken');
+
+            toggleAnswersInDOM(showAnswers);
+
+            try {
+                const response = await fetch(`/api/surveys/${surveyId}/toggle-answers/`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json', 
+                        'X-CSRFToken': csrftoken 
+                    },
+                    body: JSON.stringify({ show_answers: showAnswers })
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    Island.success(showAnswers ? 'Ответы открыты' : 'Ответы скрыты', showAnswers ? 'fa-eye' : 'fa-eye-slash');
+                } else {
+                    rollbackAnswersToggle(!showAnswers);
+                    Island.error(data.error || 'Ошибка сохранения');
+                }
+            } catch (err) {
+                rollbackAnswersToggle(!showAnswers);
+                Island.error('Сбой связи с сервером');
+            }
+        });
+
+        function toggleAnswersInDOM(show) {
+            $('.option-row').each(function() {
+                const isCorrect = $(this).attr('data-is-correct') === 'true';
+                const isMultiple = $(this).closest('article').find('.fa-list-check').length > 0;
+                const $badge = $(this).find('.opt-badge');
+                const $icon = $(this).find('.opt-icon');
+                const $label = $(this).find('.opt-label');
+
+                if (isCorrect) {
+                    if (show) {
+                        $(this)
+                            .removeClass('bg-[#18171A]/70 border-white/[0.04] text-gray-300')
+                            .addClass('bg-emerald-500/10 border-emerald-500/30 text-emerald-300 font-medium');
+                        $badge
+                            .removeClass('bg-white/5 border border-white/10 text-gray-400')
+                            .addClass('bg-emerald-500 text-black font-bold');
+                        $icon
+                            .attr('class', 'opt-icon fas fa-check');
+                        $label.removeClass('hidden');
+                    } else {
+                        $(this)
+                            .addClass('bg-[#18171A]/70 border-white/[0.04] text-gray-300')
+                            .removeClass('bg-emerald-500/10 border-emerald-500/30 text-emerald-300 font-medium');
+                        $badge
+                            .addClass('bg-white/5 border border-white/10 text-gray-400')
+                            .removeClass('bg-emerald-500 text-black font-bold');
+                        
+                        if (isMultiple) {
+                            $icon.attr('class', 'opt-icon fas fa-square text-[9px] opacity-40');
+                        } else {
+                            $icon.attr('class', 'opt-icon fas fa-circle text-[7px] opacity-40');
+                        }
+                        $label.addClass('hidden');
+                    }
                 }
             });
+        }
 
-            $(document).on('click', function(e) {
-                if (!actionMenu.hasClass('hidden') && !actionMenu.is(e.target) && actionMenu.has(e.target).length === 0) {
-                    actionMenuBtn.click()
-                }
-            });
+        function rollbackAnswersToggle(previousState) {
+            $('#answersToggle').prop('checked', previousState);
+            toggleAnswersInDOM(previousState);
+        }
 
-            const scrollProgress = $('#scrollProgress');
-            $(window).on('scroll', function() {
-                const winScroll = $(this).scrollTop();
-                const height = $(document).height() - $(window).height();
-                const scrolled = (winScroll / height) * 100;
-                scrollProgress.css('width', scrolled + '%');
-            });
+        // ШЕЙРИНГ (DYNAMIC ISLAND ACTION)
+        $('button[data-action="share"]').on('click', function(e) {
+            const shareUrl = $(e.currentTarget).data('share-url');
+            const fullUrl = window.location.protocol + '//' + window.location.host + shareUrl;
 
-            // --- КНОПКА "ПОДЕЛИТЬСЯ" ---
-            $('button[data-action="share"]').on('click', copyLinkAndNotify);
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(fullUrl).then(() => {
+                    Island.success('Ссылка скопирована', 'fa-link');
+                }).catch(() => fallbackCopy(fullUrl));
+            } else {
+                fallbackCopy(fullUrl);
+            }
+        });
 
-            // Регистрация просмотров
-            async function generateVisitorHash() {
-                const uniqueString = `${navigator.userAgent}-${navigator.language}-${new Date().getTimezoneOffset()}`;
+        // РЕГИСТРАЦИЯ ПРОСМОТРА (FINGERPRINT + VIEW COUNTER)
+        async function registerSurveyView() {
+            const surveyId = '{{ survey_id }}';
+            if (!surveyId) return;
+
+            try {
+                const rawString = `${navigator.userAgent}-${navigator.language}-${new Date().getTimezoneOffset()}`;
                 const encoder = new TextEncoder();
-                const data = encoder.encode(uniqueString);
+                const data = encoder.encode(rawString);
                 const hashBuffer = await crypto.subtle.digest('SHA-256', data);
                 const hashArray = Array.from(new Uint8Array(hashBuffer));
-                return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-            }
-
-            async function registerView() {
-                const surveyId = '{{ survey_id }}';
-                if (!surveyId) return;
-
-                try {
-                    const visitorHash = await generateVisitorHash();
-                    const csrftoken = getCookie('csrftoken');
-
-                    const response = await fetch(`/register-view/${surveyId}/`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRFToken': csrftoken
-                        },
-                        body: JSON.stringify({ hash: visitorHash })
-                    });
-
-                    const data = await response.json();
-
-                    if (data.success) {
-                        const counterElement = $('#view-counter-value'); 
-                        const currentCount = parseInt(counterElement.text());
-                        const newCount = data.view_count;
-
-                        if (data.new_view && newCount > currentCount) {
-                            counterElement.text(newCount);
-                            counterElement.addClass('counter-pulse');
-                            setTimeout(() => {
-                                counterElement.removeClass('counter-pulse');
-                            }, 600);
-                        } else {
-                            counterElement.text(newCount);
-                        }
-                    }
-                } catch (error) {
-                    console.error('Ошибка регистрации просмотра:', error);
-                }
-            }
-            // --- Регистрация просмотров ---
-
-            registerView();
-
-            const toggle = $('#answersToggle');
-            if (toggle.length) {
-                if (!toggle.is(':disabled')) {
-                    toggle.on('change', async function() {
-                        const surveyId = '{{ survey_id }}';
-                        const showAnswers = this.checked;
-
-                        try {
-                            const response = await fetch(`/api/surveys/${surveyId}/toggle-answers/`, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
-                                body: JSON.stringify({ show_answers: showAnswers })
-                            });
-                            const data = await response.json();
-
-                            if (data.status === 'success') {
-                                window.location.reload();
-                            } else {
-                                this.checked = !showAnswers;
-                            }
-                        } catch (error) {
-                            this.checked = !showAnswers;
-                        }
-                    });
-                }
-            }
-
-            // --- ЛОГИКА МОДАЛКИ ---
-            const modal = $('#register-modal');
-            const openModalButtons = $('button[data-trigger-modal="register"]');
-            const closeModalBtn = $('#close-modal-btn');
-            const modalContent = $('#modal-content');
-            const form = $('#quick-register-form');
-            const errorDisplay = $('#form-error');
-            const termsCheckbox = $('#terms-checkbox');
-            const submitBtn = $('#submit-register-btn');
-            const originalBtnText = submitBtn.text();
-            const loadingBtnText = submitBtn.data('loading-text');
-
-            // --- ФУНКЦИИ ОТКРЫТИЯ/ЗАКРЫТИЯ ---
-            const openModal = () => {
-                modal.removeClass('hidden').addClass('flex');
-                setTimeout(() => {
-                    modalContent.removeClass('scale-95 opacity-0').addClass('scale-100 opacity-100');
-                }, 10);
-            };
-
-            const closeModal = () => {
-                modalContent.addClass('scale-95 opacity-0').removeClass('scale-100 opacity-100');
-                setTimeout(() => {
-                    modal.addClass('hidden').removeClass('flex');
-                }, 300);
-            };
-
-            // --- ОБРАБОТЧИКИ СОБЫТИЙ ---
-
-            // Кнопки, которые открывают модалку
-            openModalButtons.on('click', openModal);
-
-            // Кнопка "крестик" для закрытия
-            closeModalBtn.on('click', closeModal);
-
-            // Закрытие по клику на темный фон
-            modal.on('click', function(e) {
-                if (e.target === this) {
-                    closeModal();
-                }
-            });
-
-            // Галочка согласия
-            termsCheckbox.on('change', function() {
-                submitBtn.prop('disabled', !this.checked);
-            });
-            
-            function getCookie(name) {
-                let cookieValue = null;
-                if (document.cookie && document.cookie !== '') {
-                    const cookies = document.cookie.split(';');
-                    for (let i = 0; i < cookies.length; i++) {
-                        const cookie = cookies[i].trim();
-                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                            break;
-                        }
-                    }
-                }
-                return cookieValue;
-            }
-
-            openModalButtons.on('click', openModal);
-            closeModalBtn.on('click', closeModal);
-            modal.on('click', function(e) { if (e.target === this) closeModal(); });
-
-            termsCheckbox.on('change', function() { submitBtn.prop('disabled', !this.checked); });
-            
-            // 3. "УМНЫЙ ENTER"
-            form.on('keydown', 'input', function(e) {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-
-                    const inputs = form.find('input:not([type="hidden"])');
-                    const currentIndex = inputs.index(this);
-                    const nextIndex = currentIndex + 1;
-
-                    if (nextIndex < inputs.length) {
-                        inputs.eq(nextIndex).focus();
-                    } else {
-                        if (!submitBtn.is(':disabled')) {
-                            form.submit();
-                        }
-                    }
-                }
-            });
-
-            form.on('submit', function(event) {
-                event.preventDefault();
-                errorDisplay.hide().text('');
-
-                const password = $('input[name="password1"]', this).val();
-                const password2 = $('input[name="password2"]', this).val();
-                if (password !== password2) {
-                    errorDisplay.text('Пароли не совпадают.').show();
-                    return;
-                }
+                const visitorHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
                 const csrftoken = getCookie('csrftoken');
 
-                $.ajax({
-                    type: 'POST',
-                    url: '/api/quick-register/',
+                const response = await fetch(`/register-view/${surveyId}/`, {
+                    method: 'POST',
                     headers: {
+                        'Content-Type': 'application/json',
                         'X-CSRFToken': csrftoken
                     },
-                    data: form.serialize(),
-                    
-                    beforeSend: function() {
-                        submitBtn.prop('disabled', true);
-                        submitBtn.html(`
-                            <span class="flex items-center justify-center">
-                                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                <span>${loadingBtnText}</span>
-                            </span>
-                        `);
-                    },
-                    success: function(response) {
-                        window.location.reload();
-                    },
-                    error: function(xhr) {
-                        let errorMessage = 'Произошла ошибка. Попробуйте снова.';
-                        if (xhr.responseJSON && xhr.responseJSON.error) {
-                            errorMessage = xhr.responseJSON.error;
-                        }
-                        errorDisplay.text(errorMessage).show();
-                    },
-                    complete: function(xhr, status) {
-                        if (status !== 'success' || !xhr.responseJSON.redirect) {
-                            submitBtn.prop('disabled', !termsCheckbox.is(':checked'));
-                            submitBtn.text(originalBtnText);
-                        }
-                    }
+                    body: JSON.stringify({ hash: visitorHash })
                 });
+
+                const resData = await response.json();
+
+                if (resData.success && resData.view_count !== undefined) {
+                    const $counter = $('#dynamic-island .fa-eye').next('span');
+                    const currentCount = parseInt($counter.text(), 10) || 0;
+                    
+                    if (resData.new_view && resData.view_count > currentCount) {
+                        $counter.text(resData.view_count);
+                        $counter.parent().addClass('border-indigo-500/40 text-white');
+                        setTimeout(() => {
+                            $counter.parent().removeClass('border-indigo-500/40 text-white');
+                        }, 1200);
+                    } else {
+                        $counter.text(resData.view_count);
+                    }
+                }
+            } catch (e) {
+                console.warn('View tracking unavailable');
+            }
+        }
+
+        // Запуск при старте страницы
+        $(document).ready(function() {
+            registerSurveyView();
+        });
+
+        function fallbackCopy(text) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = "fixed";
+            textArea.style.left = "-999999px";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                Island.success('Ссылка скопирована', 'fa-link');
+            } catch (err) {
+                Island.error('Не удалось скопировать');
+            }
+            textArea.remove();
+        }
+
+        // QR
+        function showClassroomQR() {
+            const link = window.location.protocol + "//" + window.location.host + "{% url 'take_test' survey_id %}";
+            const container = document.getElementById('qrcode');
+            container.innerHTML = "";
+            new QRCode(container, {
+                text: link,
+                width: 240,
+                height: 240,
+                colorDark : "#18171A",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
             });
-        });
-
-
-        // Модалка удаления теста
-        function openDeleteModal(surveyId, surveyTitle) {
-            const modal = document.getElementById('delete-modal');
-            const titleSpan = document.getElementById('modal-survey-title');
-            const deleteLink = document.getElementById('confirm-delete-link');
-
-            if (modal && titleSpan && deleteLink) {
-                titleSpan.textContent = `«${surveyTitle}»`;
-                
-                deleteLink.href = `/drop-survey/${surveyId}/`;
-
-                modal.classList.remove('hidden');
-                modal.classList.add('flex');
-                document.body.style.overflow = 'hidden';
-            }
+            document.getElementById('qrLinkText').innerText = "{{ title }}";
+            $('#qrModal').removeClass('hidden').addClass('flex');
+            Island.info('QR-код сформирован', 'fa-qrcode');
         }
 
+        // МОДАЛКА УДАЛЕНИЯ
+        function openDeleteModal(id, title) {
+            $('#modal-survey-title').text(`«${title}»`);
+            $('#confirm-delete-link').attr('href', `/drop-survey/${id}/`);
+            $('#delete-modal').removeClass('hidden').addClass('flex');
+        }
         function closeDeleteModal() {
-            const modal = document.getElementById('delete-modal');
-            if (modal) {
-                modal.classList.add('hidden');
-                modal.classList.remove('flex');
-                document.body.style.overflow = '';
-            }
-        }
-
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') closeDeleteModal();
-        });
-
-
-        // Модалка в разработке (временно)
-        function regenerateSurvey(id) {
-            const modal = document.getElementById('soon-modal');
-            if (modal) {
-                modal.classList.remove('hidden');
-                modal.classList.add('flex');
-            }
-        }
-
-        function closeSoonModal() {
-            const modal = document.getElementById('soon-modal');
-            if (modal) {
-                modal.classList.add('hidden');
-                modal.classList.remove('flex');
-            }
+            $('#delete-modal').addClass('hidden').removeClass('flex');
         }
     </script>
 </body>

@@ -1,6 +1,7 @@
 from django.urls import re_path
 from django.urls import path
-from django.views.generic import TemplateView
+from django.views.generic import TemplateView, RedirectView
+from django.urls import path, re_path
 
 from .views import *
 from askify_app.settings import DEBUG
@@ -25,6 +26,7 @@ urlpatterns = [
     path('blocked_view/', blocked_view, name='blocked_view'),
 
     path('create/', page_create_survey, name='create'),
+    re_path(r'^create/\)+$', RedirectView.as_view(url='/create/', permanent=False)),
     path('api-create-survey/', ManageSurveysView.as_view(), name='api-create-survey'),
     path('api-non-auth/create-survey/', GenerationSurveysView.as_view(), name='api-create-survey'),
 
@@ -37,6 +39,12 @@ urlpatterns = [
     path('t/<str:survey_id>/', take_test, name='take_test'),
     path('c/<str:survey_id>/result/', redirect_to_dashboard, name='preview_test_inside'),
     path('c/<str:survey_id>/dashboard/', view_results, name='preview_test_result'),
+    path('api/surveys/<uuid:survey_id>/questions/<int:question_index>/delete/', survey_delete_question, name='survey_delete_question'),
+    path('api/surveys/<uuid:survey_id>/questions/add/', survey_add_question, name='survey_add_question'),
+    path('api/surveys/<uuid:survey_id>/title/', api_update_survey_title, name='api_update_survey_title'),
+    path('api/surveys/<uuid:survey_id>/questions/save/', api_save_question, name='api_save_question'),
+    path('api/surveys/<uuid:survey_id>/questions/<int:question_index>/delete/', survey_delete_question, name='survey_delete_question'),
+    path('api/surveys/<uuid:survey_id>/regenerate/', api_regenerate_survey, name='api_regenerate_survey'),
     
     path('api/ad/v1/<str:survey_id>/', get_survey_ad, name='get_survey_ad'),
 
@@ -54,6 +62,7 @@ urlpatterns = [
 
     path('drop-survey/<str:survey_id>/', drop_survey, name='drop-survey'),
     path('history/', page_history_surveys, name='history'),
+    path('api/history/search/', api_search_history, name='api_search_history'),
     path('api/get-history/', api_get_history, name='api_history'),
     path('load-more-surveys/', load_more_surveys, name='load-more-surveys'),
 
@@ -134,6 +143,8 @@ urlpatterns = [
     path('api/admin/new-users/', get_new_users_api, name='api_get_new_users'),
     path('api/admin/send-manual-email/', send_manual_email_api, name='api_send_manual_email'),
     path('unsubscribe/<str:signed_user_id>/', unsubscribe_view, name='unsubscribe'),
+    path('email-preview/', preview_release_email, name='preview_release_email'),
+    path('api/unisender/webhook/', unisender_webhook_view, name='unisender_webhook'),
 
     path('api/admin/mailings/start/', start_mailing_api, name='api_start_mailing'),
     path('api/admin/mailings/history/', get_mailing_history_api, name='api_get_mailing_history'),
