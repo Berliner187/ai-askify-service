@@ -84,6 +84,31 @@ class ManageGenerationSurveys:
     def get_text_from_request(self):
         return self.data
 
+    def check_forbidden_words(self):
+        """
+        Проверяет наличие запрещенных слов строго как ЦЕЛЫХ СЛОВ
+        """
+        if not self.forbidden_words or not self.text_from_user:
+            return False
+
+        user_text_lower = self.text_from_user.lower()
+
+        for word in self.forbidden_words:
+            pattern = rf'(?<![а-яёa-z0-9_-]){re.escape(word)}(?![а-яёa-z0-9_-])'
+            match = re.search(pattern, user_text_lower)
+            if match:
+                start = max(0, match.start() - 25)
+                end = min(len(user_text_lower), match.end() + 25)
+                snippet = user_text_lower[start:end].replace('\n', ' ')
+                
+                tracer_l.warning(
+                    f"ЦЕНЗУРА: Сработало слово '{word}' во фрагменте '...{snippet}...' "
+                    f"от пользователя {getattr(self.request.user, 'username', 'anon')}"
+                )
+                return True
+
+        return False
+    
     def load_forbidden_words(self):
         base_dir = os.path.dirname(os.path.abspath(__file__))
         forbidden_words_file_path = os.path.join(base_dir, '../askify_app', "forbidden_words.txt")
@@ -94,13 +119,6 @@ class ManageGenerationSurveys:
             except Exception:
                 return []
         return []
-
-    def check_forbidden_words(self):
-        user_text_lower = self.text_from_user.lower()
-        if any(w in user_text_lower for w in self.forbidden_words):
-            tracer_l.warning(f"Detected forbidden words in input from {getattr(self.request.user, 'username', 'anon')}")
-            return True
-        return False
 
     @staticmethod
     def __get_confidential_key(key_name, default=""):

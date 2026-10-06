@@ -463,7 +463,7 @@
 
         <!-- DYNAMIC ISLAND HEADER -->
         <header class="motion-fade-up motion-delay-island sticky top-4 z-40 w-full px-4 flex justify-center pointer-events-none">
-            <div id="dynamic-island" class="island-capsule mode-header pointer-events-auto flex items-center justify-center relative overflow-hidden min-h-[48px]">
+            <div id="dynamic-island" class="island-capsule mode-header pointer-events-auto flex items-center justify-center backdrop-blur-2xl relative overflow-hidden min-h-[48px]">
                 
                 <!-- 1. ДЕФОЛТНЫЙ СЛОЙ УПРАВЛЕНИЯ -->
                 <div id="island-controls" class="island-content-layer w-full flex items-center justify-between gap-4 opacity-100 scale-100">
@@ -473,8 +473,6 @@
                                 <img src="{% static 'img/logo.png' %}" alt="Logo" class="w-5 h-auto">
                             </a>
                             <span class="text-gray-500 select-none">/</span>
-                            <span class="text-gray-400">Летучка</span>
-                            <span class="text-gray-600 select-none">/</span>
                             <span class="text-white font-medium">Создание теста</span>
                         </div>
                     </div>
@@ -501,7 +499,7 @@
                             <a href="{% url 'payment' %}" class="flex items-center gap-2 pl-2.5 pr-3 py-1 rounded-full bg-rose-500/10 hover:bg-rose-500/15 border border-rose-500/20 text-rose-400 text-xs transition-all spring-btn">
                                 <span class="w-1.5 h-1.5 rounded-full bg-rose-500 flex-shrink-0"></span>
                                 <span class="text-[11px] font-sans font-semibold tracking-tight text-white">0 доступно</span>
-                                <span class="text-[10px] font-sans text-rose-400 font-bold ml-0.5">Купить &rarr;</span>
+                                <span class="text-[10px] font-sans text-rose-400 font-bold ml-0.5">Купить&rarr;</span>
                             </a>
                         {% endif %}
                     </div>
@@ -520,6 +518,29 @@
 
         <!-- РАБОЧАЯ ОБЛАСТЬ (СТУДИЯ) -->
         <main class="max-w-4xl w-full mx-auto px-4 sm:px-6 py-6 flex-grow space-y-6">
+
+            <!-- ТРИГГЕР-ХУК: ЕСЛИ ГОСТЬ УЖЕ СОЗДАЛ ТЕСТ И ВЕРНУЛСЯ НА /CREATE/ -->
+            {% if not request.user.is_authenticated and not can_generate %}
+            <div class="rounded-[24px] bg-gradient-to-r from-amber-500/10 via-[#1F1C18] to-amber-500/5 border border-amber-500/30 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl">
+                <div class="flex items-start sm:items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center flex-shrink-0 text-sm">
+                        <i class="fas fa-triangle-exclamation"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs sm:text-sm font-bold text-white">У вас есть несохраненный демо-тест</span>
+                            <span class="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-mono-nums font-bold">Сгорит через 24ч</span>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-0.5 leading-relaxed">
+                            Вы уже использовали 1 бесплатную генерацию. Зарегистрируйтесь, чтобы закрепить созданный тест за собой и получить еще 3 теста бесплатно.
+                        </p>
+                    </div>
+                </div>
+                <button type="button" onclick="openRegisterModal('unclaimed_alert')" class="flex-shrink-0 px-5 py-2.5 rounded-full bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold transition-all spring-btn text-center shadow-lg shadow-amber-500/20">
+                    Забрать тест себе &rarr;
+                </button>
+            </div>
+            {% endif %}
             
             <!-- HERO / СТУДИЯ ОНБОРДИНГ -->
             <div class="motion-fade-up motion-delay-hero pt-6 sm:pt-10 pb-2 text-center space-y-3.5 max-w-2xl mx-auto">
@@ -598,13 +619,25 @@
                             </div>
 
                             {% if not can_generate or total_available == 0 %}
-                                <a href="{% url 'payment' %}" class="px-2.5 py-1 rounded-full bg-rose-500/15 hover:bg-rose-500 text-rose-300 hover:text-white text-[11px] font-bold font-sans transition-all spring-btn">
-                                    Пополнить &rarr;
-                                </a>
+                                {% if request.user.is_authenticated %}
+                                    <a href="{% url 'payment' %}" class="px-2.5 py-1 rounded-full bg-rose-500/15 hover:bg-rose-500 text-rose-300 hover:text-white text-[11px] font-bold font-sans transition-all spring-btn">
+                                        Пополнить &rarr;
+                                    </a>
+                                {% else %}
+                                    <button type="button" onclick="openRegisterModal('quota_card')" class="px-2.5 py-1 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold font-sans transition-all spring-btn shadow-md shadow-indigo-600/30">
+                                        Сохранить тест &rarr;
+                                    </button>
+                                {% endif %}
                             {% else %}
-                                <a href="{% url 'payment' %}" class="px-2.5 py-1 rounded-full bg-white/5 hover:bg-indigo-600 text-gray-300 hover:text-white text-[11px] font-medium font-sans border border-white/5 hover:border-transparent transition-all spring-btn">
-                                    + Докупить
-                                </a>
+                                {% if request.user.is_authenticated %}
+                                    <a href="{% url 'payment' %}" class="px-2.5 py-1 rounded-full bg-white/5 hover:bg-indigo-600 text-gray-300 hover:text-white text-[11px] font-medium font-sans border border-white/5 hover:border-transparent transition-all spring-btn">
+                                        + Докупить
+                                    </a>
+                                {% else %}
+                                    <button type="button" onclick="openRegisterModal('buy_credits')" class="px-2.5 py-1 rounded-full bg-white/5 hover:bg-indigo-600 text-gray-300 hover:text-white text-[11px] font-medium font-sans border border-white/5 hover:border-transparent transition-all spring-btn">
+                                        + Докупить
+                                    </button>
+                                {% endif %}
                             {% endif %}
                         </div>
                     </div>
@@ -709,7 +742,7 @@
                             <!-- Монолитный дисплей значения (не прыгает при изменении) -->
                             <div class="flex items-center gap-2 px-2.5 py-1 rounded-full bg-[#18171C] border border-white/[0.08] font-mono-nums">
                                 <span id="slider-pro-pill" class="opacity-0 scale-90 -mr-1 transition-all duration-200 text-[10px] font-sans font-bold text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded-full border border-indigo-500/20">
-                                    $
+                                    ₽
                                 </span>
                                 <span id="slider-count-display" class="text-xs font-bold text-white min-w-[14px] text-center">5</span>
                                 <span class="text-[11px] text-gray-500 font-sans">вопросов</span>
@@ -723,14 +756,11 @@
 
                         <!-- Лаконичная шкала значений без цыганщины -->
                         <div class="flex justify-between items-center text-[10px] text-gray-500 font-mono-nums px-1 select-none">
-                            <span>1</span>
-                            <span class="flex items-center gap-1 text-gray-400">
-                                <span>7</span>
-                                <span class="w-1 h-1 rounded-full bg-indigo-500/60" title="Базовый лимит"></span>
-                            </span>
-                            <span>15</span>
-                            <span>22</span>
-                            <span>30</span>
+                                <span>1</span>
+                                <span>8</span>
+                                <span>15</span>
+                                <span>22</span>
+                                <span>30</span>
                         </div>
                     </div>
 
@@ -838,7 +868,7 @@
                     </a>
                     {% empty %}
                     <div class="sm:col-span-2 text-center py-6 glass-panel rounded-2xl border border-white/5">
-                        <p class="text-xs text-gray-500">Здесь появятся ваши первые сгенерированные тесты</p>
+                        <p class="text-xs text-gray-500">Здесь появятся Ваши первые сгенерированные тесты</p>
                     </div>
                     {% endfor %}
                 </div>
@@ -901,6 +931,66 @@
                     Понятно
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- МОДАЛКА БЫСТРОЙ РЕГИСТРАЦИИ (152-ФЗ) НА СТРАНИЦЕ СОЗДАНИЯ -->
+    <div id="quick-register-modal" class="fixed inset-0 z-[10002] hidden items-center justify-center p-4">
+        <div class="fixed inset-0 bg-black/85 backdrop-blur-md" onclick="closeRegisterModal()"></div>
+        
+        <div class="relative w-full max-w-md glass-panel rounded-[32px] p-6 sm:p-8 shadow-2xl z-10 space-y-5 spring-modal border border-white/10">
+            <div class="flex items-start justify-between pb-3 border-b border-white/10">
+                <div>
+                    <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-mono-nums font-semibold mb-2">
+                        <span>+3 ТЕСТА В ПОДАРОК</span>
+                    </div>
+                    <h3 id="reg-modal-title" class="text-base sm:text-lg font-bold text-white tracking-tight">Сохраните ваш аккаунт</h3>
+                    <p id="reg-modal-desc" class="text-xs text-gray-400 mt-1 leading-relaxed">
+                        Зарегистрируйтесь за 10 секунд, чтобы сохранить тест и пополнить баланс.
+                    </p>
+                </div>
+                <button type="button" onclick="closeRegisterModal()" class="text-gray-500 hover:text-white p-1">
+                    <i class="fas fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <form id="create-quick-register-form" class="space-y-4">
+                {% csrf_token %}
+                <div>
+                    <label for="reg-email" class="block text-xs font-semibold text-gray-300 mb-1.5">Ваш Email</label>
+                    <input type="email" name="email" id="reg-email" required placeholder="teacher@school.ru" 
+                        class="w-full bg-[#18171A] border border-white/10 rounded-2xl p-3.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 transition-colors">
+                </div>
+
+                <div>
+                    <label for="reg-password" class="block text-xs font-semibold text-gray-300 mb-1.5">Придумайте пароль</label>
+                    <input type="password" name="password1" id="reg-password" required placeholder="••••••••" 
+                        class="w-full bg-[#18171A] border border-white/10 rounded-2xl p-3.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 transition-colors">
+                </div>
+
+                <!-- 152-ФЗ ГАЛКА СТРОГО СНЯТА ПО УМОЛЧАНИЮ -->
+                <div class="pt-1">
+                    <label class="flex items-start gap-2.5 cursor-pointer text-[11px] text-gray-400 leading-tight select-none">
+                        <input type="checkbox" id="reg-terms" name="terms" required 
+                            class="mt-0.5 rounded border-white/20 bg-[#18171A] text-indigo-600 focus:ring-0 w-4 h-4 flex-shrink-0">
+                        <span>
+                            Я даю согласие на обработку персональных данных (152-ФЗ) и принимаю условия 
+                            <a href="/docs/public-offer" target="_blank" class="text-indigo-400 underline">Оферты</a>.
+                        </span>
+                    </label>
+                </div>
+
+                <div id="reg-form-error" class="hidden text-xs text-rose-400 font-semibold p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20"></div>
+
+                <button type="submit" id="btn-submit-reg-create" class="w-full py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white shadow-lg shadow-indigo-600/30 transition-all spring-btn flex items-center justify-center gap-2">
+                    <span>Зарегистрироваться и забрать</span>
+                    <i class="fas fa-arrow-right text-[10px]"></i>
+                </button>
+
+                <p class="text-center text-xs text-gray-500">
+                    Уже есть аккаунт? <a href="/login" class="text-indigo-400 hover:underline font-semibold">Войти</a>
+                </p>
+            </form>
         </div>
     </div>
 
@@ -1131,7 +1221,7 @@
             $sliderDisplay.text(val);
             updateSliderFill(val);
 
-            if (val > 7) {
+            if (val > 8) {
                 $proPill.removeClass('opacity-0 scale-90 -mr-1').addClass('opacity-100 scale-100 mr-0');
             } else {
                 $proPill.addClass('opacity-0 scale-90 -mr-1').removeClass('opacity-100 scale-100 mr-0');
@@ -1140,7 +1230,7 @@
 
         $slider.on('change', function() {
             const val = parseInt(this.value, 10);
-            if (!isUserPremium && val > 7) {
+            if (!isUserPremium && val > 8) {
                 Island.warn('Тесты от 8 вопросов доступны в Премиум');
                 openPaywallModal('slider');
                 this.value = 7;
@@ -1508,7 +1598,10 @@
                 SmartLoader.start(questionCount, currentDiffLabel);
 
                 try {
-                    const res = await fetch('/api-create-survey/', {
+                    const isGuest = {{ is_guest|yesno:"true,false" }};
+                    const targetEndpoint = isGuest ? '/api-non-auth/create-survey/' : '/api-create-survey/';
+
+                    const res = await fetch(targetEndpoint, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -1573,7 +1666,15 @@
                         body: formData
                     });
 
-                    const data = await res.json();
+                    // Безопасный парсинг ответа (если сервер вернул HTML 500 / 504)
+                    let data = {};
+                    const responseText = await res.text();
+                    try {
+                        data = JSON.parse(responseText);
+                    } catch (jsonErr) {
+                        console.error('Сервер вернул не-JSON ответ:', responseText);
+                        throw new Error(`Ошибка сервера (${res.status}): процесс прерван таймаутом или сбоем.`);
+                    }
 
                     if (res.status === 429) {
                         resetButtonLoading();
@@ -1591,15 +1692,119 @@
                     } else {
                         resetButtonLoading();
                         SmartLoader.stop();
-                        Island.error(data.error || 'Ошибка обработки файла');
+                        if (data.is_moderation_error || (data.error && data.error.includes('недопустимый'))) {
+                            Island.warn(data.error, 'fa-shield-halved', 6000);
+                        } else {
+                            Island.error(data.error || `Ошибка обработки (${res.status})`, 'fa-triangle-exclamation', 5000);
+                        }
                     }
                 } catch (err) {
+                    console.error('Fetch error:', err);
                     resetButtonLoading();
                     SmartLoader.stop();
-                    Island.error('Сбой загрузки файла');
+                    Island.error(err.message || 'Сбой соединения при загрузке файла', 'fa-triangle-exclamation', 5000);
                 }
             }
         }
+    </script>
+
+    <script>
+        /* ==========================================================================
+        УПРАВЛЕНИЕ МОДАЛКОЙ РЕГИСТРАЦИИ
+        ========================================================================== */
+        const CREATE_MODAL_TEXTS = {
+            quota_header: {
+                title: "Лимит демо-режима исчерпан",
+                desc: "Зарегистрируйтесь за 10 секунд, чтобы сохранить созданные тесты и забрать еще 3 теста бесплатно."
+            },
+            quota_card: {
+                title: "Заберите ваш демо-тест",
+                desc: "Создайте аккаунт, чтобы закрепить тест в личном кабинете и открыть доступ к покупке пакетов."
+            },
+            buy_credits: {
+                title: "Пополнение баланса тестов",
+                desc: "Для покупки пакетов и снятия лимитов создайте аккаунт за 10 секунд."
+            },
+            unclaimed_alert: {
+                title: "Сохраните созданный тест",
+                desc: "Тест находится во временной сессии. Создайте аккаунт, чтобы не потерять его и продолжить генерации."
+            },
+            limit: {
+                title: "Бесплатный тест использован",
+                desc: "Зарегистрируйтесь, чтобы забрать тест из истории и получить еще 3 теста в подарок."
+            }
+        };
+
+        function openRegisterModal(trigger = 'quota_card') {
+            const config = CREATE_MODAL_TEXTS[trigger] || CREATE_MODAL_TEXTS.quota_card;
+            $('#reg-modal-title').text(config.title);
+            $('#reg-modal-desc').text(config.desc);
+            $('#reg-form-error').addClass('hidden').text('');
+            $('#quick-register-modal').removeClass('hidden').addClass('flex');
+        }
+
+        function closeRegisterModal() {
+            $('#quick-register-modal').addClass('hidden').removeClass('flex');
+        }
+
+        // Перехват кнопки в старой модалке 429
+        function openLimitModal(msg) {
+            const isAuth = {{ request.user.is_authenticated|yesno:"true,false" }};
+            if (!isAuth) {
+                openRegisterModal('limit');
+            } else {
+                if (msg) $('#limit-modal-text').text(msg);
+                $('#limit-exceeded-modal').removeClass('hidden').addClass('flex');
+            }
+        }
+
+        // AJAX сабмит формы быстрой регистрации
+        $('#create-quick-register-form').on('submit', async function(e) {
+            e.preventDefault();
+            const $err = $('#reg-form-error');
+            const $btn = $('#btn-submit-reg-create');
+            $err.addClass('hidden').text('');
+
+            const email = $('#reg-email').val().trim();
+            const password = $('#reg-password').val().trim();
+
+            if (!$('#reg-terms').is(':checked')) {
+                $err.removeClass('hidden').text('Необходимо согласие с политикой конфиденциальности (152-ФЗ).');
+                return;
+            }
+
+            $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-2"></i> Сохраняем...');
+
+            try {
+                const res = await fetch('/api/quick-register/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: new URLSearchParams({
+                        email: email,
+                        password1: password,
+                        terms_accepted: 'true'
+                    })
+                });
+
+                const data = await res.json();
+                if (res.ok && data.redirect) {
+                    closeRegisterModal();
+                    Island.success('Аккаунт создан! Тест сохранен');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 600);
+                } else {
+                    $btn.prop('disabled', false).html('<span>Зарегистрироваться и забрать</span><i class="fas fa-arrow-right text-[10px]"></i>');
+                    $err.removeClass('hidden').text(data.error || 'Ошибка при регистрации.');
+                }
+            } catch (err) {
+                $btn.prop('disabled', false).html('<span>Зарегистрироваться и забрать</span><i class="fas fa-arrow-right text-[10px]"></i>');
+                $err.removeClass('hidden').text('Сбой связи с сервером. Попробуйте еще раз.');
+            }
+        });
     </script>
 </body>
 </html>

@@ -68,8 +68,6 @@
             letter-spacing: -0.03em;
         }
 
-        .font-mono-nums { font-family: 'JetBrains Mono', monospace; }
-
         .glass-panel {
             background: var(--card-bg);
             backdrop-filter: blur(24px);
@@ -78,7 +76,7 @@
         }
 
         /* ==========================================================================
-           TRUE APPLE DYNAMIC ISLAND MORPHING
+           APPLE DYNAMIC ISLAND ENGINE
            ========================================================================== */
         .island-capsule {
             background: rgba(24, 23, 26, 0.92);
@@ -87,8 +85,6 @@
             border: 1px solid rgba(255, 255, 255, 0.12);
             box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.8);
             border-radius: 9999px;
-            
-            /* Фирменная пружина Apple для ширины и скейла */
             transition: 
                 max-width 0.45s var(--spring-bounce),
                 padding 0.35s var(--spring-smooth),
@@ -99,23 +95,20 @@
             will-change: max-width, transform, border-color, box-shadow;
         }
 
-        /* Состояние 1: Дефолтный широкий хедер */
         .island-capsule.mode-header {
-            max-width: 56rem; /* 896px = max-w-4xl */
+            max-width: 56rem;
             width: 100%;
             padding: 0.625rem 1.25rem;
         }
 
-        /* Состояние 2: Остров сжался под уведомление (Компактная пилюля) */
         .island-capsule.mode-notify {
-            max-width: 25rem; /* ~400px под сообщение */
+            max-width: 25rem;
             width: auto;
             padding: 0.5rem 1.25rem;
             transform: scale(1.02);
             background: rgba(18, 17, 20, 0.98);
         }
 
-        /* Акцентные ауры типов уведомлений */
         .island-capsule.theme-success {
             border-color: rgba(16, 185, 129, 0.45);
             box-shadow: 0 15px 35px -8px rgba(16, 185, 129, 0.3), 0 0 0 1px rgba(16, 185, 129, 0.15);
@@ -133,17 +126,15 @@
             box-shadow: 0 15px 35px -8px rgba(99, 102, 241, 0.3), 0 0 0 1px rgba(99, 102, 241, 0.15);
         }
 
-        /* Переходы внутреннего контента */
         .island-content-layer {
             transition: opacity 0.25s var(--spring-smooth), transform 0.3s var(--spring-bounce), filter 0.25s;
         }
 
-        /* Пружинистые кнопки страницы */
         .spring-btn {
             transition: transform 0.25s var(--spring-bounce), background-color 0.2s, box-shadow 0.2s;
         }
-        .spring-btn:hover { transform: scale(1.03) translateY(-1px); }
-        .spring-btn:active { transform: scale(0.96) translateY(0); }
+        .spring-btn:hover { transform: scale(1.02) translateY(-1px); }
+        .spring-btn:active { transform: scale(0.97) translateY(0); }
 
         .spring-modal-content {
             transition: transform 0.35s var(--spring-bounce), opacity 0.25s var(--spring-smooth);
@@ -169,6 +160,10 @@
                 <a href="{% url 'profile_redirect' %}" class="w-11 h-11 rounded-2xl bg-white/5 border border-white/5 text-gray-400 flex items-center justify-center hover:text-white hover:bg-white/10 spring-btn" title="Профиль">
                     <i class="fas fa-user-astronaut text-sm"></i>
                 </a>
+            {% else %}
+                <button type="button" onclick="openRegisterModal('history')" class="w-11 h-11 rounded-2xl bg-white/5 border border-white/5 text-gray-500 flex items-center justify-center hover:text-indigo-400 hover:bg-white/10 spring-btn" title="История (требуется регистрация)">
+                    <i class="fa-sharp fa-solid fa-clock-rotate-left text-sm"></i>
+                </button>
             {% endif %}
         </nav>
         {% if username != 0 %}
@@ -187,7 +182,7 @@
             <a href="{% url 'history' %}" class="text-gray-400 hover:text-white"><i class="fas fa-layer-group text-base"></i></a>
             <a href="{% url 'profile_redirect' %}" class="text-gray-400 hover:text-white"><i class="fas fa-user text-base"></i></a>
         {% else %}
-            <a href="/login" class="text-xs font-semibold text-indigo-400">Войти</a>
+            <button type="button" onclick="openRegisterModal('nav')" class="text-xs font-bold text-indigo-400">Сохранить</button>
         {% endif %}
     </nav>
 
@@ -208,7 +203,7 @@
                             <h1 id="header-survey-title" class="text-xs sm:text-sm font-semibold text-white truncate max-w-[170px] sm:max-w-xs md:max-w-md">
                                 {{ title }}
                             </h1>
-                            {% if can_edit %}
+                            {% if username != 0 and can_edit %}
                                 <button onclick="openEditTitleModal()" class="text-gray-500 hover:text-indigo-400 transition-colors p-1" title="Переименовать тест">
                                     <i class="fas fa-pen text-[10px]"></i>
                                 </button>
@@ -217,21 +212,28 @@
                     </div>
 
                     <div class="flex items-center gap-2.5 flex-shrink-0">
-                        <div class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/5 text-[11px] text-gray-300 font-mono-nums">
-                            <i class="fas fa-eye text-gray-500"></i>
-                            <span>{{ view_count }}</span>
-                        </div>
+                        {% if username == 0 %}
+                            <button type="button" onclick="openRegisterModal('header')" class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-md shadow-indigo-600/30 spring-btn">
+                                <i class="fas fa-floppy-disk text-[10px]"></i>
+                                <span>Сохранить</span>
+                            </button>
+                        {% else %}
+                            <div class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/5 text-[11px] text-gray-300 font-mono-nums">
+                                <i class="fas fa-eye text-gray-500"></i>
+                                <span>{{ view_count }}</span>
+                            </div>
 
-                        {% if is_creator and username != 0 %}
-                            <a href="{% url 'preview_test_result' survey_id %}" class="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-indigo-600/10 border border-indigo-500/20 text-indigo-400 hover:bg-indigo-600/20 text-xs font-semibold transition-colors spring-btn">
-                                <i class="fas fa-chart-pie text-[10px]"></i>
-                                <span>Аналитика</span>
-                            </a>
+                            {% if is_creator %}
+                                <a href="{% url 'preview_test_result' survey_id %}" class="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-indigo-600/10 border border-indigo-500/20 text-indigo-400 hover:bg-indigo-600/20 text-xs font-semibold transition-colors spring-btn">
+                                    <i class="fas fa-chart-pie text-[10px]"></i>
+                                    <span>Аналитика</span>
+                                </a>
+                            {% endif %}
                         {% endif %}
                     </div>
                 </div>
 
-                <!-- 2. СЛОЙ УВЕДОМЛЕНИЙ: ПОЯВЛЯЕТСЯ ВМЕСТО ЭЛЕМЕНТОВ УПРАВЛЕНИЯ -->
+                <!-- 2. СЛОЙ УВЕДОМЛЕНИЙ -->
                 <div id="island-notice" class="island-content-layer hidden w-full items-center justify-center gap-3 opacity-0 scale-75 select-none">
                     <span id="island-icon-box" class="w-6 h-6 rounded-full flex items-center justify-center text-xs flex-shrink-0">
                         <i id="island-icon" class="fas fa-check"></i>
@@ -243,7 +245,39 @@
         </header>
 
         <!-- BENTO GRID -->
-        <main class="max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 mt-8 flex-grow">
+        <main class="max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 mt-4 sm:mt-6 flex-grow">
+
+            <!-- ============================================================== -->
+            <!--   МОБИЛЬНО-ДЕКСТОПНЫЙ ХУК-БАННЕР ДЛЯ ГОСТЯ (ВРЕМЕННАЯ СЕССИЯ)   -->
+            <!-- ============================================================== -->
+            {% if username == 0 %}
+            <div class="mb-6 rounded-[24px] sm:rounded-[28px] bg-gradient-to-r from-indigo-950/40 via-[#181724] to-indigo-950/20 border border-indigo-500/30 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xl relative overflow-hidden">
+                <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+                <div class="flex items-start sm:items-center gap-3.5 relative z-10">
+                    <div class="w-10 h-10 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 flex items-center justify-center flex-shrink-0">
+                        <i class="fa-regular fa-user"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs sm:text-sm font-bold text-white tracking-tight">Временная демо-сессия</span>
+                            <span class="px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[10px] font-bold">Не сохранен</span>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-1 max-w-xl leading-relaxed">
+                            Тест создан и готов к работе. Зарегистрируйтесь в 1 клик, чтобы получить ссылку для учеников, открыть правильные ответы и забрать <strong>еще 3 теста в подарок</strong>.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2 sm:flex-shrink-0 relative z-10 w-full sm:w-auto">
+                    <button type="button" onclick="openRegisterModal('banner')" class="w-full sm:w-auto px-5 py-3 rounded-xl sm:rounded-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-lg shadow-indigo-600/30 spring-btn text-center flex items-center justify-center gap-2">
+                        <span>Сохранить тест</span>
+                        <i class="fas fa-arrow-right text-[10px]"></i>
+                    </button>
+                </div>
+            </div>
+            {% endif %}
+
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                 
                 <!-- ЛЕВАЯ СЕКЦИЯ: ВОПРОСЫ (col-span-8) -->
@@ -255,7 +289,7 @@
                                 {{ questions|length }}
                             </span>
                         </div>
-                        <span class="text-xs text-gray-500 font-medium">{{ model_name }}</span>
+                        <span class="text-xs text-gray-500 font-medium font-mono-nums">{{ model_name }}</span>
                     </div>
 
                     <div id="questions-stream" class="space-y-4">
@@ -277,6 +311,7 @@
                                     {% endif %}
                                 </div>
 
+                                {% if username != 0 and can_edit %}
                                 <div class="edit-actions hidden items-center gap-1">
                                     <button type="button" class="text-gray-400 hover:text-indigo-400 p-2 rounded-xl hover:bg-white/5 transition-colors spring-btn" onclick="editExistingQuestion({{ forloop.counter0 }})" title="Редактировать">
                                         <i class="fas fa-pen-to-square text-xs"></i>
@@ -285,6 +320,7 @@
                                         <i class="fas fa-trash-can text-xs"></i>
                                     </button>
                                 </div>
+                                {% endif %}
                             </div>
 
                             <h3 class="text-base font-semibold text-white mb-5 leading-snug">
@@ -294,70 +330,115 @@
                             <div class="space-y-2.5">
                                 {% for option in question.options %}
                                 <div class="option-row flex items-center gap-3 p-3.5 rounded-2xl border text-sm transition-all
-                                    {% if show_answers and option in question.correct_answers %}
+                                    {% if username != 0 and show_answers and option in question.correct_answers %}
                                         is-correct bg-emerald-500/10 border-emerald-500/30 text-emerald-300 font-medium
                                     {% else %}
-                                        {% if option in question.correct_answers %}is-correct{% endif %} bg-[#18171A]/70 border-white/[0.04] text-gray-300
+                                        {% if option in question.correct_answers %}is-correct{% endif %} bg-[#111119]/70 border-white/[0.04] text-gray-300
                                     {% endif %}"
                                     data-is-correct="{% if option in question.correct_answers %}true{% else %}false{% endif %}">
                                     
                                     <span class="opt-badge w-6 h-6 rounded-lg flex items-center justify-center text-xs flex-shrink-0
-                                        {% if show_answers and option in question.correct_answers %}
+                                        {% if username != 0 and show_answers and option in question.correct_answers %}
                                             bg-emerald-500 text-black font-bold
                                         {% else %}
                                             bg-white/5 border border-white/10 text-gray-400
                                         {% endif %}">
                                         {% if question.type == 'multiple' %}
-                                            <i class="opt-icon fas {% if show_answers and option in question.correct_answers %}fa-check{% else %}fa-square text-[9px] opacity-40{% endif %}"></i>
+                                            <i class="opt-icon fas {% if username != 0 and show_answers and option in question.correct_answers %}fa-check{% else %}fa-square text-[9px] opacity-40{% endif %}"></i>
                                         {% else %}
-                                            <i class="opt-icon fas {% if show_answers and option in question.correct_answers %}fa-check{% else %}fa-circle text-[7px] opacity-40{% endif %}"></i>
+                                            <i class="opt-icon fas {% if username != 0 and show_answers and option in question.correct_answers %}fa-check{% else %}fa-circle text-[7px] opacity-40{% endif %}"></i>
                                         {% endif %}
                                     </span>
                                     
                                     <span class="flex-grow">{{ option }}</span>
 
-                                    <span class="opt-label text-[11px] font-mono-nums uppercase tracking-wider text-emerald-400 font-bold {% if not show_answers or option not in question.correct_answers %}hidden{% endif %}">
-                                        Верно
-                                    </span>
+                                    {% if username != 0 %}
+                                        <span class="opt-label text-[11px] font-mono-nums uppercase tracking-wider text-emerald-400 font-bold {% if not show_answers or option not in question.correct_answers %}hidden{% endif %}">
+                                            Верно
+                                        </span>
+                                    {% endif %}
                                 </div>
                                 {% endfor %}
                             </div>
                         </article>
+
+                        <!-- ИНЛАЙН-МАГНИТ ПОСЛЕ 2-ГО ВОПРОСА ДЛЯ НЕАВТОРИЗОВАННОГО -->
+                        {% if username == 0 and forloop.counter == 2 %}
+                        <div class="rounded-[28px] border border-white/10 bg-white/[0.02] p-5 sm:p-6 text-center space-y-3">
+                            <p class="text-xs sm:text-sm font-semibold text-white">
+                                Хотите настроить эти задания под себя или добавить свои варианты?
+                            </p>
+                            <p class="text-xs text-gray-400 max-w-md mx-auto">
+                                Сохраните тест в личный кабинет, чтобы включить режим редактирования и выгрузить готовые бланки в PDF.
+                            </p>
+                            <button type="button" onclick="openRegisterModal('in_feed')" class="px-6 py-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all spring-btn">
+                                Зарегистрироваться и продолжить &rarr;
+                            </button>
+                        </div>
+                        {% endif %}
+
                         {% endfor %}
                     </div>
 
+                    {% if username != 0 and can_edit %}
                     <div id="add-question-box" class="hidden p-6 border-2 border-dashed border-white/10 hover:border-indigo-500/50 rounded-[28px] bg-white/[0.02] transition-colors">
                         <button type="button" onclick="openNewQuestionModal()" class="w-full flex items-center justify-center gap-2.5 py-3 text-sm font-semibold text-indigo-400 hover:text-indigo-300 spring-btn">
                             <i class="fas fa-plus-circle text-base"></i> Добавить вопрос
                         </button>
                     </div>
+                    {% endif %}
                 </section>
 
                 <!-- ПРАВАЯ СЕКЦИЯ: ПАНЕЛЬ ДЕЙСТВИЙ (col-span-4) -->
                 <aside class="lg:col-span-4 space-y-5 lg:sticky lg:top-24">
-                    
+
                     <div class="glass-panel rounded-[32px] p-6 shadow-2xl space-y-4">
-                        <a href="{% url 'take_test' survey_id %}" class="w-full flex items-center justify-center gap-3 py-4 px-5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold shadow-lg shadow-indigo-600/30 spring-btn">
-                            <i class="fas fa-play text-xs"></i>
-                            <span>Запустить прохождение</span>
-                        </a>
-
-                        <button type="button" data-action="share" data-share-url="{% url 'take_test' survey_id %}" class="w-full flex items-center justify-center gap-3 py-3.5 px-4 rounded-2xl bg-[#18171A] hover:bg-white/5 border border-white/10 text-gray-200 text-xs font-semibold spring-btn">
-                            <i class="fas fa-share-nodes text-gray-400"></i>
-                            <span>Поделиться ссылкой</span>
-                        </button>
-
-                        <div class="grid grid-cols-2 gap-2 pt-2 border-t border-white/10">
-                            <button onclick="showClassroomQR()" class="flex items-center justify-center gap-2 py-3 rounded-xl bg-[#18171A] border border-white/5 text-xs font-medium text-gray-300 hover:text-white spring-btn">
-                                <i class="fas fa-qrcode text-gray-400"></i> QR-код
-                            </button>
-                            <a href="{% url 'download-survey_pdf' survey_id %}" class="flex items-center justify-center gap-2 py-3 rounded-xl bg-[#18171A] border border-white/5 text-xs font-medium text-gray-300 hover:text-white spring-btn">
-                                <i class="fas fa-file-pdf text-gray-400"></i> PDF
+                        {% if username != 0 %}
+                            <a href="{% url 'take_test' survey_id %}" class="w-full flex items-center justify-center gap-3 py-4 px-5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold shadow-lg shadow-indigo-600/30 spring-btn">
+                                <i class="fas fa-play text-xs"></i>
+                                <span>Запустить прохождение</span>
                             </a>
-                        </div>
+
+                            <button type="button" data-action="share" data-share-url="{% url 'take_test' survey_id %}" class="w-full flex items-center justify-center gap-3 py-3.5 px-4 rounded-2xl bg-[#18171A] hover:bg-white/5 border border-white/10 text-gray-200 text-xs font-semibold spring-btn">
+                                <i class="fas fa-share-nodes text-gray-400"></i>
+                                <span>Поделиться ссылкой</span>
+                            </button>
+
+                            <div class="grid grid-cols-2 gap-2 pt-2 border-t border-white/10">
+                                <button onclick="showClassroomQR()" class="flex items-center justify-center gap-2 py-3 rounded-xl bg-[#18171A] border border-white/5 text-xs font-medium text-gray-300 hover:text-white spring-btn">
+                                    <i class="fas fa-qrcode text-gray-400"></i> QR-код
+                                </button>
+                                <a href="{% url 'download-survey_pdf' survey_id %}" class="flex items-center justify-center gap-2 py-3 rounded-xl bg-[#18171A] border border-white/5 text-xs font-medium text-gray-300 hover:text-white spring-btn">
+                                    <i class="fas fa-file-pdf text-gray-400"></i> PDF
+                                </a>
+                            </div>
+                        {% else %}
+                            <!-- КНОПКИ ДЛЯ НЕАВТОРИЗОВАННОГО ГОСТЯ (ТРИГГЕРЫ МОДАЛКИ) -->
+                            <button type="button" onclick="openRegisterModal('take_test')" class="w-full flex items-center justify-center gap-3 py-4 px-5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold shadow-lg shadow-indigo-600/30 spring-btn">
+                                <i class="fas fa-lock text-xs opacity-70"></i>
+                                <span>Запустить прохождение</span>
+                            </button>
+
+                            <button type="button" onclick="openRegisterModal('share')" class="w-full flex items-center justify-center gap-3 py-3.5 px-4 rounded-2xl bg-[#18171A] hover:bg-white/5 border border-white/10 text-gray-300 text-xs font-semibold spring-btn">
+                                <i class="fas fa-share-nodes text-gray-500"></i>
+                                <span>Поделиться ссылкой</span>
+                            </button>
+
+                            <div class="grid grid-cols-2 gap-2 pt-2 border-t border-white/10">
+                                <button type="button" onclick="openRegisterModal('qr')" class="flex items-center justify-center gap-2 py-3 rounded-xl bg-[#18171A] border border-white/5 text-xs font-medium text-gray-400 hover:text-white spring-btn">
+                                    <i class="fas fa-qrcode text-gray-500"></i> QR-код
+                                </button>
+                                <button type="button" onclick="openRegisterModal('pdf')" class="flex items-center justify-center gap-2 py-3 rounded-xl bg-[#18171A] border border-white/5 text-xs font-medium text-gray-400 hover:text-white spring-btn">
+                                    <i class="fas fa-file-pdf text-gray-500"></i> PDF
+                                </button>
+                            </div>
+                            <p class="text-[10px] text-gray-500 text-center font-mono-nums pt-1">
+                                Сохраните тест для доступа ко всем опциям
+                            </p>
+                        {% endif %}
                     </div>
 
-                    {% if is_creator %}
+                    <!-- ПАНЕЛЬ УПРАВЛЕНИЯ ТЕСТОМ -->
                     <div class="glass-panel rounded-[32px] p-6 space-y-5">
                         <span class="text-xs font-bold uppercase tracking-wider text-gray-400 block">Управление тестом</span>
 
@@ -365,7 +446,7 @@
                         <div class="flex items-center justify-between gap-4 py-2 border-b border-white/5">
                             <div>
                                 <span class="text-xs font-semibold text-white block">Показ ответов</span>
-                                <span class="text-[11px] text-gray-500">Видны участникам теста</span>
+                                <span class="text-[11px] text-gray-500">Видны правильные ответы</span>
                             </div>
                             <label class="relative inline-block w-11 h-6 cursor-pointer">
                                 <input type="checkbox" id="answersToggle" class="sr-only peer" {% if show_answers %}checked{% endif %}>
@@ -379,15 +460,9 @@
                                 <span class="text-xs font-semibold text-white block">Редактирование</span>
                                 <span class="text-[11px] text-gray-500">Правка вопросов и ответов</span>
                             </div>
-                            {% if can_edit %}
-                                <button type="button" id="toggle-edit-mode-btn" class="px-3.5 py-1.5 rounded-xl bg-[#18171A] border border-white/10 text-xs font-semibold text-gray-300 hover:text-white spring-btn">
-                                    Править
-                                </button>
-                            {% else %}
-                                <a href="{% url 'payment' %}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-bold hover:bg-indigo-500/20 spring-btn">
-                                    <i class="fas fa-lock text-[10px]"></i> PRO
-                                </a>
-                            {% endif %}
+                            <button type="button" id="toggle-edit-mode-btn" class="px-3.5 py-1.5 rounded-xl bg-[#18171A] border border-white/10 text-xs font-semibold text-gray-300 hover:text-white spring-btn">
+                                Править
+                            </button>
                         </div>
 
                         <!-- Перегенерация -->
@@ -396,16 +471,12 @@
                                 <span class="text-xs font-semibold text-white block">Пересобрать тест</span>
                                 <span class="text-[11px] text-gray-500">Нейросеть составит новые</span>
                             </div>
-                            {% if can_edit %}
-                                <button type="button" onclick="triggerRegenerateSurvey()" class="px-3.5 py-1.5 rounded-xl bg-white/5 border border-white/10 text-xs font-semibold text-indigo-400 hover:bg-indigo-600 hover:text-white spring-btn">
-                                    <i class="fas fa-rotate mr-1"></i> Сгенерировать
-                                </button>
-                            {% else %}
-                                <a href="{% url 'payment' %}" class="text-xs text-gray-500 hover:text-gray-300">Платная опция</a>
-                            {% endif %}
+                            <button type="button" id="btn-regenerate-survey" onclick="triggerRegenerateSurvey()" class="px-3.5 py-1.5 rounded-xl bg-white/5 border border-white/10 text-xs font-semibold text-indigo-400 hover:bg-indigo-600 hover:text-white spring-btn">
+                                Пересобрать
+                            </button>
                         </div>
 
-                        {% if username == author %}
+                        {% if username != 0 and username == author %}
                         <div class="pt-1">
                             <button onclick="openDeleteModal('{{ survey_id }}', '{{ title|escapejs }}')" class="w-full py-2.5 rounded-xl text-xs font-semibold text-gray-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors text-center block">
                                 Удалить этот тест
@@ -413,15 +484,14 @@
                         </div>
                         {% endif %}
                     </div>
-                    {% endif %}
 
                 </aside>
             </div>
 
             <footer class="mt-16 sm:mt-24">
                 <div class="max-w-3xl mx-auto px-4 sm:px-8">
-                    <div class="mt-8 mb-4 pt-8 border-t border-[var(--color-border)] flex flex-col sm:flex-row justify-between items-center text-xs text-gray-600 text-center">
-                        <p>2024-2026 Летучка AI. Design & Development <a class="text-gray-500 hover:text-[var(--color-accent-primary)]" rel='nofollow' href="https://dprofile.ru/kozak_developer" target="_blank">by Kozak</a></p>
+                    <div class="mt-8 mb-4 pt-8 border-t border-white/5 flex flex-col sm:flex-row justify-between items-center text-xs text-gray-600 text-center">
+                        <p>2024-2026 Летучка AI. Design & Development <a class="text-gray-500 hover:text-indigo-400" rel='nofollow' href="https://dprofile.ru/kozak_developer" target="_blank">by Kozak</a></p>
                         <div class="mt-2 sm:mt-0">
                             <a href="/docs/public-offer" class="hover:text-gray-400">Публичная оферта</a>
                             <span class="mx-2">|</span>
@@ -431,6 +501,68 @@
                 </div>
             </footer>
         </main>
+
+        <!-- ============================================================== -->
+        <!--   КОНВЕРСИОННАЯ МОДАЛКА БЫСТРОЙ РЕГИСТРАЦИИ (152-ФЗ)           -->
+        <!-- ============================================================== -->
+        <div id="quick-register-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+            <div class="fixed inset-0 bg-black/85 backdrop-blur-md" onclick="closeRegisterModal()"></div>
+            
+            <div class="relative w-full max-w-md glass-panel rounded-[32px] p-6 sm:p-8 shadow-2xl z-10 space-y-5 spring-modal-content border border-white/10">
+                <div class="flex items-start justify-between pb-3 border-b border-white/10">
+                    <div>
+                        <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-mono-nums font-semibold mb-2">
+                            <span>+3 ТЕСТА БЕСПЛАТНО</span>
+                        </div>
+                        <h3 id="reg-modal-title" class="text-lg font-bold text-white tracking-tight">Сохраните ваш тест</h3>
+                        <p id="reg-modal-desc" class="text-xs text-gray-400 mt-1 leading-relaxed">
+                            Создайте аккаунт за 10 секунд, чтобы не потерять этот тест и открыть все возможности.
+                        </p>
+                    </div>
+                    <button type="button" onclick="closeRegisterModal()" class="text-gray-500 hover:text-white p-1">
+                        <i class="fas fa-xmark text-lg"></i>
+                    </button>
+                </div>
+
+                <form id="page-quick-register-form" class="space-y-4">
+                    {% csrf_token %}
+                    <div>
+                        <label for="reg-email" class="block text-xs font-semibold text-gray-300 mb-1.5">Ваш Email</label>
+                        <input type="email" name="email" id="reg-email" required placeholder="teacher@school.ru" 
+                               class="w-full bg-[#18171A] border border-white/10 rounded-2xl p-3.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 transition-colors">
+                    </div>
+
+                    <div>
+                        <label for="reg-password" class="block text-xs font-semibold text-gray-300 mb-1.5">Придумайте пароль</label>
+                        <input type="password" name="password1" id="reg-password" required placeholder="••••••••" 
+                               class="w-full bg-[#18171A] border border-white/10 rounded-2xl p-3.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 transition-colors">
+                    </div>
+
+                    <!-- ЧЕКБОКС 152-ФЗ -->
+                    <div class="pt-1">
+                        <label class="flex items-start gap-2.5 cursor-pointer text-[11px] text-gray-400 leading-tight select-none">
+                            <input type="checkbox" id="reg-terms" name="terms" required checked 
+                                   class="mt-0.5 rounded border-white/20 bg-[#18171A] text-indigo-600 focus:ring-0 w-4 h-4 flex-shrink-0">
+                            <span>
+                                Согласен на обработку персональных данных (152-ФЗ) и принимаю условия 
+                                <a href="/docs/public-offer" target="_blank" class="text-indigo-400 underline">Публичной оферты</a>.
+                            </span>
+                        </label>
+                    </div>
+
+                    <div id="reg-form-error" class="hidden text-xs text-rose-400 font-semibold p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20"></div>
+
+                    <button type="submit" id="btn-submit-register" class="w-full py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white shadow-lg shadow-indigo-600/30 transition-all spring-btn flex items-center justify-center gap-2">
+                        <span>Сохранить и продолжить</span>
+                        <i class="fas fa-arrow-right text-[10px]"></i>
+                    </button>
+
+                    <p class="text-center text-xs text-gray-500">
+                        Уже есть аккаунт? <a href="/login?next=/c/{{ survey_id }}/" class="text-indigo-400 hover:underline font-semibold">Войти</a>
+                    </p>
+                </form>
+            </div>
+        </div>
 
         <!-- МОДАЛКА: СОЗДАНИЕ / РЕДАКТИРОВАНИЕ ВОПРОСА -->
         <div id="question-editor-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
@@ -521,29 +653,114 @@
     {{ questions|json_script:"questions-data" }}
 
     <script>
-        const surveyId = '{{ survey_id }}';
-        let rawQuestions = JSON.parse(document.getElementById('questions-data').textContent || '[]');
-        let currentQuestionType = 'single';
+    const surveyId = '{{ survey_id }}';
+    // 1. ЖЕЛЕЗОБЕТОННЫЙ ФИКС: строковое сравнение в кавычках (больше никакого ReferenceError)
+    const isUserAuthenticated = ("{{ username }}" !== "0" && "{{ username }}" !== "" && "{{ username }}" !== "None");
+    
+    // 2. БЕЗОПАСНЫЙ ПАРСИНГ ВОПРОСОВ (защита от null.textContent)
+    let rawQuestions = [];
+    try {
+        const qDataEl = document.getElementById('questions-data');
+        if (qDataEl && qDataEl.textContent) {
+            rawQuestions = JSON.parse(qDataEl.textContent);
+        }
+    } catch (e) {
+        console.warn('Не удалось распарсить questions-data', e);
+    }
 
-        function getCookie(name) {
-            let cookieValue = null;
-            if (document.cookie && document.cookie !== '') {
-                const cookies = document.cookie.split(';');
-                for (let i = 0; i < cookies.length; i++) {
-                    const cookie = cookies[i].trim();
-                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
-                    }
+    let currentQuestionType = 'single';
+    let isEditMode = false;
+
+    // 3. ПОЛУЧЕНИЕ CSRF (двойной fallback: cookie -> meta-тег)
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
                 }
             }
-            return cookieValue;
         }
+        if (!cookieValue && name === 'csrftoken') {
+            const meta = document.querySelector('meta[name="csrf-token"]');
+            if (meta) cookieValue = meta.getAttribute('content');
+        }
+        return cookieValue;
+    }
 
-        /* ==========================================================================
-           APPLE DYNAMIC ISLAND ENGINE (ШИНА УВЕДОМЛЕНИЙ)
-           ========================================================================== */
-        const Island = (() => {
+    /* ==========================================================================
+       1. УПРАВЛЕНИЕ МОДАЛКОЙ БЫСТРОЙ РЕГИСТРАЦИИ (152-ФЗ)
+       ========================================================================== */
+    const MODAL_PRESETS = {
+        banner: {
+            title: "Сохраните созданный тест",
+            desc: "Зарегистрируйтесь, чтобы закрепить тест за своим аккаунтом и получить ещё 3 теста в подарок."
+        },
+        take_test: {
+            title: "Запуск теста для прохождения",
+            desc: "Создайте аккаунт, чтобы открыть доступ ученикам по прямой ссылке и собирать статистику с автопроверкой."
+        },
+        share: {
+            title: "Поделиться тестом с группой",
+            desc: "Зарегистрируйтесь, чтобы сгенерировать публичную ссылку для учеников без паролей."
+        },
+        pdf: {
+            title: "Выгрузка бланка в PDF",
+            desc: "Зарегистрируйтесь, чтобы скачать сверстанный тест с отдельным листом ответов для печати."
+        },
+        qr: {
+            title: "QR-код для аудитории",
+            desc: "Сохраните тест, чтобы вывести QR-код на проектор или доску для мгновенного входа со смартфонов."
+        },
+        answers: {
+            title: "Ключи и правильные ответы",
+            desc: "Зарегистрируйтесь в 1 клик, чтобы открыть правильные варианты и пояснения к каждому заданию."
+        },
+        edit: {
+            title: "Редактирование заданий",
+            desc: "Сохраните тест в личный кабинет, чтобы менять формулировки, удалять или добавлять свои вопросы."
+        },
+        regenerate: {
+            title: "Пересборка теста нейросетью",
+            desc: "Зарегистрируйтесь, чтобы запустить генерацию альтернативного варианта заданий."
+        },
+        in_feed: {
+            title: "Сохранить и продолжить работу",
+            desc: "Зарегистрируйтесь за 10 секунд, чтобы настроить этот тест и забрать 3 бонусных теста."
+        }
+    };
+
+    function openRegisterModal(trigger = 'banner') {
+        const config = MODAL_PRESETS[trigger] || MODAL_PRESETS.banner;
+        $('#reg-modal-title').text(config.title);
+        $('#reg-modal-desc').text(config.desc);
+        $('#reg-form-error').addClass('hidden').text('');
+        $('#quick-register-modal').removeClass('hidden').css('display', 'flex');
+    }
+
+    function closeRegisterModal() {
+        $('#quick-register-modal').addClass('hidden').css('display', 'none');
+    }
+
+    /* ==========================================================================
+       2. ДИНАМИЧЕСКИЙ ОСТРОВОК (ПЕРЕПИСАН БЕЗ ЗАВИСИМОСТИ ОТ ТАЙЛВИНД-БАГОВ)
+       ========================================================================== */
+    const Island = (() => {
+        let timer = null;
+
+        const THEMES = {
+            success: { themeClass: 'theme-success', icon: 'fa-check', iconBg: 'bg-emerald-500 text-black font-bold' },
+            error: { themeClass: 'theme-error', icon: 'fa-xmark', iconBg: 'bg-rose-500 text-white font-bold' },
+            warning: { themeClass: 'theme-warning', icon: 'fa-exclamation', iconBg: 'bg-amber-500 text-black font-bold' },
+            info: { themeClass: 'theme-info', icon: 'fa-bolt', iconBg: 'bg-indigo-500 text-white' }
+        };
+
+        function notify(message, type = 'success', customIcon = null, duration = 2600) {
+            if (timer) clearTimeout(timer);
+
             const $island = $('#dynamic-island');
             const $controls = $('#island-controls');
             const $notice = $('#island-notice');
@@ -551,190 +768,441 @@
             const $icon = $('#island-icon');
             const $iconBox = $('#island-icon-box');
 
-            let timer = null;
+            const config = THEMES[type] || THEMES.info;
+            const chosenIcon = customIcon || config.icon;
 
-            const THEMES = {
-                success: {
-                    themeClass: 'theme-success',
-                    icon: 'fa-check',
-                    iconBg: 'bg-emerald-500 text-black font-bold'
-                },
-                error: {
-                    themeClass: 'theme-error',
-                    icon: 'fa-xmark',
-                    iconBg: 'bg-rose-500 text-white font-bold'
-                },
-                warning: {
-                    themeClass: 'theme-warning',
-                    icon: 'fa-exclamation',
-                    iconBg: 'bg-amber-500 text-black font-bold'
-                },
-                info: {
-                    themeClass: 'theme-info',
-                    icon: 'fa-bolt',
-                    iconBg: 'bg-indigo-500 text-white'
+            // 1. Анимация ухода контролов
+            $island.removeClass('theme-success theme-error theme-warning theme-info');
+            $controls.css({ opacity: 0, pointerEvents: 'none', transform: 'scale(0.92)' });
+
+            setTimeout(() => {
+                $controls.hide();
+
+                // 2. Подготовка контента
+                $text.text(message);
+                $icon.attr('class', `fas ${chosenIcon}`);
+                $iconBox.attr('class', `w-6 h-6 rounded-full flex items-center justify-center text-[11px] flex-shrink-0 ${config.iconBg}`);
+
+                // 3. Морфинг капсулы островка
+                $island.removeClass('mode-header').addClass(`mode-notify ${config.themeClass}`);
+
+                // 4. Показ уведомления с принудительным flex
+                $notice.removeClass('hidden').css({ display: 'flex', opacity: 0, transform: 'scale(0.8)' });
+
+                setTimeout(() => {
+                    $notice.css({ opacity: 1, transform: 'scale(1)', transition: 'all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)' });
+                }, 20);
+
+            }, 150);
+
+            timer = setTimeout(() => {
+                dismiss();
+            }, duration);
+        }
+
+        function dismiss() {
+            const $island = $('#dynamic-island');
+            const $controls = $('#island-controls');
+            const $notice = $('#island-notice');
+
+            $notice.css({ opacity: 0, transform: 'scale(0.8)', transition: 'all 0.2s ease' });
+
+            setTimeout(() => {
+                $notice.hide().addClass('hidden');
+
+                $island
+                    .removeClass('mode-notify theme-success theme-error theme-warning theme-info')
+                    .addClass('mode-header');
+
+                $controls.show().css({ display: 'flex' });
+                setTimeout(() => {
+                    $controls.css({ opacity: 1, pointerEvents: 'auto', transform: 'scale(1)', transition: 'all 0.25s ease' });
+                }, 20);
+
+                timer = null;
+            }, 180);
+        }
+
+        return {
+            notify,
+            dismiss,
+            success: (msg, icon, dur) => notify(msg, 'success', icon, dur),
+            error: (msg, icon, dur) => notify(msg, 'error', icon, dur),
+            warn: (msg, icon, dur) => notify(msg, 'warning', icon, dur),
+            info: (msg, icon, dur) => notify(msg, 'info', icon, dur)
+        };
+    })();
+
+    /* ==========================================================================
+       3. ПЕРЕКЛЮЧЕНИЕ ПРАВИЛЬНЫХ ОТВЕТОВ В DOM
+       ========================================================================== */
+    function toggleAnswersInDOM(show) {
+        $('.option-row').each(function() {
+            const isCorrect = $(this).attr('data-is-correct') === 'true';
+            const isMultiple = $(this).closest('article').find('.fa-list-check').length > 0;
+            const $badge = $(this).find('.opt-badge');
+            const $icon = $(this).find('.opt-icon');
+            const $label = $(this).find('.opt-label');
+
+            if (isCorrect) {
+                if (show) {
+                    $(this)
+                        .removeClass('bg-[#111119]/70 border-white/[0.04] text-gray-300')
+                        .addClass('bg-emerald-500/10 border-emerald-500/30 text-emerald-300 font-medium');
+                    $badge
+                        .removeClass('bg-white/5 border border-white/10 text-gray-400')
+                        .addClass('bg-emerald-500 text-black font-bold');
+                    $icon.attr('class', 'opt-icon fas fa-check');
+                    $label.removeClass('hidden').show();
+                } else {
+                    $(this)
+                        .addClass('bg-[#111119]/70 border-white/[0.04] text-gray-300')
+                        .removeClass('bg-emerald-500/10 border-emerald-500/30 text-emerald-300 font-medium');
+                    $badge
+                        .addClass('bg-white/5 border border-white/10 text-gray-400')
+                        .removeClass('bg-emerald-500 text-black font-bold');
+                    
+                    if (isMultiple) {
+                        $icon.attr('class', 'opt-icon fas fa-square text-[9px] opacity-40');
+                    } else {
+                        $icon.attr('class', 'opt-icon fas fa-circle text-[7px] opacity-40');
+                    }
+                    $label.addClass('hidden').hide();
                 }
-            };
+            }
+        });
+    }
 
-            function notify(message, type = 'success', customIcon = null, duration = 2600) {
-                if (timer) clearTimeout(timer);
+    function rollbackAnswersToggle(previousState) {
+        $('#answersToggle').prop('checked', previousState);
+        toggleAnswersInDOM(previousState);
+    }
 
-                const config = THEMES[type] || THEMES.info;
-                const chosenIcon = customIcon || config.icon;
+    /* ==========================================================================
+       4. МОДАЛКА РЕДАКТИРОВАНИЯ ВОПРОСА
+       ========================================================================== */
+    function setQuestionType(type) {
+        currentQuestionType = type;
+        if (type === 'single') {
+            $('#btn-type-single').addClass('bg-indigo-600 text-white').removeClass('text-gray-400');
+            $('#btn-type-multiple').removeClass('bg-indigo-600 text-white').addClass('text-gray-400');
+            $('.opt-check').attr('type', 'radio').attr('name', 'correct_opt');
+        } else {
+            $('#btn-type-multiple').addClass('bg-indigo-600 text-white').removeClass('text-gray-400');
+            $('#btn-type-single').removeClass('bg-indigo-600 text-white').addClass('text-gray-400');
+            $('.opt-check').attr('type', 'checkbox').removeAttr('name');
+        }
+    }
 
-                // 1. Убираем старые темы
-                $island.removeClass('theme-success theme-error theme-warning theme-info');
+    function addOptionRow(value = '', isChecked = false) {
+        const rowId = 'opt-row-' + Math.random().toString(36).substring(2, 9);
+        const inputType = (currentQuestionType === 'single') ? 'radio' : 'checkbox';
+        const nameAttr = (currentQuestionType === 'single') ? 'name="correct_opt"' : '';
 
-                // 2. Фаза растворения элементов управления
-                $controls.addClass('opacity-0 scale-90 blur-sm pointer-events-none');
+        const rowHtml = `
+            <div class="flex items-center gap-2.5 bg-[#18171A] border border-white/10 rounded-2xl p-2.5" id="${rowId}">
+                <input type="${inputType}" ${nameAttr} ${isChecked ? 'checked' : ''} class="opt-check text-indigo-600 focus:ring-0 ml-1 rounded cursor-pointer">
+                <input type="text" required value="${value}" class="opt-val flex-grow bg-transparent border-0 text-sm text-white focus:outline-none" placeholder="Текст ответа">
+                <button type="button" onclick="$('#${rowId}').remove()" class="text-gray-500 hover:text-rose-400 p-1 text-xs">
+                    <i class="fas fa-xmark"></i>
+                </button>
+            </div>
+        `;
+        $('#modal-options-list').append(rowHtml);
+    }
 
+    function openNewQuestionModal() {
+        $('#modal-editor-title').text('Новый вопрос');
+        $('#edit-q-index').val('');
+        $('#modal-q-text').val('');
+        $('#modal-options-list').empty();
+        setQuestionType('single');
+        addOptionRow('', true);
+        addOptionRow('', false);
+        $('#question-editor-modal').removeClass('hidden').css('display', 'flex');
+    }
+
+    function editExistingQuestion(index) {
+        const q = rawQuestions[index];
+        if (!q) {
+            Island.warn('Данные вопроса не найдены');
+            return;
+        }
+
+        $('#modal-editor-title').text(`Правка вопроса #${index + 1}`);
+        $('#edit-q-index').val(index);
+        $('#modal-q-text').val(q.question);
+        $('#modal-options-list').empty();
+        setQuestionType(q.type || 'single');
+
+        if (Array.isArray(q.options)) {
+            q.options.forEach(opt => {
+                let isCorrect = false;
+                if (Array.isArray(q.correct_answers)) {
+                    isCorrect = q.correct_answers.includes(opt);
+                } else if (q.correct_answer) {
+                    isCorrect = (q.correct_answer === opt);
+                }
+                addOptionRow(opt, isCorrect);
+            });
+        }
+
+        $('#question-editor-modal').removeClass('hidden').css('display', 'flex');
+    }
+
+    function closeQuestionModal() {
+        $('#question-editor-modal').addClass('hidden').css('display', 'none');
+    }
+
+    async function deleteQuestion(index) {
+        if (!confirm('Удалить этот вопрос?')) return;
+        try {
+            const res = await fetch(`/api/surveys/${surveyId}/questions/${index}/delete/`, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': getCookie('csrftoken') }
+            });
+            const data = await res.json();
+            if (res.ok && data.status === 'success') {
+                Island.success('Вопрос удален');
+                setTimeout(() => window.location.reload(), 600);
+            } else {
+                Island.error(data.error || 'Ошибка при удалении');
+            }
+        } catch (err) {
+            Island.error('Сбой удаления вопроса');
+        }
+    }
+
+    function openEditTitleModal() {
+        $('#title-modal').removeClass('hidden').css('display', 'flex');
+    }
+
+    function closeEditTitleModal() {
+        $('#title-modal').addClass('hidden').css('display', 'none');
+    }
+
+    async function saveSurveyTitle() {
+        const newTitle = $('#input-new-title').val().trim();
+        if (!newTitle) {
+            Island.warn('Введите название теста');
+            return;
+        }
+
+        try {
+            const res = await fetch(`/api/surveys/${surveyId}/title/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ title: newTitle })
+            });
+            const data = await res.json();
+            if (res.ok && data.status === 'success') {
+                $('#header-survey-title').text(data.title);
+                closeEditTitleModal();
+                Island.success('Название обновлено', 'fa-pen');
+            } else {
+                Island.error(data.error || 'Не удалось обновить');
+            }
+        } catch (err) {
+            Island.error('Сетевой сбой при обновлении');
+        }
+    }
+
+    async function triggerRegenerateSurvey() {
+        if (!isUserAuthenticated) {
+            openRegisterModal('regenerate');
+            return;
+        }
+
+        if (!confirm('Нейросеть составит совершенно новые вопросы по этой теме. Текущие вопросы будут заменены. Продолжить?')) return;
+
+        Island.info('ИИ пересобирает тест...', 'fa-rotate fa-spin', 25000);
+
+        try {
+            const res = await fetch(`/api/surveys/${surveyId}/regenerate/`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json', 
+                    'X-CSRFToken': getCookie('csrftoken') 
+                }
+            });
+
+            const data = await res.json();
+
+            if (res.ok && data.status === 'success') {
+                Island.success('Тест успешно пересобран!', 'fa-check');
                 setTimeout(() => {
-                    $controls.addClass('hidden').removeClass('flex');
+                    window.location.reload();
+                }, 800);
+            } else {
+                Island.error(data.error || 'Ошибка перегенерации');
+            }
+        } catch (err) {
+            Island.error('Сетевой сбой при отправке');
+        }
+    }
 
-                    // 3. Подготовка контента нотификации
-                    $text.text(message);
-                    $icon.attr('class', `fas ${chosenIcon}`);
-                    $iconBox.attr('class', `w-6 h-6 rounded-full flex items-center justify-center text-[11px] flex-shrink-0 ${config.iconBg}`);
+    function fallbackCopy(text) {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-999999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        try {
+            document.execCommand('copy');
+            Island.success('Ссылка скопирована', 'fa-link');
+        } catch (err) {
+            Island.error('Не удалось скопировать');
+        }
+        textArea.remove();
+    }
 
-                    // 4. Схлопывание островка в компактную пилюлю
-                    $island.removeClass('mode-header').addClass(`mode-notify ${config.themeClass}`);
+    function showClassroomQR() {
+        const link = window.location.protocol + "//" + window.location.host + "{% url 'take_test' survey_id %}";
+        const container = document.getElementById('qrcode');
+        container.innerHTML = "";
+        new QRCode(container, {
+            text: link,
+            width: 240,
+            height: 240,
+            colorDark : "#18171A",
+            colorLight : "#ffffff",
+            correctLevel : QRCode.CorrectLevel.H
+        });
+        document.getElementById('qrLinkText').innerText = "{{ title|escapejs }}";
+        $('#qrModal').removeClass('hidden').css('display', 'flex');
+        Island.info('QR-код сформирован', 'fa-qrcode');
+    }
 
-                    // 5. Пружинистый взрыв контента уведомления
-                    $notice.removeClass('hidden').addClass('flex');
+    function openDeleteModal(id, title) {
+        $('#modal-survey-title').text(`«${title}»`);
+        $('#confirm-delete-link').attr('href', `/drop-survey/${id}/`);
+        $('#delete-modal').removeClass('hidden').css('display', 'flex');
+    }
+
+    function closeDeleteModal() {
+        $('#delete-modal').addClass('hidden').css('display', 'none');
+    }
+
+    async function registerSurveyView() {
+        if (!surveyId) return;
+        try {
+            const rawString = `${navigator.userAgent}-${navigator.language}-${new Date().getTimezoneOffset()}`;
+            const encoder = new TextEncoder();
+            const data = encoder.encode(rawString);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const visitorHash = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+
+            const response = await fetch(`/register-view/${surveyId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ hash: visitorHash })
+            });
+
+            const resData = await response.json();
+            if (resData.success && resData.view_count !== undefined) {
+                const $counter = $('#dynamic-island .fa-eye').next('span');
+                const currentCount = parseInt($counter.text(), 10) || 0;
+                
+                if (resData.new_view && resData.view_count > currentCount) {
+                    $counter.text(resData.view_count);
+                    $counter.parent().addClass('border-indigo-500/40 text-white');
                     setTimeout(() => {
-                        $notice.removeClass('opacity-0 scale-75').addClass('opacity-100 scale-100');
-                    }, 20);
+                        $counter.parent().removeClass('border-indigo-500/40 text-white');
+                    }, 1200);
+                } else {
+                    $counter.text(resData.view_count);
+                }
+            }
+        } catch (e) {
+            console.warn('View tracking unavailable');
+        }
+    }
 
-                }, 200);
+    /* ==========================================================================
+       5. БИНДИНГ СОБЫТИЙ СТРОГО ПОСЛЕ ЗАГРУЗКИ DOM
+       ========================================================================== */
+    $(document).ready(function() {
 
-                // 6. Таймер возврата в дефолтный хедер
-                timer = setTimeout(() => {
-                    dismiss();
-                }, duration);
+        // 1. ТУМБЛЕР ОТВЕТОВ
+        $('#answersToggle').off('change').on('change', async function() {
+            if (!isUserAuthenticated) {
+                this.checked = false;
+                openRegisterModal('answers');
+                return;
             }
 
-            function dismiss() {
-                $notice.removeClass('opacity-100 scale-100').addClass('opacity-0 scale-75');
+            const showAnswers = this.checked;
+            const csrftoken = getCookie('csrftoken');
 
-                setTimeout(() => {
-                    $notice.addClass('hidden').removeClass('flex');
+            // Мгновенный отклик в DOM
+            toggleAnswersInDOM(showAnswers);
 
-                    $island
-                        .removeClass('mode-notify theme-success theme-error theme-warning theme-info')
-                        .addClass('mode-header');
+            try {
+                const response = await fetch(`/api/surveys/${surveyId}/toggle-answers/`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json', 
+                        'X-CSRFToken': csrftoken 
+                    },
+                    body: JSON.stringify({ show_answers: showAnswers })
+                });
 
-                    $controls.removeClass('hidden').addClass('flex');
-                    setTimeout(() => {
-                        $controls.removeClass('opacity-0 scale-90 blur-sm pointer-events-none').addClass('opacity-100 scale-100');
-                    }, 20);
+                const data = await response.json();
+                if (data.status === 'success') {
+                    Island.success(showAnswers ? 'Ответы открыты' : 'Ответы скрыты', showAnswers ? 'fa-eye' : 'fa-eye-slash');
+                } else {
+                    rollbackAnswersToggle(!showAnswers);
+                    Island.error(data.error || 'Ошибка сохранения');
+                }
+            } catch (err) {
+                rollbackAnswersToggle(!showAnswers);
+                Island.error('Сбой связи с сервером');
+            }
+        });
 
-                    timer = null;
-                }, 180);
+        // 2. КНОПКА «ПРАВИТЬ»
+        $('#toggle-edit-mode-btn').off('click').on('click', function(e) {
+            e.preventDefault();
+
+            if (!isUserAuthenticated) {
+                openRegisterModal('edit');
+                return;
             }
 
-            return {
-                notify,
-                dismiss,
-                success: (msg, icon, dur) => notify(msg, 'success', icon, dur),
-                error: (msg, icon, dur) => notify(msg, 'error', icon, dur),
-                warn: (msg, icon, dur) => notify(msg, 'warning', icon, dur),
-                info: (msg, icon, dur) => notify(msg, 'info', icon, dur)
-            };
-        })();
-
-        // РЕЖИМ ПРАВКИ (TOGGLE)
-        let isEditMode = false;
-
-        $('#toggle-edit-mode-btn').on('click', function() {
             isEditMode = !isEditMode;
 
             if (isEditMode) {
                 $(this)
                     .text('Готово')
                     .removeClass('bg-[#18171A] text-gray-300 border-white/10')
-                    .addClass('bg-indigo-600 text-white border-transparent');
+                    .addClass('bg-indigo-600 text-white border-transparent shadow-lg shadow-indigo-600/30');
 
-                $('.edit-actions').removeClass('hidden').addClass('flex');
-                $('#add-question-box').removeClass('hidden');
+                // Принудительный показ карандашей
+                $('.edit-actions').removeClass('hidden').css('display', 'flex');
+                $('#add-question-box').removeClass('hidden').css('display', 'block');
                 Island.info('Режим правки активен', 'fa-pen-to-square');
             } else {
                 $(this)
                     .text('Править')
-                    .removeClass('bg-indigo-600 text-white border-transparent')
+                    .removeClass('bg-indigo-600 text-white border-transparent shadow-lg shadow-indigo-600/30')
                     .addClass('bg-[#18171A] text-gray-300 border-white/10');
 
-                $('.edit-actions').addClass('hidden').removeClass('flex');
-                $('#add-question-box').addClass('hidden');
-                Island.info('Редактирование завершено');
+                $('.edit-actions').addClass('hidden').css('display', 'none');
+                $('#add-question-box').addClass('hidden').css('display', 'none');
+                Island.info('Редактирование завершено', 'fa-check');
             }
         });
 
-        // ПЕРЕКЛЮЧАТЕЛЬ ТИПА ВОПРОСА
-        function setQuestionType(type) {
-            currentQuestionType = type;
-            if (type === 'single') {
-                $('#btn-type-single').addClass('bg-indigo-600 text-white').removeClass('text-gray-400');
-                $('#btn-type-multiple').removeClass('bg-indigo-600 text-white').addClass('text-gray-400');
-                $('.opt-check').attr('type', 'radio').attr('name', 'correct_opt');
-            } else {
-                $('#btn-type-multiple').addClass('bg-indigo-600 text-white').removeClass('text-gray-400');
-                $('#btn-type-single').removeClass('bg-indigo-600 text-white').addClass('text-gray-400');
-                $('.opt-check').attr('type', 'checkbox').removeAttr('name');
-            }
-        }
-
-        function addOptionRow(value = '', isChecked = false) {
-            const rowId = 'opt-row-' + Math.random().toString(36).substring(2, 9);
-            const inputType = (currentQuestionType === 'single') ? 'radio' : 'checkbox';
-            const nameAttr = (currentQuestionType === 'single') ? 'name="correct_opt"' : '';
-
-            const rowHtml = `
-                <div class="flex items-center gap-2.5 bg-[#18171A] border border-white/10 rounded-2xl p-2.5" id="${rowId}">
-                    <input type="${inputType}" ${nameAttr} ${isChecked ? 'checked' : ''} class="opt-check text-indigo-600 focus:ring-0 ml-1 rounded">
-                    <input type="text" required value="${value}" class="opt-val flex-grow bg-transparent border-0 text-sm text-white focus:outline-none" placeholder="Текст ответа">
-                    <button type="button" onclick="$('#${rowId}').remove()" class="text-gray-500 hover:text-rose-400 p-1 text-xs">
-                        <i class="fas fa-xmark"></i>
-                    </button>
-                </div>
-            `;
-            $('#modal-options-list').append(rowHtml);
-        }
-
-        function openNewQuestionModal() {
-            $('#modal-editor-title').text('Новый вопрос');
-            $('#edit-q-index').val('');
-            $('#modal-q-text').val('');
-            $('#modal-options-list').empty();
-            setQuestionType('single');
-            addOptionRow('', true);
-            addOptionRow('', false);
-            $('#question-editor-modal').removeClass('hidden').addClass('flex');
-        }
-
-        function editExistingQuestion(index) {
-            const q = rawQuestions[index];
-            if (!q) return;
-
-            $('#modal-editor-title').text(`Правка вопроса #${index + 1}`);
-            $('#edit-q-index').val(index);
-            $('#modal-q-text').val(q.question);
-            $('#modal-options-list').empty();
-            setQuestionType(q.type || 'single');
-
-            q.options.forEach(opt => {
-                const isCorrect = q.correct_answers.includes(opt);
-                addOptionRow(opt, isCorrect);
-            });
-
-            $('#question-editor-modal').removeClass('hidden').addClass('flex');
-        }
-
-        function closeQuestionModal() {
-            $('#question-editor-modal').addClass('hidden').removeClass('flex');
-        }
-
-        // САБМИТ РЕДАКТОРА ВОПРОСОВ
-        $('#question-editor-form').on('submit', async function(e) {
+        // 3. САБМИТ РЕДАКТИРОВАНИЯ ВОПРОСА
+        $('#question-editor-form').off('submit').on('submit', async function(e) {
             e.preventDefault();
             const qIndexVal = $('#edit-q-index').val();
             const questionIndex = qIndexVal !== '' ? parseInt(qIndexVal, 10) : null;
@@ -781,7 +1249,7 @@
                 if (res.ok && data.status === 'success') {
                     closeQuestionModal();
                     Island.success('Вопрос сохранен');
-                    setTimeout(() => window.location.reload(), 1100);
+                    setTimeout(() => window.location.reload(), 700);
                 } else {
                     Island.error(data.error || 'Ошибка при сохранении');
                 }
@@ -790,170 +1258,55 @@
             }
         });
 
-        // УДАЛЕНИЕ ВОПРОСА
-        async function deleteQuestion(index) {
-            if (!confirm('Удалить этот вопрос?')) return;
-            try {
-                const res = await fetch(`/api/surveys/${surveyId}/questions/${index}/delete/`, {
-                    method: 'POST',
-                    headers: { 'X-CSRFToken': getCookie('csrftoken') }
-                });
-                const data = await res.json();
-                if (res.ok && data.status === 'success') {
-                    Island.success('Вопрос удален');
-                    setTimeout(() => window.location.reload(), 1000);
-                } else {
-                    Island.error(data.error || 'Ошибка при удалении');
-                }
-            } catch (err) {
-                Island.error('Сбой удаления вопроса');
-            }
-        }
+        // 4. САБМИТ БЫСТРОЙ РЕГИСТРАЦИИ
+        $('#page-quick-register-form').off('submit').on('submit', async function(e) {
+            e.preventDefault();
+            const $err = $('#reg-form-error');
+            const $btn = $('#btn-submit-register');
+            $err.addClass('hidden').text('');
 
-        // РЕДАКТИРОВАНИЕ TITLE
-        function openEditTitleModal() {
-            $('#title-modal').removeClass('hidden').addClass('flex');
-        }
-        function closeEditTitleModal() {
-            $('#title-modal').addClass('hidden').removeClass('flex');
-        }
-        async function saveSurveyTitle() {
-            const newTitle = $('#input-new-title').val().trim();
-            if (!newTitle) {
-                Island.warn('Введите название теста');
+            const email = $('#reg-email').val().trim();
+            const password = $('#reg-password').val().trim();
+            const termsChecked = $('#reg-terms').is(':checked');
+
+            if (!termsChecked) {
+                $err.removeClass('hidden').text('Необходимо согласие с политикой конфиденциальности (152-ФЗ).');
                 return;
             }
 
+            $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-2"></i> Сохраняем...');
+
             try {
-                const res = await fetch(`/api/surveys/${surveyId}/title/`, {
+                const res = await fetch('/api/quick-register/', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
+                        'Content-Type': 'application/x-www-form-urlencoded',
                         'X-CSRFToken': getCookie('csrftoken')
                     },
-                    body: JSON.stringify({ title: newTitle })
-                });
-                const data = await res.json();
-                if (res.ok && data.status === 'success') {
-                    $('#header-survey-title').text(data.title);
-                    closeEditTitleModal();
-                    Island.success('Название обновлено', 'fa-pen');
-                } else {
-                    Island.error(data.error || 'Не удалось обновить');
-                }
-            } catch (err) {
-                Island.error('Сетевой сбой при обновлении');
-            }
-        }
-
-        // ПЕРЕГЕНЕРАЦИЯ
-        async function triggerRegenerateSurvey() {
-            if (!confirm('Нейросеть составит совершенно новые вопросы по этой теме. Текущие вопросы будут заменены. Продолжить?')) return;
-
-            // Сворачиваем Dynamic Island в индикатор загрузки
-            Island.info('ИИ пересобирает тест...', 'fa-rotate fa-spin', 25000);
-
-            try {
-                const res = await fetch(`/api/surveys/${surveyId}/regenerate/`, {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': getCookie('csrftoken') 
-                    }
+                    body: new URLSearchParams({
+                        email: email,
+                        password1: password,
+                        terms_accepted: 'true'
+                    })
                 });
 
                 const data = await res.json();
-
-                if (res.ok && data.status === 'success') {
-                    Island.success('Тест успешно пересобран!', 'fa-check');
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 800);
+                if (res.ok && data.redirect) {
+                    closeRegisterModal();
+                    Island.success('Аккаунт создан! Тест сохранен');
+                    setTimeout(() => window.location.reload(), 600);
                 } else {
-                    Island.error(data.error || 'Ошибка перегенерации');
+                    $btn.prop('disabled', false).html('<span>Сохранить и продолжить</span><i class="fas fa-arrow-right text-[10px]"></i>');
+                    $err.removeClass('hidden').text(data.error || 'Ошибка регистрации.');
                 }
             } catch (err) {
-                Island.error('Сетевой сбой при отправке');
-            }
-        }
-
-        // ТУМБЛЕР ОТВЕТОВ
-        $('#answersToggle').on('change', async function() {
-            const showAnswers = this.checked;
-            const surveyId = '{{ survey_id }}';
-            const csrftoken = getCookie('csrftoken');
-
-            toggleAnswersInDOM(showAnswers);
-
-            try {
-                const response = await fetch(`/api/surveys/${surveyId}/toggle-answers/`, {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json', 
-                        'X-CSRFToken': csrftoken 
-                    },
-                    body: JSON.stringify({ show_answers: showAnswers })
-                });
-
-                const data = await response.json();
-
-                if (data.status === 'success') {
-                    Island.success(showAnswers ? 'Ответы открыты' : 'Ответы скрыты', showAnswers ? 'fa-eye' : 'fa-eye-slash');
-                } else {
-                    rollbackAnswersToggle(!showAnswers);
-                    Island.error(data.error || 'Ошибка сохранения');
-                }
-            } catch (err) {
-                rollbackAnswersToggle(!showAnswers);
-                Island.error('Сбой связи с сервером');
+                $btn.prop('disabled', false).html('<span>Сохранить и продолжить</span><i class="fas fa-arrow-right text-[10px]"></i>');
+                $err.removeClass('hidden').text('Сбой связи с сервером.');
             }
         });
 
-        function toggleAnswersInDOM(show) {
-            $('.option-row').each(function() {
-                const isCorrect = $(this).attr('data-is-correct') === 'true';
-                const isMultiple = $(this).closest('article').find('.fa-list-check').length > 0;
-                const $badge = $(this).find('.opt-badge');
-                const $icon = $(this).find('.opt-icon');
-                const $label = $(this).find('.opt-label');
-
-                if (isCorrect) {
-                    if (show) {
-                        $(this)
-                            .removeClass('bg-[#18171A]/70 border-white/[0.04] text-gray-300')
-                            .addClass('bg-emerald-500/10 border-emerald-500/30 text-emerald-300 font-medium');
-                        $badge
-                            .removeClass('bg-white/5 border border-white/10 text-gray-400')
-                            .addClass('bg-emerald-500 text-black font-bold');
-                        $icon
-                            .attr('class', 'opt-icon fas fa-check');
-                        $label.removeClass('hidden');
-                    } else {
-                        $(this)
-                            .addClass('bg-[#18171A]/70 border-white/[0.04] text-gray-300')
-                            .removeClass('bg-emerald-500/10 border-emerald-500/30 text-emerald-300 font-medium');
-                        $badge
-                            .addClass('bg-white/5 border border-white/10 text-gray-400')
-                            .removeClass('bg-emerald-500 text-black font-bold');
-                        
-                        if (isMultiple) {
-                            $icon.attr('class', 'opt-icon fas fa-square text-[9px] opacity-40');
-                        } else {
-                            $icon.attr('class', 'opt-icon fas fa-circle text-[7px] opacity-40');
-                        }
-                        $label.addClass('hidden');
-                    }
-                }
-            });
-        }
-
-        function rollbackAnswersToggle(previousState) {
-            $('#answersToggle').prop('checked', previousState);
-            toggleAnswersInDOM(previousState);
-        }
-
-        // ШЕЙРИНГ (DYNAMIC ISLAND ACTION)
-        $('button[data-action="share"]').on('click', function(e) {
+        // 5. ШЕЙРИНГ
+        $('button[data-action="share"]').off('click').on('click', function(e) {
             const shareUrl = $(e.currentTarget).data('share-url');
             const fullUrl = window.location.protocol + '//' + window.location.host + shareUrl;
 
@@ -966,100 +1319,9 @@
             }
         });
 
-        // РЕГИСТРАЦИЯ ПРОСМОТРА (FINGERPRINT + VIEW COUNTER)
-        async function registerSurveyView() {
-            const surveyId = '{{ survey_id }}';
-            if (!surveyId) return;
-
-            try {
-                const rawString = `${navigator.userAgent}-${navigator.language}-${new Date().getTimezoneOffset()}`;
-                const encoder = new TextEncoder();
-                const data = encoder.encode(rawString);
-                const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-                const hashArray = Array.from(new Uint8Array(hashBuffer));
-                const visitorHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-
-                const csrftoken = getCookie('csrftoken');
-
-                const response = await fetch(`/register-view/${surveyId}/`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': csrftoken
-                    },
-                    body: JSON.stringify({ hash: visitorHash })
-                });
-
-                const resData = await response.json();
-
-                if (resData.success && resData.view_count !== undefined) {
-                    const $counter = $('#dynamic-island .fa-eye').next('span');
-                    const currentCount = parseInt($counter.text(), 10) || 0;
-                    
-                    if (resData.new_view && resData.view_count > currentCount) {
-                        $counter.text(resData.view_count);
-                        $counter.parent().addClass('border-indigo-500/40 text-white');
-                        setTimeout(() => {
-                            $counter.parent().removeClass('border-indigo-500/40 text-white');
-                        }, 1200);
-                    } else {
-                        $counter.text(resData.view_count);
-                    }
-                }
-            } catch (e) {
-                console.warn('View tracking unavailable');
-            }
-        }
-
-        // Запуск при старте страницы
-        $(document).ready(function() {
-            registerSurveyView();
-        });
-
-        function fallbackCopy(text) {
-            const textArea = document.createElement("textarea");
-            textArea.value = text;
-            textArea.style.position = "fixed";
-            textArea.style.left = "-999999px";
-            document.body.appendChild(textArea);
-            textArea.focus();
-            textArea.select();
-            try {
-                document.execCommand('copy');
-                Island.success('Ссылка скопирована', 'fa-link');
-            } catch (err) {
-                Island.error('Не удалось скопировать');
-            }
-            textArea.remove();
-        }
-
-        // QR
-        function showClassroomQR() {
-            const link = window.location.protocol + "//" + window.location.host + "{% url 'take_test' survey_id %}";
-            const container = document.getElementById('qrcode');
-            container.innerHTML = "";
-            new QRCode(container, {
-                text: link,
-                width: 240,
-                height: 240,
-                colorDark : "#18171A",
-                colorLight : "#ffffff",
-                correctLevel : QRCode.CorrectLevel.H
-            });
-            document.getElementById('qrLinkText').innerText = "{{ title }}";
-            $('#qrModal').removeClass('hidden').addClass('flex');
-            Island.info('QR-код сформирован', 'fa-qrcode');
-        }
-
-        // МОДАЛКА УДАЛЕНИЯ
-        function openDeleteModal(id, title) {
-            $('#modal-survey-title').text(`«${title}»`);
-            $('#confirm-delete-link').attr('href', `/drop-survey/${id}/`);
-            $('#delete-modal').removeClass('hidden').addClass('flex');
-        }
-        function closeDeleteModal() {
-            $('#delete-modal').addClass('hidden').removeClass('flex');
-        }
-    </script>
+        // 6. СЧЕТЧИК ПРОСМОТРОВ
+        registerSurveyView();
+    });
+</script>
 </body>
 </html>
