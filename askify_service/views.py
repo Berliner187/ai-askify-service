@@ -74,7 +74,6 @@ import aiofiles
 import PyPDF2
 # from Crypto.PublicKey import ECC
 import chardet
-import docx
 import PyPDF2
 from tempfile import NamedTemporaryFile
 from bs4 import BeautifulSoup
@@ -116,6 +115,8 @@ from tempfile import NamedTemporaryFile
 import traceback
 from io import BytesIO
 from zoneinfo import ZoneInfo
+import xml.etree.ElementTree as ET
+from tempfile import TemporaryDirectory
 
 
 env = environ.Env()
@@ -1833,103 +1834,151 @@ class FileUploadView(View):
         return -1
 
     def extract_text_from_word(self, file_path, original_ext=".docx"):
-        """
-        Бронебойное извлечение текста:
-        - Умеет определять DOCX, переименованный в .DOC
-        - Использует antiword / catdoc
-        - Имеет бинарный fallback на случай отсутствия утилит
-        """
-        # Проверка: вдруг это на самом деле DOCX (ZIP-архив), даже если расширение .doc
+        tracer_l.info(f"[DOC] Старт глубокого извлечения текста из: {file_path}")
+
+        # ------------------------------------------------------------------
+        # МЕТОД 1: LIBREOFFICE HEADLESS (с явным поиском бинарника)
+        # ------------------------------------------------------------------
+        soffice_bin = shutil.which("soffice") or shutil.which("libreoffice")
+        if not soffice_bin:
+            for potential_path in ["/usr/bin/soffice", "/usr/bin/libreoffice", "/usr/local/bin/soffice"]:
+                if os.path.exists(potential_path) and os.access(potential_path, os.X_OK):
+                    soffice_bin = potential_path
+                    break
+
+        if soffice_bin:
+            try:
+                with TemporaryDirectory() as out_dir:
+                    cmd = [
+                        soffice_bin,
+                        "--headless",
+                        "--convert-to", "txt:Text",
+                        "--outdir", out_dir,
+                        file_path
+                    ]
+                    process = subprocess.run(cmd, capture_output=True, text=True, timeout=25, check=False)
+                    
+                    base_name = os.path.splitext(os.path.basename(file_path))[0]
+                    txt_path = os.path.join(out_dir, f"{base_name}.txt")
+
+                    if os.path.exists(txt_path):
+                        with open(txt_path, "r", encoding="utf-8", errors="ignore") as f:
+                            text = f.read().strip()
+                        if len(text) > 30:
+                            tracer_l.info(f"[DOC] МЕТОД 1 (LibreOffice): успешно извлечено {len(text)} символов.")
+                            return text
+                    else:
+                        tracer_l.warning(f"[DOC] LibreOffice не создал txt: {process.stderr}")
+            except Exception as e:
+                tracer_l.warning(f"[DOC] LibreOffice ошибка выполнения: {e}")
+
+        # ------------------------------------------------------------------
+        # МЕТОД 2: ЕСЛИ ЭТО ZIP/OPENXML
+        # ------------------------------------------------------------------
         if zipfile.is_zipfile(file_path):
+            tracer_l.info("[DOC] Файл является ZIP-архивом. Запуск извлечения OpenXML...")
+
+            # 2.1 Пробуем стандартный python-docx
             try:
                 doc = docx.Document(file_path)
-                text = "\n".join([para.text for para in doc.paragraphs if para.text.strip()])
-                if text.strip():
-                    tracer_l.info("[DOC] Файл распознан как DOCX через python-docx.")
-                    return text
+                paragraphs = [p.text for p in doc.paragraphs if p.text.strip()]
+                tables = []
+                for t in doc.tables:
+                    for row in t.rows:
+                        row_text = " | ".join(c.text.strip() for c in row.cells if c.text.strip())
+                        if row_text:
+                            tables.append(row_text)
+                full_text = "\n".join(paragraphs + tables).strip()
+                if len(full_text) > 30:
+                    tracer_l.info(f"[DOC] МЕТОД 2.1 (python-docx): успешно извлечено {len(full_text)} символов.")
+                    return full_text
             except Exception as e:
-                tracer_l.warning(f"[DOC] Попытка прочесть как docx не удалась: {e}")
+                tracer_l.warning(f"[DOC] python-docx споткнулся ({e}). Переходим к прямому чтению тегов <w:t>...")
 
-        # Если это старый бинарный .DOC (Word 97-2003)
-        if original_ext == ".doc" or not zipfile.is_zipfile(file_path):
-            # 1. Попытка через antiword
-            if shutil.which("antiword"):
-                try:
-                    # Флаг -m UTF-8.txt гарантирует корректную кириллицу
-                    process = subprocess.run(
-                        ["antiword", "-m", "UTF-8.txt", file_path],
-                        capture_output=True,
-                        text=True,
-                        timeout=15,
-                        check=False
-                    )
-                    if process.returncode == 0 and process.stdout.strip():
-                        tracer_l.info("[DOC] Успешно извлечено через antiword.")
-                        return process.stdout
-                except Exception as e:
-                    tracer_l.warning(f"[DOC] antiword упал: {e}")
-
-            # 2. Попытка через catdoc (если antiword не справился)
-            if shutil.which("catdoc"):
-                try:
-                    process = subprocess.run(
-                        ["catdoc", "-dutf-8", file_path],
-                        capture_output=True,
-                        text=True,
-                        timeout=15,
-                        check=False
-                    )
-                    if process.returncode == 0 and process.stdout.strip():
-                        tracer_l.info("[DOC] Успешно извлечено через catdoc.")
-                        return process.stdout
-                except Exception as e:
-                    tracer_l.warning(f"[DOC] catdoc упал: {e}")
-
-            # 3. Чистый Python Fallback (извлечение читаемого текста из бинарника напрямую)
-            tracer_l.info("[DOC] Внешние утилиты недоступны. Запуск бинарного извлечения текста...")
-            return self._extract_raw_strings_from_binary(file_path)
-
-        # Если обычный .docx
-        try:
-            doc = docx.Document(file_path)
-            return "\n".join([para.text for para in doc.paragraphs if para.text.strip()])
-        except Exception as e:
-            tracer_l.error(f"[DOC] Ошибка python-docx: {e}")
-            return ""
-
-    def _extract_raw_strings_from_binary(self, file_path):
-        """Резервный метод: извлекает текст из бинарного потока DOC, если на сервере нет antiword."""
-        try:
-            with open(file_path, "rb") as f:
-                content = f.read()
-
-            # Пробуем декодировать в UTF-16LE и CP1251 (стандартные кодировки Word 97-2003)
-            extracted_chunks = []
-            
-            # Поиск UTF-16LE строк (кириллица в Word)
+            # 2.2 УНИВЕРСАЛЬНЫЙ XML-ПАРСЕР ТЕГОВ <w:t>
             try:
-                decoded_utf16 = content.decode("utf-16le", errors="ignore")
-                # Оставляем блоки читаемого русского/английского текста от 4 символов
-                words = re.findall(r'[А-Яа-яA-Za-z0-9\s.,!?:;\-–—«»"\'()]{4,}', decoded_utf16)
-                if words:
-                    extracted_chunks.append(" ".join(words))
-            except Exception:
-                pass
+                extracted_pieces = []
+                with zipfile.ZipFile(file_path, 'r') as z:
+                    xml_files = [
+                        name for name in z.namelist() 
+                        if name.endswith('.xml') and ('word/' in name or 'document' in name.lower())
+                    ]
 
-            # Поиск CP1251 строк
+                    xml_files.sort(key=lambda x: 0 if 'document.xml' in x.lower() else 1)
+
+                    for xml_name in xml_files:
+                        try:
+                            raw_xml = z.read(xml_name).decode('utf-8', errors='ignore')
+                            raw_xml = re.sub(r'</w:p>', '\n', raw_xml)
+                            
+                            matches = re.findall(r'<w:t(?:\s+[^>]*)?>(.*?)</w:t>', raw_xml, flags=re.DOTALL)
+                            if matches:
+                                piece_text = "".join(matches)
+                                piece_text = (piece_text
+                                              .replace('&lt;', '<')
+                                              .replace('&gt;', '>')
+                                              .replace('&amp;', '&')
+                                              .replace('&quot;', '"')
+                                              .replace('&apos;', "'"))
+                                if piece_text.strip():
+                                    extracted_pieces.append(piece_text.strip())
+                        except Exception as read_err:
+                            tracer_l.debug(f"[DOC] Ошибка чтения {xml_name}: {read_err}")
+
+                combined_xml_text = "\n\n".join(extracted_pieces).strip()
+                combined_xml_text = re.sub(r'[ \t]+', ' ', combined_xml_text)
+                combined_xml_text = re.sub(r'\n{3,}', '\n\n', combined_xml_text)
+
+                if len(combined_xml_text) > 30:
+                    tracer_l.info(f"[DOC] МЕТОД 2.2 (Прямой парсер <w:t>): успешно извлечено {len(combined_xml_text)} символов!")
+                    return combined_xml_text
+            except Exception as z_err:
+                tracer_l.error(f"[DOC] Сбой парсера <w:t>: {z_err}")
+
+        # МЕТОД 3: СТАРЫЙ БИНАРНЫЙ WORD 97-2003 (.DOC)
+        tracer_l.info("[DOC] Попытка чтения через утилиты бинарного DOC (antiword / catdoc)...")
+        
+        antiword_bin = shutil.which("antiword") or "/usr/bin/antiword"
+        if os.path.exists(antiword_bin):
             try:
-                decoded_cp1251 = content.decode("cp1251", errors="ignore")
-                words_cp = re.findall(r'[А-Яа-яA-Za-z0-9\s.,!?:;\-–—«»"\'()]{4,}', decoded_cp1251)
-                if words_cp:
-                    extracted_chunks.append(" ".join(words_cp))
-            except Exception:
-                pass
+                proc = subprocess.run(
+                    [antiword_bin, "-m", "UTF-8.txt", file_path],
+                    capture_output=True,
+                    text=True,
+                    timeout=15,
+                    check=False
+                )
+                if proc.returncode == 0 and len(proc.stdout.strip()) > 30:
+                    tracer_l.info(f"[DOC] МЕТОД 3.1 (antiword): извлечено {len(proc.stdout)} символов.")
+                    return proc.stdout.strip()
+            except Exception as e:
+                tracer_l.info(f"[DOC] antiword ошибка: {e}")
 
-            result = max(extracted_chunks, key=len) if extracted_chunks else ""
-            return result
-        except Exception as e:
-            tracer_l.error(f"[DOC] Сбой аварийного бинарного парсера: {e}")
-            return ""
+        catdoc_bin = shutil.which("catdoc") or "/usr/bin/catdoc"
+        if os.path.exists(catdoc_bin):
+            try:
+                proc = subprocess.run(
+                    [catdoc_bin, "-dutf-8", file_path],
+                    capture_output=True,
+                    text=True,
+                    timeout=15,
+                    check=False
+                )
+                if proc.returncode == 0 and len(proc.stdout.strip()) > 30:
+                    tracer_l.info(f"[DOC] МЕТОД 3.2 (catdoc): извлечено {len(proc.stdout)} символов.")
+                    return proc.stdout.strip()
+            except Exception as e:
+                tracer_l.info(f"[DOC] catdoc ошибка: {e}")
+
+        # МЕТОД 4: РЕЗЕРВНЫЙ БИНАРНЫЙ ДЕКОДЕР
+        tracer_l.info("[DOC] Внешние парсеры не сработали. Запуск аварийного извлечения строк...")
+        fallback_text = self._extract_clean_text_fallback(file_path)
+        if len(fallback_text.strip()) > 30:
+            tracer_l.info(f"[DOC] МЕТОД 4 (Аварийный fallback): извлечено {len(fallback_text)} символов.")
+            return fallback_text
+
+        tracer_l.error(f"[DOC] КРИТИЧЕСКИЙ СБОЙ: ни один метод не смог извлечь текст из {file_path}")
+        return ""
 
 
 @method_decorator(login_required, name="dispatch")

@@ -396,7 +396,7 @@
                         {% if username != 0 %}
                             <a href="{% url 'take_test' survey_id %}" class="w-full flex items-center justify-center gap-3 py-4 px-5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold shadow-lg shadow-indigo-600/30 spring-btn">
                                 <i class="fas fa-play text-xs"></i>
-                                <span>Запустить прохождение</span>
+                                <span>Пройти тест</span>
                             </a>
 
                             <button type="button" data-action="share" data-share-url="{% url 'take_test' survey_id %}" class="w-full flex items-center justify-center gap-3 py-3.5 px-4 rounded-2xl bg-[#18171A] hover:bg-white/5 border border-white/10 text-gray-200 text-xs font-semibold spring-btn">
@@ -416,7 +416,7 @@
                             <!-- КНОПКИ ДЛЯ НЕАВТОРИЗОВАННОГО ГОСТЯ (ТРИГГЕРЫ МОДАЛКИ) -->
                             <button type="button" onclick="openRegisterModal('take_test')" class="w-full flex items-center justify-center gap-3 py-4 px-5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold shadow-lg shadow-indigo-600/30 spring-btn">
                                 <i class="fas fa-lock text-xs opacity-70"></i>
-                                <span>Запустить прохождение</span>
+                                <span>Пройти тест</span>
                             </button>
 
                             <button type="button" onclick="openRegisterModal('share')" class="w-full flex items-center justify-center gap-3 py-3.5 px-4 rounded-2xl bg-[#18171A] hover:bg-white/5 border border-white/10 text-gray-300 text-xs font-semibold spring-btn">
