@@ -139,6 +139,21 @@
         .spring-modal-content {
             transition: transform 0.35s var(--spring-bounce), opacity 0.25s var(--spring-smooth);
         }
+
+        /* САЛОННАЯ КНОПКА АНАЛИТИКИ */
+        .master-pill-btn {
+            background: linear-gradient(180deg, #4F46E5 0%, #4338CA 100%);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            box-shadow: 0 10px 24px -6px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            transition: all 0.2s var(--spring-bounce);
+        }
+        .master-pill-btn:hover {
+            background: linear-gradient(180deg, #554BF0 0%, #4639D4 100%);
+            border-color: rgba(255, 255, 255, 0.24);
+            box-shadow: 0 14px 28px -6px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
+        }
+        .master-pill-btn:active { transform: scale(0.98) translateY(1px); }
     </style>
 </head>
 <body class="min-h-full flex flex-col antialiased selection:bg-indigo-600 selection:text-white">
@@ -484,6 +499,101 @@
                         </div>
                         {% endif %}
                     </div>
+
+                    <!-- ЭКСПРЕСС-АНАЛИТИКА ТЕСТА (QUICK ANALYTICS WIDGET) -->
+                    {% if is_creator and username != 0 %}
+                    <div class="glass-panel rounded-[32px] p-6 space-y-4 relative overflow-hidden border border-white/[0.08]">
+
+                        <!-- ШАПКА ВИДЖЕТА -->
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2.5">
+                                <span class="w-7 h-7 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center text-xs">
+                                    <i class="fas fa-chart-pie"></i>
+                                </span>
+                                <div>
+                                    <span class="text-xs font-bold text-white block tracking-tight">Аналитика</span>
+                                    <span class="text-[10px] text-gray-500 font-mono-nums">Активность прохождений</span>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-mono-nums text-emerald-400 font-semibold">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                <span>LIVE</span>
+                            </div>
+                        </div>
+
+                        <!-- КОНТЕНТ АНАЛИТИКИ (С БЛЮРОМ ПРИ subscription_level == 0) -->
+                        <div class="space-y-3.5 relative {% if subscription_level == 0 %}filter blur-sm opacity-40 pointer-events-none select-none{% endif %}">
+                            
+                            <!-- СЕТКА МИКРО-МЕТРИК -->
+                            <div class="grid grid-cols-2 gap-2 pt-1">
+                                
+                                <!-- 1. Прохождения -->
+                                <div class="p-3 rounded-2xl bg-[#16151A] border border-white/5 space-y-1">
+                                    <span class="text-[10px] text-gray-500 uppercase tracking-wider block font-semibold">Сдано тестов</span>
+                                    <div class="flex items-baseline gap-1.5">
+                                        <span id="qa-total-attempts" class="text-xl font-extrabold text-white font-mono-nums">—</span>
+                                        <span id="qa-conversion-rate" class="text-[10px] text-gray-500 font-mono-nums"></span>
+                                    </div>
+                                </div>
+
+                                <!-- 2. Средний балл / Успех -->
+                                <div class="p-3 rounded-2xl bg-[#16151A] border border-white/5 space-y-1">
+                                    <span class="text-[10px] text-gray-500 uppercase tracking-wider block font-semibold">Успеваемость</span>
+                                    <div class="flex items-baseline gap-1.5">
+                                        <span id="qa-success-rate" class="text-xl font-extrabold text-emerald-400 font-mono-nums">—%</span>
+                                        <span class="text-[10px] text-gray-500">сдали</span>
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            <!-- МИНИ-СПАРКЛАЙН ГРАФИК (ТРЕНД АКТИВНОСТИ) -->
+                            <div class="space-y-1.5 pt-1">
+                                <div class="flex justify-between items-center text-[10px] text-gray-500 font-mono-nums px-1">
+                                    <span>Тренд за 7 дней</span>
+                                    <span id="qa-last-activity" class="text-gray-400 font-sans">Загрузка...</span>
+                                </div>
+
+                                <!-- Холст спарклайна -->
+                                <div class="relative w-full h-[68px] rounded-2xl bg-[#16151A] border border-white/5 p-2 overflow-hidden flex items-center justify-center">
+                                    <canvas id="qa-sparkline-canvas" class="w-full h-full"></canvas>
+                                    <div id="qa-empty-sparkline" class="hidden text-[10px] text-gray-500 font-mono-nums">
+                                        Ожидание первых сдач
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- ЗАМЕТНАЯ КНОПКА ПЕРЕХОДА В ПОЛНУЮ АНАЛИТИКУ -->
+                            <div class="pt-1">
+                                <a href="{% url 'preview_test_result' survey_id %}" 
+                                class="master-pill-btn group w-full h-[46px] rounded-2xl text-white text-xs font-bold flex items-center justify-center gap-2 select-none spring-btn">
+                                    <span>Открыть полную аналитику</span>
+                                    <i class="fas fa-arrow-right text-[10px] text-indigo-200 group-hover:translate-x-1 transition-transform"></i>
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- ПЕЙВОЛЛ-ЗАГЛУШКА ДЛЯ БЕСПЛАТНОГО ТАРИФА -->
+                        {% if subscription_level == 0 %}
+                        <div class="absolute inset-0 z-10 flex flex-col items-center justify-center p-6 text-center bg-[#18171C]/80 backdrop-blur-md rounded-[32px] space-y-3">
+                            <div class="w-10 h-10 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center text-sm shadow-md">
+                                <i class="fas fa-lock"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-xs font-bold text-white tracking-tight">Аналитика ответов</h4>
+                                <p class="text-[11px] text-gray-400 mt-1 max-w-[200px] leading-relaxed">
+                                    Смотрите графики сдач, рейтинг учеников и сложные вопросы.
+                                </p>
+                            </div>
+                            <a href="{% url 'payment' %}" class="px-4 py-2 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all spring-btn shadow-lg shadow-indigo-600/30">
+                                Подключить Премиум
+                            </a>
+                        </div>
+                        {% endif %}
+
+                    </div>
+                    {% endif %}
 
                 </aside>
             </div>
@@ -1321,6 +1431,142 @@
 
         // 6. СЧЕТЧИК ПРОСМОТРОВ
         registerSurveyView();
+    });
+</script>
+<script>
+    /* ==========================================================================
+       QUICK ANALYTICS SPARKLINE ENGINE (SELF-HEALING + SAFE CHART)
+       ========================================================================== */
+    document.addEventListener('DOMContentLoaded', function() {
+        const sparklineCanvas = document.getElementById('qa-sparkline-canvas');
+        if (!sparklineCanvas) return;
+
+        // Хелпер гарантированного наличия Chart.js (подтянет сам, если нет в <head>)
+        function ensureChartJs(callback) {
+            if (typeof Chart !== 'undefined') {
+                callback();
+            } else {
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+                script.onload = callback;
+                script.onerror = () => {
+                    $('#qa-last-activity').text('Ошибка скрипта');
+                    $('#qa-sparkline-canvas').addClass('hidden');
+                    $('#qa-empty-sparkline').removeClass('hidden');
+                };
+                document.head.appendChild(script);
+            }
+        }
+
+        // Забираем данные аналитики
+        fetch(`/api/test-charts/${surveyId}/`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) throw new Error(data.error);
+
+                const activityData = (data.attempts_activity_chart?.data || []).map(v => parseInt(v, 10) || 0);
+                const activityLabels = data.attempts_activity_chart?.labels || [];
+                const totalAttempts = activityData.reduce((acc, v) => acc + v, 0);
+
+                // 1. Счётчик сдач
+                $('#qa-total-attempts').text(totalAttempts);
+                
+                // Адекватный CR (без дичи типа 1000% CR)
+                const views = parseInt('{{ view_count|default:0 }}', 10);
+                if (views > 0 && totalAttempts > 0) {
+                    const rawCr = Math.round((totalAttempts / views) * 100);
+                    const cleanCr = Math.min(rawCr, 100); // не больше 100%
+                    $('#qa-conversion-rate').text(`(${cleanCr}% CR)`);
+                } else if (totalAttempts > 0) {
+                    $('#qa-conversion-rate').text(`(100% CR)`);
+                }
+
+                // 2. Успеваемость (Success Rate)
+                const scoreCounts = (data.scores_distribution_chart?.data || []).map(v => parseInt(v, 10) || 0);
+                const totalScoreRecords = scoreCounts.reduce((acc, v) => acc + v, 0);
+                
+                if (totalScoreRecords > 0 && scoreCounts.length >= 4) {
+                    // Сегменты 3 и 4 (успешные сдачи)
+                    const passed = (scoreCounts[2] || 0) + (scoreCounts[3] || 0);
+                    const successPct = Math.round((passed / totalScoreRecords) * 100);
+                    $('#qa-success-rate').text(`${successPct}%`);
+                } else if (totalAttempts > 0) {
+                    $('#qa-success-rate').text('100%');
+                } else {
+                    $('#qa-success-rate').text('—%');
+                }
+
+                // 3. Статус активности
+                if (totalAttempts > 0) {
+                    $('#qa-last-activity').text('Активно');
+                } else {
+                    $('#qa-last-activity').text('Нет сдач');
+                    $('#qa-sparkline-canvas').addClass('hidden');
+                    $('#qa-empty-sparkline').removeClass('hidden');
+                    return;
+                }
+
+                // 4. Отрисовка графика через гарантированный Chart.js
+                ensureChartJs(() => {
+                    const ctx = sparklineCanvas.getContext('2d');
+                    const gradient = ctx.createLinearGradient(0, 0, 0, 60);
+                    gradient.addColorStop(0, 'rgba(99, 102, 241, 0.45)');
+                    gradient.addColorStop(1, 'rgba(99, 102, 241, 0.0)');
+
+                    new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: activityLabels.length ? activityLabels : activityData.map((_, i) => `${i + 1}`),
+                            datasets: [{
+                                data: activityData,
+                                borderColor: '#818CF8',
+                                borderWidth: 2,
+                                fill: true,
+                                backgroundColor: gradient,
+                                tension: 0.4,
+                                pointRadius: 0,
+                                pointHoverRadius: 4,
+                                pointHoverBackgroundColor: '#FFFFFF',
+                                pointHoverBorderColor: '#4F46E5',
+                                pointHoverBorderWidth: 2
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    enabled: true,
+                                    backgroundColor: 'rgba(20, 19, 24, 0.95)',
+                                    borderColor: 'rgba(255, 255, 255, 0.1)',
+                                    borderWidth: 1,
+                                    titleColor: '#FFFFFF',
+                                    bodyColor: '#A5B4FC',
+                                    titleFont: { family: 'Golos Text', size: 10 },
+                                    bodyFont: { family: 'JetBrains Mono', size: 10, weight: 'bold' },
+                                    padding: 6,
+                                    cornerRadius: 8,
+                                    displayColors: false,
+                                    callbacks: {
+                                        label: (c) => `${c.parsed.y} прохожд.`
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: { display: false },
+                                y: { display: false, beginAtZero: true }
+                            }
+                        }
+                    });
+                });
+            })
+            .catch((err) => {
+                console.error("Quick Analytics Fetch Error:", err);
+                $('#qa-last-activity').text('Нет данных');
+                $('#qa-sparkline-canvas').addClass('hidden');
+                $('#qa-empty-sparkline').removeClass('hidden');
+            });
     });
 </script>
 </body>

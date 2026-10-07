@@ -46,7 +46,7 @@
     <style>
         :root {
             --bg-main: #111119;
-            --card-bg: #212024;
+            --card-bg: rgba(24, 24, 36, 0.7);
             --card-border: rgba(255, 255, 255, 0.07);
             --card-border-hover: rgba(255, 255, 255, 0.15);
             --accent-indigo: #4F46E5;
@@ -74,19 +74,19 @@
         }
 
         .glass-panel {
-            background: rgba(33, 32, 36, 0.5);
+            background: var(--card-bg);
             backdrop-filter: blur(24px);
             -webkit-backdrop-filter: blur(24px);
             border: 1px solid var(--card-border);
         }
 
         /* ==========================================================================
-           СДЕРЖАННАЯ КИНЕТИКА ПОЯВЛЕНИЯ (APPLE MOTION SYSTEM)
+           СДЕРЖАННАЯ КИНЕТИКА ПОЯВЛЕНИЯ
            ========================================================================== */
         .motion-fade-up {
             opacity: 0;
             transform: translateY(12px) scale(0.99);
-            filter: blur(4px);
+            filter: blur(12px);
             animation: quietArrival 0.45s var(--spring-smooth) forwards;
             will-change: transform, opacity, filter;
         }
@@ -109,12 +109,17 @@
            APPLE DYNAMIC ISLAND ENGINE (MORPHING)
            ========================================================================== */
         .island-capsule {
-            background: rgba(24, 23, 26, 0.92);
-            backdrop-filter: blur(28px);
-            -webkit-backdrop-filter: blur(28px);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.8);
+            background: var(--card-bg) !important;
+            backdrop-filter: blur(12px) saturate(190%) contrast(105%);
+            -webkit-backdrop-filter: blur(12px) saturate(190%) contrast(105%);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            box-shadow: 
+                0 20px 40px -15px rgba(0, 0, 0, 0.7),
+                inset 0 1px 0 0 rgba(255, 255, 255, 0.18),
+                inset 0 -1px 0 0 rgba(0, 0, 0, 0.3);
             border-radius: 9999px;
+            transform: translateZ(0);
+            -webkit-transform: translateZ(0);
             transition: 
                 max-width 0.45s var(--spring-bounce),
                 padding 0.35s var(--spring-smooth),
@@ -122,11 +127,10 @@
                 border-color 0.3s ease,
                 box-shadow 0.3s ease,
                 transform 0.4s var(--spring-bounce);
-            will-change: max-width, transform, border-color, box-shadow;
         }
 
         .island-capsule.mode-header {
-            max-width: 56rem; /* 896px = max-w-4xl */
+            max-width: 56rem;
             width: 100%;
             padding: 0.625rem 1.25rem;
         }
@@ -205,7 +209,7 @@
             width: 1.25rem;
             height: 1.25rem;
             border-radius: 0.375rem;
-            background-color: #18171A;
+            background-color: var(--bg-main);
             border: 1px solid rgba(255, 255, 255, 0.15);
             display: inline-grid;
             place-content: center;
@@ -462,11 +466,11 @@
     <div class="lg:pl-28 flex-grow flex flex-col">
 
         <!-- DYNAMIC ISLAND HEADER -->
-        <header class="motion-fade-up motion-delay-island sticky top-4 z-40 w-full px-4 flex justify-center pointer-events-none">
-            <div id="dynamic-island" class="island-capsule mode-header pointer-events-auto flex items-center justify-center backdrop-blur-2xl relative overflow-hidden min-h-[48px]">
+        <header class="motion-delay-island sticky top-4 z-40 w-full px-4 flex justify-center pointer-events-none">
+            <div id="dynamic-island" class="island-capsule mode-header pointer-events-auto flex items-center justify-center relative min-h-[48px]">
                 
                 <!-- 1. ДЕФОЛТНЫЙ СЛОЙ УПРАВЛЕНИЯ -->
-                <div id="island-controls" class="island-content-layer w-full flex items-center justify-between gap-4 opacity-100 scale-100">
+                <div id="island-controls" class="motion-fade-up island-content-layer w-full flex items-center justify-between gap-4 opacity-100 scale-100">
                     <div class="flex items-center gap-3">
                         <div class="flex items-center gap-2.5 text-xs font-semibold">
                             <a href="/" class="flex-shrink-0 transition-opacity hover:opacity-80 mr-1">
@@ -563,24 +567,19 @@
                 <div class="pt-1.5 flex items-center justify-center">
                     <div class="inline-flex items-center p-1 rounded-full bg-[#18171C] border border-white/[0.08] shadow-inner text-[11px] font-medium text-gray-400">
                         
-                        <!-- Шаг 1: Активный -->
                         <div class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-600/15 border border-indigo-500/30 text-indigo-300 font-semibold shadow-sm">
                             <span class="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
                             <span>1. Материал</span>
                         </div>
 
-                        <!-- Разделитель -->
                         <span class="w-2.5 h-px bg-white/10 mx-1"></span>
 
-                        <!-- Шаг 2 -->
                         <div class="flex items-center gap-1.5 px-2.5 py-1 text-gray-500">
                             <span>2. Параметры</span>
                         </div>
 
-                        <!-- Разделитель -->
                         <span class="w-2.5 h-px bg-white/10 mx-1"></span>
 
-                        <!-- Шаг 3 -->
                         <div class="flex items-center gap-1.5 px-2.5 py-1 text-gray-500">
                             <span>3. Результат</span>
                         </div>
@@ -593,7 +592,7 @@
             <div class="motion-fade-up motion-delay-bento glass-panel rounded-[32px] p-6 sm:p-8 shadow-2xl space-y-6 border border-white/[0.08]">
 
                 <!-- КВОТА И СТРОГИЙ ПРОГРЕСС-БАР ЛИМИТА -->
-                <div class="w-full bg-[#16151A] border border-white/[0.06] rounded-[22px] p-3.5 sm:px-4 sm:py-3 transition-colors hover:border-white/10">
+                <div class="w-full bg-[--var(--bg-main)] border border-white/[0.06] rounded-[22px] p-3.5 sm:px-4 sm:py-3 transition-colors hover:border-white/10">
                     <div class="flex items-center justify-between gap-3 text-xs mb-2.5">
                         
                         <!-- Левая часть: статус квоты -->
@@ -653,7 +652,7 @@
                 
                 <!-- ТАБЛЕТКА-ПЕРЕКЛЮЧАТЕЛЬ -->
                 <div class="flex items-center justify-between border-b border-white/10 pb-4">
-                    <div class="flex items-center p-1 rounded-2xl bg-[#18171A] border border-white/10">
+                    <div class="flex items-center p-1 rounded-2xl bg-[var(--bg-main)] border border-white/10">
                         <button type="button" id="tab-btn-text" onclick="switchSourceTab('text')" class="px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 text-white transition-all spring-btn">
                             <i class="fas fa-align-left mr-1.5"></i> Текст
                         </button>
@@ -681,7 +680,7 @@
                 <div id="source-file-zone" class="hidden space-y-4">
                     {% if subscription_level >= 1 or total_available > 0 or plan_type == 'package' %}
                         <div id="drop-area" onclick="document.getElementById('hidden-file-input').click()" 
-                             class="border-2 border-dashed border-white/15 hover:border-indigo-500/60 rounded-2xl p-8 sm:p-12 text-center cursor-pointer bg-[#18171A]/50 transition-all group">
+                             class="border-2 border-dashed border-white/15 hover:border-indigo-500/60 rounded-2xl p-8 sm:p-12 text-center cursor-pointer bg-[var(--bg-main)]/50 transition-all group">
                             <div class="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 group-hover:bg-indigo-600/10 group-hover:border-indigo-500/30 flex items-center justify-center mx-auto mb-3 transition-all">
                                 <i class="fas fa-cloud-arrow-up text-xl text-gray-400 group-hover:text-indigo-400 transition-colors"></i>
                             </div>
@@ -690,7 +689,7 @@
                             <input type="file" id="hidden-file-input" accept=".pdf, .doc, .docx, .txt" class="hidden" onchange="handleFileSelect(this.files)">
                         </div>
                     {% else %}
-                        <div onclick="openPaywallModal('file')" class="border-2 border-dashed border-white/10 rounded-2xl p-8 text-center cursor-pointer bg-[#18171A]/30 hover:border-indigo-500/30 transition-all group">
+                        <div onclick="openPaywallModal('file')" class="border-2 border-dashed border-white/10 rounded-2xl p-8 text-center cursor-pointer bg-[var(--bg-main)]/30 hover:border-indigo-500/30 transition-all group">
                             <div class="w-10 h-10 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center mx-auto mb-3 text-indigo-400">
                                 <i class="fas fa-lock text-sm"></i>
                             </div>
@@ -705,7 +704,7 @@
                     {% endif %}
 
                     <!-- Чип прикрепленного файла -->
-                    <div id="file-preview-card" class="hidden items-center justify-between p-3.5 bg-[#18171A] border border-white/10 rounded-2xl">
+                    <div id="file-preview-card" class="hidden items-center justify-between p-3.5 bg-[var(--bg-main)] border border-white/10 rounded-2xl">
                         <div class="flex items-center gap-3 overflow-hidden">
                             <div class="w-9 h-9 rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center flex-shrink-0 text-indigo-400">
                                 <i class="fas fa-file-lines text-sm"></i>
@@ -727,7 +726,7 @@
                     <!-- 1. СЛОЖНОСТЬ -->
                     <div class="space-y-2">
                         <label class="block text-xs font-semibold text-gray-400">Сложность вопросов</label>
-                        <div class="grid grid-cols-3 gap-1.5 p-1 rounded-2xl bg-[#18171A] border border-white/10">
+                        <div class="grid grid-cols-3 gap-1.5 p-1 rounded-2xl bg-[var(--bg-main)] border border-white/10">
                             <button type="button" onclick="setDifficulty('easy')" data-diff="easy" class="diff-btn py-2 rounded-xl text-xs font-semibold text-gray-400 hover:text-white transition-all">Лёгкий</button>
                             <button type="button" onclick="setDifficulty('medium')" data-diff="medium" class="diff-btn py-2 rounded-xl text-xs font-bold bg-indigo-600 text-white transition-all">Средний</button>
                             <button type="button" onclick="setDifficulty('hard')" data-diff="hard" class="diff-btn py-2 rounded-xl text-xs font-semibold text-gray-400 hover:text-white transition-all">Сложный</button>
@@ -768,11 +767,11 @@
                     <div class="space-y-2.5">
                         <label class="block text-xs font-semibold text-gray-400">Типы заданий</label>
                         <div class="space-y-2">
-                            <label class="flex items-center justify-between p-3 rounded-2xl bg-[#18171A] border border-white/5 cursor-pointer">
+                            <label class="flex items-center justify-between p-3 rounded-2xl bg-[var(--bg-main)] border border-white/5 cursor-pointer">
                                 <span class="text-xs font-medium text-gray-200">Один правильный ответ</span>
                                 <input type="checkbox" id="type-single" checked disabled class="apple-checkbox">
                             </label>
-                            <label class="flex items-center justify-between p-3 rounded-2xl bg-[#18171A] border border-white/5 cursor-pointer hover:border-white/15 transition-colors">
+                            <label class="flex items-center justify-between p-3 rounded-2xl bg-[var(--bg-main)] border border-white/5 cursor-pointer hover:border-white/15 transition-colors">
                                 <span class="text-xs font-medium text-gray-200">Несколько правильных ответов</span>
                                 <input type="checkbox" id="type-multiple" class="apple-checkbox">
                             </label>
@@ -783,7 +782,7 @@
                     <div class="space-y-2.5">
                         <label class="block text-xs font-semibold text-gray-400">Параметры теста</label>
                         <div class="space-y-2">
-                            <label class="flex items-center justify-between p-3 rounded-2xl bg-[#18171A] border border-white/5 cursor-pointer hover:border-white/15 transition-colors">
+                            <label class="flex items-center justify-between p-3 rounded-2xl bg-[var(--bg-main)] border border-white/5 cursor-pointer hover:border-white/15 transition-colors">
                                 <div>
                                     <span class="text-xs font-medium text-gray-200 block">Перемешивать вопросы</span>
                                     <span class="text-[10px] text-gray-500">Уникальный порядок для участников</span>
@@ -859,7 +858,7 @@
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="recent-surveys-container">
                     {% for survey in recent_surveys|slice:":4" %}
-                    <a href="{% url 'preview_test' survey.survey_id %}" class="glass-panel p-4 rounded-2xl hover:border-white/20 transition-all flex items-center justify-between group spring-btn">
+                    <a href="{% url 'preview_test' survey.survey_id %}" class="glass-panel p-4 rounded-3xl hover:border-white/20 transition-all flex items-center justify-between group spring-btn">
                         <div class="min-w-0 pr-3 text-left">
                             <p class="text-xs font-bold text-white truncate group-hover:text-indigo-400 transition-colors">{{ survey.title }}</p>
                             <span class="text-[10px] text-gray-500 font-mono-nums">{{ survey.created_at|date:"d.m.Y" }}</span>
@@ -959,20 +958,20 @@
                 <div>
                     <label for="reg-email" class="block text-xs font-semibold text-gray-300 mb-1.5">Ваш Email</label>
                     <input type="email" name="email" id="reg-email" required placeholder="teacher@school.ru" 
-                        class="w-full bg-[#18171A] border border-white/10 rounded-2xl p-3.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 transition-colors">
+                        class="w-full bg-[var(--bg-main)] border border-white/10 rounded-2xl p-3.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 transition-colors">
                 </div>
 
                 <div>
                     <label for="reg-password" class="block text-xs font-semibold text-gray-300 mb-1.5">Придумайте пароль</label>
                     <input type="password" name="password1" id="reg-password" required placeholder="••••••••" 
-                        class="w-full bg-[#18171A] border border-white/10 rounded-2xl p-3.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 transition-colors">
+                        class="w-full bg-[var(--bg-main)] border border-white/10 rounded-2xl p-3.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 transition-colors">
                 </div>
 
                 <!-- 152-ФЗ ГАЛКА СТРОГО СНЯТА ПО УМОЛЧАНИЮ -->
                 <div class="pt-1">
                     <label class="flex items-start gap-2.5 cursor-pointer text-[11px] text-gray-400 leading-tight select-none">
                         <input type="checkbox" id="reg-terms" name="terms" required 
-                            class="mt-0.5 rounded border-white/20 bg-[#18171A] text-indigo-600 focus:ring-0 w-4 h-4 flex-shrink-0">
+                            class="mt-0.5 rounded border-white/20 bg-[var(--bg-main)] text-indigo-600 focus:ring-0 w-4 h-4 flex-shrink-0">
                         <span>
                             Я даю согласие на обработку персональных данных (152-ФЗ) и принимаю условия 
                             <a href="/docs/public-offer" target="_blank" class="text-indigo-400 underline">Оферты</a>.

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" class="h-full">
 <head>
     {% include 'components/meta_tags.html' %} 
     <meta name="csrf-token" content="{{ csrf_token }}">
@@ -15,11 +15,6 @@
         <script src="{% static 'vendor/jquery.min.js' %}"></script>
     {% endif %}
 
-    <meta name="robots" content="noindex, nofollow" />
-
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=Unbounded:wght@500;700&display=swap" rel="stylesheet">
-    
     <!-- Yandex.Metrika counter -->
     <script type="text/javascript" >
         setTimeout(function() {
@@ -40,203 +35,624 @@
     <noscript><div><img src="https://mc.yandex.ru/watch/98823704" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
     <!-- /Yandex.Metrika counter -->
 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Wix+Madefor+Display:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <style>
         :root {
-            --color-bg: #0F0818;
-            --color-surface: rgba(30, 24, 48, 0.5);
-            --color-border: rgba(97, 109, 240, 0.2);
-            --color-text-primary: #f0f0f0;
-            --color-text-secondary: #a0a0b0;
-            --color-accent-primary: #616DF0;
-            --color-accent-secondary: #79EF66;
+            --bg-main: #111119;
+            --card-bg: #212024;
+            --card-border: rgba(255, 255, 255, 0.08);
+            --card-border-hover: rgba(255, 255, 255, 0.16);
+            --accent-indigo: #4F46E5;
+            --spring-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+            --spring-smooth: cubic-bezier(0.16, 1, 0.3, 1);
         }
-        body { background-color: var(--color-bg); font-family: 'Inter', sans-serif; }
-        h1, h2, h3 { font-family: 'Unbounded', sans-serif; }
-        .gradient-text {
-            background: linear-gradient(45deg, var(--color-accent-primary), var(--color-accent-secondary));
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+
+        body {
+            background-color: var(--bg-main);
+            font-family: 'Golos Text', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: #F3F4F6;
+            letter-spacing: -0.01em;
+            overflow-x: hidden;
         }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(15px); }
-            to { opacity: 1; transform: translateY(0); }
+
+        h1, h2, h3, h4, .font-display {
+            font-family: 'Wix Madefor Display', sans-serif;
+            letter-spacing: -0.025em;
         }
-        .animate-fadeIn {
-            animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+
+        .font-mono-nums { 
+            font-family: 'JetBrains Mono', monospace; 
+            letter-spacing: -0.02em;
         }
-        .loader-animation {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-            justify-content: center;
-            height: 50px;
+
+        .glass-panel {
+            background: rgba(24, 23, 27, 0.78);
+            backdrop-filter: blur(28px);
+            -webkit-backdrop-filter: blur(28px);
+            border: 1px solid var(--card-border);
+            box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.6);
         }
-        .loader-animation .bar {
-            width: 12px;
-            height: 100%;
-            background-color: var(--color-accent-primary);
-            border-radius: 6px;
-            animation: bar-pulse 1.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+
+        /* DYNAMIC ISLAND CAPSULE */
+        .island-capsule {
+            background: rgba(22, 21, 26, 0.92);
+            backdrop-filter: blur(28px);
+            -webkit-backdrop-filter: blur(28px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.7);
+            border-radius: 9999px;
+            transition: max-width 0.4s var(--spring-bounce), padding 0.3s var(--spring-smooth), transform 0.35s var(--spring-bounce);
         }
-        .loader-animation .bar:nth-child(1) {
-            animation-delay: -0.24s;
+        .island-capsule.mode-header { max-width: 44rem; width: 100%; padding: 0.5rem 1.25rem; }
+        .island-capsule.mode-notify { max-width: 22rem; width: auto; padding: 0.5rem 1.25rem; transform: scale(1.02); }
+
+        .spring-btn {
+            transition: transform 0.2s var(--spring-bounce), background-color 0.15s, border-color 0.15s, box-shadow 0.15s;
         }
-        .loader-animation .bar:nth-child(2) {
-            animation-delay: -0.12s;
+        .spring-btn:hover { transform: translateY(-1px); }
+        .spring-btn:active { transform: scale(0.975) translateY(1px); }
+
+        /* САЛОННЫЕ КНОПКИ ПРИЛОЖЕНИЯ */
+        .master-pill-btn {
+            background: linear-gradient(180deg, #4F46E5 0%, #4338CA 100%);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            box-shadow: 0 10px 24px -6px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            transition: all 0.2s var(--spring-bounce);
         }
-        .loader-animation .bar:nth-child(3) {
-            animation-delay: 0s;
+        .master-pill-btn:hover {
+            background: linear-gradient(180deg, #554BF0 0%, #4639D4 100%);
+            border-color: rgba(255, 255, 255, 0.24);
+            box-shadow: 0 14px 28px -6px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
         }
-        @keyframes bar-pulse {
-            50% {
-                transform: scaleY(0.3);
-                background-color: var(--color-accent-secondary);
+        .master-pill-btn:active {
+            transform: scale(0.98) translateY(1px);
+        }
+
+        /* КАСТОМНЫЕ ЧЕКБОКСЫ И РАДИО APPLE STYLE */
+        .apple-checkbox {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 1.25rem;
+            height: 1.25rem;
+            border-radius: 0.45rem;
+            background-color: #16151A;
+            border: 1.5px solid rgba(255, 255, 255, 0.16);
+            display: inline-grid;
+            place-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+        .apple-checkbox::before {
+            content: "\f00c";
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            font-size: 0.65rem;
+            color: #ffffff;
+            transform: scale(0);
+            transition: transform 0.2s var(--spring-bounce);
+        }
+        .apple-checkbox:checked {
+            background-color: #4F46E5;
+            border-color: #4F46E5;
+        }
+        .apple-checkbox:checked::before { transform: scale(1); }
+
+        .apple-radio {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 1.25rem;
+            height: 1.25rem;
+            border-radius: 9999px;
+            background-color: #16151A;
+            border: 1.5px solid rgba(255, 255, 255, 0.16);
+            display: inline-grid;
+            place-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+        .apple-radio::before {
+            content: "";
+            width: 0.5rem;
+            height: 0.5rem;
+            border-radius: 9999px;
+            background-color: #ffffff;
+            transform: scale(0);
+            transition: transform 0.2s var(--spring-bounce);
+        }
+        .apple-radio:checked {
+            background-color: #4F46E5;
+            border-color: #4F46E5;
+        }
+        .apple-radio:checked::before { transform: scale(1); }
+
+        /* АНИМАЦИИ КАРТОЧЕК */
+        @keyframes gentleFadeIn {
+            from { opacity: 0; transform: translateY(14px) scale(0.985); filter: blur(4px); }
+            to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+        }
+        .animate-stage-in {
+            animation: gentleFadeIn 0.4s var(--spring-smooth) forwards;
+            will-change: transform, opacity, filter;
+        }
+
+        /* РАДИАЛЬНЫЙ SVG ПРОГРЕСС */
+        .score-circle-track {
+            stroke: rgba(255, 255, 255, 0.07);
+        }
+        .score-circle-fill {
+            transition: stroke-dashoffset 1.2s cubic-bezier(0.2, 0.8, 0.2, 1), stroke 0.4s ease;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+            stroke-linecap: round;
+        }
+
+        .start-unlock-pill {
+            background: #18171C;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Активное состояние кнопки (разблокирована) */
+        .start-unlock-pill.is-ready {
+            background: linear-gradient(180deg, #4F46E5 0%, #4338CA 100%) !important;
+            border-color: rgba(255, 255, 255, 0.2) !important;
+            box-shadow: 
+                0 12px 28px -6px rgba(79, 70, 229, 0.45),
+                inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
+            cursor: pointer !important;
+        }
+        .start-unlock-pill.is-ready:hover {
+            background: linear-gradient(180deg, #554BF0 0%, #4639D4 100%) !important;
+            transform: translateY(-1px);
+            box-shadow: 
+                0 16px 32px -6px rgba(79, 70, 229, 0.55),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+        }
+        .start-unlock-pill.is-ready:active {
+            transform: scale(0.98) translateY(1px);
+        }
+    </style>
+    <style>
+        .motion-dock-desktop {
+            opacity: 0;
+            transform: translateY(calc(-50% + 12px)) scale(0.99);
+            filter: blur(4px);
+            animation: dockDesktopArrival 0.45s var(--spring-smooth) forwards;
+            will-change: transform, opacity, filter;
+        }
+
+        @keyframes dockDesktopArrival {
+            to {
+                opacity: 1;
+                transform: translateY(-50%) scale(1);
+                filter: blur(0);
             }
         }
-        #loader-text {
-            transition: opacity 0.3s ease-in-out;
+
+        /* Кинематика для мобильного нижнего дока (держит translateX(-50%)) */
+        .motion-dock-mobile {
+            opacity: 0;
+            transform: translate(-50%, 12px) scale(0.99);
+            filter: blur(4px);
+            animation: dockMobileArrival 0.45s var(--spring-smooth) forwards;
+            will-change: transform, opacity, filter;
+        }
+
+        @keyframes dockMobileArrival {
+            to {
+                opacity: 1;
+                transform: translate(-50%, 0) scale(1);
+                filter: blur(0);
+            }
         }
     </style>
 </head>
-<body class="text-[var(--color-text-primary)]">
+<body class="min-h-full flex flex-col items-center justify-between antialiased selection:bg-indigo-600 selection:text-white relative overflow-x-hidden">
 
-    <main class="min-h-screen flex flex-col items-center justify-center p-4">
-        
-        <div id="landing-view" class="w-full max-w-lg text-center">
-            <div class="bg-[var(--color-surface)] p-8 rounded-3xl border border-[var(--color-border)] animate-fadeIn shadow-2xl shadow-black/50">
+    <!-- ХОЛСТ САЛЮТА TELEGRAM CONFETTI -->
+    <canvas id="confetti-canvas" class="fixed inset-0 pointer-events-none z-[9999] w-full h-full"></canvas>
 
-                <div class="flex justify-center my-4">
-                    <a href="/">
-                        <img src="{% static 'img/logo-header.webp' %}" alt="Летучка Логотип" class="w-40 h-auto">
-                    </a>
+    <!-- FLOATING PROGRESS ISLAND -->
+    <header class="sticky top-4 z-40 w-full px-4 flex justify-center pointer-events-none">
+        <div id="dynamic-island" class="island-capsule mode-header pointer-events-auto flex items-center justify-between min-h-[46px]">
+            
+            <div id="island-controls" class="w-full flex items-center justify-between gap-3">
+                <div class="flex items-center gap-2.5 min-w-0">
+                    <!-- ХЛЕБНЫЕ КРОШКИ В СТИЛЕ ПУТИ ФАЙЛОВОЙ СИСТЕМЫ -->
+                    <div class="flex items-center gap-2 sm:gap-2.5 text-xs font-semibold min-w-0">
+                        <a href="/" class="flex-shrink-0 transition-opacity hover:opacity-80 mr-0.5" title="Главная">
+                            <img src="{% static 'img/logo.png' %}" alt="Logo" class="w-5 h-auto">
+                        </a>
+                        
+                        <span class="text-gray-600 select-none">/</span>
+
+                        <!-- Промежуточный раздел (виден на десктопе, скрыт на мобилках) -->
+                        <a href="{% url 'history' %}" class="hidden sm:inline text-gray-400 hover:text-gray-200 transition-colors flex-shrink-0">
+                            Мои тесты
+                        </a>
+                        <span class="text-gray-600 select-none hidden sm:inline">/</span>
+
+                        <!-- Конечный текущий раздел (виден везде, на мобилке занимает все свободное место) -->
+                        <div class="min-w-0 flex items-center gap-1.5">
+                            <span id="header-survey-title" class="text-white font-medium truncate max-w-[130px] sm:max-w-[200px] md:max-w-xs" title="{{ title }}">
+                                {{ survey.title|default:"Создание теста" }}
+                            </span>
+                            {% if can_edit %}
+                                <button onclick="openEditTitleModal()" class="text-gray-500 hover:text-indigo-400 transition-colors p-1 flex-shrink-0" title="Переименовать тест">
+                                    <i class="fas fa-pen text-[9px]"></i>
+                                </button>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
 
-                <p class="text-sm text-[var(--color-text-secondary)]">Тест от {{ author }}</p>
-                <h1 class="mt-2 text-2xl font-bold text-white">{{ survey.title }}</h1>
-                <p class="mt-4 text-[var(--color-text-secondary)] max-w-md mx-auto">
-                    Вам предстоит ответить на <strong>{{ survey.get_questions|length }}</strong> вопросов.
-                </p>
+                <!-- Индикатор шагов -->
+                <div class="flex items-center gap-2 font-mono-nums text-xs flex-shrink-0">
+                    <span id="header-progress-text" class="text-gray-400">Старт</span>
+                </div>
+            </div>
+
+            <!-- СЛОЙ УВЕДОМЛЕНИЙ В ОСТРОВКЕ -->
+            <div id="island-notice" class="hidden w-full items-center justify-center gap-2.5 select-none font-mono-nums text-xs">
+                <span id="island-icon-box" class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] bg-emerald-500 text-black font-bold">
+                    <i class="fas fa-check"></i>
+                </span>
+                <span id="island-text" class="font-semibold text-white"></span>
+            </div>
+
+        </div>
+    </header>
+
+    <!-- ОСНОВНАЯ ЗОНА: АДАПТИВНАЯ ШИРИНА ДЛЯ ВАУ-ЭФФЕКТА -->
+    <main class="w-full max-w-4xl px-4 flex-grow flex flex-col justify-center items-center z-10 min-h-[calc(100vh-160px)] my-auto py-6 sm:py-10">
+
+        <!-- ==============================================================
+             1. ЭКРАН СТАРТА (ВВОД ИМЕНИ)
+             ============================================================== -->
+        <div id="landing-view" class="w-full max-w-4xl mx-auto animate-stage-in">
+            <div class="glass-panel rounded-[36px] p-6 sm:p-8 lg:p-10 border border-white/[0.09] shadow-[0_30px_70px_-20px_rgba(0,0,0,0.85)] relative overflow-hidden">
                 
-                <form id="start-test-form" class="mt-8 flex flex-col">
-                    <input 
-                        type="text" 
-                        id="student-name" 
-                        class="flex-grow w-full p-4 bg-[var(--color-bg)] border-2 border-[var(--color-border)] rounded-full text-center text-lg text-white focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)] placeholder:text-gray-600 transition-colors" 
-                        placeholder="Имя" 
-                        required
-                    >
-                    <span class="text-xs mt-2 text-gray-400">Его увидит автор (гадости не пишите)</span>
-                    <button 
-                        type="submit" 
-                        id="start-button"  
-                        disabled 
-                        class="w-full sm:w-auto bg-gray-500 text-white px-8 py-4 mt-6 font-bold rounded-full text-lg 
-                            transition-all 
-                            disabled:opacity-50 disabled:bg-gray-500 disabled:shadow-none 
-                            enabled:bg-[var(--color-accent-primary)] 
-                            enabled:hover:scale-[1.03] enabled:active:scale-[.97] 
-                            enabled:shadow-lg enabled:shadow-[var(--color-accent-primary)]/20"
-                    >
-                        Начать
-                    </button>
-                </form>
+                <!-- Мягкий сапфировый фоновый эмбиент в углу карточки -->
+                <div class="absolute -top-24 -left-24 w-72 h-72 rounded-full bg-indigo-600/[0.12] blur-[90px] pointer-events-none"></div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-stretch relative z-10">
+                    
+                    <!-- ЛЕВАЯ СТОРОНА: ПАСПОРТ ТЕСТА И ХАРАКТЕРИСТИКИ (col-span-7) -->
+                    <div class="lg:col-span-7 flex flex-col justify-between space-y-6 text-left">
+                        
+                        <div class="space-y-4">
+                            <!-- Статусный чип автора -->
+                            <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#151419] border border-white/10 text-xs text-gray-300">
+                                <span class="w-5 h-5 rounded-full bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 font-bold text-[10px] flex items-center justify-center font-mono-nums">
+                                    {{ author|first|upper }}
+                                </span>
+                                <span class="text-gray-400 text-[11px]">Автор теста:</span>
+                                <span class="font-semibold text-white truncate max-w-[150px]">{{ author }}</span>
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 ml-0.5" title="Сессия активна"></span>
+                            </div>
+
+                            <!-- Название теста с акцентной типографикой -->
+                            <div class="space-y-2">
+                                <h1 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight font-display leading-[1.15]">
+                                    {{ survey.title }}
+                                </h1>
+                                <p class="text-xs sm:text-sm text-gray-400 leading-relaxed max-w-md">
+                                    Интерактивное тестирование с автоматической проверкой ответов и мгновенной фиксацией результатов у автора.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- BENTO-ПАСПОРТ: 3 ХАРАКТЕРИСТИКИ ТЕСТА -->
+                        <div class="space-y-4 pt-1">
+                            <div class="grid grid-cols-3 gap-2.5">
+                                
+                                <!-- Плитка 1: Задания -->
+                                <div class="p-3 sm:p-3.5 rounded-2xl bg-[#15141A]/90 border border-white/[0.06] space-y-1">
+                                    <span class="text-[10px] text-gray-500 uppercase tracking-wider block font-semibold font-mono-nums">Заданий</span>
+                                    <div class="flex items-baseline gap-1">
+                                        <span class="text-lg sm:text-xl font-extrabold text-white font-mono-nums">{{ survey.questions_count }}</span>
+                                        <span class="text-[10px] text-gray-400">вопр.</span>
+                                    </div>
+                                </div>
+
+                                <!-- Плитка 2: Тайминг -->
+                                <div class="p-3 sm:p-3.5 rounded-2xl bg-[#15141A]/90 border border-white/[0.06] space-y-1">
+                                    <span class="text-[10px] text-gray-500 uppercase tracking-wider block font-semibold font-mono-nums">Время</span>
+                                    <div class="flex items-baseline gap-1">
+                                        <span class="text-lg sm:text-xl font-extrabold text-indigo-300 font-mono-nums">~1</span>
+                                        <span class="text-[10px] text-gray-400">мин.</span>
+                                    </div>
+                                </div>
+
+                                <!-- Плитка 3: Проверка -->
+                                <div class="p-3 sm:p-3.5 rounded-2xl bg-[#15141A]/90 border border-white/[0.06] space-y-1">
+                                    <span class="text-[10px] text-gray-500 uppercase tracking-wider block font-semibold font-mono-nums">Формат</span>
+                                    <div class="flex items-baseline gap-1">
+                                        <span class="text-xs sm:text-sm font-bold text-emerald-400 tracking-tight">Авто</span>
+                                        <span class="text-[10px] text-gray-400">балл</span>
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            <!-- Микро-гарантия приватности и регламента -->
+                            <div class="flex items-center justify-center gap-2.5 px-3 py-2 rounded-xl bg-white/[0.02] border border-white/[0.05] text-[11px] text-gray-400">
+                                <i class="fas fa-shield-halved text-indigo-400 text-xs flex-shrink-0"></i>
+                                <span class="truncate">Результат увидит только автор.</span>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- ПРАВАЯ СТОРОНА: ТЕРМИНАЛ РЕГИСТРАЦИИ УЧАСТНИКА (col-span-5) -->
+                    <div class="lg:col-span-5 flex flex-col justify-center">
+                        <div class="bg-[#141318]/95 border border-white/[0.09] rounded-[28px] p-6 sm:p-7 space-y-5 shadow-2xl relative">
+                            
+                            <!-- Шапка терминала с динамической монограммой -->
+                            <div class="flex items-center gap-3.5 pb-3 border-b border-white/[0.07]">
+                                <div id="student-avatar-badge" class="w-11 h-11 rounded-2xl bg-indigo-600/15 border border-indigo-500/25 text-indigo-300 flex items-center justify-center font-bold text-base font-mono-nums flex-shrink-0 transition-all duration-300">
+                                    <i id="student-avatar-icon" class="fas fa-user-astronaut text-sm"></i>
+                                    <span id="student-avatar-letter" class="hidden text-white font-extrabold text-lg"></span>
+                                </div>
+
+                                <div class="min-w-0 text-left">
+                                    <h3 class="text-sm font-bold text-white tracking-tight font-display">
+                                        Представьтесь
+                                    </h3>
+                                    <p class="text-[11px] text-gray-400 truncate">
+                                        Имя отобразится в статистике
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Форма старта -->
+                            <form id="start-test-form" class="space-y-4 pt-1">
+                                
+                                <div class="space-y-2 text-left">
+                                    <div class="relative flex items-center">
+                                        <input type="text" id="student-name" required autocomplete="name"
+                                               placeholder="Как Вас представить?" 
+                                               class="w-full bg-[#18171D] border border-white/[0.12] focus:border-indigo-500 rounded-2xl px-4 py-3.5 text-sm sm:text-base text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all font-medium">
+                                        
+                                        <div id="input-check-icon" class="absolute right-4 text-emerald-400 text-xs opacity-0 scale-75 transition-all pointer-events-none">
+                                            <i class="fas fa-circle-check"></i>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Главная кнопка запуска -->
+                                <button type="submit" id="start-button" disabled
+                                        class="master-pill-btn group w-full h-[52px] rounded-full text-white text-xs sm:text-sm font-bold disabled:opacity-40 disabled:pointer-events-none disabled:transform-none select-none flex items-center justify-center gap-2 cursor-pointer">
+                                    <span>Приступить к заданиям</span>
+                                    <i class="fas fa-arrow-right text-xs group-hover:translate-x-1 transition-transform"></i>
+                                </button>
+
+                                <p class="text-[10px] text-center text-gray-500 font-mono-nums tracking-wide">
+                                    Запуск в 1 клик
+                                </p>
+                            </form>
+
+                        </div>
+                    </div>
+
+                </div>
+
             </div>
         </div>
 
-        <div id="questions-view" class="w-full max-w-2xl hidden">
-            <div class="mb-4 px-2">
-                <div class="w-full bg-black/30 rounded-full h-2.5">
-                    <div id="progress-bar" class="bg-[var(--color-accent-primary)] h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
-                </div>
-                <div class="text-center text-sm text-[var(--color-text-secondary)] mt-2">Вопрос <span id="current-question-number">1</span> из {{ survey.get_questions|length }}</div>
-            </div>
+        <!-- ==============================================================
+             2. ЭКРАН ПРОХОЖДЕНИЯ (ВОПРОСЫ)
+             ============================================================== -->
+        <div id="questions-view" class="w-full hidden space-y-4">
             
-            <form id="test-form" class="space-y-6 select-none">
-                <!-- Вопросы будут вставлены сюда через JS -->
+            <!-- Индикатор прогресса -->
+            <div class="w-full space-y-1.5 px-1.5">
+                <div class="w-full bg-[#18171C] rounded-full h-1.5 overflow-hidden border border-white/5 p-[1px]">
+                    <div id="progress-bar-fill" class="bg-indigo-500 h-full rounded-full transition-all duration-400 ease-out" style="width: 0%;"></div>
+                </div>
+                <div class="flex justify-between items-center text-[11px] font-mono-nums text-gray-500 px-0.5">
+                    <span>Вопрос <span id="current-q-num" class="text-white font-bold">1</span> из <span id="total-q-num">1</span></span>
+                    <span id="question-type-badge" class="text-indigo-400 font-sans font-medium">Один ответ</span>
+                </div>
+            </div>
+
+            <!-- Карточка вопроса -->
+            <form id="test-step-form" class="space-y-4">
+                <article class="glass-panel rounded-[32px] p-6 sm:p-8 space-y-5 animate-stage-in">
+                    
+                    <h2 id="question-text" class="text-base sm:text-lg font-bold text-white leading-snug font-display">
+                        <!-- Текст вопроса из JS -->
+                    </h2>
+
+                    <!-- Варианты ответа -->
+                    <div id="options-container" class="space-y-2.5">
+                        <!-- Генерируются через JS -->
+                    </div>
+
+                    <p id="multichoice-hint" class="hidden text-[11px] text-gray-500 font-mono-nums pt-1">
+                        * Выберите все подходящие варианты
+                    </p>
+
+                </article>
+
+                <button type="submit" id="next-question-btn" disabled
+                        class="master-pill-btn w-full h-[52px] rounded-full text-white text-xs sm:text-sm font-bold disabled:opacity-40 disabled:pointer-events-none disabled:transform-none select-none">
+                    Далее &rarr;
+                </button>
             </form>
         </div>
 
-        <div id="loader-view" class="fixed inset-0 bg-black/80 z-50 hidden items-center justify-center p-4 flex-col text-center" style="backdrop-filter: blur(10px);">
-            <div class="loader-animation">
-                <div class="bar"></div>
-                <div class="bar"></div>
-                <div class="bar"></div>
+        <!-- ==============================================================
+             3. ЭКРАН ИТОГОВ (РЕЗУЛЬТАТЫ
+             ============================================================== -->
+        <div id="result-view" class="w-full hidden animate-stage-in">
+            <div class="glass-panel p-6 sm:p-9 rounded-[32px] text-center space-y-6 relative overflow-hidden">
+                
+                <!-- Мягкая органическая подложка под результат (без ядовитого неона) -->
+                <div id="score-aurora" class="absolute -top-16 left-1/2 -translate-x-1/2 w-48 h-48 rounded-full bg-emerald-500/10 blur-[80px] pointer-events-none transition-all duration-700"></div>
+
+                <!-- Шапка результата -->
+                <div class="space-y-1.5 relative z-10">
+                    <span id="result-badge" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-mono-nums font-bold uppercase tracking-wider bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                        Тест завершён
+                    </span>
+
+                    <h2 class="text-xl sm:text-2xl font-black text-white tracking-tight font-display pt-1">
+                        {{ survey.title }}
+                    </h2>
+                </div>
+
+                <!-- РАДИАЛЬНЫЙ SVG ИНДИКАТОР ОЦЕНКИ (APPLE STYLE GAUGE) -->
+                <div class="py-2 relative z-10 flex flex-col items-center justify-center">
+                    <div class="relative w-40 h-40 flex items-center justify-center">
+                        <svg class="w-full h-full" viewBox="0 0 120 120">
+                            <!-- Фоновый трек -->
+                            <circle class="score-circle-track" cx="60" cy="60" r="50" stroke-width="8" fill="none" />
+                            <!-- Заполняющаяся дуга -->
+                            <circle id="score-ring" class="score-circle-fill" cx="60" cy="60" r="50" stroke-width="8" fill="none" 
+                                    stroke="#10B981" stroke-dasharray="314.16" stroke-dashoffset="314.16" />
+                        </svg>
+
+                        <!-- Числовой центр -->
+                        <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+                            <span class="text-3xl sm:text-4xl font-extrabold text-white font-mono-nums tracking-tight">
+                                <span id="final-score" class="text-emerald-400">0</span><span class="text-gray-500 text-2xl font-light">/</span><span id="final-total">0</span>
+                            </span>
+                            <span id="score-percent" class="text-xs font-mono-nums text-gray-400 font-semibold mt-0.5">0%</span>
+                        </div>
+                    </div>
+
+                    <!-- Вердикт качества -->
+                    <p id="result-verdict" class="text-sm font-semibold text-gray-200 mt-4 font-display max-w-xs leading-snug">
+                        Отличный результат!
+                    </p>
+                </div>
+
+                <!-- СЕТКА ДЕЙСТВИЙ (ВИРАЛЬНОСТЬ + КОНВЕРСИЯ В СЕРВИС) -->
+                <div class="space-y-2.5 pt-2 relative z-10">
+                    
+                    <!-- 1. Поделиться результатом (копирует красивый сниппет) -->
+                    <button type="button" id="challenge-btn" 
+                            class="w-full h-[50px] px-5 rounded-2xl bg-[#18171C] hover:bg-white/10 border border-white/10 text-white text-xs font-semibold flex items-center justify-center gap-2.5 spring-btn mb-4">
+                        <i class="fas fa-arrow-up-right-from-square text-indigo-400 text-xs"></i>
+                        <span>Поделиться своим результатом</span>
+                    </button>
+
+                    <!-- 2. Главный продуктовый CTA (для автора или нового гостя) -->
+                    {% if is_creator %}
+                        <a href="{% url 'preview_test' survey.survey_id %}" 
+                           class="master-pill-btn w-full h-[52px] rounded-full text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 select-none mb-4">
+                            <i class="fas fa-chart-pie text-xs"></i>
+                            <span>Панель аналитики теста</span>
+                        </a>
+                    {% else %}
+                        <a href="{% url 'create' %}" 
+                           class="master-pill-btn w-full h-[52px] rounded-full text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 select-none mb-4">
+                            <i class="fas fa-sparkles text-xs"></i>
+                            <span>Собрать свой тест с ИИ &rarr;</span>
+                        </a>
+                    {% endif %}
+
+                    <!-- 3. Повторить тест -->
+                    <a href="{% url 'take_test' survey.survey_id %}" class="inline-block text-xs text-gray-500 hover:text-white pt-2 transition-colors font-medium mb-4">
+                        Пройти этот тест ещё раз
+                    </a>
+                </div>
+
             </div>
-            <h2 class="text-2xl font-bold text-white mt-6">Подводим итоги...</h2>
-            <p class="text-gray-400 mt-2" id="loader-text">Анализируем ваши ответы</p>
         </div>
-            
-        <div id="result-view" class="w-full max-w-lg text-center hidden">
-            <div class="bg-[var(--color-surface)] p-8 rounded-3xl border border-[var(--color-border)] animate-fadeIn shadow-2xl shadow-black/50">
-            <div class="flex justify-center my-4">
-                <a href="/">
-                    <img src="{% static 'img/logo-header.webp' %}" alt="Летучка Логотип" class="w-40 h-auto">
-                </a>
+
+        <!-- 4. ОВЕРЛЕЙ ОТПРАВКИ -->
+        <div id="submitting-overlay" class="fixed inset-0 bg-[#0E0D12]/85 backdrop-blur-xl z-50 hidden flex-col items-center justify-center p-6 select-none">
+            <div class="w-12 h-12 rounded-full bg-indigo-600/15 border border-indigo-500/25 text-indigo-400 flex items-center justify-center mb-4">
+                <i class="fas fa-circle-notch text-lg fa-spin"></i>
             </div>
-
-            <p class="text-sm text-[var(--color-text-secondary)]">Тест от {{ author }}</p>
-            <h1 class="mt-2 text-2xl font-bold text-white">{{ survey.title }}</h1>
-
-            <p class="text-8xl font-black gradient-text my-4">
-                <span id="score-value"></span>/<span id="total-value"></span>
-            </p>
-            <p class="text-lg text-[var(--color-text-secondary)]">Отлично! Результат отправлен автору.</p>
-
-            {% if is_creator %}
-                <a href="{% url 'preview_test' survey.survey_id %}" class="mt-6 block w-full text-center bg-[var(--color-accent-secondary)] text-white p-5 rounded-3xl transition-transform hover:scale-[1.03] active:scale-[.97] shadow-lg shadow-[var(--color-accent-primary)]/20">
-                    <span class="text-lg font-bold text-[var(--color-bg)]">Вернуться к тесту</span>
-                </a>
-            {% else %}
-                <button 
-                    id="challenge-friend-button"
-                    class="mt-8 w-full bg-[var(--color-accent-secondary)] text-black px-10 py-4 text-lg font-bold rounded-full transition-transform hover:scale-[1.03] active:scale-[.97] shadow-lg shadow-[var(--color-accent-secondary)]/20"
-                    data-base-text="Тест в Летучке по теме «{{ survey.title|escapejs }}».
-
-    Мой результат: %score%/%total% 🔥
-
-    Слабо перебить? Держи ссылку 👇
-    "
-                    data-share-url="{% url 'take_test' survey.survey_id %}"
-                >
-                    <i class="fas fa-fist-raised"></i> Бросить вызов другим
-                </button>
-            {% endif %}
-
-            <a href="{% url 'take_test' survey.survey_id %}" class="mt-4 inline-block text-[var(--color-text-secondary)] hover:text-white text-sm">
-                Пройти заново
-            </a>
-            
-            {% if not is_creator %}
-            <p class="mt-4 text-s">Понравилось? Создайте свой тест!</p>
-                <a href="{% url 'register' %}" class="mt-2 inline-block text-[var(--color-text-secondary)] hover:text-white text-sm">
-                    Создать свой тест в Летучке
-                </a>
-            </div>
-            {% endif %}
+            <p class="text-sm font-bold text-white tracking-tight">Подводим итоги...</p>
+            <p class="text-xs text-gray-500 mt-1 font-mono-nums">Сохраняем результат в отчёте</p>
         </div>
+
     </main>
 
+    <!-- ЛЕВЫЙ ВЕРТИКАЛЬНЫЙ ДОК (DESKTOP) -->
+    <aside class="motion-dock-desktop motion-delay-dock hidden lg:flex fixed left-5 top-1/2 flex-col items-center gap-6 py-6 px-3.5 glass-panel rounded-[28px] z-40 shadow-2xl">
+        <a href="/" class="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors" title="Главная">
+            <img src="{% static 'img/logo.png' %}" alt="Logo" class="w-5 h-auto">
+        </a>
+        <div class="w-6 h-px bg-white/10"></div>
+        <nav class="flex flex-col gap-4">
+            <a href="{% url 'create' %}" class="w-11 h-11 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-600/30 spring-btn" title="Создать тест">
+                <i class="fas fa-plus text-sm"></i>
+            </a>
+            {% if request.user.is_authenticated %}
+                <a href="{% url 'history' %}" class="w-11 h-11 rounded-2xl bg-white/5 border border-white/5 text-gray-400 flex items-center justify-center hover:text-white hover:bg-white/10 spring-btn" title="Мои тесты">
+                    <i class="fa-sharp fa-solid fa-clock-rotate-left fa-layer-group text-sm"></i>
+                </a>
+                <a href="{% url 'profile_redirect' %}" class="w-11 h-11 rounded-2xl bg-white/5 border border-white/5 text-gray-400 flex items-center justify-center hover:text-white hover:bg-white/10 spring-btn" title="Профиль">
+                    <i class="fas fa-user-astronaut text-sm"></i>
+                </a>
+            {% endif %}
+        </nav>
+        {% if request.user.is_authenticated %}
+            <div class="w-6 h-px bg-white/10 mt-auto"></div>
+            <a href="{% url 'logout' %}" class="w-11 h-11 rounded-2xl text-gray-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors flex items-center justify-center" title="Выйти">
+                <i class="fas fa-arrow-right-from-bracket text-sm"></i>
+            </a>
+        {% endif %}
+    </aside>
+
+    <!-- МОБИЛЬНЫЙ НИЖНИЙ DOCK -->
+    <nav class="motion-dock-mobile motion-delay-dock lg:hidden fixed bottom-4 left-1/2 island-capsule rounded-full px-6 py-3 flex items-center gap-6 z-40 shadow-2xl">
+        <a href="/" class="text-gray-400 hover:text-white"><i class="fas fa-home text-base"></i></a>
+        <a href="{% url 'create' %}" class="w-9 h-9 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-600/30"><i class="fas fa-plus text-sm"></i></a>
+        {% if request.user.is_authenticated %}
+            <a href="{% url 'history' %}" class="text-gray-400 hover:text-white"><i class="fas fa-layer-group text-base"></i></a>
+            <a href="{% url 'profile_redirect' %}" class="text-gray-400 hover:text-white"><i class="fas fa-user text-base"></i></a>
+        {% else %}
+            <a href="/login" class="text-xs font-semibold text-indigo-400">Войти</a>
+        {% endif %}
+    </nav>
+
+    <!-- ЭЛЕГАНТНЫЙ ФУТЕР БРЕНДА (КАК В СТУДИИ) -->
+    <footer class="w-full pb-8 pt-4">
+        <div class="max-w-2xl mx-auto px-4 text-center space-y-2">
+            <p class="text-xs text-gray-500">
+                <span class="text-gray-300 font-semibold">Летучка AI</span> — сервис моментального создания интерактивных тестов из любых учебных материалов
+            </p>
+            <div class="flex items-center justify-center gap-3 text-[11px] text-gray-600">
+                <span>© 2024–2026</span>
+                <span>•</span>
+                <a class="hover:text-indigo-400 transition-colors" rel="nofollow" href="https://dprofile.ru/kozak_developer" target="_blank">Design & Dev by Kozak</a>
+                <span>•</span>
+                <a href="/docs/public-offer" class="hover:text-gray-400 transition-colors">Оферта</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ДАННЫЕ ВОПРОСОВ -->
+    <script id="questions-data" type="application/json">{{ questions_json|safe }}</script>
+
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const nameInput = document.getElementById('student-name');
-            const startButton = document.getElementById('start-button');
+        const surveyId = '{{ survey.survey_id }}';
+        
+        let rawData = document.getElementById('questions-data').textContent || '[]';
+        let questions = JSON.parse(rawData);
+        if (typeof questions === 'string') {
+            questions = JSON.parse(questions);
+        }
+        const totalQuestions = questions.length;
+        
+        let currentIdx = 0;
+        let studentName = '';
+        let studentAnswers = {};
 
-            function toggleButtonState() {
-                if (nameInput.value.trim().length > 0) {
-                    startButton.removeAttribute('disabled');
-                } else {
-                    startButton.setAttribute('disabled', true);
-                }
-            }
-
-            nameInput.addEventListener('input', toggleButtonState);
-            nameInput.addEventListener('blur', toggleButtonState);
-
-            toggleButtonState(); 
-        });
-    </script>
-
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-    <script>
         function getCookie(name) {
             let cookieValue = null;
             if (document.cookie && document.cookie !== '') {
@@ -251,232 +667,301 @@
             }
             return cookieValue;
         }
-        
-        $(document).ready(function() {
-            const landingView = $('#landing-view');
-            const questionsView = $('#questions-view');
-            const resultView = $('#result-view');
-            const testForm = $('#test-form');
-            const studentNameInput = $('#student-name');
-            const currentQuestionSpan = $('#current-question-number');
 
-            let studentName = '';
-            const questions = JSON.parse('{{ questions_json|escapejs }}');
-            let currentQuestionIndex = 0;
-            let studentAnswers = {};
-
-            function showQuestion(index) {
-                testForm.empty();
-                if (index >= questions.length) {
-                    submitTest();
-                    return;
-                }
-
-                currentQuestionSpan.text(index + 1);
-                const q = questions[index];
-                
-                const questionBlock = $(`
-                    <div class="bg-[var(--color-surface)] rounded-3xl border border-[var(--color-border)] p-6 animate-fadeIn shadow-2xl shadow-black/50">
-                        <p class="text-xl font-semibold text-white mb-5">${q.question}</p>
-                        <div class="space-y-3"></div>
-                    </div>
-                `);
-
-                const optionsContainer = questionBlock.find('.space-y-3');
-                q.options.forEach((option, i) => {
-                    const optionId = `q${index}_option${i}_${Math.random().toString(36).substring(2, 9)}`;
-                    
-                    const optionLabel = $(`
-                        <label for="${optionId}" class="block p-4 bg-[var(--color-bg)] hover:bg-black/50 rounded-2xl cursor-pointer border-2 border-[var(--color-border)] has-[:checked]:border-[var(--color-accent-primary)] has-[:checked]:bg-[var(--color-accent-primary)]/10 transition-all duration-200">
-                            <input type="radio" id="${optionId}" name="question_${index}" value="${option}" class="hidden">
-                            <span class="text-base text-white">${option}</span>
-                        </label>
-                    `);
-                    optionsContainer.append(optionLabel);
-                });
-
-                testForm.append(questionBlock);
-                testForm.append('<button type="submit" class="w-full mt-4 inline-block bg-[var(--color-accent-primary)] text-white px-10 py-4 font-bold rounded-full transition-transform hover:scale-[1.03] active:scale-[.97] shadow-lg shadow-[var(--color-accent-primary)]/20">Ответить</button>');
+        // ШИНА ОСТРОВКА
+        const Island = {
+            notify: (text, iconClass = 'fa-check') => {
+                $('#island-controls').addClass('hidden');
+                $('#island-text').text(text);
+                $('#island-icon-box i').attr('class', `fas ${iconClass}`);
+                $('#dynamic-island').removeClass('mode-header').addClass('mode-notify');
+                $('#island-notice').removeClass('hidden').addClass('flex');
+                setTimeout(() => {
+                    $('#island-notice').addClass('hidden').removeClass('flex');
+                    $('#dynamic-island').removeClass('mode-notify').addClass('mode-header');
+                    $('#island-controls').removeClass('hidden');
+                }, 2200);
             }
+        };
 
-            // Регистрация просмотров
-            async function generateVisitorHash() {
-                const uniqueString = `${navigator.userAgent}-${navigator.language}-${new Date().getTimezoneOffset()}`;
-                const encoder = new TextEncoder();
-                const data = encoder.encode(uniqueString);
-                const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-                const hashArray = Array.from(new Uint8Array(hashBuffer));
-                return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-            }
-
-            // --- Регистрация просмотров ---
-            async function registerView() {
-                const surveyId = '{{ survey.survey_id }}';
-                if (!surveyId) return;
-
-                try {
-                    const visitorHash = await generateVisitorHash();
-                    const csrftoken = getCookie('csrftoken');
-
-                    const response = await fetch(`/register-view/${surveyId}/`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRFToken': csrftoken
-                        },
-                        body: JSON.stringify({ hash: visitorHash })
-                    });
-
-                    const data = await response.json();
-
-                    if (data.success) {
-                        const counterElement = $('#view-counter-value'); 
-                        const currentCount = parseInt(counterElement.text());
-                        const newCount = data.view_count;
-
-                        if (data.new_view && newCount > currentCount) {
-                            counterElement.text(newCount);
-                            counterElement.addClass('counter-pulse');
-                            setTimeout(() => {
-                                counterElement.removeClass('counter-pulse');
-                            }, 600);
-                        } else {
-                            counterElement.text(newCount);
-                        }
-                    }
-                } catch (error) {
-                    console.error('Ошибка регистрации просмотра:', error);
-                }
-            }
-            // --- Регистрация просмотров ---
-            registerView();
+        // ВАЛИДАЦИЯ ВВОДА ИМЕНИ
+        $('#student-name').on('input', function() {
+            const raw = this.value.trim();
+            const hasText = raw.length > 0;
             
-            $('#start-test-form').on('submit', function(e) {
-                e.preventDefault();
-                studentName = studentNameInput.val();
-                if (studentName.trim() === '') {
-                    studentNameInput.css('border-color', 'red');
-                    return;
-                }
-                landingView.addClass('hidden');
-                questionsView.removeClass('hidden');
-                showQuestion(currentQuestionIndex);
+            $('#start-button').prop('disabled', !hasText);
+
+            const $avatarBadge = $('#student-avatar-badge');
+            const $avatarIcon = $('#student-avatar-icon');
+            const $avatarLetter = $('#student-avatar-letter');
+            const $checkIcon = $('#input-check-icon');
+
+            if (hasText) {
+                const firstChar = raw.charAt(0).toUpperCase();
+                $avatarIcon.addClass('hidden');
+                $avatarLetter.text(firstChar).removeClass('hidden');
+                $avatarBadge.addClass('bg-indigo-600 text-white border-indigo-400 shadow-[0_0_20px_rgba(79,70,229,0.4)]');
+                $checkIcon.removeClass('opacity-0 scale-75').addClass('opacity-100 scale-100');
+            } else {
+                $avatarIcon.removeClass('hidden');
+                $avatarLetter.addClass('hidden');
+                $avatarBadge.removeClass('bg-indigo-600 text-white border-indigo-400 shadow-[0_0_20px_rgba(79,70,229,0.4)]');
+                $checkIcon.addClass('opacity-0 scale-75').removeClass('opacity-100 scale-100');
+            }
+        });
+
+        // СТАРТ ТЕСТА
+        $('#start-test-form').on('submit', function(e) {
+            e.preventDefault();
+            studentName = $('#student-name').val().trim();
+            if (!studentName) return;
+
+            $('#landing-view').addClass('hidden');
+            $('#questions-view').removeClass('hidden');
+            $('#total-q-num').text(totalQuestions);
+            renderQuestion(currentIdx);
+        });
+
+        // ОТРИСОВКА ВОПРОСА
+        function renderQuestion(idx) {
+            const q = questions[idx];
+            if (!q) return;
+
+            $('#current-q-num').text(idx + 1);
+            $('#question-text').text(q.question);
+            
+            // Расчет прогресса
+            const pct = Math.round(((idx) / totalQuestions) * 100);
+            $('#progress-bar-fill').css('width', pct + '%');
+            $('#header-progress-text').text(`${idx + 1} / ${totalQuestions}`);
+
+            // Проверка типа вопроса
+            const isMultiple = q.type === 'multiple' || Array.isArray(q.correct_answer);
+            $('#question-type-badge').text(isMultiple ? 'Несколько ответов' : 'Один ответ');
+            $('#multichoice-hint').toggleClass('hidden', !isMultiple);
+
+            const $container = $('#options-container').empty();
+            $('#next-question-btn').prop('disabled', true);
+
+            q.options.forEach((opt, optIdx) => {
+                const optId = `opt_${idx}_${optIdx}`;
+                const inputType = isMultiple ? 'checkbox' : 'radio';
+                const inputClass = isMultiple ? 'apple-checkbox' : 'apple-radio';
+
+                const optHtml = `
+                    <label for="${optId}" class="option-label flex items-center gap-3.5 p-4 rounded-2xl bg-[#16151A] border border-white/5 hover:border-white/15 cursor-pointer transition-all">
+                        <input type="${inputType}" id="${optId}" name="step_answer" value="${opt.replace(/"/g, '&quot;')}" class="${inputClass}">
+                        <span class="text-xs sm:text-sm font-medium text-gray-200 select-none">${opt}</span>
+                    </label>
+                `;
+                $container.append(optHtml);
             });
 
-            testForm.on('submit', async function(e) {
-                e.preventDefault();
-                const selectedOption = $(`input[name="question_${currentQuestionIndex}"]:checked`).val();
-                if (!selectedOption) {
-                    alert('Пожалуйста, выберите вариант ответа.'); 
-                    return;
-                }
-                studentAnswers[questions[currentQuestionIndex].question] = selectedOption;
-                currentQuestionIndex++;
-                showQuestion(currentQuestionIndex);
+            // Слушатель выбора ответа
+            $('input[name="step_answer"]').on('change', function() {
+                const anyChecked = $('input[name="step_answer"]:checked').length > 0;
+                $('#next-question-btn').prop('disabled', !anyChecked);
+
+                // Тактильная подсветка выбранных вариантов
+                $('.option-label').each(function() {
+                    const checked = $(this).find('input').is(':checked');
+                    $(this).toggleClass('border-indigo-500/40 bg-indigo-600/10 text-white', checked);
+                });
             });
+        }
 
-            async function submitTest() {
-                questionsView.addClass('hidden');
-                
-                const loaderView = $('#loader-view');
-                const loaderText = $('#loader-text');
-                let textInterval;
+        // САБМИТ ШАГА
+        $('#test-step-form').on('submit', function(e) {
+            e.preventDefault();
+            const q = questions[currentIdx];
+            const isMultiple = q.type === 'multiple' || Array.isArray(q.correct_answer);
 
-                try {
-                    loaderView.removeClass('hidden').addClass('flex');
-
-                    const loadingPhrases = [
-                        "Анализируем ваши ответы...",
-                        "Сравниваем с правильными решениями...",
-                        "Подсчитываем итоговый балл...",
-                        "AI готовит ваш вердикт...",
-                        "Почти готово!"
-                    ];
-                    let phraseIndex = 0;
-                    loaderText.text(loadingPhrases[phraseIndex]);
-
-                    textInterval = setInterval(() => {
-                        phraseIndex = (phraseIndex + 1) % loadingPhrases.length;
-                        loaderText.css('opacity', 0);
-                        setTimeout(() => {
-                            loaderText.text(loadingPhrases[phraseIndex]);
-                            loaderText.css('opacity', 1);
-                        }, 300);
-                    }, 2000);
-
-                    const response = await fetch(`/api/t/{{ survey.survey_id }}/submit/`, {
-                        method: 'POST',
-                        headers: { 
-                            'Content-Type': 'application/json',
-                            'X-CSRFToken': $('meta[name="csrf-token"]').attr('content')
-                        },
-                        body: JSON.stringify({ student_name: studentName, answers: studentAnswers })
-                    });
-                    const data = await response.json();
-                    
-                    if (data.success) {
-                        $('#score-value').text(data.score);
-                        $('#total-value').text(data.total);
-                        resultView.removeClass('hidden');
-                    } else { 
-                        throw new Error(data.error || 'Unknown error'); 
-                    }
-
-                } catch (err) {
-                    alert('Произошла ошибка при отправке результатов: ' + err.message);
-                    window.location.reload(); 
-                } finally {
-                    clearInterval(textInterval);
-                    loaderView.addClass('hidden').removeClass('flex');
-                }
+            if (isMultiple) {
+                const selected = [];
+                $('input[name="step_answer"]:checked').each(function() {
+                    selected.push($(this).val());
+                });
+                studentAnswers[q.question] = selected;
+            } else {
+                studentAnswers[q.question] = $('input[name="step_answer"]:checked').val();
             }
 
-            const challengeButton = $('#challenge-friend-button');
+            currentIdx++;
+            if (currentIdx < totalQuestions) {
+                renderQuestion(currentIdx);
+            } else {
+                finishAndSubmitTest();
+            }
+        });
 
-            if (challengeButton.length) {
-                challengeButton.on('click', function() {
-                    const baseTextTemplate = $(this).data('base-text');
-                    const shareUrl = $(this).data('share-url');
-                    const score = $('#score-value').text();
-                    const total = $('#total-value').text();
+        // ФИНАЛЬНАЯ ОТПРАВКА И РАСЧЕТ РЕЗУЛЬТАТА
+        async function finishAndSubmitTest() {
+            $('#questions-view').addClass('hidden');
+            $('#submitting-overlay').removeClass('hidden').addClass('flex');
+            $('#progress-bar-fill').css('width', '100%');
 
-                    let challengeText = baseTextTemplate
-                        .replace('%score%', score)
-                        .replace('%total%', total);
-                    
-                    challengeText += '\n\n' + new URL(shareUrl, window.location.origin).href;
+            try {
+                const response = await fetch(`/api/t/${surveyId}/submit/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken') || $('meta[name="csrf-token"]').attr('content')
+                    },
+                    body: JSON.stringify({
+                        student_name: studentName,
+                        answers: studentAnswers
+                    })
+                });
 
-                    function dedent(text) {
-                        const lines = text.split('\n');
-                        
-                        const minIndent = lines.reduce((min, line) => {
-                            if (line.trim() === '') return min;
-                            const indent = line.match(/^\s*/)[0].length;
-                            return Math.min(min, indent);
-                        }, Infinity);
+                const data = await response.json();
+                if (data.success) {
+                    const score = parseInt(data.score, 10) || 0;
+                    const total = parseInt(data.total, 10) || totalQuestions;
+                    const percent = Math.round((score / total) * 100);
 
-                        if (minIndent === Infinity) return text;
-                        
-                        return lines.map(line => line.substring(minIndent)).join('\n').trim();
+                    $('#final-score').text(score);
+                    $('#final-total').text(total);
+                    $('#score-percent').text(percent + '%');
+
+                    // Настройка радиального индикатора и темы по оценке
+                    const circumference = 314.16; // 2 * PI * 50
+                    const offset = circumference - (percent / 100) * circumference;
+
+                    const $ring = $('#score-ring');
+                    const $aurora = $('#score-aurora');
+                    const $badge = $('#result-badge');
+                    const $verdict = $('#result-verdict');
+
+                    if (percent >= 80) {
+                        $ring.attr('stroke', '#10B981'); // Изумруд
+                        $('#final-score').attr('class', 'text-emerald-400');
+                        $aurora.attr('class', 'absolute -top-16 left-1/2 -translate-x-1/2 w-48 h-48 rounded-full bg-emerald-500/10 blur-[80px] pointer-events-none');
+                        $badge.html('<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Отличный результат');
+                        $verdict.text('Великолепная работа! Материал усвоен на высоком уровне.');
+                    } else if (percent >= 50) {
+                        $ring.attr('stroke', '#6366F1'); // Индиго
+                        $('#final-score').attr('class', 'text-indigo-400');
+                        $aurora.attr('class', 'absolute -top-16 left-1/2 -translate-x-1/2 w-48 h-48 rounded-full bg-indigo-600/10 blur-[80px] pointer-events-none');
+                        $badge.attr('class', 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-mono-nums font-bold uppercase tracking-wider bg-indigo-500/10 border border-indigo-500/20 text-indigo-300');
+                        $badge.html('<span class="w-1.5 h-1.5 rounded-full bg-indigo-400"></span> Хорошая попытка');
+                        $verdict.text('Хороший результат. Есть пара нюансов, которые стоит закрепить.');
+                    } else {
+                        $ring.attr('stroke', '#F59E0B'); // Мягкий янтарь вместо красной агрессии
+                        $('#final-score').attr('class', 'text-amber-400');
+                        $aurora.attr('class', 'absolute -top-16 left-1/2 -translate-x-1/2 w-48 h-48 rounded-full bg-amber-500/10 blur-[80px] pointer-events-none');
+                        $badge.attr('class', 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-mono-nums font-bold uppercase tracking-wider bg-amber-500/10 border border-amber-500/20 text-amber-300');
+                        $badge.html('<span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Требует повторения');
+                        $verdict.text('Материал пока не закрепился. Рекомендуем повторить теорию и попробовать снова.');
                     }
 
-                    const cleanedText = dedent(challengeText);
-                    
-                    navigator.clipboard.writeText(cleanedText).then(() => {
-                        const originalText = $(this).html();
-                        $(this).html('<i class="fas fa-check-circle"></i> Скопировано! Отправь другим');
+                    $('#submitting-overlay').addClass('hidden').removeClass('flex');
+                    $('#result-view').removeClass('hidden');
 
-                        setTimeout(() => {
-                            $(this).html(originalText);
-                        }, 3000);
+                    // Анимация круговой шкалы после отображения карточки
+                    setTimeout(() => {
+                        $ring.css('stroke-dashoffset', offset);
+                    }, 80);
 
-                    }).catch(err => {
-                        console.error('Ошибка копирования вызова:', err);
-                    });
+                    // САЛЮТ ПРИ ХОРОШЕМ РЕЗУЛЬТАТЕ
+                    if (percent >= 50) {
+                        fireConfetti();
+                    }
+                } else {
+                    throw new Error(data.error || 'Ошибка проверки');
+                }
+            } catch (err) {
+                Island.notify('Сбой проверки теста', 'fa-triangle-exclamation');
+                setTimeout(() => window.location.reload(), 2000);
+            }
+        }
+
+        // ШЕЙРИНГ РЕЗУЛЬТАТА
+        $('#challenge-btn').on('click', function() {
+            const score = $('#final-score').text();
+            const total = $('#final-total').text();
+            const percent = $('#score-percent').text();
+            
+            const shareText = `Я прошел тест «{{ survey.title|escapejs }}» на Летучке!\nРезультат: ${score} из ${total} (${percent}) 🎯\n\nПопробуй набрать больше: ${window.location.origin}/t/${surveyId}/`;
+
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(shareText).then(() => {
+                    Island.notify('Результат скопирован!');
+                }).catch(() => fallbackCopy(shareText));
+            } else {
+                fallbackCopy(shareText);
+            }
+        });
+
+        function fallbackCopy(text) {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.left = '-9999px';
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            Island.notify('Результат скопирован!');
+        }
+
+        // ФИЗИЧЕСКИЙ ДВИЖОК КОНФЕТТИ (CANVAS)
+        function fireConfetti() {
+            const canvas = document.getElementById('confetti-canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            const particles = [];
+            const colors = ['#10B981', '#4F46E5', '#F59E0B', '#38BDF8', '#EC4899', '#ffffff'];
+
+            for (let i = 0; i < 90; i++) {
+                particles.push({
+                    x: canvas.width / 2,
+                    y: canvas.height * 0.42,
+                    vx: (Math.random() - 0.5) * 18,
+                    vy: (Math.random() - 0.75) * 16,
+                    size: Math.random() * 8 + 4,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    rotation: Math.random() * 360,
+                    vRot: (Math.random() - 0.5) * 10,
+                    alpha: 1
                 });
             }
 
-        });
+            let animationId;
+            function render() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                let alive = 0;
+
+                particles.forEach(p => {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.vy += 0.38;
+                    p.vx *= 0.98;
+                    p.rotation += p.vRot;
+                    p.alpha -= 0.009;
+
+                    if (p.alpha > 0) {
+                        alive++;
+                        ctx.save();
+                        ctx.globalAlpha = p.alpha;
+                        ctx.translate(p.x, p.y);
+                        ctx.rotate((p.rotation * Math.PI) / 180);
+                        ctx.fillStyle = p.color;
+                        ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+                        ctx.restore();
+                    }
+                });
+
+                if (alive > 0) {
+                    animationId = requestAnimationFrame(render);
+                } else {
+                    cancelAnimationFrame(animationId);
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                }
+            }
+            render();
+        }
     </script>
 </body>
 </html>

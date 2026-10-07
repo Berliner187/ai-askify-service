@@ -1,10 +1,11 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" class="h-full">
 <head>
     {% include 'components/meta_tags.html' %} 
     <meta name="csrf-token" content="{{ csrf_token }}">
     {% load static %}
     <link rel="icon" href="{% static 'img/favicon.ico' %}" type="image/ico">
+    <meta name="robots" content="noindex, nofollow">
 
     {% if debug %}
         <script src="https://cdn.tailwindcss.com"></script>
@@ -16,7 +17,8 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=Unbounded:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Wix+Madefor+Display:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -29,892 +31,855 @@
             k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
             (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
         
-            ym(98823704, "init", {
-                clickmap:true,
-                trackLinks:true,
-                accurateTrackBounce:true,
-                webvisor:true
-            });
+            ym(98823704, "init", { clickmap:true, trackLinks:true, accurateTrackBounce:true, webvisor:true });
         }, 1000);
     </script>
     <noscript><div><img src="https://mc.yandex.ru/watch/98823704" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
-    <!-- /Yandex.Metrika counter -->
 
     <style>
         :root {
-            --color-bg: #0F0818;
-            --color-surface: rgba(30, 24, 48, 0.5);
-            --color-border: rgba(97, 109, 240, 0.2);
-            --color-text-primary: #f0f0f0;
-            --color-text-secondary: #a0a0b0;
-            --color-accent-primary: #616DF0;
-            --color-accent-secondary: #79EF66;
+            --bg-main: #111119;
+            --card-bg: rgba(24, 24, 36, 0.7);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --card-border-hover: rgba(255, 255, 255, 0.16);
+            --accent-indigo: #4F46E5;
+            --accent-emerald: #10B981;
+            --accent-amber: #F59E0B;
+            --spring-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+            --spring-smooth: cubic-bezier(0.16, 1, 0.3, 1);
         }
-        body { background-color: var(--color-bg); font-family: 'Inter', sans-serif; }
-        h1, h2, h3 { font-family: 'Unbounded', sans-serif; }
-        .gradient-text {
-            background: linear-gradient(45deg, var(--color-accent-primary), var(--color-accent-secondary));
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+
+        body {
+            background-color: var(--bg-main);
+            font-family: 'Golos Text', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: #F3F4F6;
+            letter-spacing: -0.01em;
+            overflow-x: hidden;
         }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(15px); }
-            to { opacity: 1; transform: translateY(0); }
+
+        h1, h2, h3, h4, .font-display {
+            font-family: 'Wix Madefor Display', sans-serif;
+            letter-spacing: -0.025em;
         }
-        .animate-fadeIn {
-            animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+
+        .font-mono-nums { 
+            font-family: 'JetBrains Mono', monospace; 
+            letter-spacing: -0.02em;
         }
-        .chart-wrapper {
+
+        .glass-panel {
+            background: var(--card-bg);
+            backdrop-filter: blur(28px);
+            -webkit-backdrop-filter: blur(28px);
+            border: 1px solid var(--card-border);
+            box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.65);
+            position: relative;
+        }
+
+        /* DYNAMIC ISLAND CAPSULE */
+        .island-capsule {
+            background: rgba(22, 21, 26, 0.94);
+            backdrop-filter: blur(28px);
+            -webkit-backdrop-filter: blur(28px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.7);
+            border-radius: 9999px;
+            transition: max-width 0.4s var(--spring-bounce), padding 0.3s var(--spring-smooth), transform 0.35s var(--spring-bounce);
+        }
+        .island-capsule.mode-header { max-width: 52rem; width: 100%; padding: 0.5rem 1.25rem; }
+        .island-capsule.mode-notify { max-width: 22rem; width: auto; padding: 0.5rem 1.25rem; transform: scale(1.02); }
+
+        /* САЛОННЫЕ КНОПКИ */
+        .master-pill-btn {
+            background: linear-gradient(180deg, #4F46E5 0%, #4338CA 100%);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            box-shadow: 0 10px 24px -6px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+            transition: all 0.2s var(--spring-bounce);
+        }
+        .master-pill-btn:hover {
+            background: linear-gradient(180deg, #554BF0 0%, #4639D4 100%);
+            border-color: rgba(255, 255, 255, 0.26);
+            box-shadow: 0 14px 28px -6px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
+        }
+        .master-pill-btn:active { transform: scale(0.98) translateY(1px); }
+
+        .spring-btn {
+            transition: transform 0.2s var(--spring-bounce), background-color 0.15s, border-color 0.15s, box-shadow 0.15s;
+        }
+        .spring-btn:hover { transform: translateY(-1px); }
+        .spring-btn:active { transform: scale(0.975) translateY(1px); }
+
+        /* STAGGERED MOTION ORCHESTRATION */
+        .stagger-in {
+            opacity: 0;
+            transform: translateY(12px) scale(0.99);
+            filter: blur(4px);
+            animation: staggerArrival 0.42s var(--spring-smooth) forwards;
+            will-change: transform, opacity, filter;
+        }
+
+        @keyframes staggerArrival {
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+                filter: blur(0);
+            }
+        }
+
+        .stagger-d-1 { animation-delay: 0.04s; }
+        .stagger-d-2 { animation-delay: 0.08s; }
+        .stagger-d-3 { animation-delay: 0.13s; }
+        .stagger-d-4 { animation-delay: 0.19s; }
+        .stagger-d-5 { animation-delay: 0.25s; }
+        .stagger-d-6 { animation-delay: 0.31s; }
+
+        /* НАВИГАЦИОННЫЕ ДОКИ */
+        .motion-dock-desktop {
+            opacity: 0;
+            transform: translateY(calc(-50% + 12px)) scale(0.99);
+            filter: blur(4px);
+            animation: dockArrivalDesktop 0.45s var(--spring-smooth) forwards;
+            will-change: transform, opacity, filter;
+        }
+        @keyframes dockArrivalDesktop {
+            to {
+                opacity: 1;
+                transform: translateY(-50%) scale(1);
+                filter: blur(0);
+            }
+        }
+
+        .motion-dock-mobile {
+            opacity: 0;
+            transform: translate(-50%, 12px) scale(0.99);
+            filter: blur(4px);
+            animation: dockArrivalMobile 0.45s var(--spring-smooth) forwards;
+            will-change: transform, opacity, filter;
+        }
+        @keyframes dockArrivalMobile {
+            to {
+                opacity: 1;
+                transform: translate(-50%, 0) scale(1);
+                filter: blur(0);
+            }
+        }
+
+        /* SVG GAUGE MINI */
+        .mini-gauge-track { stroke: rgba(255, 255, 255, 0.08); }
+        .mini-gauge-fill {
+            transition: stroke-dashoffset 1.1s var(--spring-smooth);
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+            stroke-linecap: round;
+        }
+
+        .chart-box {
             position: relative;
             width: 100%;
-        }
-        .chart-wrapper canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100% !important;
-            height: 100% !important;
+            height: 100%;
         }
 
-        #attempt-modal {
-            position: fixed;
-            inset: 0;
-            background-color: rgba(0, 0, 0, 0.8);
-            z-index: 50;
-            
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 1rem;
-
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease;
-        }
-        #attempt-modal.is-visible {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        /* Контентная часть модалки */
-        #attempt-modal-content {
-            background: var(--color-surface);
-            width: 100%;
-            max-width: 42rem;
-            border-radius: 1.5rem;
-            border: 1px solid var(--color-border);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            display: flex;
-            flex-direction: column;
-            max-height: 90vh;
-            padding: 1.5rem 2rem;
-            transform: scale(0.95);
-            transition: transform 0.3s ease;
-        }
-        #attempt-modal.is-visible #attempt-modal-content {
-            transform: scale(1);
-        }
-
-        #modal-answers-list {
-            overflow-y: auto;
-            flex-grow: 1;
-            padding-right: 0.5rem;
-        }
-
-        body.modal-open {
-            overflow: hidden;
-        }
-
-        
-        .floating-action-bar {
-            position: fixed;
-            bottom: 1.25rem;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 0.5rem;
-            padding: 0.5rem;
-            background: linear-gradient(135deg, rgba(30, 24, 48, 0.4), rgba(30, 24, 48, 0.2));
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border-radius: 9999px;
-            border: 1px solid transparent;
-            background-clip: padding-box;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), 
-                        inset 0 1px 1px rgba(255, 255, 255, 0.05);
-            z-index: 50;
-            transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
-        }
-
-        .floating-action-bar a, .floating-action-bar button {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.75rem;
-            height: 3rem;
-            padding: 0 1.25rem;
-            border: none;
-            border-radius: 9999px;
-            font-size: 1rem;
-            font-weight: 600;
-            text-decoration: none;
-            white-space: nowrap;
-            cursor: pointer;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .floating-action-bar .copy-btn,
-        .floating-action-bar a[title="Создать свой"] {
-            width: 3rem;
-            padding: 0;
-        }
-
-        .floating-action-bar a:hover, 
-        .floating-action-bar button:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
-        }
-
-        .floating-action-bar a:active,
-        .floating-action-bar button:active {
-            transform: translateY(-1px) scale(0.98);
-        }
-
-        .floating-action-bar a[href*="take_test"],
-        .floating-action-bar button.bg-\[\--color-accent-primary\] {
-            background-color: var(--color-accent-primary);
-            color: white;
-        }
-
-        .floating-action-bar a[href*="preview_test_result"],
-        .floating-action-bar button.bg-\[\--color-accent-secondary\] {
-            background-color: var(--color-accent-secondary);
-            color: var(--color-bg);
-        }
-
-        .floating-action-bar a.copy-btn,
-        .floating-action-bar a[title="Создать свой"] {
-            background-color: rgba(255, 255, 255, 0.1);
-            color: white;
-        }
-        .floating-action-bar a.copy-btn:hover,
-        .floating-action-bar a[title="Создать свой"]:hover {
-            background-color: rgba(255, 255, 255, 0.2);
-        }
-
-        .apple-toast {
-            position: fixed;
-            top: -100px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            padding: 0.75rem 1rem;
-            background: linear-gradient(135deg, rgba(40, 35, 60, 0.7), rgba(30, 24, 48, 0.6));
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            color: white;
-            font-weight: 600;
-            font-size: 0.9rem;
-            border-radius: 9999px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4),
-                        inset 0 1px 1px rgba(255, 255, 255, 0.05);
-            z-index: 1000;
-            transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
-            width: max-content;
-        }
-
-        .apple-toast--visible {
-            transform: translateX(-50%) translateY(220px);
-        }
-
-        .apple-toast .icon-success {
-            font-size: 1.1rem;
-            color: var(--color-accent-secondary);
-        }
-
-        .apple-toast .icon-error {
-            font-size: 1.1rem;
-            color: #EF4444;
-        }
-
-        .radial-progress {
-            display: inline-grid; place-content: center; position: relative;
-            background: conic-gradient(var(--color-accent-primary) calc(var(--value) * 1%), #40404055 0);
-            border-radius: 50%; width: 100%; height: 100%;
-        }
-        .radial-progress::before {
-            content: ""; position: absolute; border-radius: 50%;
-            inset: 15%; background: var(--color-surface);
-        }
+        body.modal-open { overflow: hidden; }
     </style>
 </head>
-<body class="text-[var(--color-text-primary)]">
-    <main class="max-w-4xl mx-auto px-4 py-8 sm:py-12 space-y-8 animate-fadeIn">
-        
-        <header class="sticky top-4 z-40 max-w-3xl  mx-auto">
-            <div class="relative max-w-3xl mx-auto">
-                <!-- Основная панель хедера -->
-                <div class="flex items-center justify-between gap-4 
-                    bg-[var(--color-surface)]/80 backdrop-blur-xl 
-                    rounded-[32px] border border-[var(--color-border)] 
-                    pl-4 pr-4 py-2 shadow-2xl shadow-black/50">
-                    <!-- Логотип -->
-                    <a href="/" class="flex-shrink-0">
-                        <img src="{% static 'img/logo.png' %}" alt="Летучка Логотип" class="w-8 h-auto">
-                    </a>
-                    <!-- Контекстная информация (скрыта на мобильных) -->
-                    <div class="hidden sm:flex flex-col items-center min-w-0">
-                        <h1 class="text-sm font-bold text-white truncate" title="{{ title }}">{{ title | truncatechars:40  }}</h1>
-                        <div class="flex items-center gap-2 text-xs text-gray-400">
-                            <span>{{ author }}</span>
-                            <span class="text-gray-600">•</span>
-                            <div class="flex items-center gap-1.5" title="{{ view_count }} просмотров">
-                                <i class="fas fa-eye text-xs"></i>
-                                <span>{{ view_count }}</span>
-                            </div>
+<body class="min-h-full flex flex-col justify-between antialiased selection:bg-indigo-600 selection:text-white relative">
+
+    <!-- ЛЕВЫЙ ВЕРТИКАЛЬНЫЙ ДОК (DESKTOP) -->
+    <aside class="motion-dock-desktop hidden lg:flex fixed left-5 top-1/2 flex-col items-center gap-6 py-6 px-3.5 glass-panel rounded-[28px] z-40 shadow-2xl">
+        <a href="/" class="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors" title="Главная">
+            <img src="{% static 'img/logo.png' %}" alt="Logo" class="w-5 h-auto">
+        </a>
+        <div class="w-6 h-px bg-white/10"></div>
+        <nav class="flex flex-col gap-4">
+            <a href="{% url 'create' %}" class="w-11 h-11 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-600/30 spring-btn" title="Создать тест">
+                <i class="fas fa-plus text-sm"></i>
+            </a>
+            {% if username != 0 %}
+                <a href="{% url 'history' %}" class="w-11 h-11 rounded-2xl bg-white/5 border border-white/5 text-gray-400 flex items-center justify-center hover:text-white hover:bg-white/10 spring-btn" title="История тестов">
+                    <i class="fa-sharp fa-solid fa-clock-rotate-left fa-layer-group text-sm"></i>
+                </a>
+                <a href="{% url 'profile_redirect' %}" class="w-11 h-11 rounded-2xl bg-white/5 border border-white/5 text-gray-400 flex items-center justify-center hover:text-white hover:bg-white/10 spring-btn" title="Профиль">
+                    <i class="fas fa-user-astronaut text-sm"></i>
+                </a>
+            {% endif %}
+        </nav>
+        {% if username != 0 %}
+            <div class="w-6 h-px bg-white/10 mt-auto"></div>
+            <a href="{% url 'logout' %}" class="w-11 h-11 rounded-2xl text-gray-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors flex items-center justify-center" title="Выйти">
+                <i class="fas fa-arrow-right-from-bracket text-sm"></i>
+            </a>
+        {% endif %}
+    </aside>
+
+    <!-- МОБИЛЬНЫЙ НИЖНИЙ DOCK -->
+    <nav class="motion-dock-mobile lg:hidden fixed bottom-4 left-1/2 island-capsule rounded-full px-6 py-3 flex items-center gap-6 z-40 shadow-2xl">
+        <a href="/" class="text-gray-400 hover:text-white"><i class="fas fa-home text-base"></i></a>
+        <a href="{% url 'create' %}" class="w-9 h-9 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-600/30"><i class="fas fa-plus text-sm"></i></a>
+        {% if username != 0 %}
+            <a href="{% url 'history' %}" class="text-gray-400 hover:text-white"><i class="fas fa-layer-group text-base"></i></a>
+            <a href="{% url 'profile_redirect' %}" class="text-gray-400 hover:text-white"><i class="fas fa-user text-base"></i></a>
+        {% else %}
+            <a href="/login" class="text-xs font-semibold text-indigo-400">Войти</a>
+        {% endif %}
+    </nav>
+
+    <!-- ГЛАВНАЯ ОБЛАСТЬ (С ОТСТУПОМ ПОД ЛЕВУЮ ПАНЕЛЬ) -->
+    <div class="lg:pl-24 xl:pl-28 flex-grow flex flex-col w-full">
+
+        <!-- DYNAMIC ISLAND HEADER С UNIX-ПУТЕМ -->
+        <header class="stagger-in stagger-d-1 sticky top-4 z-40 w-full px-4 flex justify-center pointer-events-none">
+            <div id="dynamic-island" class="island-capsule mode-header pointer-events-auto flex items-center justify-between backdrop-blur-2xl relative overflow-hidden min-h-[48px]">
+                
+                <div id="island-controls" class="w-full flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-2 sm:gap-2.5 text-xs font-semibold min-w-0">
+                        
+                        <div class="flex items-center gap-2.5 text-xs font-semibold">
+                            <a href="/" class="flex-shrink-0 hover:opacity-80 transition-opacity mr-0.5">
+                                <img src="{% static 'img/logo.png' %}" alt="Logo" class="w-5 h-auto">
+                            </a>
+                            <span class="text-gray-500 select-none">/</span>
+                            <span class="text-white font-medium truncate max-w-[130px] sm:max-w-[190px] md:max-w-xs" title="{{ title }}">
+                                {{ survey.title }}
+                            </span>
+                            <span class="text-gray-500 select-none">/</span>
+                            <span class="text-white font-medium truncate max-w-[130px] sm:max-w-[190px] md:max-w-xs" title="{{ title }}">
+                                Аналитика
+                            </span>
                         </div>
                     </div>
-                    <!-- "Кнопка Действий" (Action Button) -->
-                    <div class="flex-shrink-0">
-                        <button id="action-menu-btn" class="h-12 w-12 flex items-center justify-center bg-black/20 rounded-full hover:bg-black/40 transition-colors transition-transform active:scale-[.95]">
-                            <i class="fas fa-ellipsis-h text-[var(--color-accent-primary)]"></i>
-                        </button>
-                    </div>
-                </div>
-                <!-- Выпадающее меню -->
-                <div id="action-menu" class="hidden absolute top-full right-0 mt-2 w-64
-                                            bg-[var(--color-surface)]/90 backdrop-blur-xl 
-                                            rounded-3xl border border-[var(--color-border)]
-                                            p-2 shadow-2xl shadow-black/50
-                                            origin-top-right transition-all duration-200 ease-out 
-                                            transform opacity-0 scale-95 z-50">
-                    <nav class="flex flex-col">
-                        {% if username != 0 %}
-                            
-                            <a href="{% url 'create' %}" class="flex items-center gap-3 px-4 py-3 text-white font-semibold rounded-3xl hover:bg-white/5 transition-transform active:scale-[.97]"><i class="fas fa-plus w-5 text-center text-gray-400"></i><span>Создать новый</span></a>
-                            <a href="{% url 'history' %}" class="flex items-center gap-3 px-4 py-3 text-white font-semibold rounded-3xl hover:bg-white/5 transition-transform active:scale-[.97]"><i class="fas fa-history w-5 text-center text-gray-400"></i><span>История тестов</span></a>
-                            <a href="{% url 'profile_redirect' %}" class="flex items-center gap-3 px-4 py-3 text-white font-semibold rounded-3xl hover:bg-white/5 transition-transform active:scale-[.97]"><i class="fas fa-user-circle w-5 text-center text-gray-400"></i><span>Мой профиль</span></a>
-                            
-                            <hr class="border-t border-[var(--color-border)] my-1">
-                            <a href="{% url 'logout' %}" class="flex items-center gap-3 px-4 py-3 text-red-400 font-semibold rounded-3xl hover:bg-white/5 transition-transform active:scale-[.97]"><i class="fas fa-sign-out-alt w-5 text-center"></i><span>Выйти</span></a>
 
-                        {% else %}
-                            <a href="/#transformation-engine" class="px-4 py-3 text-white font-semibold rounded-3xl hover:bg-white/5 transition-transform active:scale-[.97]">Как начать</a>
-                            <a href="/#use-cases" class="px-4 py-3 text-white font-semibold rounded-3xl hover:bg-white/5 transition-transform active:scale-[.97]">Кейсы</a>
-                            <a href="/#analytics-showcase" class="px-4 py-3 text-white font-semibold rounded-3xl hover:bg-white/5 transition-transform active:scale-[.97]">Аналитика</a>
-                            <a href="/#faq" class="px-4 py-3 text-white font-semibold rounded-3xl hover:bg-white/5 transition-transform active:scale-[.97]">FAQ</a>
-                            <hr class="border-t border-[var(--color-border)] my-1">
-                            <a href="/register" class="block text-center bg-[var(--color-accent-primary)] text-white px-5 py-3 font-bold rounded-3xl mt-1">Зарегистрироваться</a>
-                        {% endif %}
-                    </nav>
-                </div>
-            </div>
-
-            <div class="mt-2 pt-1 pl-2 pr-2 flex justify-between items-center gap-3
-                flex items-center justify-between gap-4 
-                bg-[var(--color-surface)]/80 backdrop-blur-xl 
-                rounded-[32px] border border-[var(--color-border)] 
-                pl-4 pr-4 py-2 shadow-2xl shadow-black/50">
-                    
-                    <div class="flex justify-end">
+                    <div class="flex items-center gap-2 text-xs flex-shrink-0">
                         <a href="{% url 'preview_test' survey.survey_id %}" 
-                        class="group inline-flex items-center gap-2 
-                                bg-indigo-600 hover:bg-indigo-500 
-                                text-white text-sm font-bold 
-                                py-2.5 px-6 rounded-full hover:shadow-indigo-500/60 
-                                transition-all duration-300 ease-out 
-                                transform hover:-translate-y-0.5 hover:scale-105 active:scale-95">
-                            
-                                <i class="fas fa-arrow-left transition-transform duration-300 group-hover:translate-x-1"></i>
-                            <span class="text-xs">К вопросам</span>
+                           class="px-3.5 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white text-[11px] font-semibold transition-all spring-btn flex items-center gap-1.5">
+                            <i class="fas fa-list-check text-[10px] text-gray-400"></i>
+                            <span>К вопросам</span>
                         </a>
                     </div>
                 </div>
+
+                <!-- СЛОЙ МОРФИНГА ОПОВЕЩЕНИЙ В ОСТРОВКЕ -->
+                <div id="island-notice" class="hidden w-full items-center justify-center gap-2.5 select-none font-mono-nums text-xs">
+                    <span id="island-icon-box" class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] bg-emerald-500 text-black font-bold">
+                        <i class="fas fa-check"></i>
+                    </span>
+                    <span id="island-text" class="font-semibold text-white"></span>
+                </div>
+
+            </div>
         </header>
 
-        <div class="mx-auto mt-8">
-            <div class="bg-[var(--color-surface)] p-6 rounded-[2rem] border border-[var(--color-border)] shadow-2xl">
-                
-                <!-- Основные CTA кнопки -->
-                <div class="grid grid-cols-1 gap-3 mb-6">
-                    <p class="mt-2 text-sm mb-2 text-center text-gray-400 max-w-md mx-auto">
-                        Отправьте эту ссылку ученикам,<br>чтобы получить аналитику их ответов.
-                    </p>
-                    <!-- ПОДЕЛИТЬСЯ -->
-                    <button data-action="share" data-share-url="{% url 'take_test' survey.survey_id %}" 
-                            class="flex items-center justify-center gap-3 py-4 bg-[var(--color-accent-secondary)] text-black font-black rounded-2xl
-                                transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-[var(--color-accent-secondary)]/20">
-                        <i class="fas fa-share-alt text-sm"></i>
-                        <span class="uppercase tracking-widest text-xs">Поделиться</span>
-                    </button>
-                </div>
+        <!-- РАБОЧИЙ ДЕШБОРД (EXECUTIVE COCKPIT) -->
+        <main class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 flex-grow space-y-6">
+            <section class="stagger-in stagger-d-2 glass-panel rounded-[36px] p-6 sm:p-8 lg:p-9 relative overflow-hidden">
+                <div class="absolute -top-20 -left-20 w-80 h-80 rounded-full bg-indigo-600/[0.12] blur-[100px] pointer-events-none"></div>
 
-                <!-- Вспомогательные инструменты -->
-                <div class="flex items-center justify-around border-t border-white/5 pt-2">
-                    <!-- QR -->
-                    <button onclick="showClassroomQR()" class="flex flex-col items-center gap-2 group transition-transform active:scale-[0.95]">
-                        <div class="h-10 w-10 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-white/10 transition-colors">
-                            <i class="fas fa-qrcode text-gray-400 group-hover:text-indigo-400"></i>
+                <div class="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                    <div class="space-y-3 min-w-0">
+                        <div class="flex flex-wrap items-center gap-2.5 font-mono-nums text-xs">
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#151419] border border-white/10 text-gray-300">
+                                <span class="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
+                                <span>Автор: <strong class="text-white font-sans">{{ author }}</strong></span>
+                            </span>
+                            <span class="text-gray-600">•</span>
+                            <span class="text-gray-400">{{ date_create }}</span>
+                            <span class="text-gray-600">•</span>
+                            <span class="text-gray-400"><strong class="text-white">{{ view_count }}</strong> просмотров</span>
                         </div>
-                        <span class="text-[9px] font-bold text-gray-500 uppercase tracking-tighter">QR-код</span>
-                    </button>
 
-                    <!-- PDF -->
-                    <a href="{% url 'download-survey_pdf' survey.survey_id %}" class="flex flex-col items-center gap-2 group transition-transform active:scale-[0.95]">
-                        <div class="h-10 w-10 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-white/10 transition-colors">
-                            <i class="fas fa-file-pdf text-gray-400 group-hover:text-indigo-400"></i>
-                        </div>
-                        <span class="text-[9px] font-bold text-gray-500 uppercase tracking-tighter">Скачать PDF</span>
-                    </a>
+                        <h1 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight font-display truncate">
+                            {{ survey.title }}
+                        </h1>
+                        <p class="text-xs sm:text-sm text-gray-400 max-w-2xl leading-relaxed">
+                            Панель мониторинга результатов. Статистика ответов, аналитика сложности вопросов и рейтинг учеников в реальном времени.
+                        </p>
+                    </div>
 
+                    <!-- ПУЛЬТ ДЕЙСТВИЙ -->
+                    <div class="flex flex-wrap items-center gap-2.5 flex-shrink-0">
+                        <!-- Поделиться ссылкой -->
+                        <button type="button" data-action="share" data-share-url="{% url 'take_test' survey.survey_id %}" 
+                                class="master-pill-btn h-11 px-5 rounded-full text-white text-xs font-bold flex items-center gap-2 select-none spring-btn">
+                            <i class="fas fa-link text-xs"></i>
+                            <span>Поделиться ссылкой</span>
+                        </button>
 
-                    {% if is_creator %}
-                        {% if username != 0 %}
-                            <!-- ПЕРЕДЕЛАТЬ -->
-                            <button onclick="regenerateSurvey('{{ survey.survey_id }}')" class="flex flex-col items-center gap-2 group transition-transform active:scale-[0.95]">
-                                <div class="h-10 w-10 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-white/10 transition-colors">
-                                    <i class="fas fa-sync-alt text-gray-400 group-hover:text-indigo-400"></i>
-                                </div>
-                                <span class="text-[9px] font-bold text-gray-500 uppercase tracking-tighter">Переделать</span>
+                        <!-- QR Код -->
+                        <button type="button" onclick="showClassroomQR()" 
+                                class="h-11 px-4 rounded-full bg-[#16151A] hover:bg-white/10 border border-white/10 text-white text-xs font-semibold flex items-center gap-2 spring-btn" title="QR-код для экрана">
+                            <i class="fas fa-qrcode text-gray-400"></i>
+                            <span class="hidden sm:inline">QR-код</span>
+                        </button>
+
+                        <!-- Скачать PDF -->
+                        <a href="{% url 'download-survey_pdf' survey.survey_id %}" 
+                           class="h-11 px-4 rounded-full bg-[#16151A] hover:bg-white/10 border border-white/10 text-white text-xs font-semibold flex items-center gap-2 spring-btn" title="Скачать PDF бланк">
+                            <i class="fas fa-file-pdf text-gray-400"></i>
+                            <span class="hidden sm:inline">PDF</span>
+                        </a>
+
+                        <!-- Экспорт в Excel -->
+                        {% if subscription_level > 0 %}
+                            <a href="{% url 'export_results_to_excel' survey.survey_id %}" 
+                               class="h-11 px-4 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/25 text-emerald-300 text-xs font-bold flex items-center gap-2 spring-btn">
+                                <i class="fas fa-file-excel"></i>
+                                <span>Excel</span>
+                            </a>
+                        {% else %}
+                            <button type="button" id="export-trigger-button" 
+                                    class="h-11 px-4 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 text-xs font-semibold flex items-center gap-2 spring-btn">
+                                <i class="fas fa-lock text-[10px] text-amber-400"></i>
+                                <i class="fas fa-file-excel text-gray-400"></i>
+                                <span>Excel</span>
                             </button>
                         {% endif %}
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-        
-        <div>
-            <span class="text-xs flex justify-center mt-0 p-0 text-white/75">{{ date_create }}</span>
-            <h1 class="text-xl sm:text-xl font-bold text-white text-center">{{ survey.title }}</h1>
-        </div>
 
-        <div class="space-y-6">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <!-- КАРТОЧКА 1 -->
-                <div class="bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] shadow-2xl shadow-black/50">
-                    <h3 class="text-base font-bold text-white mb-4">Общая сводка</h3>
-                    <div class="space-y-4">
-                        <div class="flex justify-between items-baseline">
-                            <p class="text-gray-400">Всего прохождений</p>
-                            <p class="text-3xl font-extrabold text-white">{{ total_attempts }}</p>
-                        </div>
-                        <div class="flex justify-between items-baseline">
-                            <p class="text-gray-400">Просмотры теста</p>
-                            <p class="text-3xl font-extrabold text-white">{{ view_count }}</p>
-                        </div>
-                        <div class="flex justify-between items-baseline border-t border-[var(--color-border)] pt-3">
-                            <p class="text-gray-400">Идеальные попытки</p>
-                            <p class="text-3xl font-extrabold text-amber-400">{{ perfect_attempts_percent|floatformat:0 }}%</p>
-                        </div>
+                        <!-- Пересобрать тест (ИИ) -->
+                        {% if username != 0 %}
+                            <button type="button" onclick="regenerateSurvey('{{ survey.survey_id }}')" 
+                                    class="h-11 w-11 rounded-full bg-[#16151A] hover:bg-rose-500/15 hover:border-rose-500/30 text-gray-400 hover:text-rose-400 border border-white/10 flex items-center justify-center spring-btn" title="Пересобрать вопросы с ИИ">
+                                <i class="fas fa-rotate text-xs"></i>
+                            </button>
+                        {% endif %}
                     </div>
                 </div>
-
-                <!-- КАРТОЧКА 2 -->
-                <div class="bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] shadow-2xl shadow-black/50 flex flex-col justify-center items-center">
-                    <h3 class="text-base font-bold text-white mb-4">Средний балл</h3>
-                    <div class="relative w-36 h-36 flex items-center justify-center">
-                        <div style="--value:{{ average_score_percent|floatformat:0 }};" class="radial-progress gradient-text text-lg" role="progressbar">
-                            <span class="text-white font-extrabold text-5xl">{{ average_score_percent|floatformat:0 }}<span class="text-3xl opacity-50">%</span></span>
-                        </div>
-                    </div>
-                    <p class="text-sm text-gray-400 text-center mt-3">Медианный балл: <span class="font-bold text-white">{{ median_score|floatformat:0 }}</span></p>
-                </div>
-
-                <!-- КАРТОЧКА 3 -->
-                <div class="bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] shadow-2xl shadow-black/50 flex flex-col">
-                    <div><h3 class="text-base font-bold text-white">Процент успеха</h3></div>
-                    <div class="flex-grow flex items-center justify-center my-4">
-                        <p class="text-8xl font-extrabold" style="color: {{ success_rate_color }};">{{ success_rate|floatformat:0 }}</p>
-                    </div>
-                    <div class="w-full bg-black/30 rounded-full h-4">
-                        <div class="h-4 rounded-full" style="width: {{ success_rate }}%; background-color: {{ success_rate_color }};"></div>
-                    </div>
-                </div>
-            </div>
-
-            <section class="my-16 animate-fadeIn">
-                <a href="{% url 'media_view' 'ot-paragrafa-v-uchebnike-do-pervykh-rezultatov-i-otcheta-v-excel' %}" 
-                class="group block max-w-auto mx-auto p-4 bg-[var(--color-surface)] rounded-3xl border border-[var(--color-border)] 
-                        transition-all duration-300 hover:border-[var(--color-accent-primary)] hover:-translate-y-1">
-                    
-                    <div class="flex flex-col sm:flex-row items-center gap-6 text-center sm:text-left">
-                        <div class="flex-shrink-0">
-                            <div class="flex items-center justify-center h-16 w-16 rounded-2xl bg-black/30 border border-[var(--color-border)]
-                                        transition-all duration-300 group-hover:bg-[var(--color-accent-primary)]/20 group-hover:border-[var(--color-accent-primary)]/50 group-hover:scale-110">
-                                <i class="fas fa-graduation-cap text-3xl text-[var(--color-accent-primary)] transition-colors duration-300 group-hover:text-white"></i>
-                            </div>
-                        </div>
-                        <div class="flex-grow">
-                            <h3 class="font-bold text-white/90 text-base">Не знаете, с чего начать?</h3>
-                            <p class="mt-2 text-sm text-gray-400">
-                                Мы&nbsp;написали подробный гайд о&nbsp;том, как читать дашборды и&nbsp;превращать сухие цифры в&nbsp;полезные инсайты для улучшения обучения.
-                            </p>
-                        </div>
-                        <div class="flex-shrink-0 text-3xl text-gray-600 transition-transform duration-300 group-hover:translate-x-2 group-hover:text-[var(--color-accent-primary)]">
-                            <i class="fas fa-arrow-right"></i>
-                        </div>
-                    </div>
-
-                </a>
             </section>
 
-            <!-- БЛОК ПЛАТНОЙ АНАЛИТИКИ -->
-            <div class="relative">
-                <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 transition-all duration-500 
-                    {% if subscription_level == 0 %}filter blur-lg opacity-40 pointer-events-none select-none{% endif %}">
-                    
-                    <div class="lg:col-span-3 bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] shadow-2xl shadow-black/50">
-                        <h3 class="text-base font-bold text-white mb-4">Активность за 7 дней</h3>
-                        <div class="chart-wrapper h-64"><canvas id="activityChart"></canvas></div>
+            <!-- 2. KPI МЕТРИЧЕСКИЙ ПОЯС -->
+            <section class="stagger-in stagger-d-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                
+                <div class="glass-panel p-5 sm:p-6 rounded-[28px] space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-gray-400 uppercase tracking-wider font-mono-nums">Прохождения</span>
+                        <span class="w-7 h-7 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center text-xs">
+                            <i class="fas fa-users"></i>
+                        </span>
                     </div>
-                    <div class="lg:col-span-2 bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] shadow-2xl shadow-black/50">
-                        <h3 class="text-base font-bold text-white mb-4">Распределение баллов</h3>
-                        <div class="chart-wrapper h-64"><canvas id="scoresDistributionChart"></canvas></div>
+                    <div class="flex items-baseline justify-between">
+                        <span class="text-3xl sm:text-4xl font-extrabold text-white font-mono-nums">
+                            {{ total_attempts }}
+                        </span>
+                        <span class="text-xs font-mono-nums text-gray-400 font-semibold">
+                            {{ conversion_rate|floatformat:0 }}% CR
+                        </span>
                     </div>
-                    <div class="lg:col-span-5 bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] shadow-2xl shadow-black/50">
-                        <h3 class="text-base font-bold text-white mb-4">Анализ вопросов</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div class="bg-black/20 p-4 rounded-xl flex items-start gap-4">
-                                <i class="fas fa-brain text-xl text-red-400 pt-1"></i>
-                                <div class="min-w-0">
-                                    <p class="text-sm font-semibold text-red-400">Самый сложный вопрос</p>
-                                    {% if question_insights.hardest %}
-                                        <p class="text-sm text-gray-300 truncate">{{ question_insights.hardest.text }}</p>
-                                        <p class="text-lg font-bold text-white">{{ question_insights.hardest.rate|floatformat:0 }}% <span class="text-xs text-gray-500">верно</span></p>
-                                    {% else %}<p class="text-sm text-gray-500 mt-1">Недостаточно данных</p>{% endif %}
-                                </div>
-                            </div>
-                            <div class="bg-black/20 p-4 rounded-xl flex items-start gap-4">
-                                <i class="fas fa-star text-xl text-green-400 pt-1"></i>
-                                <div class="min-w-0">
-                                    <p class="text-sm font-semibold text-green-400">Самый легкий вопрос</p>
-                                    {% if question_insights.easiest %}
-                                        <p class="text-sm text-gray-300 truncate">{{ question_insights.easiest.text }}</p>
-                                        <p class="text-lg font-bold text-white">{{ question_insights.easiest.rate|floatformat:0 }}% <span class="text-xs text-gray-500">верно</span></p>
-                                    {% else %}<p class="text-sm text-gray-500 mt-1">Недостаточно данных</p>{% endif %}
-                                </div>
-                            </div>
+                    <p class="text-[11px] text-gray-500 font-mono-nums">Конверсия из {{ view_count }} просмотров</p>
+                </div>
+
+                <!-- 2. Средний балл -->
+                <div class="glass-panel p-5 sm:p-6 rounded-[28px] space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-gray-400 uppercase tracking-wider font-mono-nums">Средний балл</span>
+                        <span class="w-7 h-7 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs">
+                            <i class="fas fa-bullseye"></i>
+                        </span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-3xl sm:text-4xl font-extrabold text-white font-mono-nums">
+                            {{ average_score_percent|floatformat:0 }}<span class="text-2xl text-gray-500 font-light">%</span>
+                        </span>
+                        
+                        <div class="relative w-11 h-11 flex items-center justify-center">
+                            <svg class="w-full h-full" viewBox="0 0 36 36">
+                                <path class="mini-gauge-track" stroke-width="3.5" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                <path class="mini-gauge-fill" stroke="#10B981" stroke-width="3.5" stroke-dasharray="100, 100" stroke-dashoffset="{{ 100|add:'-average_score_percent' }}" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                            </svg>
                         </div>
                     </div>
-                    <div class="lg:col-span-5 grid grid-cols-1 lg:grid-cols-2 gap-6">
-                         
-                         <div class="bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] shadow-2xl shadow-black/50">
-                            <h3 class="text-base font-bold text-white mb-4 flex items-center gap-2">
-                                <i class="fas fa-trophy text-amber-400"></i>
-                                Таблица лидеров
-                            </h3>
-                            <ul class="space-y-3">
+                    <p class="text-[11px] text-gray-500 font-mono-nums">Медиана группы: <span class="text-white font-semibold">{{ median_score|floatformat:0 }} баллов</span></p>
+                </div>
+
+                <!-- 3. Идеальные сдачи -->
+                <div class="glass-panel p-5 sm:p-6 rounded-[28px] space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-gray-400 uppercase tracking-wider font-mono-nums">Без ошибок</span>
+                        <span class="w-7 h-7 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-xs">
+                            <i class="fas fa-crown"></i>
+                        </span>
+                    </div>
+                    <div class="flex items-baseline justify-between">
+                        <span class="text-3xl sm:text-4xl font-extrabold text-amber-400 font-mono-nums">
+                            {{ perfect_attempts_percent|floatformat:0 }}<span class="text-2xl text-amber-500/60 font-light">%</span>
+                        </span>
+                        <span class="text-[10px] uppercase font-mono-nums tracking-wider text-amber-300 font-bold bg-amber-500/15 px-2 py-0.5 rounded-full">100% балл</span>
+                    </div>
+                    <p class="text-[11px] text-gray-500 font-mono-nums">Ученики с абсолютным результатом</p>
+                </div>
+
+                <!-- 4. Успеваемость (Pass Rate) -->
+                <div class="glass-panel p-5 sm:p-6 rounded-[28px] space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-gray-400 uppercase tracking-wider font-mono-nums">Успеваемость</span>
+                        <span class="w-7 h-7 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center text-xs">
+                            <i class="fas fa-chart-line"></i>
+                        </span>
+                    </div>
+                    <div class="flex items-baseline justify-between">
+                        <span class="text-3xl sm:text-4xl font-extrabold font-mono-nums" style="color: {{ success_rate_color|default:'#10B981' }};">
+                            {{ success_rate|floatformat:0 }}<span class="text-2xl text-gray-500 font-light">%</span>
+                        </span>
+                        <span class="text-xs text-gray-500 font-mono-nums">сдали тест</span>
+                    </div>
+                    <div class="w-full bg-[#18171C] rounded-full h-1.5 overflow-hidden p-[1px]">
+                        <div class="h-full rounded-full transition-all duration-700" style="width: {{ success_rate }}%; background-color: {{ success_rate_color|default:'#10B981' }};"></div>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- 3. ОСНОВНОЙ АНАЛИТИЧЕСКИЙ БЛОК + ЗАМОК ПЕЙВОЛЛА ДЛЯ FREE -->
+            <section class="stagger-in stagger-d-4 relative">
+                
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 transition-all duration-500 {% if subscription_level == 0 %}filter blur-md opacity-35 pointer-events-none select-none{% endif %}">
+                    
+                    <!-- ЛЕВАЯ КОЛОНКА (7 колонок): АКТИВНОСТЬ И КАРТА ВОПРОСОВ -->
+                    <div class="lg:col-span-7 space-y-6">
+                        
+                        <!-- График активности 7 дней -->
+                        <div class="glass-panel p-6 sm:p-7 rounded-[32px] space-y-4">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h3 class="text-base font-bold text-white font-display">Динамика активности</h3>
+                                    <p class="text-xs text-gray-500 font-mono-nums">Количество прохождений по дням недели</p>
+                                </div>
+                                <span class="px-2.5 py-1 rounded-full bg-white/5 border border-white/5 text-[11px] font-mono-nums text-gray-400">7 дней</span>
+                            </div>
+                            <div class="chart-box h-64">
+                                <canvas id="activityChart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Карта вопросов: детальный разбор западающих тем -->
+                        <div class="glass-panel p-6 sm:p-7 rounded-[32px] space-y-4">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h3 class="text-base font-bold text-white font-display">Карта заданий</h3>
+                                    <p class="text-xs text-gray-500 font-mono-nums">Процент правильных ответов на каждый вопрос</p>
+                                </div>
+                                <i class="fas fa-layer-group text-xs text-gray-600"></i>
+                            </div>
+
+                            <div class="space-y-3 pt-1">
+                                {% for q in questions_breakdown|slice:":6" %}
+                                <div class="p-3.5 rounded-2xl bg-[#151419] border border-white/5 space-y-2">
+                                    <div class="flex justify-between items-center text-xs">
+                                        <p class="font-medium text-gray-200 truncate pr-3" title="{{ q.text }}">{{ forloop.counter }}. {{ q.text }}</p>
+                                        <div class="flex items-center gap-2 flex-shrink-0 font-mono-nums">
+                                            <span class="text-[11px] text-gray-500">{{ q.stats }}</span>
+                                            <span class="font-bold text-white text-xs">{{ q.rate|floatformat:0 }}%</span>
+                                        </div>
+                                    </div>
+                                    <div class="w-full bg-[#1F1E26] rounded-full h-1.5 overflow-hidden">
+                                        <div class="h-full rounded-full transition-all duration-500" style="width: {{ q.rate }}%; background-color: {{ q.color|default:'#4F46E5' }};"></div>
+                                    </div>
+                                </div>
+                                {% empty %}
+                                    <div class="text-center text-gray-500 py-8 text-xs font-mono-nums">Данные формируются по мере прохождений...</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- ПРАВАЯ КОЛОНКА (5 колонок): РАСПРЕДЕЛЕНИЕ, ЭКСТРЕМУМЫ, ЛИДЕРЫ -->
+                    <div class="lg:col-span-5 space-y-6">
+                        
+                        <!-- Распределение оценок (горизонтальный чарт) -->
+                        <div class="glass-panel p-6 sm:p-7 rounded-[32px] space-y-4">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h3 class="text-base font-bold text-white font-display">Распределение оценок</h3>
+                                    <p class="text-xs text-gray-500 font-mono-nums">Группировка учеников по шкале баллов</p>
+                                </div>
+                                <i class="fas fa-chart-column text-xs text-gray-600"></i>
+                            </div>
+                            <div class="chart-box h-64">
+                                <canvas id="scoresDistributionChart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Экстремумы сложности (Самый сложный / простой) -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            
+                            <!-- Сложный -->
+                            <div class="glass-panel p-4 rounded-2xl border border-rose-500/20 bg-rose-500/[0.03] space-y-1.5">
+                                <div class="flex items-center gap-2 text-rose-400 text-xs font-bold font-mono-nums">
+                                    <i class="fas fa-triangle-exclamation"></i>
+                                    <span>Сложный вопрос</span>
+                                </div>
+                                {% if question_insights.hardest %}
+                                    <p class="text-xs text-gray-300 truncate" title="{{ question_insights.hardest.text }}">{{ question_insights.hardest.text }}</p>
+                                    <p class="text-lg font-bold text-white font-mono-nums">{{ question_insights.hardest.rate|floatformat:0 }}% <span class="text-[10px] text-gray-500 font-normal">верных</span></p>
+                                {% else %}
+                                    <p class="text-xs text-gray-500 font-mono-nums">Недостаточно данных</p>
+                                {% endif %}
+                            </div>
+
+                            <!-- Простой -->
+                            <div class="glass-panel p-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.03] space-y-1.5">
+                                <div class="flex items-center gap-2 text-emerald-400 text-xs font-bold font-mono-nums">
+                                    <i class="fas fa-circle-check"></i>
+                                    <span>Простой вопрос</span>
+                                </div>
+                                {% if question_insights.easiest %}
+                                    <p class="text-xs text-gray-300 truncate" title="{{ question_insights.easiest.text }}">{{ question_insights.easiest.text }}</p>
+                                    <p class="text-lg font-bold text-white font-mono-nums">{{ question_insights.easiest.rate|floatformat:0 }}% <span class="text-[10px] text-gray-500 font-normal">верных</span></p>
+                                {% else %}
+                                    <p class="text-xs text-gray-500 font-mono-nums">Недостаточно данных</p>
+                                {% endif %}
+                            </div>
+
+                        </div>
+
+                        <!-- Таблица лидеров -->
+                        <div class="glass-panel p-6 sm:p-7 rounded-[32px] space-y-4">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-6 h-6 rounded-full bg-amber-500/10 text-amber-400 flex items-center justify-center text-xs">
+                                        <i class="fas fa-trophy text-[10px]"></i>
+                                    </span>
+                                    <h3 class="text-base font-bold text-white font-display">Топ учеников</h3>
+                                </div>
+                                <span class="text-[11px] text-gray-500 font-mono-nums">Топ-5</span>
+                            </div>
+
+                            <ul class="space-y-2.5">
                                 {% for attempt in leaderboard_attempts|slice:":5" %}
-                                <li class="flex items-center gap-4">
-                                    <div class="font-bold text-lg w-6 text-center {% if forloop.counter == 1 %}text-amber-400{% elif forloop.counter == 2 %}text-gray-300{% elif forloop.counter == 3 %}text-yellow-700{% else %}text-gray-500{% endif %}">
-                                        {{ forloop.counter }}
+                                <li class="p-2.5 rounded-2xl bg-[#151419] border border-white/5 flex items-center justify-between gap-3">
+                                    <div class="flex items-center gap-3 min-w-0">
+                                        <span class="w-7 h-7 rounded-xl bg-black/40 border border-white/5 font-mono-nums font-bold text-xs flex items-center justify-center
+                                            {% if forloop.counter == 1 %}text-amber-400 border-amber-500/30{% elif forloop.counter == 2 %}text-gray-300{% elif forloop.counter == 3 %}text-amber-700{% else %}text-gray-500{% endif %}">
+                                            {{ forloop.counter }}
+                                        </span>
+                                        <div class="min-w-0">
+                                            <p class="text-xs font-bold text-white truncate">{{ attempt.student_name }}</p>
+                                            <span class="text-[10px] text-gray-500 font-mono-nums">{{ attempt.created_at|date:"d.m.Y" }}</span>
+                                        </div>
                                     </div>
-                                    <div class="flex-grow min-w-0">
-                                        <p class="text-white font-semibold truncate">{{ attempt.student_name }}</p>
-                                        <p class="text-xs text-gray-500">{{ attempt.created_at|date:"d M Y" }}</p>
-                                    </div>
-                                    <div class="flex-shrink-0 font-bold text-white bg-black/20 px-3 py-1 rounded-lg">
+                                    <span class="px-2.5 py-1 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 font-mono-nums font-bold text-xs flex-shrink-0">
                                         {{ attempt.score }}/{{ attempt.total_questions }}
-                                    </div>
+                                    </span>
                                 </li>
                                 {% empty %}
-                                <li class="text-center text-gray-500 py-8">Данные собираются...</li>
+                                    <li class="text-center text-gray-500 py-6 text-xs font-mono-nums">Ожидание первых прохождений...</li>
                                 {% endfor %}
                             </ul>
                         </div>
 
-                        <div class="bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] shadow-2xl shadow-black/50">
-                            <h3 class="text-base font-bold text-white mb-4 flex items-center gap-2">
-                                <i class="fas fa-map text-cyan-400"></i>
-                                Карта вопросов
-                            </h3>
-                            <div class="space-y-3 max-h-60 overflow-hidden">
-                                {% for q in questions_breakdown|slice:":5" %}
-                                <div>
-                                    <div class="flex justify-between items-center text-xs text-gray-400 mb-1">
-                                        <p class="pr-4 truncate" title="{{ q.text }}">{{ q.text }}</p>
-                                        <p class="font-bold text-white flex-shrink-0">{{ q.rate|floatformat:0 }}%</p>
-                                    </div>
-                                    <div class="w-full bg-gray-700/50 rounded-full h-1.5">
-                                        <div class="h-1.5 rounded-full" style="width: {{ q.rate }}%; background-color: {{ q.color }};"></div>
-                                    </div>
-                                </div>
-                                {% empty %}
-                                <div class="text-center text-gray-500 py-8">Данные собираются...</div>
-                                {% endfor %}
-                            </div>
-                        </div>
                     </div>
+
                 </div>
 
+                <!-- ПРЕМИУМ-ЗАМОК (FROSTED VAULT ДЛЯ subscription_level == 0) -->
                 {% if subscription_level == 0 %}
-                <div class="absolute inset-0 z-10 flex flex-col items-center justify-center">
-                    <div class="bg-[var(--color-surface)]/95 backdrop-blur-xl border border-[var(--color-border)] p-8 rounded-[2rem] text-center shadow-2xl shadow-black/80 ring-1 ring-white/10 max-w-md mx-4">
-                        <div class="mx-auto w-16 h-16 bg-indigo-500/10 border-2 border-indigo-500/30 rounded-full flex items-center justify-center mb-6">
-                            <i class="fas fa-chart-pie text-3xl text-indigo-400"></i>
+                <div class="absolute inset-0 z-20 flex items-center justify-center p-4">
+                    <div class="glass-panel p-8 sm:p-10 rounded-[36px] text-center max-w-md w-full border border-indigo-500/30 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.9)] space-y-6">
+                        <div class="w-14 h-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/25 text-indigo-400 flex items-center justify-center mx-auto text-xl shadow-lg">
+                            <i class="fas fa-crown"></i>
                         </div>
-                        <h3 class="text-2xl font-bold text-white mb-4">Откройте полную картину</h3>
-                        <div class="text-left space-y-3 mb-6 max-w-sm mx-auto">
-                            
-                            <div class="flex items-center gap-3 p-2 rounded-lg bg-white/5 border border-white/10">
-                                <div class="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center text-red-400">
-                                    <i class="fas fa-brain"></i>
-                                </div>
-                                <div class="text-sm text-gray-300">
-                                    <span class="block text-white font-bold">Сложные вопросы</span>
-                                    Где ошибаются чаще всего?
-                                </div>
-                            </div>
 
-                            <div class="flex items-center gap-3 p-2 rounded-lg bg-white/5 border border-white/10">
-                                <div class="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400">
-                                    <i class="fas fa-trophy"></i>
-                                </div>
-                                <div class="text-sm text-gray-300">
-                                    <span class="block text-white font-bold">Таблица лидеров</span>
-                                    Ранжирование учеников по баллам.
-                                </div>
-                            </div>
-
-                            <div class="flex items-center gap-3 p-2 rounded-lg bg-white/5 border border-white/10">
-                                <div class="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400">
-                                    <i class="fas fa-chart-bar"></i>
-                                </div>
-                                <div class="text-sm text-gray-300">
-                                    <span class="block text-white font-bold">Распределение оценок</span>
-                                    Общая успеваемость группы.
-                                </div>
-                            </div>
-
+                        <div class="space-y-2">
+                            <h3 class="text-xl sm:text-2xl font-extrabold text-white font-display">Аналитика Премиум</h3>
+                            <p class="text-xs sm:text-sm text-gray-400 leading-relaxed">
+                                Откройте графики активности, рейтинги учеников, процент ошибок по каждому вопросу и экспорт в Excel.
+                            </p>
                         </div>
-                        <a href="{% url 'payment' %}" class="block w-full bg-[var(--color-accent-primary)] text-white font-bold py-3 rounded-xl transition-transform hover:scale-[1.02] shadow-lg shadow-indigo-500/20">
-                            Открыть аналитику
+
+                        <div class="space-y-2 text-left text-xs text-gray-300">
+                            <div class="flex items-center gap-2.5 p-2 rounded-xl bg-white/5 border border-white/5">
+                                <i class="fas fa-check text-emerald-400 text-xs"></i>
+                                <span>Анализ сложных и простых вопросов</span>
+                            </div>
+                            <div class="flex items-center gap-2.5 p-2 rounded-xl bg-white/5 border border-white/5">
+                                <i class="fas fa-check text-emerald-400 text-xs"></i>
+                                <span>Таблица лидеров и успеваемость группы</span>
+                            </div>
+                            <div class="flex items-center gap-2.5 p-2 rounded-xl bg-white/5 border border-white/5">
+                                <i class="fas fa-check text-emerald-400 text-xs"></i>
+                                <span>Экспорт отчётов в Excel в один клик</span>
+                            </div>
+                        </div>
+
+                        <a href="{% url 'payment' %}" class="master-pill-btn w-full h-12 rounded-full text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 select-none shadow-xl">
+                            <span>Подключить Премиум</span>
+                            <i class="fas fa-arrow-right text-xs"></i>
                         </a>
                     </div>
                 </div>
                 {% endif %}
-            </div>
-        </div>
 
-        <!-- БЛОК ЭКСПОРТА -->
-        <div class="flex flex-col p-2 sm:flex-row justify-between sm:items-center mt-8 mb-4">
-            <div>
-                <h2 class="text-xl font-bold text-white">Результат в Excel</h2>
-                <p class="text-gray-400 text-sm">Забудьте о ручном копировании. Вся статистика уже готова к скачиванию.</p>
-            </div>
-            
-            {% if subscription_level > 0 %}
-                <a href="{% url 'export_results_to_excel' survey.survey_id %}" class="mt-3 sm:mt-0 inline-flex items-center gap-2 bg-emerald-600/20 text-emerald-300 px-4 py-2 rounded-xl font-semibold text-sm border border-emerald-500/30 hover:bg-emerald-600/40 transition-colors">
-                    <i class="fas fa-file-excel"></i> Экспорт в Excel
-                </a>
-            {% else %}
-                <button type="button" id="export-trigger-button" class="mt-3 sm:mt-0 inline-flex items-center gap-2 bg-emerald-600/20 text-emerald-300 px-4 py-2 rounded-xl font-semibold text-sm border border-emerald-500/30 hover:bg-emerald-600/40 transition-colors">
-                    <i class="fas fa-lock mr-1 text-xs"></i> <i class="fas fa-file-excel"></i> Экспорт в Excel
-                </button>
-            {% endif %}
-        </div>
+            </section>
 
-        <!-- СПИСОК РЕЗУЛЬТАТОВ (PAYWALL) -->
-        <div class="relative bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] shadow-2xl shadow-black/50">
-            <h2 class="text-xl font-bold text-white mb-4">Последние попытки</h2>
-            
-            <div class="flow-root {% if subscription_level == 0 %}filter blur-md opacity-40 pointer-events-none select-none min-h-[300px]{% endif %}">
-                <ul class="-my-3 divide-y divide-[var(--color-border)]">
-                    {% for attempt in attempts %}
-                    <li class="py-4 flex flex-col sm:flex-row justify-between sm:items-center gap-3 hover:bg-black/20 -mx-4 px-4 rounded-2xl transition-colors duration-200 cursor-pointer" data-action="show-attempt-details">
-                        <div class="flex items-center gap-4">
-                            <div class="flex-shrink-0 flex items-center justify-center h-11 w-11 rounded-full bg-[var(--color-accent-primary)]/20 border border-[var(--color-border)]">
-                                <span class="font-bold text-lg text-white">{{ attempt.student_name|first|upper }}</span>
-                            </div>
-                            <div>
-                                <p class="font-semibold text-white">{{ attempt.student_name }}</p>
-                                <p class="text-xs text-[var(--color-text-secondary)]">{{ attempt.created_at|date:"d M Y в H:i" }}</p>
-                            </div>
+            <!-- 4. СТУДЕНЧЕСКИЙ ЖУРНАЛ: СПИСОК ВСЕХ ПОПЫТОК -->
+            <section class="stagger-in stagger-d-5 glass-panel rounded-[36px] p-6 sm:p-8 space-y-6">
+                
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/[0.08] pb-5">
+                    <div>
+                        <h2 class="text-lg font-bold text-white font-display">Все попытки прохождения</h2>
+                        <p class="text-xs text-gray-400">Нажмите на ученика, чтобы открыть полный разбор ответов</p>
+                    </div>
+
+                    <div class="flex items-center gap-2 font-mono-nums text-xs">
+                        <span class="text-gray-500">Записей в отчёте:</span>
+                        <span class="text-white font-bold bg-[#151419] px-2.5 py-1 rounded-xl border border-white/10">{{ attempts|length }}</span>
+                    </div>
+                </div>
+
+                <!-- Список попыток -->
+                <div class="relative">
+                    <div class="flow-root {% if subscription_level == 0 %}filter blur-md opacity-35 pointer-events-none select-none min-h-[220px]{% endif %}">
+                        <ul class="divide-y divide-white/[0.06] -my-2">
+                            {% for attempt in attempts %}
+                            <li class="py-3.5 px-3 flex flex-col sm:flex-row justify-between sm:items-center gap-3 hover:bg-white/[0.03] rounded-2xl transition-colors cursor-pointer group" data-action="show-attempt-details">
+                                
+                                <div class="flex items-center gap-3.5 min-w-0">
+                                    <span class="w-10 h-10 rounded-full bg-indigo-600/15 border border-indigo-500/20 text-indigo-300 font-bold text-sm flex items-center justify-center flex-shrink-0 font-mono-nums">
+                                        {{ attempt.student_name|first|upper }}
+                                    </span>
+                                    <div class="min-w-0">
+                                        <p class="font-bold text-white text-sm group-hover:text-indigo-400 transition-colors truncate">{{ attempt.student_name }}</p>
+                                        <p class="text-[11px] text-gray-500 font-mono-nums">{{ attempt.created_at|date:"d M Y, H:i" }}</p>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center gap-4 sm:text-right flex-shrink-0">
+                                    <div class="font-mono-nums">
+                                        <span class="text-base font-extrabold {% if attempt.percent == 100 %}text-emerald-400{% else %}text-white{% endif %}">
+                                            {{ attempt.score }}
+                                        </span>
+                                        <span class="text-gray-600">/</span>
+                                        <span class="text-gray-400 text-xs">{{ attempt.total_questions }}</span>
+                                        <span class="text-[11px] text-gray-500 ml-1">({{ attempt.percent }}%)</span>
+                                    </div>
+                                    <i class="fas fa-chevron-right text-xs text-gray-600 group-hover:text-white transition-colors"></i>
+                                </div>
+
+                                <!-- Мета-теги для JS разбора -->
+                                <script type="application/json" class="attempt-details-json">{{ attempt.answers_json }}</script>
+                                <span class="student-name hidden">{{ attempt.student_name }}</span>
+                                <span class="attempt-date hidden">{{ attempt.created_at|date:"d M Y, H:i" }}</span>
+                                <span class="attempt-score hidden">{{ attempt.score }} / {{ attempt.total_questions }}</span>
+                            </li>
+                            {% empty %}
+                                {% if subscription_level == 0 %}
+                                    <li class="py-4 text-center text-gray-500 text-xs font-mono-nums">Данные скрыты тарифом</li>
+                                {% else %}
+                                    <li class="text-center py-12 text-gray-500 space-y-2">
+                                        <i class="fas fa-inbox text-3xl opacity-40"></i>
+                                        <p class="text-sm font-semibold text-gray-300">Пока никто не прошёл тест</p>
+                                        <p class="text-xs">Отправьте ссылку ученикам, чтобы здесь появились результаты</p>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                        </ul>
+                    </div>
+
+                    <!-- Заглушка списка для Free -->
+                    {% if subscription_level == 0 %}
+                    <div class="absolute inset-0 z-10 flex items-center justify-center p-4">
+                        <div class="glass-panel p-6 rounded-3xl border border-white/10 text-center max-w-sm w-full space-y-3">
+                            <i class="fas fa-lock text-amber-400 text-xl"></i>
+                            <h4 class="text-sm font-bold text-white">Список респондентов закрыт</h4>
+                            <p class="text-xs text-gray-400">Перейдите на Премиум, чтобы видеть имена всех прошедших тест и их ответы.</p>
+                            <a href="{% url 'payment' %}" class="inline-block px-5 py-2 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all spring-btn">
+                                Разблокировать список
+                            </a>
                         </div>
-                        <div class="text-right mt-2 sm:mt-0 flex-shrink-0">
-                            <p class="font-bold text-lg {% if attempt.percent == 100 %}text-[var(--color-accent-secondary)]{% else %}text-white{% endif %}">{{ attempt.score }} / {{ attempt.total_questions }}</p>
-                        </div>
-                        <script type="application/json" class="attempt-details-json">{{ attempt.answers_json }}</script>
-                        <span class="student-name" style="display: none;">{{ attempt.student_name }}</span>
-                        <span class="attempt-date" style="display: none;">{{ attempt.created_at|date:"d M Y в H:i" }}</span>
-                        <span class="attempt-score" style="display: none;">{{ attempt.score }} / {{ attempt.total_questions }}</span>
-                    </li>
-                    {% empty %}
-                        {% if subscription_level == 0 %}
-                            <li class="py-4 flex items-center gap-4"><div class="h-11 w-11 rounded-full bg-gray-700"></div><div class="h-4 bg-gray-700 w-32 rounded"></div></li>
-                            <li class="py-4 flex items-center gap-4"><div class="h-11 w-11 rounded-full bg-gray-700"></div><div class="h-4 bg-gray-700 w-48 rounded"></div></li>
-                            <li class="py-4 flex items-center gap-4"><div class="h-11 w-11 rounded-full bg-gray-700"></div><div class="h-4 bg-gray-700 w-24 rounded"></div></li>
-                        {% else %}
-                            <li class="text-center text-[var(--color-text-secondary)] py-16"><i class="fas fa-ghost text-4xl mb-4 opacity-50"></i><p class="font-semibold text-white">Здесь пока пусто</p></li>
-                        {% endif %}
-                    {% endfor %}
-                </ul>
-            </div>
+                    </div>
+                    {% endif %}
+                </div>
 
-            {% if subscription_level == 0 %}
-            <div class="absolute inset-0 z-10 flex items-center justify-center">
-                <div class="bg-[var(--color-surface)]/90 backdrop-blur-xl border border-[var(--color-border)] p-6 rounded-3xl text-center shadow-2xl max-w-sm mx-4">
-                    <i class="fas fa-lock text-2xl text-[var(--color-accent-secondary)] mb-4"></i>
-                    <h3 class="text-lg font-bold text-white mb-2">Список участников скрыт</h3>
-                    <p class="text-gray-400 text-sm mb-4">Узнайте, кто именно прошел тест и какие оценки получил.</p>
-                    <a href="{% url 'payment' %}" class="block w-full border border-[var(--color-accent-secondary)] text-[var(--color-accent-secondary)] font-bold py-2 rounded-xl hover:bg-[var(--color-accent-secondary)] hover:text-black transition-colors">
-                        Открыть список
-                    </a>
+            </section>
+
+        </main>
+
+        <!-- 5. ФИРМЕННЫЙ ФУТЕР БРЕНДА -->
+        <footer class="stagger-in stagger-d-6 w-full pb-8 pt-8">
+            <div class="max-w-4xl mx-auto px-4 text-center space-y-2">
+                <p class="text-xs text-gray-500">
+                    <span class="text-gray-300 font-semibold">Летучка AI</span> — сервис моментального создания интерактивных тестов из любых учебных материалов
+                </p>
+                <div class="flex items-center justify-center gap-3 text-[11px] text-gray-600 font-mono-nums">
+                    <span>© 2024–2026</span>
+                    <span>•</span>
+                    <a class="hover:text-indigo-400 transition-colors font-sans" rel="nofollow" href="https://dprofile.ru/kozak_developer" target="_blank">Design & Dev by Kozak</a>
+                    <span>•</span>
+                    <a href="/docs/public-offer" class="hover:text-gray-400 transition-colors font-sans">Оферта</a>
+                    <span>•</span>
+                    <a href="/docs/privacy-policy" class="hover:text-gray-400 transition-colors font-sans">Конфиденциальность</a>
                 </div>
             </div>
-            {% endif %}
-        </div>
+        </footer>
 
-        <div class="mt-8 text-center bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] shadow-2xl shadow-black/50">
-            <div class="flex justify-center mb-4"><i class="fas fa-rocket text-3xl gradient-text"></i></div>
-            <h3 class="text-xl font-bold text-white">Данные — это топливо.</h3>
-            <p class="mt-2 text-[var(--color-text-secondary)] max-w-md mx-auto">Вы только что увидели, как аналитика превращает догадки в факты.</p>
-            <a href="{% url 'create' %}" class="mt-6 inline-block bg-[var(--color-accent-secondary)] text-[var(--color-bg)] px-10 py-3 text-base font-bold rounded-full transition-transform active:scale-[.97] shadow-lg shadow-[var(--color-accent-secondary)]/20">Создать следующий тест</a>
-        </div>
-    </main>
+    </div>
 
-    <!-- МОДАЛЬНОЕ ОКНО ДЛЯ ДЕТАЛЕЙ ПОПЫТКИ -->
-    <div id="attempt-modal" class="fixed inset-0 bg-black/80 z-50 hidden items-center justify-center p-4">
-        <div id="attempt-modal-content" class="bg-[var(--color-surface)] w-full max-w-2xl p-6 sm:p-8 rounded-3xl border border-[var(--color-border)] transform scale-95 opacity-0 transition-all duration-300 backdrop-blur-xl flex flex-col max-h-[90vh]">
+    <!-- МОДАЛЬНОЕ ОКНО ДЕТАЛЕЙ ПОПЫТКИ (STUDENT DETAIL REVIEW) -->
+    <div id="attempt-modal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 hidden items-center justify-center p-4">
+        <div id="attempt-modal-content" class="glass-panel w-full max-w-2xl p-6 sm:p-8 rounded-[36px] border border-white/15 scale-95 opacity-0 flex flex-col max-h-[90vh] shadow-2xl">
             
-            <div class="flex-shrink-0 flex justify-between items-start mb-4">
+            <div class="flex-shrink-0 flex justify-between items-start pb-4 border-b border-white/[0.08]">
                 <div>
-                    <h3 id="modal-student-name" class="text-2xl font-bold text-white"></h3>
-                    <p id="modal-attempt-date" class="text-sm text-[var(--color-text-secondary)]"></p>
+                    <h3 id="modal-student-name" class="text-xl font-bold text-white font-display"></h3>
+                    <p id="modal-attempt-date" class="text-xs text-gray-400 font-mono-nums mt-0.5"></p>
                 </div>
-                <button id="close-attempt-modal" class="text-gray-500 hover:text-white text-3xl">&times;</button>
+                <button id="close-attempt-modal" class="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white flex items-center justify-center transition-colors">
+                    <i class="fas fa-xmark text-sm"></i>
+                </button>
             </div>
 
-            <div id="modal-answers-list" class="flex-grow overflow-y-auto pr-2 space-y-4">
-                <!-- Сюда будут вставляться ответы через JS -->
+            <!-- Список разобранных ответов -->
+            <div id="modal-answers-list" class="flex-grow overflow-y-auto pr-1 py-4 space-y-3.5">
+                <!-- Рендерится через JS -->
             </div>
 
-            <div class="flex-shrink-0 mt-6 pt-4 border-t border-[var(--color-border)] text-right">
-                <p class="text-lg text-[var(--color-text-secondary)]">Итоговый балл: <span id="modal-attempt-score" class="font-bold text-2xl text-white"></span></p>
+            <div class="flex-shrink-0 pt-4 border-t border-white/[0.08] flex items-center justify-between">
+                <span class="text-xs text-gray-400 font-mono-nums">Итоговый результат:</span>
+                <span id="modal-attempt-score" class="font-extrabold text-xl text-emerald-400 font-mono-nums"></span>
             </div>
         </div>
     </div>
 
-    <div class="fixed bottom-5 left-1/2 -translate-x-1/2 flex space-x-2 p-2 rounded-full 
-                bg-black/40 backdrop-blur-lg 
-                border border-gray-700/60 
-                shadow-lg shadow-[0_0_20px_rgba(139,92,246,0.2)] z-50">
-        
-        <a href="{% url 'preview_test' survey.survey_id %}" title="Посмотреть вопросы"
-            class="group flex items-center h-12 rounded-full text-white font-bold transition-all duration-300 overflow-hidden 
-                bg-indigo-600 
-                hover:opacity-90 hover:scale-[1.05] active:scale-[0.98] shadow-lg shadow-indigo-500/30">
+    <!-- МОДАЛКА ПЕЙВОЛЛА EXCEL -->
+    <div id="export-paywall-modal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div id="export-paywall-panel" class="glass-panel border border-white/15 rounded-[36px] w-full max-w-md text-center p-8 shadow-2xl scale-95 opacity-0 space-y-5">
+            <div class="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 flex items-center justify-center mx-auto text-2xl">
+                <i class="fas fa-file-excel"></i>
+            </div>
             
-            <i class="fa-solid fa-tasks h-12 w-12 flex items-center justify-center flex-shrink-0 transition-colors group-hover:text-white"></i>
-            
-            <span class="max-w-0 group-hover:max-w-xs opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out pr-0 group-hover:pr-4 whitespace-nowrap text-sm font-semibold text-white">
-                Вопросы
-            </span>
-        </a>
-    </div>
+            <div class="space-y-1.5">
+                <h3 class="text-xl font-bold text-white font-display">Экспорт в Excel</h3>
+                <p class="text-xs text-gray-400 leading-relaxed">
+                    Выгружайте полную сводную таблицу учеников, баллов и ответов для отчётов и методических комиссий в тарифе Премиум.
+                </p>
+            </div>
 
-    <footer class="mt-16 sm:mt-24">
-        <div class="max-w-3xl mx-auto px-4 sm:px-8">
-            <div class="mt-8 mb-4 pt-8 border-t border-[var(--color-border)] flex flex-col sm:flex-row justify-between items-center text-xs text-gray-600 text-center">
-                <p>2024-2026 Летучка AI. Design & Development <a class="text-gray-500 hover:text-[var(--color-accent-primary)]" rel='nofollow' href="https://dprofile.ru/kozak_developer" target="_blank">by Kozak</a></p>
-                <div class="mt-2 sm:mt-0">
-                    <a href="/docs/public-offer" class="hover:text-gray-400">Публичная оферта</a>
-                    <span class="mx-2">|</span>
-                    <a href="/docs/privacy-policy" class="hover:text-gray-400">Политика конфиденциальности</a>
-                </div>
+            <div class="pt-2 flex flex-col gap-2">
+                <a href="{% url 'payment' %}" class="master-pill-btn w-full h-11 rounded-full text-white text-xs font-bold flex items-center justify-center gap-2 select-none">
+                    <span>Подключить Премиум</span>
+                    <i class="fas fa-arrow-right text-xs"></i>
+                </a>
+                <button id="close-paywall-modal" class="text-xs text-gray-500 hover:text-white py-2 transition-colors">
+                    Позже
+                </button>
             </div>
         </div>
-    </footer>
+    </div>
 
-    <div id="export-paywall-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50
-                                    flex items-center justify-center p-4 hidden">
-
-        <div class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-3xl
-                    w-full max-w-md text-center p-8 shadow-2xl shadow-black/50
-                    transform transition-all opacity-0 scale-95"
-            id="export-paywall-panel">
-
-            <div class="flex items-center justify-center h-16 w-16 rounded-full bg-indigo-500/10 border-2 border-indigo-500/30 mb-4 mx-auto">
-                <i class="fas fa-file-excel text-3xl text-indigo-400"></i>
+    <!-- МОДАЛКА QR-КОДА -->
+    <div id="qrModal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-[9999] hidden flex-col items-center justify-center p-4" onclick="this.classList.add('hidden'); this.classList.remove('flex');">
+        <div class="glass-panel p-6 sm:p-8 rounded-[36px] text-center space-y-5 max-w-sm w-full border border-white/15" onclick="event.stopPropagation()">
+            <h3 class="text-base font-bold text-white font-display">Сканируйте для прохождения</h3>
+            <div class="bg-white p-4 rounded-2xl inline-block shadow-2xl mx-auto">
+                <div id="qrcode"></div>
             </div>
-            
-            <h3 class="text-2xl font-bold text-white">Доступно в Премиум</h3>
-            <p class="mt-2 text-gray-300">
-                Получите полный доступ к экспорту данных в Excel, чтобы анализировать результаты и делиться ими с коллегами.
-            </p>
-            <a href="{% url 'payment' %}" class="mt-6 inline-block bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-8 py-3 font-bold rounded-full transition-transform hover:scale-105 active:scale-[.95] shadow-lg shadow-indigo-500/30">
-                Разблокировать
-            </a>
-            
-            <button id="close-paywall-modal" class="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors">
-                <i class="fas fa-times text-xl"></i>
+            <p class="text-xs text-gray-400 font-mono-nums truncate" id="qrLinkText"></p>
+            <button onclick="$('#qrModal').addClass('hidden').removeClass('flex')" class="w-full py-2.5 rounded-full bg-white/5 hover:bg-white/10 text-white text-xs font-semibold transition-colors">
+                Закрыть
             </button>
         </div>
     </div>
 
-    <!--         THE MODAL QR-CODE        -->
-    <div id="qrModal" class="fixed inset-0 bg-black/90 z-[9999] hidden flex-col items-center justify-center backdrop-blur-sm" onclick="this.classList.add('hidden')">
-        <h2 class="text-white text-3xl text-center font-bold mb-8">Отсканируйте, чтобы пройти тест</h2>
-        <div class="bg-white p-6 rounded-3xl shadow-2xl shadow-white/20">
-            <div id="qrcode"></div>
-        </div>
-        <p class="text-gray-400 mt-8 text-xl font-mono" id="qrLinkText"></p>
-        <p class="text-gray-500 mt-2 text-sm">Нажмите в любом месте, чтобы закрыть</p>
-    </div>
-
+    <!-- СКРИПТЫ: ДВИЖОК ОСТРОВКА, МОДАЛОК И ЧАРТОВ -->
     <script>
+        // ШИНА ОСТРОВКА
+        const Island = {
+            notify: (text, iconClass = 'fa-check') => {
+                $('#island-controls').addClass('hidden');
+                $('#island-text').text(text);
+                $('#island-icon-box i').attr('class', `fas ${iconClass}`);
+                $('#dynamic-island').removeClass('mode-header').addClass('mode-notify');
+                $('#island-notice').removeClass('hidden').addClass('flex');
+                setTimeout(() => {
+                    $('#island-notice').addClass('hidden').removeClass('flex');
+                    $('#dynamic-island').removeClass('mode-notify').addClass('mode-header');
+                    $('#island-controls').removeClass('hidden');
+                }, 2200);
+            }
+        };
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // КОПИРОВАНИЕ ССЫЛКИ
+        function copyLinkAndNotify(event) {
+            const shareUrl = $(event.currentTarget).data('share-url');
+            const urlToCopy = window.location.protocol + '//' + window.location.host + shareUrl;
+
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(urlToCopy).then(() => {
+                    Island.notify('Ссылка на тест скопирована', 'fa-link');
+                }).catch(() => fallbackCopy(urlToCopy));
+            } else {
+                fallbackCopy(urlToCopy);
+            }
+        }
+
+        function fallbackCopy(text) {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.left = '-9999px';
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            Island.notify('Ссылка скопирована', 'fa-link');
+        }
+
+        $('button[data-action="share"]').on('click', copyLinkAndNotify);
+
+        // QR-КОД КЛАССА
         function showClassroomQR() {
-            console.log(window.location.host)
-            const link = window.location.protocol + window.location.host + "{% url 'take_test' survey.survey_id %}";
-            const modal = document.getElementById('qrModal');
+            const link = window.location.protocol + '//' + window.location.host + "{% url 'take_test' survey.survey_id %}";
             const container = document.getElementById('qrcode');
-            
             container.innerHTML = "";
-            
             new QRCode(container, {
                 text: link,
-                width: 350,
-                height: 350,
-                colorDark : "#000000",
+                width: 240,
+                height: 240,
+                colorDark : "#111119",
                 colorLight : "#ffffff",
                 correctLevel : QRCode.CorrectLevel.H
             });
-            
             document.getElementById('qrLinkText').innerText = "{{ title }}";
-            
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-        }
-    </script>
-
-    <script>
-        function copyLinkAndNotify(event) {
-            const shareUrl = $(event.currentTarget).data('share-url');
-            const urlToCopy = 'https://' + window.location.host + shareUrl;
-
-            navigator.clipboard.writeText(urlToCopy).then(function() {
-                if ($('.apple-toast').length > 0) {
-                    return; 
-                }
-
-                const toast = $('<div/>', {
-                    class: 'apple-toast',
-                    html: `
-                        <i class="fas fa-check-circle icon"></i>
-                        <span>Ссылка скопирована</span>
-                    `
-                }).appendTo('body');
-
-                setTimeout(() => {
-                    toast.addClass('apple-toast--visible');
-                    if (window.navigator && window.navigator.vibrate) {
-                        window.navigator.vibrate(200);
-                    }
-                }, 10);
-                
-                setTimeout(() => {
-                    toast.removeClass('apple-toast--visible');
-                    toast.one('transitionend', function() {
-                        $(this).remove();
-                    });
-                }, 2500);
-
-            }, function(err) {
-                console.error('Ошибка копирования: ', err);
-
-                if ($('.apple-toast').length > 0) return;
-                const errorToast = $('<div/>', {
-                    class: 'apple-toast',
-                    html: `
-                        <i class="fas fa-times-circle text-red-500"></i>
-                        <span>Ошибка копирования</span>
-                    `
-                }).appendTo('body');
-                setTimeout(() => errorToast.addClass('apple-toast--visible'), 10);
-                setTimeout(() => {
-                    errorToast.removeClass('apple-toast--visible');
-                    errorToast.one('transitionend', function() { $(this).remove(); });
-                }, 3000);
-            });
+            $('#qrModal').removeClass('hidden').addClass('flex');
         }
 
-        $('button[data-action="share"]').on('click', function(event) {
-            copyLinkAndNotify(event);
-        });
-
-        $(document).ready(function() {
-            // Выпадающее меню в хедере
-            const actionMenuBtn = $('#action-menu-btn');
-            const actionMenu = $('#action-menu');
-
-            actionMenuBtn.on('click', function(e) {
-                e.stopPropagation();
-                
-                if (actionMenu.hasClass('hidden')) {
-                    actionMenu.removeClass('hidden');
-                    setTimeout(() => {
-                        actionMenu.removeClass('opacity-0 scale-95').addClass('opacity-100 scale-100');
-                    }, 10);
-                } else {
-                    actionMenu.removeClass('opacity-100 scale-100').addClass('opacity-0 scale-95');
-                    setTimeout(() => {
-                        actionMenu.addClass('hidden');
-                    }, 200);
-                }
-            });
-
-            $(document).on('click', function(e) {
-                if (!actionMenu.hasClass('hidden') && !actionMenu.is(e.target) && actionMenu.has(e.target).length === 0) {
-                    actionMenuBtn.click()
-                }
-            });
-
-            
-            const scrollProgress = $('#scrollProgress');
-            $(window).on('scroll', function() {
-                const winScroll = $(this).scrollTop();
-                const height = $(document).height() - $(window).height();
-                const scrolled = (winScroll / height) * 100;
-                scrollProgress.css('width', scrolled + '%');
-            });
-
-            $('button[data-action="share"]').on('click', copyLinkAndNotify);
-        });
-
+        // МОДАЛКА ДЕТАЛЕЙ ПОПЫТКИ
         const modalElement = $('#attempt-modal');
         const modalContent = $('#attempt-modal-content');
-        const body = $('body');
         let isModalOpen = false;
 
         function openModal() {
             if (isModalOpen) return;
             isModalOpen = true;
-
-            body.addClass('modal-open');
-            modalElement.removeClass('hidden');
-
+            $('body').addClass('modal-open');
+            modalElement.removeClass('hidden').addClass('flex');
             setTimeout(() => {
-                modalElement.addClass('is-visible');
                 modalContent.removeClass('scale-95 opacity-0').addClass('scale-100 opacity-100');
-            }, 10); 
+            }, 10);
         }
 
         function closeModal() {
             if (!isModalOpen) return;
             isModalOpen = false;
-
-            body.removeClass('modal-open');
-            modalElement.removeClass('is-visible');
-            modalContent.addClass('scale-95 opacity-0').removeClass('scale-100 opacity-100');
-            
+            $('body').removeClass('modal-open');
+            modalContent.removeClass('scale-100 opacity-100').addClass('scale-95 opacity-0');
             setTimeout(() => {
-                modalElement.addClass('hidden');
-            }, 300);
+                modalElement.addClass('hidden').removeClass('flex');
+            }, 250);
         }
 
         function renderAttemptDetails(data) {
@@ -922,22 +887,22 @@
             $('#modal-attempt-date').text(data.attemptDate);
             $('#modal-attempt-score').text(data.attemptScore);
 
-            const answersList = $('#modal-answers-list');
-            answersList.empty();
+            const answersList = $('#modal-answers-list').empty();
 
-            data.answers.forEach(answerData => {
-                const isCorrect = answerData.is_correct;
-                const icon = isCorrect ? '<i class="fas fa-check-circle text-green-400"></i>' : '<i class="fas fa-times-circle text-red-400"></i>';
-                const correctAnswerHtml = !isCorrect ? `<p class="text-sm text-gray-300 mt-1">Верный ответ: <strong class="text-white">${answerData.correct_answer || 'N/A'}</strong></p>` : '';
+            data.answers.forEach((ans, idx) => {
+                const isCorrect = ans.is_correct;
+                const icon = isCorrect 
+                    ? '<i class="fas fa-circle-check text-emerald-400 text-sm"></i>' 
+                    : '<i class="fas fa-circle-xmark text-rose-400 text-sm"></i>';
 
                 const answerHtml = `
-                    <div class="p-4 rounded-2xl border ${isCorrect ? 'border-green-500/20 bg-green-500/10' : 'border-red-500/20 bg-red-500/10'}">
-                        <p class="font-semibold text-white mb-2">${answerData.question}</p>
-                        <div class="flex items-start gap-3">
+                    <div class="p-3.5 rounded-2xl border text-xs space-y-2 ${isCorrect ? 'border-emerald-500/20 bg-emerald-500/[0.04]' : 'border-rose-500/20 bg-rose-500/[0.04]'}">
+                        <p class="font-bold text-white text-xs">${idx + 1}. ${ans.question}</p>
+                        <div class="flex items-start gap-2.5">
                             ${icon}
-                            <div>
-                                <p class="text-sm text-gray-300">${data.studentName}: <strong class="text-white">${answerData.selected_answer || 'Не дан'}</strong></p>
-                                ${correctAnswerHtml}
+                            <div class="space-y-1">
+                                <p class="text-gray-300">Ответ ученика: <strong class="text-white font-medium">${ans.selected_answer || 'Не отвечено'}</strong></p>
+                                ${!isCorrect ? `<p class="text-emerald-400">Верный ответ: <strong>${ans.correct_answer || '—'}</strong></p>` : ''}
                             </div>
                         </div>
                     </div>
@@ -946,25 +911,21 @@
             });
         }
 
-        // --- ОБРАБОТЧИКИ СОБЫТИЙ ---
-        $('button[data-action="share"]').on('click', copyLinkAndNotify);
-
         $('[data-action="show-attempt-details"]').on('click', function() {
-            const clickedItem = $(this);
+            const item = $(this);
             let answersData = [];
             try {
-                answersData = JSON.parse(clickedItem.find('.attempt-details-json').text());
+                answersData = JSON.parse(item.find('.attempt-details-json').text());
             } catch (e) {
-                console.error("Failed to parse answers JSON:", e);
+                console.error("Parse error:", e);
             }
 
             renderAttemptDetails({
-                studentName: clickedItem.find('.student-name').text(),
-                attemptDate: clickedItem.find('.attempt-date').text(),
-                attemptScore: clickedItem.find('.attempt-score').text(),
+                studentName: item.find('.student-name').text(),
+                attemptDate: item.find('.attempt-date').text(),
+                attemptScore: item.find('.attempt-score').text(),
                 answers: answersData
             });
-            
             openModal();
         });
 
@@ -972,8 +933,56 @@
         modalElement.on('click', function(e) { if (e.target === this) closeModal(); });
         $(document).on('keydown', function(e) { if (e.key === "Escape" && isModalOpen) closeModal(); });
 
+        // МОДАЛКА ПЕЙВОЛЛА EXCEL
+        const paywallModal = document.getElementById('export-paywall-modal');
+        const paywallPanel = document.getElementById('export-paywall-panel');
+        const exportTrigger = document.getElementById('export-trigger-button');
+        const closePaywallBtn = document.getElementById('close-paywall-modal');
+
+        function openPaywallModal() {
+            paywallModal.classList.remove('hidden');
+            setTimeout(() => {
+                paywallPanel.classList.remove('opacity-0', 'scale-95');
+                paywallPanel.classList.add('opacity-100', 'scale-100');
+            }, 10);
+        }
+
+        function closePaywallModal() {
+            paywallPanel.classList.remove('opacity-100', 'scale-100');
+            paywallPanel.classList.add('opacity-0', 'scale-95');
+            setTimeout(() => {
+                paywallModal.classList.add('hidden');
+            }, 250);
+        }
+
+        if (exportTrigger) exportTrigger.addEventListener('click', openPaywallModal);
+        if (closePaywallBtn) closePaywallBtn.addEventListener('click', closePaywallModal);
+        if (paywallModal) {
+            paywallModal.addEventListener('click', function(e) {
+                if (e.target === paywallModal) closePaywallModal();
+            });
+        }
+
+        // РЕГЕНЕРАЦИЯ (ИИ)
+        function regenerateSurvey(id) {
+            if (!confirm('Пересобрать вопросы с помощью ИИ?')) return;
+            fetch(`/api/surveys/${id}/regenerate/`, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': getCookie('csrftoken') }
+            }).then(r => r.json()).then(data => {
+                if (data.status === 'success' || data.success) {
+                    Island.notify('Тест отправлен на пересборку');
+                    setTimeout(() => window.location.reload(), 2000);
+                } else {
+                    Island.notify('Ошибка перегенерации', 'fa-triangle-exclamation');
+                }
+            }).catch(() => {
+                Island.notify('Сетевой сбой', 'fa-triangle-exclamation');
+            });
+        }
     </script>
     
+    <!-- CHART.JS: ПАЛИТРА ДЛЯ ТЁМНОЙ ТЕМЫ -->
     <script>
         const chartInstances = {};
 
@@ -984,48 +993,53 @@
             }
         }
 
-        const verticalBarOptions = {
+        const darkChartOptions = {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
                 legend: { display: false },
                 tooltip: {
-                    backgroundColor: 'rgba(18, 17, 25, 0.8)',
-                    titleFont: { family: 'Unbounded' },
-                    bodyFont: { family: 'Inter' },
+                    backgroundColor: 'rgba(24, 23, 28, 0.95)',
+                    borderColor: 'rgba(255, 255, 255, 0.1)',
+                    borderWidth: 1,
+                    titleColor: '#FFFFFF',
+                    bodyColor: '#A1A1AA',
+                    titleFont: { family: 'Wix Madefor Display', size: 12, weight: 'bold' },
+                    bodyFont: { family: 'JetBrains Mono', size: 11 },
                     padding: 10,
-                    cornerRadius: 8
+                    cornerRadius: 12,
+                    displayColors: false
                 }
             },
             scales: {
                 y: { 
                     beginAtZero: true, 
-                    ticks: { color: '#a0a0b0', precision: 0 },
-                    grid: { color: 'rgba(255, 255, 255, 0.05)' }
+                    ticks: { color: '#71717A', font: { family: 'JetBrains Mono', size: 10 }, precision: 0 },
+                    grid: { color: 'rgba(255, 255, 255, 0.04)' },
+                    border: { dash: [4, 4], color: 'transparent' }
                 },
                 x: { 
-                    ticks: { color: '#a0a0b0' },
+                    ticks: { color: '#71717A', font: { family: 'JetBrains Mono', size: 10 } },
                     grid: { display: false }
                 }
             }
         };
 
-        const horizontalBarOptions = {
-            ...verticalBarOptions,
+        const darkHorizontalChartOptions = {
+            ...darkChartOptions,
             indexAxis: 'y',
             scales: {
                 x: { 
                     beginAtZero: true, 
-                    ticks: { color: '#a0a0b0', precision: 0 },
-                    grid: { color: 'rgba(255, 255, 255, 0.05)' }
+                    ticks: { color: '#71717A', font: { family: 'JetBrains Mono', size: 10 }, precision: 0 },
+                    grid: { color: 'rgba(255, 255, 255, 0.04)' }
                 },
                 y: { 
-                    ticks: { color: '#a0a0b0' },
+                    ticks: { color: '#D4D4D8', font: { family: 'Golos Text', size: 11, weight: '500' } },
                     grid: { display: false }
                 }
             }
         };
-
 
         function initializeTestAnalyticsCharts() {
             const surveyId = '{{ survey.survey_id }}';
@@ -1039,6 +1053,7 @@
                     destroyChart('activityChart');
                     destroyChart('scoresDistributionChart');
 
+                    // 1. График активности
                     const activityCtx = document.getElementById('activityChart')?.getContext('2d');
                     if (activityCtx) {
                         chartInstances.activityChart = new Chart(activityCtx, {
@@ -1048,16 +1063,17 @@
                                 datasets: [{
                                     label: 'Прохождений',
                                     data: data.attempts_activity_chart.data,
-                                    backgroundColor: 'rgba(97, 109, 240, 0.6)',
-                                    borderColor: 'rgba(97, 109, 240, 1)',
-                                    borderRadius: 4,
-                                    hoverBackgroundColor: 'rgba(97, 109, 240, 0.8)'
+                                    backgroundColor: 'rgba(79, 70, 229, 0.65)',
+                                    hoverBackgroundColor: '#4F46E5',
+                                    borderRadius: 8,
+                                    borderSkipped: false
                                 }]
                             },
-                            options: verticalBarOptions
+                            options: darkChartOptions
                         });
                     }
 
+                    // 2. Распределение оценок
                     const scoresCtx = document.getElementById('scoresDistributionChart')?.getContext('2d');
                     if (scoresCtx) {
                         chartInstances.scoresDistributionChart = new Chart(scoresCtx, {
@@ -1065,67 +1081,26 @@
                             data: {
                                 labels: data.scores_distribution_chart.labels,
                                 datasets: [{
-                                    label: 'Кол-во респондентов',
+                                    label: 'Учеников',
                                     data: data.scores_distribution_chart.data,
                                     backgroundColor: [
-                                        'rgba(231, 76, 117, 0.7)',
-                                        'rgba(255, 199, 0, 0.7)',
-                                        'rgba(121, 239, 102, 0.7)',
-                                        'rgba(52, 199, 89, 0.8)'
+                                        'rgba(244, 63, 94, 0.7)',
+                                        'rgba(245, 158, 11, 0.7)',
+                                        'rgba(79, 70, 229, 0.7)',
+                                        'rgba(16, 185, 129, 0.8)'
                                     ],
-                                    borderRadius: 4,
-                                    borderWidth: 0
+                                    borderRadius: 6,
+                                    borderSkipped: false
                                 }]
                             },
-                            options: horizontalBarOptions
+                            options: darkHorizontalChartOptions
                         });
                     }
                 })
-                .catch(error => console.error('Error fetching test chart data:', error));
+                .catch(err => console.error('Error fetching test chart data:', err));
         }
 
         document.addEventListener('DOMContentLoaded', initializeTestAnalyticsCharts);
-        </script>
-
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                const paywallModal = document.getElementById('export-paywall-modal');
-                const paywallPanel = document.getElementById('export-paywall-panel');
-                const exportTrigger = document.getElementById('export-trigger-button');
-                const closeModalButton = document.getElementById('close-paywall-modal');
-
-                function openModal() {
-                    paywallModal.classList.remove('hidden');
-                    setTimeout(() => {
-                        paywallPanel.classList.remove('opacity-0', 'scale-95');
-                    }, 10); 
-                }
-
-                function closeModal() {
-                    paywallPanel.classList.add('opacity-0', 'scale-95');
-                    setTimeout(() => {
-                        paywallModal.classList.add('hidden');
-                    }, 200);
-                }
-
-                if (exportTrigger) {
-                    exportTrigger.addEventListener('click', function(event) {
-                        event.preventDefault();
-                        openModal();
-                    });
-                }
-
-                if (closeModalButton) {
-                    closeModalButton.addEventListener('click', closeModal);
-                }
-                if (paywallModal) {
-                    paywallModal.addEventListener('click', function(event) {
-                        if (event.target === paywallModal) {
-                            closeModal();
-                        }
-                    });
-                }
-            });
-        </script>
+    </script>
 </body>
 </html>

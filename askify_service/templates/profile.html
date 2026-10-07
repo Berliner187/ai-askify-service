@@ -39,7 +39,7 @@
     <style>
         :root {
             --bg-main: #111119;
-            --card-bg: #212024;
+            --card-bg: rgba(24, 24, 36, 0.7);
             --card-border: rgba(255, 255, 255, 0.07);
             --card-border-hover: rgba(255, 255, 255, 0.15);
             --accent-indigo: #4F46E5;
@@ -66,7 +66,7 @@
         }
 
         .glass-panel {
-            background: rgba(33, 32, 36, 0.5);
+            background: var(--card-bg);
             backdrop-filter: blur(24px);
             -webkit-backdrop-filter: blur(24px);
             border: 1px solid var(--card-border);
@@ -217,19 +217,19 @@
 
                     <!-- Фичи активного тарифа -->
                     <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-4 border-t border-white/5">
-                        <div class="p-3 rounded-2xl bg-[#18171A] border border-white/5">
+                        <div class="p-3 rounded-2xl bg-[var(--bg-main)] border border-white/5">
                             <span class="text-[10px] text-gray-500 uppercase font-mono-nums block">Лимит теста</span>
                             <span class="text-sm font-bold text-white">
                                 {% if subscription_level >= 1 %}до 30 вопр.{% else %}до 7 вопр.{% endif %}
                             </span>
                         </div>
-                        <div class="p-3 rounded-2xl bg-[#18171A] border border-white/5">
+                        <div class="p-3 rounded-2xl bg-[var(--bg-main)] border border-white/5">
                             <span class="text-[10px] text-gray-500 uppercase font-mono-nums block">Импорт файлов</span>
                             <span class="text-sm font-bold {% if subscription_level >= 1 or plan_type == 'package' %}text-emerald-400{% else %}text-gray-500{% endif %}">
                                 {% if subscription_level >= 1 or plan_type == 'package' %}Word, PDF, TXT{% else %}Заблокирован{% endif %}
                             </span>
                         </div>
-                        <div class="p-3 rounded-2xl bg-[#18171A] border border-white/5 col-span-2 sm:col-span-1">
+                        <div class="p-3 rounded-2xl bg-[var(--bg-main)] border border-white/5 col-span-2 sm:col-span-1">
                             <span class="text-[10px] text-gray-500 uppercase font-mono-nums block">Аналитика ответов</span>
                             <span class="text-sm font-bold {% if subscription_level >= 1 %}text-emerald-400{% else %}text-gray-500{% endif %}">
                                 {% if subscription_level >= 1 %}Включена{% else %}Базовая{% endif %}
@@ -273,14 +273,14 @@
                             </div>
 
                             <!-- Прогресс-бар -->
-                            <div class="w-full bg-[#18171A] rounded-full h-2.5 overflow-hidden border border-white/5 p-0.5">
+                            <div class="w-full bg-[var(--bg-main)] rounded-full h-2.5 overflow-hidden border border-white/5 p-0.5">
                                 <div class="bg-indigo-500 h-full rounded-full transition-all duration-500" 
                                      style="width: {% if plan_type == 'package' %}100{% else %}{{ tokens.tests_usage_percentage|default:0 }}{% endif %}%;"></div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="p-4 rounded-2xl bg-[#18171A] border border-white/5 space-y-2">
+                    <div class="p-4 rounded-2xl bg-[var(--bg-main)] border border-white/5 space-y-2">
                         <div class="flex items-center justify-between text-xs font-mono-nums">
                             <span class="text-gray-500">Сброс счетчика:</span>
                             <span class="text-gray-300">Каждые 24 часа</span>
@@ -331,7 +331,7 @@
                     {% endif %}
 
                     <!-- График 1: Активность создания и просмотров -->
-                    <div class="p-4 sm:p-5 rounded-2xl bg-[#18171A] border border-white/5 space-y-3">
+                    <div class="p-4 sm:p-5 rounded-2xl bg-[var(--bg-main)] border border-white/5 space-y-3">
                         <div class="flex items-center justify-between">
                             <span class="text-xs font-bold text-gray-300 font-display">Динамика создания тестов (7 дней)</span>
                             <span class="text-[10px] font-mono-nums text-gray-500">Кол-во</span>
@@ -342,7 +342,7 @@
                     </div>
 
                     <!-- График 2: Результаты прохождений учеников -->
-                    <div class="p-4 sm:p-5 rounded-2xl bg-[#18171A] border border-white/5 space-y-3">
+                    <div class="p-4 sm:p-5 rounded-2xl bg-[var(--bg-main)] border border-white/5 space-y-3">
                         <div class="flex items-center justify-between">
                             <span class="text-xs font-bold text-gray-300 font-display">Распределение оценок участников</span>
                             <span class="text-[10px] font-mono-nums text-gray-500">Баллы</span>
@@ -364,7 +364,7 @@
                     </span>
 
                     <div class="space-y-3">
-                        <div class="p-3.5 rounded-2xl bg-[#18171A] border border-white/5 flex items-center justify-between">
+                        <div class="p-3.5 rounded-2xl bg-[var(--bg-main)] border border-white/5 flex items-center justify-between">
                             <div>
                                 <span class="text-[10px] text-gray-500 uppercase font-mono-nums block">Логин</span>
                                 <span class="text-sm font-semibold text-white font-mono-nums">{{ username }}</span>
@@ -373,7 +373,7 @@
                         </div>
 
                         {% if user.email %}
-                        <div class="p-3.5 rounded-2xl bg-[#18171A] border border-white/5 flex items-center justify-between">
+                        <div class="p-3.5 rounded-2xl bg-[var(--bg-main)] border border-white/5 flex items-center justify-between">
                             <div>
                                 <span class="text-[10px] text-gray-500 uppercase font-mono-nums block">E-mail</span>
                                 <span class="text-sm font-semibold text-white">{{ user.email }}</span>
@@ -426,7 +426,7 @@
 
                         <div class="space-y-2.5 max-h-72 overflow-y-auto pr-1">
                             {% for payment in payments %}
-                            <div class="p-3.5 rounded-2xl bg-[#18171A] border border-white/5 flex items-center justify-between gap-3">
+                            <div class="p-3.5 rounded-2xl bg-[var(--bg-main)] border border-white/5 flex items-center justify-between gap-3">
                                 <div class="flex items-center gap-3 min-w-0">
                                     <span class="w-2 h-2 rounded-full flex-shrink-0 
                                         {% if payment.status == 'completed' %}bg-emerald-500 shadow-[0_0_6px_#10B981]
@@ -559,7 +559,7 @@
                                 datasets: [{
                                     data: d.scores_chart.data,
                                     backgroundColor: ['#10B981', '#F59E0B', '#EF4444'],
-                                    borderColor: '#18171A',
+                                    borderColor: 'var(--bg-main)',
                                     borderWidth: 4,
                                     hoverOffset: 4
                                 }]

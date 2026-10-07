@@ -711,35 +711,34 @@ def page_history_surveys(request):
     search_query = request.GET.get("q", "").strip()
     page_number = request.GET.get("page", 1)
 
-    # Базовый кверисет с учетом перевертыша (is_visible=False -> живые тесты)
+    # Базовый кверисет: сразу считаем прохождения каждого теста в 1 SQL-запрос
     surveys_qs = Survey.objects.filter(
         id_staff=staff_id, 
         is_visible=False
+    ).annotate(
+        total_attempts=Count("attempts", distinct=True)
     ).order_by("-created_at")
 
     if search_query:
         surveys_qs = surveys_qs.filter(title__icontains=search_query)
 
-    # Пагинация (по 8 тестов на страницу для красивой сетки)
+    # Пагинация (по 8 тестов на страницу)
     paginator = Paginator(surveys_qs, 8)
     try:
         page_obj = paginator.page(page_number)
     except (EmptyPage, PageNotAnInteger):
         page_obj = paginator.page(1)
 
-    # Быстрая сводная статистика для правого виджета (1 легкий SQL-запрос)
+    # Быстрая сводная статистика для правого виджета (включая общее число сдач)
     total_stats = Survey.objects.filter(id_staff=staff_id, is_visible=False).aggregate(
-        total_count=Count("id"),
+        total_count=Count("id", distinct=True),
         total_views=Sum("view_count"),
-        total_questions=Sum("questions_count")
+        total_questions=Sum("questions_count"),
+        total_attempts_all=Count("attempts", distinct=True)
     )
 
-    # Самый популярный тест пользователя
-    top_survey = Survey.objects.filter(
-        id_staff=staff_id, 
-        is_visible=False,
-        view_count__gt=0
-    ).order_by("-view_count").first()
+    # Самый популярный тест пользователя по просмотрам
+    top_survey = surveys_qs.filter(view_count__gt=0).order_by("-view_count").first()
 
     context = {
         "page_title": "История тестов | Летучка",
@@ -748,6 +747,7 @@ def page_history_surveys(request):
         "total_surveys": total_stats["total_count"] or 0,
         "total_views": total_stats["total_views"] or 0,
         "total_questions": total_stats["total_questions"] or 0,
+        "total_attempts_all": total_stats["total_attempts_all"] or 0,
         "top_survey": top_survey,
         "subscription_level": get_subscription_level(request),
         "total_available": getattr(request.user, "test_balance", 0),
@@ -2692,10 +2692,6 @@ def main_test_card(request, survey_id):
 
     current_user_id_staff = None
     is_authenticated = request.user.is_authenticated
-
-    # if is_authenticated:
-    #     current_user_id_staff = get_staff_id(request)
-    # else:
     
     anonymous_user = AuthUser.objects.filter(hash_user_id=client_ip).first()
     if anonymous_user:
