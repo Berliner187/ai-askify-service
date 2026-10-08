@@ -76,12 +76,12 @@
         }
 
         /* ==========================================================================
-           APPLE DYNAMIC ISLAND ENGINE
+           DYNAMIC ISLAND DESGIN
            ========================================================================== */
         .island-capsule {
-            background: rgba(24, 23, 26, 0.92);
-            backdrop-filter: blur(28px);
-            -webkit-backdrop-filter: blur(28px);
+            background: rgba(24, 24, 36, 0.2);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.12);
             box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.8);
             border-radius: 9999px;
@@ -190,11 +190,11 @@
     </aside>
 
     <!-- МОБИЛЬНЫЙ НИЖНИЙ DOCK -->
-    <nav class="lg:hidden fixed bottom-4 left-1/2 -translate-x-1/2 island-capsule rounded-full px-6 py-3 flex items-center gap-6 z-40 shadow-2xl">
+    <nav class="lg:hidden fixed bottom-4 left-1/2 -translate-x-1/2 island-capsule rounded-full px-5 py-2 flex items-center gap-6 z-40 shadow-2xl">
         <a href="/" class="text-gray-400 hover:text-white"><i class="fas fa-home text-base"></i></a>
         <a href="{% url 'create' %}" class="w-9 h-9 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-600/30"><i class="fas fa-plus text-sm"></i></a>
         {% if username != 0 %}
-            <a href="{% url 'history' %}" class="text-gray-400 hover:text-white"><i class="fas fa-layer-group text-base"></i></a>
+            <a href="{% url 'history' %}" class="text-gray-400 hover:text-white"><i class="fa-sharp fa-solid fa-clock-rotate-left text-base"></i></a>
             <a href="{% url 'profile_redirect' %}" class="text-gray-400 hover:text-white"><i class="fas fa-user text-base"></i></a>
         {% else %}
             <button type="button" onclick="openRegisterModal('nav')" class="text-xs font-bold text-indigo-400">Сохранить</button>
@@ -312,7 +312,7 @@
                         <article class="question-card glass-panel rounded-[28px] p-6 transition-all relative border border-white/[0.08]" data-question-index="{{ forloop.counter0 }}">
                             <div class="flex items-start justify-between gap-4 mb-4">
                                 <div class="flex items-center gap-2.5">
-                                    <span class="w-8 h-8 rounded-xl bg-[#18171A] border border-white/10 font-mono-nums text-xs font-bold text-gray-300 flex items-center justify-center">
+                                    <span class="w-8 h-8 rounded-xl bg-[--var(--card-bg)] border border-white/10 font-mono-nums text-xs font-bold text-gray-300 flex items-center justify-center">
                                         {{ forloop.counter }}
                                     </span>
                                     {% if question.type == 'multiple' %}
@@ -328,8 +328,9 @@
 
                                 {% if username != 0 and can_edit %}
                                 <div class="edit-actions hidden items-center gap-1">
-                                    <button type="button" class="text-gray-400 hover:text-indigo-400 p-2 rounded-xl hover:bg-white/5 transition-colors spring-btn" onclick="editExistingQuestion({{ forloop.counter0 }})" title="Редактировать">
+                                    <button type="button" class="text-gray-400 bg-[--var(--bg-main)] hover:text-indigo-400 p-2 rounded-xl hover:bg-white/5 transition-colors spring-btn" onclick="editExistingQuestion({{ forloop.counter0 }})" title="Редактировать">
                                         <i class="fas fa-pen-to-square text-xs"></i>
+                                        <span class="text-[12px]">Редактировать</span>
                                     </button>
                                     <button type="button" class="text-gray-400 hover:text-rose-400 p-2 rounded-xl hover:bg-rose-500/10 transition-colors spring-btn" onclick="deleteQuestion({{ forloop.counter0 }})" title="Удалить">
                                         <i class="fas fa-trash-can text-xs"></i>
@@ -404,7 +405,7 @@
                     {% endif %}
                 </section>
 
-                <!-- ПРАВАЯ СЕКЦИЯ: ПАНЕЛЬ ДЕЙСТВИЙ (col-span-4) -->
+                <!-- ПРАВАЯ СЕКЦИЯ: ПАНЕЛЬ ДЕЙСТВИЙ -->
                 <aside class="lg:col-span-4 space-y-5 lg:sticky lg:top-24">
 
                     <div class="glass-panel rounded-[32px] p-6 shadow-2xl space-y-4">
@@ -457,38 +458,94 @@
                     <div class="glass-panel rounded-[32px] p-6 space-y-5">
                         <span class="text-xs font-bold uppercase tracking-wider text-gray-400 block">Управление тестом</span>
 
-                        <!-- Тумблер ответов -->
+                        <!-- 1. Тумблер ответов -->
                         <div class="flex items-center justify-between gap-4 py-2 border-b border-white/5">
                             <div>
-                                <span class="text-xs font-semibold text-white block">Показ ответов</span>
-                                <span class="text-[11px] text-gray-500">Видны правильные ответы</span>
+                                <div class="flex items-center gap-1.5">
+                                    <span class="text-xs font-semibold text-white block">Показ ответов</span>
+                                    {% if username == 0 or not is_creator %}
+                                        <i class="fas fa-lock text-[9px] text-amber-400/80" title="Только для автора"></i>
+                                    {% endif %}
+                                </div>
+                                <span class="text-[11px] text-gray-500">
+                                    {% if username == 0 %}
+                                        Ключи и решения к тесту
+                                    {% else %}
+                                        Видны правильные ответы
+                                    {% endif %}
+                                </span>
                             </div>
-                            <label class="relative inline-block w-11 h-6 cursor-pointer">
-                                <input type="checkbox" id="answersToggle" class="sr-only peer" {% if show_answers %}checked{% endif %}>
-                                <div class="w-11 h-6 bg-[#18171A] border border-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-400 peer-checked:after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
-                            </label>
+
+                            {% if username != 0 and is_creator %}
+                                <!-- Рабочий тумблер только для реального автора -->
+                                <label class="relative inline-block w-11 h-6 cursor-pointer">
+                                    <input type="checkbox" id="answersToggle" class="sr-only peer" {% if show_answers %}checked{% endif %}>
+                                    <div class="w-11 h-6 bg-[#18171A] border border-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-400 peer-checked:after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                                </label>
+                            {% else %}
+                                <!-- Флеш в Dynamic Island вместо модалки -->
+                                <button type="button" 
+                                        onclick="{% if username == 0 %}openRegisterModal('answers'){% else %}Island.warn('Переключать ответы может только автор теста', 'fa-eye-slash'){% endif %}" 
+                                        class="relative inline-block w-11 h-6 cursor-pointer focus:outline-none group">
+                                    <div class="w-11 h-6 bg-[#18171A] border border-white/10 rounded-full relative transition-colors group-hover:border-amber-400/40">
+                                        <span class="absolute top-[2px] left-[2px] bg-zinc-700 rounded-full h-5 w-5 flex items-center justify-center text-[9px] text-amber-300">
+                                            <i class="fas fa-lock text-[8px]"></i>
+                                        </span>
+                                    </div>
+                                </button>
+                            {% endif %}
                         </div>
 
-                        <!-- Режим правки -->
+                        <!-- 2. Режим правки -->
                         <div class="flex items-center justify-between py-2 border-b border-white/5">
                             <div>
-                                <span class="text-xs font-semibold text-white block">Редактирование</span>
+                                <div class="flex items-center gap-1.5">
+                                    <span class="text-xs font-semibold text-white block">Редактирование</span>
+                                    {% if username == 0 or not is_creator %}
+                                        <i class="fas fa-lock text-[9px] text-amber-400/80" title="Только для автора"></i>
+                                    {% endif %}
+                                </div>
                                 <span class="text-[11px] text-gray-500">Правка вопросов и ответов</span>
                             </div>
-                            <button type="button" id="toggle-edit-mode-btn" class="px-3.5 py-1.5 rounded-xl bg-[#18171A] border border-white/10 text-xs font-semibold text-gray-300 hover:text-white spring-btn">
-                                Править
-                            </button>
+
+                            {% if username != 0 and is_creator %}
+                                <button type="button" id="toggle-edit-mode-btn" class="px-3.5 py-1.5 rounded-xl bg-[#18171A] border border-white/10 text-xs font-semibold text-gray-300 hover:text-white spring-btn">
+                                    Править
+                                </button>
+                            {% else %}
+                                <button type="button" 
+                                        onclick="{% if username == 0 %}openRegisterModal('edit'){% else %}Island.warn('Это чужой тест. Создайте свой в конструкторе, чтобы редактировать!', 'fa-pen-slash'){% endif %}" 
+                                        class="px-3 py-1.5 rounded-xl bg-[#18171A] border border-white/10 text-xs font-semibold text-gray-400 hover:text-white hover:border-amber-400/40 spring-btn inline-flex items-center gap-1.5">
+                                    <i class="fas fa-lock text-[9px] text-amber-400"></i>
+                                    <span>Править</span>
+                                </button>
+                            {% endif %}
                         </div>
 
-                        <!-- Перегенерация -->
+                        <!-- 3. Перегенерация -->
                         <div class="flex items-center justify-between py-2 border-b border-white/5">
                             <div>
-                                <span class="text-xs font-semibold text-white block">Пересобрать тест</span>
+                                <div class="flex items-center gap-1.5">
+                                    <span class="text-xs font-semibold text-white block">Пересобрать тест</span>
+                                    {% if username == 0 or not is_creator %}
+                                        <i class="fas fa-lock text-[9px] text-amber-400/80" title="Только для автора"></i>
+                                    {% endif %}
+                                </div>
                                 <span class="text-[11px] text-gray-500">Нейросеть составит новые</span>
                             </div>
-                            <button type="button" id="btn-regenerate-survey" onclick="triggerRegenerateSurvey()" class="px-3.5 py-1.5 rounded-xl bg-white/5 border border-white/10 text-xs font-semibold text-indigo-400 hover:bg-indigo-600 hover:text-white spring-btn">
-                                Пересобрать
-                            </button>
+
+                            {% if username != 0 and is_creator %}
+                                <button type="button" id="btn-regenerate-survey" onclick="triggerRegenerateSurvey()" class="px-3.5 py-1.5 rounded-xl bg-white/5 border border-white/10 text-xs font-semibold text-indigo-400 hover:bg-indigo-600 hover:text-white spring-btn">
+                                    Пересобрать
+                                </button>
+                            {% else %}
+                                <button type="button" 
+                                        onclick="{% if username == 0 %}openRegisterModal('regenerate'){% else %}Island.warn('Пересобрать тест может только его автор. Создайте свой!', 'fa-rotate'){% endif %}" 
+                                        class="px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-xs font-semibold text-gray-400 hover:text-white hover:border-amber-400/40 spring-btn inline-flex items-center gap-1.5">
+                                    <i class="fas fa-lock text-[9px] text-amber-400"></i>
+                                    <span>Пересобрать</span>
+                                </button>
+                            {% endif %}
                         </div>
 
                         {% if username != 0 and username == author %}
@@ -638,14 +695,14 @@
                     {% csrf_token %}
                     <div>
                         <label for="reg-email" class="block text-xs font-semibold text-gray-300 mb-1.5">Ваш Email</label>
-                        <input type="email" name="email" id="reg-email" required placeholder="teacher@school.ru" 
-                               class="w-full bg-[#18171A] border border-white/10 rounded-2xl p-3.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 transition-colors">
+                        <input type="email" name="email" id="reg-email" required placeholder="email@yandex.ru" 
+                               class="w-full bg-[--var(--card-bg)] border border-white/10 rounded-2xl p-3.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 transition-colors">
                     </div>
 
                     <div>
                         <label for="reg-password" class="block text-xs font-semibold text-gray-300 mb-1.5">Придумайте пароль</label>
                         <input type="password" name="password1" id="reg-password" required placeholder="••••••••" 
-                               class="w-full bg-[#18171A] border border-white/10 rounded-2xl p-3.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 transition-colors">
+                               class="w-full bg-[--var(--card-bg)] border border-white/10 rounded-2xl p-3.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 transition-colors">
                     </div>
 
                     <!-- ЧЕКБОКС 152-ФЗ -->
@@ -690,7 +747,7 @@
 
                     <div>
                         <label class="block text-xs font-semibold text-gray-400 mb-2">Тип вопроса</label>
-                        <div class="grid grid-cols-2 gap-2 bg-[#18171A] p-1 rounded-2xl border border-white/10">
+                        <div class="grid grid-cols-2 gap-2 bg-[--var(--card-bg)] p-1 rounded-2xl border border-white/10">
                             <button type="button" id="btn-type-single" onclick="setQuestionType('single')" class="py-2 rounded-xl text-xs font-semibold bg-indigo-600 text-white transition-all">Один правильный</button>
                             <button type="button" id="btn-type-multiple" onclick="setQuestionType('multiple')" class="py-2 rounded-xl text-xs font-semibold text-gray-400 hover:text-white transition-all">Несколько вариантов</button>
                         </div>
@@ -763,811 +820,805 @@
     {{ questions|json_script:"questions-data" }}
 
     <script>
-    const surveyId = '{{ survey_id }}';
-    // 1. ЖЕЛЕЗОБЕТОННЫЙ ФИКС: строковое сравнение в кавычках (больше никакого ReferenceError)
-    const isUserAuthenticated = ("{{ username }}" !== "0" && "{{ username }}" !== "" && "{{ username }}" !== "None");
-    
-    // 2. БЕЗОПАСНЫЙ ПАРСИНГ ВОПРОСОВ (защита от null.textContent)
-    let rawQuestions = [];
-    try {
-        const qDataEl = document.getElementById('questions-data');
-        if (qDataEl && qDataEl.textContent) {
-            rawQuestions = JSON.parse(qDataEl.textContent);
-        }
-    } catch (e) {
-        console.warn('Не удалось распарсить questions-data', e);
-    }
-
-    let currentQuestionType = 'single';
-    let isEditMode = false;
-
-    // 3. ПОЛУЧЕНИЕ CSRF (двойной fallback: cookie -> meta-тег)
-    function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
-            }
-        }
-        if (!cookieValue && name === 'csrftoken') {
-            const meta = document.querySelector('meta[name="csrf-token"]');
-            if (meta) cookieValue = meta.getAttribute('content');
-        }
-        return cookieValue;
-    }
-
-    /* ==========================================================================
-       1. УПРАВЛЕНИЕ МОДАЛКОЙ БЫСТРОЙ РЕГИСТРАЦИИ (152-ФЗ)
-       ========================================================================== */
-    const MODAL_PRESETS = {
-        banner: {
-            title: "Сохраните созданный тест",
-            desc: "Зарегистрируйтесь, чтобы закрепить тест за своим аккаунтом и получить ещё 3 теста в подарок."
-        },
-        take_test: {
-            title: "Запуск теста для прохождения",
-            desc: "Создайте аккаунт, чтобы открыть доступ ученикам по прямой ссылке и собирать статистику с автопроверкой."
-        },
-        share: {
-            title: "Поделиться тестом с группой",
-            desc: "Зарегистрируйтесь, чтобы сгенерировать публичную ссылку для учеников без паролей."
-        },
-        pdf: {
-            title: "Выгрузка бланка в PDF",
-            desc: "Зарегистрируйтесь, чтобы скачать сверстанный тест с отдельным листом ответов для печати."
-        },
-        qr: {
-            title: "QR-код для аудитории",
-            desc: "Сохраните тест, чтобы вывести QR-код на проектор или доску для мгновенного входа со смартфонов."
-        },
-        answers: {
-            title: "Ключи и правильные ответы",
-            desc: "Зарегистрируйтесь в 1 клик, чтобы открыть правильные варианты и пояснения к каждому заданию."
-        },
-        edit: {
-            title: "Редактирование заданий",
-            desc: "Сохраните тест в личный кабинет, чтобы менять формулировки, удалять или добавлять свои вопросы."
-        },
-        regenerate: {
-            title: "Пересборка теста нейросетью",
-            desc: "Зарегистрируйтесь, чтобы запустить генерацию альтернативного варианта заданий."
-        },
-        in_feed: {
-            title: "Сохранить и продолжить работу",
-            desc: "Зарегистрируйтесь за 10 секунд, чтобы настроить этот тест и забрать 3 бонусных теста."
-        }
-    };
-
-    function openRegisterModal(trigger = 'banner') {
-        const config = MODAL_PRESETS[trigger] || MODAL_PRESETS.banner;
-        $('#reg-modal-title').text(config.title);
-        $('#reg-modal-desc').text(config.desc);
-        $('#reg-form-error').addClass('hidden').text('');
-        $('#quick-register-modal').removeClass('hidden').css('display', 'flex');
-    }
-
-    function closeRegisterModal() {
-        $('#quick-register-modal').addClass('hidden').css('display', 'none');
-    }
-
-    /* ==========================================================================
-       2. ДИНАМИЧЕСКИЙ ОСТРОВОК (ПЕРЕПИСАН БЕЗ ЗАВИСИМОСТИ ОТ ТАЙЛВИНД-БАГОВ)
-       ========================================================================== */
-    const Island = (() => {
-        let timer = null;
-
-        const THEMES = {
-            success: { themeClass: 'theme-success', icon: 'fa-check', iconBg: 'bg-emerald-500 text-black font-bold' },
-            error: { themeClass: 'theme-error', icon: 'fa-xmark', iconBg: 'bg-rose-500 text-white font-bold' },
-            warning: { themeClass: 'theme-warning', icon: 'fa-exclamation', iconBg: 'bg-amber-500 text-black font-bold' },
-            info: { themeClass: 'theme-info', icon: 'fa-bolt', iconBg: 'bg-indigo-500 text-white' }
-        };
-
-        function notify(message, type = 'success', customIcon = null, duration = 2600) {
-            if (timer) clearTimeout(timer);
-
-            const $island = $('#dynamic-island');
-            const $controls = $('#island-controls');
-            const $notice = $('#island-notice');
-            const $text = $('#island-text');
-            const $icon = $('#island-icon');
-            const $iconBox = $('#island-icon-box');
-
-            const config = THEMES[type] || THEMES.info;
-            const chosenIcon = customIcon || config.icon;
-
-            // 1. Анимация ухода контролов
-            $island.removeClass('theme-success theme-error theme-warning theme-info');
-            $controls.css({ opacity: 0, pointerEvents: 'none', transform: 'scale(0.92)' });
-
-            setTimeout(() => {
-                $controls.hide();
-
-                // 2. Подготовка контента
-                $text.text(message);
-                $icon.attr('class', `fas ${chosenIcon}`);
-                $iconBox.attr('class', `w-6 h-6 rounded-full flex items-center justify-center text-[11px] flex-shrink-0 ${config.iconBg}`);
-
-                // 3. Морфинг капсулы островка
-                $island.removeClass('mode-header').addClass(`mode-notify ${config.themeClass}`);
-
-                // 4. Показ уведомления с принудительным flex
-                $notice.removeClass('hidden').css({ display: 'flex', opacity: 0, transform: 'scale(0.8)' });
-
-                setTimeout(() => {
-                    $notice.css({ opacity: 1, transform: 'scale(1)', transition: 'all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)' });
-                }, 20);
-
-            }, 150);
-
-            timer = setTimeout(() => {
-                dismiss();
-            }, duration);
-        }
-
-        function dismiss() {
-            const $island = $('#dynamic-island');
-            const $controls = $('#island-controls');
-            const $notice = $('#island-notice');
-
-            $notice.css({ opacity: 0, transform: 'scale(0.8)', transition: 'all 0.2s ease' });
-
-            setTimeout(() => {
-                $notice.hide().addClass('hidden');
-
-                $island
-                    .removeClass('mode-notify theme-success theme-error theme-warning theme-info')
-                    .addClass('mode-header');
-
-                $controls.show().css({ display: 'flex' });
-                setTimeout(() => {
-                    $controls.css({ opacity: 1, pointerEvents: 'auto', transform: 'scale(1)', transition: 'all 0.25s ease' });
-                }, 20);
-
-                timer = null;
-            }, 180);
-        }
-
-        return {
-            notify,
-            dismiss,
-            success: (msg, icon, dur) => notify(msg, 'success', icon, dur),
-            error: (msg, icon, dur) => notify(msg, 'error', icon, dur),
-            warn: (msg, icon, dur) => notify(msg, 'warning', icon, dur),
-            info: (msg, icon, dur) => notify(msg, 'info', icon, dur)
-        };
-    })();
-
-    /* ==========================================================================
-       3. ПЕРЕКЛЮЧЕНИЕ ПРАВИЛЬНЫХ ОТВЕТОВ В DOM
-       ========================================================================== */
-    function toggleAnswersInDOM(show) {
-        $('.option-row').each(function() {
-            const isCorrect = $(this).attr('data-is-correct') === 'true';
-            const isMultiple = $(this).closest('article').find('.fa-list-check').length > 0;
-            const $badge = $(this).find('.opt-badge');
-            const $icon = $(this).find('.opt-icon');
-            const $label = $(this).find('.opt-label');
-
-            if (isCorrect) {
-                if (show) {
-                    $(this)
-                        .removeClass('bg-[#111119]/70 border-white/[0.04] text-gray-300')
-                        .addClass('bg-emerald-500/10 border-emerald-500/30 text-emerald-300 font-medium');
-                    $badge
-                        .removeClass('bg-white/5 border border-white/10 text-gray-400')
-                        .addClass('bg-emerald-500 text-black font-bold');
-                    $icon.attr('class', 'opt-icon fas fa-check');
-                    $label.removeClass('hidden').show();
-                } else {
-                    $(this)
-                        .addClass('bg-[#111119]/70 border-white/[0.04] text-gray-300')
-                        .removeClass('bg-emerald-500/10 border-emerald-500/30 text-emerald-300 font-medium');
-                    $badge
-                        .addClass('bg-white/5 border border-white/10 text-gray-400')
-                        .removeClass('bg-emerald-500 text-black font-bold');
-                    
-                    if (isMultiple) {
-                        $icon.attr('class', 'opt-icon fas fa-square text-[9px] opacity-40');
-                    } else {
-                        $icon.attr('class', 'opt-icon fas fa-circle text-[7px] opacity-40');
-                    }
-                    $label.addClass('hidden').hide();
-                }
-            }
-        });
-    }
-
-    function rollbackAnswersToggle(previousState) {
-        $('#answersToggle').prop('checked', previousState);
-        toggleAnswersInDOM(previousState);
-    }
-
-    /* ==========================================================================
-       4. МОДАЛКА РЕДАКТИРОВАНИЯ ВОПРОСА
-       ========================================================================== */
-    function setQuestionType(type) {
-        currentQuestionType = type;
-        if (type === 'single') {
-            $('#btn-type-single').addClass('bg-indigo-600 text-white').removeClass('text-gray-400');
-            $('#btn-type-multiple').removeClass('bg-indigo-600 text-white').addClass('text-gray-400');
-            $('.opt-check').attr('type', 'radio').attr('name', 'correct_opt');
-        } else {
-            $('#btn-type-multiple').addClass('bg-indigo-600 text-white').removeClass('text-gray-400');
-            $('#btn-type-single').removeClass('bg-indigo-600 text-white').addClass('text-gray-400');
-            $('.opt-check').attr('type', 'checkbox').removeAttr('name');
-        }
-    }
-
-    function addOptionRow(value = '', isChecked = false) {
-        const rowId = 'opt-row-' + Math.random().toString(36).substring(2, 9);
-        const inputType = (currentQuestionType === 'single') ? 'radio' : 'checkbox';
-        const nameAttr = (currentQuestionType === 'single') ? 'name="correct_opt"' : '';
-
-        const rowHtml = `
-            <div class="flex items-center gap-2.5 bg-[#18171A] border border-white/10 rounded-2xl p-2.5" id="${rowId}">
-                <input type="${inputType}" ${nameAttr} ${isChecked ? 'checked' : ''} class="opt-check text-indigo-600 focus:ring-0 ml-1 rounded cursor-pointer">
-                <input type="text" required value="${value}" class="opt-val flex-grow bg-transparent border-0 text-sm text-white focus:outline-none" placeholder="Текст ответа">
-                <button type="button" onclick="$('#${rowId}').remove()" class="text-gray-500 hover:text-rose-400 p-1 text-xs">
-                    <i class="fas fa-xmark"></i>
-                </button>
-            </div>
-        `;
-        $('#modal-options-list').append(rowHtml);
-    }
-
-    function openNewQuestionModal() {
-        $('#modal-editor-title').text('Новый вопрос');
-        $('#edit-q-index').val('');
-        $('#modal-q-text').val('');
-        $('#modal-options-list').empty();
-        setQuestionType('single');
-        addOptionRow('', true);
-        addOptionRow('', false);
-        $('#question-editor-modal').removeClass('hidden').css('display', 'flex');
-    }
-
-    function editExistingQuestion(index) {
-        const q = rawQuestions[index];
-        if (!q) {
-            Island.warn('Данные вопроса не найдены');
-            return;
-        }
-
-        $('#modal-editor-title').text(`Правка вопроса #${index + 1}`);
-        $('#edit-q-index').val(index);
-        $('#modal-q-text').val(q.question);
-        $('#modal-options-list').empty();
-        setQuestionType(q.type || 'single');
-
-        if (Array.isArray(q.options)) {
-            q.options.forEach(opt => {
-                let isCorrect = false;
-                if (Array.isArray(q.correct_answers)) {
-                    isCorrect = q.correct_answers.includes(opt);
-                } else if (q.correct_answer) {
-                    isCorrect = (q.correct_answer === opt);
-                }
-                addOptionRow(opt, isCorrect);
-            });
-        }
-
-        $('#question-editor-modal').removeClass('hidden').css('display', 'flex');
-    }
-
-    function closeQuestionModal() {
-        $('#question-editor-modal').addClass('hidden').css('display', 'none');
-    }
-
-    async function deleteQuestion(index) {
-        if (!confirm('Удалить этот вопрос?')) return;
+        const surveyId = '{{ survey_id }}';
+        const isUserAuthenticated = ("{{ username }}" !== "0" && "{{ username }}" !== "" && "{{ username }}" !== "None");
+        
+        let rawQuestions = [];
         try {
-            const res = await fetch(`/api/surveys/${surveyId}/questions/${index}/delete/`, {
-                method: 'POST',
-                headers: { 'X-CSRFToken': getCookie('csrftoken') }
-            });
-            const data = await res.json();
-            if (res.ok && data.status === 'success') {
-                Island.success('Вопрос удален');
-                setTimeout(() => window.location.reload(), 600);
-            } else {
-                Island.error(data.error || 'Ошибка при удалении');
-            }
-        } catch (err) {
-            Island.error('Сбой удаления вопроса');
-        }
-    }
-
-    function openEditTitleModal() {
-        $('#title-modal').removeClass('hidden').css('display', 'flex');
-    }
-
-    function closeEditTitleModal() {
-        $('#title-modal').addClass('hidden').css('display', 'none');
-    }
-
-    async function saveSurveyTitle() {
-        const newTitle = $('#input-new-title').val().trim();
-        if (!newTitle) {
-            Island.warn('Введите название теста');
-            return;
-        }
-
-        try {
-            const res = await fetch(`/api/surveys/${surveyId}/title/`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken')
-                },
-                body: JSON.stringify({ title: newTitle })
-            });
-            const data = await res.json();
-            if (res.ok && data.status === 'success') {
-                $('#header-survey-title').text(data.title);
-                closeEditTitleModal();
-                Island.success('Название обновлено', 'fa-pen');
-            } else {
-                Island.error(data.error || 'Не удалось обновить');
-            }
-        } catch (err) {
-            Island.error('Сетевой сбой при обновлении');
-        }
-    }
-
-    async function triggerRegenerateSurvey() {
-        if (!isUserAuthenticated) {
-            openRegisterModal('regenerate');
-            return;
-        }
-
-        if (!confirm('Нейросеть составит совершенно новые вопросы по этой теме. Текущие вопросы будут заменены. Продолжить?')) return;
-
-        Island.info('ИИ пересобирает тест...', 'fa-rotate fa-spin', 25000);
-
-        try {
-            const res = await fetch(`/api/surveys/${surveyId}/regenerate/`, {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json', 
-                    'X-CSRFToken': getCookie('csrftoken') 
-                }
-            });
-
-            const data = await res.json();
-
-            if (res.ok && data.status === 'success') {
-                Island.success('Тест успешно пересобран!', 'fa-check');
-                setTimeout(() => {
-                    window.location.reload();
-                }, 800);
-            } else {
-                Island.error(data.error || 'Ошибка перегенерации');
-            }
-        } catch (err) {
-            Island.error('Сетевой сбой при отправке');
-        }
-    }
-
-    function fallbackCopy(text) {
-        const textArea = document.createElement("textarea");
-        textArea.value = text;
-        textArea.style.position = "fixed";
-        textArea.style.left = "-999999px";
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
-        try {
-            document.execCommand('copy');
-            Island.success('Ссылка скопирована', 'fa-link');
-        } catch (err) {
-            Island.error('Не удалось скопировать');
-        }
-        textArea.remove();
-    }
-
-    function showClassroomQR() {
-        const link = window.location.protocol + "//" + window.location.host + "{% url 'take_test' survey_id %}";
-        const container = document.getElementById('qrcode');
-        container.innerHTML = "";
-        new QRCode(container, {
-            text: link,
-            width: 240,
-            height: 240,
-            colorDark : "#18171A",
-            colorLight : "#ffffff",
-            correctLevel : QRCode.CorrectLevel.H
-        });
-        document.getElementById('qrLinkText').innerText = "{{ title|escapejs }}";
-        $('#qrModal').removeClass('hidden').css('display', 'flex');
-        Island.info('QR-код сформирован', 'fa-qrcode');
-    }
-
-    function openDeleteModal(id, title) {
-        $('#modal-survey-title').text(`«${title}»`);
-        $('#confirm-delete-link').attr('href', `/drop-survey/${id}/`);
-        $('#delete-modal').removeClass('hidden').css('display', 'flex');
-    }
-
-    function closeDeleteModal() {
-        $('#delete-modal').addClass('hidden').css('display', 'none');
-    }
-
-    async function registerSurveyView() {
-        if (!surveyId) return;
-        try {
-            const rawString = `${navigator.userAgent}-${navigator.language}-${new Date().getTimezoneOffset()}`;
-            const encoder = new TextEncoder();
-            const data = encoder.encode(rawString);
-            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-            const visitorHash = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
-
-            const response = await fetch(`/register-view/${surveyId}/`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken')
-                },
-                body: JSON.stringify({ hash: visitorHash })
-            });
-
-            const resData = await response.json();
-            if (resData.success && resData.view_count !== undefined) {
-                const $counter = $('#dynamic-island .fa-eye').next('span');
-                const currentCount = parseInt($counter.text(), 10) || 0;
-                
-                if (resData.new_view && resData.view_count > currentCount) {
-                    $counter.text(resData.view_count);
-                    $counter.parent().addClass('border-indigo-500/40 text-white');
-                    setTimeout(() => {
-                        $counter.parent().removeClass('border-indigo-500/40 text-white');
-                    }, 1200);
-                } else {
-                    $counter.text(resData.view_count);
-                }
+            const qDataEl = document.getElementById('questions-data');
+            if (qDataEl && qDataEl.textContent) {
+                rawQuestions = JSON.parse(qDataEl.textContent);
             }
         } catch (e) {
-            console.warn('View tracking unavailable');
+            console.warn('Не удалось распарсить questions-data', e);
         }
-    }
 
-    /* ==========================================================================
-       5. БИНДИНГ СОБЫТИЙ СТРОГО ПОСЛЕ ЗАГРУЗКИ DOM
-       ========================================================================== */
-    $(document).ready(function() {
+        let currentQuestionType = 'single';
+        let isEditMode = false;
 
-        // 1. ТУМБЛЕР ОТВЕТОВ
-        $('#answersToggle').off('change').on('change', async function() {
-            if (!isUserAuthenticated) {
-                this.checked = false;
-                openRegisterModal('answers');
-                return;
-            }
-
-            const showAnswers = this.checked;
-            const csrftoken = getCookie('csrftoken');
-
-            // Мгновенный отклик в DOM
-            toggleAnswersInDOM(showAnswers);
-
-            try {
-                const response = await fetch(`/api/surveys/${surveyId}/toggle-answers/`, {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json', 
-                        'X-CSRFToken': csrftoken 
-                    },
-                    body: JSON.stringify({ show_answers: showAnswers })
-                });
-
-                const data = await response.json();
-                if (data.status === 'success') {
-                    Island.success(showAnswers ? 'Ответы открыты' : 'Ответы скрыты', showAnswers ? 'fa-eye' : 'fa-eye-slash');
-                } else {
-                    rollbackAnswersToggle(!showAnswers);
-                    Island.error(data.error || 'Ошибка сохранения');
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
                 }
-            } catch (err) {
-                rollbackAnswersToggle(!showAnswers);
-                Island.error('Сбой связи с сервером');
             }
-        });
+            if (!cookieValue && name === 'csrftoken') {
+                const meta = document.querySelector('meta[name="csrf-token"]');
+                if (meta) cookieValue = meta.getAttribute('content');
+            }
+            return cookieValue;
+        }
 
-        // 2. КНОПКА «ПРАВИТЬ»
-        $('#toggle-edit-mode-btn').off('click').on('click', function(e) {
-            e.preventDefault();
+        const MODAL_PRESETS = {
+            banner: {
+                title: "Сохраните созданный тест",
+                desc: "Зарегистрируйтесь, чтобы закрепить тест за своим аккаунтом и получить ещё 3 теста в подарок."
+            },
+            take_test: {
+                title: "Запуск теста для прохождения",
+                desc: "Создайте аккаунт, чтобы открыть доступ ученикам по прямой ссылке и собирать статистику с автопроверкой."
+            },
+            share: {
+                title: "Поделиться тестом с группой",
+                desc: "Зарегистрируйтесь, чтобы сгенерировать публичную ссылку для учеников без паролей."
+            },
+            pdf: {
+                title: "Выгрузка бланка в PDF",
+                desc: "Зарегистрируйтесь, чтобы скачать сверстанный тест с отдельным листом ответов для печати."
+            },
+            qr: {
+                title: "QR-код для аудитории",
+                desc: "Сохраните тест, чтобы вывести QR-код на проектор или доску для мгновенного входа со смартфонов."
+            },
+            answers: {
+                title: "Ключи и правильные ответы",
+                desc: "Зарегистрируйтесь в 1 клик, чтобы открыть правильные варианты и пояснения к каждому заданию."
+            },
+            edit: {
+                title: "Редактирование заданий",
+                desc: "Сохраните тест в личный кабинет, чтобы менять формулировки, удалять или добавлять свои вопросы."
+            },
+            regenerate: {
+                title: "Пересборка теста нейросетью",
+                desc: "Зарегистрируйтесь, чтобы запустить генерацию альтернативного варианта заданий."
+            },
+            in_feed: {
+                title: "Сохранить и продолжить работу",
+                desc: "Зарегистрируйтесь за 10 секунд, чтобы настроить этот тест и забрать 3 бонусных теста."
+            }
+        };
 
-            if (!isUserAuthenticated) {
-                openRegisterModal('edit');
-                return;
+        function openRegisterModal(trigger = 'banner') {
+            const config = MODAL_PRESETS[trigger] || MODAL_PRESETS.banner;
+            $('#reg-modal-title').text(config.title);
+            $('#reg-modal-desc').text(config.desc);
+            $('#reg-form-error').addClass('hidden').text('');
+            $('#quick-register-modal').removeClass('hidden').css('display', 'flex');
+        }
+
+        function closeRegisterModal() {
+            $('#quick-register-modal').addClass('hidden').css('display', 'none');
+        }
+
+        /* ==========================================================================
+        2. ДИНАМИЧЕСКИЙ ОСТРОВОК (ПЕРЕПИСАН БЕЗ ЗАВИСИМОСТИ ОТ ТАЙЛВИНД-БАГОВ)
+        ========================================================================== */
+        const Island = (() => {
+            let timer = null;
+
+            const THEMES = {
+                success: { themeClass: 'theme-success', icon: 'fa-check', iconBg: 'bg-emerald-500 text-black font-bold' },
+                error: { themeClass: 'theme-error', icon: 'fa-xmark', iconBg: 'bg-rose-500 text-white font-bold' },
+                warning: { themeClass: 'theme-warning', icon: 'fa-exclamation', iconBg: 'bg-amber-500 text-black font-bold' },
+                info: { themeClass: 'theme-info', icon: 'fa-bolt', iconBg: 'bg-indigo-500 text-white' }
+            };
+
+            function notify(message, type = 'success', customIcon = null, duration = 2600) {
+                if (timer) clearTimeout(timer);
+
+                const $island = $('#dynamic-island');
+                const $controls = $('#island-controls');
+                const $notice = $('#island-notice');
+                const $text = $('#island-text');
+                const $icon = $('#island-icon');
+                const $iconBox = $('#island-icon-box');
+
+                const config = THEMES[type] || THEMES.info;
+                const chosenIcon = customIcon || config.icon;
+
+                // 1. Анимация ухода контролов
+                $island.removeClass('theme-success theme-error theme-warning theme-info');
+                $controls.css({ opacity: 0, pointerEvents: 'none', transform: 'scale(0.92)' });
+
+                setTimeout(() => {
+                    $controls.hide();
+
+                    // 2. Подготовка контента
+                    $text.text(message);
+                    $icon.attr('class', `fas ${chosenIcon}`);
+                    $iconBox.attr('class', `w-6 h-6 rounded-full flex items-center justify-center text-[11px] flex-shrink-0 ${config.iconBg}`);
+
+                    // 3. Морфинг капсулы островка
+                    $island.removeClass('mode-header').addClass(`mode-notify ${config.themeClass}`);
+
+                    // 4. Показ уведомления с принудительным flex
+                    $notice.removeClass('hidden').css({ display: 'flex', opacity: 0, transform: 'scale(0.8)' });
+
+                    setTimeout(() => {
+                        $notice.css({ opacity: 1, transform: 'scale(1)', transition: 'all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)' });
+                    }, 20);
+
+                }, 150);
+
+                timer = setTimeout(() => {
+                    dismiss();
+                }, duration);
             }
 
-            isEditMode = !isEditMode;
+            function dismiss() {
+                const $island = $('#dynamic-island');
+                const $controls = $('#island-controls');
+                const $notice = $('#island-notice');
 
-            if (isEditMode) {
-                $(this)
-                    .text('Готово')
-                    .removeClass('bg-[#18171A] text-gray-300 border-white/10')
-                    .addClass('bg-indigo-600 text-white border-transparent shadow-lg shadow-indigo-600/30');
+                $notice.css({ opacity: 0, transform: 'scale(0.8)', transition: 'all 0.2s ease' });
 
-                // Принудительный показ карандашей
-                $('.edit-actions').removeClass('hidden').css('display', 'flex');
-                $('#add-question-box').removeClass('hidden').css('display', 'block');
-                Island.info('Режим правки активен', 'fa-pen-to-square');
-            } else {
-                $(this)
-                    .text('Править')
-                    .removeClass('bg-indigo-600 text-white border-transparent shadow-lg shadow-indigo-600/30')
-                    .addClass('bg-[#18171A] text-gray-300 border-white/10');
+                setTimeout(() => {
+                    $notice.hide().addClass('hidden');
 
-                $('.edit-actions').addClass('hidden').css('display', 'none');
-                $('#add-question-box').addClass('hidden').css('display', 'none');
-                Island.info('Редактирование завершено', 'fa-check');
+                    $island
+                        .removeClass('mode-notify theme-success theme-error theme-warning theme-info')
+                        .addClass('mode-header');
+
+                    $controls.show().css({ display: 'flex' });
+                    setTimeout(() => {
+                        $controls.css({ opacity: 1, pointerEvents: 'auto', transform: 'scale(1)', transition: 'all 0.25s ease' });
+                    }, 20);
+
+                    timer = null;
+                }, 180);
             }
-        });
 
-        // 3. САБМИТ РЕДАКТИРОВАНИЯ ВОПРОСА
-        $('#question-editor-form').off('submit').on('submit', async function(e) {
-            e.preventDefault();
-            const qIndexVal = $('#edit-q-index').val();
-            const questionIndex = qIndexVal !== '' ? parseInt(qIndexVal, 10) : null;
-            const questionText = $('#modal-q-text').val().trim();
+            return {
+                notify,
+                dismiss,
+                success: (msg, icon, dur) => notify(msg, 'success', icon, dur),
+                error: (msg, icon, dur) => notify(msg, 'error', icon, dur),
+                warn: (msg, icon, dur) => notify(msg, 'warning', icon, dur),
+                info: (msg, icon, dur) => notify(msg, 'info', icon, dur)
+            };
+        })();
 
-            const options = [];
-            const correctAnswers = [];
+        /* ==========================================================================
+        3. ПЕРЕКЛЮЧЕНИЕ ПРАВИЛЬНЫХ ОТВЕТОВ В DOM
+        ========================================================================== */
+        function toggleAnswersInDOM(show) {
+            $('.option-row').each(function() {
+                const isCorrect = $(this).attr('data-is-correct') === 'true';
+                const isMultiple = $(this).closest('article').find('.fa-list-check').length > 0;
+                const $badge = $(this).find('.opt-badge');
+                const $icon = $(this).find('.opt-icon');
+                const $label = $(this).find('.opt-label');
 
-            $('#modal-options-list > div').each(function() {
-                const text = $(this).find('.opt-val').val().trim();
-                const isChecked = $(this).find('.opt-check').is(':checked');
-                if (text) {
-                    options.push(text);
-                    if (isChecked) correctAnswers.push(text);
+                if (isCorrect) {
+                    if (show) {
+                        $(this)
+                            .removeClass('bg-[#111119]/70 border-white/[0.04] text-gray-300')
+                            .addClass('bg-emerald-500/10 border-emerald-500/30 text-emerald-300 font-medium');
+                        $badge
+                            .removeClass('bg-white/5 border border-white/10 text-gray-400')
+                            .addClass('bg-emerald-500 text-black font-bold');
+                        $icon.attr('class', 'opt-icon fas fa-check');
+                        $label.removeClass('hidden').show();
+                    } else {
+                        $(this)
+                            .addClass('bg-[#111119]/70 border-white/[0.04] text-gray-300')
+                            .removeClass('bg-emerald-500/10 border-emerald-500/30 text-emerald-300 font-medium');
+                        $badge
+                            .addClass('bg-white/5 border border-white/10 text-gray-400')
+                            .removeClass('bg-emerald-500 text-black font-bold');
+                        
+                        if (isMultiple) {
+                            $icon.attr('class', 'opt-icon fas fa-square text-[9px] opacity-40');
+                        } else {
+                            $icon.attr('class', 'opt-icon fas fa-circle text-[7px] opacity-40');
+                        }
+                        $label.addClass('hidden').hide();
+                    }
                 }
             });
+        }
 
-            if (options.length < 2) {
-                Island.warn('Нужно минимум 2 варианта');
+        function rollbackAnswersToggle(previousState) {
+            $('#answersToggle').prop('checked', previousState);
+            toggleAnswersInDOM(previousState);
+        }
+
+        /* ==========================================================================
+        4. МОДАЛКА РЕДАКТИРОВАНИЯ ВОПРОСА
+        ========================================================================== */
+        function setQuestionType(type) {
+            currentQuestionType = type;
+            if (type === 'single') {
+                $('#btn-type-single').addClass('bg-indigo-600 text-white').removeClass('text-gray-400');
+                $('#btn-type-multiple').removeClass('bg-indigo-600 text-white').addClass('text-gray-400');
+                $('.opt-check').attr('type', 'radio').attr('name', 'correct_opt');
+            } else {
+                $('#btn-type-multiple').addClass('bg-indigo-600 text-white').removeClass('text-gray-400');
+                $('#btn-type-single').removeClass('bg-indigo-600 text-white').addClass('text-gray-400');
+                $('.opt-check').attr('type', 'checkbox').removeAttr('name');
+            }
+        }
+
+        function addOptionRow(value = '', isChecked = false) {
+            const rowId = 'opt-row-' + Math.random().toString(36).substring(2, 9);
+            const inputType = (currentQuestionType === 'single') ? 'radio' : 'checkbox';
+            const nameAttr = (currentQuestionType === 'single') ? 'name="correct_opt"' : '';
+
+            const rowHtml = `
+                <div class="flex items-center gap-2.5 bg-[--var(--card-bg)] border border-white/10 rounded-2xl p-2.5" id="${rowId}">
+                    <input type="${inputType}" ${nameAttr} ${isChecked ? 'checked' : ''} class="opt-check text-indigo-600 focus:ring-0 ml-1 rounded cursor-pointer">
+                    <input type="text" required value="${value}" class="opt-val flex-grow bg-transparent border-0 text-sm text-white focus:outline-none" placeholder="Текст ответа">
+                    <button type="button" onclick="$('#${rowId}').remove()" class="text-gray-500 hover:text-rose-400 p-1 text-xs">
+                        <i class="fas fa-xmark"></i>
+                    </button>
+                </div>
+            `;
+            $('#modal-options-list').append(rowHtml);
+        }
+
+        function openNewQuestionModal() {
+            $('#modal-editor-title').text('Новый вопрос');
+            $('#edit-q-index').val('');
+            $('#modal-q-text').val('');
+            $('#modal-options-list').empty();
+            setQuestionType('single');
+            addOptionRow('', true);
+            addOptionRow('', false);
+            $('#question-editor-modal').removeClass('hidden').css('display', 'flex');
+        }
+
+        function editExistingQuestion(index) {
+            const q = rawQuestions[index];
+            if (!q) {
+                Island.warn('Данные вопроса не найдены');
                 return;
             }
-            if (correctAnswers.length === 0) {
-                Island.warn('Отметьте правильный ответ');
+
+            $('#modal-editor-title').text(`Правка вопроса #${index + 1}`);
+            $('#edit-q-index').val(index);
+            $('#modal-q-text').val(q.question);
+            $('#modal-options-list').empty();
+            setQuestionType(q.type || 'single');
+
+            if (Array.isArray(q.options)) {
+                q.options.forEach(opt => {
+                    let isCorrect = false;
+                    if (Array.isArray(q.correct_answers)) {
+                        isCorrect = q.correct_answers.includes(opt);
+                    } else if (q.correct_answer) {
+                        isCorrect = (q.correct_answer === opt);
+                    }
+                    addOptionRow(opt, isCorrect);
+                });
+            }
+
+            $('#question-editor-modal').removeClass('hidden').css('display', 'flex');
+        }
+
+        function closeQuestionModal() {
+            $('#question-editor-modal').addClass('hidden').css('display', 'none');
+        }
+
+        async function deleteQuestion(index) {
+            if (!confirm('Удалить этот вопрос?')) return;
+            try {
+                const res = await fetch(`/api/surveys/${surveyId}/questions/${index}/delete/`, {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': getCookie('csrftoken') }
+                });
+                const data = await res.json();
+                if (res.ok && data.status === 'success') {
+                    Island.success('Вопрос удален');
+                    setTimeout(() => window.location.reload(), 600);
+                } else {
+                    Island.error(data.error || 'Ошибка при удалении');
+                }
+            } catch (err) {
+                Island.error('Сбой удаления вопроса');
+            }
+        }
+
+        function openEditTitleModal() {
+            $('#title-modal').removeClass('hidden').css('display', 'flex');
+        }
+
+        function closeEditTitleModal() {
+            $('#title-modal').addClass('hidden').css('display', 'none');
+        }
+
+        async function saveSurveyTitle() {
+            const newTitle = $('#input-new-title').val().trim();
+            if (!newTitle) {
+                Island.warn('Введите название теста');
                 return;
             }
 
             try {
-                const res = await fetch(`/api/surveys/${surveyId}/questions/save/`, {
+                const res = await fetch(`/api/surveys/${surveyId}/title/`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'X-CSRFToken': getCookie('csrftoken')
                     },
-                    body: JSON.stringify({
-                        index: questionIndex,
-                        question: questionText,
-                        options: options,
-                        correct_answers: correctAnswers,
-                        type: currentQuestionType
-                    })
+                    body: JSON.stringify({ title: newTitle })
                 });
-
                 const data = await res.json();
                 if (res.ok && data.status === 'success') {
-                    closeQuestionModal();
-                    Island.success('Вопрос сохранен');
-                    setTimeout(() => window.location.reload(), 700);
+                    $('#header-survey-title').text(data.title);
+                    closeEditTitleModal();
+                    Island.success('Название обновлено', 'fa-pen');
                 } else {
-                    Island.error(data.error || 'Ошибка при сохранении');
+                    Island.error(data.error || 'Не удалось обновить');
                 }
             } catch (err) {
-                Island.error('Сбой соединения с сервером');
-            }
-        });
-
-        // 4. САБМИТ БЫСТРОЙ РЕГИСТРАЦИИ
-        $('#page-quick-register-form').off('submit').on('submit', async function(e) {
-            e.preventDefault();
-            const $err = $('#reg-form-error');
-            const $btn = $('#btn-submit-register');
-            $err.addClass('hidden').text('');
-
-            const email = $('#reg-email').val().trim();
-            const password = $('#reg-password').val().trim();
-            const termsChecked = $('#reg-terms').is(':checked');
-
-            if (!termsChecked) {
-                $err.removeClass('hidden').text('Необходимо согласие с политикой конфиденциальности (152-ФЗ).');
-                return;
-            }
-
-            $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-2"></i> Сохраняем...');
-
-            try {
-                const res = await fetch('/api/quick-register/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                        'X-CSRFToken': getCookie('csrftoken')
-                    },
-                    body: new URLSearchParams({
-                        email: email,
-                        password1: password,
-                        terms_accepted: 'true'
-                    })
-                });
-
-                const data = await res.json();
-                if (res.ok && data.redirect) {
-                    closeRegisterModal();
-                    Island.success('Аккаунт создан! Тест сохранен');
-                    setTimeout(() => window.location.reload(), 600);
-                } else {
-                    $btn.prop('disabled', false).html('<span>Сохранить и продолжить</span><i class="fas fa-arrow-right text-[10px]"></i>');
-                    $err.removeClass('hidden').text(data.error || 'Ошибка регистрации.');
-                }
-            } catch (err) {
-                $btn.prop('disabled', false).html('<span>Сохранить и продолжить</span><i class="fas fa-arrow-right text-[10px]"></i>');
-                $err.removeClass('hidden').text('Сбой связи с сервером.');
-            }
-        });
-
-        // 5. ШЕЙРИНГ
-        $('button[data-action="share"]').off('click').on('click', function(e) {
-            const shareUrl = $(e.currentTarget).data('share-url');
-            const fullUrl = window.location.protocol + '//' + window.location.host + shareUrl;
-
-            if (navigator.clipboard && window.isSecureContext) {
-                navigator.clipboard.writeText(fullUrl).then(() => {
-                    Island.success('Ссылка скопирована', 'fa-link');
-                }).catch(() => fallbackCopy(fullUrl));
-            } else {
-                fallbackCopy(fullUrl);
-            }
-        });
-
-        // 6. СЧЕТЧИК ПРОСМОТРОВ
-        registerSurveyView();
-    });
-</script>
-<script>
-    /* ==========================================================================
-       QUICK ANALYTICS SPARKLINE ENGINE (SELF-HEALING + SAFE CHART)
-       ========================================================================== */
-    document.addEventListener('DOMContentLoaded', function() {
-        const sparklineCanvas = document.getElementById('qa-sparkline-canvas');
-        if (!sparklineCanvas) return;
-
-        // Хелпер гарантированного наличия Chart.js (подтянет сам, если нет в <head>)
-        function ensureChartJs(callback) {
-            if (typeof Chart !== 'undefined') {
-                callback();
-            } else {
-                const script = document.createElement('script');
-                script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
-                script.onload = callback;
-                script.onerror = () => {
-                    $('#qa-last-activity').text('Ошибка скрипта');
-                    $('#qa-sparkline-canvas').addClass('hidden');
-                    $('#qa-empty-sparkline').removeClass('hidden');
-                };
-                document.head.appendChild(script);
+                Island.error('Сетевой сбой при обновлении');
             }
         }
 
-        // Забираем данные аналитики
-        fetch(`/api/test-charts/${surveyId}/`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.error) throw new Error(data.error);
+        async function triggerRegenerateSurvey() {
+            if (!isUserAuthenticated) {
+                openRegisterModal('regenerate');
+                return;
+            }
 
-                const activityData = (data.attempts_activity_chart?.data || []).map(v => parseInt(v, 10) || 0);
-                const activityLabels = data.attempts_activity_chart?.labels || [];
-                const totalAttempts = activityData.reduce((acc, v) => acc + v, 0);
+            if (!confirm('Нейросеть составит совершенно новые вопросы по этой теме. Текущие вопросы будут заменены. Продолжить?')) return;
 
-                // 1. Счётчик сдач
-                $('#qa-total-attempts').text(totalAttempts);
-                
-                // Адекватный CR (без дичи типа 1000% CR)
-                const views = parseInt('{{ view_count|default:0 }}', 10);
-                if (views > 0 && totalAttempts > 0) {
-                    const rawCr = Math.round((totalAttempts / views) * 100);
-                    const cleanCr = Math.min(rawCr, 100); // не больше 100%
-                    $('#qa-conversion-rate').text(`(${cleanCr}% CR)`);
-                } else if (totalAttempts > 0) {
-                    $('#qa-conversion-rate').text(`(100% CR)`);
-                }
+            Island.info('ИИ пересобирает тест...', 'fa-rotate fa-spin', 25000);
 
-                // 2. Успеваемость (Success Rate)
-                const scoreCounts = (data.scores_distribution_chart?.data || []).map(v => parseInt(v, 10) || 0);
-                const totalScoreRecords = scoreCounts.reduce((acc, v) => acc + v, 0);
-                
-                if (totalScoreRecords > 0 && scoreCounts.length >= 4) {
-                    // Сегменты 3 и 4 (успешные сдачи)
-                    const passed = (scoreCounts[2] || 0) + (scoreCounts[3] || 0);
-                    const successPct = Math.round((passed / totalScoreRecords) * 100);
-                    $('#qa-success-rate').text(`${successPct}%`);
-                } else if (totalAttempts > 0) {
-                    $('#qa-success-rate').text('100%');
+            try {
+                const res = await fetch(`/api/surveys/${surveyId}/regenerate/`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json', 
+                        'X-CSRFToken': getCookie('csrftoken') 
+                    }
+                });
+
+                const data = await res.json();
+
+                if (res.ok && data.status === 'success') {
+                    Island.success('Тест успешно пересобран!', 'fa-check');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 800);
                 } else {
-                    $('#qa-success-rate').text('—%');
+                    Island.error(data.error || 'Ошибка перегенерации');
                 }
+            } catch (err) {
+                Island.error('Сетевой сбой при отправке');
+            }
+        }
 
-                // 3. Статус активности
-                if (totalAttempts > 0) {
-                    $('#qa-last-activity').text('Активно');
-                } else {
-                    $('#qa-last-activity').text('Нет сдач');
-                    $('#qa-sparkline-canvas').addClass('hidden');
-                    $('#qa-empty-sparkline').removeClass('hidden');
+        function fallbackCopy(text) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = "fixed";
+            textArea.style.left = "-999999px";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                Island.success('Ссылка скопирована', 'fa-link');
+            } catch (err) {
+                Island.error('Не удалось скопировать');
+            }
+            textArea.remove();
+        }
+
+        function showClassroomQR() {
+            const link = window.location.protocol + "//" + window.location.host + "{% url 'take_test' survey_id %}";
+            const container = document.getElementById('qrcode');
+            container.innerHTML = "";
+            new QRCode(container, {
+                text: link,
+                width: 240,
+                height: 240,
+                colorDark : "#18171A",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
+            document.getElementById('qrLinkText').innerText = "{{ title|escapejs }}";
+            $('#qrModal').removeClass('hidden').css('display', 'flex');
+            Island.info('QR-код сформирован', 'fa-qrcode');
+        }
+
+        function openDeleteModal(id, title) {
+            $('#modal-survey-title').text(`«${title}»`);
+            $('#confirm-delete-link').attr('href', `/drop-survey/${id}/`);
+            $('#delete-modal').removeClass('hidden').css('display', 'flex');
+        }
+
+        function closeDeleteModal() {
+            $('#delete-modal').addClass('hidden').css('display', 'none');
+        }
+
+        async function registerSurveyView() {
+            if (!surveyId) return;
+            try {
+                const rawString = `${navigator.userAgent}-${navigator.language}-${new Date().getTimezoneOffset()}`;
+                const encoder = new TextEncoder();
+                const data = encoder.encode(rawString);
+                const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+                const visitorHash = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+
+                const response = await fetch(`/register-view/${surveyId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({ hash: visitorHash })
+                });
+
+                const resData = await response.json();
+                if (resData.success && resData.view_count !== undefined) {
+                    const $counter = $('#dynamic-island .fa-eye').next('span');
+                    const currentCount = parseInt($counter.text(), 10) || 0;
+                    
+                    if (resData.new_view && resData.view_count > currentCount) {
+                        $counter.text(resData.view_count);
+                        $counter.parent().addClass('border-indigo-500/40 text-white');
+                        setTimeout(() => {
+                            $counter.parent().removeClass('border-indigo-500/40 text-white');
+                        }, 1200);
+                    } else {
+                        $counter.text(resData.view_count);
+                    }
+                }
+            } catch (e) {
+                console.warn('View tracking unavailable');
+            }
+        }
+
+        /* ==========================================================================
+        5. БИНДИНГ СОБЫТИЙ СТРОГО ПОСЛЕ ЗАГРУЗКИ DOM
+        ========================================================================== */
+        $(document).ready(function() {
+
+            // 1. ТУМБЛЕР ОТВЕТОВ
+            $('#answersToggle').off('change').on('change', async function() {
+                if (!isUserAuthenticated) {
+                    this.checked = false;
+                    openRegisterModal('answers');
                     return;
                 }
 
-                // 4. Отрисовка графика через гарантированный Chart.js
-                ensureChartJs(() => {
-                    const ctx = sparklineCanvas.getContext('2d');
-                    const gradient = ctx.createLinearGradient(0, 0, 0, 60);
-                    gradient.addColorStop(0, 'rgba(99, 102, 241, 0.45)');
-                    gradient.addColorStop(1, 'rgba(99, 102, 241, 0.0)');
+                const showAnswers = this.checked;
+                const csrftoken = getCookie('csrftoken');
 
-                    new Chart(ctx, {
-                        type: 'line',
-                        data: {
-                            labels: activityLabels.length ? activityLabels : activityData.map((_, i) => `${i + 1}`),
-                            datasets: [{
-                                data: activityData,
-                                borderColor: '#818CF8',
-                                borderWidth: 2,
-                                fill: true,
-                                backgroundColor: gradient,
-                                tension: 0.4,
-                                pointRadius: 0,
-                                pointHoverRadius: 4,
-                                pointHoverBackgroundColor: '#FFFFFF',
-                                pointHoverBorderColor: '#4F46E5',
-                                pointHoverBorderWidth: 2
-                            }]
+                // Мгновенный отклик в DOM
+                toggleAnswersInDOM(showAnswers);
+
+                try {
+                    const response = await fetch(`/api/surveys/${surveyId}/toggle-answers/`, {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json', 
+                            'X-CSRFToken': csrftoken 
                         },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: { display: false },
-                                tooltip: {
-                                    enabled: true,
-                                    backgroundColor: 'rgba(20, 19, 24, 0.95)',
-                                    borderColor: 'rgba(255, 255, 255, 0.1)',
-                                    borderWidth: 1,
-                                    titleColor: '#FFFFFF',
-                                    bodyColor: '#A5B4FC',
-                                    titleFont: { family: 'Golos Text', size: 10 },
-                                    bodyFont: { family: 'JetBrains Mono', size: 10, weight: 'bold' },
-                                    padding: 6,
-                                    cornerRadius: 8,
-                                    displayColors: false,
-                                    callbacks: {
-                                        label: (c) => `${c.parsed.y} прохожд.`
-                                    }
-                                }
-                            },
-                            scales: {
-                                x: { display: false },
-                                y: { display: false, beginAtZero: true }
-                            }
-                        }
+                        body: JSON.stringify({ show_answers: showAnswers })
                     });
-                });
-            })
-            .catch((err) => {
-                console.error("Quick Analytics Fetch Error:", err);
-                $('#qa-last-activity').text('Нет данных');
-                $('#qa-sparkline-canvas').addClass('hidden');
-                $('#qa-empty-sparkline').removeClass('hidden');
+
+                    const data = await response.json();
+                    if (data.status === 'success') {
+                        Island.success(showAnswers ? 'Ответы открыты' : 'Ответы скрыты', showAnswers ? 'fa-eye' : 'fa-eye-slash');
+                    } else {
+                        rollbackAnswersToggle(!showAnswers);
+                        Island.error(data.error || 'Ошибка сохранения');
+                    }
+                } catch (err) {
+                    rollbackAnswersToggle(!showAnswers);
+                    Island.error('Сбой связи с сервером');
+                }
             });
-    });
-</script>
+
+            // 2. КНОПКА «ПРАВИТЬ»
+            $('#toggle-edit-mode-btn').off('click').on('click', function(e) {
+                e.preventDefault();
+
+                if (!isUserAuthenticated) {
+                    openRegisterModal('edit');
+                    return;
+                }
+
+                isEditMode = !isEditMode;
+
+                if (isEditMode) {
+                    $(this)
+                        .text('Готово')
+                        .removeClass('bg-[#18171A] text-gray-300 border-white/10')
+                        .addClass('bg-indigo-600 text-white border-transparent shadow-lg shadow-indigo-600/30');
+
+                    // Принудительный показ карандашей
+                    $('.edit-actions').removeClass('hidden').css('display', 'flex');
+                    $('#add-question-box').removeClass('hidden').css('display', 'block');
+                    Island.info('Режим правки активен', 'fa-pen-to-square');
+                } else {
+                    $(this)
+                        .text('Править')
+                        .removeClass('bg-indigo-600 text-white border-transparent shadow-lg shadow-indigo-600/30')
+                        .addClass('bg-[#18171A] text-gray-300 border-white/10');
+
+                    $('.edit-actions').addClass('hidden').css('display', 'none');
+                    $('#add-question-box').addClass('hidden').css('display', 'none');
+                    Island.info('Редактирование завершено', 'fa-check');
+                }
+            });
+
+            // 3. САБМИТ РЕДАКТИРОВАНИЯ ВОПРОСА
+            $('#question-editor-form').off('submit').on('submit', async function(e) {
+                e.preventDefault();
+                const qIndexVal = $('#edit-q-index').val();
+                const questionIndex = qIndexVal !== '' ? parseInt(qIndexVal, 10) : null;
+                const questionText = $('#modal-q-text').val().trim();
+
+                const options = [];
+                const correctAnswers = [];
+
+                $('#modal-options-list > div').each(function() {
+                    const text = $(this).find('.opt-val').val().trim();
+                    const isChecked = $(this).find('.opt-check').is(':checked');
+                    if (text) {
+                        options.push(text);
+                        if (isChecked) correctAnswers.push(text);
+                    }
+                });
+
+                if (options.length < 2) {
+                    Island.warn('Нужно минимум 2 варианта');
+                    return;
+                }
+                if (correctAnswers.length === 0) {
+                    Island.warn('Отметьте правильный ответ');
+                    return;
+                }
+
+                try {
+                    const res = await fetch(`/api/surveys/${surveyId}/questions/save/`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCookie('csrftoken')
+                        },
+                        body: JSON.stringify({
+                            index: questionIndex,
+                            question: questionText,
+                            options: options,
+                            correct_answers: correctAnswers,
+                            type: currentQuestionType
+                        })
+                    });
+
+                    const data = await res.json();
+                    if (res.ok && data.status === 'success') {
+                        closeQuestionModal();
+                        Island.success('Вопрос сохранен');
+                        setTimeout(() => window.location.reload(), 700);
+                    } else {
+                        Island.error(data.error || 'Ошибка при сохранении');
+                    }
+                } catch (err) {
+                    Island.error('Сбой соединения с сервером');
+                }
+            });
+
+            // 4. САБМИТ БЫСТРОЙ РЕГИСТРАЦИИ
+            $('#page-quick-register-form').off('submit').on('submit', async function(e) {
+                e.preventDefault();
+                const $err = $('#reg-form-error');
+                const $btn = $('#btn-submit-register');
+                $err.addClass('hidden').text('');
+
+                const email = $('#reg-email').val().trim();
+                const password = $('#reg-password').val().trim();
+                const termsChecked = $('#reg-terms').is(':checked');
+
+                if (!termsChecked) {
+                    $err.removeClass('hidden').text('Необходимо согласие с политикой конфиденциальности (152-ФЗ).');
+                    return;
+                }
+
+                $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-2"></i> Сохраняем...');
+
+                try {
+                    const res = await fetch('/api/quick-register/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'X-CSRFToken': getCookie('csrftoken')
+                        },
+                        body: new URLSearchParams({
+                            email: email,
+                            password1: password,
+                            terms_accepted: 'true'
+                        })
+                    });
+
+                    const data = await res.json();
+                    if (res.ok && data.redirect) {
+                        closeRegisterModal();
+                        Island.success('Аккаунт создан! Тест сохранен');
+                        setTimeout(() => window.location.reload(), 600);
+                    } else {
+                        $btn.prop('disabled', false).html('<span>Сохранить и продолжить</span><i class="fas fa-arrow-right text-[10px]"></i>');
+                        $err.removeClass('hidden').text(data.error || 'Ошибка регистрации.');
+                    }
+                } catch (err) {
+                    $btn.prop('disabled', false).html('<span>Сохранить и продолжить</span><i class="fas fa-arrow-right text-[10px]"></i>');
+                    $err.removeClass('hidden').text('Сбой связи с сервером.');
+                }
+            });
+
+            // 5. ШЕЙРИНГ
+            $('button[data-action="share"]').off('click').on('click', function(e) {
+                const shareUrl = $(e.currentTarget).data('share-url');
+                const fullUrl = window.location.protocol + '//' + window.location.host + shareUrl;
+
+                if (navigator.clipboard && window.isSecureContext) {
+                    navigator.clipboard.writeText(fullUrl).then(() => {
+                        Island.success('Ссылка скопирована', 'fa-link');
+                    }).catch(() => fallbackCopy(fullUrl));
+                } else {
+                    fallbackCopy(fullUrl);
+                }
+            });
+
+            // 6. СЧЕТЧИК ПРОСМОТРОВ
+            registerSurveyView();
+        });
+    </script>
+    <script>
+        /* ==========================================================================
+        QUICK ANALYTICS SPARKLINE ENGINE (SELF-HEALING + SAFE CHART)
+        ========================================================================== */
+        document.addEventListener('DOMContentLoaded', function() {
+            const sparklineCanvas = document.getElementById('qa-sparkline-canvas');
+            if (!sparklineCanvas) return;
+
+            // Хелпер гарантированного наличия Chart.js (подтянет сам, если нет в <head>)
+            function ensureChartJs(callback) {
+                if (typeof Chart !== 'undefined') {
+                    callback();
+                } else {
+                    const script = document.createElement('script');
+                    script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+                    script.onload = callback;
+                    script.onerror = () => {
+                        $('#qa-last-activity').text('Ошибка скрипта');
+                        $('#qa-sparkline-canvas').addClass('hidden');
+                        $('#qa-empty-sparkline').removeClass('hidden');
+                    };
+                    document.head.appendChild(script);
+                }
+            }
+
+            // Забираем данные аналитики
+            fetch(`/api/test-charts/${surveyId}/`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.error) throw new Error(data.error);
+
+                    const activityData = (data.attempts_activity_chart?.data || []).map(v => parseInt(v, 10) || 0);
+                    const activityLabels = data.attempts_activity_chart?.labels || [];
+                    const totalAttempts = activityData.reduce((acc, v) => acc + v, 0);
+
+                    // 1. Счётчик сдач
+                    $('#qa-total-attempts').text(totalAttempts);
+                    
+                    // Адекватный CR (без дичи типа 1000% CR)
+                    const views = parseInt('{{ view_count|default:0 }}', 10);
+                    if (views > 0 && totalAttempts > 0) {
+                        const rawCr = Math.round((totalAttempts / views) * 100);
+                        const cleanCr = Math.min(rawCr, 100); // не больше 100%
+                        $('#qa-conversion-rate').text(`(${cleanCr}% CR)`);
+                    } else if (totalAttempts > 0) {
+                        $('#qa-conversion-rate').text(`(100% CR)`);
+                    }
+
+                    // 2. Успеваемость (Success Rate)
+                    const scoreCounts = (data.scores_distribution_chart?.data || []).map(v => parseInt(v, 10) || 0);
+                    const totalScoreRecords = scoreCounts.reduce((acc, v) => acc + v, 0);
+                    
+                    if (totalScoreRecords > 0 && scoreCounts.length >= 4) {
+                        // Сегменты 3 и 4 (успешные сдачи)
+                        const passed = (scoreCounts[2] || 0) + (scoreCounts[3] || 0);
+                        const successPct = Math.round((passed / totalScoreRecords) * 100);
+                        $('#qa-success-rate').text(`${successPct}%`);
+                    } else if (totalAttempts > 0) {
+                        $('#qa-success-rate').text('100%');
+                    } else {
+                        $('#qa-success-rate').text('—%');
+                    }
+
+                    // 3. Статус активности
+                    if (totalAttempts > 0) {
+                        $('#qa-last-activity').text('Активно');
+                    } else {
+                        $('#qa-last-activity').text('Нет сдач');
+                        $('#qa-sparkline-canvas').addClass('hidden');
+                        $('#qa-empty-sparkline').removeClass('hidden');
+                        return;
+                    }
+
+                    // 4. Отрисовка графика через гарантированный Chart.js
+                    ensureChartJs(() => {
+                        const ctx = sparklineCanvas.getContext('2d');
+                        const gradient = ctx.createLinearGradient(0, 0, 0, 60);
+                        gradient.addColorStop(0, 'rgba(99, 102, 241, 0.45)');
+                        gradient.addColorStop(1, 'rgba(99, 102, 241, 0.0)');
+
+                        new Chart(ctx, {
+                            type: 'line',
+                            data: {
+                                labels: activityLabels.length ? activityLabels : activityData.map((_, i) => `${i + 1}`),
+                                datasets: [{
+                                    data: activityData,
+                                    borderColor: '#818CF8',
+                                    borderWidth: 2,
+                                    fill: true,
+                                    backgroundColor: gradient,
+                                    tension: 0.4,
+                                    pointRadius: 0,
+                                    pointHoverRadius: 4,
+                                    pointHoverBackgroundColor: '#FFFFFF',
+                                    pointHoverBorderColor: '#4F46E5',
+                                    pointHoverBorderWidth: 2
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: { display: false },
+                                    tooltip: {
+                                        enabled: true,
+                                        backgroundColor: 'rgba(20, 19, 24, 0.95)',
+                                        borderColor: 'rgba(255, 255, 255, 0.1)',
+                                        borderWidth: 1,
+                                        titleColor: '#FFFFFF',
+                                        bodyColor: '#A5B4FC',
+                                        titleFont: { family: 'Golos Text', size: 10 },
+                                        bodyFont: { family: 'JetBrains Mono', size: 10, weight: 'bold' },
+                                        padding: 6,
+                                        cornerRadius: 8,
+                                        displayColors: false,
+                                        callbacks: {
+                                            label: (c) => `${c.parsed.y} прохожд.`
+                                        }
+                                    }
+                                },
+                                scales: {
+                                    x: { display: false },
+                                    y: { display: false, beginAtZero: true }
+                                }
+                            }
+                        });
+                    });
+                })
+                .catch((err) => {
+                    console.error("Quick Analytics Fetch Error:", err);
+                    $('#qa-last-activity').text('Нет данных');
+                    $('#qa-sparkline-canvas').addClass('hidden');
+                    $('#qa-empty-sparkline').removeClass('hidden');
+                });
+        });
+    </script>
 </body>
 </html>

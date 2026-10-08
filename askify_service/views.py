@@ -3410,15 +3410,22 @@ def quick_register_api(request):
     email = request.POST.get("email", "").strip().lower()
     password = request.POST.get("password1", "")
     terms_accepted = request.POST.get("terms") or request.POST.get("terms_accepted")
+    
+    # Анти-фрод
+    client_ip = get_client_ip(request)
+    cache_key = f"reg_ip_limit_{client_ip}"
+    reg_count = cache.get(cache_key, 0)
 
-    # Валидация
+    if reg_count >= 1:
+        tracer_l.warning(f"ANTI-FRAUD: IP {client_ip} заблокирован по лимиту регистраций ({reg_count} попыток)")
+        return JsonResponse({
+            "error": "С вашего устройства создано слишком много аккаунтов за сегодня. Войдите в существующий профиль."
+        }, status=429)
+
     if not email or not password:
         return JsonResponse({"error": "Заполните email и пароль."}, status=400)
 
-    # 152-ФЗ Валидация (проверяем обязательное согласие)
-    # Если на фронте чекбокс называется terms-checkbox:
     if not request.POST.get("terms_accepted") and request.POST.get("terms") != "on":
-        # Делаем мягкую проверку, если фронт шлет стандартный сабмит
         pass
 
     if AuthUser.objects.filter(email=email).exists():
@@ -3487,19 +3494,17 @@ def quick_register_api(request):
                     discount=0.00,
                 )
 
-            # ПЕРЕНОС ТЕСТОВ (CLAIMING): привязываем сиротский тест к новому юзеру
             if demo_survey_id:
                 Survey.objects.filter(survey_id=demo_survey_id).update(id_staff=user.id_staff)
             
-            # Очищаем временные сессионные маркеры
             request.session.pop('guest_staff_id', None)
             request.session.pop('demo_test_created', None)
             request.session.modified = True
 
             login(request, user)
             tracer_l.info(f"QUICK REGISTRATION SUCCESS: User {user.username} ({user.id_staff}) claimed demo test.")
+            cache.set(cache_key, reg_count + 1, timeout=86400)
 
-            # Если пользователь шел с конкретного демо-теста, возвращаем его туда, иначе на оплату
             redirect_target = f"/c/{demo_survey_id}/" if demo_survey_id else "/create/"
             return JsonResponse({"redirect": redirect_target})
 
@@ -3515,8 +3520,20 @@ def quick_register_api(request):
 def register_view(request):
     if request.user.is_authenticated:
         return redirect("create")
+    
+    # Анти-фрод
+    client_ip = get_client_ip(request)
+    cache_key = f"reg_ip_limit_{client_ip}"
+    reg_count = cache.get(cache_key, 0)
+    print(cache_key, reg_count)
 
     if request.method == "POST":
+        if reg_count >= 1:
+            tracer_l.warning(f"ANTI-FRAUD: IP {client_ip} заблокирован по лимиту регистраций ({reg_count} попыток)")
+            return JsonResponse({
+                "error": "С вашего устройства создано слишком много аккаунтов за сегодня. Войдите в существующий профиль."
+            }, status=429)
+    
         form = CustomUserCreationForm(request.POST)
 
         if form.is_valid():
@@ -3551,13 +3568,13 @@ def register_view(request):
                             },
                         )
 
-                        # Привязка сиротского демо-теста
                         if demo_survey_id:
                             Survey.objects.filter(survey_id=demo_survey_id).update(id_staff=user.id_staff)
                             request.session.pop('demo_survey_id', None)
 
                         login(request, user)
-                        tracer_l.info(f"STANDARD REGISTRATION SUCCESS: {user.username}")
+                        tracer_l.info(f"REGISTRATION SUCCESS: {user.username}")
+                        cache.set(cache_key, reg_count + 1, timeout=86400)
                         return redirect("create")
 
                 except IntegrityError:
