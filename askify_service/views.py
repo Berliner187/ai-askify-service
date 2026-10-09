@@ -1054,7 +1054,7 @@ class ManageSurveysView(View):
 
             if not generated_data.get("success"):
                 error_msg = generated_data.get("error", "Не удалось составить тест. Попробуйте снова через несколько минут.")
-                return JsonResponse({"error": error_msg}, status=429)
+                return JsonResponse({"error": error_msg}, status=404)
 
             cleaned_text = generated_data.get("generated_text")
             tokens_used = generated_data.get("tokens_used", 0)
@@ -1702,24 +1702,38 @@ class FileUploadView(View):
 
             # 9. СОХРАНЕНИЕ В БАЗУ ДАННЫХ
             new_survey_id = uuid.uuid4()
+            
+            def sanitize_val(val):
+                """Рекурсивно вычищает NUL-байты из строк, словарей и списков."""
+                if isinstance(val, str):
+                    return val.replace('\x00', '')
+                elif isinstance(val, dict):
+                    return {k: sanitize_val(v) for k, v in val.items()}
+                elif isinstance(val, list):
+                    return [sanitize_val(item) for item in val]
+                return val
 
             def save_survey_tx():
                 with transaction.atomic():
+                    safe_title = sanitize_val(cleaned_generated_text.get('title', file_name[:60]))
+                    safe_source_text = sanitize_val(cleaned_data_for_llm[:50000])
+                    safe_questions = sanitize_val(cleaned_generated_text.get('questions', []))
+
                     survey = Survey(
                         survey_id=new_survey_id,
-                        title=cleaned_generated_text.get('title', file_name[:60]),
+                        title=safe_title,
                         id_staff=staff_id,
                         model_name=model_used,
-                        source_text=cleaned_data_for_llm[:50000],
+                        source_text=safe_source_text,
                         generation_params={
                             "difficulty": difficulty,
                             "question_types": question_types,
                             "shuffle_questions": shuffle_questions,
-                            "source_file": file_name
+                            "source_file": file_name.replace('\x00', '')
                         },
                         is_visible=False
                     )
-                    survey.save_questions(cleaned_generated_text['questions'], shuffle=shuffle_questions)
+                    survey.save_questions(safe_questions, shuffle=shuffle_questions)
                     survey.save()
 
                     TokensUsed.objects.create(id_staff=staff_id, tokens_survey_used=tokens_used)
@@ -1762,7 +1776,9 @@ class FileUploadView(View):
         return JsonResponse({'error': 'Метод GET не поддерживается'}, status=405)
 
     def __remove_surrogates(self, text):
-        return "".join(c for c in text if not (0xD800 <= ord(c) <= 0xDFFF))
+        if not text:
+            return ""
+        return "".join(c for c in str(text) if c != '\x00' and not (0xD800 <= ord(c) <= 0xDFFF))
 
     def read_file_data(self, uploaded_file):
         """Всеядный парсер документов с лимитом до 150 000 символов."""
@@ -2669,39 +2685,38 @@ def get_question_insights(questions_stats):
 
 def main_test_card(request, survey_id):
     """
-        Страница с карточкой теста.
+    Страница с карточкой теста.
     """
     if not is_valid_uuid(survey_id):
-        context = {
-            'not_found': True,
-            'survey_id': None,
-            'page_title': 'Тест не найден | Летучка',
-        }
-        return render(request, 'demo-view.html', context, status=404)
+        return render(request, "404.html", status=404)
+
+    survey = Survey.objects.filter(survey_id=survey_id).first()
+    if not survey:
+        return render(request, "404.html", status=404)
+
+    has_junk, matched_word = contains_forbidden_words(survey.title or "")
+    if has_junk:
+        tracer_l.warning(
+            f"CENSORED 404: Запрос к тесту '{survey.title}' (ID: {survey_id}) "
+            f"заблокирован по слову '{matched_word}' -> отдан 404.html."
+        )
+        return render(request, "404.html", status=404)
+
+    # -------------------------------------------------------------------------
 
     client_ip = get_client_ip(request)
-    survey = Survey.objects.filter(survey_id=survey_id).first()
-    if (not survey) or (not is_valid_uuid(survey_id)):
-        context = {
-            'not_found': True,
-            'page_title': 'Тест не найден | Летучка',
-        }
-        return render(request, 'demo-view.html', context, status=404)
-    
     survey_creator_id_staff = survey.id_staff
 
     current_user_id_staff = None
     is_authenticated = request.user.is_authenticated
-    
+
     anonymous_user = AuthUser.objects.filter(hash_user_id=client_ip).first()
     if anonymous_user:
         current_user_id_staff = anonymous_user.id_staff
     if survey.id_staff == get_staff_id(request):
         survey_creator_id_staff = current_user_id_staff
 
-    is_creator = False
-    if current_user_id_staff == survey_creator_id_staff:
-        is_creator = True
+    is_creator = (current_user_id_staff == survey_creator_id_staff)
 
     can_generate = True
     if not is_authenticated and current_user_id_staff:
@@ -2711,68 +2726,65 @@ def main_test_card(request, survey_id):
         if total_demo_surveys_count >= 2:
             can_generate = False
 
-    if survey:
-        questions = survey.get_questions()
-        view_count = survey.view_count
+    # ---------------------------------------------------------
+    # ЛОГИКА ИНДЕКСАЦИИ ДЛЯ ЧИСТЫХ ТЕСТОВ (SEO-ФИЛЬТР)
+    # ---------------------------------------------------------
+    author_obj = AuthUser.objects.filter(id_staff=survey.id_staff).first()
+    raw_username = author_obj.username if author_obj else "Аноним"
 
-        author_username = AuthUser.objects.filter(id_staff=survey.id_staff).first()
+    # Не индексируем гостей
+    is_guest_author = (
+        not author_obj 
+        or raw_username.startswith("guest_") 
+        or raw_username == "Аноним"
+    )
 
-        if author_username:
-            author_username = author_username.username
-            is_short_enough = len(author_username) < 40
-        else:
-            author_username = "Аноним"
-            is_short_enough = False
+    # Реальные сдачи учеников
+    attempts_count = survey.attempts.count()
 
-        subscription_level = get_subscription_level(request)
+    # Индексируем ТОЛЬКО если: не гость и есть хотя бы 2 реальные сдачи
+    is_indexable = (not is_guest_author) and (attempts_count >= 2)
 
-        client_ip = get_client_ip(request)
-        tracer_l.info(f"{request.user.username} {client_ip} --- preview {survey.title}")
+    # Имя автора для интерфейса
+    if is_guest_author:
+        display_author = "Преподаватель"
+    else:
+        display_author = raw_username if len(raw_username) < 40 else "Преподаватель"
 
-        date_create = survey.created_at.strftime("%d.%m.%Y")
+    date_create = survey.created_at.strftime("%d.%m.%Y")
+    subscription_level = get_subscription_level(request)
 
-        json_response = {
-            "page_title": f"{survey.title} ({date_create}) | Генератор тестов с ИИ | Создать тест в Летучке",
-            "title": survey.title,
-            "survey_id": survey_id,
-            "questions": questions,
-            "author": author_username if len(author_username) < 40 else "Аноним",
-            "username": request.user.username if request.user.is_authenticated else 0,
-            "model_name": f"{'Создано в Летучке'} • {date_create}",
-            "view_count": view_count,
-            "date_create": date_create,
-            "is_creator": is_creator,
-            "show_answers": survey.show_answers,
-            "can_generate": can_generate,
-            "is_short_enough": is_short_enough,
-            "debug": DEBUG,
-            "subscription_level": subscription_level,
-        }
+    tracer_l.info(f"{request.user.username} {client_ip} --- preview {survey.title} (indexed={is_indexable})")
 
-        can_edit = False
-        if request.user.is_authenticated and survey.id_staff == request.user.id_staff:
-            can_edit = (subscription_level >= 1) or (getattr(request.user, "test_balance", 0) > 0)
+    can_edit = False
+    if request.user.is_authenticated and survey.id_staff == request.user.id_staff:
+        can_edit = (subscription_level >= 1) or (getattr(request.user, "test_balance", 0) > 0)
 
-        json_response["questions"] = survey.get_normalized_questions()
-        json_response["can_edit"] = can_edit
+    show_ads = (subscription_level < 1) or (not is_authenticated)
 
-        show_ads = False
-        if get_subscription_level(request) < 1 or not is_authenticated:
-            show_ads = True
-
-        json_response["show_ads"] = show_ads
-
-        return render(request, "demo-view.html", json_response)
-
-    context = {
-        "page_title": f"Генератор тестов с ИИ | Создать тест в Летучке",
-        "title": "Создать тест при помощи нейросети | Создать тест в Летучке",
-        "survey_id": survey_id,
-        "username": request.user.username if request.user.is_authenticated else None,
+    json_response = {
+        "page_title": f"{survey.title} ({date_create}) | Генератор тестов с ИИ | Создать тест в Летучке",
+        "title": survey.title,
+        "survey_id": str(survey_id),
+        "questions": survey.get_normalized_questions(),
+        "author": display_author,
+        "username": request.user.username if request.user.is_authenticated else 0,
+        "model_name": f"Создано в Летучке • {date_create}",
+        "view_count": survey.view_count,
+        "attempts_count": attempts_count,
+        "date_create": date_create,
+        "is_creator": is_creator,
+        "show_answers": survey.show_answers,
+        "can_generate": can_generate,
+        "is_short_enough": len(display_author) < 40,
         "debug": DEBUG,
+        "subscription_level": subscription_level,
+        "can_edit": can_edit,
+        "show_ads": show_ads,
+        "is_indexable": is_indexable,
     }
 
-    return render(request, "demo-view.html", context)
+    return render(request, "demo-view.html", json_response)
 
 
 @login_required
@@ -3416,7 +3428,7 @@ def quick_register_api(request):
     cache_key = f"reg_ip_limit_{client_ip}"
     reg_count = cache.get(cache_key, 0)
 
-    if reg_count >= 1:
+    if reg_count >= 2:
         tracer_l.warning(f"ANTI-FRAUD: IP {client_ip} заблокирован по лимиту регистраций ({reg_count} попыток)")
         return JsonResponse({
             "error": "С вашего устройства создано слишком много аккаунтов за сегодня. Войдите в существующий профиль."
@@ -3525,63 +3537,62 @@ def register_view(request):
     client_ip = get_client_ip(request)
     cache_key = f"reg_ip_limit_{client_ip}"
     reg_count = cache.get(cache_key, 0)
-    print(cache_key, reg_count)
 
     if request.method == "POST":
-        if reg_count >= 1:
-            tracer_l.warning(f"ANTI-FRAUD: IP {client_ip} заблокирован по лимиту регистраций ({reg_count} попыток)")
-            return JsonResponse({
-                "error": "С вашего устройства создано слишком много аккаунтов за сегодня. Войдите в существующий профиль."
-            }, status=429)
-    
         form = CustomUserCreationForm(request.POST)
 
         if form.is_valid():
+            if reg_count >= 1:
+                tracer_l.warning(f"ANTI-FRAUD: IP {client_ip} заблокирован по лимиту регистраций ({reg_count} попыток)")
+                form.add_error(None, "Превышен лимит регистраций с Вашего IP-адреса. Войдите в свой действующий аккаунт, пожалуйста.")
+                return render(request, "register.html", {"form": form, "debug": DEBUG})
+
             email = form.cleaned_data.get("email")
             if not is_allowed_email(email):
                 form.add_error("email", "Регистрация с этого почтового домена не разрешена.")
-            else:
-                try:
-                    with transaction.atomic():
-                        temporary_user = _resolve_temporary_user(request)
-                        demo_survey_id = request.session.get('demo_survey_id')
+                return render(request, "register.html", {"form": form, "debug": DEBUG})
 
-                        if temporary_user:
-                            user = temporary_user
-                            user.username = email.split("@")[0]
-                            user.email = email
-                            user.set_password(form.cleaned_data.get("password1"))
-                            user.hash_user_id = None
-                            user.confirmed_user = True
-                            user.save()
-                        else:
-                            user = form.save()
+            try:
+                with transaction.atomic():
+                    temporary_user = _resolve_temporary_user(request)
+                    demo_survey_id = request.session.get('demo_survey_id')
 
-                        plan_name, end_date, status, billing_cycle, discount = init_free_subscription()
-                        Subscription.objects.get_or_create(
-                            staff_id=user.id_staff,
-                            defaults={
-                                "plan_name": plan_name,
-                                "end_date": end_date,
-                                "status": status,
-                                "billing_cycle": billing_cycle,
-                            },
-                        )
+                    if temporary_user:
+                        user = temporary_user
+                        user.username = email.split("@")[0]
+                        user.email = email
+                        user.set_password(form.cleaned_data.get("password1"))
+                        user.hash_user_id = None
+                        user.confirmed_user = True
+                        user.save()
+                    else:
+                        user = form.save()
 
-                        if demo_survey_id:
-                            Survey.objects.filter(survey_id=demo_survey_id).update(id_staff=user.id_staff)
-                            request.session.pop('demo_survey_id', None)
+                    plan_name, end_date, status, billing_cycle, discount = init_free_subscription()
+                    Subscription.objects.get_or_create(
+                        staff_id=user.id_staff,
+                        defaults={
+                            "plan_name": plan_name,
+                            "end_date": end_date,
+                            "status": status,
+                            "billing_cycle": billing_cycle,
+                        },
+                    )
 
-                        login(request, user)
-                        tracer_l.info(f"REGISTRATION SUCCESS: {user.username}")
-                        cache.set(cache_key, reg_count + 1, timeout=86400)
-                        return redirect("create")
+                    if demo_survey_id:
+                        Survey.objects.filter(survey_id=demo_survey_id).update(id_staff=user.id_staff)
+                        request.session.pop('demo_survey_id', None)
 
-                except IntegrityError:
-                    form.add_error(None, "Пользователь с таким именем или email уже существует.")
-                except Exception as e:
-                    tracer_l.error(f"Registration error: {e}")
-                    form.add_error(None, "Произошла ошибка при регистрации.")
+                    login(request, user)
+                    tracer_l.info(f"REGISTRATION SUCCESS: {user.username}")
+                    cache.set(cache_key, reg_count + 1, timeout=86400)
+                    return redirect("create")
+
+            except IntegrityError:
+                form.add_error(None, "Пользователь с таким email уже зарегистрирован. Попробуйте войти.")
+            except Exception as e:
+                tracer_l.error(f"Registration error: {e}")
+                form.add_error(None, "Произошла непредвиденная ошибка при регистрации. Попробуйте позже.")
     else:
         form = CustomUserCreationForm()
 

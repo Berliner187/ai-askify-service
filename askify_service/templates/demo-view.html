@@ -2,6 +2,14 @@
 <html lang="ru" class="h-full">
 <head>
     {% include 'components/meta_tags.html' %}
+    
+    {% if is_indexable %}
+        <meta name="robots" content="index, follow">
+        <link rel="canonical" href="https://letychka.ru/c/{{ survey_id }}/">
+    {% else %}
+        <meta name="robots" content="noindex, nofollow">
+    {% endif %}
+
     <meta name="csrf-token" content="{{ csrf_token }}">
     {% load static %}
     <link rel="icon" href="{% static 'img/favicon.ico' %}" type="image/ico">
@@ -75,13 +83,11 @@
             border: 1px solid var(--card-border);
         }
 
-        /* ==========================================================================
-           DYNAMIC ISLAND DESGIN
-           ========================================================================== */
+        /* DYNAMIC ISLAND */
         .island-capsule {
-            background: rgba(24, 24, 36, 0.2);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            background: rgba(24, 24, 36, 0.75);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.12);
             box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.8);
             border-radius: 9999px;
@@ -102,11 +108,11 @@
         }
 
         .island-capsule.mode-notify {
-            max-width: 25rem;
+            max-width: 26rem;
             width: auto;
             padding: 0.5rem 1.25rem;
             transform: scale(1.02);
-            background: rgba(18, 17, 20, 0.98);
+            background: rgba(18, 17, 24, 0.98);
         }
 
         .island-capsule.theme-success {
@@ -114,8 +120,8 @@
             box-shadow: 0 15px 35px -8px rgba(16, 185, 129, 0.3), 0 0 0 1px rgba(16, 185, 129, 0.15);
         }
         .island-capsule.theme-error {
-            border-color: rgba(244, 63, 94, 0.45);
-            box-shadow: 0 15px 35px -8px rgba(244, 63, 94, 0.3), 0 0 0 1px rgba(244, 63, 94, 0.15);
+            border-color: rgba(239, 68, 68, 0.45);
+            box-shadow: 0 15px 35px -8px rgba(239, 68, 68, 0.3), 0 0 0 1px rgba(239, 68, 68, 0.15);
         }
         .island-capsule.theme-warning {
             border-color: rgba(245, 158, 11, 0.45);
@@ -131,16 +137,15 @@
         }
 
         .spring-btn {
-            transition: transform 0.25s var(--spring-bounce), background-color 0.2s, box-shadow 0.2s;
+            transition: transform 0.2s var(--spring-bounce), background-color 0.15s, border-color 0.15s, box-shadow 0.15s;
         }
-        .spring-btn:hover { transform: scale(1.02) translateY(-1px); }
-        .spring-btn:active { transform: scale(0.97) translateY(0); }
+        .spring-btn:hover { transform: translateY(-1px); }
+        .spring-btn:active { transform: scale(0.97) translateY(1px); }
 
         .spring-modal-content {
             transition: transform 0.35s var(--spring-bounce), opacity 0.25s var(--spring-smooth);
         }
 
-        /* САЛОННАЯ КНОПКА АНАЛИТИКИ */
         .master-pill-btn {
             background: linear-gradient(180deg, #4F46E5 0%, #4338CA 100%);
             border: 1px solid rgba(255, 255, 255, 0.16);
@@ -154,6 +159,22 @@
             transform: translateY(-1px);
         }
         .master-pill-btn:active { transform: scale(0.98) translateY(1px); }
+
+        /* ИНТЕРАКТИВНЫЕ СТРОКИ ОТВЕТОВ */
+        .option-row {
+            cursor: pointer;
+            user-select: none;
+            -webkit-user-select: none;
+            transition: transform 0.18s var(--spring-bounce), background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .option-row:hover:not(.is-locked) {
+            transform: translateX(3px);
+            border-color: rgba(255, 255, 255, 0.18);
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+        .option-row:active:not(.is-locked) {
+            transform: scale(0.99);
+        }
     </style>
 </head>
 <body class="min-h-full flex flex-col antialiased selection:bg-indigo-600 selection:text-white">
@@ -218,7 +239,7 @@
                             <h1 id="header-survey-title" class="text-xs sm:text-sm font-semibold text-white truncate max-w-[170px] sm:max-w-xs md:max-w-md">
                                 {{ title }}
                             </h1>
-                            {% if username != 0 and can_edit %}
+                            {% if username != 0 and is_creator %}
                                 <button onclick="openEditTitleModal()" class="text-gray-500 hover:text-indigo-400 transition-colors p-1" title="Переименовать тест">
                                     <i class="fas fa-pen text-[10px]"></i>
                                 </button>
@@ -262,9 +283,7 @@
         <!-- BENTO GRID -->
         <main class="max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 mt-4 sm:mt-6 flex-grow">
 
-            <!-- ============================================================== -->
-            <!--   МОБИЛЬНО-ДЕКСТОПНЫЙ ХУК-БАННЕР ДЛЯ ГОСТЯ (ВРЕМЕННАЯ СЕССИЯ)   -->
-            <!-- ============================================================== -->
+            <!-- ХУК-БАННЕР ДЛЯ ГОСТЯ (ВРЕМЕННАЯ СЕССИЯ) -->
             {% if username == 0 %}
             <div class="mb-6 rounded-[24px] sm:rounded-[28px] bg-gradient-to-r from-indigo-950/40 via-[#181724] to-indigo-950/20 border border-indigo-500/30 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xl relative overflow-hidden">
                 <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
@@ -279,7 +298,7 @@
                             <span class="px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[10px] font-bold">Не сохранен</span>
                         </div>
                         <p class="text-xs text-gray-400 mt-1 max-w-xl leading-relaxed">
-                            Тест создан и готов к работе. Зарегистрируйтесь в 1 клик, чтобы получить ссылку для учеников, открыть правильные ответы и забрать <strong>еще 3 теста в подарок</strong>.
+                            Попробуйте тест прямо на этой странице! Кликните на любой вариант, чтобы проверить свои знания. Сохраните тест в 1 клик, чтобы отправить его ученикам.
                         </p>
                     </div>
                 </div>
@@ -303,16 +322,21 @@
                             <span class="px-2.5 py-0.5 rounded-full text-xs font-bold font-mono-nums bg-white/5 border border-white/10 text-gray-300" id="total-questions-badge">
                                 {{ questions|length }}
                             </span>
+                            <span class="text-[11px] text-zinc-500 font-mono-nums hidden sm:inline">• Кликайте по вариантам для проверки</span>
                         </div>
                         <span class="text-xs text-gray-500 font-medium font-mono-nums">{{ model_name }}</span>
                     </div>
 
                     <div id="questions-stream" class="space-y-4">
                         {% for question in questions %}
-                        <article class="question-card glass-panel rounded-[28px] p-6 transition-all relative border border-white/[0.08]" data-question-index="{{ forloop.counter0 }}">
+                        <article class="question-card glass-panel rounded-[28px] p-6 transition-all relative border border-white/[0.08]" 
+                                 data-question-index="{{ forloop.counter0 }}" 
+                                 data-question-type="{{ question.type|default:'single' }}">
+                            
+                            <!-- ШАПКА КАРТОЧКИ: ТИП + ВСЕГДА ДОСТУПНЫЙ КАРАНДАШ -->
                             <div class="flex items-start justify-between gap-4 mb-4">
                                 <div class="flex items-center gap-2.5">
-                                    <span class="w-8 h-8 rounded-xl bg-[--var(--card-bg)] border border-white/10 font-mono-nums text-xs font-bold text-gray-300 flex items-center justify-center">
+                                    <span class="w-8 h-8 rounded-xl bg-[#18171C] border border-white/10 font-mono-nums text-xs font-bold text-gray-300 flex items-center justify-center">
                                         {{ forloop.counter }}
                                     </span>
                                     {% if question.type == 'multiple' %}
@@ -326,24 +350,48 @@
                                     {% endif %}
                                 </div>
 
-                                {% if username != 0 and can_edit %}
-                                <div class="edit-actions hidden items-center gap-1">
-                                    <button type="button" class="text-gray-400 bg-[--var(--bg-main)] hover:text-indigo-400 p-2 rounded-xl hover:bg-white/5 transition-colors spring-btn" onclick="editExistingQuestion({{ forloop.counter0 }})" title="Редактировать">
-                                        <i class="fas fa-pen-to-square text-xs"></i>
-                                        <span class="text-[12px]">Редактировать</span>
-                                    </button>
-                                    <button type="button" class="text-gray-400 hover:text-rose-400 p-2 rounded-xl hover:bg-rose-500/10 transition-colors spring-btn" onclick="deleteQuestion({{ forloop.counter0 }})" title="Удалить">
-                                        <i class="fas fa-trash-can text-xs"></i>
-                                    </button>
+                                <!-- ЭКШЕНЫ ВОПРОСА: ПОСТОЯННЫЙ КАРАНДАШ + КНОПКИ САЙДБАР-РЕЖИМА -->
+                                <div class="flex items-center gap-1">
+                                    <!-- 1. ПОСТОЯННЫЙ КАРАНДАШ (ВИДЕН ВСЕГДА) -->
+                                    {% if username != 0 and is_creator %}
+                                        <button type="button" 
+                                                class="always-pencil-btn text-zinc-400 hover:text-white p-2 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] border border-white/5 transition-all spring-btn flex items-center gap-1.5" 
+                                                onclick="editExistingQuestion({{ forloop.counter0 }})" 
+                                                title="Редактировать этот вопрос">
+                                            <i class="fas fa-pen text-[11px] text-indigo-400"></i>
+                                            <span class="text-[11px] font-medium hidden sm:inline text-zinc-300">Изменить</span>
+                                        </button>
+                                    {% elif username == 0 %}
+                                        <button type="button" 
+                                                class="always-pencil-btn text-zinc-500 hover:text-amber-300 p-2 rounded-xl bg-white/[0.02] hover:bg-white/[0.06] border border-white/5 transition-all spring-btn flex items-center gap-1.5" 
+                                                onclick="openRegisterModal('edit')" 
+                                                title="Сохраните тест, чтобы редактировать">
+                                            <i class="fas fa-lock text-[10px] text-amber-400/80"></i>
+                                            <span class="text-[11px] font-medium hidden sm:inline text-zinc-400">Изменить</span>
+                                        </button>
+                                    {% endif %}
+
+                                    <!-- 2. КНОПКА УДАЛЕНИЯ (ТОЛЬКО В РЕЖИМЕ ПРАВКИ) -->
+                                    {% if username != 0 and is_creator %}
+                                    <div class="edit-actions hidden items-center gap-1">
+                                        <button type="button" 
+                                                class="text-gray-400 hover:text-rose-400 p-2 rounded-xl hover:bg-rose-500/10 transition-colors spring-btn" 
+                                                onclick="deleteQuestion({{ forloop.counter0 }})" 
+                                                title="Удалить вопрос">
+                                            <i class="fas fa-trash-can text-xs"></i>
+                                        </button>
+                                    </div>
+                                    {% endif %}
                                 </div>
-                                {% endif %}
                             </div>
 
+                            <!-- ТЕКСТ ВОПРОСА -->
                             <h3 class="text-base font-semibold text-white mb-5 leading-snug">
                                 {{ question.question }}
                             </h3>
 
-                            <div class="space-y-2.5">
+                            <!-- СПИСОК ВАРИАНТОВ (ИНТЕРАКТИВНЫЙ КЛИК) -->
+                            <div class="options-container space-y-2.5">
                                 {% for option in question.options %}
                                 <div class="option-row flex items-center gap-3 p-3.5 rounded-2xl border text-sm transition-all
                                     {% if username != 0 and show_answers and option in question.correct_answers %}
@@ -351,7 +399,8 @@
                                     {% else %}
                                         {% if option in question.correct_answers %}is-correct{% endif %} bg-[#111119]/70 border-white/[0.04] text-gray-300
                                     {% endif %}"
-                                    data-is-correct="{% if option in question.correct_answers %}true{% else %}false{% endif %}">
+                                    data-is-correct="{% if option in question.correct_answers %}true{% else %}false{% endif %}"
+                                    data-option-text="{{ option|escapejs }}">
                                     
                                     <span class="opt-badge w-6 h-6 rounded-lg flex items-center justify-center text-xs flex-shrink-0
                                         {% if username != 0 and show_answers and option in question.correct_answers %}
@@ -366,29 +415,30 @@
                                         {% endif %}
                                     </span>
                                     
-                                    <span class="flex-grow">{{ option }}</span>
+                                    <span class="flex-grow select-none">{{ option }}</span>
 
-                                    {% if username != 0 %}
-                                        <span class="opt-label text-[11px] font-mono-nums uppercase tracking-wider text-emerald-400 font-bold {% if not show_answers or option not in question.correct_answers %}hidden{% endif %}">
-                                            Верно
-                                        </span>
-                                    {% endif %}
+                                    <!-- ИНЛАЙН СТАТУС ВЕРДИКТА -->
+                                    <span class="opt-label text-[11px] font-mono-nums uppercase tracking-wider text-emerald-400 font-bold 
+                                        {% if not show_answers or option not in question.correct_answers %}hidden{% endif %}">
+                                        Верно
+                                    </span>
                                 </div>
                                 {% endfor %}
                             </div>
+
                         </article>
 
                         <!-- ИНЛАЙН-МАГНИТ ПОСЛЕ 2-ГО ВОПРОСА ДЛЯ НЕАВТОРИЗОВАННОГО -->
                         {% if username == 0 and forloop.counter == 2 %}
                         <div class="rounded-[28px] border border-white/10 bg-white/[0.02] p-5 sm:p-6 text-center space-y-3">
                             <p class="text-xs sm:text-sm font-semibold text-white">
-                                Хотите настроить эти задания под себя или добавить свои варианты?
+                                Понравилось качество вопросов и точность вариантов?
                             </p>
                             <p class="text-xs text-gray-400 max-w-md mx-auto">
-                                Сохраните тест в личный кабинет, чтобы включить режим редактирования и выгрузить готовые бланки в PDF.
+                                Сохраните тест в личный кабинет, чтобы отправить его ученикам по ссылке и выгрузить бланки в PDF.
                             </p>
                             <button type="button" onclick="openRegisterModal('in_feed')" class="px-6 py-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all spring-btn">
-                                Зарегистрироваться и продолжить &rarr;
+                                Зарегистрироваться и сохранить &rarr;
                             </button>
                         </div>
                         {% endif %}
@@ -396,7 +446,7 @@
                         {% endfor %}
                     </div>
 
-                    {% if username != 0 and can_edit %}
+                    {% if username != 0 and is_creator %}
                     <div id="add-question-box" class="hidden p-6 border-2 border-dashed border-white/10 hover:border-indigo-500/50 rounded-[28px] bg-white/[0.02] transition-colors">
                         <button type="button" onclick="openNewQuestionModal()" class="w-full flex items-center justify-center gap-2.5 py-3 text-sm font-semibold text-indigo-400 hover:text-indigo-300 spring-btn">
                             <i class="fas fa-plus-circle text-base"></i> Добавить вопрос
@@ -408,11 +458,12 @@
                 <!-- ПРАВАЯ СЕКЦИЯ: ПАНЕЛЬ ДЕЙСТВИЙ -->
                 <aside class="lg:col-span-4 space-y-5 lg:sticky lg:top-24">
 
+                    <!-- БЛОК ЗАПУСКА И ШЕЙРИНГА -->
                     <div class="glass-panel rounded-[32px] p-6 shadow-2xl space-y-4">
                         {% if username != 0 %}
                             <a href="{% url 'take_test' survey_id %}" class="w-full flex items-center justify-center gap-3 py-4 px-5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold shadow-lg shadow-indigo-600/30 spring-btn">
                                 <i class="fas fa-play text-xs"></i>
-                                <span>Пройти тест</span>
+                                <span>Пройти тест (режим экзамена)</span>
                             </a>
 
                             <button type="button" data-action="share" data-share-url="{% url 'take_test' survey_id %}" class="w-full flex items-center justify-center gap-3 py-3.5 px-4 rounded-2xl bg-[#18171A] hover:bg-white/5 border border-white/10 text-gray-200 text-xs font-semibold spring-btn">
@@ -429,7 +480,6 @@
                                 </a>
                             </div>
                         {% else %}
-                            <!-- КНОПКИ ДЛЯ НЕАВТОРИЗОВАННОГО ГОСТЯ (ТРИГГЕРЫ МОДАЛКИ) -->
                             <button type="button" onclick="openRegisterModal('take_test')" class="w-full flex items-center justify-center gap-3 py-4 px-5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold shadow-lg shadow-indigo-600/30 spring-btn">
                                 <i class="fas fa-lock text-xs opacity-70"></i>
                                 <span>Пройти тест</span>
@@ -471,19 +521,17 @@
                                     {% if username == 0 %}
                                         Ключи и решения к тесту
                                     {% else %}
-                                        Видны правильные ответы
+                                        Открыть все правильные ответы
                                     {% endif %}
                                 </span>
                             </div>
 
                             {% if username != 0 and is_creator %}
-                                <!-- Рабочий тумблер только для реального автора -->
                                 <label class="relative inline-block w-11 h-6 cursor-pointer">
                                     <input type="checkbox" id="answersToggle" class="sr-only peer" {% if show_answers %}checked{% endif %}>
                                     <div class="w-11 h-6 bg-[#18171A] border border-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-400 peer-checked:after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
                                 </label>
                             {% else %}
-                                <!-- Флеш в Dynamic Island вместо модалки -->
                                 <button type="button" 
                                         onclick="{% if username == 0 %}openRegisterModal('answers'){% else %}Island.warn('Переключать ответы может только автор теста', 'fa-eye-slash'){% endif %}" 
                                         class="relative inline-block w-11 h-6 cursor-pointer focus:outline-none group">
@@ -496,16 +544,16 @@
                             {% endif %}
                         </div>
 
-                        <!-- 2. Режим правки -->
+                        <!-- 2. Режим правки (массовый) -->
                         <div class="flex items-center justify-between py-2 border-b border-white/5">
                             <div>
                                 <div class="flex items-center gap-1.5">
-                                    <span class="text-xs font-semibold text-white block">Редактирование</span>
+                                    <span class="text-xs font-semibold text-white block">Режим правки</span>
                                     {% if username == 0 or not is_creator %}
                                         <i class="fas fa-lock text-[9px] text-amber-400/80" title="Только для автора"></i>
                                     {% endif %}
                                 </div>
-                                <span class="text-[11px] text-gray-500">Правка вопросов и ответов</span>
+                                <span class="text-[11px] text-gray-500">Удаление и добавление вопросов</span>
                             </div>
 
                             {% if username != 0 and is_creator %}
@@ -557,11 +605,10 @@
                         {% endif %}
                     </div>
 
-                    <!-- ЭКСПРЕСС-АНАЛИТИКА ТЕСТА (QUICK ANALYTICS WIDGET) -->
+                    <!-- ЭКСПРЕСС-АНАЛИТИКА ТЕСТА -->
                     {% if is_creator and username != 0 %}
                     <div class="glass-panel rounded-[32px] p-6 space-y-4 relative overflow-hidden border border-white/[0.08]">
 
-                        <!-- ШАПКА ВИДЖЕТА -->
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-2.5">
                                 <span class="w-7 h-7 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center text-xs">
@@ -579,13 +626,8 @@
                             </div>
                         </div>
 
-                        <!-- КОНТЕНТ АНАЛИТИКИ (С БЛЮРОМ ПРИ subscription_level == 0) -->
                         <div class="space-y-3.5 relative {% if subscription_level == 0 %}filter blur-sm opacity-40 pointer-events-none select-none{% endif %}">
-                            
-                            <!-- СЕТКА МИКРО-МЕТРИК -->
                             <div class="grid grid-cols-2 gap-2 pt-1">
-                                
-                                <!-- 1. Прохождения -->
                                 <div class="p-3 rounded-2xl bg-[#16151A] border border-white/5 space-y-1">
                                     <span class="text-[10px] text-gray-500 uppercase tracking-wider block font-semibold">Сдано тестов</span>
                                     <div class="flex items-baseline gap-1.5">
@@ -594,7 +636,6 @@
                                     </div>
                                 </div>
 
-                                <!-- 2. Средний балл / Успех -->
                                 <div class="p-3 rounded-2xl bg-[#16151A] border border-white/5 space-y-1">
                                     <span class="text-[10px] text-gray-500 uppercase tracking-wider block font-semibold">Успеваемость</span>
                                     <div class="flex items-baseline gap-1.5">
@@ -602,17 +643,14 @@
                                         <span class="text-[10px] text-gray-500">сдали</span>
                                     </div>
                                 </div>
-
                             </div>
 
-                            <!-- МИНИ-СПАРКЛАЙН ГРАФИК (ТРЕНД АКТИВНОСТИ) -->
                             <div class="space-y-1.5 pt-1">
                                 <div class="flex justify-between items-center text-[10px] text-gray-500 font-mono-nums px-1">
                                     <span>Тренд за 7 дней</span>
                                     <span id="qa-last-activity" class="text-gray-400 font-sans">Загрузка...</span>
                                 </div>
 
-                                <!-- Холст спарклайна -->
                                 <div class="relative w-full h-[68px] rounded-2xl bg-[#16151A] border border-white/5 p-2 overflow-hidden flex items-center justify-center">
                                     <canvas id="qa-sparkline-canvas" class="w-full h-full"></canvas>
                                     <div id="qa-empty-sparkline" class="hidden text-[10px] text-gray-500 font-mono-nums">
@@ -621,17 +659,15 @@
                                 </div>
                             </div>
 
-                            <!-- ЗАМЕТНАЯ КНОПКА ПЕРЕХОДА В ПОЛНУЮ АНАЛИТИКУ -->
                             <div class="pt-1">
                                 <a href="{% url 'preview_test_result' survey_id %}" 
-                                class="master-pill-btn group w-full h-[46px] rounded-2xl text-white text-xs font-bold flex items-center justify-center gap-2 select-none spring-btn">
+                                   class="master-pill-btn group w-full h-[46px] rounded-2xl text-white text-xs font-bold flex items-center justify-center gap-2 select-none spring-btn">
                                     <span>Открыть полную аналитику</span>
                                     <i class="fas fa-arrow-right text-[10px] text-indigo-200 group-hover:translate-x-1 transition-transform"></i>
                                 </a>
                             </div>
                         </div>
 
-                        <!-- ПЕЙВОЛЛ-ЗАГЛУШКА ДЛЯ БЕСПЛАТНОГО ТАРИФА -->
                         {% if subscription_level == 0 %}
                         <div class="absolute inset-0 z-10 flex flex-col items-center justify-center p-6 text-center bg-[#18171C]/80 backdrop-blur-md rounded-[32px] space-y-3">
                             <div class="w-10 h-10 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center text-sm shadow-md">
@@ -708,7 +744,7 @@
                     <!-- ЧЕКБОКС 152-ФЗ -->
                     <div class="pt-1">
                         <label class="flex items-start gap-2.5 cursor-pointer text-[11px] text-gray-400 leading-tight select-none">
-                            <input type="checkbox" id="reg-terms" name="terms" required checked 
+                            <input type="checkbox" id="reg-terms" name="terms" required 
                                    class="mt-0.5 rounded border-white/20 bg-[#18171A] text-indigo-600 focus:ring-0 w-4 h-4 flex-shrink-0">
                             <span>
                                 Согласен на обработку персональных данных (152-ФЗ) и принимаю условия 
@@ -731,12 +767,12 @@
             </div>
         </div>
 
-        <!-- МОДАЛКА: СОЗДАНИЕ / РЕДАКТИРОВАНИЕ ВОПРОСА -->
+        <!-- МОДАЛКА: РЕДАКТИРОВАНИЕ ВОПРОСА -->
         <div id="question-editor-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
             <div class="fixed inset-0 bg-black/80 backdrop-blur-md" onclick="closeQuestionModal()"></div>
             <div class="relative w-full max-w-xl glass-panel rounded-[32px] p-6 sm:p-8 shadow-2xl z-10 space-y-5 spring-modal-content">
                 <div class="flex items-center justify-between pb-3 border-b border-white/10">
-                    <h3 id="modal-editor-title" class="text-sm font-bold text-white uppercase tracking-wider">Новый вопрос</h3>
+                    <h3 id="modal-editor-title" class="text-sm font-bold text-white uppercase tracking-wider">Правка вопроса</h3>
                     <button type="button" onclick="closeQuestionModal()" class="text-gray-500 hover:text-white">
                         <i class="fas fa-xmark text-lg"></i>
                     </button>
@@ -747,7 +783,7 @@
 
                     <div>
                         <label class="block text-xs font-semibold text-gray-400 mb-2">Тип вопроса</label>
-                        <div class="grid grid-cols-2 gap-2 bg-[--var(--card-bg)] p-1 rounded-2xl border border-white/10">
+                        <div class="grid grid-cols-2 gap-2 bg-[#18171A] p-1 rounded-2xl border border-white/10">
                             <button type="button" id="btn-type-single" onclick="setQuestionType('single')" class="py-2 rounded-xl text-xs font-semibold bg-indigo-600 text-white transition-all">Один правильный</button>
                             <button type="button" id="btn-type-multiple" onclick="setQuestionType('multiple')" class="py-2 rounded-xl text-xs font-semibold text-gray-400 hover:text-white transition-all">Несколько вариантов</button>
                         </div>
@@ -835,6 +871,7 @@
 
         let currentQuestionType = 'single';
         let isEditMode = false;
+        let guestAnswerCounter = 0; // Счетчик попыток клика гостя для мягкого пуша
 
         function getCookie(name) {
             let cookieValue = null;
@@ -878,7 +915,7 @@
             },
             answers: {
                 title: "Ключи и правильные ответы",
-                desc: "Зарегистрируйтесь в 1 клик, чтобы открыть правильные варианты и пояснения к каждому заданию."
+                desc: "Зарегистрируйтесь в 1 клик, чтобы открыть все правильные варианты и пояснения."
             },
             edit: {
                 title: "Редактирование заданий",
@@ -907,7 +944,7 @@
         }
 
         /* ==========================================================================
-        2. ДИНАМИЧЕСКИЙ ОСТРОВОК (ПЕРЕПИСАН БЕЗ ЗАВИСИМОСТИ ОТ ТАЙЛВИНД-БАГОВ)
+        DYNAMIC ISLAND ENGINE
         ========================================================================== */
         const Island = (() => {
             let timer = null;
@@ -932,22 +969,18 @@
                 const config = THEMES[type] || THEMES.info;
                 const chosenIcon = customIcon || config.icon;
 
-                // 1. Анимация ухода контролов
                 $island.removeClass('theme-success theme-error theme-warning theme-info');
                 $controls.css({ opacity: 0, pointerEvents: 'none', transform: 'scale(0.92)' });
 
                 setTimeout(() => {
                     $controls.hide();
 
-                    // 2. Подготовка контента
                     $text.text(message);
                     $icon.attr('class', `fas ${chosenIcon}`);
                     $iconBox.attr('class', `w-6 h-6 rounded-full flex items-center justify-center text-[11px] flex-shrink-0 ${config.iconBg}`);
 
-                    // 3. Морфинг капсулы островка
                     $island.removeClass('mode-header').addClass(`mode-notify ${config.themeClass}`);
 
-                    // 4. Показ уведомления с принудительным flex
                     $notice.removeClass('hidden').css({ display: 'flex', opacity: 0, transform: 'scale(0.8)' });
 
                     setTimeout(() => {
@@ -995,7 +1028,121 @@
         })();
 
         /* ==========================================================================
-        3. ПЕРЕКЛЮЧЕНИЕ ПРАВИЛЬНЫХ ОТВЕТОВ В DOM
+        ИНТЕРАКТИВНЫЙ КЛИК ПО ВАРИАНТАМ (ТЕСТ-ДРАЙВ В ПРЕВЬЮ)
+        ========================================================================== */
+        function initInteractiveQuizPreview() {
+            $('.options-container').on('click', '.option-row', function(e) {
+                // Если включен режим массовой правки — клики не трогаем
+                if (isEditMode) return;
+
+                const $row = $(this);
+                const $article = $row.closest('article');
+                const qType = $article.attr('data-question-type') || 'single';
+                const isMasterShow = $('#answersToggle').is(':checked');
+
+                // Если мастер-показ ответов уже открыт автором — просто визуал
+                if (isMasterShow) return;
+
+                const isCorrect = ($row.attr('data-is-correct') === 'true');
+
+                if (qType === 'single') {
+                    // 1. ОДИН ПРАВИЛЬНЫЙ ОТВЕТ: сбрасываем предыдущие клики в этом вопросе
+                    $article.find('.option-row').each(function() {
+                        const $r = $(this);
+                        $r.removeClass('bg-emerald-500/15 border-emerald-500/40 text-emerald-200 bg-rose-500/15 border-rose-500/40 text-rose-200')
+                          .addClass('bg-[#111119]/70 border-white/[0.04] text-gray-300');
+                        
+                        const $b = $r.find('.opt-badge');
+                        $b.removeClass('bg-emerald-500 bg-rose-500 text-black text-white font-bold')
+                          .addClass('bg-white/5 border border-white/10 text-gray-400');
+                        $b.find('.opt-icon').attr('class', 'opt-icon fas fa-circle text-[7px] opacity-40');
+                        $r.find('.opt-label').addClass('hidden').hide();
+                    });
+
+                    // 2. ПОДСВЕЧИВАЕМ ВЫБРАННЫЙ
+                    const $badge = $row.find('.opt-badge');
+                    const $icon = $badge.find('.opt-icon');
+                    const $label = $row.find('.opt-label');
+
+                    if (isCorrect) {
+                        // Угадал!
+                        $row.removeClass('bg-[#111119]/70 border-white/[0.04] text-gray-300')
+                            .addClass('bg-emerald-500/15 border-emerald-500/40 text-emerald-200');
+                        $badge.removeClass('bg-white/5 border border-white/10 text-gray-400')
+                              .addClass('bg-emerald-500 text-black font-bold');
+                        $icon.attr('class', 'opt-icon fas fa-check');
+                        $label.text('Верно!').removeClass('hidden text-rose-400').addClass('text-emerald-400').show();
+                    } else {
+                        // Ошибся!
+                        $row.removeClass('bg-[#111119]/70 border-white/[0.04] text-gray-300')
+                            .addClass('bg-rose-500/15 border-rose-500/40 text-rose-200');
+                        $badge.removeClass('bg-white/5 border border-white/10 text-gray-400')
+                              .addClass('bg-rose-500 text-white font-bold');
+                        $icon.attr('class', 'opt-icon fas fa-xmark text-[9px]');
+                        $label.text('Неверно').removeClass('hidden text-emerald-400').addClass('text-rose-400 font-bold').show();
+
+                        // Показываем, где был правильный ответ
+                        const $correctRow = $article.find('.option-row[data-is-correct="true"]');
+                        if ($correctRow.length) {
+                            $correctRow.removeClass('bg-[#111119]/70 border-white/[0.04] text-gray-300')
+                                       .addClass('bg-emerald-500/10 border-emerald-500/30 text-emerald-300');
+                            $correctRow.find('.opt-badge')
+                                       .removeClass('bg-white/5 border border-white/10 text-gray-400')
+                                       .addClass('bg-emerald-500/30 text-emerald-300 font-bold');
+                            $correctRow.find('.opt-icon').attr('class', 'opt-icon fas fa-check text-[9px]');
+                            $correctRow.find('.opt-label').text('Правильный ответ').removeClass('hidden').addClass('text-emerald-400').show();
+                        }
+                    }
+
+                } else {
+                    // НЕСКОЛЬКО ВАРИАНТОВ (MULTIPLE)
+                    const $badge = $row.find('.opt-badge');
+                    const $icon = $badge.find('.opt-icon');
+                    const $label = $row.find('.opt-label');
+
+                    if ($row.hasClass('is-checked-preview')) {
+                        // Снимаем выбор
+                        $row.removeClass('is-checked-preview bg-emerald-500/15 border-emerald-500/40 text-emerald-200 bg-rose-500/15 border-rose-500/40 text-rose-200')
+                            .addClass('bg-[#111119]/70 border-white/[0.04] text-gray-300');
+                        $badge.removeClass('bg-emerald-500 bg-rose-500 text-black text-white font-bold')
+                              .addClass('bg-white/5 border border-white/10 text-gray-400');
+                        $icon.attr('class', 'opt-icon fas fa-square text-[9px] opacity-40');
+                        $label.addClass('hidden').hide();
+                    } else {
+                        // Ставим выбор
+                        $row.addClass('is-checked-preview');
+                        if (isCorrect) {
+                            $row.removeClass('bg-[#111119]/70 border-white/[0.04] text-gray-300')
+                                .addClass('bg-emerald-500/15 border-emerald-500/40 text-emerald-200');
+                            $badge.removeClass('bg-white/5 border border-white/10 text-gray-400')
+                                  .addClass('bg-emerald-500 text-black font-bold');
+                            $icon.attr('class', 'opt-icon fas fa-check');
+                            $label.text('Верно').removeClass('hidden text-rose-400').addClass('text-emerald-400').show();
+                        } else {
+                            $row.removeClass('bg-[#111119]/70 border-white/[0.04] text-gray-300')
+                                .addClass('bg-rose-500/15 border-rose-500/40 text-rose-200');
+                            $badge.removeClass('bg-white/5 border border-white/10 text-gray-400')
+                                  .addClass('bg-rose-500 text-white font-bold');
+                            $icon.attr('class', 'opt-icon fas fa-xmark text-[9px]');
+                            $label.text('Неверно').removeClass('hidden text-emerald-400').addClass('text-rose-400 font-bold').show();
+                        }
+                    }
+                }
+
+                // Крючок для неавторизованного гостя: мягкий пуш в Dynamic Island после 2 кликов
+                if (!isUserAuthenticated) {
+                    guestAnswerCounter++;
+                    if (guestAnswerCounter === 2) {
+                        setTimeout(() => {
+                            Island.info('Отличный тест! Сохраните его, чтобы отправить ученикам', 'fa-sparkles', 4500);
+                        }, 500);
+                    }
+                }
+            });
+        }
+
+        /* ==========================================================================
+        ПЕРЕКЛЮЧЕНИЕ ПРАВИЛЬНЫХ ОТВЕТОВ В DOM (МАСТЕР-ТУМБЛЕР)
         ========================================================================== */
         function toggleAnswersInDOM(show) {
             $('.option-row').each(function() {
@@ -1004,6 +1151,9 @@
                 const $badge = $(this).find('.opt-badge');
                 const $icon = $(this).find('.opt-icon');
                 const $label = $(this).find('.opt-label');
+
+                // Очищаем интерактивные классы тест-драйва
+                $(this).removeClass('is-checked-preview bg-rose-500/15 border-rose-500/40 text-rose-200');
 
                 if (isCorrect) {
                     if (show) {
@@ -1014,7 +1164,7 @@
                             .removeClass('bg-white/5 border border-white/10 text-gray-400')
                             .addClass('bg-emerald-500 text-black font-bold');
                         $icon.attr('class', 'opt-icon fas fa-check');
-                        $label.removeClass('hidden').show();
+                        $label.text('Верно').removeClass('hidden text-rose-400').addClass('text-emerald-400').show();
                     } else {
                         $(this)
                             .addClass('bg-[#111119]/70 border-white/[0.04] text-gray-300')
@@ -1030,6 +1180,20 @@
                         }
                         $label.addClass('hidden').hide();
                     }
+                } else {
+                    $(this)
+                        .addClass('bg-[#111119]/70 border-white/[0.04] text-gray-300')
+                        .removeClass('bg-emerald-500/10 border-emerald-500/30 text-emerald-300 font-medium');
+                    $badge
+                        .addClass('bg-white/5 border border-white/10 text-gray-400')
+                        .removeClass('bg-emerald-500 text-black font-bold');
+                    
+                    if (isMultiple) {
+                        $icon.attr('class', 'opt-icon fas fa-square text-[9px] opacity-40');
+                    } else {
+                        $icon.attr('class', 'opt-icon fas fa-circle text-[7px] opacity-40');
+                    }
+                    $label.addClass('hidden').hide();
                 }
             });
         }
@@ -1040,7 +1204,7 @@
         }
 
         /* ==========================================================================
-        4. МОДАЛКА РЕДАКТИРОВАНИЯ ВОПРОСА
+        МОДАЛКА РЕДАКТИРОВАНИЯ ВОПРОСА
         ========================================================================== */
         function setQuestionType(type) {
             currentQuestionType = type;
@@ -1061,7 +1225,7 @@
             const nameAttr = (currentQuestionType === 'single') ? 'name="correct_opt"' : '';
 
             const rowHtml = `
-                <div class="flex items-center gap-2.5 bg-[--var(--card-bg)] border border-white/10 rounded-2xl p-2.5" id="${rowId}">
+                <div class="flex items-center gap-2.5 bg-[#18171A] border border-white/10 rounded-2xl p-2.5" id="${rowId}">
                     <input type="${inputType}" ${nameAttr} ${isChecked ? 'checked' : ''} class="opt-check text-indigo-600 focus:ring-0 ml-1 rounded cursor-pointer">
                     <input type="text" required value="${value}" class="opt-val flex-grow bg-transparent border-0 text-sm text-white focus:outline-none" placeholder="Текст ответа">
                     <button type="button" onclick="$('#${rowId}').remove()" class="text-gray-500 hover:text-rose-400 p-1 text-xs">
@@ -1288,11 +1452,14 @@
         }
 
         /* ==========================================================================
-        5. БИНДИНГ СОБЫТИЙ СТРОГО ПОСЛЕ ЗАГРУЗКИ DOM
+        БИНДИНГ СОБЫТИЙ СТРОГО ПОСЛЕ ЗАГРУЗКИ DOM
         ========================================================================== */
         $(document).ready(function() {
 
-            // 1. ТУМБЛЕР ОТВЕТОВ
+            // 1. ИНИЦИАЛИЗАЦИЯ ИНТЕРАКТИВНОГО КВИЗА (ТЕСТ-ДРАЙВ)
+            initInteractiveQuizPreview();
+
+            // 2. ТУМБЛЕР ОТВЕТОВ
             $('#answersToggle').off('change').on('change', async function() {
                 if (!isUserAuthenticated) {
                     this.checked = false;
@@ -1303,7 +1470,6 @@
                 const showAnswers = this.checked;
                 const csrftoken = getCookie('csrftoken');
 
-                // Мгновенный отклик в DOM
                 toggleAnswersInDOM(showAnswers);
 
                 try {
@@ -1329,7 +1495,7 @@
                 }
             });
 
-            // 2. КНОПКА «ПРАВИТЬ»
+            // 3. КНОПКА «ПРАВИТЬ» (МАССОВЫЙ РЕЖИМ)
             $('#toggle-edit-mode-btn').off('click').on('click', function(e) {
                 e.preventDefault();
 
@@ -1346,7 +1512,6 @@
                         .removeClass('bg-[#18171A] text-gray-300 border-white/10')
                         .addClass('bg-indigo-600 text-white border-transparent shadow-lg shadow-indigo-600/30');
 
-                    // Принудительный показ карандашей
                     $('.edit-actions').removeClass('hidden').css('display', 'flex');
                     $('#add-question-box').removeClass('hidden').css('display', 'block');
                     Island.info('Режим правки активен', 'fa-pen-to-square');
@@ -1362,7 +1527,7 @@
                 }
             });
 
-            // 3. САБМИТ РЕДАКТИРОВАНИЯ ВОПРОСА
+            // 4. САБМИТ РЕДАКТИРОВАНИЯ ВОПРОСА
             $('#question-editor-form').off('submit').on('submit', async function(e) {
                 e.preventDefault();
                 const qIndexVal = $('#edit-q-index').val();
@@ -1419,7 +1584,7 @@
                 }
             });
 
-            // 4. САБМИТ БЫСТРОЙ РЕГИСТРАЦИИ
+            // 5. САБМИТ БЫСТРОЙ РЕГИСТРАЦИИ (152-ФЗ)
             $('#page-quick-register-form').off('submit').on('submit', async function(e) {
                 e.preventDefault();
                 const $err = $('#reg-form-error');
@@ -1466,7 +1631,7 @@
                 }
             });
 
-            // 5. ШЕЙРИНГ
+            // 6. ШЕЙРИНГ
             $('button[data-action="share"]').off('click').on('click', function(e) {
                 const shareUrl = $(e.currentTarget).data('share-url');
                 const fullUrl = window.location.protocol + '//' + window.location.host + shareUrl;
@@ -1480,19 +1645,17 @@
                 }
             });
 
-            // 6. СЧЕТЧИК ПРОСМОТРОВ
+            // 7. СЧЕТЧИК ПРОСМОТРОВ
             registerSurveyView();
         });
     </script>
+
+    <!-- СПАРКЛАЙН ГРАФИК (CHART.JS) -->
     <script>
-        /* ==========================================================================
-        QUICK ANALYTICS SPARKLINE ENGINE (SELF-HEALING + SAFE CHART)
-        ========================================================================== */
         document.addEventListener('DOMContentLoaded', function() {
             const sparklineCanvas = document.getElementById('qa-sparkline-canvas');
             if (!sparklineCanvas) return;
 
-            // Хелпер гарантированного наличия Chart.js (подтянет сам, если нет в <head>)
             function ensureChartJs(callback) {
                 if (typeof Chart !== 'undefined') {
                     callback();
@@ -1509,7 +1672,6 @@
                 }
             }
 
-            // Забираем данные аналитики
             fetch(`/api/test-charts/${surveyId}/`)
                 .then(res => res.json())
                 .then(data => {
@@ -1519,25 +1681,21 @@
                     const activityLabels = data.attempts_activity_chart?.labels || [];
                     const totalAttempts = activityData.reduce((acc, v) => acc + v, 0);
 
-                    // 1. Счётчик сдач
                     $('#qa-total-attempts').text(totalAttempts);
                     
-                    // Адекватный CR (без дичи типа 1000% CR)
                     const views = parseInt('{{ view_count|default:0 }}', 10);
                     if (views > 0 && totalAttempts > 0) {
                         const rawCr = Math.round((totalAttempts / views) * 100);
-                        const cleanCr = Math.min(rawCr, 100); // не больше 100%
+                        const cleanCr = Math.min(rawCr, 100);
                         $('#qa-conversion-rate').text(`(${cleanCr}% CR)`);
                     } else if (totalAttempts > 0) {
                         $('#qa-conversion-rate').text(`(100% CR)`);
                     }
 
-                    // 2. Успеваемость (Success Rate)
                     const scoreCounts = (data.scores_distribution_chart?.data || []).map(v => parseInt(v, 10) || 0);
                     const totalScoreRecords = scoreCounts.reduce((acc, v) => acc + v, 0);
                     
                     if (totalScoreRecords > 0 && scoreCounts.length >= 4) {
-                        // Сегменты 3 и 4 (успешные сдачи)
                         const passed = (scoreCounts[2] || 0) + (scoreCounts[3] || 0);
                         const successPct = Math.round((passed / totalScoreRecords) * 100);
                         $('#qa-success-rate').text(`${successPct}%`);
@@ -1547,7 +1705,6 @@
                         $('#qa-success-rate').text('—%');
                     }
 
-                    // 3. Статус активности
                     if (totalAttempts > 0) {
                         $('#qa-last-activity').text('Активно');
                     } else {
@@ -1557,7 +1714,6 @@
                         return;
                     }
 
-                    // 4. Отрисовка графика через гарантированный Chart.js
                     ensureChartJs(() => {
                         const ctx = sparklineCanvas.getContext('2d');
                         const gradient = ctx.createLinearGradient(0, 0, 0, 60);

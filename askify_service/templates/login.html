@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" class="h-full">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Вход в Летучку — авторизация</title>
-    <meta name="description" content="Авторизуйтесь в сервисе Летучка, чтобы создавать свои тесты по тексту, проходить их и получать обратную связь от ИИ." />
+    <title>Вход в личный кабинет — Летучка</title>
+    <meta name="description" content="Авторизация в сервисе Летучка. Вход в личный кабинет для работы с тестами, аналитикой и ведомостями." />
     <link rel="canonical" href="https://letychka.ru/login/" />
     
     {% load static %}
@@ -21,7 +21,7 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&family=Wix+Madefor+Display:wght@700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- Yandex.Metrika counter -->
@@ -33,426 +33,305 @@
             k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
             (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
         
-            ym(98823704, "init", {
-                clickmap:true,
-                trackLinks:true,
-                accurateTrackBounce:true,
-                webvisor:true
-            });
+            ym(98823704, "init", { clickmap:true, trackLinks:true, accurateTrackBounce:true, webvisor:true });
         }, 1000);
     </script>
     <noscript><div><img src="https://mc.yandex.ru/watch/98823704" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
-    <!-- /Yandex.Metrika counter -->
 
     <style>
         :root {
-            --color-bg: #0F0818;
-            --color-surface: rgba(30, 24, 48, 0.5);
-            --color-border: rgba(97, 109, 240, 0.2);
-            --color-text-primary: #f0f0f0;
-            --color-text-secondary: #a0a0b0;
-            --color-accent-primary: #616DF0;
-            --color-accent-secondary: #79EF66;
-            --color-text-on-accent: #ffffff;
+            --bg-canvas: #0e0e14;
+            --panel-bg: rgba(22, 21, 30, 0.75);
+            --border-subtle: rgba(255, 255, 255, 0.08);
+            --border-highlight: rgba(255, 255, 255, 0.14);
+            --spring-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
         }
 
-       @font-face {
-            font-family: 'Unbounded Medium';
-            src: url("{% static 'fonts/Unbounded-Medium.ttf' %}") format('truetype');
+        body {
+            background-color: var(--bg-canvas);
+            font-family: 'Golos Text', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: #F3F4F6;
+            letter-spacing: -0.01em;
+            overflow-x: hidden;
         }
 
-        body { background-color: var(--color-bg); color: var(--color-text-primary); font-family: 'Inter', sans-serif; }
-
-        h1, h2, h3 {
-            font-family: 'Unbounded Medium';
+        h1, .font-display {
+            font-family: 'Wix Madefor Display', sans-serif;
+            letter-spacing: -0.025em;
         }
 
-        .highlight { color: var(--color-accent-secondary); }
-        .gradient-text {
-            background: linear-gradient(45deg, var(--color-accent-primary), var(--color-accent-secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+        .font-mono-nums {
+            font-family: 'JetBrains Mono', monospace;
+            letter-spacing: -0.02em;
         }
-        input[type="range"] { -webkit-appearance: none; appearance: none; background: transparent; cursor: pointer; }
-        input[type="range"]::-webkit-slider-runnable-track { background: var(--color-bg); border: 1px solid var(--color-border); border-radius: 9999px; height: 0.5rem; }
-        input[type="range"]::-moz-range-track { background: var(--color-bg); border: 1px solid var(--color-border); border-radius: 9999px; height: 0.5rem; }
-        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; margin-top: -6px; background-color: var(--color-accent-secondary); border: 2px solid var(--color-bg); height: 1.25rem; width: 1.25rem; border-radius: 9999px; transition: transform .2s ease; }
-        input[type="range"]::-moz-range-thumb { background-color: var(--color-accent-secondary); border: 2px solid var(--color-bg); height: 1.25rem; width: 1.25rem; border-radius: 9999px; transition: transform .2s ease; }
-        
-        #glass-alert {
-            position: fixed;
-            z-index: 100;
-            
-            top: 16px;
-            left: 16px;
-            right: 16px;
-            width: auto;
-            transform: translateY(-200%);
-            
-            background: rgba(30, 24, 48, 0.9);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            color: white;
-            padding: 1rem 1.5rem;
-            border: 1px solid var(--color-border);
-            border-radius: 1.5rem;
-            
-            transition: transform 0.4s ease-in-out, opacity 0.4s ease-in-out;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 1rem;
+
+        .glass-card {
+            background: var(--panel-bg);
+            backdrop-filter: blur(28px) saturate(180%);
+            -webkit-backdrop-filter: blur(28px) saturate(180%);
+            border: 1px solid var(--border-subtle);
+            box-shadow: 
+                0 32px 64px -16px rgba(0, 0, 0, 0.8),
+                inset 0 1px 0 0 var(--border-highlight);
+        }
+
+        .glass-input {
+            background: rgba(14, 13, 19, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.09);
+            box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.3);
+            transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+        }
+        .glass-input:hover {
+            border-color: rgba(255, 255, 255, 0.18);
+        }
+        .glass-input:focus {
+            border-color: rgba(99, 102, 241, 0.7);
+            background: rgba(17, 16, 24, 0.95);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18), inset 0 2px 4px 0 rgba(0, 0, 0, 0.2);
+        }
+
+        .spring-btn {
+            transition: transform 0.2s var(--spring-bounce), background-color 0.15s, border-color 0.15s, box-shadow 0.15s;
+        }
+        .spring-btn:hover { 
+            transform: translateY(-1px); 
+        }
+        .spring-btn:active { 
+            transform: scale(0.98) translateY(1px); 
+        }
+
+        .btn-loading #btn-text-layer {
             opacity: 0;
-            pointer-events: none;
+            transform: translateY(-16px);
         }
-
-        #glass-alert.visible {
+        .btn-loading #btn-loader-layer {
+            opacity: 1;
             transform: translateY(0);
-            opacity: 1;
-            pointer-events: auto;
         }
-
-        @media screen and (min-width: 720px) {
-            #glass-alert {
-                top: auto;
-                right: auto; 
-                top: 4rem;
-                left: 50%;
-                width: max-content;
-                max-width: 90%;
-                transform: translateX(-50%) translateY(200%);
-                border-radius: 9999px;
-            }
-
-            #glass-alert.visible {
-                transform: translateX(-50%) translateY(0);
-            }
-        }
-
-        .glass-alert__close { 
-            background: none; 
-            border: none; 
-            color: var(--color-text-secondary); 
-            font-size: 1.5rem; 
-            cursor: pointer; 
-            line-height: 1; 
-        }
-
-        #main-header {
-            transition: padding 0.3s ease-in-out, background-color 0.3s ease, box-shadow 0.3s ease, top 0.3s ease-in-out;
-            max-width: max-content;
-            border-radius: 9999px;
-            margin: 0 auto;
-            top: 32px;
-            padding: 0.5rem;
-        }
-        
-        #main-header.scrolled {
-            padding-top: 0.75rem;
-            padding-bottom: 0.75rem;
-            background-color: rgba(20, 18, 23, 0.75);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            box-shadow: 0 8px 32px rgba(62, 30, 112, 0.3);
-            top: 12px;
-            z-index: 50;
-        }
-        
-        /* Плавность для внутренних элементов */
-        #main-header .logo-img, #main-header .nav-link, #main-header .cta-btn, #main-header .main-nav {
-            transition: all 0.3s ease-in-out;
-        }
-        #main-header .main-nav {
-            padding: 0 64px;
-        }
-        #main-header.scrolled .main-nav {
-            padding: 0 32px;
-        }
-
-        /* СТИЛИ ДЛЯ МОБИЛЬНОГО МЕНЮ */
-        #mobile-menu {
-            max-width: 100%;
-            position: absolute;
-            top: calc(100% + 0.5rem);
-            right: 0;
-            opacity: 0;
-            transform-origin: top right;
-            transform: scale(0.95);
-            pointer-events: none;
-            transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
-        }
-
-        #mobile-menu.menu-open {
-            opacity: 1;
-            transform: scale(1);
-            pointer-events: auto;
-        }
-
-        @media screen and (width <= 600px) {
-            #main-header {
-                max-width: 100%;
-            }
-        }
-
-        /* Плавное открытие/закрытие аккордеона */
-        details > summary {
-        list-style: none; /* Убираем стандартную стрелку */
-        }
-        details > summary::-webkit-details-marker {
-        display: none; /* И для Webkit тоже */
-        }
-        details[open] > summary ~ * {
-            animation: fadeIn 0.3s ease-in-out;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        @keyframes pulse-glow {
-            0%, 100% { box-shadow: 0 0 15px rgba(var(--color-accent-rgb), 0.3); }
-            50% { box-shadow: 0 0 30px rgba(var(--color-accent-rgb), 0.6); }
-        }
-
         .btn-loading {
             pointer-events: none;
-            filter: brightness(1.1);
-            animation: pulse-glow 1.5s infinite;
+            filter: brightness(1.05);
         }
 
-        .btn-loading #btn-text {
-            opacity: 0;
-            transform: translateY(-20px);
+        @keyframes cardShake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-7px); }
+            40% { transform: translateX(7px); }
+            60% { transform: translateX(-4px); }
+            80% { transform: translateX(4px); }
         }
-
-        .btn-loading #btn-loader {
-            opacity: 1;
-            transform: translateY(0);
+        .shake-active {
+            animation: cardShake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
         }
-
     </style>
-
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
-<body class="bg-[var(--color-bg)] text-[var(--color-text-primary)] min-h-screen flex flex-col">
-    
-    <header id="main-header" class="sticky z-50 w-full">
-        <div class="relative max-w-6xl mx-auto px-4 sm:px-8">
-            <div class="flex justify-between items-center">
-                
-                <a href="/" class="flex-shrink-0">
-                    <img src="{% static 'img/logo-header.webp' %}" alt="Летучка Логотип" class="logo-img w-32 md:w-32 h-auto">
-                </a>
+<body class="min-h-full flex flex-col antialiased selection:bg-indigo-600 selection:text-white relative bg-[#0e0e14]">
 
-                <nav class="main-nav hidden lg:flex items-center gap-6">
-                    <a href="/#transformation" class="nav-link text-sm text-[var(--color-text-secondary)] font-semibold hover:text-white">Возможности</a>
-                    <a href="/available-plans" class="nav-link text-sm text-[var(--color-text-secondary)] font-semibold hover:text-white">Тарифы</a>
-                    <a href="/#faq" class="nav-link text-sm text-[var(--color-text-secondary)] font-semibold hover:text-white">FAQ</a>
-                </nav>
+    <!-- АМБИЕНТНОЕ СВЕЧЕНИЕ ФОНА -->
+    <div class="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <div class="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[520px] h-[520px] bg-indigo-600/10 rounded-full blur-[140px]"></div>
+    </div>
 
-                <div class="hidden lg:flex items-center space-x-3">
-                    <a href="/register" class="cta-btn bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] px-5 py-2.5 text-sm font-bold rounded-full transition-transform hover:scale-105">Начать бесплатно</a>
-                </div>
-
-                <div class="lg:hidden">
-                    <button id="burger-btn" class="text-white text-2xl w-10 h-10 flex items-center justify-center">
-                        <i id="burger-icon" class="fas fa-bars transition-transform duration-300"></i>
-                    </button>
-                </div>
-            </div>
+    <!-- ДИНАМИЧЕСКИЙ ОСТРОВОК (STICKY ISLAND HEADER) -->
+    <header class="sticky top-4 z-40 w-full px-4 flex justify-center pointer-events-none">
+        <nav class="pointer-events-auto flex items-center justify-between gap-3 px-4 py-2 sm:px-5 sm:py-2.5 rounded-full bg-[#161520]/80 backdrop-blur-xl border border-white/10 shadow-2xl max-w-4xl w-full">
             
-            <div id="mobile-menu" class="w-64 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/80 backdrop-blur-xl shadow-2xl shadow-black/50">
-                <nav class="flex flex-col p-4 space-y-2">
-                    <a href="/#transformation" class="px-4 py-3 text-base text-white font-semibold rounded-lg hover:bg-black/20">Возможности</a>
-                    <a href="/available-plans" class="px-4 py-3 text-base text-white font-semibold rounded-lg hover:bg-black/20">Тарифы</a>
-                    <a href="/#faq" class="px-4 py-3 text-base text-white font-semibold rounded-lg hover:bg-black/20">FAQ</a>
-                    <hr class="border-t border-[var(--color-border)] !my-3">
-                    <a href="/login" class="px-4 py-3 text-base text-white font-semibold rounded-lg hover:bg-black/20">Вход</a>
-                    <a href="/register" class="block text-center bg-[var(--color-accent-primary)] text-white px-5 py-3 text-base font-bold rounded-3xl mt-2">Начать бесплатно</a>
-                </nav>
+            <div class="flex items-center gap-2.5 text-xs">
+                <a href="/" class="flex items-center gap-2 group transition-opacity hover:opacity-85">
+                    <img src="{% static 'img/logo-header.webp' %}" alt="Летучка" class="h-6 sm:h-7 w-auto object-contain">
+                </a>
+                <span class="text-zinc-600 select-none">/</span>
+                <span class="text-white font-medium">Авторизация</span>
             </div>
-        </div>
+
+            <div class="flex items-center gap-2 font-mono-nums">
+                <a href="{% url 'register' %}{% if next %}?next={{ next|urlencode }}{% elif next_url %}?next={{ next_url|urlencode }}{% endif %}" class="px-3.5 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-zinc-200 hover:text-white transition-all spring-btn flex items-center gap-1.5">
+                    <span>Регистрация</span>
+                    <i class="fas fa-arrow-right text-[10px] text-zinc-400"></i>
+                </a>
+            </div>
+
+        </nav>
     </header>
 
-    <main class="flex-grow flex items-center justify-center p-4 mt-16">
-        <div class="w-full max-w-md mx-auto">
-            <div class="bg-[var(--color-surface)]/80 backdrop-blur-xl p-8 rounded-3xl border border-[var(--color-border)] text-center animate-fadeIn">
+    <!-- ЦЕНТРАЛЬНЫЙ МОДУЛЬ АВТОРИЗАЦИИ -->
+    <main class="relative z-10 flex-grow flex items-center justify-center w-full px-4 sm:px-6 py-8 sm:py-12">
+        <div class="w-full max-w-[420px] mx-auto">
+            
+            <div id="login-card" class="glass-card rounded-[32px] p-7 sm:p-9 space-y-6">
                 
-                <h1 class="text-3xl font-bold text-white">Вход в Летучку</h1>
-                <p class="mt-2 text-sm text-gray-400">Рады видеть Вас снова!</p>
-                
-                <!-- ГЛАВНЫЕ КНОПКИ БЕСПАРОЛЬНОГО ВХОДА -->
-                <div class="mt-8 space-y-4">
-                    <!-- <a href="{% url 'tg_code_login' %}" 
-                    class="group flex items-center justify-center gap-3 w-full p-4 bg-[#2AABEE] text-white font-bold rounded-2xl transition-transform transform hover:scale-105 active:scale-98">
-                        <i class="fab fa-telegram-plane text-2xl"></i>
-                        <span>Войти через Telegram</span>
-                    </a> -->
-                    <a href="{% url 'passwordless_auth' %}"
-                    class="group flex items-center justify-center gap-3 w-full p-4 bg-white/5 text-white font-semibold rounded-2xl border border-white/10
-                            transition-all duration-300 hover:border-[var(--color-accent-primary)] hover:bg-[var(--color-accent-primary)]/20">
-                        <span>Войти в 1 клик через Email</span>
+                <!-- ЗАГОЛОВОК КАРТОЧКИ -->
+                <div class="space-y-1.5 text-center">
+                    <h1 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight font-display">
+                        Вход в аккаунт
+                    </h1>
+                    <p class="text-xs sm:text-sm text-zinc-400">
+                        Введите email и пароль для доступа к кабинету
+                    </p>
+                </div>
+
+                <!-- КОНТЕКСТНАЯ ПЛАШКА: ЕСЛИ ПРИШЁЛ СО СГЕНЕРИРОВАННОГО ТЕСТА -->
+                {% if next and '/c/' in next or next_url and '/c/' in next_url %}
+                <div class="p-3.5 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs flex items-center gap-3">
+                    <div class="w-6 h-6 rounded-xl bg-indigo-500/20 flex items-center justify-center flex-shrink-0 text-indigo-400">
+                        <i class="fas fa-bookmark text-xs"></i>
+                    </div>
+                    <span class="leading-snug">Войдите, чтобы сохранить созданный тест в ваш личный кабинет.</span>
+                </div>
+                {% endif %}
+
+                <!-- СООБЩЕНИЕ ОБ ОШИБКЕ -->
+                {% if error %}
+                <div class="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/25 text-rose-300 text-xs flex items-center gap-3">
+                    <div class="w-6 h-6 rounded-xl bg-rose-500/20 flex items-center justify-center flex-shrink-0 text-rose-400">
+                        <i class="fas fa-circle-exclamation text-xs"></i>
+                    </div>
+                    <span class="leading-relaxed">{{ error }}</span>
+                </div>
+                {% endif %}
+
+                <!-- ОСНОВНАЯ ФОРМА -->
+                <form method="post" id="auth-form" class="space-y-4">
+                    {% csrf_token %}
+                    {% if next %}
+                        <input type="hidden" name="next" value="{{ next }}">
+                    {% elif next_url %}
+                        <input type="hidden" name="next" value="{{ next_url }}">
+                    {% endif %}
+
+                    <!-- EMAIL (С АВТОФОКУСОМ) -->
+                    <div class="space-y-1.5 text-left">
+                        <label for="id_email" class="block text-xs font-semibold text-zinc-300">Email</label>
+                        <div class="relative">
+                            <input type="email" name="email" id="id_email" required autofocus autocomplete="email"
+                                   placeholder="email@yandex.ru"
+                                   class="w-full glass-input rounded-2xl pl-4 pr-11 py-3.5 text-sm text-white placeholder-zinc-600 focus:outline-none">
+                            <span class="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 text-xs pointer-events-none">
+                                <i class="fas fa-envelope"></i>
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- ПАРОЛЬ -->
+                    <div class="space-y-1.5 text-left">
+                        <div class="flex justify-between items-baseline">
+                            <label for="id_password" class="text-xs font-semibold text-zinc-300">Пароль</label>
+                            <a href="{% url 'passwordless_auth' %}" class="text-[11px] text-zinc-400 hover:text-indigo-300 transition-colors">Забыли пароль?</a>
+                        </div>
+                        <div class="relative">
+                            <input type="password" name="password" id="id_password" required autocomplete="current-password"
+                                   placeholder="••••••••"
+                                   class="w-full glass-input rounded-2xl pl-4 pr-11 py-3.5 text-sm text-white placeholder-zinc-600 focus:outline-none">
+                            <button type="button" id="toggle-pwd-btn" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 text-xs transition-colors p-1" title="Показать пароль">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- САБМИТ -->
+                    <div class="pt-1">
+                        <button type="submit" id="submit-btn"
+                                class="group relative w-full h-[50px] rounded-2xl flex items-center justify-center select-none overflow-hidden cursor-pointer bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-bold text-xs sm:text-sm tracking-tight shadow-xl shadow-indigo-600/30 border border-white/20 spring-btn">
+                            
+                            <div class="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/40 to-transparent pointer-events-none"></div>
+
+                            <div id="btn-text-layer" class="flex items-center gap-2 transition-all duration-200">
+                                <i class="fas fa-arrow-right-to-bracket text-xs opacity-80"></i>
+                                <span>Войти в аккаунт</span>
+                            </div>
+
+                            <div id="btn-loader-layer" class="absolute inset-0 flex items-center justify-center gap-2.5 opacity-0 translate-y-6 transition-all duration-200 bg-indigo-600 pointer-events-none">
+                                <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path style="opacity: 0.75;" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <span class="text-xs font-semibold tracking-wide">Заходим...</span>
+                            </div>
+                        </button>
+                    </div>
+                </form>
+
+                <!-- РАЗДЕЛИТЕЛЬ -->
+                <div class="relative flex items-center justify-center">
+                    <div class="w-full border-t border-white/[0.07]"></div>
+                    <span class="absolute bg-[#181722] px-3 text-[10px] font-mono-nums text-zinc-500 uppercase tracking-widest">или</span>
+                </div>
+
+                <!-- ВХОД ПО ССЫЛКЕ БЕЗ ПАРОЛЯ -->
+                <div>
+                    <a href="{% url 'passwordless_auth' %}" 
+                       class="w-full flex items-center justify-center gap-2.5 py-3 px-4 rounded-2xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.08] text-xs font-semibold text-zinc-300 hover:text-white transition-all spring-btn">
+                        <i class="fas fa-envelope text-indigo-400 text-xs"></i>
+                        <span>Войти в 1 клик по ссылке</span>
                     </a>
                 </div>
-                
-                <!-- ДЛЯ ВХОДА ПО ПАРОЛЮ -->
-                <div class="my-6 text-left">
-                    <summary class="list-none text-sm text-center text-gray-100 font-semibold transition-colors">
-                        <span class="summary-text select-none">Или войти по паролю <i class="fas fa-chevron-down ml-1 text-xs transition-transform duration-300"></i></span>
-                    </summary>
-                    
-                    <form method="post" class="mt-4 space-y-4">
-                        {% csrf_token %}
 
-                        {% if error %}
-                        <div class="mb-4 p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm text-left animate-fadeIn">
-                            <div class="flex items-center gap-2">
-                                <i class="fas fa-exclamation-triangle mt-0.5"></i>
-                                <span><strong>Ошибка входа:</strong> {{ error }}</span>
-                            </div>
-                        </div>
-                        {% endif %}
-
-                        <div>
-                            <label for="id_email" class="text-sm font-semibold text-gray-300">Email</label>
-                            <input type="email" name="email" id="id_email" required 
-                                class="mt-1 w-full p-3 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl text-white 
-                                        focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]">
-                        </div>
-                        <div>
-                            <div class="flex justify-between items-baseline">
-                                <label for="id_password" class="text-sm font-semibold text-gray-300">Пароль</label>
-                                <a href="{% url 'password_reset' %}" class="text-xs text-gray-400 hover:underline">Забыли пароль?</a>
-                            </div>
-                            <input type="password" name="password" id="id_password" required 
-                                class="mt-1 w-full p-3 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl text-white 
-                                        focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]">
-                        </div>
-                        <button type="submit" id="submit-btn"
-                            class="relative w-full py-4 font-bold text-center rounded-xl bg-[var(--color-accent-primary)] text-white 
-                                transition-all duration-300 transform hover:shadow-[0_0_20px_rgba(var(--color-accent-rgb),0.4)] 
-                                active:scale-95 overflow-hidden group">
-                        
-                        <!-- Текст кнопки -->
-                        <span id="btn-text" class="inline-flex items-center transition-all duration-300">
-                            Войти <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
-                        </span>
-
-                        <!-- Ебейший лоадер (по умолчанию скрыт) -->
-                        <div id="btn-loader" class="absolute inset-0 flex items-center justify-center opacity-0 translate-y-10 transition-all duration-300">
-                            <svg class="animate-spin h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            <span class="ml-3 text-sm tracking-widest uppercase font-black">Проверка...</span>
-                        </div>
-                    </button>
-                    </form>
+                <!-- ПЕРЕХОД В РЕГИСТРАЦИЮ -->
+                <div class="pt-2 text-center text-xs text-zinc-400 border-t border-white/[0.05]">
+                    <span>Нет аккаунта?</span>
+                    <a href="{% url 'register' %}{% if next %}?next={{ next|urlencode }}{% elif next_url %}?next={{ next_url|urlencode }}{% endif %}" 
+                       class="text-indigo-400 hover:text-indigo-300 font-bold transition-colors ml-1.5">
+                        Зарегистрироваться
+                    </a>
                 </div>
-                
-                <p class="text-sm text-gray-400">
-                    Еще нет аккаунта? <a href="{% url 'register' %}" class="font-bold text-[var(--color-accent-primary)] hover:underline">Зарегистрироваться</a>
-                </p>
 
             </div>
         </div>
     </main>
 
-    <footer class="mt-24 border-t border-[var(--color-border)]">
-        <div class="max-w-6xl mx-auto px-4 sm:px-8 py-16">
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-12">
-                
-                <div class="sm:col-span-2 md:col-span-1">
-                    <a href="/">
-                        <img src="{% static 'img/logo-header.webp' %}" alt="Летучка Логотип" class="w-40 h-auto">
-                    </a>
-                    <p class="mt-4 text-sm text-[var(--color-text-secondary)]">
-                        AI-сервис для создания тестов и&nbsp;онлайн тестирования
-                    </p>
-                </div>
-
+    <!-- СТРОГИЙ ЧИСТЫЙ ФУТЕР -->
+    <footer class="relative z-10 border-t border-white/[0.06] bg-[#0C0B0F]/90 mt-auto">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 py-6">
+            <div class="flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-zinc-500 text-center sm:text-left">
                 <div>
-                    <h3 class="text-sm font-semibold text-white uppercase tracking-wider">Продукт</h3>
-                    <div class="mt-4 flex flex-col space-y-3 text-sm">
-                        <a href="#transformation" class="text-[var(--color-text-secondary)] hover:text-white transition-colors">Возможности</a>
-                        <a href="#security-and-payments" class="text-[var(--color-text-secondary)] hover:text-white transition-colors">Безопасность</a>
-                        <a href="#pricing" class="text-[var(--color-text-secondary)] hover:text-white transition-colors">Тарифы</a>
-                        <a href="#faq" class="text-[var(--color-text-secondary)] hover:text-white transition-colors">FAQ</a>
-                        <a href="/dlya-prepodavateley/" target="_blank" rel="noopener noreferrer" class="text-[var(--color-text-secondary)] hover:text-white transition-colors">Преподавателям</a>
-                        
-                    </div>
+                    <p>© 2024–2026 Летучка AI. Все права защищены.</p>
+                    <p class="text-[11px] text-zinc-600 mt-0.5">ИНН 773613171558 / ОГРНИП 3245081071286</p>
                 </div>
 
-                <div>
-                    <h3 class="text-sm font-semibold text-white uppercase tracking-wider">Медиа</h3>
-                    <div class="mt-4 flex flex-col space-y-3 text-sm">
-                        <a href="https://letychka.ru/media/main/" class="text-[var(--color-text-secondary)] hover:text-white transition-colors">Блог</a>
-                        <a href="https://productradar.ru/product/letuchka/" target="_blank" rel="noopener noreferrer" class="text-[var(--color-text-secondary)] hover:text-white transition-colors">Product Radar</a>
-                        <a href="https://www.behance.net/gallery/217116137/Letychka-letuchka-AI-servis-dlja-generacii-testov/" target="_blank" rel="noopener noreferrer" class="text-[var(--color-text-secondary)] hover:text-white transition-colors">Кейс на Behance</a>
-                        <a href="https://rutube.ru/video/05833232f69b6dd32e4ccd0e9ec63c4b/?r=wd" target="_blank" rel="noopener noreferrer" class="text-[var(--color-text-secondary)] hover:text-white transition-colors">Промо на Rutube</a>
-                    </div>
-                </div>
-
-                <div>
-                    <h3 class="text-sm font-semibold text-white uppercase tracking-wider">Компания</h3>
-                    <div class="mt-4 flex flex-col space-y-3 text-sm">
-                        <a href="mailto:support@letychka.ru" class="text-[var(--color-text-secondary)] hover:text-white transition-colors">support@letychka.ru</a>
-                        <a href="/docs/public-offer/" class="text-[var(--color-text-secondary)] hover:text-white transition-colors">Публичная оферта</a>
-                        <a href="/docs/privacy-policy/" class="text-[var(--color-text-secondary)] hover:text-white transition-colors">Политика конфиденциальности</a>
-                        <hr>
-                        <a href="https://golosok.space/" class="text-[var(--color-text-secondary)] hover:text-white transition-colors" target="_blank" rel="noopener noreferrer">Голосок</a>
-                        <a href="https://taxi-watcher.ru/" class="text-[var(--color-text-secondary)] hover:text-white transition-colors" target="_blank" rel="noopener noreferrer">Taxi Watcher</a>
-                    </div>
-                </div>
-            </div>
-
-            <div class="mt-16 pt-8 border-t border-[var(--color-border)] flex flex-col sm:flex-row justify-between items-center text-sm text-[var(--color-text-secondary)]">
-                <p>2024-2026 Летучка AI. Design & Development <a href="https://dprofile.ru/case/106507/letucka-ai-servis-dlia-generacii-testov/" target="_blank" rel="noopener noreferrer" class="text-[var(--color-text-secondary)] hover:text-white transition-colors">by Kozak</a></p>
-                <div class="flex items-center space-x-6 text-xl mt-4 sm:mt-0">
-                    <a href="https://t.me/LetychkaRobot" target="_blank" rel="noopener noreferrer" class="hover:text-white transition-colors" title="Telegram">
-                        <i class="fab fa-telegram"></i>
-                    </a>
+                <div class="flex flex-wrap justify-center sm:justify-end items-center gap-5 text-zinc-400">
+                    <a href="/docs/public-offer" class="hover:text-white transition-colors">Публичная оферта</a>
+                    <a href="/docs/privacy-policy" class="hover:text-white transition-colors">Политика конфиденциальности</a>
+                    <a href="mailto:support@letychka.ru" class="text-indigo-400 hover:text-indigo-300 transition-colors">support@letychka.ru</a>
                 </div>
             </div>
         </div>
     </footer>
-    
+
+    <!-- JS СКРИПТ: УПРАВЛЕНИЕ ПАРОЛЕМ, ТРЯСКА КАРТОЧКИ, ЛОАДЕР -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const form = document.getElementById('classic-login-form');
+            const form = document.getElementById('auth-form');
+            const submitBtn = document.getElementById('submit-btn');
+            const loginCard = document.getElementById('login-card');
+            
+            // 1. Показ/скрытие пароля
+            const pwdInput = document.getElementById('id_password');
+            const togglePwdBtn = document.getElementById('toggle-pwd-btn');
+            if (togglePwdBtn && pwdInput) {
+                togglePwdBtn.addEventListener('click', () => {
+                    const isPwd = pwdInput.type === 'password';
+                    pwdInput.type = isPwd ? 'text' : 'password';
+                    togglePwdBtn.innerHTML = isPwd ? '<i class="fas fa-eye-slash"></i>' : '<i class="fas fa-eye"></i>';
+                });
+            }
+
+            // 2. Визуальный отклик при ошибке из Django
+            {% if error %}
+                if (loginCard) {
+                    loginCard.classList.add('shake-active');
+                    setTimeout(() => loginCard.classList.remove('shake-active'), 500);
+                }
+            {% endif %}
+
+            // 3. Активация лоадера при отправке валидной формы
             if (form) {
-                form.addEventListener('submit', () => {
-                    const submitBtn = document.getElementById('submit-btn');
-                    if (submitBtn) {
-                        submitBtn.disabled = true;
-                        const loadingText = submitBtn.dataset.loadingText || 'Подождите...';
-                        submitBtn.innerHTML = `
-                            <span style="display: flex; align-items: center; justify-content: center;">
-                                <svg style="animation: spin 1s linear infinite; margin-right: 0.75rem; height: 1.25rem; width: 1.25rem; color: white;" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle style="opacity: 0.25;" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                    <path style="opacity: 0.75;" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                <span>${loadingText}</span>
-                            </span>
-                        `;
+                form.addEventListener('submit', function() {
+                    if (this.checkValidity()) {
+                        submitBtn.classList.add('btn-loading');
                     }
                 });
             }
         });
     </script>
-    <script>
-document.querySelector('form').addEventListener('submit', function(e) {
-    const btn = document.getElementById('submit-btn');
-    
-    // Если форма валидна (браузерная проверка прошла)
-    if (this.checkValidity()) {
-        btn.classList.add('btn-loading');
-        // Чтобы нельзя было спамить кликами и не ловить race condition
-        btn.disabled = true; 
-    }
-});
-</script>
-    <script src="{% static 'js/head-landing.js' %}"></script>
-
 </body>
 </html>

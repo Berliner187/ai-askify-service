@@ -234,8 +234,13 @@ class ManageGenerationSurveys:
                 base_url = None
                 model_name = "gpt-4o-mini"
 
-            is_local = base_url and ("localhost" in base_url or "127.0.0.1" in base_url)
-            use_proxy = proxy_url if (proxy_url and not is_local) else None
+            is_local = bool(base_url and ("localhost" in base_url or "127.0.0.1" in base_url))
+            is_deepseek = (
+                getattr(db_key, 'provider', '').lower() == 'deepseek'
+                or "deepseek" in (base_url or "").lower()
+                or "deepseek" in (model_name or "").lower()
+            )
+            use_proxy = proxy_url if (proxy_url and not is_local and not is_deepseek) else None
 
             http_client = httpx.AsyncClient(proxy=use_proxy, timeout=60.0) if use_proxy else None
 
@@ -356,6 +361,54 @@ class ManageGenerationSurveys:
             return {'success': True, 'generated_text': parsed, 'tokens_used': 0, 'model_used': model, 'api_key_used': None}
         except Exception as e:
             return {'success': False, 'message': str(e)}
+
+
+@lru_cache(maxsize=1)
+def get_forbidden_words_list() -> list[str]:
+    """
+    Загружает стоп-слова из файла 1 раз и кэширует в памяти.
+    """
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    file_path = os.path.join(base_dir, '../askify_app', "forbidden_words.txt")
+    if os.path.exists(file_path):
+        try:
+            with open(file_path, encoding='utf-8') as f:
+                # Фильтруем комментарии (#) и пустые строки
+                return [
+                    w.strip().lower() 
+                    for w in f.read().splitlines() 
+                    if w.strip() and not w.strip().startswith("#")
+                ]
+        except Exception:
+            return []
+    return []
+
+
+def contains_forbidden_words(text: str) -> tuple[bool, str]:
+    """
+    Проверяет текст на наличие стоп-слов.
+    Возвращает (True, сработавшее_слово) или (False, "").
+    Поддерживает и одиночные слова (по границам слова), и фразы из нескольких слов.
+    """
+    if not text:
+        return False, ""
+
+    words = get_forbidden_words_list()
+    if not words:
+        return False, ""
+
+    text_lower = text.lower()
+
+    for word in words:
+        if " " in word:
+            if word in text_lower:
+                return True, word
+        else:
+            pattern = rf'(?<![а-яёa-z0-9_-]){re.escape(word)}(?![а-яёa-z0-9_-])'
+            if re.search(pattern, text_lower):
+                return True, word
+
+    return False, ""
 
 
 class AccessControlUser:

@@ -758,7 +758,7 @@ class TokensUsed(models.Model):
         }
 
     @classmethod
-    def get_tokens_usage_today(cls, staff_id):  # Переименованный метод
+    def get_tokens_usage_today(cls, staff_id):
         """
         Метод для получения использованных токенов для конкретного пользователя за последний месяц
         (с начала предыдущего месяца до текущего дня включительно).
