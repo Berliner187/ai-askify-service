@@ -1,0 +1,544 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Центр управления тестами | ЦУП Летучки</title>
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <link rel="shortcut icon" href="{% static 'img/logo.png' %}" type="image/png">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body { background-color: #080811; color: #ebeff3; font-family: 'Inter', system-ui, sans-serif; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 6px; }
+        ::-webkit-scrollbar-thumb:hover { background: #334155; }
+        
+        .font-mono-nums { font-family: 'JetBrains Mono', monospace; }
+
+        .card-spring {
+            background: #101123;
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 1.75rem;
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .card-spring:hover {
+            border-color: rgba(255, 255, 255, 0.16);
+            box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.7);
+        }
+
+        .filter-chip {
+            padding: 4px 10px;
+            font-size: 11px;
+            font-weight: 600;
+            border-radius: 10px;
+            color: #94a3b8;
+            background: transparent;
+            transition: all 0.15s ease;
+            white-space: nowrap;
+        }
+        .filter-chip:hover {
+            color: #f1f5f9;
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .filter-chip.active {
+            color: #ffffff;
+            background: #5E6CF8;
+            box-shadow: 0 2px 8px rgba(94, 108, 248, 0.35);
+        }
+
+        #toast { transition: opacity .25s ease, transform .25s ease; }
+    </style>
+</head>
+<body class="text-slate-100 antialiased min-h-screen">
+<div class="max-w-[1700px] mx-auto px-4 lg:px-6 py-6">
+
+    <!-- ХЕДЕР С ТАБЛЕТКОЙ -->
+    <header class="flex flex-wrap items-center justify-between gap-4 mb-6">
+        <div class="flex items-center gap-4">
+            <h1 class="text-2xl font-extrabold tracking-tight text-slate-50">Инспекция каталога тестов</h1>
+            
+            <div class="flex items-center gap-1 rounded-2xl bg-[#111827] border border-[#1E293B] p-0.5">
+                <a href="{% url 'stats2975' %}" class="px-3 py-1.5 text-xs font-medium rounded-xl text-slate-400 hover:text-slate-200 transition">Дашборд</a>
+                <a href="{% url 'user_ops_center' %}" class="px-3 py-1.5 text-xs font-medium rounded-xl text-slate-400 hover:text-slate-200 transition">CRM</a>
+                <a href="{% url 'admin_surveys_ops' %}" class="px-3 py-1.5 text-xs font-medium rounded-xl bg-[#5E6CF8] text-white">Тесты</a>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <span class="text-xs text-slate-400 font-mono-nums" id="total-tests-stat">Всего в базе: ...</span>
+            <a href="{% url 'stats2975' %}" class="text-xs text-slate-500 hover:text-slate-300">← Аналитика</a>
+        </div>
+    </header>
+
+    <!-- ОСНОВНАЯ СЕТКА: 4 / 8 -->
+    <div class="grid grid-cols-12 gap-5">
+        
+        <!-- ЛЕВАЯ КОЛОНКА: ПОИСК, ФИЛЬТРЫ И СПИСОК -->
+        <aside class="col-span-12 xl:col-span-4 space-y-4">
+            
+            <!-- КАРТОЧКА ПОИСКА И ФИЛЬТРОВ -->
+            <div class="card-spring p-4 space-y-3.5">
+                
+                <!-- Строка поиска -->
+                <div class="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-[#0B0F17] border border-[#1E293B] focus-within:border-indigo-500 transition-colors">
+                    <i class="fa-solid fa-magnifying-glass text-slate-500 text-xs"></i>
+                    <input id="survey-search-input" type="text" placeholder="Поиск: Название / UUID / Автор..."
+                           class="w-full bg-transparent outline-none text-xs sm:text-sm text-slate-100 placeholder-slate-500">
+                    <button id="clear-search-btn" class="hidden text-slate-500 hover:text-white text-xs p-1">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                    <button id="survey-search-btn" class="text-xs font-bold text-indigo-400 hover:text-indigo-300 ml-1">
+                        Найти
+                    </button>
+                </div>
+
+                <!-- Быстрые пресеты периодов (Скролл-бар) -->
+                <div class="space-y-1.5">
+                    <div class="flex items-center justify-between text-[11px] text-slate-400 font-medium px-1">
+                        <span>Период создания</span>
+                        <button onclick="toggleCalendar()" class="text-indigo-400 hover:text-indigo-300 text-[11px] flex items-center gap-1 font-semibold">
+                            <i class="fa-regular fa-calendar"></i>
+                            <span id="calendar-toggle-label">Календарь</span>
+                        </button>
+                    </div>
+
+                    <div class="flex flex-wrap gap-1 bg-[#0B0F17] rounded-xl p-1 border border-white/5" id="presets-container">
+                        <button class="filter-chip active" data-period="all">Все</button>
+                        <button class="filter-chip" data-period="today">24ч <b id="cnt-today" class="font-normal opacity-70"></b></button>
+                        <button class="filter-chip" data-period="yesterday">Вчера <b id="cnt-yesterday" class="font-normal opacity-70"></b></button>
+                        <button class="filter-chip" data-period="7d">7д <b id="cnt-week" class="font-normal opacity-70"></b></button>
+                        <button class="filter-chip" data-period="30d">30д</button>
+                        <button class="filter-chip" data-period="90d">3 мес</button>
+                        <button class="filter-chip" data-period="180d">Полгода</button>
+                        <button class="filter-chip" data-period="365d">Год</button>
+                    </div>
+                </div>
+
+                <!-- Выдвижной блок календаря -->
+                <div id="calendar-box" class="hidden p-3 bg-[#0B0F17] rounded-xl border border-indigo-500/30 space-y-2">
+                    <span class="text-[10px] font-bold text-indigo-300 uppercase tracking-wider block">Выбор диапазона дат</span>
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <div>
+                            <span class="text-[10px] text-slate-500 block mb-1">От:</span>
+                            <input type="date" id="date-from" class="w-full bg-[#101123] border border-[#1E293B] rounded-lg px-2 py-1.5 text-xs text-white outline-none focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-slate-500 block mb-1">До:</span>
+                            <input type="date" id="date-to" class="w-full bg-[#101123] border border-[#1E293B] rounded-lg px-2 py-1.5 text-xs text-white outline-none focus:border-indigo-500">
+                        </div>
+                    </div>
+                    <div class="flex justify-end gap-2 pt-1">
+                        <button onclick="resetCalendar()" class="px-2.5 py-1 text-[11px] text-slate-400 hover:text-white">Сброс</button>
+                        <button onclick="applyCalendar()" class="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold rounded-lg">Применить</button>
+                    </div>
+                </div>
+
+                <!-- Строка сортировки и результатов -->
+                <div class="flex items-center justify-between pt-1 border-t border-[#1E293B] text-[11px] text-slate-400">
+                    <span id="found-count-text">Загрузка...</span>
+                    
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-slate-500">Сортировка:</span>
+                        <select id="sort-select" onchange="applySort(this.value)" class="bg-[#0B0F17] text-slate-200 border border-[#1E293B] rounded-lg px-2 py-1 outline-none text-[11px]">
+                            <option value="-created_at">Свежие</option>
+                            <option value="created_at">Старые</option>
+                            <option value="-view_count">Просмотры</option>
+                            <option value="-questions_count">Вопросы</option>
+                        </select>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- СПИСОК ТЕСТОВ (БРОНЕБОЙНАЯ ВЕРСТКА БЕЗ СМЕЩЕНИЙ) -->
+            <div class="card-spring p-3">
+                <div id="surveys-list" class="max-h-[640px] overflow-y-auto space-y-1.5 pr-1"></div>
+            </div>
+
+        </aside>
+
+        <!-- ПРАВАЯ КОЛОНКА (ДОСЬЕ ТЕСТА) -->
+        <main class="col-span-12 xl:col-span-8">
+            <div id="survey-placeholder" class="card-spring p-20 text-center space-y-3">
+                <i class="fa-solid fa-vial-circle-check text-5xl text-slate-700"></i>
+                <h3 class="text-base font-bold text-slate-400">Выберите тест из списка слева</h3>
+                <p class="text-xs text-slate-600 max-w-sm mx-auto">Здесь появится полная структура вопросов, промпт генерации, автор и статистика прохождений учениками.</p>
+            </div>
+
+            <div id="survey-dossier" class="hidden space-y-4"></div>
+        </main>
+
+    </div>
+</div>
+
+<div id="toast" class="fixed bottom-6 right-6 z-50 hidden rounded-lg bg-slate-800 border border-[#1E293B] px-4 py-3 text-sm text-slate-100 shadow-xl"></div>
+
+<script>
+const CSRF = document.querySelector('meta[name="csrf-token"]') ? document.querySelector('meta[name="csrf-token"]').content : '';
+let currentSurvey = null;
+let currentPeriod = 'all';
+let currentDateFrom = '';
+let currentDateTo = '';
+let currentOrder = '-created_at';
+let searchTimer = null;
+
+function toast(msg, type = 'ok') {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = 'fixed bottom-6 right-6 z-50 rounded-lg px-4 py-3 text-sm shadow-xl ' +
+        (type === 'ok' ? 'bg-emerald-600/90 text-white border border-emerald-500' : 'bg-red-600/90 text-white border border-red-500');
+    el.style.opacity = '1';
+    el.style.transform = 'translateY(0)';
+    setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translateY(8px)'; }, 3200);
+}
+
+function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function toggleCalendar() {
+    const box = document.getElementById('calendar-box');
+    box.classList.toggle('hidden');
+}
+
+function resetCalendar() {
+    document.getElementById('date-from').value = '';
+    document.getElementById('date-to').value = '';
+    currentDateFrom = '';
+    currentDateTo = '';
+    document.getElementById('calendar-box').classList.add('hidden');
+    document.getElementById('calendar-toggle-label').textContent = 'Календарь';
+    SurveysOps.loadList();
+}
+
+function applyCalendar() {
+    currentDateFrom = document.getElementById('date-from').value;
+    currentDateTo = document.getElementById('date-to').value;
+    if (currentDateFrom || currentDateTo) {
+        document.getElementById('calendar-toggle-label').textContent = 'Диапазон выбран ✓';
+        // Снимаем активность с пресетов
+        document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active'));
+        currentPeriod = '';
+    }
+    document.getElementById('calendar-box').classList.add('hidden');
+    SurveysOps.loadList();
+}
+
+function applySort(val) {
+    currentOrder = val;
+    SurveysOps.loadList();
+}
+
+let currentPage = 1;
+let isLoadingMore = false;
+let hasMoreSurveys = false;
+
+const SurveysOps = {
+    async loadDetails(surveyId) {
+        document.getElementById('survey-placeholder').classList.add('hidden');
+        const box = document.getElementById('survey-dossier');
+        box.classList.remove('hidden');
+        box.innerHTML = '<div class="card-spring p-12 text-center text-sm text-slate-500">Загрузка структуры теста...</div>';
+
+        try {
+            const res = await fetch('/api/admin/surveys/details/' + surveyId + '/');
+            const data = await res.json();
+            if (!res.ok) { toast(data.error || 'Ошибка загрузки', 'error'); return; }
+            currentSurvey = data;
+            this.renderDossier(data);
+        } catch (e) {
+            toast('Сбой сети при загрузке теста', 'error');
+        }
+    },
+
+    renderDossier(s) {
+        const questionsHtml = (s.questions || []).map((q, idx) => {
+            const opts = (q.options || []).map((opt, oIdx) => {
+                const isCorrect = Array.isArray(q.correct_answer) ? q.correct_answer.includes(opt) : q.correct_answer === opt;
+                return `
+                    <div class="p-2.5 rounded-xl border text-xs flex items-center justify-between ${isCorrect ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300 font-semibold' : 'bg-[#0B0F17] border-white/5 text-slate-300'}">
+                        <span>${esc(opt)}</span>
+                        ${isCorrect ? '<span class="text-[10px] text-emerald-400 uppercase font-mono">Верно</span>' : ''}
+                    </div>
+                `;
+            }).join('');
+
+            return `
+                <div class="p-4 rounded-2xl bg-[#0B0F17] border border-white/5 space-y-2.5">
+                    <div class="flex items-center justify-between text-xs text-slate-500 font-mono-nums">
+                        <span>Вопрос #${idx + 1}</span>
+                        <span class="text-indigo-400 font-sans">${q.type === 'multiple' ? 'Несколько ответов' : 'Один ответ'}</span>
+                    </div>
+                    <p class="text-sm font-semibold text-slate-100">${esc(q.question)}</p>
+                    <div class="space-y-1.5 pt-1">${opts}</div>
+                </div>
+            `;
+        }).join('') || '<p class="text-xs text-slate-500 text-center py-6">Вопросы не сформированы</p>';
+
+        const attemptsHtml = (s.recent_attempts || []).map(a => `
+            <tr class="border-b border-[#1E293B]/60 text-xs">
+                <td class="py-2.5 pr-2 font-medium text-slate-200">${esc(a.student_name)}</td>
+                <td class="py-2.5 pr-2 font-mono-nums text-emerald-400 font-bold">${a.score} / ${a.total}</td>
+                <td class="py-2.5 text-slate-500 font-mono-nums whitespace-nowrap">${a.date}</td>
+            </tr>
+        `).join('') || '<tr><td colspan="3" class="py-6 text-center text-xs text-slate-500">Пока никто не проходил</td></tr>';
+
+        const html = `
+            <div class="card-spring p-6 space-y-4">
+                <div class="flex flex-wrap items-start justify-between gap-4">
+                    <div class="min-w-0 max-w-xl">
+                        <div class="flex items-center gap-2 mb-1.5">
+                            <span class="px-2 py-0.5 rounded text-[10px] font-mono-nums font-bold ${s.is_visible ? 'bg-red-500/20 text-red-400' : 'bg-emerald-500/20 text-emerald-400'}">
+                                ${s.is_visible ? 'УДАЛЕН АВТОРОМ' : 'АКТИВЕН'}
+                            </span>
+                            <span class="text-xs text-slate-500 font-mono-nums">${s.created_at}</span>
+                        </div>
+                        <h2 class="text-xl font-bold text-white leading-snug">${esc(s.title)}</h2>
+                        <div class="text-xs text-slate-500 mt-1 font-mono-nums">UUID: ${s.survey_id}</div>
+                    </div>
+
+                    <div class="text-right space-y-1">
+                        <div class="text-xs text-slate-400">Автор: <b class="text-slate-200">${esc(s.author.username)}</b></div>
+                        <div class="text-[11px] text-slate-500 font-mono">${esc(s.author.email)}</div>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-[#1E293B]">
+                    <div class="flex flex-wrap gap-2">
+                        <a href="/c/${s.survey_id}/" target="_blank" class="px-3.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-slate-200 flex items-center gap-1.5">
+                            <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i> Карточка
+                        </a>
+                        <a href="/t/${s.survey_id}/" target="_blank" class="px-3.5 py-1.5 rounded-xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-300 hover:bg-indigo-600 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition">
+                            <i class="fa-solid fa-play text-[10px]"></i> Прохождение
+                        </a>
+                    </div>
+                    
+                    <button onclick="SurveysOps.destroySurvey('${s.survey_id}', '${esc(s.title)}')" class="px-3.5 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-600 border border-rose-500/30 text-rose-300 hover:text-white text-xs font-semibold transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-trash-can text-[10px]"></i> Стереть тест из БД
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div class="card-spring p-4">
+                    <span class="text-[10px] text-slate-500 uppercase font-mono-nums block">Просмотров</span>
+                    <span class="text-lg font-bold text-white font-mono-nums">${s.view_count}</span>
+                </div>
+                <div class="card-spring p-4">
+                    <span class="text-[10px] text-slate-500 uppercase font-mono-nums block">Прохождений</span>
+                    <span class="text-lg font-bold text-indigo-400 font-mono-nums">${s.attempts_count}</span>
+                </div>
+                <div class="card-spring p-4">
+                    <span class="text-[10px] text-slate-500 uppercase font-mono-nums block">Средний балл</span>
+                    <span class="text-lg font-bold text-emerald-400 font-mono-nums">${s.avg_score}</span>
+                </div>
+                <div class="card-spring p-4">
+                    <span class="text-[10px] text-slate-500 uppercase font-mono-nums block">Модель ИИ</span>
+                    <span class="text-xs font-bold text-slate-300 truncate block mt-1">${esc(s.model_name)}</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                <div class="lg:col-span-8 card-spring p-5 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-sm font-bold text-white uppercase tracking-wider">Структура заданий (${s.questions_count})</h3>
+                        <span class="text-xs text-slate-500">${s.show_answers ? 'Ответы открыты' : 'Ответы скрыты автором'}</span>
+                    </div>
+                    <div class="space-y-3 max-h-[500px] overflow-y-auto pr-1">${questionsHtml}</div>
+                </div>
+
+                <div class="lg:col-span-4 card-spring p-5 space-y-4">
+                    <h3 class="text-sm font-bold text-white uppercase tracking-wider">Ученики (последние 10)</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead><tr class="text-[10px] uppercase text-slate-500 border-b border-[#1E293B]"><th class="pb-2">Имя</th><th class="pb-2">Балл</th><th class="pb-2">Дата</th></tr></thead>
+                            <tbody>${attemptsHtml}</tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            ${s.source_text ? `
+                <div class="card-spring p-5 space-y-2">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Исходный материал пользователя</h3>
+                    <div class="p-3 bg-[#0B0F17] rounded-xl text-xs text-slate-400 font-mono max-h-40 overflow-y-auto leading-relaxed whitespace-pre-wrap">${esc(s.source_text)}</div>
+                </div>
+            ` : ''}
+        `;
+
+        document.getElementById('survey-dossier').innerHTML = html;
+    },
+
+    async destroySurvey(surveyId, title) {
+        if (!confirm(`Безвозвратно удалить тест «${title}» и стереть все попытки прохождения?`)) return;
+
+        try {
+            const res = await fetch('/api/admin/surveys/delete/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+                body: JSON.stringify({ survey_id: surveyId })
+            });
+            const data = await res.json();
+            if (res.ok && data.ok) {
+                toast(data.message, 'ok');
+                document.getElementById('survey-dossier').classList.add('hidden');
+                document.getElementById('survey-placeholder').classList.remove('hidden');
+                SurveysOps.loadList();
+            } else {
+                toast(data.error || 'Ошибка удаления', 'error');
+            }
+        } catch (e) {
+            toast('Сбой сети при удалении', 'error');
+        }
+    },
+
+    async loadList(page = 1, append = false) {
+        if (isLoadingMore) return;
+        isLoadingMore = true;
+
+        const q = document.getElementById('survey-search-input').value.trim();
+        const box = document.getElementById('surveys-list');
+
+        if (!append) {
+            currentPage = 1;
+            box.innerHTML = '<div class="text-xs text-slate-500 text-center py-6">Загрузка каталога...</div>';
+        }
+
+        try {
+            let url = `/api/admin/surveys/search/?q=${encodeURIComponent(q)}&period=${currentPeriod}&order_by=${currentOrder}&page=${page}`;
+            if (currentDateFrom) url += `&date_from=${currentDateFrom}`;
+            if (currentDateTo) url += `&date_to=${currentDateTo}`;
+
+            const res = await fetch(url);
+            const data = await res.json();
+
+            // Обновляем бейджи
+            if (data.counts) {
+                document.getElementById('cnt-today').textContent = data.counts.today;
+                document.getElementById('cnt-yesterday').textContent = data.counts.yesterday;
+                document.getElementById('cnt-week').textContent = data.counts['7d'];
+                document.getElementById('total-tests-stat').textContent = 'Всего в базе: ' + data.counts.total;
+            }
+
+            hasMoreSurveys = data.has_more;
+            currentPage = data.page;
+
+            const total = data.total_found || 0;
+            const shownCount = append ? box.querySelectorAll('.survey-item-btn').length + data.surveys.length : data.surveys.length;
+            document.getElementById('found-count-text').textContent = `Показано ${shownCount} из ${total}`;
+
+            if (!append && (!data.surveys || data.surveys.length === 0)) {
+                box.innerHTML = '<div class="text-xs text-slate-500 text-center py-8">Тесты не найдены</div>';
+                isLoadingMore = false;
+                return;
+            }
+
+            const itemsHtml = data.surveys.map(s => `
+                <button onclick="SurveysOps.loadDetails('${s.survey_id}')" 
+                        class="survey-item-btn w-full text-left p-3 rounded-2xl hover:bg-white/[0.04] border border-transparent hover:border-[#1E293B] transition-all flex items-center justify-between gap-3 group">
+                    
+                    <div class="min-w-0 flex-1">
+                        <h4 class="text-xs sm:text-sm font-bold text-slate-200 group-hover:text-indigo-300 transition-colors truncate">
+                            ${esc(s.title)}
+                        </h4>
+                        <div class="text-[11px] text-slate-500 truncate mt-0.5">
+                            ${esc(s.author)}
+                        </div>
+                    </div>
+
+                    <div class="flex-shrink-0 text-right space-y-0.5">
+                        <div class="text-[11px] text-slate-400 font-mono-nums">
+                            ${s.created_at}
+                        </div>
+                        <div class="flex items-center justify-end gap-1.5 text-[11px] text-slate-500">
+                            <span class="text-indigo-400 font-semibold">${s.questions_count} вопр.</span>
+                            <span>•</span>
+                            <span class="flex items-center gap-1">
+                                <i class="fa-solid fa-eye text-[9px]"></i>
+                                ${s.views}
+                            </span>
+                        </div>
+                    </div>
+
+                </button>
+            `).join('');
+
+            // Убираем старую кнопку "Загрузить еще" перед вставкой
+            const oldMoreBtn = document.getElementById('load-more-btn-container');
+            if (oldMoreBtn) oldMoreBtn.remove();
+
+            if (append) {
+                box.insertAdjacentHTML('beforeend', itemsHtml);
+            } else {
+                box.innerHTML = itemsHtml;
+            }
+
+            // Если в базе есть еще страницы — добавляем кнопку догрузки в конец списка
+            if (hasMoreSurveys) {
+                const moreBtnHtml = `
+                    <div id="load-more-btn-container" class="pt-2 text-center">
+                        <button onclick="SurveysOps.loadList(${currentPage + 1}, true)" 
+                                class="w-full py-2.5 px-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 text-xs font-semibold text-indigo-400 hover:text-white transition">
+                            Загрузить еще 50 тестов ↓
+                        </button>
+                    </div>
+                `;
+                box.insertAdjacentHTML('beforeend', moreBtnHtml);
+            }
+
+        } catch (e) {
+            toast('Сбой загрузки каталога', 'error');
+        } finally {
+            isLoadingMore = false;
+        }
+    }
+};
+
+window.SurveysOps = SurveysOps;
+
+document.addEventListener('DOMContentLoaded', () => {
+    const searchInput = document.getElementById('survey-search-input');
+    
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(() => SurveysOps.loadList(), 250);
+    });
+
+    document.getElementById('clear-search-btn').addEventListener('click', () => {
+        searchInput.value = '';
+        SurveysOps.loadList();
+    });
+
+    document.getElementById('survey-search-btn').addEventListener('click', () => SurveysOps.loadList());
+
+    // Табы пресетов
+    document.querySelectorAll('.filter-chip').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            currentPeriod = this.dataset.period;
+            
+            // Если выбран пресет, сбрасываем календарь
+            currentDateFrom = '';
+            currentDateTo = '';
+            document.getElementById('date-from').value = '';
+            document.getElementById('date-to').value = '';
+            document.getElementById('calendar-toggle-label').textContent = 'Календарь';
+
+            SurveysOps.loadList();
+        });
+    });
+
+    SurveysOps.loadList();
+});
+</script>
+</body>
+</html>

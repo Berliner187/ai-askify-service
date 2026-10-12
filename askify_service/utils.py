@@ -97,8 +97,8 @@ class ManageGenerationSurveys:
             pattern = rf'(?<![а-яёa-z0-9_-]){re.escape(word)}(?![а-яёa-z0-9_-])'
             match = re.search(pattern, user_text_lower)
             if match:
-                start = max(0, match.start() - 25)
-                end = min(len(user_text_lower), match.end() + 25)
+                start = max(0, match.start() - 50)
+                end = min(len(user_text_lower), match.end() + 50)
                 snippet = user_text_lower[start:end].replace('\n', ' ')
                 
                 tracer_l.warning(
@@ -610,7 +610,7 @@ class PaymentManager:
         """
         headers = {"Content-Type": "application/json"}
         start_time = time.time()
-        response_api = requests.post(request_url, json=data_json, headers=headers)
+        response_api = requests.post(request_url, json=data_json, headers=headers, verify=False)
         elapsed_time = time.time() - start_time
         try:
             response = response_api.json()

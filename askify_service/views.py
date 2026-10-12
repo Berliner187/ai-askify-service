@@ -44,6 +44,10 @@ from django.db.models.functions import TruncHour, TruncWeek, TruncDay, ExtractWe
 from celery import shared_task
 from django.core.signing import TimestampSigner, BadSignature, SignatureExpired
 from django.views.decorators.http import require_http_methods
+from django.views.decorators.http import require_POST, require_GET
+from django.contrib.auth.decorators import user_passes_test
+from django.db.models import Count, Avg, Q
+from django.utils.dateparse import parse_date
 
 
 from smtplib import SMTPException
@@ -1049,6 +1053,7 @@ class ManageSurveysView(View):
                 difficulty=difficulty,
                 question_types=question_types
             )
+            tracer_l.info('LOADED TEXT: ' + text_from_user)
 
             generated_data = await manage_generate_surveys.openai_generate()
 
@@ -6530,7 +6535,7 @@ def admin_grant_premium_api(request):
             "billing_cycle": "monthly",
         },
     )
-    sub.activate_subscription(duration_days=days, new_plan_name="premium_plan")
+    sub.activate_subscription(duration_days=days, new_plan_name="Премиум")
     return JsonResponse({
         "ok": True,
         "plan": "Premium",
@@ -6951,119 +6956,6 @@ def activate_api_key(request):
         return JsonResponse({"status": False, "message": "Ключ не найден"})
     except Exception as e:
         return JsonResponse({"status": False, "message": str(e)})
-
-
-MODEL_MAP = {
-    "Survey": ("📝 Тесты", Survey),
-    "SurveyView": ("📝 SurveyView", SurveyUniqueView),
-    "UserAnswers": ("📤 Ответы", UserAnswers),
-    "AuthUser": ("👥 Пользователи", AuthUser),
-    "Subscription": ("💰 Подписки", Subscription),
-    "Payment": ("💳 Платежи", Payment),
-    "BlockedUsers": ("🚫 Блокировки", BlockedUsers),
-    "BlogPost": ("📰 Статьи", BlogPost),
-    "TokensUsed": ("🪙 Токены", TokensUsed),
-}
-
-
-@login_required
-def db_viewer(request):
-    if not request.user.is_superuser:
-        return HttpResponseForbidden("Доступ закрыт")
-
-    model_key = request.GET.get("model", "AuthUser")
-    model_data = MODEL_MAP.get(model_key)
-    if not model_data:
-        return HttpResponse("Модель не найдена", status=404)
-
-    model_class = model_data[1]
-
-    # ПАГИНАЦИЯ: по 50 записей на страницу
-    fields = [f.name for f in model_class._meta.fields]
-    all_items = model_class.objects.all().order_by("-pk")
-
-    # Пагинация
-    paginator = Paginator(all_items, 50)
-    page_obj = paginator.get_page(request.GET.get('page', 1))
-
-    # Готовим данные заранее: список списков [[val1, val2], [val1, val2]]
-    prepared_items = []
-    for item in page_obj:
-        row = {
-            'pk': item.pk,
-            'values': [getattr(item, field, "-") for field in fields]
-        }
-        prepared_items.append(row)
-
-    context = {
-        "model_name": model_data[0],
-        "model_key": model_key,
-        "items": page_obj,
-        "rows": prepared_items,
-        "fields": fields,
-        "models": MODEL_MAP.items(),
-    }
-    return render(request, "askify_service/db_viewer.html", context)
-
-
-# Новый метод для получения деталей в Drawer (AJAX)
-@login_required
-def get_item_details(request, model_key, item_id):
-    model_data = MODEL_MAP.get(model_key)
-    if not model_data: return JsonResponse({'error': 'No model'}, status=404)
-
-    model_class = model_data[1]
-    item = get_object_or_404(model_class, pk=item_id)
-
-    # Возвращаем все поля объекта как дикт
-    data = {}
-    for field in item._meta.fields:
-        val = getattr(item, field.name)
-        data[field.name] = str(val) if val is not None else None
-
-    return JsonResponse({
-        'data': data,
-        'related': get_related_info(item)
-    })
-
-
-@login_required
-def db_search(request):
-    query = request.GET.get("q", "").strip()
-    if len(query) < 3:
-        return JsonResponse([])
-
-    # Модели для поиска.
-    search_config = [
-        ("AuthUser", AuthUser, ["username", "email", "first_name", "last_name"]),
-        ("Survey", Survey, ["title", "description", "survey_id"]),
-        ("Payment", Payment, ["payment_id", "order_id", "status"]),
-        ("Subscription", Subscription, ["plan_name", "status"]),
-        ("UserAnswers", UserAnswers, ["selected_answer"]),
-    ]
-
-    results = []
-
-    for model_key, model_class, fields in search_config:
-        q_objects = Q()
-        for field in fields:
-            q_objects |= Q(**{f"{field}__icontains": query})
-
-        # Берем по 5 штук из каждой модели, чтоб не спамить
-        qs = model_class.objects.filter(q_objects)[:5]
-
-        for item in qs:
-            results.append({
-                "model": model_key,
-                "id": item.pk,
-                "value": str(item),
-                "source": get_related_info(item)
-            })
-
-    # Сортируем, чтоб было красиво
-    results.sort(key=lambda x: x["model"])
-
-    return JsonResponse(results, safe=False)
 
 
 def get_related_info(item):
@@ -9347,7 +9239,6 @@ def unisender_webhook_view(request):
                         email = val
                         break
 
-        # 2. Если Unisender прислал raw JSON payload
         if not email and request.body:
             try:
                 payload = json.loads(request.body.decode("utf-8"))
@@ -9358,7 +9249,6 @@ def unisender_webhook_view(request):
             except Exception:
                 pass
 
-        # 3. Гасим подписку в базе данных
         if email:
             normalized_email = email.strip().lower()
             updated_count = AuthUser.objects.filter(email=normalized_email).update(is_subscribed=False)
@@ -9370,3 +9260,286 @@ def unisender_webhook_view(request):
         tracer_l.error(f"UNISENDER WEBHOOK ERROR: {e}", exc_info=True)
 
     return HttpResponse("OK", status=200)
+
+
+@user_passes_test(lambda u: u.is_superuser)
+@require_POST
+def api_admin_delete_user(request):
+    """
+    Полное уничтожение пользователя и всего связанного контента:
+    - AuthUser
+    - Survey (по id_staff)
+    - TestAttempt / UserAnswers
+    - Subscriptions / Payments
+    """
+    try:
+        data = json.loads(request.body)
+        user_id = data.get("user_id")
+
+        if not user_id:
+            return JsonResponse({"error": "Не передан user_id"}, status=400)
+
+        user = AuthUser.objects.filter(id=user_id).first()
+        if not user:
+            return JsonResponse({"error": "Пользователь не найден"}, status=404)
+
+        if user.id == request.user.id:
+            return JsonResponse({"error": "Запрещено удалять собственный аккаунт суперпользователя"}, status=400)
+
+        staff_id = user.id_staff
+        username = user.username
+
+        with transaction.atomic():
+            surveys_qs = Survey.objects.filter(id_staff=staff_id)
+            survey_uuids = list(surveys_qs.values_list("survey_id", flat=True))
+
+            TestAttempt.objects.filter(survey__survey_id__in=survey_uuids).delete()
+            if 'UserAnswers' in globals():
+                UserAnswers.objects.filter(survey_id__in=survey_uuids).delete()
+
+            deleted_surveys_count, _ = surveys_qs.delete()
+
+            Subscription.objects.filter(staff_id=staff_id).delete()
+            TokensUsed.objects.filter(id_staff=staff_id).delete()
+
+            user.delete()
+
+        tracer_l.info(
+            f"ADMIN DESTROY: {request.user.username} безвозвратно удалил {username} (staff_id={staff_id}) "
+            f"и {deleted_surveys_count} тестов."
+        )
+
+        return JsonResponse({
+            "ok": True,
+            "message": f"Пользователь «{username}» и все его тесты ({deleted_surveys_count} шт.) уничтожены."
+        })
+
+    except Exception as e:
+        tracer_l.error(f"ADMIN DESTROY FAIL: {e}", exc_info=True)
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+@user_passes_test(lambda u: u.is_superuser)
+def admin_surveys_ops_view(request):
+    """Главная страница Ситуационного Центра Тестов."""
+    return render(request, "admin/admin_surveys_ops.html", {
+        "page_title": "Управление тестами | ЦУП Летучки"
+    })
+
+
+@user_passes_test(lambda u: u.is_superuser)
+@require_GET
+def api_admin_search_surveys(request):
+    """
+    db_viewer для поиска тестов в БД по временным сегментам.
+    """
+    q = request.GET.get("q", "").strip()
+    period = request.GET.get("period", "all").strip()
+    date_from = request.GET.get("date_from", "").strip()
+    date_to = request.GET.get("date_to", "").strip()
+    order_by = request.GET.get("order_by", "-created_at").strip()
+    
+    try:
+        page = int(request.GET.get("page", 1))
+        if page < 1:
+            page = 1
+    except ValueError:
+        page = 1
+
+    per_page = 50
+
+    valid_orders = ["-created_at", "created_at", "-view_count", "-questions_count"]
+    if order_by not in valid_orders:
+        order_by = "-created_at"
+
+    qs = Survey.objects.all().order_by(order_by)
+
+    now_moscow = timezone.now().astimezone(MOSCOW_TZ)
+
+    if date_from or date_to:
+        if date_from:
+            d_from = parse_date(date_from)
+            if d_from:
+                start_dt = timezone.datetime.combine(d_from, timezone.datetime.min.time(), tzinfo=MOSCOW_TZ)
+                qs = qs.filter(created_at__gte=start_dt)
+        if date_to:
+            d_to = parse_date(date_to)
+            if d_to:
+                end_dt = timezone.datetime.combine(d_to, timezone.datetime.max.time(), tzinfo=MOSCOW_TZ)
+                qs = qs.filter(created_at__lte=end_dt)
+
+    elif period and period != "all":
+        today_start_moscow = now_moscow.replace(hour=0, minute=0, second=0, microsecond=0)
+
+        if period == "today":
+            qs = qs.filter(created_at__gte=today_start_moscow)
+        elif period == "yesterday":
+            yesterday_start = today_start_moscow - timedelta(days=1)
+            qs = qs.filter(created_at__range=(yesterday_start, today_start_moscow))
+        elif period == "7d":
+            qs = qs.filter(created_at__gte=now_moscow - timedelta(days=7))
+        elif period == "30d":
+            qs = qs.filter(created_at__gte=now_moscow - timedelta(days=30))
+        elif period == "90d":
+            qs = qs.filter(created_at__gte=now_moscow - timedelta(days=90))
+        elif period == "180d":
+            qs = qs.filter(created_at__gte=now_moscow - timedelta(days=180))
+        elif period == "365d":
+            qs = qs.filter(created_at__gte=now_moscow - timedelta(days=365))
+
+    if q:
+        is_uuid = False
+        try:
+            val_uuid = uuid.UUID(q)
+            is_uuid = True
+        except ValueError:
+            pass
+
+        if is_uuid:
+            qs = qs.filter(Q(survey_id=val_uuid) | Q(id_staff=val_uuid))
+        else:
+            matching_staff = list(AuthUser.objects.filter(username__icontains=q).values_list("id_staff", flat=True))
+            qs = qs.filter(Q(title__icontains=q) | Q(id_staff__in=matching_staff))
+
+    total_found = qs.count()
+
+    start = (page - 1) * per_page
+    end = start + per_page
+    surveys_slice = qs[start:end]
+    has_more = total_found > end
+
+    staff_ids = [s.id_staff for s in surveys_slice]
+    users = AuthUser.objects.filter(id_staff__in=staff_ids)
+    users_map = {}
+    for u in users:
+        uname = u.username or "Аноним"
+        if len(uname) > 25 and ("_" in uname or uname.isalnum()):
+            uname = f"Гость #{uname[:6]}"
+        users_map[u.id_staff] = uname
+
+    results = []
+    for s in surveys_slice:
+        author_name = users_map.get(s.id_staff, "Гость")
+        
+        moscow_dt = s.created_at.astimezone(MOSCOW_TZ) if timezone.is_aware(s.created_at) else timezone.make_aware(s.created_at).astimezone(MOSCOW_TZ)
+
+        results.append({
+            "survey_id": str(s.survey_id),
+            "title": s.title,
+            "created_at": moscow_dt.strftime("%d.%m.%Y %H:%M"),
+            "created_date": moscow_dt.strftime("%d.%m.%Y"),
+            "author": author_name,
+            "questions_count": s.questions_count,
+            "views": s.view_count,
+            "is_visible": s.is_visible,
+            "model_name": s.model_name or "gpt-4o-mini"
+        })
+
+    today_midnight = now_moscow.replace(hour=0, minute=0, second=0, microsecond=0)
+    counts = {
+        "today": Survey.objects.filter(created_at__gte=today_midnight).count(),
+        "yesterday": Survey.objects.filter(created_at__range=(today_midnight - timedelta(days=1), today_midnight)).count(),
+        "7d": Survey.objects.filter(created_at__gte=now_moscow - timedelta(days=7)).count(),
+        "30d": Survey.objects.filter(created_at__gte=now_moscow - timedelta(days=30)).count(),
+        "total": Survey.objects.count()
+    }
+
+    return JsonResponse({
+        "surveys": results,
+        "page": page,
+        "has_more": has_more,
+        "total_found": total_found,
+        "counts": counts
+    })
+
+
+@user_passes_test(lambda u: u.is_superuser)
+@require_GET
+def api_admin_survey_details(request, survey_id):
+    """
+    Полное досье теста: автор, исходный материал, попытки учеников и список вопросов.
+    """
+    try:
+        val_uuid = uuid.UUID(survey_id)
+    except ValueError:
+        return JsonResponse({"error": "Невалидный UUID теста"}, status=400)
+
+    survey = Survey.objects.filter(survey_id=val_uuid).first()
+    if not survey:
+        return JsonResponse({"error": "Тест не найден"}, status=404)
+
+    author = AuthUser.objects.filter(id_staff=survey.id_staff).first()
+    author_info = {
+        "username": author.username if author else "Аноним",
+        "email": author.email if author else "-",
+        "id_staff": str(survey.id_staff),
+        "is_authenticated": bool(author)
+    }
+    
+    created_msk = survey.created_at.astimezone(MOSCOW_TZ).strftime("%d.%m.%Y %H:%M")
+    updated_msk = survey.updated_at.astimezone(MOSCOW_TZ).strftime("%d.%m.%Y %H:%M")
+
+    attempts_qs = TestAttempt.objects.filter(survey=survey)
+    attempts_count = attempts_qs.count()
+    avg_score = attempts_qs.aggregate(avg=Avg("score"))["avg"] or 0
+
+    recent_attempts = []
+    for att in attempts_qs.order_by("-created_at")[:10]:
+        att_msk = att.created_at.astimezone(MOSCOW_TZ).strftime("%d.%m.%Y %H:%M")
+        recent_attempts.append({
+            "student_name": att.student_name,
+            "score": att.score,
+            "total": att.total_questions,
+            "date": att_msk
+        })
+
+    raw_questions = survey.get_questions() if hasattr(survey, 'get_questions') else []
+
+    return JsonResponse({
+        "survey_id": str(survey.survey_id),
+        "title": survey.title,
+        "created_at": created_msk,
+        "updated_at": updated_msk,
+        "author": author_info,
+        "model_name": survey.model_name or "Не указана",
+        "view_count": survey.view_count,
+        "attempts_count": attempts_count,
+        "avg_score": round(avg_score, 1),
+        "questions_count": survey.questions_count or len(raw_questions),
+        "show_answers": survey.show_answers,
+        "is_visible": survey.is_visible,
+        "source_text": survey.source_text or "",
+        "generation_params": survey.generation_params or {},
+        "questions": raw_questions,
+        "recent_attempts": recent_attempts
+    })
+
+
+@user_passes_test(lambda u: u.is_superuser)
+@require_POST
+def api_admin_delete_survey(request):
+    """
+    Eничтожение теста и всех связанных попыток прохождения.
+    """
+    try:
+        data = json.loads(request.body)
+        survey_id = data.get("survey_id")
+        val_uuid = uuid.UUID(survey_id)
+
+        survey = Survey.objects.filter(survey_id=val_uuid).first()
+        if not survey:
+            return JsonResponse({"error": "Тест не найден"}, status=404)
+
+        title = survey.title
+        TestAttempt.objects.filter(survey=survey).delete()
+        if 'UserAnswers' in globals():
+            UserAnswers.objects.filter(survey_id=val_uuid).delete()
+
+        survey.delete()
+
+        tracer_l.warning(f"ADMIN SURVEY DESTROY: {request.user.username} удалил тест «{title}» ({survey_id})")
+        return JsonResponse({"ok": True, "message": f"Тест «{title}» безвозвратно удален"})
+
+    except Exception as e:
+        tracer_l.error(f"ADMIN SURVEY DELETE FAIL: {e}")
+        return JsonResponse({"error": str(e)}, status=500)

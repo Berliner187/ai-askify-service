@@ -77,9 +77,13 @@ urlpatterns = [
     path('api/admin/api-keys/<int:pk>/toggle/', api_key_toggle_api, name='api_key_toggle'),
     path('api/admin/api-keys/<int:pk>/test/', api_key_test_api, name='api_key_test'),
     path('api/admin/api-keys/cleanup/', api_key_cleanup_api, name='api_key_cleanup'),
-    path('db-viewer/', db_viewer, name='db_viewer'),
-    path('db-search/', db_search, name='db_search'),
-    path('get-details/<str:model_key>/<str:item_id>/', get_item_details, name='get_item_details'),
+    
+    path('api/admin/delete-user/', api_admin_delete_user, name='api_admin_delete_user'),
+    path('ops/surveys/', admin_surveys_ops_view, name='admin_surveys_ops'),
+    path('api/admin/surveys/search/', api_admin_search_surveys, name='api_admin_search_surveys'),
+    path('api/admin/surveys/details/<str:survey_id>/', api_admin_survey_details, name='api_admin_survey_details'),
+    path('api/admin/surveys/delete/', api_admin_delete_survey, name='api_admin_delete_survey'),
+
 
     path('profile/<str:username>/', profile_view, name='profile'),
     path('profile/', redirect_to_profile, name='profile_redirect'),
