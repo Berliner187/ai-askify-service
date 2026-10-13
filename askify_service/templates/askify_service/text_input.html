@@ -1614,6 +1614,36 @@
                     return;
                 }
 
+                // 1. ПРОВЕРКА ЛОКДАУНА
+                const lockUntil = localStorage.getItem('submit_lockout');
+                if (lockUntil) {
+                    const now = Date.now();
+                    if (now < parseInt(lockUntil)) {
+                        const timeLeft = Math.ceil((parseInt(lockUntil) - now) / 1000);
+                        resetButtonLoading();
+                        SmartLoader.stop();
+                        triggerButtonError('ОТКАЗАНО');
+                        Island.error(`Тебя могнули, школотрон`);
+                        return;
+                    } else {
+                        localStorage.removeItem('submit_lockout');
+                    }
+                }
+
+                const lowerText = text.toLowerCase();
+                const badPattern = /(интриж|сплетн)/i;
+
+                if (badPattern.test(lowerText)) {
+                    const newLock = Date.now() + 30000;
+                    localStorage.setItem('submit_lockout', newLock.toString());
+
+                    resetButtonLoading();
+                    SmartLoader.stop();
+                    triggerButtonError('Отказ');
+                    Island.error('Интрижки обсуждайте в школе');
+                    return;
+                }
+
                 triggerButtonLoading();
                 SmartLoader.start(questionCount, currentDiffLabel);
 

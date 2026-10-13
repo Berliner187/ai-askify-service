@@ -29,3 +29,4 @@ app.log.3
 *.dump
 /askify_service/static/vendor
 /askify_app/__pycache__
+*.csv

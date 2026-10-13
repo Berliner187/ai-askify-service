@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Создать тест по тексту и документу | Онлайн бесплатно с результатами | Летучка</title>
-    <meta name="description" content="Умный онлайн генератор тестов по тексту, параграфам и файлам PDF/Word. Составьте тест с автопроверкой ответов, экспортом бланков в PDF и ведомостью в Excel за 15 секунд бесплатно.">
+    <meta name="description" content="Умный онлайн генератор тестов по тексту, лекциям и файлам PDF/Word. Составьте тест с автопроверкой ответов, экспортом бланков в PDF и ведомостью в Excel за 15 секунд бесплатно.">
     <meta name="csrf-token" content="{{ csrf_token }}">
     
     <!-- Open Graph -->
@@ -159,6 +159,57 @@
         details summary::-webkit-details-marker { display: none; }
         details summary { list-style: none; }
     </style>
+    <style>
+        @keyframes springIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.82);
+            }
+            60% {
+                opacity: 0.95;
+                transform: scale(1.04);
+            }
+            85% {
+                transform: scale(0.98);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .animate-spring-glow {
+            animation: springIn 7.2s cubic-bezier(0.16, 1, 0.3, 1) 0.3s backwards;
+        }
+
+        @property --border-angle {
+            syntax: '<angle>';
+            initial-value: 0deg;
+            inherits: false;
+        }
+
+            @keyframes spinAngle {
+            0% {
+                --border-angle: 0deg;
+            }
+            100% {
+                --border-angle: 360deg;
+            }
+        }
+
+        .animate-liquid-border-fast {
+        animation: spinAngle 2s linear infinite;
+        
+        background: conic-gradient(
+            from var(--border-angle),
+            transparent 0%,
+            transparent 65%,
+            #818cf8 82%,
+            #6366f1 92%,
+            #4338ca 100%
+            );
+        }
+    </style>
 </head>
 <body class="min-h-screen">
     
@@ -215,13 +266,10 @@
         </div>
     </header>
 
-    <!-- ====================================================== -->
-    <!--         HERO BLOCK: ВЧ/СЧ КЛАСТЕР + ЧЕТКИЙ ОФФЕР       -->
-    <!-- ====================================================== -->
-    <section id="hero" class="relative pt-24 sm:pt-36 pb-12 sm:pb-20 max-w-5xl mx-auto text-center flex flex-col items-center px-4 sm:px-6">
+    <!-- HERO BLOCK -->
+    <section id="hero" class="relative pt-24 sm:pt-36 pb-12 sm:pb-20 max-w-7xl mx-auto text-center flex flex-col items-center px-4 sm:px-6">
 
-        <div class="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[280px] sm:w-[500px] h-[200px] sm:h-[300px] bg-indigo-500/10 blur-[80px] sm:blur-[120px] pointer-events-none -z-10"></div>
-
+        <!-- Заголовок, тексты, кнопка -->
         <div class="inline-flex items-center gap-1.5 font-mono text-[10px] sm:text-[11px] tracking-widest text-zinc-400 uppercase select-none mb-3 sm:mb-8">
             <span class="text-zinc-600">[ 01</span>
             <span class="text-zinc-700">//</span>
@@ -236,32 +284,56 @@
         </h1>
 
         <p class="mt-3.5 sm:mt-5 text-xs sm:text-base text-zinc-300 max-w-md sm:max-w-2xl mx-auto font-normal leading-relaxed">
-            Умный сервис для составления тестов по методичкам, параграфам и конспектам. Загрузите текст, документ Word или PDF — нейросеть за 15 секунд составит проверочные вопросы, правильные ответы, сформирует ссылку для учеников или аккуратный бланк для печати.
+            Загрузите параграф учебника, методичку или файл Word/PDF. <br><br>
+            <span class="text-zinc-400">Алгоритм за&nbsp;15&nbsp;секунд выделит главное, составит задания с&nbsp;вариантами ответов и&nbsp;подготовит всё к&nbsp;уроку: ссылку с&nbsp;автопроверкой для&nbsp;учеников или готовый бланк для&nbsp;печати на&nbsp;А4.</span>
         </p>
 
         <div class="mt-6 sm:mt-8 flex flex-col items-center justify-center gap-2.5 sm:gap-4 w-full">
-            <a href="{% url 'create' %}" 
-               class="group relative inline-flex items-center justify-center gap-2.5 h-11 sm:h-12 px-6 sm:px-8 rounded-full 
-                      bg-gradient-to-b from-white via-white to-zinc-100 text-black font-bold text-xs sm:text-sm tracking-tight
-                      border border-white/80 shadow-[0_4px_16px_-2px_rgba(255,255,255,0.2),0_8px_24px_-4px_rgba(0,0,0,0.6)]
-                      hover:shadow-[0_0_24px_rgba(79,70,229,0.3)] hover:scale-[1.02] active:scale-[0.97] transition-all duration-200">
-                <span class="uppercase">Сгенерировать тест бесплатно</span>
-                <span class="w-5 h-5 rounded-full bg-black/[0.06] flex items-center justify-center transition-transform duration-200 group-hover:translate-x-0.5">
-                    <svg class="w-3 h-3 text-black" viewBox="0 0 16 16" fill="none">
-                        <path d="M6 3L11 8L6 13" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                </span>
-            </a>
+            <div class="group relative inline-flex items-center justify-center p-[2px] rounded-full overflow-hidden transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]">
+                <div class="absolute inset-0 rounded-full animate-liquid-border-fast pointer-events-none"></div>
+                <a href="{% url 'create' %}" 
+                class="relative z-10 inline-flex items-center justify-center gap-2.5 h-11 sm:h-12 px-6 sm:px-8 rounded-full 
+                        bg-indigo-600 text-white font-bold text-xs sm:text-sm tracking-tight
+                        shadow-[0_4px_24px_-2px_rgba(79,70,229,0.5),0_8px_24px_-4px_rgba(0,0,0,0.6)]
+                        group-hover:bg-[#111119] group-hover:text-white
+                        group-hover:shadow-[0_0_32px_rgba(99,102,241,0.45)] 
+                        transition-all duration-300 ease-out">
+                    
+                    <span class="uppercase tracking-wider">Сгенерировать тест бесплатно</span>
+                    <span class="w-5 h-5 rounded-full bg-white/20 group-hover:bg-white/10 flex items-center justify-center transition-all duration-300 group-hover:translate-x-0.5">
+                        <svg class="w-3 h-3 text-white transition-transform duration-300" viewBox="0 0 16 16" fill="none">
+                            <path d="M6 3L11 8L6 13" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </span>
+                </a>
+            </div>
 
-            <div class="flex items-center gap-3 text-[11px] sm:text-xs font-mono text-zinc-500 pt-1">
+            <!-- Мета-информация -->
+            <div class="flex items-center gap-3 text-[11px] sm:text-xs text-zinc-500 pt-1">
                 <span>Без обязательной регистрации</span>
                 <span>•</span>
-                <span class="text-zinc-400">PDF, Word до 25 МБ</span>
+                <span class="text-zinc-400">PDF, Word документы</span>
             </div>
+
         </div>
 
-        <div class="mt-8 sm:mt-14 relative w-full max-w-5xl mx-auto">
-            <div class="relative rounded-[20px] sm:rounded-[36px] p-1 sm:p-1.5 bg-gradient-to-b from-white/[0.12] to-white/[0.02] shadow-[0_16px_40px_-10px_rgba(0,0,0,0.8)] border border-white/[0.06]">
+        <!-- БЛОК С ВИДЕО -->
+        <div class="mt-8 sm:mt-14 relative w-full max-w-4xl mx-auto flex justify-center items-center">
+            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[240vw] max-w-[3600px] pointer-events-none -z-10 select-none">
+                <div class="animate-spring-glow w-full h-auto">
+                    <img 
+                        src="{% static 'img/hero-light-bridge.webp' %}" 
+                        alt="" 
+                        width="1400" 
+                        height="770"
+                        class="w-full h-auto object-contain mix-blend-screen"
+                        loading="eager"
+                        decoding="async"
+                    >
+                </div>
+            </div>
+            <!-- Рамка с видео -->
+            <div class="relative w-full rounded-[20px] sm:rounded-[36px] p-1 sm:p-1.5 bg-gradient-to-b from-white/[0.12] to-white/[0.02] shadow-[0_16px_40px_-10px_rgba(0,0,0,0.8)] border border-white/[0.06]">
                 <div class="relative rounded-[16px] sm:rounded-[32px] overflow-hidden bg-zinc-950 aspect-[16/9]">
                     <video 
                         autoplay 
@@ -273,11 +345,10 @@
                         class="w-full h-full object-cover">
                         <source src="{% static 'letychka-hero.mp4' %}" type="video/mp4">
                     </video>
-                    <div class="absolute inset-0 pointer-events-none rounded-[16px] sm:rounded-[32px] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]"></div>
                 </div>
             </div>
-        </div>
 
+        </div>
     </section>
 
     <!-- ====================================================== -->
@@ -682,7 +753,7 @@
                 
                 <div class="space-y-2">
                     <div class="text-4xl sm:text-5xl font-black font-mono-nums text-white tracking-tight">
-                        2 400+
+                        3 000+
                     </div>
                     <p class="text-xs sm:text-sm text-zinc-400 font-medium">Преподавателей и авторов тестов по РФ</p>
                 </div>
@@ -983,7 +1054,7 @@
                     </span>
                 </summary>
                 <div class="px-6 pb-6 text-xs sm:text-sm text-zinc-400 leading-relaxed border-t border-white/[0.04] pt-4">
-                    Летучка полностью автоматизирует процесс проверки знаний. Вы загружаете параграф учебника, лекцию или конспект, а обученная нейросеть за 15 секунд формулирует вопросы, генерирует правдоподобные варианты ответов, определяет ключи и выдает готовую ссылку для учеников. Вам больше не нужно вручную форматировать тесты в Word и тратить часы на проверку тетрадей — система сама оценивает работы и формирует отчет в Excel.
+                    Летучка полностью автоматизирует процесс проверки знаний. Вы загружаете параграф учебника, лекцию или конспект, а нейросеть за 15 секунд формулирует вопросы, генерирует правдоподобные варианты ответов, определяет ключи и выдает готовую ссылку для учеников. Вам больше не нужно вручную форматировать тесты в Word и тратить часы на проверку тетрадей — система сама оценивает работы и формирует отчет в Excel.
                 </div>
             </details>
 

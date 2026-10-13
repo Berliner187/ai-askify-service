@@ -533,7 +533,7 @@ class AccessService:
         try:
             user = AuthUser.objects.get(id_staff=self.staff_id)
             credits_balance = user.test_balance
-            logger.warning(f"DEBUG AccessService: credits_balance={credits_balance}")
+            logger.warning(f"DEBUG AccessService for {user.username}: credits_balance={credits_balance}")
         except AuthUser.DoesNotExist:
             credits_balance = 0
 

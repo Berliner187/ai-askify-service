@@ -2,7 +2,7 @@
 <html lang="ru" class="h-full">
 <head>
     {% include 'components/meta_tags.html' %}
-    
+
     {% if is_indexable %}
         <meta name="robots" content="index, follow">
         <link rel="canonical" href="https://letychka.ru/c/{{ survey_id }}/">
@@ -1071,7 +1071,7 @@
                         $badge.removeClass('bg-white/5 border border-white/10 text-gray-400')
                               .addClass('bg-emerald-500 text-black font-bold');
                         $icon.attr('class', 'opt-icon fas fa-check');
-                        $label.text('Верно!').removeClass('hidden text-rose-400').addClass('text-emerald-400').show();
+                        $label.text('').removeClass('hidden text-rose-400').addClass('text-emerald-400').show();
                     } else {
                         // Ошибся!
                         $row.removeClass('bg-[#111119]/70 border-white/[0.04] text-gray-300')
@@ -1090,7 +1090,7 @@
                                        .removeClass('bg-white/5 border border-white/10 text-gray-400')
                                        .addClass('bg-emerald-500/30 text-emerald-300 font-bold');
                             $correctRow.find('.opt-icon').attr('class', 'opt-icon fas fa-check text-[9px]');
-                            $correctRow.find('.opt-label').text('Правильный ответ').removeClass('hidden').addClass('text-emerald-400').show();
+                            $correctRow.find('.opt-label').text('Верный').removeClass('hidden').addClass('text-emerald-400').show();
                         }
                     }
 
@@ -1117,7 +1117,7 @@
                             $badge.removeClass('bg-white/5 border border-white/10 text-gray-400')
                                   .addClass('bg-emerald-500 text-black font-bold');
                             $icon.attr('class', 'opt-icon fas fa-check');
-                            $label.text('Верно').removeClass('hidden text-rose-400').addClass('text-emerald-400').show();
+                            $label.text('').removeClass('hidden text-rose-400').addClass('text-emerald-400').show();
                         } else {
                             $row.removeClass('bg-[#111119]/70 border-white/[0.04] text-gray-300')
                                 .addClass('bg-rose-500/15 border-rose-500/40 text-rose-200');
@@ -1341,7 +1341,7 @@
                 return;
             }
 
-            if (!confirm('Нейросеть составит совершенно новые вопросы по этой теме. Текущие вопросы будут заменены. Продолжить?')) return;
+            if (!confirm('Летучка составит совершенно новые вопросы по этой теме. Будет списание одного теста с баланса. Продолжить?')) return;
 
             Island.info('ИИ пересобирает тест...', 'fa-rotate fa-spin', 25000);
 

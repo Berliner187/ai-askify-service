@@ -83,7 +83,8 @@ from tempfile import NamedTemporaryFile
 from bs4 import BeautifulSoup
 import environ
 from openpyxl import Workbook
-from openpyxl.styles import Font, PatternFill
+from openpyxl.styles import Alignment, Font, PatternFill
+from openpyxl.utils import get_column_letter
 from urllib.parse import quote
 import docx
 
@@ -151,6 +152,8 @@ def index(request):
         'username': request.user.username if request.user.is_authenticated else 0,
         'debug': DEBUG
     }
+    tracer_l.debug(f'USER {get_client_ip(request)}')
+    
     return render(request, 'askify_service/index.html', context)
 
 
@@ -204,9 +207,6 @@ def page_create_survey(request):
         current_id_staff = get_staff_id(request)
         access_service = AccessService(current_id_staff)
         access_info = access_service.check_access()
-        survey_stats = Survey.objects.get_user_stats(current_id_staff)
-        stats = UserAnswers.calculate_user_statistics(current_id_staff)
-        dashboard_context = get_user_dashboard_context(request.user)
         username = get_username(request)
 
         subscription_level = 0
@@ -254,11 +254,8 @@ def page_create_survey(request):
             banner_text = "Демо-квота исчерпана"
 
         username = None
-        subscription_level = 0  # Слайдер ограничен 5-7 вопросами
+        subscription_level = 0
         plan_type = "demo"
-        survey_stats = {"total_tests": guest_surveys_count, "today_uploads": 0, "total_questions": 0, "avg_questions": 0, "tests_this_month": 0}
-        stats = {"passed_tests": 0}
-        dashboard_context = {}
         recent_surveys = Survey.objects.filter(id_staff=current_id_staff).order_by('-created_at')[:2]
 
     context = {
@@ -1389,7 +1386,7 @@ async def notify_admin_by_limit():
         ).aggregate(count=Count("id"))
         count_today = usage_count_for_active_key.get("count", 0)
 
-        LIMIT = 45
+        LIMIT = 100
         if count_today > LIMIT:
             tracer_l.info(f"--- [ RESET counter active key ] ---")
             tracer_l.warning(f"API [ FULL UP ] count_today: {count_today}")
@@ -3208,7 +3205,6 @@ def get_analytics_context(request, survey_id):
         "analytics_author": author_username if len(author_username) < 40 else "Аноним",
         "is_short_enough": is_short_enough,
         "analytics_date_create": survey.created_at.strftime("%d.%m.%Y"),
-        # Заглушки для графиков, чтобы JS не падал, (оставлено для API-запросов)
         "chart_activity_json": "{}",
         "chart_scores_json": "{}",
     }
@@ -3216,7 +3212,21 @@ def get_analytics_context(request, survey_id):
     return context
 
 
-@login_required
+CLEAN_XML_RE = re.compile(
+    r"[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x84\x86-\x9F]"
+)
+
+
+def safe_clean(val):
+    if val is None:
+        return ""
+    if isinstance(val, list):
+        val = ", ".join(safe_clean(i) for i in val)
+    else:
+        val = str(val)
+    return CLEAN_XML_RE.sub("", val).strip()
+
+
 def export_results_to_excel(request, survey_id):
     survey = get_object_or_404(Survey, survey_id=survey_id)
 
@@ -3228,11 +3238,14 @@ def export_results_to_excel(request, survey_id):
     workbook = Workbook()
     sheet = workbook.active
 
-    sanitized = re.sub(r"[:\\/?*\[\]]", "", survey.title[:20])
-    sheet.title = f"Результаты - {sanitized}"
+    # 1. СТРОГИЙ ЛИМИТ НАЗВАНИЯ ВКТАДКИ (макс 31 символ в Excel!)
+    raw_title = safe_clean(survey.title)
+    sanitized_title = re.sub(r"[:\\/?*\[\]]", "", raw_title)
+    # 10 символов на "Результаты" + 21 символ на тайтл = 31 символ
+    sheet.title = f"Результаты {sanitized_title[:21]}".strip()
 
     questions_list = survey.get_questions()
-    question_headers = [q["question"] for q in questions_list]
+    question_headers = [safe_clean(q["question"]) for q in questions_list]
 
     headers = [
         "Имя участника",
@@ -3244,35 +3257,63 @@ def export_results_to_excel(request, survey_id):
 
     sheet.append(headers)
 
-    header_font = Font(bold=True, color="FFFFFF")
-    header_fill = PatternFill(
-        start_color="4F46E5", end_color="4F46E5", fill_type="solid"
-    )
-
-    for cell in sheet[1]:
-        cell.font = header_font
-        cell.fill = header_fill
-
+    # 2. ЗАПОЛНЕНИЕ ДАННЫМИ
     for attempt in attempts_qs:
         student_answers = attempt.get_answers()
-        percent = (
-            (attempt.score * 100 / attempt.total_questions)
+        
+        # Считаем чистый float для процента (например 0.25 для 25%)
+        percent_float = (
+            (attempt.score / attempt.total_questions)
             if attempt.total_questions > 0
-            else 0
+            else 0.0
         )
 
         row_data = [
-            attempt.student_name,
+            safe_clean(attempt.student_name),
             attempt.created_at.strftime("%Y-%m-%d %H:%M:%S"),
-            attempt.score,
-            attempt.total_questions,
-            f"{percent:.1f}%",
+            int(attempt.score),
+            int(attempt.total_questions),
+            percent_float,  # Форматируем в самом Excel
         ]
 
-        for q_text in question_headers:
-            row_data.append(student_answers.get(q_text, "Н/Д"))
+        for q_raw in [q["question"] for q in questions_list]:
+            ans = student_answers.get(q_raw, "Н/Д")
+            row_data.append(safe_clean(ans))
 
         sheet.append(row_data)
+
+    # 3. СТИЛИ И ФОРМАТИРОВАНИЕ
+    header_font = Font(bold=True, color="FFFFFF", size=11)
+    header_fill = PatternFill(
+        start_color="4F46E5", end_color="4F46E5", fill_type="solid"
+    )
+    header_align = Alignment(
+        horizontal="center", vertical="center", wrap_text=True
+    )
+    cell_align = Alignment(vertical="center", wrap_text=True)
+
+    sheet.row_dimensions[1].height = 32
+    for cell in sheet[1]:
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = header_align
+
+    for row in sheet.iter_rows(min_row=2, max_row=sheet.max_row):
+        row[4].number_format = "0.0%"
+
+    for col in sheet.columns:
+        max_len = 0
+        col_letter = get_column_letter(col[0].column)
+
+        for cell in col:
+            if cell.row > 1:
+                cell.alignment = cell_align
+
+            val = str(cell.value or "")
+            if len(val) > max_len:
+                max_len = len(val)
+
+        sheet.column_dimensions[col_letter].width = min(max(max_len + 3, 14), 45)
 
     buffer = BytesIO()
     workbook.save(buffer)
@@ -3283,8 +3324,7 @@ def export_results_to_excel(request, survey_id):
         content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
 
-    filename = f"Результаты_{survey.title}.xlsx"
-
+    filename = f"Результаты_{sanitized_title}.xlsx"
     ascii_filename = "results.xlsx"
     utf8_filename = quote(filename)
 
@@ -8628,7 +8668,7 @@ def get_user_details_api(request, user_id):
     tokens_survey = tokens["s"] or 0
     tokens_feedback = tokens["f"] or 0
 
-    # ---- Графики: 12 месяцев (с подгоном под MSK) ----
+    # ---- Графики: 12 месяцев ----
     months = _pulse_month_series(12, today)
     labels = [_pulse_month_label(ym) for ym in months]
     creations = [0] * 12
@@ -8793,7 +8833,7 @@ def get_new_users_api(request):
             )
 
         sorted_results = sorted(results, key=lambda u: u["date_joined"], reverse=True)
-        return sorted_results[:50]
+        return sorted_results[:150]
 
     data = {
         "today": get_formatted_top_users(today_start, now),
