@@ -63,13 +63,14 @@
     <!-- ХЕДЕР С ТАБЛЕТКОЙ -->
     <header class="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div class="flex items-center gap-4">
-            <h1 class="text-2xl font-extrabold tracking-tight text-slate-50">Инспекция каталога тестов</h1>
-            
             <div class="flex items-center gap-1 rounded-2xl bg-[#111827] border border-[#1E293B] p-0.5">
                 <a href="{% url 'stats2975' %}" class="px-3 py-1.5 text-xs font-medium rounded-xl text-slate-400 hover:text-slate-200 transition">Дашборд</a>
                 <a href="{% url 'user_ops_center' %}" class="px-3 py-1.5 text-xs font-medium rounded-xl text-slate-400 hover:text-slate-200 transition">CRM</a>
                 <a href="{% url 'admin_surveys_ops' %}" class="px-3 py-1.5 text-xs font-medium rounded-xl bg-[#5E6CF8] text-white">Тесты</a>
+                <a href="{% url 'admin_traffic_live' %}" class="px-3 py-1.5 text-xs font-medium rounded-xl text-slate-400 hover:text-slate-200 transition">Пульс</a>
             </div>
+
+            <h1 class="text-2xl font-extrabold tracking-tight text-slate-50">СЦ / Каталог тестов</h1>
         </div>
 
         <div class="flex items-center gap-3">

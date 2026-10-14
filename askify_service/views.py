@@ -61,6 +61,7 @@ from .forms import *
 from .constants import *
 from .tracer import *
 from .models import AccessService, SurveyManager
+from .traffic import log_traffic
 # from .quant import Quant
 from askify_service.services.guest_auth import get_or_create_guest_user
 
@@ -142,6 +143,7 @@ signer = Signer()
 # Параметры входа
 MAX_LOGIN_ATTEMPTS = 5
 LOCKOUT_TIME = 60 * 30
+FREE_TEST_LIMIT__TEXT = 5
 
 MOSCOW_TZ = ZoneInfo("Europe/Moscow")
 
@@ -152,7 +154,7 @@ def index(request):
         'username': request.user.username if request.user.is_authenticated else 0,
         'debug': DEBUG
     }
-    tracer_l.debug(f'USER {get_client_ip(request)}')
+    log_traffic(request, "Главная страница")
     
     return render(request, 'askify_service/index.html', context)
 
@@ -163,6 +165,8 @@ def pro_landing(request):
         'username': request.user.username if request.user.is_authenticated else 0,
         'debug': DEBUG
     }
+    log_traffic(request, "Преподам")
+    
     return render(request, 'pro_landing.html', context)
 
 
@@ -253,7 +257,7 @@ def page_create_survey(request):
             can_generate = False
             banner_text = "Демо-квота исчерпана"
 
-        username = None
+        username = 0
         subscription_level = 0
         plan_type = "demo"
         recent_surveys = Survey.objects.filter(id_staff=current_id_staff).order_by('-created_at')[:2]
@@ -268,8 +272,11 @@ def page_create_survey(request):
         "plan_type": plan_type,
         "recent_surveys": recent_surveys,
         "is_guest": not request.user.is_authenticated,
+        "free_test_limit": FREE_TEST_LIMIT__TEXT,
+        "package_tests_count": total_available, 
         "debug": settings.DEBUG,
     }
+    log_traffic(request, "Создать тест")
 
     return render(request, "askify_service/text_input.html", context)
 
@@ -753,6 +760,7 @@ def page_history_surveys(request):
         "subscription_level": get_subscription_level(request),
         "total_available": getattr(request.user, "test_balance", 0),
     }
+    log_traffic(request, "История")
 
     return render(request, "askify_service/history.html", context)
 
@@ -1432,7 +1440,7 @@ class GenerationSurveysView(View):
                 if guest_surveys_count >= 1 or has_demo:
                     return JsonResponse(
                         {
-                            "error": "Зарегистрируйтесь, чтобы забрать еще 3 теста бесплатно!",
+                            "error": f"Зарегистрируйтесь, чтобы создать {FREE_TEST_LIMIT__TEXT} бесплатно!",
                             "limit_exceeded": True
                         },
                         status=429
@@ -1621,7 +1629,7 @@ class FileUploadView(View):
                 if guest_surveys_count >= 1 or has_demo:
                     tracer_l.warning(f"[UPLOAD] Гость {staff_id} исчерпал демо-лимит.")
                     return JsonResponse({
-                        'error': 'Вы уже создали 1 бесплатный тест. Зарегистрируйтесь, чтобы забрать еще 3 теста бесплатно!',
+                        'error': f'Вы уже создали 1 бесплатный тест. Зарегистрируйтесь, чтобы забрать еще {FREE_TEST_LIMIT__TEXT}!',
                         'limit_exceeded': True
                     }, status=429)
             else:
@@ -2607,6 +2615,8 @@ def take_test(request, survey_id):
         "page_title": f"{survey.title} ({survey.created_at})",
         "is_creator": get_is_creator(request, survey),
     }
+    log_traffic(request, "Пройти тест")
+    
     return render(request, "askify_service/take_test.html", context)
 
 
@@ -2715,8 +2725,10 @@ def main_test_card(request, survey_id):
     anonymous_user = AuthUser.objects.filter(hash_user_id=client_ip).first()
     if anonymous_user:
         current_user_id_staff = anonymous_user.id_staff
+        print(current_user_id_staff)
     if survey.id_staff == get_staff_id(request):
         survey_creator_id_staff = current_user_id_staff
+        print(survey_creator_id_staff)
 
     is_creator = (current_user_id_staff == survey_creator_id_staff)
 
@@ -2740,6 +2752,7 @@ def main_test_card(request, survey_id):
         or raw_username.startswith("guest_") 
         or raw_username == "Аноним"
     )
+    print(is_guest_author)
 
     # Реальные сдачи учеников
     attempts_count = survey.attempts.count()
@@ -2770,6 +2783,7 @@ def main_test_card(request, survey_id):
         "survey_id": str(survey_id),
         "questions": survey.get_normalized_questions(),
         "author": display_author,
+        "is_guest_author": is_guest_author,
         "username": request.user.username if request.user.is_authenticated else 0,
         "model_name": f"Создано в Летучке • {date_create}",
         "view_count": survey.view_count,
@@ -2785,6 +2799,7 @@ def main_test_card(request, survey_id):
         "show_ads": show_ads,
         "is_indexable": is_indexable,
     }
+    log_traffic(request, "Конструктор теста")
 
     return render(request, "demo-view.html", json_response)
 
@@ -3005,6 +3020,8 @@ def view_results(request, survey_id):
         "is_short_enough": is_short_enough,
         "date_create": survey.created_at.strftime("%d.%m.%Y"),
     }
+    log_traffic(request, "Дашборд теста")
+    
     return render(request, "askify_service/test_results.html", context)
 
 
@@ -3476,7 +3493,7 @@ def quick_register_api(request):
     if reg_count >= 2:
         tracer_l.warning(f"ANTI-FRAUD: IP {client_ip} заблокирован по лимиту регистраций ({reg_count} попыток)")
         return JsonResponse({
-            "error": "С вашего устройства создано слишком много аккаунтов за сегодня. Войдите в существующий профиль."
+            "error": "С вашего устройства создано слишком много аккаунтов. Войдите в существующий профиль."
         }, status=429)
 
     if not email or not password:
@@ -3641,6 +3658,8 @@ def register_view(request):
     else:
         form = CustomUserCreationForm()
 
+    log_traffic(request, "Регистрация")
+
     context = {"form": form, "debug": DEBUG}
     return render(request, "register.html", context)
 
@@ -3716,6 +3735,9 @@ def login_view(request):
 
     context["next_url"] = request.GET.get("next", "/create")
     context["debug"] = DEBUG
+    
+    log_traffic(request, "Логин")
+    
     return render(request, "login.html", context)
 
 
@@ -3727,6 +3749,7 @@ def logout_view(request):
 
 
 def blocked_view(request):
+    log_traffic(request, "Логин")
     return render(request, "askify_service/blocked.html")
 
 
@@ -3892,6 +3915,7 @@ def profile_view(request, username):
         )
 
     user_data["top_surveys"] = top_surveys_formatted
+    log_traffic(request, "Профиль")
 
     return render(request, "profile.html", user_data)
 
@@ -8195,7 +8219,7 @@ class TelegramAuthView(View):
 @check_legal_process
 def document_view(request, slug):
     file_path = os.path.join(BASE_DIR, "docs", f"{slug}.md")
-    tracer_l.debug(f"file_path: file_path")
+    tracer_l.debug(f"file_path: {file_path}")
 
     if not os.path.exists(file_path):
         return render(request, "404.html", status=404)
@@ -9577,9 +9601,179 @@ def api_admin_delete_survey(request):
 
         survey.delete()
 
-        tracer_l.warning(f"ADMIN SURVEY DESTROY: {request.user.username} удалил тест «{title}» ({survey_id})")
+        tracer_l.info(f"ADMIN SURVEY DESTROY: {request.user.username} удалил тест «{title}» ({survey_id})")
         return JsonResponse({"ok": True, "message": f"Тест «{title}» безвозвратно удален"})
 
     except Exception as e:
         tracer_l.error(f"ADMIN SURVEY DELETE FAIL: {e}")
         return JsonResponse({"error": str(e)}, status=500)
+
+
+@user_passes_test(lambda u: u.is_superuser)
+def admin_traffic_live_view(request):
+    """Страница живого пульса трафика."""
+    return render(request, "admin/admin_traffic_live.html", {
+        "page_title": "Пульс трафика | ЦУП Летучки"
+    })
+
+
+def calc_delta(current: int, previous: int) -> dict:
+    """Расчет процентного отклонения с защитой от деления на ноль."""
+    if previous == 0:
+        pct = 100.0 if current > 0 else 0.0
+    else:
+        pct = round(((current - previous) / previous) * 100, 1)
+    return {
+        "val": pct,
+        "is_positive": pct >= 0,
+        "str": f"+{pct}%" if pct > 0 else f"{pct}%"
+    }
+
+
+@user_passes_test(lambda u: u.is_superuser)
+@require_GET
+def api_admin_traffic_live(request):
+    """
+    Real-time телеметрия:
+    - Скорость RPS (за последние 60 сек)
+    - Сравнение срезов минута-в-минуту: Сегодня vs Вчера (DoD) vs АППН (WoW)
+    - Матрица устройств и чистоты трафика
+    """
+    now = timezone.now()
+    now_moscow = now.astimezone(MOSCOW_TZ)
+    
+    # Границы времени
+    one_min_ago = now - timedelta(seconds=60)
+    five_min_ago = now - timedelta(minutes=5)
+    
+    # Текущие сутки (с 00:00 МСК до текущей секунды)
+    today_start = now_moscow.replace(hour=0, minute=0, second=0, microsecond=0)
+    elapsed_today = now - today_start
+
+    # Вчера (строго до этой же секунды)
+    yesterday_start = today_start - timedelta(days=1)
+    yesterday_same_time = yesterday_start + elapsed_today
+
+    # АППН: 7 дней назад (строго до этой же секунды)
+    appn_start = today_start - timedelta(days=7)
+    appn_same_time = appn_start + elapsed_today
+
+    # 1. Мгновенный RPS (запросов в секунду за последнюю минуту)
+    hits_last_minute = TrafficLog.objects.filter(created_at__gte=one_min_ago).count()
+    current_rps = round(hits_last_minute / 60.0, 2)
+
+    # 2. Онлайн прямо сейчас (5 минут)
+    recent_qs = TrafficLog.objects.filter(created_at__gte=five_min_ago)
+    online_real_users = recent_qs.filter(is_bot=False).values("ip").distinct().count()
+    online_bots = recent_qs.filter(is_bot=True).values("ip").distinct().count()
+
+    # 3. Срезы СЕГОДНЯ (до текущей секунды)
+    today_qs = TrafficLog.objects.filter(created_at__range=(today_start, now))
+    today_real_hits = today_qs.filter(is_bot=False).count()
+    today_bot_hits = today_qs.filter(is_bot=True).count()
+    today_unique_ips = today_qs.filter(is_bot=False).values("ip").distinct().count()
+
+    # 4. Срезы ВЧЕРА (до этой же секунды)
+    yest_qs = TrafficLog.objects.filter(created_at__range=(yesterday_start, yesterday_same_time))
+    yest_real_hits = yest_qs.filter(is_bot=False).count()
+    yest_bot_hits = yest_qs.filter(is_bot=True).count()
+    yest_unique_ips = yest_qs.filter(is_bot=False).values("ip").distinct().count()
+
+    # 5. Срезы АППН (7 дней назад до этой же секунды)
+    appn_qs = TrafficLog.objects.filter(created_at__range=(appn_start, appn_same_time))
+    appn_real_hits = appn_qs.filter(is_bot=False).count()
+    appn_bot_hits = appn_qs.filter(is_bot=True).count()
+    appn_unique_ips = appn_qs.filter(is_bot=False).values("ip").distinct().count()
+
+    # Расчет дельт телеметрии
+    telemetry = {
+        "uniques": {
+            "current": today_unique_ips,
+            "yesterday": yest_unique_ips,
+            "dod": calc_delta(today_unique_ips, yest_unique_ips),
+            "appn": appn_unique_ips,
+            "wow": calc_delta(today_unique_ips, appn_unique_ips)
+        },
+        "real_hits": {
+            "current": today_real_hits,
+            "yesterday": yest_real_hits,
+            "dod": calc_delta(today_real_hits, yest_real_hits),
+            "appn": appn_real_hits,
+            "wow": calc_delta(today_real_hits, appn_real_hits)
+        },
+        "bot_hits": {
+            "current": today_bot_hits,
+            "yesterday": yest_bot_hits,
+            "dod": calc_delta(today_bot_hits, yest_bot_hits),
+            "appn": appn_bot_hits,
+            "wow": calc_delta(today_bot_hits, appn_bot_hits)
+        }
+    }
+
+    total_today_hits = today_real_hits + today_bot_hits
+    clean_ratio = round((today_real_hits / total_today_hits * 100), 1) if total_today_hits > 0 else 100.0
+    bot_ratio = round((today_bot_hits / total_today_hits * 100), 1) if total_today_hits > 0 else 0.0
+
+    mobile_hits = today_qs.filter(is_bot=False, user_agent__iregex=r'(mobile|iphone|android|ipad)').count()
+    desktop_hits = max(0, today_real_hits - mobile_hits)
+    mobile_pct = round((mobile_hits / today_real_hits * 100), 1) if today_real_hits > 0 else 0.0
+    desktop_pct = round((desktop_hits / today_real_hits * 100), 1) if today_real_hits > 0 else 0.0
+
+    top_pages_raw = today_qs.filter(is_bot=False).values("path").annotate(hits=Count("id")).order_by("-hits")[:8]
+    top_pages = [{"path": p["path"], "hits": p["hits"]} for p in top_pages_raw]
+
+    timeline_labels = []
+    timeline_real = []
+    timeline_bots = []
+    for i in range(29, -1, -1):
+        b_end = now - timedelta(minutes=i * 2)
+        b_start = b_end - timedelta(minutes=2)
+        b_qs = TrafficLog.objects.filter(created_at__range=(b_start, b_end))
+        timeline_labels.append(b_end.astimezone(MOSCOW_TZ).strftime("%H:%M"))
+        timeline_real.append(b_qs.filter(is_bot=False).count())
+        timeline_bots.append(b_qs.filter(is_bot=True).count())
+
+    last_logs_raw = TrafficLog.objects.all().order_by("-created_at")[:30]
+    feed = []
+    for log in last_logs_raw:
+        ip_parts = log.ip.split(".")
+        masked_ip = f"{ip_parts[0]}.{ip_parts[1]}.{ip_parts[2]}.{ip_parts[3]}" if len(ip_parts) == 4 else log.ip[:10] + "..."
+        ua_lower = log.user_agent.lower()
+        
+        ua_short = "Desktop"
+        if "iphone" in ua_lower or "ipad" in ua_lower: ua_short = "iOS Safari"
+        elif "android" in ua_lower: ua_short = "Android Web"
+        elif "yandex" in ua_lower: ua_short = "Yandex"
+        elif "chrome" in ua_lower: ua_short = "Chrome"
+        elif log.is_bot: ua_short = "Bot / Crawler"
+
+        feed.append({
+            "ip": masked_ip,
+            "path": log.path,
+            "is_bot": log.is_bot,
+            "ua": ua_short,
+            "time": log.created_at.astimezone(MOSCOW_TZ).strftime("%H:%M:%S")
+        })
+
+    return JsonResponse({
+        "rps": current_rps,
+        "online_real": online_real_users,
+        "online_bots": online_bots,
+        "clean_ratio": clean_ratio,
+        "bot_ratio": bot_ratio,
+        "device_stats": {
+            "mobile_pct": mobile_pct,
+            "desktop_pct": desktop_pct,
+            "mobile_hits": mobile_hits,
+            "desktop_hits": desktop_hits
+        },
+        "telemetry": telemetry,
+        "top_pages": top_pages,
+        "timeline": {
+            "labels": timeline_labels,
+            "real": timeline_real,
+            "bots": timeline_bots
+        },
+        "feed": feed
+    })
+

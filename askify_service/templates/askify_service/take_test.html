@@ -43,7 +43,7 @@
     <style>
         :root {
             --bg-main: #111119;
-            --card-bg: #212024;
+            --card-bg: rgba(24, 24, 36, 0.7);
             --card-border: rgba(255, 255, 255, 0.08);
             --card-border-hover: rgba(255, 255, 255, 0.16);
             --accent-indigo: #4F46E5;
@@ -65,12 +65,12 @@
         }
 
         .font-mono-nums { 
-            font-family: 'JetBrains Mono', monospace; 
+            font-family: 'Golos Text'; 
             letter-spacing: -0.02em;
         }
 
         .glass-panel {
-            background: rgba(24, 23, 27, 0.78);
+            background: var(--card-bg);
             backdrop-filter: blur(28px);
             -webkit-backdrop-filter: blur(28px);
             border: 1px solid var(--card-border);
@@ -79,7 +79,7 @@
 
         /* DYNAMIC ISLAND CAPSULE */
         .island-capsule {
-            background: rgba(22, 21, 26, 0.92);
+            background: var(--card-bg);
             backdrop-filter: blur(28px);
             -webkit-backdrop-filter: blur(28px);
             border: 1px solid rgba(255, 255, 255, 0.12);
@@ -391,9 +391,9 @@
 
                     </div>
 
-                    <!-- ПРАВАЯ СТОРОНА: ТЕРМИНАЛ РЕГИСТРАЦИИ УЧАСТНИКА (col-span-5) -->
+                    <!-- ПРАВАЯ СТОРОНА: ТЕРМИНАЛ РЕГИСТРАЦИИ УЧАСТНИКА -->
                     <div class="lg:col-span-5 flex flex-col justify-center">
-                        <div class="bg-[#141318]/95 border border-white/[0.09] rounded-[28px] p-6 sm:p-7 space-y-5 shadow-2xl relative">
+                        <div class="bg-[#111119]/50 border border-white/[0.09] rounded-[28px] p-6 sm:p-7 space-y-5 shadow-2xl relative">
                             
                             <!-- Шапка терминала с динамической монограммой -->
                             <div class="flex items-center gap-3.5 pb-3 border-b border-white/[0.07]">
@@ -435,7 +435,7 @@
                                 </button>
 
                                 <p class="text-[10px] text-center text-gray-500 font-mono-nums tracking-wide">
-                                    Запуск в 1 клик
+                                    Автор увидит Ваше имя и результат
                                 </p>
                             </form>
 
@@ -536,17 +536,14 @@
                     </p>
                 </div>
 
-                <!-- СЕТКА ДЕЙСТВИЙ (ВИРАЛЬНОСТЬ + КОНВЕРСИЯ В СЕРВИС) -->
                 <div class="space-y-2.5 pt-2 relative z-10">
                     
-                    <!-- 1. Поделиться результатом (копирует красивый сниппет) -->
                     <button type="button" id="challenge-btn" 
-                            class="w-full h-[50px] px-5 rounded-2xl bg-[#18171C] hover:bg-white/10 border border-white/10 text-white text-xs font-semibold flex items-center justify-center gap-2.5 spring-btn mb-4">
+                            class="w-full h-[50px] px-5 rounded-full bg-[#18171C] hover:bg-white/10 border border-white/10 text-white text-xs font-semibold flex items-center justify-center gap-2.5 spring-btn mb-4">
                         <i class="fas fa-arrow-up-right-from-square text-indigo-400 text-xs"></i>
                         <span>Поделиться своим результатом</span>
                     </button>
 
-                    <!-- 2. Главный продуктовый CTA (для автора или нового гостя) -->
                     {% if is_creator %}
                         <a href="{% url 'preview_test' survey.survey_id %}" 
                            class="master-pill-btn w-full h-[52px] rounded-full text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 select-none mb-4">
@@ -562,7 +559,6 @@
                         </a>
                     {% endif %}
 
-                    <!-- 3. Повторить тест -->
                     <a href="{% url 'take_test' survey.survey_id %}" class="inline-block text-xs text-gray-500 hover:text-white pt-2 transition-colors font-medium mb-4">
                         Пройти этот тест ещё раз
                     </a>

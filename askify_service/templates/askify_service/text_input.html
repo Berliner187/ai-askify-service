@@ -425,9 +425,14 @@
 
     <!-- ЛЕВЫЙ ВЕРТИКАЛЬНЫЙ ДОК (DESKTOP) -->
     <aside class="motion-dock-desktop motion-delay-dock hidden lg:flex fixed left-5 top-1/2 flex-col items-center gap-6 py-6 px-3.5 glass-panel rounded-[28px] z-40 shadow-2xl">
-        <a href="/" class="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors" title="Главная">
+        <a href="/" class="w-10 h-10 rounded-2xl bg-white/5 border border-white/5 text-gray-500 flex items-center justify-center hover:text-indigo-400 hover:bg-white/10 spring-btn" title="Главная">
             <img src="{% static 'img/logo.png' %}" alt="Logo" class="w-5 h-auto">
         </a>
+        {% if username == 0 %}
+            <a href="{% url 'login' %}" class="w-11 h-11 rounded-2xl bg-white/5 border border-white/5 text-gray-500 flex items-center justify-center hover:text-indigo-400 hover:bg-white/10 spring-btn" title="Профиль">
+                <i class="fa-solid fa-right-to-bracket text-sm"></i>
+            </a>
+        {% endif %}
         <div class="w-6 h-px bg-white/10"></div>
         <nav class="flex flex-col gap-4">
             <a href="{% url 'create' %}" class="w-11 h-11 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-600/30 spring-btn" title="Создать тест">
@@ -522,29 +527,6 @@
 
         <!-- РАБОЧАЯ ОБЛАСТЬ (СТУДИЯ) -->
         <main class="max-w-4xl w-full mx-auto px-4 sm:px-6 py-6 flex-grow space-y-6">
-
-            <!-- ТРИГГЕР-ХУК: ЕСЛИ ГОСТЬ УЖЕ СОЗДАЛ ТЕСТ И ВЕРНУЛСЯ НА /CREATE/ -->
-            {% if not request.user.is_authenticated and not can_generate %}
-            <div class="rounded-[24px] bg-gradient-to-r from-amber-500/10 via-[#1F1C18] to-amber-500/5 border border-amber-500/30 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl">
-                <div class="flex items-start sm:items-center gap-3">
-                    <div class="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center flex-shrink-0 text-sm">
-                        <i class="fas fa-triangle-exclamation"></i>
-                    </div>
-                    <div>
-                        <div class="flex items-center gap-2">
-                            <span class="text-xs sm:text-sm font-bold text-white">У вас есть несохраненный демо-тест</span>
-                            <span class="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-mono-nums font-bold">Сгорит через 24ч</span>
-                        </div>
-                        <p class="text-xs text-gray-400 mt-0.5 leading-relaxed">
-                            Вы уже использовали 1 бесплатную генерацию. Зарегистрируйтесь, чтобы закрепить созданный тест за собой и получить еще 3 теста бесплатно.
-                        </p>
-                    </div>
-                </div>
-                <button type="button" onclick="openRegisterModal('unclaimed_alert')" class="flex-shrink-0 px-5 py-2.5 rounded-full bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold transition-all spring-btn text-center shadow-lg shadow-amber-500/20">
-                    Забрать тест себе &rarr;
-                </button>
-            </div>
-            {% endif %}
             
             <!-- HERO / СТУДИЯ ОНБОРДИНГ -->
             <div class="motion-fade-up motion-delay-hero pt-6 sm:pt-10 pb-2 text-center space-y-3.5 max-w-2xl mx-auto">
@@ -588,6 +570,34 @@
 
             </div>
 
+            <!-- ТРИГГЕР-ХУК: ЕСЛИ ГОСТЬ УЖЕ СОЗДАЛ ТЕСТ И ВЕРНУЛСЯ НА /CREATE/ -->
+            {% if not request.user.is_authenticated and not can_generate %}
+            <div class="rounded-[24px] bg-[#1A1817] border border-amber-500/20 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl">
+                <div class="flex items-start sm:items-center gap-3.5">
+                    <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center flex-shrink-0 text-sm">
+                        <i class="fa-regular fa-clock"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs sm:text-sm font-semibold text-white tracking-tight">У вас остался несохранённый черновик</span>
+                            <span class="px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-300 text-[10px]">Лимит достигнут</span>
+                        </div>
+                        <p class="text-xs text-zinc-400 mt-1 max-w-xl leading-relaxed">
+                            Бесплатная попытка без авторизации использована. Зарегистрируйтесь, чтобы закрепить созданный тест за собой и получить ещё 5 генераций.
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="flex-shrink-0">
+                    <button type="button" 
+                            onclick="openRegisterModal('unclaimed_alert')" 
+                            class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-neutral-950 text-xs font-semibold transition-all spring-btn text-center shadow-lg shadow-amber-400/10 flex items-center justify-center gap-2">
+                        <span>Сохранить черновик</span>
+                        <i class="fas fa-arrow-right text-[10px]"></i>
+                    </button>
+                </div>
+            </div>
+            {% endif %}
             <!-- ГЛАВНЫЙ БЕНТО-БЛОК КОНФИГУРАЦИИ -->
             <div class="motion-fade-up motion-delay-bento glass-panel rounded-[32px] p-6 sm:p-8 shadow-2xl space-y-6 border border-white/[0.08]">
 
@@ -614,7 +624,7 @@
                                     {{ total_available }}
                                 </span>
                                 <span class="text-gray-600">/</span>
-                                <span id="quota-val-max" class="text-gray-500">{% if subscription_level >= 1 %}50{% elif plan_type == 'package' %}10{% else %}3{% endif %}</span>
+                                <span id="quota-val-max" class="text-gray-500">{% if subscription_level >= 1 %}50{% elif plan_type == 'package' %}10{% else %}{{ free_test_limit }}{% endif %}</span>
                             </div>
 
                             {% if not can_generate or total_available == 0 %}
@@ -968,7 +978,7 @@
             <div class="flex items-start justify-between pb-3 border-b border-white/10">
                 <div>
                     <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-mono-nums font-semibold mb-2">
-                        <span>+3 ТЕСТА В ПОДАРОК</span>
+                        <span>+5 ТЕСТОВ В ПОДАРОК</span>
                     </div>
                     <h3 id="reg-modal-title" class="text-base sm:text-lg font-bold text-white tracking-tight">Сохраните ваш аккаунт</h3>
                     <p id="reg-modal-desc" class="text-xs text-gray-400 mt-1 leading-relaxed">
@@ -1255,7 +1265,7 @@
                 this.value = 8;
                 $sliderDisplay.text(8);
                 updateSliderFill(8);
-                Island.warn('В демо доступно до 8 вопросов', 'fa-lock');
+                Island.warn('Бесплатно доступно до 8 вопросов', 'fa-lock');
             }
         });
 
@@ -1765,7 +1775,7 @@
         const CREATE_MODAL_TEXTS = {
             quota_header: {
                 title: "Лимит демо-режима исчерпан",
-                desc: "Зарегистрируйтесь за 10 секунд, чтобы сохранить созданные тесты и забрать еще 3 теста бесплатно."
+                desc: "Зарегистрируйтесь, чтобы сохранить созданный тест и забрать еще 5 тестов бесплатно."
             },
             quota_card: {
                 title: "Заберите ваш демо-тест",
@@ -1781,7 +1791,7 @@
             },
             limit: {
                 title: "Бесплатный тест использован",
-                desc: "Зарегистрируйтесь, чтобы забрать тест из истории и получить еще 3 теста в подарок."
+                desc: "Зарегистрируйтесь, чтобы забрать тест из истории и получить еще 5 тестов в подарок."
             }
         };
 

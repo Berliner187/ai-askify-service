@@ -158,6 +158,9 @@ urlpatterns = [
 
     path('api/bot/generate-login-code/', bot_generate_code),
     path('api/bot/generate-magic-link/', bot_generate_link),
+    
+    path('ops/live/', admin_traffic_live_view, name='admin_traffic_live'),
+    path('api/admin/traffic/live/', api_admin_traffic_live, name='api_admin_traffic_live'),
 
     path('auth/telegram/callback/<str:token>/', telegram_magic_auth, name='tg_magic_login'),
     path('auth/code/', telegram_code_auth, name='tg_code_login'),

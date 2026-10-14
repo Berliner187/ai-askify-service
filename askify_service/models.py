@@ -461,7 +461,7 @@ def get_daily_test_limit(plan_name):
     Возвращает дневной лимит на количество создаваемых тестов для данного плана.
     """
     daily_test_limits = {
-        'стартовый': 3,
+        'стартовый': 6,
         'лайтовый': 15,
         'стандартный': 50,
         'премиум': 50,
@@ -962,3 +962,27 @@ class MagicLinkToken(models.Model):
 
     def is_expired(self):
         return self.expires_at < timezone.now()
+
+
+class TrafficLog(models.Model):
+    """
+    Легковесный лог посещений.
+    Оптимизирован под быстрый INSERT и агрегации в реальном времени.
+    """
+    ip = models.GenericIPAddressField(db_index=True)
+    path = models.CharField(max_length=150, db_index=True, help_text="Название страницы или URL")
+    user_agent = models.CharField(max_length=255, blank=True, default="")
+    is_bot = models.BooleanField(default=False, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        verbose_name = "Лог трафика"
+        verbose_name_plural = "Логи трафика"
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["created_at", "is_bot"], name="idx_traffic_time_bot"),
+            models.Index(fields=["path", "created_at"], name="idx_traffic_path_time"),
+        ]
+
+    def __str__(self):
+        return f"[{'BOT' if self.is_bot else 'USER'}] {self.ip} -> {self.path} ({self.created_at})"

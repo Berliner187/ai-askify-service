@@ -181,9 +181,14 @@
 
     <!-- ЛЕВЫЙ ВЕРТИКАЛЬНЫЙ ДОК (DESKTOP) -->
     <aside class="hidden lg:flex fixed left-5 top-1/2 -translate-y-1/2 flex-col items-center gap-6 py-6 px-3.5 glass-panel rounded-[28px] z-40 shadow-2xl">
-        <a href="/" class="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors" title="Главная">
+        <a href="/" class="w-10 h-10 rounded-2xl bg-white/5 border border-white/5 text-gray-500 flex items-center justify-center hover:text-indigo-400 hover:bg-white/10 spring-btn" title="Главная">
             <img src="{% static 'img/logo.png' %}" alt="Logo" class="w-5 h-auto">
         </a>
+        {% if username == 0 %}
+            <a href="{% url 'login' %}" class="w-11 h-11 rounded-2xl bg-white/5 border border-white/5 text-gray-500 flex items-center justify-center hover:text-indigo-400 hover:bg-white/10 spring-btn" title="Профиль">
+                <i class="fa-solid fa-right-to-bracket text-sm"></i>
+            </a>
+        {% endif %}
         <div class="w-6 h-px bg-white/10"></div>
         <nav class="flex flex-col gap-4">
             <a href="{% url 'create' %}" class="w-11 h-11 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 flex items-center justify-center hover:bg-indigo-600 hover:text-white spring-btn group" title="Создать тест">
@@ -217,7 +222,7 @@
         {% if username != 0 %}
             <a href="{% url 'history' %}" class="text-gray-400 hover:text-white"><i class="fa-sharp fa-solid fa-clock-rotate-left text-base"></i></a>
             <a href="{% url 'profile_redirect' %}" class="text-gray-400 hover:text-white"><i class="fas fa-user text-base"></i></a>
-        {% else %}
+        {% elif is_creator %}
             <button type="button" onclick="openRegisterModal('nav')" class="text-xs font-bold text-indigo-400">Сохранить</button>
         {% endif %}
     </nav>
@@ -248,7 +253,7 @@
                     </div>
 
                     <div class="flex items-center gap-2.5 flex-shrink-0">
-                        {% if username == 0 %}
+                        {% if username == 0 and is_guest_author %}
                             <button type="button" onclick="openRegisterModal('header')" class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-md shadow-indigo-600/30 spring-btn">
                                 <i class="fas fa-floppy-disk text-[10px]"></i>
                                 <span>Сохранить</span>
@@ -283,8 +288,8 @@
         <!-- BENTO GRID -->
         <main class="max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 mt-4 sm:mt-6 flex-grow">
 
-            <!-- ХУК-БАННЕР ДЛЯ ГОСТЯ (ВРЕМЕННАЯ СЕССИЯ) -->
-            {% if username == 0 %}
+            <!-- ХУК-БАННЕР ДЛЯ ГОСТЯ -->
+            {% if username == 0 and is_guest_author %}
             <div class="mb-6 rounded-[24px] sm:rounded-[28px] bg-gradient-to-r from-indigo-950/40 via-[#181724] to-indigo-950/20 border border-indigo-500/30 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xl relative overflow-hidden">
                 <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
@@ -294,18 +299,18 @@
                     </div>
                     <div>
                         <div class="flex items-center gap-2">
-                            <span class="text-xs sm:text-sm font-bold text-white tracking-tight">Временная демо-сессия</span>
-                            <span class="px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[10px] font-bold">Не сохранен</span>
+                            <span class="text-xs sm:text-sm font-bold text-white tracking-tight">Тест готов к проверке</span>
+                            <span class="px-2 py-0.5 rounded-full bg-amber-500/15 border border-gray-500/30 text-amber-300 text-[12px] font-bold">Черновик</span>
                         </div>
                         <p class="text-xs text-gray-400 mt-1 max-w-xl leading-relaxed">
-                            Попробуйте тест прямо на этой странице! Кликните на любой вариант, чтобы проверить свои знания. Сохраните тест в 1 клик, чтобы отправить его ученикам.
+                            Нажмите на любой вариант, чтобы проверить ключи. Чтобы отправить ссылку ученикам или распечатать бланки — сохраните тест в свой кабинет.
                         </p>
                     </div>
                 </div>
 
                 <div class="flex items-center gap-2 sm:flex-shrink-0 relative z-10 w-full sm:w-auto">
                     <button type="button" onclick="openRegisterModal('banner')" class="w-full sm:w-auto px-5 py-3 rounded-xl sm:rounded-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-lg shadow-indigo-600/30 spring-btn text-center flex items-center justify-center gap-2">
-                        <span>Сохранить тест</span>
+                        <span>Сохранить тест в кабинет</span>
                         <i class="fas fa-arrow-right text-[10px]"></i>
                     </button>
                 </div>
@@ -361,14 +366,6 @@
                                             <i class="fas fa-pen text-[11px] text-indigo-400"></i>
                                             <span class="text-[11px] font-medium hidden sm:inline text-zinc-300">Изменить</span>
                                         </button>
-                                    {% elif username == 0 %}
-                                        <button type="button" 
-                                                class="always-pencil-btn text-zinc-500 hover:text-amber-300 p-2 rounded-xl bg-white/[0.02] hover:bg-white/[0.06] border border-white/5 transition-all spring-btn flex items-center gap-1.5" 
-                                                onclick="openRegisterModal('edit')" 
-                                                title="Сохраните тест, чтобы редактировать">
-                                            <i class="fas fa-lock text-[10px] text-amber-400/80"></i>
-                                            <span class="text-[11px] font-medium hidden sm:inline text-zinc-400">Изменить</span>
-                                        </button>
                                     {% endif %}
 
                                     <!-- 2. КНОПКА УДАЛЕНИЯ (ТОЛЬКО В РЕЖИМЕ ПРАВКИ) -->
@@ -386,7 +383,7 @@
                             </div>
 
                             <!-- ТЕКСТ ВОПРОСА -->
-                            <h3 class="text-base font-semibold text-white mb-5 leading-snug">
+                            <h3 class="text-base sm:text-lg font-semibold text-zinc-100 mb-5 leading-snug">
                                 {{ question.question }}
                             </h3>
 
@@ -397,7 +394,7 @@
                                     {% if username != 0 and show_answers and option in question.correct_answers %}
                                         is-correct bg-emerald-500/10 border-emerald-500/30 text-emerald-300 font-medium
                                     {% else %}
-                                        {% if option in question.correct_answers %}is-correct{% endif %} bg-[#111119]/70 border-white/[0.04] text-gray-300
+                                        {% if option in question.correct_answers %}is-correct{% endif %} bg-[#111119]/70 border-indigo-300/10 bg-white/[0.04] text-gray-300
                                     {% endif %}"
                                     data-is-correct="{% if option in question.correct_answers %}true{% else %}false{% endif %}"
                                     data-option-text="{{ option|escapejs }}">
@@ -429,17 +426,62 @@
                         </article>
 
                         <!-- ИНЛАЙН-МАГНИТ ПОСЛЕ 2-ГО ВОПРОСА ДЛЯ НЕАВТОРИЗОВАННОГО -->
-                        {% if username == 0 and forloop.counter == 2 %}
-                        <div class="rounded-[28px] border border-white/10 bg-white/[0.02] p-5 sm:p-6 text-center space-y-3">
-                            <p class="text-xs sm:text-sm font-semibold text-white">
-                                Понравилось качество вопросов и точность вариантов?
-                            </p>
-                            <p class="text-xs text-gray-400 max-w-md mx-auto">
-                                Сохраните тест в личный кабинет, чтобы отправить его ученикам по ссылке и выгрузить бланки в PDF.
-                            </p>
-                            <button type="button" onclick="openRegisterModal('in_feed')" class="px-6 py-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all spring-btn">
-                                Зарегистрироваться и сохранить &rarr;
-                            </button>
+                        {% if username == 0 and is_guest_author and forloop.counter == 2 %}
+                        <div class="relative my-6 rounded-[28px] border border-indigo-500/30 bg-gradient-to-b from-[#181726] to-[#12111A] p-6 sm:p-7 shadow-2xl overflow-hidden">
+                            <!-- Фоновый радиальный градиент -->
+                            <div class="absolute -top-24 -right-24 w-64 h-64 bg-indigo-600/15 rounded-full blur-3xl pointer-events-none"></div>
+
+                            <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                                <div class="space-y-3 max-w-lg">
+                                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/25 text-indigo-400 text-[11px] font-semibold">
+                                        <i class="fa-solid fa-wand-magic-sparkles text-[10px]"></i>
+                                        <span>Что доступно после сохранения</span>
+                                    </div>
+
+                                    <h4 class="text-base sm:text-lg font-bold text-white tracking-tight">
+                                        Проводите тестирование целой группы с&nbsp;любым кол-вом респондентов
+                                    </h4>
+
+                                    <!-- Сетка фич вместо унылого абзаца текста -->
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                                        <div class="flex items-center gap-2.5 text-xs text-zinc-300">
+                                            <span class="w-5 h-5 rounded-md bg-white/5 border border-white/10 text-indigo-400 flex items-center justify-center text-[10px] flex-shrink-0">
+                                                <i class="fas fa-file-pdf"></i>
+                                            </span>
+                                            <span>Экспорт в PDF с отдельным листом ответов</span>
+                                        </div>
+                                        <div class="flex items-center gap-2.5 text-xs text-zinc-300">
+                                            <span class="w-5 h-5 rounded-md bg-white/5 border border-white/10 text-indigo-400 flex items-center justify-center text-[10px] flex-shrink-0">
+                                                <i class="fas fa-qrcode"></i>
+                                            </span>
+                                            <span>Прохождение по прямой ссылке или QR-коду</span>
+                                        </div>
+                                        <div class="flex items-center gap-2.5 text-xs text-zinc-300">
+                                            <span class="w-5 h-5 rounded-md bg-white/5 border border-white/10 text-indigo-400 flex items-center justify-center text-[10px] flex-shrink-0">
+                                                <i class="fas fa-bolt"></i>
+                                            </span>
+                                            <span>Свободный вход участников без регистрации</span>
+                                        </div>
+                                        <div class="flex items-center gap-2.5 text-xs text-zinc-300">
+                                            <span class="w-5 h-5 rounded-md bg-white/5 border border-white/10 text-indigo-400 flex items-center justify-center text-[10px] flex-shrink-0">
+                                                <i class="fas fa-chart-column"></i>
+                                            </span>
+                                            <span>Автопроверка и сводка сложных вопросов</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Кнопка-действие с визуальным якорем -->
+                                <div class="flex-shrink-0 md:self-center">
+                                    <button type="button" 
+                                            onclick="openRegisterModal('in_feed')" 
+                                            class="w-full md:w-auto px-6 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-bold shadow-xl shadow-indigo-600/30 hover:shadow-indigo-600/50 transition-all spring-btn flex items-center justify-center gap-2.5">
+                                        <span>Зарегистрироваться и сохранить</span>
+                                        <i class="fas fa-arrow-right text-xs"></i>
+                                    </button>
+                                    <span class="block text-[11px] text-zinc-500 text-center mt-2 font-mono-nums ">Бесплатно • 5 тестов в подарок</span>
+                                </div>
+                            </div>
                         </div>
                         {% endif %}
 
@@ -458,49 +500,88 @@
                 <!-- ПРАВАЯ СЕКЦИЯ: ПАНЕЛЬ ДЕЙСТВИЙ -->
                 <aside class="lg:col-span-4 space-y-5 lg:sticky lg:top-24">
 
-                    <!-- БЛОК ЗАПУСКА И ШЕЙРИНГА -->
-                    <div class="glass-panel rounded-[32px] p-6 shadow-2xl space-y-4">
+                    <div class="glass-panel rounded-[28px] p-5 sm:p-6 shadow-2xl space-y-4 border border-white/[0.08] align-center">
                         {% if username != 0 %}
-                            <a href="{% url 'take_test' survey_id %}" class="w-full flex items-center justify-center gap-3 py-4 px-5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold shadow-lg shadow-indigo-600/30 spring-btn">
-                                <i class="fas fa-play text-xs"></i>
-                                <span>Пройти тест (режим экзамена)</span>
+                            <!-- АВТОРИЗОВАННЫЙ ПОЛЬЗОВАТЕЛЬ -->
+                            <div class="space-y-2">
+                                <button type="button" 
+                                        data-action="share" 
+                                        data-share-url="{% url 'take_test' survey_id %}" 
+                                        class="w-full flex items-center justify-center gap-2.5 py-3.5 px-4 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-semibold shadow-lg shadow-indigo-600/25 transition-all spring-btn">
+                                    <i class="fas fa-link text-xs"></i>
+                                    <span>Скопировать ссылку на тест</span>
+                                </button>
+                                
+                                <div class="grid grid-cols-2 gap-2">
+                                    <button type="button" 
+                                            onclick="showClassroomQR()" 
+                                            class="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-xs font-medium text-zinc-200 transition-all spring-btn">
+                                        <i class="fas fa-qrcode text-zinc-400"></i>
+                                        <span>QR-код</span>
+                                    </button>
+                                    <a href="{% url 'download-survey_pdf' survey_id %}" 
+                                    class="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-xs font-medium text-zinc-200 transition-all spring-btn">
+                                        <i class="fas fa-file-pdf text-zinc-400"></i>
+                                        <span>Бланк PDF</span>
+                                    </a>
+                                </div>
+                            </div>
+
+                            <div class="h-px bg-white/5 my-1"></div>
+
+                            <a href="{% url 'take_test' survey_id %}" 
+                            class="w-full flex items-center justify-center gap-2 py-2 text-zinc-400 hover:text-white transition-colors text-xs font-medium">
+                                <i class="fas fa-play text-[10px] text-zinc-500"></i>
+                                <span>Пройти тестирование</span>
                             </a>
 
-                            <button type="button" data-action="share" data-share-url="{% url 'take_test' survey_id %}" class="w-full flex items-center justify-center gap-3 py-3.5 px-4 rounded-2xl bg-[#18171A] hover:bg-white/5 border border-white/10 text-gray-200 text-xs font-semibold spring-btn">
-                                <i class="fas fa-share-nodes text-gray-400"></i>
-                                <span>Поделиться ссылкой</span>
-                            </button>
-
-                            <div class="grid grid-cols-2 gap-2 pt-2 border-t border-white/10">
-                                <button onclick="showClassroomQR()" class="flex items-center justify-center gap-2 py-3 rounded-xl bg-[#18171A] border border-white/5 text-xs font-medium text-gray-300 hover:text-white spring-btn">
-                                    <i class="fas fa-qrcode text-gray-400"></i> QR-код
-                                </button>
-                                <a href="{% url 'download-survey_pdf' survey_id %}" class="flex items-center justify-center gap-2 py-3 rounded-xl bg-[#18171A] border border-white/5 text-xs font-medium text-gray-300 hover:text-white spring-btn">
-                                    <i class="fas fa-file-pdf text-gray-400"></i> PDF
-                                </a>
-                            </div>
                         {% else %}
-                            <button type="button" onclick="openRegisterModal('take_test')" class="w-full flex items-center justify-center gap-3 py-4 px-5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold shadow-lg shadow-indigo-600/30 spring-btn">
-                                <i class="fas fa-lock text-xs opacity-70"></i>
-                                <span>Пройти тест</span>
-                            </button>
+                            <div class="space-y-3">
+                                <div class="space-y-1">
+                                    <span class="text-xs font-bold uppercase tracking-wider text-gray-400 block">Действия с тестом</span>
+                                </div>
 
-                            <button type="button" onclick="openRegisterModal('share')" class="w-full flex items-center justify-center gap-3 py-3.5 px-4 rounded-2xl bg-[#18171A] hover:bg-white/5 border border-white/10 text-gray-300 text-xs font-semibold spring-btn">
-                                <i class="fas fa-share-nodes text-gray-500"></i>
-                                <span>Поделиться ссылкой</span>
-                            </button>
+                                <!-- Поделиться -->
+                                <button type="button" 
+                                        onclick="openRegisterModal('share')" 
+                                        class="w-full flex items-center justify-between p-3 rounded-2xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 text-white transition-all spring-btn text-left group">
+                                    <div class="flex items-center gap-3">
+                                        <span class="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center text-xs group-hover:bg-indigo-500/20 transition-colors">
+                                            <i class="fas fa-link"></i>
+                                        </span>
+                                        <div>
+                                            <span class="text-xs font-semibold block text-zinc-200 group-hover:text-white">Поделиться тестом</span>
+                                            <span class="text-[10px] text-zinc-500">Ссылка и QR-код для прохождения</span>
+                                        </div>
+                                    </div>
+                                    <i class="fas fa-lock text-[10px] text-zinc-600 pr-1 group-hover:text-zinc-400 transition-colors"></i>
+                                </button>
 
-                            <div class="grid grid-cols-2 gap-2 pt-2 border-t border-white/10">
-                                <button type="button" onclick="openRegisterModal('qr')" class="flex items-center justify-center gap-2 py-3 rounded-xl bg-[#18171A] border border-white/5 text-xs font-medium text-gray-400 hover:text-white spring-btn">
-                                    <i class="fas fa-qrcode text-gray-500"></i> QR-код
+                                <!-- Скачать PDF -->
+                                <button type="button" 
+                                        onclick="openRegisterModal('pdf')" 
+                                        class="w-full flex items-center justify-between p-3 rounded-2xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 text-white transition-all spring-btn text-left group">
+                                    <div class="flex items-center gap-3">
+                                        <span class="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center text-xs group-hover:bg-indigo-500/20 transition-colors">
+                                            <i class="fas fa-file-pdf"></i>
+                                        </span>
+                                        <div>
+                                            <span class="text-xs font-semibold block text-zinc-200 group-hover:text-white">Скачать для печати</span>
+                                            <span class="text-[10px] text-zinc-500">Готовый тест в PDF</span>
+                                        </div>
+                                    </div>
+                                    <i class="fas fa-lock text-[10px] text-zinc-600 pr-1 group-hover:text-zinc-400 transition-colors"></i>
                                 </button>
-                                <button type="button" onclick="openRegisterModal('pdf')" class="flex items-center justify-center gap-2 py-3 rounded-xl bg-[#18171A] border border-white/5 text-xs font-medium text-gray-400 hover:text-white spring-btn">
-                                    <i class="fas fa-file-pdf text-gray-500"></i> PDF
-                                </button>
+
+                                <!-- Акцентная кнопка на всю ширину -->
+                                <div class="pt-2 border-t border-white/5">
+                                    <a href="{% url 'take_test' survey_id %}" 
+                                        class="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-indigo-600/10 hover:bg-indigo-600 border border-indigo-500/20 hover:border-indigo-500 text-xs font-semibold text-indigo-400 hover:text-white transition-all spring-btn group">
+                                        <i class="fas fa-arrow-right text-[10px] transition-transform group-hover:translate-x-0.5"></i>
+                                        <span>Пройти тестирование</span>
+                                    </a>
+                                </div>
                             </div>
-                            <p class="text-[10px] text-gray-500 text-center font-mono-nums pt-1">
-                                Сохраните тест для доступа ко всем опциям
-                            </p>
                         {% endif %}
                     </div>
 
@@ -519,7 +600,7 @@
                                 </div>
                                 <span class="text-[11px] text-gray-500">
                                     {% if username == 0 %}
-                                        Ключи и решения к тесту
+                                        Показать правильные ответы
                                     {% else %}
                                         Открыть все правильные ответы
                                     {% endif %}
@@ -579,7 +660,7 @@
                                         <i class="fas fa-lock text-[9px] text-amber-400/80" title="Только для автора"></i>
                                     {% endif %}
                                 </div>
-                                <span class="text-[11px] text-gray-500">Нейросеть составит новые</span>
+                                <span class="text-[11px] text-gray-500">Сгенерировать другой вариант</span>
                             </div>
 
                             {% if username != 0 and is_creator %}
@@ -715,7 +796,7 @@
                 <div class="flex items-start justify-between pb-3 border-b border-white/10">
                     <div>
                         <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-mono-nums font-semibold mb-2">
-                            <span>+3 ТЕСТА БЕСПЛАТНО</span>
+                            <span>+5 ТЕСТОВ БЕСПЛАТНО</span>
                         </div>
                         <h3 id="reg-modal-title" class="text-lg font-bold text-white tracking-tight">Сохраните ваш тест</h3>
                         <p id="reg-modal-desc" class="text-xs text-gray-400 mt-1 leading-relaxed">
@@ -747,7 +828,7 @@
                             <input type="checkbox" id="reg-terms" name="terms" required 
                                    class="mt-0.5 rounded border-white/20 bg-[#18171A] text-indigo-600 focus:ring-0 w-4 h-4 flex-shrink-0">
                             <span>
-                                Согласен на обработку персональных данных (152-ФЗ) и принимаю условия 
+                                Даю согласие на обработку персональных данных в соответствии с<a href="/docs/privacy-policy" target="_blank" class="text-indigo-400 underline">Политикой конфиденциальности</a> и принимаю условия 
                                 <a href="/docs/public-offer" target="_blank" class="text-indigo-400 underline">Публичной оферты</a>.
                             </span>
                         </label>
@@ -871,7 +952,7 @@
 
         let currentQuestionType = 'single';
         let isEditMode = false;
-        let guestAnswerCounter = 0; // Счетчик попыток клика гостя для мягкого пуша
+        let guestAnswerCounter = 0;
 
         function getCookie(name) {
             let cookieValue = null;
@@ -895,7 +976,7 @@
         const MODAL_PRESETS = {
             banner: {
                 title: "Сохраните созданный тест",
-                desc: "Зарегистрируйтесь, чтобы закрепить тест за своим аккаунтом и получить ещё 3 теста в подарок."
+                desc: "Зарегистрируйтесь, чтобы закрепить тест за своим аккаунтом и получить ещё 5 тестов в подарок."
             },
             take_test: {
                 title: "Запуск теста для прохождения",
@@ -907,7 +988,7 @@
             },
             pdf: {
                 title: "Выгрузка бланка в PDF",
-                desc: "Зарегистрируйтесь, чтобы скачать сверстанный тест с отдельным листом ответов для печати."
+                desc: "Зарегистрируйтесь, чтобы скачать готовый к печати тест."
             },
             qr: {
                 title: "QR-код для аудитории",
@@ -1090,7 +1171,7 @@
                                        .removeClass('bg-white/5 border border-white/10 text-gray-400')
                                        .addClass('bg-emerald-500/30 text-emerald-300 font-bold');
                             $correctRow.find('.opt-icon').attr('class', 'opt-icon fas fa-check text-[9px]');
-                            $correctRow.find('.opt-label').text('Верный').removeClass('hidden').addClass('text-emerald-400').show();
+                            $correctRow.find('.opt-label').text('').removeClass('hidden').addClass('text-emerald-400').show();
                         }
                     }
 
@@ -1129,13 +1210,23 @@
                     }
                 }
 
-                // Крючок для неавторизованного гостя: мягкий пуш в Dynamic Island после 2 кликов
+                // Интеллектуальный крючок в Dynamic Island
                 if (!isUserAuthenticated) {
                     guestAnswerCounter++;
-                    if (guestAnswerCounter === 2) {
+                    let question_count = {{questions|length}};
+                    
+                    if (guestAnswerCounter === 1) {
+                        Island.info('Ответы сверяются на лету', 'fa-bolt', 3000);
+                    } else if (guestAnswerCounter === question_count) {
                         setTimeout(() => {
-                            Island.info('Отличный тест! Сохраните его, чтобы отправить ученикам', 'fa-sparkles', 4500);
-                        }, 500);
+                            Island.notify('Тест проверен. Нажмите, чтобы сохранить', 'info', 'fa-floppy-disk', 6000);
+                            
+                            const $island = $('#dynamic-island');
+                            $island.addClass('cursor-pointer ring-2 ring-indigo-500/50').off('click.guestSave').one('click.guestSave', function() {
+                                openRegisterModal('island');
+                                $island.removeClass('cursor-pointer ring-2 ring-indigo-500/50');
+                            });
+                        }, 400);
                     }
                 }
             });

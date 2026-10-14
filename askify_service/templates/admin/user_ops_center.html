@@ -46,14 +46,14 @@
 
     <header class="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div class="flex items-center gap-4">
-            <h1 class="text-2xl font-extrabold tracking-tight text-slate-50">Ситуационный центр Летучки</h1>
-            
-            <!-- ТАБЛЕТКА НАВИГАЦИИ (3 РАЗДЕЛА) -->
             <div class="flex items-center gap-1 rounded-2xl bg-[#111827] border border-[#1E293B] p-0.5">
                 <a href="{% url 'stats2975' %}" class="px-3 py-1.5 text-xs font-medium rounded-xl text-slate-400 hover:text-slate-200 transition">Дашборд</a>
                 <a href="{% url 'user_ops_center' %}" class="px-3 py-1.5 text-xs font-medium rounded-xl bg-[#5E6CF8] text-white">CRM</a>
                 <a href="/ops/surveys/" class="px-3 py-1.5 text-xs font-medium rounded-xl text-slate-400 hover:text-slate-200 transition">Тесты</a>
+                <a href="{% url 'admin_traffic_live' %}" class="px-3 py-1.5 text-xs font-medium rounded-xl text-slate-400 hover:text-slate-200 transition">Пульс</a>
             </div>
+
+            <h1 class="text-2xl font-extrabold tracking-tight text-slate-50">СЦ / Управление юзерами</h1>
         </div>
 
         <div class="flex items-center gap-3">
