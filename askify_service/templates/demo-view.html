@@ -86,10 +86,10 @@
         /* DYNAMIC ISLAND */
         .island-capsule {
             background: rgba(24, 24, 36, 0.75);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
             border: 1px solid rgba(255, 255, 255, 0.12);
-            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.8);
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.25);
             border-radius: 9999px;
             transition: 
                 max-width 0.45s var(--spring-bounce),
@@ -231,7 +231,7 @@
     <div class="lg:pl-28 flex-grow flex flex-col">
 
         <!-- DYNAMIC ISLAND HEADER -->
-        <header class="sticky top-4 z-40 w-full px-4 flex justify-center pointer-events-none">
+        <header class="sticky top-4 z-40 px-4 flex justify-center pointer-events-none">
             <div id="dynamic-island" class="island-capsule mode-header pointer-events-auto flex items-center justify-center relative overflow-hidden min-h-[48px]">
                 
                 <!-- 1. ДЕФОЛТНЫЙ СЛОЙ: ЭЛЕМЕНТЫ УПРАВЛЕНИЯ ТЕСТОМ -->
@@ -507,7 +507,7 @@
                                 <button type="button" 
                                         data-action="share" 
                                         data-share-url="{% url 'take_test' survey_id %}" 
-                                        class="w-full flex items-center justify-center gap-2.5 py-3.5 px-4 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-semibold shadow-lg shadow-indigo-600/25 transition-all spring-btn">
+                                        class="w-full mb-4 flex items-center justify-center gap-2.5 py-3.5 px-4 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-semibold shadow-lg shadow-indigo-600/25 transition-all spring-btn">
                                     <i class="fas fa-link text-xs"></i>
                                     <span>Скопировать ссылку на тест</span>
                                 </button>
@@ -530,8 +530,8 @@
                             <div class="h-px bg-white/5 my-1"></div>
 
                             <a href="{% url 'take_test' survey_id %}" 
-                            class="w-full flex items-center justify-center gap-2 py-2 text-zinc-400 hover:text-white transition-colors text-xs font-medium">
-                                <i class="fas fa-play text-[10px] text-zinc-500"></i>
+                            class="w-full flex items-center justify-center gap-2 py-2 text-indigo-400 hover:text-white transition-colors border border-white/10 rounded-xl hover:border-white/10 text-xs font-medium">
+                                <i class="fas fa-play text-[10px] text-indigo-500"></i>
                                 <span>Пройти тестирование</span>
                             </a>
 
@@ -678,8 +678,9 @@
                         </div>
 
                         {% if username != 0 and username == author %}
-                        <div class="pt-1">
+                        <div class="w-full flex items-center justify-center gap-2 py-2 text-indigo-400 hover:text-white transition-colors text-xs font-medium">
                             <button onclick="openDeleteModal('{{ survey_id }}', '{{ title|escapejs }}')" class="w-full py-2.5 rounded-xl text-xs font-semibold text-gray-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors text-center block">
+                                <i class="fas fa-play text-[10px] text-indigo-500"></i>
                                 Удалить этот тест
                             </button>
                         </div>
@@ -707,7 +708,7 @@
                             </div>
                         </div>
 
-                        <div class="space-y-3.5 relative {% if subscription_level == 0 %}filter blur-sm opacity-40 pointer-events-none select-none{% endif %}">
+                        <div id="" class="space-y-3.5 relative {% if subscription_level == 0 %}filter blur-sm opacity-40 pointer-events-none select-none{% endif %}">
                             <div class="grid grid-cols-2 gap-2 pt-1">
                                 <div class="p-3 rounded-2xl bg-[#16151A] border border-white/5 space-y-1">
                                     <span class="text-[10px] text-gray-500 uppercase tracking-wider block font-semibold">Сдано тестов</span>
@@ -1113,7 +1114,6 @@
         ========================================================================== */
         function initInteractiveQuizPreview() {
             $('.options-container').on('click', '.option-row', function(e) {
-                // Если включен режим массовой правки — клики не трогаем
                 if (isEditMode) return;
 
                 const $row = $(this);
@@ -1121,13 +1121,11 @@
                 const qType = $article.attr('data-question-type') || 'single';
                 const isMasterShow = $('#answersToggle').is(':checked');
 
-                // Если мастер-показ ответов уже открыт автором — просто визуал
                 if (isMasterShow) return;
 
                 const isCorrect = ($row.attr('data-is-correct') === 'true');
 
                 if (qType === 'single') {
-                    // 1. ОДИН ПРАВИЛЬНЫЙ ОТВЕТ: сбрасываем предыдущие клики в этом вопросе
                     $article.find('.option-row').each(function() {
                         const $r = $(this);
                         $r.removeClass('bg-emerald-500/15 border-emerald-500/40 text-emerald-200 bg-rose-500/15 border-rose-500/40 text-rose-200')

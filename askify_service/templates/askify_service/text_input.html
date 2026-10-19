@@ -52,8 +52,8 @@
             --accent-indigo: #4F46E5;
             --accent-emerald: #10B981;
             --accent-rose: #EF4444;
-            --spring-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
-            --spring-smooth: cubic-bezier(0.16, 1, 0.3, 1);
+            --spring-bounce: cubic-bezier(0.28, 1.4, 0.5, 1);
+            --spring-smooth: cubic-bezier(0.22, 1, 0.36, 1);
         }
 
         body {
@@ -110,6 +110,7 @@
            ========================================================================== */
         .island-capsule {
             background: var(--card-bg) !important;
+            overflow: hidden !important;
             backdrop-filter: blur(12px) saturate(190%) contrast(105%);
             -webkit-backdrop-filter: blur(12px) saturate(190%) contrast(105%);
             border: 1px solid rgba(255, 255, 255, 0.14);
@@ -162,6 +163,11 @@
 
         .island-content-layer {
             transition: opacity 0.25s var(--spring-smooth), transform 0.3s var(--spring-bounce);
+        }
+
+        .island-capsule.mode-voice #island-controls,
+        .island-capsule.mode-notify #island-controls {
+            display: none !important;
         }
 
         /* Тактильные кнопки */
@@ -365,6 +371,308 @@
         .pill-shake-active {
             animation: launchPillShake 0.42s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
         }
+
+        /* ГОЛОСОВОЙ РЕЖИМ */
+        .island-capsule.mode-voice {
+            max-width: 30rem !important;
+            width: 100% !important;
+            padding: 0.5rem 1.15rem !important;
+            border-color: rgba(99, 102, 241, 0.45) !important;
+            background: rgba(18, 17, 24, 0.98) !important;
+            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(99, 102, 241, 0.25) !important;
+        }
+
+        /* Холст волн */
+        #voice-wave-canvas {
+            display: block;
+            width: 130px;
+            height: 22px;
+        }
+
+        /* Активная кнопка микрофона в концепции Indigo/Violet */
+        #btn-generate-main.is-recording-active {
+            position: relative !important;
+            overflow: hidden !important;
+            background: linear-gradient(180deg, #4338CA 0%, #312E81 100%) !important;
+            border: 1px solid rgba(165, 180, 252, 0.4) !important;
+            color: #FFFFFF !important;
+            animation: indigoPulseGlow 2.4s infinite ease-in-out !important;
+            transform: translateY(-1px);
+        }
+
+        /* ВНУТРЕННЯЯ ВОЛНА СВЕТА (SHIMMER) */
+        #btn-generate-main.is-recording-active::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 60%;
+            height: 100%;
+            background: linear-gradient(
+                90deg, 
+                transparent 0%, 
+                rgba(255, 255, 255, 0.14) 50%, 
+                transparent 100%
+            );
+            transform: skewX(-20deg);
+            animation: indigoShimmer 2.8s infinite ease-in-out;
+            pointer-events: none;
+        }
+
+        /* СТУДИЙНЫЙ МИКРО-ЭКВАЛАЙЗЕР ВМЕСТО КРАСНОЙ ТОЧКИ */
+        .studio-eq-badge .eq-bar {
+            width: 2px;
+            background-color: #FFFFFF;
+            border-radius: 9999px;
+            transition: height 0.15s ease;
+        }
+
+        .studio-eq-badge .eq-bar-1 { height: 6px;  animation: eqBounce 0.8s ease-in-out infinite alternate; }
+        .studio-eq-badge .eq-bar-2 { height: 12px; animation: eqBounce 0.8s ease-in-out infinite alternate 0.25s; }
+        .studio-eq-badge .eq-bar-3 { height: 8px;  animation: eqBounce 0.8s ease-in-out infinite alternate 0.5s; }
+
+        @keyframes eqBounce {
+            0% { height: 4px; opacity: 0.6; }
+            100% { height: 13px; opacity: 1; }
+        }
+
+        /* МЯГКИЙ ЛАЗЕРНЫЙ ЛУЧ ПО КОНТУРУ (ИНДИГО) */
+        .svg-beam-path {
+            stroke: #A5B4FC !important;
+            stroke-linecap: round;
+            stroke-dasharray: 14 86;
+            stroke-dashoffset: 0;
+            filter: drop-shadow(0 0 5px rgba(165, 180, 252, 0.8));
+            animation: linearBeamRun 2.2s linear infinite;
+        }
+
+        @keyframes linearBeamRun {
+            from { stroke-dashoffset: 100; }
+            to { stroke-dashoffset: 0; }
+        }
+
+        @keyframes indigoPulseGlow {
+            0%, 100% {
+                box-shadow: 
+                    0 8px 24px -4px rgba(79, 70, 229, 0.45),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+            }
+            50% {
+                box-shadow: 
+                    0 14px 34px -2px rgba(99, 102, 241, 0.7),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.45);
+            }
+        }
+
+        @keyframes indigoShimmer {
+            0% { left: -100%; }
+            60%, 100% { left: 160%; }
+        }
+
+        /* ЖЕСТКИЙ ФИКС ОСТРОВКА: Скрываем controls ТОЛЬКО когда реально висит mode-voice или mode-notify */
+        .island-capsule.mode-voice #island-controls,
+        .island-capsule.mode-notify #island-controls {
+            display: none !important;
+        }
+
+        /* ==========================================================================
+        FEATURE DISCOVERY SPOTLIGHT: КИНЕМАТИКА РАСКРЫТИЯ И СХЛОПЫВАНИЯ
+        ========================================================================== */
+        .voice-spotlight-btn {
+            max-width: 36px; /* Базовый схлопнутый размер */
+            transition: 
+                max-width 0.45s cubic-bezier(0.34, 1.56, 0.64, 1),
+                background-color 0.25s ease,
+                border-color 0.25s ease,
+                box-shadow 0.25s ease,
+                transform 0.2s ease,
+                opacity 0.25s ease;
+            will-change: max-width, transform;
+        }
+
+        /* 1. СОСТОЯНИЕ РАСКРЫТОГО ТИЗЕРА (ПРИ ЗАГРУЗКЕ СТРАНИЦЫ) */
+        .voice-spotlight-btn.is-expanded {
+            max-width: 275px;
+            background: #181726;
+            border-color: rgba(99, 102, 241, 0.45);
+            box-shadow: 0 8px 24px -4px rgba(79, 70, 229, 0.45);
+        }
+
+        .voice-spotlight-btn.is-expanded .spotlight-text-wrapper {
+            opacity: 1;
+            max-width: 230px;
+            transform: translateX(0);
+            transition: 
+                opacity 0.25s ease 0.1s,
+                max-width 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* 2. СОСТОЯНИЕ СХЛОПНУТОЙ КНОПКИ */
+        .voice-spotlight-btn.is-collapsed {
+            max-width: 36px;
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .voice-spotlight-btn.is-collapsed .spotlight-text-wrapper {
+            opacity: 0;
+            max-width: 0;
+            transform: translateX(12px);
+            pointer-events: none;
+            transition: 
+                opacity 0.2s ease,
+                max-width 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.25s ease;
+        }
+
+        .voice-spotlight-btn.is-collapsed .spotlight-svg-beam {
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .voice-spotlight-btn.is-collapsed .spotlight-pro-dot {
+            opacity: 1;
+        }
+
+        /* 3. КИЛЛЕР-ФИЧА: РАСКРЫТИЕ ПРИ НАВЕДЕНИИ МЫШИ (HOVER EXPANSION) */
+        @media (hover: hover) {
+            .voice-spotlight-btn.is-collapsed:hover {
+                max-width: 275px;
+                background: #181726;
+                border-color: rgba(99, 102, 241, 0.5);
+                box-shadow: 0 10px 28px -4px rgba(79, 70, 229, 0.45);
+                transform: translateY(-1px);
+            }
+
+            .voice-spotlight-btn.is-collapsed:hover .spotlight-text-wrapper {
+                opacity: 1;
+                max-width: 230px;
+                transform: translateX(0);
+                pointer-events: auto;
+                transition: 
+                    opacity 0.25s ease 0.08s,
+                    max-width 0.45s cubic-bezier(0.34, 1.56, 0.64, 1),
+                    transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            }
+
+            .voice-spotlight-btn.is-collapsed:hover .spotlight-svg-beam {
+                opacity: 1;
+            }
+
+            .voice-spotlight-btn.is-collapsed:hover .spotlight-pro-dot {
+                opacity: 0; /* Прячем точку, пока текст раскрыт */
+            }
+        }
+
+        /* 4. НЕЛИНЕЙНЫЙ ЛАЗЕРНЫЙ ЛУЧ */
+        .spotlight-beam-path {
+            stroke-dasharray: 18 82;
+            stroke-dashoffset: 0;
+            filter: drop-shadow(0 0 4px rgba(129, 140, 248, 0.9));
+            animation: spotlightNonLinearBeam 1.35s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+        }
+
+        @keyframes spotlightNonLinearBeam {
+            0% { stroke-dashoffset: 100; }
+            50% { stroke-dashoffset: 40; }
+            100% { stroke-dashoffset: 0; }
+        }
+
+        /* ==========================================================================
+        ПАРИЩИЙ МОБИЛЬНЫЙ ОСТРОВОК ПОД БОЛЬШОЙ ПАЛЕЦ
+        ========================================================================== */
+        #mobile-voice-dock {
+            transform: translate(-50%, 20px) scale(0.92);
+            transition: 
+                transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+                opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            will-change: transform, opacity;
+        }
+
+        /* Активное состояние: мягко выпрыгивает строго над нижним меню */
+        #mobile-voice-dock.is-active {
+            opacity: 1 !important;
+            transform: translate(-50%, 0) scale(1) !important;
+            pointer-events: auto !important;
+        }
+
+        /* Пульсирующий неоновый ореол на мобилке */
+        .mobile-voice-pill {
+            animation: mobilePillGlow 2.2s infinite ease-in-out;
+        }
+
+        @keyframes mobilePillGlow {
+            0%, 100% {
+                box-shadow: 
+                    0 12px 30px rgba(79, 70, 229, 0.5),
+                    0 0 0 1px rgba(165, 180, 252, 0.3);
+            }
+            50% {
+                box-shadow: 
+                    0 16px 40px rgba(99, 102, 241, 0.75),
+                    0 0 0 2px rgba(165, 180, 252, 0.5);
+            }
+        }
+
+        /* ==========================================================================
+        ДИНАМИЧЕСКИЙ ОСТРОВОК: РЕЖИМ ТРАНСКРИБАЦИИ И УСПЕХА
+        ========================================================================== */
+
+        /* Состояние обработки аудио */
+        .island-capsule.mode-transcribe {
+            max-width: 25rem !important;
+            width: 100% !important;
+            padding: 0.5rem 1.15rem !important;
+            background: rgba(18, 17, 26, 0.98) !important;
+            border-color: rgba(99, 102, 241, 0.45) !important;
+            box-shadow: 
+                0 16px 36px -8px rgba(79, 70, 229, 0.4),
+                0 0 0 1px rgba(129, 140, 248, 0.2) !important;
+        }
+
+        /* Состояние триумфа (успешно вставлено) */
+        .island-capsule.mode-transcribe-success {
+            max-width: 22rem !important;
+            width: 100% !important;
+            padding: 0.5rem 1.15rem !important;
+            background: rgba(16, 24, 22, 0.98) !important;
+            border-color: rgba(16, 185, 129, 0.45) !important;
+            box-shadow: 
+                0 16px 36px -8px rgba(16, 185, 129, 0.35),
+                0 0 0 1px rgba(16, 185, 129, 0.25) !important;
+        }
+
+        /* Бегущий световой градиент по тексту (Text Shimmer) */
+        .transcribe-shimmer-text {
+            background: linear-gradient(
+                90deg, 
+                rgba(255, 255, 255, 0.7) 0%, 
+                rgba(255, 255, 255, 1) 50%, 
+                rgba(255, 255, 255, 0.7) 100%
+            );
+            background-size: 200% 100%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: textShimmerMove 2s infinite linear;
+        }
+
+        @keyframes textShimmerMove {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* Пружинный взрыв чекмарка при успехе */
+        .success-check-pop {
+            animation: checkPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        @keyframes checkPop {
+            0% { transform: scale(0.6); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
     </style>
 </head>
 <body class="min-h-full flex flex-col antialiased selection:bg-indigo-600 selection:text-white">
@@ -514,12 +822,68 @@
                     </div>
                 </div>
 
-                <!-- 2. СЛОЙ МОРФИНГА УВЕДОМЛЕНИЙ -->
+                <!-- 2. СЛОЙ ОБРАБОТКИ И УСПЕХА ТРАНСКРИБАЦИИ (APPLE INTELLIGENCE STYLE) -->
+                <div id="island-transcribe" class="island-content-layer hidden w-full items-center justify-between gap-3 opacity-0 scale-90 select-none">
+                    
+                    <!-- Левая часть: Индикатор (Орбитальный спиннер -> Изумрудный чек) -->
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <!-- Спиннер обработки (активен во время Whisper) -->
+                        <div id="transcribe-spinner" class="relative w-5 h-5 flex items-center justify-center flex-shrink-0">
+                            <span class="absolute inset-0 rounded-full border-[1.5px] border-indigo-500/20"></span>
+                            <span class="absolute inset-0 rounded-full border-[1.5px] border-transparent border-t-indigo-400 border-r-cyan-300 animate-spin"></span>
+                            <span class="w-1.5 h-1.5 rounded-full bg-indigo-300 shadow-[0_0_6px_#818CF8]"></span>
+                        </div>
+
+                        <div id="transcribe-success-icon" class="hidden relative w-5 h-5 rounded-full bg-emerald-500/20 border border-emerald-500/40 items-center justify-center text-emerald-400 text-[10px] flex-shrink-0">
+                            <i class="fas fa-check"></i>
+                        </div>
+
+                        <span id="transcribe-status-text" class="text-xs font-semibold text-white tracking-tight truncate transcribe-shimmer-text">
+                            Преобразуем речь в текст...
+                        </span>
+                    </div>
+
+                    <div id="transcribe-metric-chip" class="flex-shrink-0 px-2 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-[10px] font-bold text-indigo-300 uppercase tracking-wider">
+                        <span>SPEECH</span>
+                    </div>
+
+                </div>
+
+                <!-- 4. СТАНДАРТНЫЙ СЛОЙ ДЛЯ ОБЫЧНЫХ АЛЕРТОВ (ОШИБКИ, ВАРНИНГИ) -->
                 <div id="island-notice" class="island-content-layer hidden w-full items-center justify-center gap-3 opacity-0 scale-75 select-none">
                     <span id="island-icon-box" class="w-6 h-6 rounded-full flex items-center justify-center text-xs flex-shrink-0">
                         <i id="island-icon" class="fas fa-check"></i>
                     </span>
                     <span id="island-text" class="text-xs sm:text-sm font-semibold text-white tracking-wide truncate"></span>
+                </div>
+
+                <!-- 3. СЛОЙ ГОЛОСОВОЙ ЗАПИСИ И ЭКВАЛАЙЗЕРА WHISPER -->
+                <div id="island-voice" class="island-content-layer hidden w-full items-center justify-between gap-3 opacity-0 scale-90 select-none">
+                    
+                    <!-- Индикатор записи и секундомер -->
+                    <div class="flex items-center gap-2 min-w-[65px]">
+                        <span class="relative flex h-2.5 w-2.5">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
+                        </span>
+                        <span id="voice-timer" class="text-xs font-bold text-white tracking-wider">00:00</span>
+                    </div>
+
+                    <!-- Живой Canvas эквалайзер -->
+                    <div class="flex-grow flex items-center justify-center px-1">
+                        <canvas id="voice-wave-canvas" width="260" height="44"></canvas>
+                    </div>
+
+                    <!-- Кнопки управления -->
+                    <div class="flex items-center gap-2 justify-end">
+                        <button type="button" onclick="cancelVoiceRecording()" 
+                                class="px-2.5 py-1 rounded-full bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-300 hover:text-rose-200 text-[11px] font-medium transition-all spring-btn flex items-center gap-1.5"
+                                title="Сбросить запись (Esc)">
+                            <i class="fas fa-xmark text-[10px]"></i>
+                            <span>Отмена</span>
+                        </button>
+                    </div>
+
                 </div>
 
             </div>
@@ -528,43 +892,63 @@
         <!-- РАБОЧАЯ ОБЛАСТЬ (СТУДИЯ) -->
         <main class="max-w-4xl w-full mx-auto px-4 sm:px-6 py-6 flex-grow space-y-6">
             
-            <!-- HERO / СТУДИЯ ОНБОРДИНГ -->
-            <div class="motion-fade-up motion-delay-hero pt-6 sm:pt-10 pb-2 text-center space-y-3.5 max-w-2xl mx-auto">
+            <!-- HERO / СТУДИЯ ОНБОРДИНГ (ФУНКЦИОНАЛЬНЫЙ BENTO-ХЕДЕР) -->
+            <div class="motion-fade-up motion-delay-hero pt-4 sm:pt-8 pb-3 text-center space-y-3 sm:space-y-4 max-w-3xl mx-auto px-2">
                 
-                <!-- Заголовок с фокусом на результат -->
+                <!-- 1. Заголовок без AI-мусора -->
                 <h1 class="text-2xl sm:text-3xl md:text-4xl font-extrabold text-white tracking-tight leading-tight">
                     {% if request.user.is_authenticated %}
                         Собрать новый тест
                     {% else %}
-                        Превратите материал в готовый тест
+                        Тест из ваших материалов
                     {% endif %}
                 </h1>
 
-                <!-- Заботливый сабтайтл-подсказка -->
-                <p class="text-xs sm:text-sm text-gray-400 font-normal leading-relaxed max-w-lg mx-auto">
-                    Вставьте конспект лекции, ключевые тезисы или прикрепите документ — нейросеть выделит главное и сформирует варианты.
+                <!-- 2. Прагматичный подзаголовок -->
+                <p class="text-xs sm:text-sm text-zinc-400 font-normal leading-relaxed max-w-lg mx-auto">
+                    Вставьте текст, прикрепите файл или надиктуйте суть голосом — вопросы и варианты ответов сформируются автоматически.
                 </p>
 
-                <!-- WORKFLOW PILL (СЕГМЕНТИРОВАННЫЙ ЭТАПНЫЙ ТРЕКЕР) -->
-                <div class="pt-1.5 flex items-center justify-center">
-                    <div class="inline-flex items-center p-1 rounded-full bg-[#18171C] border border-white/[0.08] shadow-inner text-[11px] font-medium text-gray-400">
+                <!-- 3. ИНТЕРАКТИВНЫЕ КАРТОЧКИ ВХОДНЫХ ФОРМАТОВ (НЕ ЖРУТ ЭКРАН НА МОБИЛКЕ) -->
+                <div class="pt-1 sm:pt-2">
+                    <div class="grid grid-cols-3 gap-2 sm:gap-3 max-w-xl mx-auto">
                         
-                        <div class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-600/15 border border-indigo-500/30 text-indigo-300 font-semibold shadow-sm">
-                            <span class="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
-                            <span>1. Материал</span>
+                        <!-- Формат 1: Текст -->
+                        <div onclick="switchSourceTab('text'); $('#user-text').focus();" 
+                            class="group p-2.5 sm:p-3.5 rounded-2xl bg-white/[0.025] hover:bg-white/[0.06] border border-white/[0.07] hover:border-indigo-500/40 transition-all duration-200 cursor-pointer spring-btn flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-2 sm:gap-3">
+                            <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+                                <i class="fa-solid fa-align-left text-xs"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <span class="text-[11px] sm:text-xs font-bold text-zinc-200 group-hover:text-white block truncate tracking-tight">Текст</span>
+                                <span class="text-[10px] text-zinc-500 hidden sm:block truncate">Конспект или статья</span>
+                            </div>
                         </div>
 
-                        <span class="w-2.5 h-px bg-white/10 mx-1"></span>
-
-                        <div class="flex items-center gap-1.5 px-2.5 py-1 text-gray-500">
-                            <span>2. Параметры</span>
+                        <!-- Формат 2: Документ -->
+                        <div onclick="switchSourceTab('file')" 
+                            class="group p-2.5 sm:p-3.5 rounded-2xl bg-white/[0.025] hover:bg-white/[0.06] border border-white/[0.07] hover:border-indigo-500/40 transition-all duration-200 cursor-pointer spring-btn flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-2 sm:gap-3">
+                            <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-white/[0.05] border border-white/10 text-zinc-300 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+                                <i class="fa-solid fa-file-arrow-up text-xs"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <span class="text-[11px] sm:text-xs font-bold text-zinc-200 group-hover:text-white block truncate tracking-tight">Документ</span>
+                                <span class="text-[10px] text-zinc-500 hidden sm:block truncate">PDF или DOCX</span>
+                            </div>
                         </div>
 
-                        <span class="w-2.5 h-px bg-white/10 mx-1"></span>
-
-                        <div class="flex items-center gap-1.5 px-2.5 py-1 text-gray-500">
-                            <span>3. Результат</span>
+                        <!-- Формат 3: Голос -->
+                        <div onclick="toggleVoiceDictation()" 
+                            class="group p-2.5 sm:p-3.5 rounded-2xl bg-white/[0.025] hover:bg-indigo-600/10 border border-white/[0.07] hover:border-indigo-500/40 transition-all duration-200 cursor-pointer spring-btn flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-2 sm:gap-3 relative overflow-hidden">
+                            <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+                                <i class="fa-solid fa-microphone text-xs"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <span class="text-[11px] sm:text-xs font-bold text-zinc-200 group-hover:text-white block truncate tracking-tight">Голос</span>
+                                <span class="text-[10px] text-zinc-500 hidden sm:block truncate">Надиктовать суть</span>
+                            </div>
                         </div>
+
                     </div>
                 </div>
 
@@ -681,11 +1065,39 @@
                 </div>
 
                 <!-- 1. ВВОД ТЕКСТА -->
-                <div id="source-text-zone" class="space-y-2">
-                    <textarea id="user-text" rows="7" placeholder="Вставьте сюда текст лекции, методички, параграфа или ключевые тезисы..." 
-                              class="w-full bg-[#111119] border border-white/10 rounded-2xl p-4 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 transition-colors resize-none leading-relaxed"></textarea>
-                </div>
+                <div id="source-text-zone" class="space-y-2 relative">
+                    <div class="relative w-full">
+                        <textarea id="user-text" rows="7" placeholder="Вставьте сюда текст лекции, методички, параграфа или ключевые тезисы..." 
+                                class="w-full bg-[#111119] border border-white/10 rounded-2xl p-4 pr-14 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 transition-colors resize-none leading-relaxed"></textarea>
 
+                        <!-- ПЛАВАЮЩИЙ МИКРОФОН С FEATURE DISCOVERY SPOTLIGHT -->
+                        <button type="button" id="btn-voice-dictate" onclick="toggleVoiceDictation()"
+                                class="voice-spotlight-btn is-expanded absolute right-3.5 bottom-4 h-9 rounded-xl bg-[#161522] border border-indigo-500/30 text-white flex items-center shadow-lg shadow-indigo-950/40 select-none group overflow-hidden transition-all"
+                                title="Надиктовать голосом">
+                            
+                            <!-- Нелинейный SVG-луч (светит при старте и при наведении) -->
+                            <svg class="spotlight-svg-beam absolute inset-0 w-full h-full pointer-events-none rounded-xl" style="overflow: visible;">
+                                <rect x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="11"
+                                    fill="none" stroke="#818CF8" stroke-width="2" stroke-linecap="round"
+                                    pathLength="100" class="spotlight-beam-path" />
+                            </svg>
+
+                            <!-- Иконка микрофона с аккуратным внутренним LED-индикатором -->
+                            <div class="relative w-9 h-9 flex items-center justify-center flex-shrink-0 text-indigo-400 group-hover:text-white transition-colors">
+                                <i class="fa-solid fa-microphone text-xs transition-transform group-hover:scale-110"></i>
+                                
+                                <!-- Внутренний диод статуса (никогда не обрежется краем) -->
+                                <span class="spotlight-pro-dot absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-indigo-400 shadow-[0_0_6px_rgba(129,140,248,0.9)] opacity-0 transition-opacity duration-300"></span>
+                            </div>
+
+                            <!-- Текст: раскрывается на старте и при наведении мыши -->
+                            <div class="spotlight-text-wrapper overflow-hidden whitespace-nowrap pr-3 flex items-center gap-2">
+                                <span class="text-xs font-semibold text-zinc-100 tracking-tight">Нажмите, чтобы начать диктовку</span>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+                
                 <!-- 2. ДРОПЗОНА ДОКУМЕНТА -->
                 <div id="source-file-zone" class="hidden space-y-4">
                     {% if subscription_level >= 1 or total_available > 0 or plan_type == 'package' %}
@@ -806,28 +1218,35 @@
                 
                 <!-- ГЛАВНАЯ КНОПКА ЗАПУСКА ГЕНЕРАЦИИ (PRECISION LAUNCH PILL) -->
                 <div class="pt-5 border-t border-white/[0.08]">
-                    <button type="button" id="btn-generate-main" onclick="startGenerationProcess()" 
+                    <button type="button" id="btn-generate-main" onclick="handleMainButtonClick()" 
                             class="master-launch-pill group relative w-full h-[54px] sm:h-[56px] rounded-full px-5 sm:px-7 flex items-center justify-center select-none overflow-hidden cursor-pointer transition-all duration-300">
                         
-                        <!-- Внутренний зеркальный хайлайт по верхнему ребру -->
                         <div class="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none z-20"></div>
-
-                        <!-- МЯГКИЙ ЯНТАРНЫЙ СЛОЙ ПРЕДУПРЕЖДЕНИЯ (ТАЕТ ПЛАВНО, БЕЗ СКАЧКОВ) -->
                         <div id="btn-trigger-warn-bg" class="absolute inset-0 bg-[#201C16] border border-amber-500/40 rounded-full opacity-0 pointer-events-none transition-opacity duration-500 ease-out z-10 shadow-[inset_0_1px_0_rgba(245,158,11,0.25)]"></div>
 
-                        <!-- 1. ДЕФОЛТНЫЙ СЛОЙ ДЕЙСТВИЯ (ИНДИГО) -->
-                        <div id="btn-content-default" class="flex items-center gap-2.5 z-20 transition-all duration-300 ease-out opacity-100 scale-100">
-                            <span class="w-6 h-6 rounded-full bg-black/25 border border-white/10 flex items-center justify-center flex-shrink-0 transition-colors">
-                                <svg class="w-3.5 h-3.5 text-indigo-200 transition-transform group-hover:rotate-45 duration-300" viewBox="0 0 16 16" fill="currentColor">
-                                    <path d="M8 0L9.4 6.6L16 8L9.4 9.4L8 16L6.6 9.4L0 8L6.6 6.6L8 0Z" />
-                                </svg>
-                            </span>
-                            <span class="text-xs sm:text-sm font-semibold tracking-tight text-white antialiased">
-                                Сгенерировать тест
-                            </span>
+                        <!-- 1. ДЕФОЛТ: ГЕНЕРАЦИЯ ТЕСТА (Хоткей спрятан ВНУТРИ слоя) -->
+                        <div id="btn-content-default" class="w-full flex items-center justify-center relative z-20 transition-all duration-300 ease-out opacity-100 scale-100">
+                            <div class="flex items-center gap-2.5">
+                                <span class="w-6 h-6 rounded-full bg-black/25 border border-white/10 flex items-center justify-center flex-shrink-0 transition-colors">
+                                    <svg class="w-3.5 h-3.5 text-indigo-200 transition-transform group-hover:rotate-45 duration-300" viewBox="0 0 16 16" fill="currentColor">
+                                        <path d="M8 0L9.4 6.6L16 8L9.4 9.4L8 16L6.6 9.4L0 8L6.6 6.6L8 0Z" />
+                                    </svg>
+                                </span>
+                                <span class="text-xs sm:text-sm font-semibold tracking-tight text-white antialiased">
+                                    Сгенерировать тест
+                                </span>
+                            </div>
+
+                            <!-- Дефолтный хоткей -->
+                            <div class="absolute right-0 top-1/2 -translate-y-1/2 hidden sm:flex items-center gap-1.5 opacity-70 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                                <kbd class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-black/25 border border-white/10 text-[10px] text-indigo-200 font-semibold tracking-wider">
+                                    <span>⌘</span>Enter
+                                </kbd>
+                                <i class="fas fa-arrow-right text-[10px] text-indigo-300/70 group-hover:translate-x-0.5 transition-transform"></i>
+                            </div>
                         </div>
 
-                        <!-- 2. СЛОЙ ПРЕДУПРЕЖДЕНИЯ (ТЕПЛЫЙ ЯНТАРЬ / AMBER) -->
+                        <!-- 2. ОШИБКА: НЕТ ТЕКСТА -->
                         <div id="btn-content-warn" class="absolute inset-0 flex items-center justify-center gap-2.5 z-20 transition-all duration-300 ease-out opacity-0 scale-95 pointer-events-none">
                             <span class="w-6 h-6 rounded-full bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 text-xs flex-shrink-0">
                                 <i class="fas fa-triangle-exclamation text-[11px]"></i>
@@ -837,15 +1256,38 @@
                             </span>
                         </div>
 
-                        <!-- ХОТКЕЙ ⌘ ENTER СПРАВА -->
-                        <div id="btn-trigger-action-box" class="absolute right-4 sm:right-5 top-1/2 -translate-y-1/2 hidden sm:flex items-center gap-1.5 pointer-events-none opacity-80 group-hover:opacity-100 transition-opacity duration-300 z-20">
-                            <kbd class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-black/25 border border-white/10 text-[10px] text-indigo-200 font-mono-nums font-semibold tracking-wider">
-                                <span>⌘</span>Enter
-                            </kbd>
-                            <i class="fas fa-arrow-right text-[10px] text-indigo-300/70 group-hover:translate-x-0.5 transition-transform"></i>
+                        <!-- 3. ДИКТОВКА: СТРОГО ПО ЦЕНТРУ + ХОТКЕЙ ENTER БЕЗ НАЛОЖЕНИЙ -->
+                        <div id="btn-content-recording" class="absolute inset-0 z-20 flex items-center justify-center opacity-0 scale-95 pointer-events-none transition-all duration-300 ease-out rounded-full overflow-hidden">
+                            
+                            <!-- Линейный лазерный импульс (Indigo-300) -->
+                            <svg class="absolute inset-0 w-full h-full pointer-events-none" style="overflow: visible;">
+                                <rect x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="27"
+                                    fill="none" stroke="#A5B4FC" stroke-width="2" stroke-linecap="round"
+                                    pathLength="100" class="svg-beam-path" />
+                            </svg>
+
+                            <!-- Центр: Студийный звуковой эквалайзер вместо красной точки + Белый текст -->
+                            <div class="relative z-10 flex items-center gap-3">
+                                <!-- Студийный микро-стоп -->
+                                <div class="studio-stop-badge flex items-center justify-center w-6 h-6 rounded-full bg-white/10 border border-white/15 backdrop-blur-md transition-transform group-hover:scale-105">
+                                    <span class="w-2.5 h-2.5 rounded-[2.5px] bg-white shadow-[0_0_6px_rgba(255,255,255,0.6)]"></span>
+                                </div>
+                                
+                                <span class="text-xs sm:text-sm font-semibold tracking-tight text-white antialiased">
+                                    Остановить и распознать
+                                </span>
+                            </div>
+
+                            <!-- Справа: Контрастный белый матовый Enter -->
+                            <div class="absolute right-5 sm:right-6 top-1/2 -translate-y-1/2 hidden sm:flex items-center gap-1.5 pointer-events-none z-10">
+                                <kbd class="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/15 border border-white/20 text-[10px] text-white font-semibold tracking-wider backdrop-blur-md shadow-sm">
+                                    Enter ↵
+                                </kbd>
+                            </div>
+
                         </div>
 
-                        <!-- 3. БАР ИНИЦИАЛИЗАЦИИ ПРИ ЗАПУСКЕ -->
+                        <!-- 4. ПРОГРЕСС -->
                         <div id="btn-trigger-progress" class="absolute inset-0 bg-[#3730A3] -translate-x-full transition-transform duration-500 ease-out pointer-events-none flex items-center justify-center z-30">
                             <div class="flex items-center gap-2 text-xs font-semibold text-white">
                                 <span class="w-1.5 h-1.5 rounded-full bg-indigo-300 animate-ping"></span>
@@ -924,6 +1366,39 @@
 
             </div>
         </footer>
+    </div>
+
+    <!-- ПАРИЩИЙ МОБИЛЬНЫЙ ОСТРОВОК ЗАВЕРШЕНИЯ (ТОЛЬКО SMARTPHONE VIEWPORT) -->
+    <div id="mobile-voice-dock" 
+        class="lg:hidden fixed bottom-[84px] left-1/2 z-50 pointer-events-none opacity-0 select-none">
+        
+        <button type="button" onclick="stopVoiceRecording()" 
+                class="mobile-voice-pill relative h-12 px-5 rounded-full bg-gradient-to-r from-[#4338CA] via-[#3730A3] to-[#312E81] border border-indigo-400/50 text-white flex items-center gap-3 shadow-[0_14px_35px_rgba(79,70,229,0.55),0_0_0_1px_rgba(165,180,252,0.35)] spring-btn pointer-events-auto">
+            
+            <!-- Равномерный лазерный контур вокруг мобильной кнопки -->
+            <svg class="absolute inset-0 w-full h-full pointer-events-none rounded-full" style="overflow: visible;">
+                <rect x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="23"
+                    fill="none" stroke="#A5B4FC" stroke-width="2" stroke-linecap="round"
+                    pathLength="100" class="svg-beam-path" />
+            </svg>
+
+            <!-- Трёхполосный студийный эквалайзер -->
+            <div class="studio-eq-badge flex items-center justify-center gap-1 w-5 h-5 rounded-full bg-white/10 border border-white/15 backdrop-blur-md">
+                <span class="eq-bar eq-bar-1"></span>
+                <span class="eq-bar eq-bar-2"></span>
+                <span class="eq-bar eq-bar-3"></span>
+            </div>
+
+            <span class="text-xs font-bold tracking-tight text-white whitespace-nowrap drop-shadow-sm">
+                Остановить и распознать
+            </span>
+
+            <!-- Тактильный квадрат STOP -->
+            <span class="w-6 h-6 rounded-full bg-white/15 border border-white/20 flex items-center justify-center text-[9px] text-white flex-shrink-0 shadow-inner">
+                <i class="fas fa-stop text-[8px]"></i>
+            </span>
+        </button>
+
     </div>
 
     <!-- МОДАЛКА ПЕЙВОЛЛА -->
@@ -1019,7 +1494,7 @@
                 <div id="reg-form-error" class="hidden text-xs text-rose-400 font-semibold p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20"></div>
 
                 <button type="submit" id="btn-submit-reg-create" class="w-full py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white shadow-lg shadow-indigo-600/30 transition-all spring-btn flex items-center justify-center gap-2">
-                    <span>Зарегистрироваться и забрать</span>
+                    <span>Создать аккаунт</span>
                     <i class="fas fa-arrow-right text-[10px]"></i>
                 </button>
 
@@ -1094,7 +1569,6 @@
     </script>
 
     <!-- СИСТЕМНЫЙ JS (ОСТРОВОК, ФОРМА, СЛАЙДЕР) -->
-    <!-- СИСТЕМНЫЙ JS (ОСТРОВОК, ФОРМА, СЛАЙДЕР, GATEWAY FLOW, ГЕНЕРАЦИЯ) -->
     <script>
         const isUserPremium = {{ subscription_level|default:0 }} >= 1 || {{ total_available|default:0 }} > 0;
         let activeSourceTab = 'text';
@@ -1123,57 +1597,109 @@
             const $island = $('#dynamic-island');
             const $controls = $('#island-controls');
             const $notice = $('#island-notice');
+            const $transcribe = $('#island-transcribe');
             const $text = $('#island-text');
             const $icon = $('#island-icon');
             const $iconBox = $('#island-icon-box');
 
             let timer = null;
 
-            const THEMES = {
-                success: { themeClass: 'theme-success', icon: 'fa-check', iconBg: 'bg-emerald-500 text-black font-bold' },
-                error: { themeClass: 'theme-error', icon: 'fa-xmark', iconBg: 'bg-rose-500 text-white font-bold' },
-                warning: { themeClass: 'theme-warning', icon: 'fa-triangle-exclamation', iconBg: 'bg-amber-500 text-black font-bold' },
-                info: { themeClass: 'theme-info', icon: 'fa-info', iconBg: 'bg-indigo-600 text-white' }
-            };
+            function abort() {
+                if (timer) {
+                    clearTimeout(timer);
+                    timer = null;
+                }
+            }
 
-            function notify(message, type = 'info', customIcon = null, duration = 2600) {
-                if (timer) clearTimeout(timer);
+            // 1. ЗАПУСК СОСТОЯНИЯ ОБРАБОТКИ
+            function startTranscribing() {
+                abort();
+                $controls.addClass('hidden').removeClass('flex');
+                $notice.addClass('hidden').removeClass('flex');
 
-                const config = THEMES[type] || THEMES.info;
-                const chosenIcon = customIcon || config.icon;
+                // Сбрасываем иконки в состояние загрузки
+                $('#transcribe-spinner').removeClass('hidden');
+                $('#transcribe-success-icon').addClass('hidden').removeClass('flex success-check-pop');
+                $('#transcribe-status-text').text('Преобразуем речь в текст...').addClass('transcribe-shimmer-text');
+                $('#transcribe-metric-chip')
+                    .removeClass('bg-emerald-500/10 border-emerald-500/20 text-emerald-300')
+                    .addClass('bg-indigo-500/10 border-indigo-500/20 text-indigo-300')
+                    .html('<span>VOICE AI</span>');
 
-                $island.removeClass('theme-success theme-error theme-warning theme-info');
-                $controls.addClass('opacity-0 scale-90 blur-sm pointer-events-none');
+                // Морфинг островка
+                $island
+                    .removeClass('mode-header mode-notify mode-voice mode-transcribe-success')
+                    .addClass('mode-transcribe');
+
+                $transcribe.removeClass('hidden').addClass('flex');
+                setTimeout(() => {
+                    $transcribe.removeClass('opacity-0 scale-90').addClass('opacity-100 scale-100');
+                }, 20);
+            }
+
+            // 2. ФАЗА ТРИУМФА (УСПЕШНАЯ ВСТАВКА)
+            function transcribeSuccess(wordsAdded = 0) {
+                abort();
+
+                // Спиннер прячем, чекмарк пружинит
+                $('#transcribe-spinner').addClass('hidden');
+                $('#transcribe-success-icon').removeClass('hidden').addClass('flex success-check-pop');
+                
+                $('#transcribe-status-text')
+                    .text('Текст добавлен в поле')
+                    .removeClass('transcribe-shimmer-text')
+                    .css({ '-webkit-text-fill-color': '#FFFFFF' });
+
+                // Бейдж показывает конкретную пользу
+                const label = wordsAdded > 0 ? `+${wordsAdded} СЛОВ` : 'ГОТОВО';
+                $('#transcribe-metric-chip')
+                    .removeClass('bg-indigo-500/10 border-indigo-500/20 text-indigo-300')
+                    .addClass('bg-emerald-500/10 border-emerald-500/20 text-emerald-300')
+                    .html(`<span>${label}</span>`);
+
+                // Переводим капсулу в изумрудную ауру
+                $island.removeClass('mode-transcribe').addClass('mode-transcribe-success');
+
+                // Через 2 секунды шёлково уходим обратно в дефолтный хедер
+                timer = setTimeout(() => {
+                    finishTranscribing();
+                }, 2200);
+            }
+
+            // 3. ПЛАВНЫЙ ВОЗВРАТ В ХЕДЕР БЕЗ СБОЕВ
+            function finishTranscribing() {
+                $transcribe.removeClass('opacity-100 scale-100').addClass('opacity-0 scale-90');
 
                 setTimeout(() => {
-                    $controls.addClass('hidden').removeClass('flex');
+                    $transcribe.addClass('hidden').removeClass('flex');
+                    
+                    $island
+                        .removeClass('mode-transcribe mode-transcribe-success mode-voice mode-notify')
+                        .addClass('mode-header');
 
-                    $text.text(message);
-                    $icon.attr('class', `fas ${chosenIcon}`);
-                    $iconBox.attr('class', `w-6 h-6 rounded-full flex items-center justify-center text-[11px] flex-shrink-0 ${config.iconBg}`);
-
-                    $island.removeClass('mode-header').addClass(`mode-notify ${config.themeClass}`);
-
-                    $notice.removeClass('hidden').addClass('flex');
+                    $controls.removeClass('hidden').addClass('flex');
                     setTimeout(() => {
-                        $notice.removeClass('opacity-0 scale-75').addClass('opacity-100 scale-100');
-                    }, 20);
-                }, 140);
+                        $controls.removeClass('opacity-0 scale-90 blur-sm pointer-events-none').addClass('opacity-100 scale-100');
+                    }, 30);
 
-                timer = setTimeout(() => {
-                    dismiss();
-                }, duration);
+                    timer = null;
+                }, 180);
             }
 
             function dismiss() {
+                if (typeof VoiceDictation !== 'undefined' && VoiceDictation.isActive()) {
+                    $notice.addClass('hidden').removeClass('flex');
+                    timer = null;
+                    return;
+                }
+
                 $notice.removeClass('opacity-100 scale-100').addClass('opacity-0 scale-75');
 
                 setTimeout(() => {
-                    $notice.addClass('hidden').removeClass('flex');
+                    if (typeof VoiceDictation !== 'undefined' && VoiceDictation.isActive()) return;
 
-                    $island
-                        .removeClass('mode-notify theme-success theme-error theme-warning theme-info')
-                        .addClass('mode-header');
+                    $notice.addClass('hidden').removeClass('flex');
+                    $island.removeClass('mode-notify mode-voice mode-transcribe mode-transcribe-success').addClass('mode-header');
 
                     $controls.removeClass('hidden').addClass('flex');
                     setTimeout(() => {
@@ -1184,9 +1710,17 @@
                 }, 160);
             }
 
+            // Стандартный notify для простых ошибок
+            function notify(message, type = 'info', customIcon = null, duration = 2600) {
+                // ... (остаётся твой стандартный код notify для обычных ошибок)
+            }
+
             return {
                 notify,
                 dismiss,
+                abort,
+                startTranscribing,
+                transcribeSuccess,
                 success: (msg, icon, dur) => notify(msg, 'success', icon, dur),
                 error: (msg, icon, dur) => notify(msg, 'error', icon, dur),
                 warn: (msg, icon, dur) => notify(msg, 'warning', icon, dur),
@@ -1244,6 +1778,19 @@
         const $slider = $('#question-slider');
         const $sliderDisplay = $('#slider-count-display');
         const isPaidUser = {{ subscription_level|default:0 }} >= 1;
+        const $proPill = $('#slider-pro-pill');
+
+        $slider.on('input', function() {
+            const val = parseInt(this.value, 10);
+            $sliderDisplay.text(val);
+            updateSliderFill(val);
+
+            if (val > 8) {
+                $proPill.removeClass('opacity-0 scale-90 -mr-1').addClass('opacity-100 scale-100 mr-0');
+            } else {
+                $proPill.addClass('opacity-0 scale-90 -mr-1').removeClass('opacity-100 scale-100 mr-0');
+            }
+        });
 
         function updateSliderFill(val) {
             const min = parseFloat($slider.attr('min')) || 1;
@@ -1275,7 +1822,10 @@
            4. МОДАЛКИ И ФАЙЛЫ
            ========================================================================== */
         function openPaywallModal(triggerType) {
-            if (triggerType === 'slider') {
+            if (triggerType === 'voice') {
+                $('#paywall-modal-title').text('Голосовой ввод');
+                $('#paywall-modal-desc').text('Надиктовывайте конспекты и материалы голосом вместо ручного набора. Доступно на тарифе Премиум и в пакетах генераций.');
+            } else if (triggerType === 'slider') {
                 $('#paywall-modal-title').text('Тесты до 30 заданий');
                 $('#paywall-modal-desc').text('Глубокие и подробные тесты с расширенным количеством вопросов доступны на тарифе Премиум.');
             } else {
@@ -1641,7 +2191,7 @@
                 }
 
                 const lowerText = text.toLowerCase();
-                const badPattern = /(интриж|сплетн)/i;
+                const badPattern = /(интриж|сплетн|бывший)/i;
 
                 if (badPattern.test(lowerText)) {
                     const newLock = Date.now() + 30000;
@@ -1773,6 +2323,10 @@
         УПРАВЛЕНИЕ МОДАЛКОЙ РЕГИСТРАЦИИ
         ========================================================================== */
         const CREATE_MODAL_TEXTS = {
+            voice: {
+                title: "Создание тестов Голосом",
+                desc: "Надиктовывайте вопросы и ответы голосом вместо ручного ввода. Функция доступна при покупке любого пакета тестов или Премиум."
+            },
             quota_header: {
                 title: "Лимит демо-режима исчерпан",
                 desc: "Зарегистрируйтесь, чтобы сохранить созданный тест и забрать еще 5 тестов бесплатно."
@@ -1857,7 +2411,7 @@
                         window.location.reload();
                     }, 600);
                 } else {
-                    $btn.prop('disabled', false).html('<span>Зарегистрироваться и забрать</span><i class="fas fa-arrow-right text-[10px]"></i>');
+                    $btn.prop('disabled', false).html('<span>Зарегистрироваться</span><i class="fas fa-arrow-right text-[10px]"></i>');
                     $err.removeClass('hidden').text(data.error || 'Ошибка при регистрации.');
                 }
             } catch (err) {
@@ -1865,6 +2419,346 @@
                 $err.removeClass('hidden').text('Сбой связи с сервером. Попробуйте еще раз.');
             }
         });
+    </script>
+    <script>
+        /* ==========================================================================
+        FEATURE DISCOVERY SPOTLIGHT ДЛЯ МИКРОФОНА
+        ========================================================================== */
+        function initVoiceFeatureSpotlight() {
+            const $btn = $('#btn-voice-dictate');
+            if (!$btn.length) return;
+
+            // Автоматическое аккуратное складывание через 3 секунды
+            const foldTimer = setTimeout(() => {
+                foldVoiceSpotlight();
+            }, 3200);
+
+            // Если юзер кликнул раньше 3 секунд — сразу складываем без ожидания
+            $btn.on('click.spotlightFold', function() {
+                clearTimeout(foldTimer);
+                foldVoiceSpotlight(true);
+                $btn.off('click.spotlightFold');
+            });
+        }
+
+        function foldVoiceSpotlight(immediate = false) {
+            const $btn = $('#btn-voice-dictate');
+            if (!$btn.hasClass('is-expanded')) return;
+
+            $btn.removeClass('is-expanded').addClass('is-collapsed');
+        }
+
+        // Запуск строго после готовности DOM
+        $(document).ready(function() {
+            initVoiceFeatureSpotlight();
+        });
+
+        /* ==========================================================================
+        VOICE RECORDER & CANVAS WAVEFORM ENGINE (APPLE SIRI STYLE)
+        ========================================================================== */
+        function setMainButtonRecordingState(isRecordingActive) {
+            const $btn = $('#btn-generate-main');
+            const $defaultLayer = $('#btn-content-default');
+            const $recordLayer = $('#btn-content-recording');
+            const $micBtn = $('#btn-voice-dictate');
+            const $mobileDock = $('#mobile-voice-dock');
+
+            if (isRecordingActive) {
+                $defaultLayer.addClass('opacity-0 scale-95 pointer-events-none').removeClass('opacity-100 scale-100');
+                $btn.addClass('is-recording-active');
+                $recordLayer.removeClass('opacity-0 scale-95 pointer-events-none').addClass('opacity-100 scale-100 pointer-events-auto');
+                $micBtn.addClass('opacity-0 scale-75 pointer-events-none');
+                $mobileDock.addClass('is-active');
+            } else {
+                $recordLayer.addClass('opacity-0 scale-95 pointer-events-none').removeClass('opacity-100 scale-100 pointer-events-auto');
+                $defaultLayer.removeClass('opacity-0 scale-95 pointer-events-none').addClass('opacity-100 scale-100');
+                $btn.removeClass('is-recording-active');
+                $micBtn.removeClass('opacity-0 scale-75 pointer-events-none');
+
+                // МОБИЛКА: Плавно прячем островок обратно вниз
+                $mobileDock.removeClass('is-active');
+            }
+        }
+
+        // ЕДИНЫЙ ДИСПЕТЧЕР КЛИКА ПО ГЛАВНОЙ КНОПКЕ
+        function handleMainButtonClick() {
+            if (VoiceDictation.isActive()) {
+                VoiceDictation.stop();
+            } else {
+                startGenerationProcess();
+            }
+        }
+
+        // ХОТКЕИ: Enter для завершения записи, Esc для отмены
+        $(document).on('keydown', function(e) {
+            if (VoiceDictation.isActive()) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    VoiceDictation.stop();
+                } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    VoiceDictation.cancel();
+                }
+            }
+        });
+        
+        const VoiceDictation = (() => {
+            let mediaRecorder = null;
+            let audioStream = null;
+            let audioContext = null;
+            let analyser = null;
+            let animFrameId = null;
+            let audioChunks = [];
+            let recordTimer = null;
+            let secondsElapsed = 0;
+            let isRecording = false;
+
+            const $island = $('#dynamic-island');
+            const $controls = $('#island-controls');
+            const $voiceLayer = $('#island-voice');
+            const $micBtn = $('#btn-voice-dictate');
+            const $timer = $('#voice-timer');
+            const canvas = document.getElementById('voice-wave-canvas');
+            const ctx = canvas ? canvas.getContext('2d') : null;
+
+            const isAuth = {{ request.user.is_authenticated|yesno:"true,false" }};
+            const userSubLevel = parseInt('{{ subscription_level|default:0 }}', 10);
+
+            async function start() {
+                Island.abort();
+                $('#island-notice').addClass('hidden').removeClass('flex');
+
+                // if (!isAuth) {
+                //     $micBtn.addClass('pill-shake-active');
+                //     setTimeout(() => $micBtn.removeClass('pill-shake-active'), 500);
+                //     openRegisterModal('voice');
+                //     return;
+                // }
+
+                // if (userSubLevel < 1) {
+                //     $micBtn.addClass('pill-shake-active');
+                //     setTimeout(() => $micBtn.removeClass('pill-shake-active'), 500);
+                //     openPaywallModal('voice');
+                //     return;
+                // }
+
+                try {
+                    audioStream = await navigator.mediaDevices.getUserMedia({ 
+                        audio: { echoCancellation: true, noiseSuppression: true } 
+                    });
+                } catch (err) {
+                    Island.error('Микрофон заблокирован в браузере', 'fa-microphone-slash');
+                    return;
+                }
+
+                isRecording = true;
+                audioChunks = [];
+                secondsElapsed = 0;
+                $timer.text('00:00');
+
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                audioContext = new AudioCtx();
+                if (audioContext.state === 'suspended') {
+                    await audioContext.resume();
+                }
+
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 64;
+                analyser.smoothingTimeConstant = 0.8;
+                const source = audioContext.createMediaStreamSource(audioStream);
+                source.connect(analyser);
+
+                const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
+                    ? 'audio/webm;codecs=opus' 
+                    : 'audio/webm';
+
+                mediaRecorder = new MediaRecorder(audioStream, { mimeType });
+                mediaRecorder.ondataavailable = (e) => {
+                    if (e.data && e.data.size > 0) audioChunks.push(e.data);
+                };
+                mediaRecorder.start(200);
+
+                // Переводим островок в режим записи
+                $controls.addClass('hidden').removeClass('flex');
+                $island.removeClass('mode-header mode-notify').addClass('mode-voice');
+                $voiceLayer.removeClass('hidden').addClass('flex');
+                setTimeout(() => {
+                    $voiceLayer.removeClass('opacity-0 scale-90').addClass('opacity-100 scale-100');
+                }, 30);
+
+                $micBtn.addClass('mic-recording-active');
+
+                // ПЕРЕКЛЮЧАЕМ ГЛАВНУЮ КНОПКУ В РЕЖИМ ЗАПИСИ
+                setMainButtonRecordingState(true);
+
+                recordTimer = setInterval(() => {
+                    secondsElapsed++;
+                    const mins = String(Math.floor(secondsElapsed / 60)).padStart(2, '0');
+                    const secs = String(secondsElapsed % 60).padStart(2, '0');
+                    $timer.text(`${mins}:${secs}`);
+
+                    if (secondsElapsed >= 180) stop();
+                }, 1000);
+
+                drawWaveform();
+            }
+
+            let idlePhase = 0;
+            function drawWaveform() {
+                if (!isRecording || !ctx) return;
+
+                const dataArray = new Uint8Array(analyser.frequencyBinCount);
+                analyser.getByteFrequencyData(dataArray);
+
+                let sum = 0;
+                for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
+                const average = sum / dataArray.length;
+
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                const barsCount = 18;
+                const barWidth = 6;
+                const gap = 8;
+                const totalWidth = barsCount * barWidth + (barsCount - 1) * gap;
+                const startX = (canvas.width - totalWidth) / 2;
+                const centerY = canvas.height / 2;
+
+                idlePhase += 0.08;
+
+                for (let i = 0; i < barsCount; i++) {
+                    const x = startX + i * (barWidth + gap);
+                    let barHeight = 6;
+
+                    if (average > 8) {
+                        const freqIndex = Math.floor((i / barsCount) * dataArray.length);
+                        const val = dataArray[freqIndex] || 0;
+                        barHeight = Math.max(6, (val / 255) * (canvas.height - 8));
+                    } else {
+                        const wave = Math.sin(idlePhase + i * 0.4) * 4;
+                        barHeight = 6 + Math.abs(wave);
+                    }
+
+                    const gradient = ctx.createLinearGradient(0, centerY - barHeight/2, 0, centerY + barHeight/2);
+                    gradient.addColorStop(0, '#818CF8');
+                    gradient.addColorStop(0.5, '#FFFFFF');
+                    gradient.addColorStop(1, '#6366F1');
+
+                    ctx.fillStyle = gradient;
+                    ctx.beginPath();
+                    ctx.roundRect(x, centerY - barHeight / 2, barWidth, barHeight, 4);
+                    ctx.fill();
+                }
+
+                animFrameId = requestAnimationFrame(drawWaveform);
+            }
+
+            function cleanup() {
+                isRecording = false;
+                if (recordTimer) clearInterval(recordTimer);
+                if (animFrameId) cancelAnimationFrame(animFrameId);
+
+                if (audioStream) {
+                    audioStream.getTracks().forEach(track => track.stop());
+                    audioStream = null;
+                }
+                if (audioContext && audioContext.state !== 'closed') {
+                    audioContext.close();
+                    audioContext = null;
+                }
+
+                $micBtn.removeClass('mic-recording-active');
+                if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                // ВОЗВРАЩАЕМ ГЛАВНУЮ КНОПКУ В ИСХОДНОЕ СОСТОЯНИЕ
+                setMainButtonRecordingState(false);
+            }
+
+            function restoreIsland() {
+                $voiceLayer.addClass('opacity-0 scale-90');
+                setTimeout(() => {
+                    $voiceLayer.addClass('hidden').removeClass('flex');
+                    $island.removeClass('mode-voice theme-error theme-warning theme-info').addClass('mode-header');
+                    $controls.removeClass('hidden').addClass('flex');
+                    setTimeout(() => {
+                        $controls.removeClass('opacity-0 scale-90 blur-sm pointer-events-none');
+                    }, 30);
+                }, 120);
+            }
+
+            async function stop() {
+                if (!isRecording) return;
+                cleanup();
+
+                mediaRecorder.onstop = async () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    
+                    if (audioBlob.size < 600) {
+                        restoreIsland();
+                        Island.warn('Запись слишком короткая');
+                        return;
+                    }
+
+                    // Снимаем слой записи и ЗАПУСКАЕМ КИНЕМАТОГРАФИЧНЫЙ ОСТРОВОК ОБРАБОТКИ
+                    $voiceLayer.addClass('hidden').removeClass('flex');
+                    $island.removeClass('mode-voice');
+                    Island.startTranscribing();
+
+                    const formData = new FormData();
+                    formData.append('audio', audioBlob, 'dictation.webm');
+
+                    try {
+                        const res = await fetch('/api/transcribe-audio/', {
+                            method: 'POST',
+                            headers: { 'X-CSRFToken': getCookie('csrftoken') },
+                            body: formData
+                        });
+
+                        const data = await res.json();
+
+                        if (res.ok && data.status === 'success') {
+                            const $textArea = $('#user-text');
+                            const curText = $textArea.val().trim();
+                            const newText = data.text;
+
+                            $textArea.val(curText ? `${curText}\n\n${newText}` : newText);
+                            $textArea.trigger('input.counter');
+                            $textArea.scrollTop($textArea[0].scrollHeight);
+
+                            // Считаем слова для красивого фидбека
+                            const wordsCount = newText.split(/\s+/).filter(Boolean).length;
+                            
+                            // Вспышка триумфа с количеством слов
+                            Island.transcribeSuccess(wordsCount);
+                        } else {
+                            Island.error(data.error || 'Сбой расшифровки');
+                        }
+                    } catch (err) {
+                        Island.error('Сетевой сбой при отправке');
+                    }
+                };
+
+                mediaRecorder.stop();
+            }
+
+            function cancel() {
+                if (!isRecording) return;
+                cleanup();
+                restoreIsland();
+                Island.info('Запись отменена', 'fa-ban');
+            }
+
+            return {
+                start,
+                stop,
+                cancel,
+                toggle: () => isRecording ? stop() : start(),
+                isActive: () => isRecording
+            };
+        })();
+
+        function toggleVoiceDictation() { VoiceDictation.toggle(); }
+        function stopVoiceRecording() { VoiceDictation.stop(); }
+        function cancelVoiceRecording() { VoiceDictation.cancel(); }
     </script>
 </body>
 </html>

@@ -4,6 +4,11 @@ from django.views.generic import TemplateView, RedirectView
 from django.urls import path, re_path
 
 from .views import *
+from .admin_dashboard import (
+    admin_dashboard_overview_api,
+    admin_dashboard_ai_api,
+    admin_dashboard_payments_api,
+)
 from askify_app.settings import DEBUG
 
 from askify_service.views import telegram_magic_auth, telegram_code_auth, bot_generate_code, bot_generate_link
@@ -45,6 +50,7 @@ urlpatterns = [
     path('api/surveys/<uuid:survey_id>/questions/save/', api_save_question, name='api_save_question'),
     path('api/surveys/<uuid:survey_id>/questions/<int:question_index>/delete/', survey_delete_question, name='survey_delete_question'),
     path('api/surveys/<uuid:survey_id>/regenerate/', api_regenerate_survey, name='api_regenerate_survey'),
+    path("api/recent-surveys/", api_public_recent_surveys, name="api_recent_surveys"),
     
     path('api/ad/v1/<str:survey_id>/', get_survey_ad, name='get_survey_ad'),
 
@@ -121,6 +127,7 @@ urlpatterns = [
     path('api/v2/signal-secure/exchange_keys/', exchange_keys, name='api_v2_exchange_keys'),
 
     path('api/v2/one_click_auth/<str:token>/<str:token_hash>/', one_click_auth_view, name='one_click_auth'),
+    path('api/transcribe-audio/', transcribe_audio_view, name='transcribe_audio'),
 
     path('block-user/<str:id_staff>/', block_by_staff_id, name='block_by_staff_id'),
     path('unblock-user/<str:id_staff>/', unblock_by_staff_id, name='unblock_by_staff_id'),
@@ -146,6 +153,9 @@ urlpatterns = [
     path('api/admin/user-details/<int:user_id>/', get_user_details_api, name='api_get_user_details'),
     path('api/admin/new-users/', get_new_users_api, name='api_get_new_users'),
     path('api/admin/send-manual-email/', send_manual_email_api, name='api_send_manual_email'),
+    path('api/admin/dashboard/overview/', admin_dashboard_overview_api, name='api_admin_dashboard_overview'),
+    path('api/admin/dashboard/ai/', admin_dashboard_ai_api, name='api_admin_dashboard_ai'),
+    path('api/admin/dashboard/payments/', admin_dashboard_payments_api, name='api_admin_dashboard_payments'),
     path('unsubscribe/<str:signed_user_id>/', unsubscribe_view, name='unsubscribe'),
     path('email-preview/', preview_release_email, name='preview_release_email'),
     path('api/unisender/webhook/', unisender_webhook_view, name='unisender_webhook'),

@@ -96,7 +96,7 @@ AI_PROVIDER_PRESETS = {
     "custom": {"base_url": "", "models": []},
 }
 
-AI_KEY_PURPOSES = ["SURVEY", "FEEDBACK", "AD", "CHAT", "EMBEDDING", "OTHER"]
+AI_KEY_PURPOSES = ["SURVEY", "FEEDBACK", "OTHER"]
 
 
 SUBSCRIPTION_TIERS = {

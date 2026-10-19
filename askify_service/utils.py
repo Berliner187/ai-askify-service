@@ -101,6 +101,8 @@ class ManageGenerationSurveys:
                 end = min(len(user_text_lower), match.end() + 50)
                 snippet = user_text_lower[start:end].replace('\n', ' ')
                 
+                tracer_l.debug(f'{user_text_lower}')
+                
                 tracer_l.warning(
                     f"ЦЕНЗУРА: Сработало слово '{word}' во фрагменте '...{snippet}...' "
                     f"от пользователя {getattr(self.request.user, 'username', 'anon')}"

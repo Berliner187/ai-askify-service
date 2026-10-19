@@ -56,9 +56,6 @@
     const colors = {
       SURVEY: 'bg-blue-500/10 text-blue-300 border-blue-500/25',
       FEEDBACK: 'bg-violet-500/10 text-violet-300 border-violet-500/25',
-      AD: 'bg-amber-500/10 text-amber-300 border-amber-500/25',
-      CHAT: 'bg-cyan-500/10 text-cyan-300 border-cyan-500/25',
-      EMBEDDING: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/25',
       OTHER: 'bg-slate-500/10 text-slate-300 border-slate-500/25',
     };
     return `<span class="inline-flex px-1.5 py-0.5 rounded text-[10px] font-semibold border ${colors[purpose] || colors.OTHER}">${esc(purpose)}</span>`;
@@ -371,7 +368,7 @@
           .concat(Object.keys(pricing))
       ));
 
-      const purposes = d.purposes || ['SURVEY', 'FEEDBACK', 'AD', 'CHAT', 'EMBEDDING', 'OTHER'];
+      const purposes = d.purposes || ['SURVEY', 'FEEDBACK', 'OTHER'];
       const providerValue = k.provider || this.activeProvider || '';
       const isSystem = !!k.is_system;
 

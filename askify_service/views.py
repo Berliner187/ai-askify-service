@@ -106,6 +106,7 @@ from collections import defaultdict, Counter
 from decimal import Decimal
 import base64
 import asyncio
+import io
 import time
 import hashlib
 import uuid
@@ -1502,7 +1503,7 @@ class GenerationSurveysView(View):
             
             await sync_to_async(mark_session)()
 
-            tracer_l.info(f"DEMO_SURVEY_CREATED: {new_survey_id} for staff_id: {staff_id}")
+            tracer_l.info(f"DEMO_SURVEY_CREATED: {new_survey_id} for staff_id: {staff_id} text: {text_from_user[:60]}")
 
             return JsonResponse(
                 {
@@ -1575,7 +1576,6 @@ class FileUploadView(View):
         tracer_l.info(">>> [UPLOAD] Входящий запрос на загрузку файла...")
 
         try:
-            # 1. ОПРЕДЕЛЯЕМ ПОЛЬЗОВАТЕЛЯ
             if request.user.is_authenticated:
                 staff_id = get_staff_id(request)
                 is_guest = False
@@ -1584,17 +1584,21 @@ class FileUploadView(View):
 
             tracer_l.info(f"[UPLOAD] Пользователь: staff_id={staff_id}, is_guest={is_guest}")
 
-            # 2. ПРОВЕРКА НАЛИЧИЯ ФАЙЛА В REQUEST.FILES
             if 'file' not in request.FILES:
                 tracer_l.warning(f"[UPLOAD] Файл отсутствует в request.FILES. Keys: {list(request.FILES.keys())}")
                 return JsonResponse({'error': 'Файл не был передан на сервер.'}, status=400)
 
             uploaded_file = request.FILES['file']
+
+            base_name, ext = os.path.splitext(uploaded_file.name)
+            max_base_length = 60
+            if len(base_name) > max_base_length:
+                uploaded_file.name = f"{base_name[:max_base_length].strip()}{ext}"
+
             file_name = uploaded_file.name
             file_size = uploaded_file.size
             tracer_l.info(f"[UPLOAD] Файл получен: name='{file_name}', size={file_size} bytes, content_type='{uploaded_file.content_type}'")
 
-            # 3. ВАЛИДАЦИЯ ФОРМЫ
             form = FileUploadForm(request.POST, request.FILES)
             if not form.is_valid():
                 form_err = form.errors.as_text()
@@ -1680,6 +1684,7 @@ class FileUploadView(View):
             # 8. ОЧИСТКА ТЕКСТА И ВЫЗОВ НЕЙРОСЕТИ
             cleaned_data_for_llm = clean_text_for_llm(data)
             tracer_l.info(f"[UPLOAD] Отправляем запрос в LLM (вопросов: {question_count}, сложность: {difficulty})...")
+            start_time = time.perf_counter()
 
             manage_generate_surveys = ManageGenerationSurveys(
                 request, 
@@ -1704,6 +1709,8 @@ class FileUploadView(View):
                 return JsonResponse({
                     'error': f'Сбой нейросети: {err_msg}'
                 }, status=502)
+
+            end_time = time.perf_counter()
 
             tokens_used = generated_data.get("tokens_used", 0)
             cleaned_generated_text = generated_data.get("generated_text")
@@ -1747,14 +1754,17 @@ class FileUploadView(View):
                     survey.save()
 
                     TokensUsed.objects.create(id_staff=staff_id, tokens_survey_used=tokens_used)
+                    
+                    response_time_ms = int((end_time - start_time) * 1000)
 
                     log_api_key = api_key_used or APIKey.objects.filter(purpose='SURVEY', is_active=True).first()
                     if log_api_key:
                         APIKeyUsage.objects.create(
                             api_key=log_api_key,
                             success=True,
+                            response_time_ms=response_time_ms,
                             tokens_used=int(tokens_used or 0),
-                            model_name=model_used or "",
+                            model_name=generated_data.get("model_used", "") or "",
                         )
 
             await sync_to_async(save_survey_tx)()
@@ -7554,6 +7564,8 @@ class PaymentSuccessView(View):
                                 fail_silently=False,
                                 html_message=message,
                             )
+                            user_data.is_active = True
+                            user_data.save()
                         tracer_l.info(f"{request.user.username} Success send mail")
 
                     except Exception as fail:
@@ -9777,3 +9789,203 @@ def api_admin_traffic_live(request):
         "feed": feed
     })
 
+
+@require_POST
+def transcribe_audio_view(request):
+    """
+    Принимает голос (WebM/WAV/MP4), валидирует права и
+    пуляет в OpenAI Whisper через корпоративный прокси.
+    """
+    start_time = time.time()
+    user = request.user
+    http_client = None
+
+    # if not user.is_authenticated:
+    #     tracer_l.warning("STT_DENIED: Анонимный доступ. IP: %s", request.META.get('REMOTE_ADDR'))
+    #     return JsonResponse({'status': 'error', 'error': 'Требуется авторизация'}, status=401)
+
+    # user_sub_level = get_subscription_level(request)
+    # if user_sub_level < 1:
+    #     tracer_l.warning("STT_PAYWALL_HIT: User ID=%s без Премиума попытался вызвать Whisper.", user.id)
+    #     return JsonResponse({
+    #         'status': 'error',
+    #         'error': 'Голосовой ввод доступен только на тарифе Премиум'
+    #     }, status=403)
+
+    # 3. Валидация файла
+    audio_file = request.FILES.get('audio')
+    if not audio_file:
+        return JsonResponse({'status': 'error', 'error': 'Аудиофайл не передан'}, status=400)
+
+    # Лимит Whisper API — 25 МБ
+    if audio_file.size > 25 * 1024 * 1024:
+        return JsonResponse({'status': 'error', 'error': 'Файл превышает лимит 25 МБ'}, status=400)
+
+    # 4. Конфигурация ключа и прокси
+    api_key = getattr(settings, 'OPENAI_API_KEY', None) or os.getenv('OPENAI_API_KEY')
+    proxy_url = getattr(settings, 'OPENAI_PROXY_URL', None) or os.getenv('OPENAI_PROXY_URL')
+
+    if not api_key:
+        tracer_l.critical("STT_CONFIG_ERROR: OPENAI_API_KEY отсутствует в settings / .env!")
+        return JsonResponse({'status': 'error', 'error': 'Серверная ошибка конфигурации AI'}, status=500)
+
+    try:
+        # Проксируем только если URL задан
+        if proxy_url:
+            http_client = httpx.Client(
+                proxy=proxy_url,
+                timeout=httpx.Timeout(60.0, connect=15.0)
+            )
+
+        client = OpenAI(
+            api_key=api_key.strip(),
+            http_client=http_client,
+            timeout=55.0
+        )
+
+        file_bytes = audio_file.read()
+        file_obj = io.BytesIO(file_bytes)
+        file_obj.name = audio_file.name or 'dictation.webm'
+
+        tracer_l.info(
+            "STT_REQUEST: User ID=%s | Size=%.2f KB | Proxy=%s",
+            user.username, len(file_bytes) / 1024, 'YES' if proxy_url else 'NO'
+        )
+
+        # Вызов Whisper
+        transcription = client.audio.transcriptions.create(
+            model="whisper-1",
+            file=file_obj,
+            language="ru",
+            response_format="text"
+        )
+        
+        result_text = transcription.strip() if isinstance(transcription, str) else transcription.text.strip()
+        elapsed_sec = round(time.time() - start_time, 2)
+
+        preview_text = f"{result_text[:200]}..." if len(result_text) > 200 else result_text
+        tracer_l.warning("STT_SUCCESS: Username=%s | Time=%ss | Chars=%d | Text='%s'", user.username, elapsed_sec, len(result_text), preview_text)
+
+        return JsonResponse({
+            'status': 'success',
+            'text': result_text,
+            'duration_sec': elapsed_sec
+        })
+
+    except APIStatusError as exc:
+        tracer_l.error("STT_API_STATUS_ERROR: OpenAI вернул HTTP %s: %s", exc.status_code, exc.message)
+        return JsonResponse({'status': 'error', 'error': f'Ошибка сервиса AI ({exc.status_code})'}, status=exc.status_code)
+
+    except Exception as exc:
+        tracer_l.error("STT_UNHANDLED_EXCEPTION: %s", exc)
+        return JsonResponse({'status': 'error', 'error': 'Внутренний сбой при обработке аудио'}, status=500)
+
+    finally:
+        if http_client:
+            http_client.close()
+
+
+def _format_time_ago(dt, now):
+    """Форматирует дату в человекопонятный интервал для живой ленты"""
+    diff = now - dt
+    seconds = int(diff.total_seconds())
+
+    if seconds < 45:
+        return "только что"
+    elif seconds < 3600:
+        minutes = max(1, seconds // 60)
+        # Склонение минут
+        if 11 <= (minutes % 100) <= 14:
+            return f"{minutes} мин назад"
+        remainder = minutes % 10
+        if remainder == 1:
+            return f"{minutes} мин назад"
+        return f"{minutes} мин назад"
+    elif seconds < 86400:
+        hours = seconds // 3600
+        return f"{hours} ч назад"
+    else:
+        days = seconds // 86400
+        return f"{days} дн назад"
+
+def _detect_subject_tag(title):
+    """
+    Если в названии теста есть маркер предмета или класса, вытягиваем тег.
+    Если нет — отдаем аккуратный нейтральный бейдж.
+    """
+    t_lower = title.lower()
+    
+    # Быстрый маппинг ключевых слов на лаконичный бейдж
+    keywords = [
+        ("биолог", "Биология"),
+        ("истор", "История"),
+        ("обществ", "Обществознание"),
+        ("геометр", "Геометрия"),
+        ("алгебр", "Алгебра"),
+        ("матем", "Математика"),
+        ("физик", "Физика"),
+        ("хим", "Химия"),
+        ("географ", "География"),
+        ("русск", "Русский язык"),
+        ("литерат", "Литература"),
+        ("англ", "Английский"),
+        ("информ", "Информатика"),
+        ("вуз", "ВУЗ"),
+        ("егэ", "ЕГЭ"),
+        ("огэ", "ОГЭ")
+    ]
+    
+    for kw, label in keywords:
+        if kw in t_lower:
+            # Проверяем, указан ли класс (например, "8 класс", "10 кл")
+            class_match = re.search(r'(\d{1,2})\s*(?:класс|кл)', t_lower)
+            if class_match:
+                return f"{label} • {class_match.group(1)} класс"
+            return label
+            
+    return "Проверочный тест"
+
+
+@require_GET
+def api_public_recent_surveys(request):
+    """
+    Публичная ручка ленты активности для лендинга:
+    возвращает 12 последних видимых тестов с кешированием на 15 секунд.
+    """
+    cache_key = "landing_recent_surveys_feed_v1"
+    cached_data = cache.get(cache_key)
+    
+    if cached_data is not None:
+        return JsonResponse(cached_data)
+
+    now = timezone.now()
+
+    surveys = (
+        Survey.objects.filter(is_visible=True)
+        .exclude(title__isnull=True)
+        .only("survey_id", "title", "questions_count", "created_at")
+        .order_by("-created_at")[:12]
+    )
+
+    feed = []
+    for s in surveys:
+        created_dt = s.created_at if timezone.is_aware(s.created_at) else timezone.make_aware(s.created_at)
+        
+        raw_title = (s.title or "").strip()
+        cleaned_title = raw_title[:68] + "..." if len(raw_title) > 68 else raw_title
+
+        feed.append({
+            "id": str(s.survey_id)[:8],
+            "title": cleaned_title,
+            "questions_count": s.questions_count or 10,
+            "tag": _detect_subject_tag(raw_title),
+            "time_ago": _format_time_ago(created_dt, now)
+        })
+
+    response_data = {
+        "status": "ok",
+        "feed": feed
+    }
+
+    cache.set(cache_key, response_data, 15)
+    return JsonResponse(response_data)
