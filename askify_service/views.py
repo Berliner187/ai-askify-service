@@ -6015,8 +6015,10 @@ def api_admin_live_stats(request):
 
     services = [
         "gunicorn.service",
+        "celery-letychka-beat.service",
+        "celery-letychka-worker.service",
         "gunicorn-golosok.service",
-        "golosok-queue-worker.service",
+        "taxi-watcher.service",
     ]
     statuses = {}
     for service in services:

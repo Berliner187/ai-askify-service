@@ -8,7 +8,7 @@
     <meta name="csrf-token" content="{{ csrf_token }}">
     {% load static %}
     <link rel="icon" href="{% static 'img/logo.png' %}" type="image/png">
-    
+
     <!-- Yandex.Metrika counter -->
     <script type="text/javascript" >
         setTimeout(function() {
@@ -17,7 +17,7 @@
             for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
             k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
             (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
-        
+
             ym(98823704, "init", {
                 clickmap:true,
                 trackLinks:true,
@@ -28,7 +28,7 @@
     </script>
     <noscript><div><img src="https://mc.yandex.ru/watch/98823704" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
     <!-- /Yandex.Metrika counter -->
-    
+
     {% if debug %}
         <script src="https://cdn.tailwindcss.com"></script>
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
@@ -114,14 +114,14 @@
             backdrop-filter: blur(12px) saturate(190%) contrast(105%);
             -webkit-backdrop-filter: blur(12px) saturate(190%) contrast(105%);
             border: 1px solid rgba(255, 255, 255, 0.14);
-            box-shadow: 
+            box-shadow:
                 0 20px 40px -15px rgba(0, 0, 0, 0.7),
                 inset 0 1px 0 0 rgba(255, 255, 255, 0.18),
                 inset 0 -1px 0 0 rgba(0, 0, 0, 0.3);
             border-radius: 9999px;
             transform: translateZ(0);
             -webkit-transform: translateZ(0);
-            transition: 
+            transition:
                 max-width 0.45s var(--spring-bounce),
                 padding 0.35s var(--spring-smooth),
                 background-color 0.3s ease,
@@ -137,11 +137,12 @@
         }
 
         .island-capsule.mode-notify {
-            max-width: 25rem;
-            width: auto;
-            padding: 0.5rem 1.25rem;
+            max-width: 26rem;
+            width: 100%;
+            padding: 0.5rem 1.1rem;
             transform: scale(1.02);
-            background: rgba(18, 17, 20, 0.98);
+            background: rgba(18, 17, 20, 0.98) !important;
+            cursor: pointer;
         }
 
         .island-capsule.theme-success {
@@ -161,12 +162,28 @@
             box-shadow: 0 15px 35px -8px rgba(79, 70, 229, 0.3), 0 0 0 1px rgba(79, 70, 229, 0.15);
         }
 
+        /* Иконка уведомления по теме */
+        .island-icon-success { background: rgba(16, 185, 129, 0.15); color: #34D399; border: 1px solid rgba(16, 185, 129, 0.35); }
+        .island-icon-error   { background: rgba(239, 68, 68, 0.15);  color: #F87171; border: 1px solid rgba(239, 68, 68, 0.35); }
+        .island-icon-warning { background: rgba(245, 158, 11, 0.15); color: #FBBF24; border: 1px solid rgba(245, 158, 11, 0.35); }
+        .island-icon-info    { background: rgba(99, 102, 241, 0.15); color: #A5B4FC; border: 1px solid rgba(99, 102, 241, 0.35); }
+
+        /* Полоска таймера автозакрытия */
+        #island-timer-bar {
+            position: absolute; left: 0; bottom: 0; height: 2px; width: 100%;
+            transform-origin: left; transform: scaleX(0); opacity: 0;
+            background: currentColor;
+        }
+        .island-capsule.mode-notify #island-timer-bar { opacity: 0.45; }
+
         .island-content-layer {
             transition: opacity 0.25s var(--spring-smooth), transform 0.3s var(--spring-bounce);
         }
 
         .island-capsule.mode-voice #island-controls,
-        .island-capsule.mode-notify #island-controls {
+        .island-capsule.mode-notify #island-controls,
+        .island-capsule.mode-transcribe #island-controls,
+        .island-capsule.mode-transcribe-success #island-controls {
             display: none !important;
         }
 
@@ -251,7 +268,6 @@
         .animate-shimmer {
             animation: shimmerMove 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
         }
-        .animate-thought { animation: thoughtFade 2.4s ease-in-out infinite; }
 
         /* Отдельная кинематика для левого вертикального дока (держит translateY(-50%)) */
         .motion-dock-desktop {
@@ -335,7 +351,7 @@
         .master-launch-pill {
             background: linear-gradient(180deg, #4F46E5 0%, #4338CA 100%);
             border: 1px solid rgba(255, 255, 255, 0.16);
-            box-shadow: 
+            box-shadow:
                 0 10px 24px -6px rgba(0, 0, 0, 0.45),
                 0 2px 6px -1px rgba(0, 0, 0, 0.25),
                 inset 0 1px 0 rgba(255, 255, 255, 0.2);
@@ -345,7 +361,7 @@
         .master-launch-pill:hover {
             background: linear-gradient(180deg, #554BF0 0%, #4639D4 100%);
             border-color: rgba(255, 255, 255, 0.24);
-            box-shadow: 
+            box-shadow:
                 0 14px 28px -6px rgba(0, 0, 0, 0.55),
                 0 4px 10px -2px rgba(0, 0, 0, 0.3),
                 inset 0 1px 0 rgba(255, 255, 255, 0.3);
@@ -354,7 +370,7 @@
 
         .master-launch-pill:active {
             transform: scale(0.985) translateY(1px);
-            box-shadow: 
+            box-shadow:
                 0 4px 12px -2px rgba(0, 0, 0, 0.4),
                 inset 0 1px 0 rgba(255, 255, 255, 0.15);
         }
@@ -409,9 +425,9 @@
             width: 60%;
             height: 100%;
             background: linear-gradient(
-                90deg, 
-                transparent 0%, 
-                rgba(255, 255, 255, 0.14) 50%, 
+                90deg,
+                transparent 0%,
+                rgba(255, 255, 255, 0.14) 50%,
                 transparent 100%
             );
             transform: skewX(-20deg);
@@ -453,12 +469,12 @@
 
         @keyframes indigoPulseGlow {
             0%, 100% {
-                box-shadow: 
+                box-shadow:
                     0 8px 24px -4px rgba(79, 70, 229, 0.45),
                     inset 0 1px 0 rgba(255, 255, 255, 0.25);
             }
             50% {
-                box-shadow: 
+                box-shadow:
                     0 14px 34px -2px rgba(99, 102, 241, 0.7),
                     inset 0 1px 0 rgba(255, 255, 255, 0.45);
             }
@@ -469,18 +485,12 @@
             60%, 100% { left: 160%; }
         }
 
-        /* ЖЕСТКИЙ ФИКС ОСТРОВКА: Скрываем controls ТОЛЬКО когда реально висит mode-voice или mode-notify */
-        .island-capsule.mode-voice #island-controls,
-        .island-capsule.mode-notify #island-controls {
-            display: none !important;
-        }
-
         /* ==========================================================================
         FEATURE DISCOVERY SPOTLIGHT: КИНЕМАТИКА РАСКРЫТИЯ И СХЛОПЫВАНИЯ
         ========================================================================== */
         .voice-spotlight-btn {
             max-width: 36px; /* Базовый схлопнутый размер */
-            transition: 
+            transition:
                 max-width 0.45s cubic-bezier(0.34, 1.56, 0.64, 1),
                 background-color 0.25s ease,
                 border-color 0.25s ease,
@@ -502,7 +512,7 @@
             opacity: 1;
             max-width: 230px;
             transform: translateX(0);
-            transition: 
+            transition:
                 opacity 0.25s ease 0.1s,
                 max-width 0.45s cubic-bezier(0.16, 1, 0.3, 1),
                 transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
@@ -521,7 +531,7 @@
             max-width: 0;
             transform: translateX(12px);
             pointer-events: none;
-            transition: 
+            transition:
                 opacity 0.2s ease,
                 max-width 0.35s cubic-bezier(0.16, 1, 0.3, 1),
                 transform 0.25s ease;
@@ -536,7 +546,7 @@
             opacity: 1;
         }
 
-        /* 3. КИЛЛЕР-ФИЧА: РАСКРЫТИЕ ПРИ НАВЕДЕНИИ МЫШИ (HOVER EXPANSION) */
+        /* 3. РАСКРЫТИЕ ПРИ НАВЕДЕНИИ МЫШИ (HOVER EXPANSION) */
         @media (hover: hover) {
             .voice-spotlight-btn.is-collapsed:hover {
                 max-width: 275px;
@@ -551,7 +561,7 @@
                 max-width: 230px;
                 transform: translateX(0);
                 pointer-events: auto;
-                transition: 
+                transition:
                     opacity 0.25s ease 0.08s,
                     max-width 0.45s cubic-bezier(0.34, 1.56, 0.64, 1),
                     transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -562,7 +572,7 @@
             }
 
             .voice-spotlight-btn.is-collapsed:hover .spotlight-pro-dot {
-                opacity: 0; /* Прячем точку, пока текст раскрыт */
+                opacity: 0;
             }
         }
 
@@ -581,36 +591,34 @@
         }
 
         /* ==========================================================================
-        ПАРИЩИЙ МОБИЛЬНЫЙ ОСТРОВОК ПОД БОЛЬШОЙ ПАЛЕЦ
+        ПАРЯЩИЙ МОБИЛЬНЫЙ ОСТРОВОК ПОД БОЛЬШОЙ ПАЛЕЦ
         ========================================================================== */
         #mobile-voice-dock {
             transform: translate(-50%, 20px) scale(0.92);
-            transition: 
+            transition:
                 transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
                 opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1);
             will-change: transform, opacity;
         }
 
-        /* Активное состояние: мягко выпрыгивает строго над нижним меню */
         #mobile-voice-dock.is-active {
             opacity: 1 !important;
             transform: translate(-50%, 0) scale(1) !important;
             pointer-events: auto !important;
         }
 
-        /* Пульсирующий неоновый ореол на мобилке */
         .mobile-voice-pill {
             animation: mobilePillGlow 2.2s infinite ease-in-out;
         }
 
         @keyframes mobilePillGlow {
             0%, 100% {
-                box-shadow: 
+                box-shadow:
                     0 12px 30px rgba(79, 70, 229, 0.5),
                     0 0 0 1px rgba(165, 180, 252, 0.3);
             }
             50% {
-                box-shadow: 
+                box-shadow:
                     0 16px 40px rgba(99, 102, 241, 0.75),
                     0 0 0 2px rgba(165, 180, 252, 0.5);
             }
@@ -619,37 +627,33 @@
         /* ==========================================================================
         ДИНАМИЧЕСКИЙ ОСТРОВОК: РЕЖИМ ТРАНСКРИБАЦИИ И УСПЕХА
         ========================================================================== */
-
-        /* Состояние обработки аудио */
         .island-capsule.mode-transcribe {
             max-width: 25rem !important;
             width: 100% !important;
             padding: 0.5rem 1.15rem !important;
             background: rgba(18, 17, 26, 0.98) !important;
             border-color: rgba(99, 102, 241, 0.45) !important;
-            box-shadow: 
+            box-shadow:
                 0 16px 36px -8px rgba(79, 70, 229, 0.4),
                 0 0 0 1px rgba(129, 140, 248, 0.2) !important;
         }
 
-        /* Состояние триумфа (успешно вставлено) */
         .island-capsule.mode-transcribe-success {
             max-width: 22rem !important;
             width: 100% !important;
             padding: 0.5rem 1.15rem !important;
             background: rgba(16, 24, 22, 0.98) !important;
             border-color: rgba(16, 185, 129, 0.45) !important;
-            box-shadow: 
+            box-shadow:
                 0 16px 36px -8px rgba(16, 185, 129, 0.35),
                 0 0 0 1px rgba(16, 185, 129, 0.25) !important;
         }
 
-        /* Бегущий световой градиент по тексту (Text Shimmer) */
         .transcribe-shimmer-text {
             background: linear-gradient(
-                90deg, 
-                rgba(255, 255, 255, 0.7) 0%, 
-                rgba(255, 255, 255, 1) 50%, 
+                90deg,
+                rgba(255, 255, 255, 0.7) 0%,
+                rgba(255, 255, 255, 1) 50%,
                 rgba(255, 255, 255, 0.7) 100%
             );
             background-size: 200% 100%;
@@ -663,7 +667,6 @@
             100% { background-position: -200% 0; }
         }
 
-        /* Пружинный взрыв чекмарка при успехе */
         .success-check-pop {
             animation: checkPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
         }
@@ -679,17 +682,13 @@
 
     <!-- ОВЕРЛЕЙ ГЕНЕРАЦИИ (GATEWAY FLOW CORE) -->
     <div id="overlay" class="fixed inset-0 bg-[#0B0A0E]/95 backdrop-blur-3xl z-[9999] hidden flex-col items-center justify-center p-6 select-none overflow-hidden">
-        
-        <!-- Живой холст схождения потоков частиц в сингулярность -->
+
         <canvas id="gateway-canvas" class="absolute inset-0 w-full h-full pointer-events-auto cursor-crosshair z-0"></canvas>
 
-        <!-- Тонкая дизер-сетка (Grain Texture) для киношной текстуры -->
         <div class="absolute inset-0 pointer-events-none opacity-[0.03] z-1" style="background-image: url('data:image/svg+xml,%3Csvg viewBox=%220 0 2 2%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Crect width=%221%22 height=%221%22 fill=%22%23ffffff%22/%3E%3C/svg%3E'); background-size: 3px 3px;"></div>
 
-        <!-- Центральный модуль статуса (в фокусе схождения потоков) -->
         <div class="relative z-10 flex flex-col items-center max-w-sm w-full text-center pointer-events-none">
-            
-            <!-- Ядро конвергенции с мягким пульсирующим свечением -->
+
             <div class="relative w-14 h-14 rounded-full bg-[#18171C]/90 border border-white/15 backdrop-blur-xl flex items-center justify-center shadow-2xl mb-7">
                 <div class="absolute inset-0 rounded-full border border-indigo-500/40 animate-ping opacity-25"></div>
                 <svg class="w-6 h-6 text-indigo-300 transition-transform duration-700" viewBox="0 0 16 16" fill="currentColor">
@@ -697,27 +696,23 @@
                 </svg>
             </div>
 
-            <!-- Человечный статус текущего действия -->
             <h2 id="loader-step-text" class="text-base sm:text-lg font-bold text-white tracking-tight mb-2 min-h-[1.75rem] transition-opacity duration-200">
                 Вчитываемся в материал...
             </h2>
 
-            <!-- Динамический подстатус (подтягивает РЕАЛЬНЫЕ параметры без хардкода) -->
             <p id="loader-meta-text" class="text-[11px] text-gray-400 font-mono-nums mb-6 transition-all">
                 Синтез: 5 вопросов • Средняя сложность
             </p>
 
-            <!-- КИНЕТИЧЕСКИЙ ПРОГРЕСС-БАР -->
             <div class="w-full max-w-[280px] space-y-2">
                 <div class="relative w-full h-1.5 bg-[#1F1E26] rounded-full overflow-hidden p-[1px] border border-white/5">
-                    <div id="loader-progress-fill" 
-                         class="relative h-full bg-indigo-500 rounded-full transition-all duration-300 ease-out overflow-hidden" 
+                    <div id="loader-progress-fill"
+                         class="relative h-full bg-indigo-500 rounded-full transition-all duration-300 ease-out overflow-hidden"
                          style="width: 5%;">
                         <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent animate-shimmer"></div>
                     </div>
                 </div>
 
-                <!-- Подпись фазы и реальный процент -->
                 <div class="flex items-center justify-between text-[11px] font-mono-nums px-0.5">
                     <span id="loader-status-sub" class="text-gray-500 text-[10px]">Анализ структуры</span>
                     <span id="loader-percent" class="text-indigo-300 font-bold">5%</span>
@@ -737,7 +732,7 @@
             <img src="{% static 'img/logo.png' %}" alt="Logo" class="w-5 h-auto">
         </a>
         {% if username == 0 %}
-            <a href="{% url 'login' %}" class="w-11 h-11 rounded-2xl bg-white/5 border border-white/5 text-gray-500 flex items-center justify-center hover:text-indigo-400 hover:bg-white/10 spring-btn" title="Профиль">
+            <a href="{% url 'login' %}" class="w-11 h-11 rounded-2xl bg-white/5 border border-white/5 text-gray-500 flex items-center justify-center hover:text-indigo-400 hover:bg-white/10 spring-btn" title="Войти">
                 <i class="fa-solid fa-right-to-bracket text-sm"></i>
             </a>
         {% endif %}
@@ -780,8 +775,8 @@
 
         <!-- DYNAMIC ISLAND HEADER -->
         <header class="motion-delay-island sticky top-4 z-40 w-full px-4 flex justify-center pointer-events-none">
-            <div id="dynamic-island" class="island-capsule mode-header pointer-events-auto flex items-center justify-center relative min-h-[48px]">
-                
+            <div id="dynamic-island" class="island-capsule mode-header pointer-events-auto flex items-center justify-center relative min-h-[48px]" role="status" aria-live="polite">
+
                 <!-- 1. ДЕФОЛТНЫЙ СЛОЙ УПРАВЛЕНИЯ -->
                 <div id="island-controls" class="motion-fade-up island-content-layer w-full flex items-center justify-between gap-4 opacity-100 scale-100">
                     <div class="flex items-center gap-3">
@@ -794,7 +789,6 @@
                         </div>
                     </div>
 
-                    <!-- ДИНАМИЧЕСКИЙ БАЛАНС В ОСТРОВКЕ (СТРОГИЙ СТИЛЬ) -->
                     <div class="flex items-center font-mono-nums">
                         {% if can_generate and total_available > 0 %}
                             <div class="flex items-center gap-2 pl-2.5 pr-3 py-1 rounded-full bg-[#18171C] border border-white/10 text-xs">
@@ -803,9 +797,9 @@
                                     <span class="text-white font-bold">{{ total_available }}</span>
                                     <span class="text-gray-500 font-sans text-[10px] uppercase font-semibold">
                                         {% if plan_type == 'package' %}
-                                            пакет
+                                            в пакете
                                         {% elif subscription_level >= 1 %}
-                                            Доступно
+                                            доступно
                                         {% else %}
                                             тест
                                         {% endif %}
@@ -822,12 +816,9 @@
                     </div>
                 </div>
 
-                <!-- 2. СЛОЙ ОБРАБОТКИ И УСПЕХА ТРАНСКРИБАЦИИ (APPLE INTELLIGENCE STYLE) -->
+                <!-- 2. СЛОЙ ОБРАБОТКИ И УСПЕХА ТРАНСКРИБАЦИИ -->
                 <div id="island-transcribe" class="island-content-layer hidden w-full items-center justify-between gap-3 opacity-0 scale-90 select-none">
-                    
-                    <!-- Левая часть: Индикатор (Орбитальный спиннер -> Изумрудный чек) -->
                     <div class="flex items-center gap-2.5 min-w-0">
-                        <!-- Спиннер обработки (активен во время Whisper) -->
                         <div id="transcribe-spinner" class="relative w-5 h-5 flex items-center justify-center flex-shrink-0">
                             <span class="absolute inset-0 rounded-full border-[1.5px] border-indigo-500/20"></span>
                             <span class="absolute inset-0 rounded-full border-[1.5px] border-transparent border-t-indigo-400 border-r-cyan-300 animate-spin"></span>
@@ -846,21 +837,19 @@
                     <div id="transcribe-metric-chip" class="flex-shrink-0 px-2 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-[10px] font-bold text-indigo-300 uppercase tracking-wider">
                         <span>SPEECH</span>
                     </div>
-
                 </div>
 
-                <!-- 4. СТАНДАРТНЫЙ СЛОЙ ДЛЯ ОБЫЧНЫХ АЛЕРТОВ (ОШИБКИ, ВАРНИНГИ) -->
+                <!-- 3. СЛОЙ ОБЫЧНЫХ УВЕДОМЛЕНИЙ (ОШИБКИ, ВАРНИНГИ, УСПЕХ) -->
                 <div id="island-notice" class="island-content-layer hidden w-full items-center justify-center gap-3 opacity-0 scale-75 select-none">
-                    <span id="island-icon-box" class="w-6 h-6 rounded-full flex items-center justify-center text-xs flex-shrink-0">
-                        <i id="island-icon" class="fas fa-check"></i>
+                    <span id="island-icon-box" class="w-6 h-6 rounded-full flex items-center justify-center text-xs flex-shrink-0 island-icon-info">
+                        <i id="island-icon" class="fas fa-circle-info"></i>
                     </span>
                     <span id="island-text" class="text-xs sm:text-sm font-semibold text-white tracking-wide truncate"></span>
                 </div>
+                <span id="island-timer-bar" aria-hidden="true"></span>
 
-                <!-- 3. СЛОЙ ГОЛОСОВОЙ ЗАПИСИ И ЭКВАЛАЙЗЕРА WHISPER -->
+                <!-- 4. СЛОЙ ГОЛОСОВОЙ ЗАПИСИ -->
                 <div id="island-voice" class="island-content-layer hidden w-full items-center justify-between gap-3 opacity-0 scale-90 select-none">
-                    
-                    <!-- Индикатор записи и секундомер -->
                     <div class="flex items-center gap-2 min-w-[65px]">
                         <span class="relative flex h-2.5 w-2.5">
                             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
@@ -869,21 +858,18 @@
                         <span id="voice-timer" class="text-xs font-bold text-white tracking-wider">00:00</span>
                     </div>
 
-                    <!-- Живой Canvas эквалайзер -->
                     <div class="flex-grow flex items-center justify-center px-1">
                         <canvas id="voice-wave-canvas" width="260" height="44"></canvas>
                     </div>
 
-                    <!-- Кнопки управления -->
                     <div class="flex items-center gap-2 justify-end">
-                        <button type="button" onclick="cancelVoiceRecording()" 
+                        <button type="button" onclick="cancelVoiceRecording()"
                                 class="px-2.5 py-1 rounded-full bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-300 hover:text-rose-200 text-[11px] font-medium transition-all spring-btn flex items-center gap-1.5"
                                 title="Сбросить запись (Esc)">
                             <i class="fas fa-xmark text-[10px]"></i>
                             <span>Отмена</span>
                         </button>
                     </div>
-
                 </div>
 
             </div>
@@ -891,11 +877,9 @@
 
         <!-- РАБОЧАЯ ОБЛАСТЬ (СТУДИЯ) -->
         <main class="max-w-4xl w-full mx-auto px-4 sm:px-6 py-6 flex-grow space-y-6">
-            
-            <!-- HERO / СТУДИЯ ОНБОРДИНГ (ФУНКЦИОНАЛЬНЫЙ BENTO-ХЕДЕР) -->
+
             <div class="motion-fade-up motion-delay-hero pt-4 sm:pt-8 pb-3 text-center space-y-3 sm:space-y-4 max-w-3xl mx-auto px-2">
-                
-                <!-- 1. Заголовок без AI-мусора -->
+
                 <h1 class="text-2xl sm:text-3xl md:text-4xl font-extrabold text-white tracking-tight leading-tight">
                     {% if request.user.is_authenticated %}
                         Собрать новый тест
@@ -904,17 +888,14 @@
                     {% endif %}
                 </h1>
 
-                <!-- 2. Прагматичный подзаголовок -->
                 <p class="text-xs sm:text-sm text-zinc-400 font-normal leading-relaxed max-w-lg mx-auto">
                     Вставьте текст, прикрепите файл или надиктуйте суть голосом — вопросы и варианты ответов сформируются автоматически.
                 </p>
 
-                <!-- 3. ИНТЕРАКТИВНЫЕ КАРТОЧКИ ВХОДНЫХ ФОРМАТОВ (НЕ ЖРУТ ЭКРАН НА МОБИЛКЕ) -->
                 <div class="pt-1 sm:pt-2">
                     <div class="grid grid-cols-3 gap-2 sm:gap-3 max-w-xl mx-auto">
-                        
-                        <!-- Формат 1: Текст -->
-                        <div onclick="switchSourceTab('text'); $('#user-text').focus();" 
+
+                        <div onclick="switchSourceTab('text'); $('#user-text').focus();"
                             class="group p-2.5 sm:p-3.5 rounded-2xl bg-white/[0.025] hover:bg-white/[0.06] border border-white/[0.07] hover:border-indigo-500/40 transition-all duration-200 cursor-pointer spring-btn flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-2 sm:gap-3">
                             <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
                                 <i class="fa-solid fa-align-left text-xs"></i>
@@ -925,8 +906,7 @@
                             </div>
                         </div>
 
-                        <!-- Формат 2: Документ -->
-                        <div onclick="switchSourceTab('file')" 
+                        <div onclick="switchSourceTab('file')"
                             class="group p-2.5 sm:p-3.5 rounded-2xl bg-white/[0.025] hover:bg-white/[0.06] border border-white/[0.07] hover:border-indigo-500/40 transition-all duration-200 cursor-pointer spring-btn flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-2 sm:gap-3">
                             <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-white/[0.05] border border-white/10 text-zinc-300 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
                                 <i class="fa-solid fa-file-arrow-up text-xs"></i>
@@ -937,8 +917,7 @@
                             </div>
                         </div>
 
-                        <!-- Формат 3: Голос -->
-                        <div onclick="toggleVoiceDictation()" 
+                        <div onclick="toggleVoiceDictation()"
                             class="group p-2.5 sm:p-3.5 rounded-2xl bg-white/[0.025] hover:bg-indigo-600/10 border border-white/[0.07] hover:border-indigo-500/40 transition-all duration-200 cursor-pointer spring-btn flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-2 sm:gap-3 relative overflow-hidden">
                             <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
                                 <i class="fa-solid fa-microphone text-xs"></i>
@@ -971,10 +950,10 @@
                         </p>
                     </div>
                 </div>
-                
+
                 <div class="flex-shrink-0">
-                    <button type="button" 
-                            onclick="openRegisterModal('unclaimed_alert')" 
+                    <button type="button"
+                            onclick="openRegisterModal('unclaimed_alert')"
                             class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-neutral-950 text-xs font-semibold transition-all spring-btn text-center shadow-lg shadow-amber-400/10 flex items-center justify-center gap-2">
                         <span>Сохранить черновик</span>
                         <i class="fas fa-arrow-right text-[10px]"></i>
@@ -982,14 +961,14 @@
                 </div>
             </div>
             {% endif %}
+
             <!-- ГЛАВНЫЙ БЕНТО-БЛОК КОНФИГУРАЦИИ -->
             <div class="motion-fade-up motion-delay-bento glass-panel rounded-[32px] p-6 sm:p-8 shadow-2xl space-y-6 border border-white/[0.08]">
 
-                <!-- КВОТА И СТРОГИЙ ПРОГРЕСС-БАР ЛИМИТА -->
-                <div class="w-full bg-[--var(--bg-main)] border border-white/[0.06] rounded-[22px] p-3.5 sm:px-4 sm:py-3 transition-colors hover:border-white/10">
+                <!-- КВОТА -->
+                <div class="w-full bg-[var(--bg-main)] border border-white/[0.06] rounded-[22px] p-3.5 sm:px-4 sm:py-3 transition-colors hover:border-white/10">
                     <div class="flex items-center justify-between gap-3 text-xs mb-2.5">
-                        
-                        <!-- Левая часть: статус квоты -->
+
                         <div class="flex items-center gap-2 min-w-0">
                             <span class="w-2 h-2 rounded-full {% if not can_generate or total_available == 0 %}bg-rose-500{% else %}bg-indigo-500{% endif %} flex-shrink-0"></span>
                             <span class="text-gray-300 font-medium text-xs truncate">
@@ -1001,7 +980,6 @@
                             </span>
                         </div>
 
-                        <!-- Правая часть: счетчик и экшен -->
                         <div class="flex items-center gap-3 font-mono-nums flex-shrink-0">
                             <div class="text-[11px] font-semibold tracking-tight">
                                 <span id="quota-val-cur" class="{% if not can_generate or total_available == 0 %}text-rose-400{% else %}text-white{% endif %}">
@@ -1035,15 +1013,14 @@
                         </div>
                     </div>
 
-                    <!-- Сам трек прогресс-бара -->
                     <div class="w-full h-1.5 bg-[#212026] rounded-full overflow-hidden p-[1px]">
-                        <div id="quota-progress-bar" 
+                        <div id="quota-progress-bar"
                             class="h-full rounded-full {% if not can_generate or total_available == 0 %}bg-rose-500{% else %}bg-indigo-600{% endif %}"
                             style="width: 0%; will-change: width;">
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- ТАБЛЕТКА-ПЕРЕКЛЮЧАТЕЛЬ -->
                 <div class="flex items-center justify-between border-b border-white/10 pb-4">
                     <div class="flex items-center p-1 rounded-2xl bg-[var(--bg-main)] border border-white/10">
@@ -1055,7 +1032,6 @@
                         </button>
                     </div>
 
-                    <!-- СЧЁТЧИК СИМВОЛОВ -->
                     <div id="char-counter-badge" class="hidden sm:inline-flex items-center text-[11px] font-mono-nums select-none" style="direction: ltr !important;">
                         <span id="txt-counter-val" class="font-bold text-gray-300 transition-colors">0</span>
                         <span class="text-gray-600 mx-1">/</span>
@@ -1067,41 +1043,32 @@
                 <!-- 1. ВВОД ТЕКСТА -->
                 <div id="source-text-zone" class="space-y-2 relative">
                     <div class="relative w-full">
-                        <textarea id="user-text" rows="7" placeholder="Вставьте сюда текст лекции, методички, параграфа или ключевые тезисы..." 
+                        <textarea id="user-text" rows="7" placeholder="Вставьте сюда текст лекции, методички, параграфа или ключевые тезисы..."
                                 class="w-full bg-[#111119] border border-white/10 rounded-2xl p-4 pr-14 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 transition-colors resize-none leading-relaxed"></textarea>
 
-                        <!-- ПЛАВАЮЩИЙ МИКРОФОН С FEATURE DISCOVERY SPOTLIGHT -->
                         <button type="button" id="btn-voice-dictate" onclick="toggleVoiceDictation()"
                                 class="voice-spotlight-btn is-expanded absolute right-3.5 bottom-4 h-9 rounded-xl bg-[#161522] border border-indigo-500/30 text-white flex items-center shadow-lg shadow-indigo-950/40 select-none group overflow-hidden transition-all"
                                 title="Надиктовать голосом">
-                            
-                            <!-- Нелинейный SVG-луч (светит при старте и при наведении) -->
                             <svg class="spotlight-svg-beam absolute inset-0 w-full h-full pointer-events-none rounded-xl" style="overflow: visible;">
                                 <rect x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="11"
                                     fill="none" stroke="#818CF8" stroke-width="2" stroke-linecap="round"
                                     pathLength="100" class="spotlight-beam-path" />
                             </svg>
-
-                            <!-- Иконка микрофона с аккуратным внутренним LED-индикатором -->
                             <div class="relative w-9 h-9 flex items-center justify-center flex-shrink-0 text-indigo-400 group-hover:text-white transition-colors">
                                 <i class="fa-solid fa-microphone text-xs transition-transform group-hover:scale-110"></i>
-                                
-                                <!-- Внутренний диод статуса (никогда не обрежется краем) -->
                                 <span class="spotlight-pro-dot absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-indigo-400 shadow-[0_0_6px_rgba(129,140,248,0.9)] opacity-0 transition-opacity duration-300"></span>
                             </div>
-
-                            <!-- Текст: раскрывается на старте и при наведении мыши -->
                             <div class="spotlight-text-wrapper overflow-hidden whitespace-nowrap pr-3 flex items-center gap-2">
                                 <span class="text-xs font-semibold text-zinc-100 tracking-tight">Нажмите, чтобы начать диктовку</span>
                             </div>
                         </button>
                     </div>
                 </div>
-                
+
                 <!-- 2. ДРОПЗОНА ДОКУМЕНТА -->
                 <div id="source-file-zone" class="hidden space-y-4">
                     {% if subscription_level >= 1 or total_available > 0 or plan_type == 'package' %}
-                        <div id="drop-area" onclick="document.getElementById('hidden-file-input').click()" 
+                        <div id="drop-area" onclick="document.getElementById('hidden-file-input').click()"
                              class="border-2 border-dashed border-white/15 hover:border-indigo-500/60 rounded-2xl p-8 sm:p-12 text-center cursor-pointer bg-[var(--bg-main)]/50 transition-all group">
                             <div class="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 group-hover:bg-indigo-600/10 group-hover:border-indigo-500/30 flex items-center justify-center mx-auto mb-3 transition-all">
                                 <i class="fas fa-cloud-arrow-up text-xl text-gray-400 group-hover:text-indigo-400 transition-colors"></i>
@@ -1115,17 +1082,16 @@
                             <div class="w-10 h-10 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center mx-auto mb-3 text-indigo-400">
                                 <i class="fas fa-lock text-sm"></i>
                             </div>
-                            <h3 class="text-sm font-bold text-white mb-1">Загрузка документов в тарифе Премиум</h3>
+                            <h3 class="text-sm font-bold text-white mb-1">Загрузка документов — в тарифе или пакете</h3>
                             <p class="text-xs text-gray-400 max-w-sm mx-auto mb-4 leading-relaxed">
-                                Анализируйте файлы без необходимости вручную копировать текст.
+                                Анализируйте файлы без ручного копирования текста.
                             </p>
                             <span class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold spring-btn">
-                                Перейти на Премиум &rarr;
+                                Открыть доступ &rarr;
                             </span>
                         </div>
                     {% endif %}
 
-                    <!-- Чип прикрепленного файла -->
                     <div id="file-preview-card" class="hidden items-center justify-between p-3.5 bg-[var(--bg-main)] border border-white/10 rounded-2xl">
                         <div class="flex items-center gap-3 overflow-hidden">
                             <div class="w-9 h-9 rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center flex-shrink-0 text-indigo-400">
@@ -1142,9 +1108,9 @@
                     </div>
                 </div>
 
-                <!-- НАСТРОЙКИ (BENTO CONTROLS) -->
+                <!-- НАСТРОЙКИ -->
                 <div class="pt-4 border-t border-white/10 grid grid-cols-1 md:grid-cols-2 gap-6">
-                    
+
                     <!-- 1. СЛОЖНОСТЬ -->
                     <div class="space-y-2">
                         <label class="block text-xs font-semibold text-gray-400">Сложность вопросов</label>
@@ -1155,37 +1121,33 @@
                         </div>
                     </div>
 
-                    <!-- 2. СЛАЙДЕР КОЛИЧЕСТВА ВОПРОСОВ (PRECISION CONTROLLER) -->
+                    <!-- 2. СЛАЙДЕР КОЛИЧЕСТВА ВОПРОСОВ -->
                     <div class="space-y-3">
                         <div class="flex items-center justify-between">
                             <label for="question-slider" class="text-xs font-semibold text-gray-400">Количество вопросов</label>
-                            
-                            <!-- Монолитный дисплей значения (не прыгает при изменении) -->
                             <div class="flex items-center gap-2 px-2.5 py-1 rounded-full bg-[#18171C] border border-white/[0.08] font-mono-nums">
-                                <span id="slider-pro-pill" class="opacity-0 scale-90 -mr-1 transition-all duration-200 text-[10px] font-sans font-bold text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded-full border border-indigo-500/20">
-                                    ₽
+                                <span id="slider-pro-pill" class="opacity-0 scale-90 -mr-1 transition-all duration-200 text-[10px] font-sans font-bold text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded-full border border-indigo-500/20" title="Больше 8 вопросов — в тарифе или пакете">
+                                    <i class="fas fa-lock text-[8px]"></i>
                                 </span>
                                 <span id="slider-count-display" class="text-xs font-bold text-white min-w-[14px] text-center">5</span>
-                                <span class="text-[11px] text-gray-500 font-sans">вопросов</span>
+                                <span id="slider-count-word" class="text-[11px] text-gray-500 font-sans">вопросов</span>
                             </div>
                         </div>
 
-                        <!-- Интерактивный трек -->
                         <div class="relative flex items-center py-1">
                             <input type="range" id="question-slider" min="1" max="30" value="5" class="custom-slider w-full cursor-pointer">
                         </div>
 
-                        <!-- Лаконичная шкала значений без цыганщины -->
                         <div class="flex justify-between items-center text-[10px] text-gray-500 font-mono-nums px-1 select-none">
-                                <span>1</span>
-                                <span>8</span>
-                                <span>15</span>
-                                <span>22</span>
-                                <span>30</span>
+                            <span>1</span>
+                            <span>8</span>
+                            <span>15</span>
+                            <span>22</span>
+                            <span>30</span>
                         </div>
                     </div>
 
-                    <!-- 3. ТИПЫ ВОПРОСОВ (КАСТОМНЫЕ ЧЕКБОКСЫ) -->
+                    <!-- 3. ТИПЫ ВОПРОСОВ -->
                     <div class="space-y-2.5">
                         <label class="block text-xs font-semibold text-gray-400">Типы заданий</label>
                         <div class="space-y-2">
@@ -1215,16 +1177,15 @@
                     </div>
 
                 </div>
-                
-                <!-- ГЛАВНАЯ КНОПКА ЗАПУСКА ГЕНЕРАЦИИ (PRECISION LAUNCH PILL) -->
+
+                <!-- ГЛАВНАЯ КНОПКА ЗАПУСКА ГЕНЕРАЦИИ -->
                 <div class="pt-5 border-t border-white/[0.08]">
-                    <button type="button" id="btn-generate-main" onclick="handleMainButtonClick()" 
+                    <button type="button" id="btn-generate-main" onclick="handleMainButtonClick()"
                             class="master-launch-pill group relative w-full h-[54px] sm:h-[56px] rounded-full px-5 sm:px-7 flex items-center justify-center select-none overflow-hidden cursor-pointer transition-all duration-300">
-                        
+
                         <div class="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none z-20"></div>
                         <div id="btn-trigger-warn-bg" class="absolute inset-0 bg-[#201C16] border border-amber-500/40 rounded-full opacity-0 pointer-events-none transition-opacity duration-500 ease-out z-10 shadow-[inset_0_1px_0_rgba(245,158,11,0.25)]"></div>
 
-                        <!-- 1. ДЕФОЛТ: ГЕНЕРАЦИЯ ТЕСТА (Хоткей спрятан ВНУТРИ слоя) -->
                         <div id="btn-content-default" class="w-full flex items-center justify-center relative z-20 transition-all duration-300 ease-out opacity-100 scale-100">
                             <div class="flex items-center gap-2.5">
                                 <span class="w-6 h-6 rounded-full bg-black/25 border border-white/10 flex items-center justify-center flex-shrink-0 transition-colors">
@@ -1237,7 +1198,6 @@
                                 </span>
                             </div>
 
-                            <!-- Дефолтный хоткей -->
                             <div class="absolute right-0 top-1/2 -translate-y-1/2 hidden sm:flex items-center gap-1.5 opacity-70 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
                                 <kbd class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-black/25 border border-white/10 text-[10px] text-indigo-200 font-semibold tracking-wider">
                                     <span>⌘</span>Enter
@@ -1246,7 +1206,6 @@
                             </div>
                         </div>
 
-                        <!-- 2. ОШИБКА: НЕТ ТЕКСТА -->
                         <div id="btn-content-warn" class="absolute inset-0 flex items-center justify-center gap-2.5 z-20 transition-all duration-300 ease-out opacity-0 scale-95 pointer-events-none">
                             <span class="w-6 h-6 rounded-full bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 text-xs flex-shrink-0">
                                 <i class="fas fa-triangle-exclamation text-[11px]"></i>
@@ -1256,38 +1215,27 @@
                             </span>
                         </div>
 
-                        <!-- 3. ДИКТОВКА: СТРОГО ПО ЦЕНТРУ + ХОТКЕЙ ENTER БЕЗ НАЛОЖЕНИЙ -->
                         <div id="btn-content-recording" class="absolute inset-0 z-20 flex items-center justify-center opacity-0 scale-95 pointer-events-none transition-all duration-300 ease-out rounded-full overflow-hidden">
-                            
-                            <!-- Линейный лазерный импульс (Indigo-300) -->
                             <svg class="absolute inset-0 w-full h-full pointer-events-none" style="overflow: visible;">
                                 <rect x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="27"
                                     fill="none" stroke="#A5B4FC" stroke-width="2" stroke-linecap="round"
                                     pathLength="100" class="svg-beam-path" />
                             </svg>
-
-                            <!-- Центр: Студийный звуковой эквалайзер вместо красной точки + Белый текст -->
                             <div class="relative z-10 flex items-center gap-3">
-                                <!-- Студийный микро-стоп -->
                                 <div class="studio-stop-badge flex items-center justify-center w-6 h-6 rounded-full bg-white/10 border border-white/15 backdrop-blur-md transition-transform group-hover:scale-105">
                                     <span class="w-2.5 h-2.5 rounded-[2.5px] bg-white shadow-[0_0_6px_rgba(255,255,255,0.6)]"></span>
                                 </div>
-                                
                                 <span class="text-xs sm:text-sm font-semibold tracking-tight text-white antialiased">
                                     Остановить и распознать
                                 </span>
                             </div>
-
-                            <!-- Справа: Контрастный белый матовый Enter -->
                             <div class="absolute right-5 sm:right-6 top-1/2 -translate-y-1/2 hidden sm:flex items-center gap-1.5 pointer-events-none z-10">
                                 <kbd class="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/15 border border-white/20 text-[10px] text-white font-semibold tracking-wider backdrop-blur-md shadow-sm">
                                     Enter ↵
                                 </kbd>
                             </div>
-
                         </div>
 
-                        <!-- 4. ПРОГРЕСС -->
                         <div id="btn-trigger-progress" class="absolute inset-0 bg-[#3730A3] -translate-x-full transition-transform duration-500 ease-out pointer-events-none flex items-center justify-center z-30">
                             <div class="flex items-center gap-2 text-xs font-semibold text-white">
                                 <span class="w-1.5 h-1.5 rounded-full bg-indigo-300 animate-ping"></span>
@@ -1299,7 +1247,7 @@
 
             </div>
 
-            <!-- НЕ ДАВНИЕ ТЕСТЫ -->
+            <!-- НЕДАВНИЕ ТЕСТЫ -->
             <section class="motion-fade-up motion-delay-recent space-y-3 pt-2">
                 <div class="flex items-center justify-between px-2">
                     <span class="text-xs font-bold uppercase tracking-wider text-gray-400">Недавние тесты</span>
@@ -1318,8 +1266,8 @@
                         <i class="fas fa-arrow-right text-xs text-gray-600 group-hover:text-white transition-colors"></i>
                     </a>
                     {% empty %}
-                    <div class="sm:col-span-2 text-center py-6 glass-panel rounded-2xl border border-white/5">
-                        <p class="text-xs text-gray-500">Здесь появятся Ваши первые сгенерированные тесты</p>
+                    <div id="recent-empty" class="sm:col-span-2 text-center py-6 glass-panel rounded-2xl border border-white/5">
+                        <p class="text-xs text-gray-500">Здесь появятся ваши первые сгенерированные тесты</p>
                     </div>
                     {% endfor %}
                 </div>
@@ -1329,7 +1277,7 @@
 
         <footer class="mt-20 sm:mt-32 pb-12 w-full">
             <div class="max-w-4xl mx-auto px-4 sm:px-6">
-                <div class="p-6 sm:p-8 rounded-3xl bg-[--var(--bg-main)]/60 border border-[#2D2C31] backdrop-blur-xl flex flex-col md:flex-row items-center justify-between gap-6 shadow-2xl">
+                <div class="p-6 sm:p-8 rounded-3xl bg-[var(--bg-main)]/60 border border-[#2D2C31] backdrop-blur-xl flex flex-col md:flex-row items-center justify-between gap-6 shadow-2xl">
                     <div class="flex items-center gap-4 text-center md:text-left">
                         <div class="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 flex-shrink-0">
                             <i class="fas fa-headset text-xl"></i>
@@ -1340,7 +1288,7 @@
                         </div>
                     </div>
 
-                    <a href="mailto:support@letuchka.ai" 
+                    <a href="mailto:support@letychka.ru"
                     class="px-5 py-2.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white text-xs font-semibold transition-all spring-btn flex items-center gap-2 flex-shrink-0 group">
                         <i class="fas fa-envelope text-indigo-400 group-hover:scale-110 transition-transform"></i>
                         <span>support@letychka.ru</span>
@@ -1349,10 +1297,10 @@
                 <div class="mt-8 pt-8 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-gray-500">
                     <div class="flex items-center gap-1.5 text-center md:text-left">
                         <span>© 2024–2026 Летучка AI.</span>
-                        <span class="block sm:inline">Design & Dev by 
-                            <a class="text-gray-400 hover:text-indigo-400 font-medium transition-colors" 
-                            rel="nofollow" 
-                            href="https://dprofile.ru/kozak_developer" 
+                        <span class="block sm:inline">Design & Dev by
+                            <a class="text-gray-400 hover:text-indigo-400 font-medium transition-colors"
+                            rel="nofollow"
+                            href="https://dprofile.ru/kozak_developer"
                             target="_blank">Kozak</a>
                         </span>
                     </div>
@@ -1361,44 +1309,33 @@
                         <span class="text-gray-700">•</span>
                         <a href="/docs/privacy-policy" class="hover:text-gray-300 transition-colors">Политика конфиденциальности</a>
                     </div>
-
                 </div>
-
             </div>
         </footer>
     </div>
 
-    <!-- ПАРИЩИЙ МОБИЛЬНЫЙ ОСТРОВОК ЗАВЕРШЕНИЯ (ТОЛЬКО SMARTPHONE VIEWPORT) -->
-    <div id="mobile-voice-dock" 
+    <!-- ПАРЯЩИЙ МОБИЛЬНЫЙ ОСТРОВОК ЗАВЕРШЕНИЯ ЗАПИСИ -->
+    <div id="mobile-voice-dock"
         class="lg:hidden fixed bottom-[84px] left-1/2 z-50 pointer-events-none opacity-0 select-none">
-        
-        <button type="button" onclick="stopVoiceRecording()" 
+        <button type="button" onclick="stopVoiceRecording()"
                 class="mobile-voice-pill relative h-12 px-5 rounded-full bg-gradient-to-r from-[#4338CA] via-[#3730A3] to-[#312E81] border border-indigo-400/50 text-white flex items-center gap-3 shadow-[0_14px_35px_rgba(79,70,229,0.55),0_0_0_1px_rgba(165,180,252,0.35)] spring-btn pointer-events-auto">
-            
-            <!-- Равномерный лазерный контур вокруг мобильной кнопки -->
             <svg class="absolute inset-0 w-full h-full pointer-events-none rounded-full" style="overflow: visible;">
                 <rect x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="23"
                     fill="none" stroke="#A5B4FC" stroke-width="2" stroke-linecap="round"
                     pathLength="100" class="svg-beam-path" />
             </svg>
-
-            <!-- Трёхполосный студийный эквалайзер -->
             <div class="studio-eq-badge flex items-center justify-center gap-1 w-5 h-5 rounded-full bg-white/10 border border-white/15 backdrop-blur-md">
                 <span class="eq-bar eq-bar-1"></span>
                 <span class="eq-bar eq-bar-2"></span>
                 <span class="eq-bar eq-bar-3"></span>
             </div>
-
             <span class="text-xs font-bold tracking-tight text-white whitespace-nowrap drop-shadow-sm">
                 Остановить и распознать
             </span>
-
-            <!-- Тактильный квадрат STOP -->
             <span class="w-6 h-6 rounded-full bg-white/15 border border-white/20 flex items-center justify-center text-[9px] text-white flex-shrink-0 shadow-inner">
                 <i class="fas fa-stop text-[8px]"></i>
             </span>
         </button>
-
     </div>
 
     <!-- МОДАЛКА ПЕЙВОЛЛА -->
@@ -1408,13 +1345,13 @@
             <div class="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center mx-auto mb-4">
                 <i class="fas fa-crown text-xl"></i>
             </div>
-            <h3 class="text-base font-bold text-white mb-2" id="paywall-modal-title">Тариф Премиум</h3>
+            <h3 class="text-base font-bold text-white mb-2" id="paywall-modal-title">Расширенный доступ</h3>
             <p class="text-xs text-gray-400 mb-6 leading-relaxed" id="paywall-modal-desc">
-                Создавайте подробные тесты до 30 заданий и загружайте файлы PDF и Word напрямую.
+                Тесты до 30 вопросов и загрузка PDF и Word — в любом тарифе или пакете тестов.
             </p>
             <div class="space-y-2">
                 <a href="{% url 'payment' %}" class="w-full block py-3.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold spring-btn">
-                    Оформить Премиум
+                    Выбрать тариф или пакет
                 </a>
                 <button type="button" onclick="closePaywallModal()" class="w-full py-2 text-xs font-semibold text-gray-500 hover:text-white transition-colors">
                     Позже
@@ -1432,7 +1369,7 @@
             </div>
             <h3 class="text-base font-bold text-white mb-2">Лимит исчерпан</h3>
             <p id="limit-modal-text" class="text-xs text-gray-400 mb-6 leading-relaxed">
-                Вы израсходовали лимит генераций. Перейдите на Премиум или приобретите пакет тестов.
+                Вы израсходовали лимит генераций. Оформите тариф или купите пакет тестов.
             </p>
             <div class="space-y-2">
                 <a href="{% url 'payment' %}" class="w-full block py-3.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold spring-btn">
@@ -1445,10 +1382,10 @@
         </div>
     </div>
 
-    <!-- МОДАЛКА БЫСТРОЙ РЕГИСТРАЦИИ (152-ФЗ) НА СТРАНИЦЕ СОЗДАНИЯ -->
+    <!-- МОДАЛКА БЫСТРОЙ РЕГИСТРАЦИИ (152-ФЗ) -->
     <div id="quick-register-modal" class="fixed inset-0 z-[10002] hidden items-center justify-center p-4">
         <div class="fixed inset-0 bg-black/85 backdrop-blur-md" onclick="closeRegisterModal()"></div>
-        
+
         <div class="relative w-full max-w-md glass-panel rounded-[32px] p-6 sm:p-8 shadow-2xl z-10 space-y-5 spring-modal border border-white/10">
             <div class="flex items-start justify-between pb-3 border-b border-white/10">
                 <div>
@@ -1469,23 +1406,22 @@
                 {% csrf_token %}
                 <div>
                     <label for="reg-email" class="block text-xs font-semibold text-gray-300 mb-1.5">Ваш Email</label>
-                    <input type="email" name="email" id="reg-email" required placeholder="teacher@school.ru" 
+                    <input type="email" name="email" id="reg-email" required autocomplete="email" placeholder="teacher@school.ru"
                         class="w-full bg-[var(--bg-main)] border border-white/10 rounded-2xl p-3.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 transition-colors">
                 </div>
 
                 <div>
                     <label for="reg-password" class="block text-xs font-semibold text-gray-300 mb-1.5">Придумайте пароль</label>
-                    <input type="password" name="password1" id="reg-password" required placeholder="••••••••" 
+                    <input type="password" name="password1" id="reg-password" required autocomplete="new-password" placeholder="••••••••"
                         class="w-full bg-[var(--bg-main)] border border-white/10 rounded-2xl p-3.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 transition-colors">
                 </div>
 
-                <!-- 152-ФЗ ГАЛКА СТРОГО СНЯТА ПО УМОЛЧАНИЮ -->
                 <div class="pt-1">
                     <label class="flex items-start gap-2.5 cursor-pointer text-[11px] text-gray-400 leading-tight select-none">
-                        <input type="checkbox" id="reg-terms" name="terms" required 
+                        <input type="checkbox" id="reg-terms" name="terms" required
                             class="mt-0.5 rounded border-white/20 bg-[var(--bg-main)] text-indigo-600 focus:ring-0 w-4 h-4 flex-shrink-0">
                         <span>
-                            Я даю согласие на обработку персональных данных (152-ФЗ) и принимаю условия 
+                            Я даю согласие на обработку персональных данных (152-ФЗ) и принимаю условия
                             <a href="/docs/public-offer" target="_blank" class="text-indigo-400 underline">Оферты</a>.
                         </span>
                     </label>
@@ -1505,20 +1441,16 @@
         </div>
     </div>
 
-    <!-- СКРИПТ: УСКОРЯЮЩИЙСЯ ПРОГРЕСС-БАР -->
+    <!-- СКРИПТ: ПРОГРЕСС-БАР КВОТЫ -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const bar = document.getElementById('quota-progress-bar');
             if (!bar) return;
 
-            const curEl = document.getElementById('quota-val-cur');
-            const maxEl = document.getElementById('quota-val-max');
-
-            const cur = parseFloat(curEl?.innerText.trim() || '0');
-            const max = parseFloat(maxEl?.innerText.trim() || '1');
+            const cur = parseFloat(document.getElementById('quota-val-cur')?.innerText.trim() || '0');
+            const max = parseFloat(document.getElementById('quota-val-max')?.innerText.trim() || '1');
 
             let targetPercent = 0;
-
             if (cur <= 0) {
                 targetPercent = 100;
             } else if (!isNaN(cur) && !isNaN(max) && max > 0) {
@@ -1527,7 +1459,6 @@
 
             bar.style.width = '0%';
             bar.style.transition = 'none';
-
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
                     bar.style.transition = 'width 0.85s cubic-bezier(0.75, 0, 0.2, 1)';
@@ -1539,38 +1470,47 @@
 
     <!-- СКРИПТ: АВТОПОДГРУЗКА ИСТОРИИ -->
     <script>
-        $(document).ready(function() {
+        $(function() {
             const $container = $('#recent-surveys-container');
-            if ($container.find('.sm\\:col-span-2').length > 0) {
-                fetch('/api/get-history/')
-                    .then(res => res.json())
-                    .then(res => {
-                        const surveys = res.data;
-                        if (surveys && Object.keys(surveys).length > 0) {
-                            let html = '';
-                            const entries = Object.entries(surveys).slice(0, 4);
-                            entries.forEach(([id, item]) => {
-                                html += `
-                                    <a href="/c/${id}/" class="glass-panel p-4 rounded-2xl hover:border-white/20 transition-all flex items-center justify-between group spring-btn">
-                                        <div class="min-w-0 pr-3">
-                                            <p class="text-xs font-bold text-white truncate group-hover:text-indigo-400 transition-colors">${item.title}</p>
-                                            <span class="text-[10px] text-gray-500 font-mono-nums">${item.create}</span>
-                                        </div>
-                                        <i class="fas fa-arrow-right text-xs text-gray-600 group-hover:text-white transition-colors"></i>
-                                    </a>
-                                `;
-                            });
-                            $container.html(html);
-                        }
-                    })
-                    .catch(() => {});
-            }
+            if (!$('#recent-empty').length) return;
+
+            const esc = (s) => $('<div>').text(s == null ? '' : String(s)).html();
+
+            fetch('/api/get-history/')
+                .then(res => res.json())
+                .then(res => {
+                    const surveys = res.data;
+                    if (!surveys || !Object.keys(surveys).length) return;
+                    const html = Object.entries(surveys).slice(0, 4).map(([id, item]) => `
+                        <a href="/c/${encodeURIComponent(id)}/" class="glass-panel p-4 rounded-2xl hover:border-white/20 transition-all flex items-center justify-between group spring-btn">
+                            <div class="min-w-0 pr-3">
+                                <p class="text-xs font-bold text-white truncate group-hover:text-indigo-400 transition-colors">${esc(item.title)}</p>
+                                <span class="text-[10px] text-gray-500 font-mono-nums">${esc(item.create)}</span>
+                            </div>
+                            <i class="fas fa-arrow-right text-xs text-gray-600 group-hover:text-white transition-colors"></i>
+                        </a>`).join('');
+                    $container.html(html);
+                })
+                .catch(() => {});
         });
     </script>
 
     <!-- СИСТЕМНЫЙ JS (ОСТРОВОК, ФОРМА, СЛАЙДЕР) -->
     <script>
-        const isUserPremium = {{ subscription_level|default:0 }} >= 1 || {{ total_available|default:0 }} > 0;
+        /* ==========================================================================
+           0. ПРАВА ПОЛЬЗОВАТЕЛЯ
+           Подписка ИЛИ пакет тестов → до 30 вопросов. Иначе — до 8.
+           ========================================================================== */
+        const USER_PLAN = {
+            subscriptionLevel: parseInt('{{ subscription_level|default:0 }}', 10) || 0,
+            isPackage: '{{ plan_type|default:"" }}' === 'package',
+            totalAvailable: parseInt('{{ total_available|default:0 }}', 10) || 0
+        };
+        const FREE_QUESTION_LIMIT = 8;
+        const PAID_QUESTION_LIMIT = 30;
+        const canUseExtendedQuestions = USER_PLAN.subscriptionLevel >= 1 || USER_PLAN.isPackage;
+        const maxQuestionsAllowed = canUseExtendedQuestions ? PAID_QUESTION_LIMIT : FREE_QUESTION_LIMIT;
+
         let activeSourceTab = 'text';
         let currentDifficulty = 'medium';
         let attachedFile = null;
@@ -1590,8 +1530,15 @@
             return cookieValue;
         }
 
+        function pluralRu(n, one, few, many) {
+            const m10 = n % 10, m100 = n % 100;
+            if (m10 === 1 && m100 !== 11) return one;
+            if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return few;
+            return many;
+        }
+
         /* ==========================================================================
-           1. APPLE DYNAMIC ISLAND ENGINE (ШИНА УВЕДОМЛЕНИЙ)
+           1. DYNAMIC ISLAND (ШИНА УВЕДОМЛЕНИЙ)
            ========================================================================== */
         const Island = (() => {
             const $island = $('#dynamic-island');
@@ -1601,35 +1548,70 @@
             const $text = $('#island-text');
             const $icon = $('#island-icon');
             const $iconBox = $('#island-icon-box');
+            const timerBar = document.getElementById('island-timer-bar');
+
+            const MODES = 'mode-header mode-notify mode-voice mode-transcribe mode-transcribe-success';
+            const THEMES = 'theme-success theme-error theme-warning theme-info';
+            const ICON_THEMES = 'island-icon-success island-icon-error island-icon-warning island-icon-info';
+
+            const DEFAULT_ICONS = {
+                success: 'fa-check',
+                error: 'fa-xmark',
+                warning: 'fa-triangle-exclamation',
+                info: 'fa-circle-info'
+            };
+            const BAR_COLORS = {
+                success: '#34D399', error: '#F87171', warning: '#FBBF24', info: '#A5B4FC'
+            };
 
             let timer = null;
+            let swapTimer = null;
 
             function abort() {
-                if (timer) {
-                    clearTimeout(timer);
-                    timer = null;
-                }
+                if (timer) { clearTimeout(timer); timer = null; }
+                if (swapTimer) { clearTimeout(swapTimer); swapTimer = null; }
             }
 
-            // 1. ЗАПУСК СОСТОЯНИЯ ОБРАБОТКИ
+            function voiceActive() {
+                return typeof VoiceDictation !== 'undefined' && VoiceDictation.isActive();
+            }
+
+            function showControls() {
+                $island.removeClass(MODES + ' ' + THEMES).addClass('mode-header');
+                $controls.removeClass('hidden').addClass('flex');
+                setTimeout(() => {
+                    $controls.removeClass('opacity-0 scale-90 blur-sm pointer-events-none').addClass('opacity-100 scale-100');
+                }, 20);
+            }
+
+            function runTimerBar(type, duration) {
+                if (!timerBar) return;
+                timerBar.style.color = BAR_COLORS[type] || BAR_COLORS.info;
+                timerBar.style.transition = 'none';
+                timerBar.style.transform = 'scaleX(1)';
+                void timerBar.offsetWidth;
+                timerBar.style.transition = `transform ${duration}ms linear`;
+                timerBar.style.transform = 'scaleX(0)';
+            }
+
+            // 1. ОБРАБОТКА РЕЧИ
             function startTranscribing() {
                 abort();
                 $controls.addClass('hidden').removeClass('flex');
-                $notice.addClass('hidden').removeClass('flex');
+                $notice.addClass('hidden').removeClass('flex opacity-100 scale-100').addClass('opacity-0 scale-75');
 
-                // Сбрасываем иконки в состояние загрузки
                 $('#transcribe-spinner').removeClass('hidden');
                 $('#transcribe-success-icon').addClass('hidden').removeClass('flex success-check-pop');
-                $('#transcribe-status-text').text('Преобразуем речь в текст...').addClass('transcribe-shimmer-text');
+                $('#transcribe-status-text')
+                    .text('Преобразуем речь в текст...')
+                    .css('-webkit-text-fill-color', '')   // снимаем инлайн-белый от прошлого успеха, иначе шиммер не виден
+                    .addClass('transcribe-shimmer-text');
                 $('#transcribe-metric-chip')
                     .removeClass('bg-emerald-500/10 border-emerald-500/20 text-emerald-300')
                     .addClass('bg-indigo-500/10 border-indigo-500/20 text-indigo-300')
                     .html('<span>VOICE AI</span>');
 
-                // Морфинг островка
-                $island
-                    .removeClass('mode-header mode-notify mode-voice mode-transcribe-success')
-                    .addClass('mode-transcribe');
+                $island.removeClass(MODES + ' ' + THEMES).addClass('mode-transcribe');
 
                 $transcribe.removeClass('hidden').addClass('flex');
                 setTimeout(() => {
@@ -1637,83 +1619,105 @@
                 }, 20);
             }
 
-            // 2. ФАЗА ТРИУМФА (УСПЕШНАЯ ВСТАВКА)
+            // 2. УСПЕХ ТРАНСКРИБАЦИИ
             function transcribeSuccess(wordsAdded = 0) {
                 abort();
 
-                // Спиннер прячем, чекмарк пружинит
                 $('#transcribe-spinner').addClass('hidden');
                 $('#transcribe-success-icon').removeClass('hidden').addClass('flex success-check-pop');
-                
                 $('#transcribe-status-text')
                     .text('Текст добавлен в поле')
                     .removeClass('transcribe-shimmer-text')
-                    .css({ '-webkit-text-fill-color': '#FFFFFF' });
+                    .css('-webkit-text-fill-color', '#FFFFFF');
 
-                // Бейдж показывает конкретную пользу
-                const label = wordsAdded > 0 ? `+${wordsAdded} СЛОВ` : 'ГОТОВО';
+                const label = wordsAdded > 0
+                    ? `+${wordsAdded} ${pluralRu(wordsAdded, 'СЛОВО', 'СЛОВА', 'СЛОВ')}`
+                    : 'ГОТОВО';
                 $('#transcribe-metric-chip')
                     .removeClass('bg-indigo-500/10 border-indigo-500/20 text-indigo-300')
                     .addClass('bg-emerald-500/10 border-emerald-500/20 text-emerald-300')
                     .html(`<span>${label}</span>`);
 
-                // Переводим капсулу в изумрудную ауру
                 $island.removeClass('mode-transcribe').addClass('mode-transcribe-success');
 
-                // Через 2 секунды шёлково уходим обратно в дефолтный хедер
-                timer = setTimeout(() => {
-                    finishTranscribing();
-                }, 2200);
+                timer = setTimeout(finishTranscribing, 2200);
             }
 
-            // 3. ПЛАВНЫЙ ВОЗВРАТ В ХЕДЕР БЕЗ СБОЕВ
+            // 3. ВОЗВРАТ ИЗ ТРАНСКРИБАЦИИ
             function finishTranscribing() {
                 $transcribe.removeClass('opacity-100 scale-100').addClass('opacity-0 scale-90');
-
-                setTimeout(() => {
+                swapTimer = setTimeout(() => {
                     $transcribe.addClass('hidden').removeClass('flex');
-                    
-                    $island
-                        .removeClass('mode-transcribe mode-transcribe-success mode-voice mode-notify')
-                        .addClass('mode-header');
-
-                    $controls.removeClass('hidden').addClass('flex');
-                    setTimeout(() => {
-                        $controls.removeClass('opacity-0 scale-90 blur-sm pointer-events-none').addClass('opacity-100 scale-100');
-                    }, 30);
-
+                    showControls();
                     timer = null;
+                    swapTimer = null;
                 }, 180);
             }
 
+            // 4. ОБЫЧНОЕ УВЕДОМЛЕНИЕ (ошибки, предупреждения, успех, инфо)
+            function notify(message, type = 'info', customIcon = null, duration = 2600) {
+                if (!message) return;
+                if (!DEFAULT_ICONS[type]) type = 'info';
+
+                // Во время записи островок занят эквалайзером — не ломаем его, просто логируем
+                if (voiceActive()) {
+                    console.warn('[Island]', message);
+                    return;
+                }
+
+                abort();
+
+                // Длинные сообщения держим дольше: ~60 мс на символ, но не меньше заданного
+                const ms = Math.max(duration || 2600, Math.min(8000, message.length * 60));
+
+                // Прячем все остальные слои
+                $controls.addClass('hidden').removeClass('flex');
+                $transcribe.addClass('hidden').removeClass('flex opacity-100 scale-100').addClass('opacity-0 scale-90');
+                $('#island-voice').addClass('hidden').removeClass('flex opacity-100 scale-100').addClass('opacity-0 scale-90');
+
+                // Контент
+                const iconName = customIcon || DEFAULT_ICONS[type];
+                $icon.attr('class', 'fas ' + iconName);
+                $iconBox.removeClass(ICON_THEMES).addClass('island-icon-' + type);
+                $text.text(message).attr('title', message);
+
+                // Морфинг капсулы
+                $island.removeClass(MODES + ' ' + THEMES).addClass('mode-notify theme-' + type);
+
+                // Показ слоя: сначала сбрасываем в стартовое состояние, затем анимируем
+                $notice.removeClass('hidden opacity-100 scale-100').addClass('flex opacity-0 scale-75');
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        $notice.removeClass('opacity-0 scale-75').addClass('opacity-100 scale-100');
+                    });
+                });
+
+                runTimerBar(type, ms);
+                timer = setTimeout(dismiss, ms);
+            }
+
             function dismiss() {
-                if (typeof VoiceDictation !== 'undefined' && VoiceDictation.isActive()) {
+                abort();
+
+                if (voiceActive()) {
                     $notice.addClass('hidden').removeClass('flex');
-                    timer = null;
                     return;
                 }
 
                 $notice.removeClass('opacity-100 scale-100').addClass('opacity-0 scale-75');
 
-                setTimeout(() => {
-                    if (typeof VoiceDictation !== 'undefined' && VoiceDictation.isActive()) return;
-
+                swapTimer = setTimeout(() => {
+                    if (voiceActive()) return;
                     $notice.addClass('hidden').removeClass('flex');
-                    $island.removeClass('mode-notify mode-voice mode-transcribe mode-transcribe-success').addClass('mode-header');
-
-                    $controls.removeClass('hidden').addClass('flex');
-                    setTimeout(() => {
-                        $controls.removeClass('opacity-0 scale-90 blur-sm pointer-events-none').addClass('opacity-100 scale-100');
-                    }, 20);
-
-                    timer = null;
+                    showControls();
+                    swapTimer = null;
                 }, 160);
             }
 
-            // Стандартный notify для простых ошибок
-            function notify(message, type = 'info', customIcon = null, duration = 2600) {
-                // ... (остаётся твой стандартный код notify для обычных ошибок)
-            }
+            // Клик по уведомлению — закрыть раньше
+            $island.on('click', function() {
+                if ($island.hasClass('mode-notify')) dismiss();
+            });
 
             return {
                 notify,
@@ -1722,14 +1726,14 @@
                 startTranscribing,
                 transcribeSuccess,
                 success: (msg, icon, dur) => notify(msg, 'success', icon, dur),
-                error: (msg, icon, dur) => notify(msg, 'error', icon, dur),
-                warn: (msg, icon, dur) => notify(msg, 'warning', icon, dur),
-                info: (msg, icon, dur) => notify(msg, 'info', icon, dur)
+                error:   (msg, icon, dur) => notify(msg, 'error', icon, dur ?? 4000),
+                warn:    (msg, icon, dur) => notify(msg, 'warning', icon, dur ?? 3200),
+                info:    (msg, icon, dur) => notify(msg, 'info', icon, dur)
             };
         })();
 
         /* ==========================================================================
-           2. ИНТЕРФЕЙСНЫЕ ПЕРЕКЛЮЧАТЕЛИ (ВКЛАДКИ, СЛОЖНОСТЬ, СЧЁТЧИК)
+           2. ПЕРЕКЛЮЧАТЕЛИ (ВКЛАДКИ, СЛОЖНОСТЬ, СЧЁТЧИК)
            ========================================================================== */
         function switchSourceTab(tab) {
             activeSourceTab = tab;
@@ -1754,7 +1758,6 @@
             $(`[data-diff="${diff}"]`).addClass('bg-indigo-600 text-white font-bold').removeClass('text-gray-400');
         }
 
-        // Счётчик символов (L-to-R порядок)
         $('#user-text').off('input.counter').on('input.counter', function() {
             const len = this.value.length;
             const $val = $('#txt-counter-val');
@@ -1762,61 +1765,57 @@
 
             $val.text(len.toLocaleString('ru-RU'));
 
-            if (len > 100000) {
-                $val.addClass('text-rose-400').removeClass('text-gray-300');
-                $badge.addClass('text-rose-400');
-            } else {
-                $val.removeClass('text-rose-400').addClass('text-gray-300');
-                $badge.removeClass('text-rose-400');
-            }
+            const over = len > 100000;
+            $val.toggleClass('text-rose-400', over).toggleClass('text-gray-300', !over);
+            $badge.toggleClass('text-rose-400', over);
         });
         $('#user-text').trigger('input.counter');
 
         /* ==========================================================================
-           3. ПРЕЦИЗИОННЫЙ СЛАЙДЕР
-        ========================================================================== */
+           3. СЛАЙДЕР КОЛИЧЕСТВА ВОПРОСОВ
+           ========================================================================== */
         const $slider = $('#question-slider');
         const $sliderDisplay = $('#slider-count-display');
-        const isPaidUser = {{ subscription_level|default:0 }} >= 1;
+        const $sliderWord = $('#slider-count-word');
         const $proPill = $('#slider-pro-pill');
-
-        $slider.on('input', function() {
-            const val = parseInt(this.value, 10);
-            $sliderDisplay.text(val);
-            updateSliderFill(val);
-
-            if (val > 8) {
-                $proPill.removeClass('opacity-0 scale-90 -mr-1').addClass('opacity-100 scale-100 mr-0');
-            } else {
-                $proPill.addClass('opacity-0 scale-90 -mr-1').removeClass('opacity-100 scale-100 mr-0');
-            }
-        });
 
         function updateSliderFill(val) {
             const min = parseFloat($slider.attr('min')) || 1;
             const max = parseFloat($slider.attr('max')) || 30;
             const percentage = ((val - min) / (max - min)) * 100;
-            $slider.css('background', `linear-gradient(to right, #4F46E5 0%, #4F46E5 ${percentage}%, #212026 ${percentage}%, #212026 100%)`);
+            // Для бесплатных: зона после 8 подсвечена приглушённо, чтобы было видно, где граница
+            const lockStart = ((FREE_QUESTION_LIMIT - min) / (max - min)) * 100;
+            const tail = canUseExtendedQuestions
+                ? `#212026 ${percentage}%, #212026 100%`
+                : `#212026 ${percentage}%, #212026 ${lockStart}%, #1A1920 ${lockStart}%, #1A1920 100%`;
+            $slider.css('background', `linear-gradient(to right, #4F46E5 0%, #4F46E5 ${percentage}%, ${tail})`);
+        }
+
+        function renderSlider(val) {
+            $sliderDisplay.text(val);
+            $sliderWord.text(pluralRu(val, 'вопрос', 'вопроса', 'вопросов'));
+            updateSliderFill(val);
+
+            const locked = !canUseExtendedQuestions && val > FREE_QUESTION_LIMIT;
+            $proPill
+                .toggleClass('opacity-100 scale-100 mr-0', locked)
+                .toggleClass('opacity-0 scale-90 -mr-1', !locked);
         }
 
         $slider.on('input', function() {
-            const val = parseInt(this.value, 10);
-            $sliderDisplay.text(val);
-            updateSliderFill(val);
+            renderSlider(parseInt(this.value, 10));
         });
 
         $slider.on('change', function() {
             const val = parseInt(this.value, 10);
-
-            if (!isPaidUser && val > 8) {
-                this.value = 8;
-                $sliderDisplay.text(8);
-                updateSliderFill(8);
-                Island.warn('Бесплатно доступно до 8 вопросов', 'fa-lock');
+            if (val > maxQuestionsAllowed) {
+                this.value = maxQuestionsAllowed;
+                renderSlider(maxQuestionsAllowed);
+                Island.warn(`Бесплатно — до ${FREE_QUESTION_LIMIT} вопросов. До 30 — в тарифе или пакете`, 'fa-lock');
             }
         });
 
-        updateSliderFill($slider.val());
+        renderSlider(parseInt($slider.val(), 10));
 
         /* ==========================================================================
            4. МОДАЛКИ И ФАЙЛЫ
@@ -1824,13 +1823,13 @@
         function openPaywallModal(triggerType) {
             if (triggerType === 'voice') {
                 $('#paywall-modal-title').text('Голосовой ввод');
-                $('#paywall-modal-desc').text('Надиктовывайте конспекты и материалы голосом вместо ручного набора. Доступно на тарифе Премиум и в пакетах генераций.');
+                $('#paywall-modal-desc').text('Надиктовывайте конспекты голосом вместо ручного набора. Доступно в любом тарифе или пакете тестов.');
             } else if (triggerType === 'slider') {
-                $('#paywall-modal-title').text('Тесты до 30 заданий');
-                $('#paywall-modal-desc').text('Глубокие и подробные тесты с расширенным количеством вопросов доступны на тарифе Премиум.');
+                $('#paywall-modal-title').text('Тесты до 30 вопросов');
+                $('#paywall-modal-desc').text('Подробные тесты с расширенным количеством вопросов доступны в любом тарифе или пакете тестов.');
             } else {
                 $('#paywall-modal-title').text('Загрузка документов');
-                $('#paywall-modal-desc').text('Анализируйте PDF и Word файлы напрямую без ручного копирования на тарифе Премиум.');
+                $('#paywall-modal-desc').text('Загружайте PDF и Word напрямую, без ручного копирования. Доступно в любом тарифе или пакете тестов.');
             }
             $('#paywall-modal').removeClass('hidden').addClass('flex');
         }
@@ -1838,24 +1837,31 @@
             $('#paywall-modal').addClass('hidden').removeClass('flex');
         }
 
-        function openLimitModal(msg) {
-            if (msg) $('#limit-modal-text').text(msg);
-            $('#limit-exceeded-modal').removeClass('hidden').addClass('flex');
-        }
         function closeLimitModal() {
             $('#limit-exceeded-modal').addClass('hidden').removeClass('flex');
         }
 
         function handleFileSelect(files) {
-            const file = files[0];
+            const file = files && files[0];
             if (!file) return;
-            attachedFile = file;
 
+            if (file.size > 25 * 1024 * 1024) {
+                Island.error('Файл больше 25 МБ', 'fa-file-circle-exclamation');
+                $('#hidden-file-input').val('');
+                return;
+            }
+            if (!/\.(pdf|docx?|txt)$/i.test(file.name)) {
+                Island.error('Нужен PDF, Word или TXT', 'fa-file-circle-exclamation');
+                $('#hidden-file-input').val('');
+                return;
+            }
+
+            attachedFile = file;
             $('#preview-filename').text(file.name);
-            $('#preview-filesize').text((file.size / 1024 / 1024).toFixed(2) + ' MB');
+            $('#preview-filesize').text((file.size / 1024 / 1024).toFixed(2) + ' МБ');
             $('#file-preview-card').removeClass('hidden').addClass('flex');
             $('#drop-area').addClass('hidden');
-            Island.success('Файл прикреплен', 'fa-file-lines');
+            Island.success('Файл прикреплён', 'fa-file-lines');
         }
 
         function removeSelectedFile() {
@@ -1863,7 +1869,7 @@
             $('#hidden-file-input').val('');
             $('#file-preview-card').addClass('hidden').removeClass('flex');
             $('#drop-area').removeClass('hidden');
-            Island.info('Файл откреплен');
+            Island.info('Файл откреплён');
         }
 
         const dropArea = document.getElementById('drop-area');
@@ -1881,7 +1887,7 @@
         }
 
         /* ==========================================================================
-           5. GATEWAY FLOW ANIMATION (БЕЗЬЕ-ПОТОКИ ЧАСТИЦ НА CANVAS)
+           5. GATEWAY FLOW ANIMATION (ЧАСТИЦЫ НА CANVAS)
            ========================================================================== */
         const GatewayFlow = (() => {
             const canvas = document.getElementById('gateway-canvas');
@@ -1900,7 +1906,7 @@
                 height = window.innerHeight;
                 canvas.width = width * dpr;
                 canvas.height = height * dpr;
-                ctx.scale(dpr, dpr);
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0); // не накапливаем масштаб при каждом resize
             }
 
             function initPaths() {
@@ -1909,10 +1915,7 @@
                     paths.push({
                         isLeft: i % 2 === 0,
                         startY: (i / numPaths) * height * 1.3 - height * 0.15,
-                        particles: [{
-                            t: Math.random(),
-                            speed: 0.0018 + Math.random() * 0.0022
-                        }]
+                        particles: [{ t: Math.random(), speed: 0.0018 + Math.random() * 0.0022 }]
                     });
                 }
             }
@@ -1930,10 +1933,7 @@
                 const centerX = width / 2;
                 const centerY = height / 2;
 
-                explosions.forEach(exp => {
-                    exp.radius += 14;
-                    exp.life -= 0.02;
-                });
+                explosions.forEach(exp => { exp.radius += 14; exp.life -= 0.02; });
                 explosions = explosions.filter(exp => exp.life > 0);
 
                 paths.forEach(path => {
@@ -1963,7 +1963,7 @@
                         explosions.forEach(exp => {
                             let dx = pos.x - exp.x;
                             let dy = pos.y - exp.y;
-                            let dist = Math.hypot(dx, dy);
+                            let dist = Math.hypot(dx, dy) || 1;
                             if (dist < exp.radius + 100 && dist > exp.radius - 100) {
                                 let force = (1 - Math.abs(dist - exp.radius) / 100) * exp.life;
                                 pos.x += (dx / dist) * force * 60;
@@ -2003,7 +2003,7 @@
         })();
 
         /* ==========================================================================
-           6. SMART ASYMPTOTIC PROGRESS (УПРАВЛЕНИЕ ЛОАДЕРОМ)
+           6. ЛОАДЕР ГЕНЕРАЦИИ
            ========================================================================== */
         const SmartLoader = (() => {
             const $overlay = $('#overlay');
@@ -2028,24 +2028,19 @@
                 progress = 5;
                 updateView(progress);
 
-                $meta.text(`Синтез: ${questionCount} вопросов • ${difficultyLabel}`);
+                $meta.text(`Синтез: ${questionCount} ${pluralRu(questionCount, 'вопрос', 'вопроса', 'вопросов')} • ${difficultyLabel}`);
                 $step.text(PHASES[0].title);
                 $sub.text(PHASES[0].sub);
 
                 $overlay.removeClass('hidden').addClass('flex');
                 GatewayFlow.start();
 
+                clearInterval(progressTimer);
                 progressTimer = setInterval(() => {
-                    if (progress < 30) {
-                        progress += Math.random() * 3.5 + 1.5;
-                    } else if (progress < 65) {
-                        progress += Math.random() * 2 + 0.8;
-                    } else if (progress < 85) {
-                        progress += Math.random() * 1.2 + 0.3;
-                    } else if (progress < 94) {
-                        progress += Math.random() * 0.3 + 0.08;
-                    }
-
+                    if (progress < 30) progress += Math.random() * 3.5 + 1.5;
+                    else if (progress < 65) progress += Math.random() * 2 + 0.8;
+                    else if (progress < 85) progress += Math.random() * 1.2 + 0.3;
+                    else if (progress < 94) progress += Math.random() * 0.3 + 0.08;
                     if (progress > 95) progress = 95;
 
                     updateView(Math.floor(progress));
@@ -2092,24 +2087,21 @@
         })();
 
         /* ==========================================================================
-           7. КИНЕТИКА КНОПКИ ЗАПУСКА (HAPTIC SHAKE & DUAL LAYER)
+           7. КНОПКА ЗАПУСКА (SHAKE & СЛОИ)
            ========================================================================== */
         const $mainBtn = $('#btn-generate-main');
         const $warnBg = $('#btn-trigger-warn-bg');
         const $contentDefault = $('#btn-content-default');
         const $contentWarn = $('#btn-content-warn');
         const $warnText = $('#btn-warn-text');
-        const $actionBox = $('#btn-trigger-action-box');
         const $btnProgress = $('#btn-trigger-progress');
 
         let buttonWarnTimer = null;
+        let isGenerating = false;
 
         function triggerButtonError(warningText) {
             if (buttonWarnTimer) clearTimeout(buttonWarnTimer);
-
-            if (warningText) {
-                $warnText.text(warningText);
-            }
+            if (warningText) $warnText.text(warningText);
 
             $mainBtn.removeClass('pill-shake-active');
             void $mainBtn[0].offsetWidth;
@@ -2118,14 +2110,12 @@
             $warnBg.removeClass('opacity-0').addClass('opacity-100');
             $contentDefault.removeClass('opacity-100 scale-100').addClass('opacity-0 scale-95 pointer-events-none');
             $contentWarn.removeClass('opacity-0 scale-95 pointer-events-none').addClass('opacity-100 scale-100');
-            $actionBox.addClass('opacity-0');
 
             buttonWarnTimer = setTimeout(() => {
                 $mainBtn.removeClass('pill-shake-active');
                 $warnBg.removeClass('opacity-100').addClass('opacity-0');
                 $contentWarn.removeClass('opacity-100 scale-100').addClass('opacity-0 scale-95 pointer-events-none');
                 $contentDefault.removeClass('opacity-0 scale-95 pointer-events-none').addClass('opacity-100 scale-100');
-                $actionBox.removeClass('opacity-0');
                 buttonWarnTimer = null;
             }, 1800);
         }
@@ -2135,6 +2125,7 @@
         }
 
         function resetButtonLoading() {
+            isGenerating = false;
             $btnProgress.removeClass('translate-x-0').addClass('-translate-x-full');
         }
 
@@ -2146,10 +2137,19 @@
         });
 
         /* ==========================================================================
-           8. ГЛАВНАЯ ТОЧКА ВХОДА ГЕНЕРАЦИИ (САБМИТ С ОБРАБОТКОЙ ОШИБОК)
+           8. ГЕНЕРАЦИЯ
            ========================================================================== */
         async function startGenerationProcess() {
-            const questionCount = parseInt($('#question-slider').val(), 10) || 5;
+            if (isGenerating) return;
+
+            // Страховка: на сервер никогда не уходит больше, чем разрешено тарифу
+            let questionCount = parseInt($slider.val(), 10) || 5;
+            if (questionCount > maxQuestionsAllowed) {
+                questionCount = maxQuestionsAllowed;
+                $slider.val(questionCount);
+                renderSlider(questionCount);
+            }
+
             const csrftoken = getCookie('csrftoken');
 
             const questionTypes = ['single'];
@@ -2166,7 +2166,7 @@
             // ВЕТКА ТЕКСТА
             if (activeSourceTab === 'text') {
                 const text = $('#user-text').val().trim();
-                
+
                 if (!text || text.length < 15) {
                     triggerButtonError('Добавьте текст для теста');
                     Island.warn('Введите текст не короче 15 символов');
@@ -2174,36 +2174,30 @@
                     return;
                 }
 
-                // 1. ПРОВЕРКА ЛОКДАУНА
-                const lockUntil = localStorage.getItem('submit_lockout');
-                if (lockUntil) {
-                    const now = Date.now();
-                    if (now < parseInt(lockUntil)) {
-                        const timeLeft = Math.ceil((parseInt(lockUntil) - now) / 1000);
-                        resetButtonLoading();
-                        SmartLoader.stop();
-                        triggerButtonError('ОТКАЗАНО');
-                        Island.error(`Тебя могнули, школотрон`);
-                        return;
-                    } else {
-                        localStorage.removeItem('submit_lockout');
-                    }
+                if (text.length > 100000) {
+                    triggerButtonError('Слишком длинный текст');
+                    Island.warn('Максимум 100 000 символов');
+                    return;
                 }
 
-                const lowerText = text.toLowerCase();
-                const badPattern = /(интриж|сплетн|бывший)/i;
+                const lockUntil = localStorage.getItem('submit_lockout');
+                if (lockUntil) {
+                    if (Date.now() < parseInt(lockUntil, 10)) {
+                        triggerButtonError('ОТКАЗАНО');
+                        Island.error('Тебя могнули, школотрон');
+                        return;
+                    }
+                    localStorage.removeItem('submit_lockout');
+                }
 
-                if (badPattern.test(lowerText)) {
-                    const newLock = Date.now() + 30000;
-                    localStorage.setItem('submit_lockout', newLock.toString());
-
-                    resetButtonLoading();
-                    SmartLoader.stop();
+                if (/(интриж|сплетн|бывший)/i.test(text)) {
+                    localStorage.setItem('submit_lockout', String(Date.now() + 30000));
                     triggerButtonError('Отказ');
                     Island.error('Интрижки обсуждайте в школе');
                     return;
                 }
 
+                isGenerating = true;
                 triggerButtonLoading();
                 SmartLoader.start(questionCount, currentDiffLabel);
 
@@ -2226,7 +2220,10 @@
                         })
                     });
 
-                    const data = await res.json();
+                    let data = {};
+                    try { data = await res.json(); } catch (_) {
+                        throw new Error(`Ошибка сервера (${res.status})`);
+                    }
 
                     if (res.status === 429) {
                         resetButtonLoading();
@@ -2237,18 +2234,16 @@
 
                     if (res.ok && data.survey_id) {
                         SmartLoader.complete();
-                        setTimeout(() => {
-                            window.location.href = `/c/${data.survey_id}/`;
-                        }, 450);
+                        setTimeout(() => { window.location.href = `/c/${data.survey_id}/`; }, 450);
                     } else {
                         resetButtonLoading();
                         SmartLoader.stop();
-                        Island.error(data.error || 'Ошибка генерации');
+                        Island.error(data.error || `Ошибка генерации (${res.status})`);
                     }
                 } catch (err) {
                     resetButtonLoading();
                     SmartLoader.stop();
-                    Island.error('Сбой отправки');
+                    Island.error(err.message || 'Сбой отправки');
                 }
 
             // ВЕТКА ФАЙЛА
@@ -2259,6 +2254,7 @@
                     return;
                 }
 
+                isGenerating = true;
                 triggerButtonLoading();
                 SmartLoader.start(questionCount, currentDiffLabel);
 
@@ -2276,7 +2272,6 @@
                         body: formData
                     });
 
-                    // Безопасный парсинг ответа (если сервер вернул HTML 500 / 504)
                     let data = {};
                     const responseText = await res.text();
                     try {
@@ -2293,12 +2288,9 @@
                         return;
                     }
 
-                    if (res.ok && (data.survey_id || data.success)) {
-                        const sId = data.survey_id;
+                    if (res.ok && data.survey_id) {
                         SmartLoader.complete();
-                        setTimeout(() => {
-                            window.location.href = `/c/${sId}/`;
-                        }, 450);
+                        setTimeout(() => { window.location.href = `/c/${data.survey_id}/`; }, 450);
                     } else {
                         resetButtonLoading();
                         SmartLoader.stop();
@@ -2320,16 +2312,16 @@
 
     <script>
         /* ==========================================================================
-        УПРАВЛЕНИЕ МОДАЛКОЙ РЕГИСТРАЦИИ
+        МОДАЛКА РЕГИСТРАЦИИ
         ========================================================================== */
         const CREATE_MODAL_TEXTS = {
             voice: {
-                title: "Создание тестов Голосом",
-                desc: "Надиктовывайте вопросы и ответы голосом вместо ручного ввода. Функция доступна при покупке любого пакета тестов или Премиум."
+                title: "Создание тестов голосом",
+                desc: "Надиктовывайте вопросы и ответы голосом вместо ручного ввода. Доступно в любом тарифе или пакете тестов."
             },
             quota_header: {
                 title: "Лимит демо-режима исчерпан",
-                desc: "Зарегистрируйтесь, чтобы сохранить созданный тест и забрать еще 5 тестов бесплатно."
+                desc: "Зарегистрируйтесь, чтобы сохранить созданный тест и забрать ещё 5 тестов бесплатно."
             },
             quota_card: {
                 title: "Заберите ваш демо-тест",
@@ -2345,7 +2337,7 @@
             },
             limit: {
                 title: "Бесплатный тест использован",
-                desc: "Зарегистрируйтесь, чтобы забрать тест из истории и получить еще 5 тестов в подарок."
+                desc: "Зарегистрируйтесь, чтобы забрать тест из истории и получить ещё 5 тестов в подарок."
             }
         };
 
@@ -2361,7 +2353,7 @@
             $('#quick-register-modal').addClass('hidden').removeClass('flex');
         }
 
-        // Перехват кнопки в старой модалке 429
+        // 429: гостю — регистрация, авторизованному — модалка лимита
         function openLimitModal(msg) {
             const isAuth = {{ request.user.is_authenticated|yesno:"true,false" }};
             if (!isAuth) {
@@ -2372,7 +2364,15 @@
             }
         }
 
-        // AJAX сабмит формы быстрой регистрации
+        // Esc закрывает модалки
+        $(document).on('keydown.modals', function(e) {
+            if (e.key !== 'Escape') return;
+            if (typeof VoiceDictation !== 'undefined' && VoiceDictation.isActive()) return;
+            closeRegisterModal(); closePaywallModal(); closeLimitModal();
+        });
+
+        const REG_BTN_HTML = '<span>Создать аккаунт</span><i class="fas fa-arrow-right text-[10px]"></i>';
+
         $('#create-quick-register-form').on('submit', async function(e) {
             e.preventDefault();
             const $err = $('#reg-form-error');
@@ -2382,8 +2382,12 @@
             const email = $('#reg-email').val().trim();
             const password = $('#reg-password').val().trim();
 
+            if (!email || !password) {
+                $err.removeClass('hidden').text('Укажите email и пароль.');
+                return;
+            }
             if (!$('#reg-terms').is(':checked')) {
-                $err.removeClass('hidden').text('Необходимо согласие с политикой конфиденциальности (152-ФЗ).');
+                $err.removeClass('hidden').text('Необходимо согласие на обработку персональных данных (152-ФЗ).');
                 return;
             }
 
@@ -2396,65 +2400,42 @@
                         'Content-Type': 'application/x-www-form-urlencoded',
                         'X-CSRFToken': getCookie('csrftoken')
                     },
-                    body: new URLSearchParams({
-                        email: email,
-                        password1: password,
-                        terms_accepted: 'true'
-                    })
+                    body: new URLSearchParams({ email: email, password1: password, terms_accepted: 'true' })
                 });
 
                 const data = await res.json();
                 if (res.ok && data.redirect) {
                     closeRegisterModal();
-                    Island.success('Аккаунт создан! Тест сохранен');
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 600);
+                    Island.success('Аккаунт создан, тест сохранён');
+                    setTimeout(() => window.location.reload(), 600);
                 } else {
-                    $btn.prop('disabled', false).html('<span>Зарегистрироваться</span><i class="fas fa-arrow-right text-[10px]"></i>');
+                    $btn.prop('disabled', false).html(REG_BTN_HTML);
                     $err.removeClass('hidden').text(data.error || 'Ошибка при регистрации.');
                 }
             } catch (err) {
-                $btn.prop('disabled', false).html('<span>Зарегистрироваться и забрать</span><i class="fas fa-arrow-right text-[10px]"></i>');
-                $err.removeClass('hidden').text('Сбой связи с сервером. Попробуйте еще раз.');
+                $btn.prop('disabled', false).html(REG_BTN_HTML);
+                $err.removeClass('hidden').text('Сбой связи с сервером. Попробуйте ещё раз.');
             }
         });
     </script>
     <script>
         /* ==========================================================================
-        FEATURE DISCOVERY SPOTLIGHT ДЛЯ МИКРОФОНА
+        SPOTLIGHT ДЛЯ МИКРОФОНА
         ========================================================================== */
-        function initVoiceFeatureSpotlight() {
+        function foldVoiceSpotlight() {
+            const $btn = $('#btn-voice-dictate');
+            if ($btn.hasClass('is-expanded')) $btn.removeClass('is-expanded').addClass('is-collapsed');
+        }
+
+        $(function() {
             const $btn = $('#btn-voice-dictate');
             if (!$btn.length) return;
-
-            // Автоматическое аккуратное складывание через 3 секунды
-            const foldTimer = setTimeout(() => {
-                foldVoiceSpotlight();
-            }, 3200);
-
-            // Если юзер кликнул раньше 3 секунд — сразу складываем без ожидания
-            $btn.on('click.spotlightFold', function() {
-                clearTimeout(foldTimer);
-                foldVoiceSpotlight(true);
-                $btn.off('click.spotlightFold');
-            });
-        }
-
-        function foldVoiceSpotlight(immediate = false) {
-            const $btn = $('#btn-voice-dictate');
-            if (!$btn.hasClass('is-expanded')) return;
-
-            $btn.removeClass('is-expanded').addClass('is-collapsed');
-        }
-
-        // Запуск строго после готовности DOM
-        $(document).ready(function() {
-            initVoiceFeatureSpotlight();
+            const foldTimer = setTimeout(foldVoiceSpotlight, 3200);
+            $btn.one('click', () => { clearTimeout(foldTimer); foldVoiceSpotlight(); });
         });
 
         /* ==========================================================================
-        VOICE RECORDER & CANVAS WAVEFORM ENGINE (APPLE SIRI STYLE)
+        ЗАПИСЬ ГОЛОСА И ЭКВАЛАЙЗЕР
         ========================================================================== */
         function setMainButtonRecordingState(isRecordingActive) {
             const $btn = $('#btn-generate-main');
@@ -2474,13 +2455,10 @@
                 $defaultLayer.removeClass('opacity-0 scale-95 pointer-events-none').addClass('opacity-100 scale-100');
                 $btn.removeClass('is-recording-active');
                 $micBtn.removeClass('opacity-0 scale-75 pointer-events-none');
-
-                // МОБИЛКА: Плавно прячем островок обратно вниз
                 $mobileDock.removeClass('is-active');
             }
         }
 
-        // ЕДИНЫЙ ДИСПЕТЧЕР КЛИКА ПО ГЛАВНОЙ КНОПКЕ
         function handleMainButtonClick() {
             if (VoiceDictation.isActive()) {
                 VoiceDictation.stop();
@@ -2489,19 +2467,12 @@
             }
         }
 
-        // ХОТКЕИ: Enter для завершения записи, Esc для отмены
         $(document).on('keydown', function(e) {
-            if (VoiceDictation.isActive()) {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    VoiceDictation.stop();
-                } else if (e.key === 'Escape') {
-                    e.preventDefault();
-                    VoiceDictation.cancel();
-                }
-            }
+            if (!VoiceDictation.isActive()) return;
+            if (e.key === 'Enter') { e.preventDefault(); VoiceDictation.stop(); }
+            else if (e.key === 'Escape') { e.preventDefault(); VoiceDictation.cancel(); }
         });
-        
+
         const VoiceDictation = (() => {
             let mediaRecorder = null;
             let audioStream = null;
@@ -2512,6 +2483,7 @@
             let recordTimer = null;
             let secondsElapsed = 0;
             let isRecording = false;
+            let isStarting = false;
 
             const $island = $('#dynamic-island');
             const $controls = $('#island-controls');
@@ -2521,74 +2493,62 @@
             const canvas = document.getElementById('voice-wave-canvas');
             const ctx = canvas ? canvas.getContext('2d') : null;
 
-            const isAuth = {{ request.user.is_authenticated|yesno:"true,false" }};
-            const userSubLevel = parseInt('{{ subscription_level|default:0 }}', 10);
-
             async function start() {
+                if (isStarting || isRecording) return;
+
+                if (!navigator.mediaDevices || !window.MediaRecorder) {
+                    Island.error('Браузер не поддерживает запись голоса', 'fa-microphone-slash');
+                    return;
+                }
+
+                isStarting = true;
                 Island.abort();
                 $('#island-notice').addClass('hidden').removeClass('flex');
 
-                // if (!isAuth) {
-                //     $micBtn.addClass('pill-shake-active');
-                //     setTimeout(() => $micBtn.removeClass('pill-shake-active'), 500);
-                //     openRegisterModal('voice');
-                //     return;
-                // }
-
-                // if (userSubLevel < 1) {
-                //     $micBtn.addClass('pill-shake-active');
-                //     setTimeout(() => $micBtn.removeClass('pill-shake-active'), 500);
-                //     openPaywallModal('voice');
-                //     return;
-                // }
-
                 try {
-                    audioStream = await navigator.mediaDevices.getUserMedia({ 
-                        audio: { echoCancellation: true, noiseSuppression: true } 
+                    audioStream = await navigator.mediaDevices.getUserMedia({
+                        audio: { echoCancellation: true, noiseSuppression: true }
                     });
                 } catch (err) {
-                    Island.error('Микрофон заблокирован в браузере', 'fa-microphone-slash');
+                    isStarting = false;
+                    Island.error('Нет доступа к микрофону — разрешите его в браузере', 'fa-microphone-slash', 4500);
                     return;
                 }
 
                 isRecording = true;
+                isStarting = false;
                 audioChunks = [];
                 secondsElapsed = 0;
                 $timer.text('00:00');
 
                 const AudioCtx = window.AudioContext || window.webkitAudioContext;
                 audioContext = new AudioCtx();
-                if (audioContext.state === 'suspended') {
-                    await audioContext.resume();
-                }
+                if (audioContext.state === 'suspended') await audioContext.resume();
 
                 analyser = audioContext.createAnalyser();
                 analyser.fftSize = 64;
                 analyser.smoothingTimeConstant = 0.8;
-                const source = audioContext.createMediaStreamSource(audioStream);
-                source.connect(analyser);
+                audioContext.createMediaStreamSource(audioStream).connect(analyser);
 
-                const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
-                    ? 'audio/webm;codecs=opus' 
-                    : 'audio/webm';
+                const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+                    ? 'audio/webm;codecs=opus'
+                    : (MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : '');
 
-                mediaRecorder = new MediaRecorder(audioStream, { mimeType });
+                mediaRecorder = mimeType ? new MediaRecorder(audioStream, { mimeType }) : new MediaRecorder(audioStream);
                 mediaRecorder.ondataavailable = (e) => {
                     if (e.data && e.data.size > 0) audioChunks.push(e.data);
                 };
                 mediaRecorder.start(200);
 
-                // Переводим островок в режим записи
+                // Островок в режим записи
                 $controls.addClass('hidden').removeClass('flex');
-                $island.removeClass('mode-header mode-notify').addClass('mode-voice');
+                $island.removeClass('mode-header mode-notify theme-success theme-error theme-warning theme-info').addClass('mode-voice');
                 $voiceLayer.removeClass('hidden').addClass('flex');
                 setTimeout(() => {
                     $voiceLayer.removeClass('opacity-0 scale-90').addClass('opacity-100 scale-100');
                 }, 30);
 
                 $micBtn.addClass('mic-recording-active');
-
-                // ПЕРЕКЛЮЧАЕМ ГЛАВНУЮ КНОПКУ В РЕЖИМ ЗАПИСИ
                 setMainButtonRecordingState(true);
 
                 recordTimer = setInterval(() => {
@@ -2596,7 +2556,6 @@
                     const mins = String(Math.floor(secondsElapsed / 60)).padStart(2, '0');
                     const secs = String(secondsElapsed % 60).padStart(2, '0');
                     $timer.text(`${mins}:${secs}`);
-
                     if (secondsElapsed >= 180) stop();
                 }, 1000);
 
@@ -2630,12 +2589,10 @@
                     let barHeight = 6;
 
                     if (average > 8) {
-                        const freqIndex = Math.floor((i / barsCount) * dataArray.length);
-                        const val = dataArray[freqIndex] || 0;
+                        const val = dataArray[Math.floor((i / barsCount) * dataArray.length)] || 0;
                         barHeight = Math.max(6, (val / 255) * (canvas.height - 8));
                     } else {
-                        const wave = Math.sin(idlePhase + i * 0.4) * 4;
-                        barHeight = 6 + Math.abs(wave);
+                        barHeight = 6 + Math.abs(Math.sin(idlePhase + i * 0.4) * 4);
                     }
 
                     const gradient = ctx.createLinearGradient(0, centerY - barHeight/2, 0, centerY + barHeight/2);
@@ -2645,7 +2602,8 @@
 
                     ctx.fillStyle = gradient;
                     ctx.beginPath();
-                    ctx.roundRect(x, centerY - barHeight / 2, barWidth, barHeight, 4);
+                    if (ctx.roundRect) ctx.roundRect(x, centerY - barHeight / 2, barWidth, barHeight, 4);
+                    else ctx.rect(x, centerY - barHeight / 2, barWidth, barHeight);
                     ctx.fill();
                 }
 
@@ -2668,16 +2626,14 @@
 
                 $micBtn.removeClass('mic-recording-active');
                 if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-                // ВОЗВРАЩАЕМ ГЛАВНУЮ КНОПКУ В ИСХОДНОЕ СОСТОЯНИЕ
                 setMainButtonRecordingState(false);
             }
 
             function restoreIsland() {
-                $voiceLayer.addClass('opacity-0 scale-90');
+                $voiceLayer.removeClass('opacity-100 scale-100').addClass('opacity-0 scale-90');
                 setTimeout(() => {
                     $voiceLayer.addClass('hidden').removeClass('flex');
-                    $island.removeClass('mode-voice theme-error theme-warning theme-info').addClass('mode-header');
+                    $island.removeClass('mode-voice theme-error theme-warning theme-info theme-success').addClass('mode-header');
                     $controls.removeClass('hidden').addClass('flex');
                     setTimeout(() => {
                         $controls.removeClass('opacity-0 scale-90 blur-sm pointer-events-none');
@@ -2685,22 +2641,20 @@
                 }, 120);
             }
 
-            async function stop() {
+            function stop() {
                 if (!isRecording) return;
                 cleanup();
 
                 mediaRecorder.onstop = async () => {
                     const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                    
+
                     if (audioBlob.size < 600) {
-                        restoreIsland();
+                        $voiceLayer.addClass('hidden').removeClass('flex opacity-100 scale-100').addClass('opacity-0 scale-90');
                         Island.warn('Запись слишком короткая');
                         return;
                     }
 
-                    // Снимаем слой записи и ЗАПУСКАЕМ КИНЕМАТОГРАФИЧНЫЙ ОСТРОВОК ОБРАБОТКИ
-                    $voiceLayer.addClass('hidden').removeClass('flex');
-                    $island.removeClass('mode-voice');
+                    $voiceLayer.addClass('hidden').removeClass('flex opacity-100 scale-100').addClass('opacity-0 scale-90');
                     Island.startTranscribing();
 
                     const formData = new FormData();
@@ -2718,22 +2672,18 @@
                         if (res.ok && data.status === 'success') {
                             const $textArea = $('#user-text');
                             const curText = $textArea.val().trim();
-                            const newText = data.text;
+                            const newText = data.text || '';
 
                             $textArea.val(curText ? `${curText}\n\n${newText}` : newText);
                             $textArea.trigger('input.counter');
                             $textArea.scrollTop($textArea[0].scrollHeight);
 
-                            // Считаем слова для красивого фидбека
-                            const wordsCount = newText.split(/\s+/).filter(Boolean).length;
-                            
-                            // Вспышка триумфа с количеством слов
-                            Island.transcribeSuccess(wordsCount);
+                            Island.transcribeSuccess(newText.split(/\s+/).filter(Boolean).length);
                         } else {
                             Island.error(data.error || 'Сбой расшифровки');
                         }
                     } catch (err) {
-                        Island.error('Сетевой сбой при отправке');
+                        Island.error('Сетевой сбой при отправке записи');
                     }
                 };
 
@@ -2743,7 +2693,7 @@
             function cancel() {
                 if (!isRecording) return;
                 cleanup();
-                restoreIsland();
+                $voiceLayer.addClass('hidden').removeClass('flex opacity-100 scale-100').addClass('opacity-0 scale-90');
                 Island.info('Запись отменена', 'fa-ban');
             }
 

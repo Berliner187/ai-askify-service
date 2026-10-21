@@ -570,7 +570,6 @@ def admin_dashboard_overview_api(request):
         "ok": True,
         "generated_at": _local_str(now, "%H:%M:%S"),
         "period": period.as_dict(),
-        "generated_at": now.strftime("%H:%M"),
         "weather": get_cached_weather(),
         "kpi": {
             "revenue": {**_metric(rev_cur, rev_prev, 2), "today": rev_today, "series": _round_list(revenue_total_series)},
@@ -901,12 +900,11 @@ def get_cached_weather():
     if weather:
         return weather
     try:
-        # Сервер сам запрашивает wttr.in (1 запрос в 30 минут)
         url = "https://wttr.in/Moscow?format=%c+%t,+%C&lang=ru"
         req = urllib.request.Request(url, headers={"User-Agent": "curl/7.68.0"})
         with urllib.request.urlopen(req, timeout=3) as resp:
             weather = resp.read().decode("utf-8").strip()
-            cache.set("admin_moscow_weather", weather, 1800)  # кэш на 30 мин
+            cache.set("admin_moscow_weather", weather, 900)
             return weather
     except Exception:
         return None
