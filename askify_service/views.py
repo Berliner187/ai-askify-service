@@ -1032,7 +1032,7 @@ class ManageSurveysView(View):
 
         if not is_paid and question_count > 8:
             return JsonResponse(
-                {"error": "Создание тестов более 8 вопросов доступно только на тарифе Премиум."},
+                {"error": "Больше 8 вопр. – в платном тарифе"},
                 status=403
             )
 
@@ -1570,6 +1570,63 @@ def toggle_answers(request, survey_id):
 
 
 class FileUploadView(View):
+    """Загрузка файла → извлечение текста → генерация теста.
+
+    Формат определяется по СОДЕРЖИМОМУ (магическим байтам), а не по расширению
+    и не по content_type от браузера: пользователи присылают RTF/HTML под видом
+    .doc, зашифрованные .docx, картинки с расширением .docx и т.п.
+    """
+
+    MAX_UPLOAD_SIZE = 50 * 1024 * 1024
+    READ_SYMBOLS_LIMIT = 150_000
+    MIN_TEXT_LEN = 20
+    PDF_MAX_PAGES = 100
+    SOFFICE_TIMEOUT = 40
+    CLI_TIMEOUT = 15
+
+    # Защита от zip-бомб (docx — это zip)
+    ZIP_MAX_MEMBERS = 3000
+    ZIP_MAX_TOTAL_UNCOMPRESSED = 300 * 1024 * 1024
+    ZIP_MAX_PART_UNCOMPRESSED = 100 * 1024 * 1024
+    ZIP_MAX_RATIO = 200
+
+    ALLOWED_EXTENSIONS = {".pdf", ".txt", ".doc", ".docx"}
+
+    OLE_MAGIC = b"\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1"
+
+    PARSE_ERROR_MESSAGES = {
+        "empty_file": "Файл пустой.",
+        "images_only": (
+            "В документе нет текста — только картинки (скан или фото страниц). "
+            "Вставьте текст в документ или загрузите PDF с текстовым слоем."
+        ),
+        "scanned_pdf": (
+            "В PDF нет текстового слоя — похоже, это скан. "
+            "Загрузите PDF с печатным текстом или распознайте его (OCR)."
+        ),
+        "image_file": "Это картинка, а не документ. Загрузите PDF, DOCX, DOC или TXT с текстом.",
+        "encrypted": "Документ защищён паролем. Снимите пароль и загрузите файл снова.",
+        "suspicious": "Файл отклонён: некорректная или подозрительная структура документа.",
+        "corrupted": "Файл повреждён или не является документом. Пересохраните его в Word и попробуйте снова.",
+        "unsupported": "Неподдерживаемый формат. Поддерживаются PDF, DOCX, DOC и TXT.",
+        "too_little_text": "В файле слишком мало текста для составления теста.",
+    }
+    
+    # Где ещё бывает текст в docx, кроме тела документа: SmartArt, колонтитулы, примечания
+    OOXML_EXTRA_TEXT_PREFIXES = (
+        "word/diagrams/data",
+        "word/header",
+        "word/footer",
+        "word/comments",
+        "word/glossary/document",
+    )
+
+    parse_error = None
+    parse_kind = None
+
+    # ------------------------------------------------------------------
+    # HTTP
+    # ------------------------------------------------------------------
     async def post(self, request):
         file_name = "unknown"
         file_size = 0
@@ -1591,26 +1648,23 @@ class FileUploadView(View):
             uploaded_file = request.FILES['file']
 
             base_name, ext = os.path.splitext(uploaded_file.name)
+            ext = ext.lower()
             max_base_length = 60
             if len(base_name) > max_base_length:
                 uploaded_file.name = f"{base_name[:max_base_length].strip()}{ext}"
 
             file_name = uploaded_file.name
             file_size = uploaded_file.size
-            tracer_l.info(f"[UPLOAD] Файл получен: name='{file_name}', size={file_size} bytes, content_type='{uploaded_file.content_type}'")
+            tracer_l.info(
+                f"[UPLOAD] Файл получен: name='{file_name}', size={file_size} bytes, "
+                f"content_type='{uploaded_file.content_type}'"
+            )
 
             form = FileUploadForm(request.POST, request.FILES)
             if not form.is_valid():
                 form_err = form.errors.as_text()
                 tracer_l.error(f"[UPLOAD] Ошибка валидации формы для '{file_name}': {form_err}")
                 return JsonResponse({'error': f'Некорректные параметры формы: {form_err}'}, status=400)
-
-            available_file_types = [
-                "application/pdf",
-                "text/plain",
-                "application/msword",
-                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            ]
 
             question_count = int(form.cleaned_data['question_count'])
             difficulty = form.cleaned_data.get('difficulty') or "medium"
@@ -1622,7 +1676,7 @@ class FileUploadView(View):
             except Exception:
                 question_types = ["single"]
 
-            # 4. ПРОВЕРКА ЛИМИТОВ ВОПРОСОВ И ГОСТЕВОГО ДОСТУПА
+            # ПРОВЕРКА ЛИМИТОВ ВОПРОСОВ И ГОСТЕВОГО ДОСТУПА
             if is_guest:
                 if not (1 <= question_count <= 8):
                     return JsonResponse({'error': 'В демо доступно до 8 вопросов.'}, status=400)
@@ -1644,15 +1698,18 @@ class FileUploadView(View):
                 if not (1 <= question_count <= 30):
                     return JsonResponse({'error': 'Количество вопросов должно быть от 1 до 30.'}, status=400)
 
-            # 5. ПРОВЕРКА MIME И РАЗМЕРА
-            if uploaded_file.content_type not in available_file_types:
-                tracer_l.error(f"[UPLOAD] Недопустимый MIME: {uploaded_file.content_type}")
-                return JsonResponse({'error': 'Недопустимый формат. Поддерживаются только PDF, DOCX и TXT.'}, status=400)
+            # ПРОВЕРКА РАСШИРЕНИЯ И РАЗМЕРА.
+            # content_type присылает браузер, ему верить нельзя (docx часто
+            # приходит как application/octet-stream или application/zip).
+            # Реальный формат определяется по содержимому в read_file_data.
+            if ext not in self.ALLOWED_EXTENSIONS:
+                tracer_l.error(f"[UPLOAD] Недопустимое расширение: '{ext}' (content_type={uploaded_file.content_type})")
+                return JsonResponse({'error': self.PARSE_ERROR_MESSAGES["unsupported"]}, status=400)
 
-            if file_size > 50 * 1024 * 1024:
+            if file_size > self.MAX_UPLOAD_SIZE:
                 return JsonResponse({'error': 'Файл слишком большой. Лимит: 50 МБ.'}, status=400)
 
-            # 6. ПРОВЕРКА КВОТ АВТОРИЗОВАННОГО ПОЛЬЗОВАТЕЛЯ
+            # ПРОВЕРКА КВОТ АВТОРИЗОВАННОГО ПОЛЬЗОВАТЕЛЯ
             if not is_guest:
                 access_service = AccessService(staff_id)
                 access_info = access_service.check_access()
@@ -1667,28 +1724,33 @@ class FileUploadView(View):
             else:
                 access_info = {"source": "demo"}
 
-            # 7. ИЗВЛЕЧЕНИЕ ТЕКСТА (БЫСТРЫЙ PRE-CHECK ДО LLM)
+            # ИЗВЛЕЧЕНИЕ ТЕКСТА (в отдельном потоке — LibreOffice/antiword
+            # могут работать десятки секунд и не должны блокировать event loop)
             tracer_l.info(f"[UPLOAD] Начинаем парсинг текста из '{file_name}'...")
-            data = self.read_file_data(uploaded_file)
+            data = await sync_to_async(self.read_file_data, thread_sensitive=False)(uploaded_file)
 
-            if data == -1 or not data or len(data.strip()) < 20:
+            if not isinstance(data, str) or len(data.strip()) < self.MIN_TEXT_LEN:
                 extracted_len = len(data.strip()) if isinstance(data, str) else 0
-                tracer_l.error(f"[UPLOAD] ОШИБКА ПАРСИНГА: файл '{file_name}' вернул {extracted_len} символов.")
+                reason = self.parse_error or "too_little_text"
+                tracer_l.error(
+                    f"[UPLOAD] ОШИБКА ПАРСИНГА: файл '{file_name}' (kind={self.parse_kind}, "
+                    f"reason={reason}) вернул {extracted_len} символов."
+                )
                 return JsonResponse({
-                    'error': 'Не удалось прочитать текст из файла. '
-                             'Если это PDF — убедитесь, что он содержит печатный текст, а не сканированное фото (без OCR).'
+                    'error': self.PARSE_ERROR_MESSAGES.get(reason, self.PARSE_ERROR_MESSAGES["corrupted"]),
+                    'reason': reason,
                 }, status=400)
 
-            tracer_l.info(f"[UPLOAD] Успешно извлечено {len(data)} символов из '{file_name}'.")
+            tracer_l.info(f"[UPLOAD] Успешно извлечено {len(data)} символов из '{file_name}' (kind={self.parse_kind}).")
 
-            # 8. ОЧИСТКА ТЕКСТА И ВЫЗОВ НЕЙРОСЕТИ
+            # ОЧИСТКА ТЕКСТА И ВЫЗОВ НЕЙРОСЕТИ
             cleaned_data_for_llm = clean_text_for_llm(data)
             tracer_l.info(f"[UPLOAD] Отправляем запрос в LLM (вопросов: {question_count}, сложность: {difficulty})...")
             start_time = time.perf_counter()
 
             manage_generate_surveys = ManageGenerationSurveys(
-                request, 
-                cleaned_data_for_llm, 
+                request,
+                cleaned_data_for_llm,
                 str(question_count),
                 difficulty=difficulty,
                 question_types=question_types
@@ -1717,9 +1779,9 @@ class FileUploadView(View):
             model_used = generated_data.get("model_used", "")
             api_key_used = generated_data.get("api_key_used")
 
-            # 9. СОХРАНЕНИЕ В БАЗУ ДАННЫХ
+            # СОХРАНЕНИЕ В БАЗУ ДАННЫХ
             new_survey_id = uuid.uuid4()
-            
+
             def sanitize_val(val):
                 """Рекурсивно вычищает NUL-байты из строк, словарей и списков."""
                 if isinstance(val, str):
@@ -1754,7 +1816,7 @@ class FileUploadView(View):
                     survey.save()
 
                     TokensUsed.objects.create(id_staff=staff_id, tokens_survey_used=tokens_used)
-                    
+
                     response_time_ms = int((end_time - start_time) * 1000)
 
                     log_api_key = api_key_used or APIKey.objects.filter(purpose='SURVEY', is_active=True).first()
@@ -1789,232 +1851,780 @@ class FileUploadView(View):
             }, status=200)
 
         except Exception as unhandled:
-            tracer_l.critical(f"[UPLOAD] КРИТИЧЕСКИЙ СБОЙ при обработке '{file_name}' (size={file_size}): {unhandled}", exc_info=True)
-            return JsonResponse({'error': f'Внутренняя ошибка сервера при обработке файла: {str(unhandled)}'}, status=500)
+            tracer_l.critical(
+                f"[UPLOAD] КРИТИЧЕСКИЙ СБОЙ при обработке '{file_name}' (size={file_size}): {unhandled}",
+                exc_info=True
+            )
+            return JsonResponse({'error': 'Внутренняя ошибка сервера при обработке файла. Попробуйте ещё раз.'}, status=500)
 
     async def get(self, request):
         return JsonResponse({'error': 'Метод GET не поддерживается'}, status=405)
 
-    def __remove_surrogates(self, text):
-        if not text:
-            return ""
-        return "".join(c for c in str(text) if c != '\x00' and not (0xD800 <= ord(c) <= 0xDFFF))
-
+    # ------------------------------------------------------------------
+    # ВХОДНАЯ ТОЧКА ПАРСИНГА
+    # ------------------------------------------------------------------
     def read_file_data(self, uploaded_file):
-        """Всеядный парсер документов с лимитом до 150 000 символов."""
+        """Возвращает извлечённый текст (str) или -1.
+        При -1 причина лежит в self.parse_error (ключ PARSE_ERROR_MESSAGES)."""
+        self.parse_error = None
+        self.parse_kind = None
+
         ext = os.path.splitext(str(uploaded_file.name))[1].lower()
-        read_symbols_count = 150000
+        tmp_path = None
 
-        # 1. ТЕКСТОВЫЙ ФАЙЛ TXT
-        if ext == ".txt":
-            try:
-                uploaded_file.seek(0)
-                raw_bytes = uploaded_file.read(read_symbols_count * 2)
-                encoding = chardet.detect(raw_bytes).get("encoding") or "utf-8"
-                text = raw_bytes.decode(encoding, errors='ignore')[:read_symbols_count]
-                return self.__remove_surrogates(text)
-            except Exception as e:
-                tracer_l.error(f"[DOC] Ошибка чтения TXT: {e}")
+        try:
+            with NamedTemporaryFile(delete=False, suffix=ext or ".bin") as tmp:
+                for chunk in uploaded_file.chunks():
+                    tmp.write(chunk)
+                tmp_path = tmp.name
+
+            if os.path.getsize(tmp_path) == 0:
+                return self._fail("empty_file")
+
+            kind = self._detect_kind(tmp_path, ext)
+            self.parse_kind = kind
+            tracer_l.info(f"[DOC] '{uploaded_file.name}': расширение={ext}, реальный формат={kind}")
+
+            handlers = {
+                "pdf": self._parse_pdf,
+                "zip": self._parse_zip_document,
+                "ole": self._parse_ole_document,
+                "rtf": self._parse_rtf,
+                "html": self._parse_html,
+                "mht": self._parse_mht,
+                "wordxml": self._parse_word_xml,
+                "txt": self._parse_txt,
+            }
+
+            if kind == "image":
+                return self._fail("image_file")
+
+            handler = handlers.get(kind)
+            if handler is None:
+                # Непонятный бинарник — последняя попытка через LibreOffice
+                text = self._convert_with_soffice(tmp_path)
+                if len(text.strip()) < self.MIN_TEXT_LEN:
+                    return self._fail("unsupported")
+            else:
+                text = handler(tmp_path) or ""
+
+            text = self._clean_text(text)
+
+            if len(text.strip()) < self.MIN_TEXT_LEN:
+                if not self.parse_error:
+                    self.parse_error = "too_little_text"
+                tracer_l.warning(
+                    f"[DOC] Из '{uploaded_file.name}' извлечено мало текста ({len(text.strip())} симв.), "
+                    f"reason={self.parse_error}"
+                )
                 return -1
 
-        # 2. PDF ДОКУМЕНТ
-        elif ext == ".pdf":
-            try:
-                uploaded_file.seek(0)
-                reader = PyPDF2.PdfReader(uploaded_file)
-                full_text = ""
-                # Лимит: не более 100 страниц во избежание зависаний
-                for page in reader.pages[:100]:
-                    if page_text := page.extract_text():
-                        full_text += page_text.strip() + "\n"
-                    if len(full_text) >= read_symbols_count:
-                        break
+            return text[:self.READ_SYMBOLS_LIMIT]
 
-                full_text = self.__remove_surrogates(full_text)
-                return full_text[:read_symbols_count]
-            except Exception as e:
-                tracer_l.error(f"[DOC] Ошибка чтения PDF: {e}")
-                return -1
+        except Exception as e:
+            tracer_l.error(f"[DOC] Критическая ошибка чтения '{uploaded_file.name}': {e}", exc_info=True)
+            if not self.parse_error:
+                self.parse_error = "corrupted"
+            return -1
+        finally:
+            if tmp_path and os.path.exists(tmp_path):
+                try:
+                    os.remove(tmp_path)
+                except Exception:
+                    pass
 
-        # 3. WORD ДОКУМЕНТЫ (.DOC и .DOCX)
-        elif ext in [".doc", ".docx"]:
-            tmp_path = None
-            try:
-                # ВАЖНО: сохраняем файл и ПРИНУДИТЕЛЬНО сбрасываем буфер на диск!
-                with NamedTemporaryFile(delete=False, suffix=ext) as tmp:
-                    for chunk in uploaded_file.chunks():
-                        tmp.write(chunk)
-                    tmp.flush() # <--- СБРОС БУФЕРА НА ДИСК!
-                    os.fsync(tmp.fileno())
-                    tmp_path = tmp.name
-
-                extracted = self.extract_text_from_word(tmp_path, original_ext=ext)
-                extracted = self.__remove_surrogates(extracted)
-
-                if len(extracted.strip()) < 20:
-                    tracer_l.warning(f"[DOC] Из файла {uploaded_file.name} извлечено слишком мало текста ({len(extracted)} симв.)")
-                    return -1
-
-                return extracted[:read_symbols_count]
-
-            except Exception as e:
-                tracer_l.error(f"[DOC] Критическая ошибка чтения Word файла: {e}", exc_info=True)
-                return -1
-            finally:
-                if tmp_path and os.path.exists(tmp_path):
-                    try:
-                        os.remove(tmp_path)
-                    except Exception:
-                        pass
-
+    def _fail(self, reason):
+        self.parse_error = reason
         return -1
 
-    def extract_text_from_word(self, file_path, original_ext=".docx"):
-        tracer_l.info(f"[DOC] Старт глубокого извлечения текста из: {file_path}")
+    # ------------------------------------------------------------------
+    # ОПРЕДЕЛЕНИЕ ФОРМАТА ПО СОДЕРЖИМОМУ
+    # ------------------------------------------------------------------
+    def _detect_kind(self, path, ext):
+        with open(path, "rb") as f:
+            head = f.read(8192)
 
-        # ------------------------------------------------------------------
-        # МЕТОД 1: LIBREOFFICE HEADLESS (с явным поиском бинарника)
-        # ------------------------------------------------------------------
+        if head.startswith(self.OLE_MAGIC):
+            return "ole"
+        if head.startswith(b"PK\x03\x04") or head.startswith(b"PK\x05\x06"):
+            return "zip"
+        if b"%PDF-" in head[:1024]:
+            return "pdf"
+
+        # Картинки под видом документа
+        if (head.startswith(b"\x89PNG") or head.startswith(b"\xff\xd8\xff")
+                or head.startswith(b"GIF8") or head[4:12] in (b"ftypheic", b"ftypheix", b"ftypmif1")
+                or (head.startswith(b"RIFF") and head[8:12] == b"WEBP")
+                or head.startswith(b"BM")):
+            return "image"
+
+        stripped = head.lstrip(b"\xef\xbb\xbf \t\r\n")
+        low = stripped[:4096].lower()
+
+        if stripped.startswith(b"{\\rtf"):
+            return "rtf"
+        if b"mime-version:" in head[:2048].lower():
+            return "mht"
+        if stripped.startswith(b"<"):
+            if b"<w:worddocument" in low or b"<pkg:package" in low or b"schemas.microsoft.com/office/word" in low:
+                return "wordxml"
+            if b"<html" in low or b"<!doctype html" in low or b"<body" in low or b"<p" in low:
+                return "html"
+
+        if ext == ".txt" or self._looks_like_text(head):
+            return "txt"
+
+        return "unknown"
+
+    @staticmethod
+    def _looks_like_text(head):
+        if not head:
+            return False
+        if head.startswith((b"\xff\xfe", b"\xfe\xff")):
+            return True
+        if b"\x00" in head:
+            return False
+        try:
+            sample = head.decode("utf-8")
+        except UnicodeDecodeError:
+            sample = head.decode("cp1251", errors="replace")
+        printable = sum(1 for c in sample if c.isprintable() or c in "\r\n\t")
+        return printable / max(len(sample), 1) > 0.95
+
+    # ------------------------------------------------------------------
+    # PDF
+    # ------------------------------------------------------------------
+    def _parse_pdf(self, path):
+        text_parts = []
+        try:
+            reader = PyPDF2.PdfReader(path)
+            if reader.is_encrypted:
+                try:
+                    if not reader.decrypt(""):
+                        return self._fail_text("encrypted")
+                except Exception:
+                    return self._fail_text("encrypted")
+
+            total = 0
+            for page in reader.pages[:self.PDF_MAX_PAGES]:
+                try:
+                    page_text = page.extract_text() or ""
+                except Exception as page_err:
+                    tracer_l.debug(f"[DOC] PDF: ошибка страницы: {page_err}")
+                    continue
+                if page_text.strip():
+                    text_parts.append(page_text.strip())
+                    total += len(page_text)
+                if total >= self.READ_SYMBOLS_LIMIT:
+                    break
+        except Exception as e:
+            tracer_l.info(f"[DOC] PyPDF2 не справился ({e}), пробуем pdftotext...")
+
+        text = "\n".join(text_parts)
+        if len(text.strip()) >= self.MIN_TEXT_LEN:
+            return text
+
+        # Фолбэк: poppler-utils, если установлен (часто читает то, на чём PyPDF2 падает)
+        pdftotext_bin = shutil.which("pdftotext")
+        if pdftotext_bin:
+            out = self._run_cli([pdftotext_bin, "-enc", "UTF-8", "-l", str(self.PDF_MAX_PAGES), path, "-"])
+            if len(out.strip()) >= self.MIN_TEXT_LEN:
+                tracer_l.info(f"[DOC] pdftotext: извлечено {len(out)} символов.")
+                return out
+
+        if not self.parse_error:
+            self.parse_error = "scanned_pdf"
+        return text
+
+    def _fail_text(self, reason):
+        self.parse_error = reason
+        return ""
+
+    # ------------------------------------------------------------------
+    # TXT
+    # ------------------------------------------------------------------
+    def _parse_txt(self, path):
+        with open(path, "rb") as f:
+            raw = f.read(self.READ_SYMBOLS_LIMIT * 4)
+
+        if raw.startswith(b"\xef\xbb\xbf"):
+            return raw[3:].decode("utf-8", errors="ignore")
+        if raw.startswith((b"\xff\xfe", b"\xfe\xff")):
+            return raw.decode("utf-16", errors="ignore")
+
+        try:
+            return raw.decode("utf-8")
+        except UnicodeDecodeError:
+            pass
+
+        encoding = (chardet.detect(raw[:200_000]) or {}).get("encoding") or "cp1251"
+        try:
+            return raw.decode(encoding, errors="ignore")
+        except LookupError:
+            return raw.decode("cp1251", errors="ignore")
+
+    # ------------------------------------------------------------------
+    # DOCX / ODT (ZIP-контейнеры)
+    # ------------------------------------------------------------------
+    def _parse_zip_document(self, path):
+        try:
+            zf = zipfile.ZipFile(path)
+        except zipfile.BadZipFile:
+            tracer_l.info("[DOC] Битый ZIP, пробуем LibreOffice (он умеет чинить)...")
+            text = self._convert_with_soffice(path)
+            if len(text.strip()) < self.MIN_TEXT_LEN:
+                self.parse_error = "corrupted"
+            return text
+
+        with zf:
+            if not self._zip_is_safe(zf):
+                return self._fail_text("suspicious")
+
+            names = zf.namelist()
+            name_set = set(names)
+            has_media = any("/media/" in n or n.startswith("Pictures/") for n in names)
+
+            text = ""
+            try:
+                if "content.xml" in name_set and "mimetype" in name_set:
+                    text = self._odf_to_text(zf.read("content.xml"))
+                else:
+                    parts = self._ooxml_text_parts(zf, name_set)
+                    text = self._read_ooxml_parts(zf, parts)
+
+                    if len(text.strip()) < self.MIN_TEXT_LEN:
+                        extra_parts = sorted(
+                            n for n in names
+                            if n.endswith(".xml")
+                            and n.startswith(self.OOXML_EXTRA_TEXT_PREFIXES)
+                            and n not in parts
+                        )
+                        if extra_parts:
+                            extra_text = self._read_ooxml_parts(zf, extra_parts)
+                            if extra_text.strip():
+                                tracer_l.info(f"[DOC] Текст найден вне тела документа: {extra_parts}")
+                                text = (text + "\n\n" + extra_text).strip()
+            except RuntimeError as enc_err:
+                tracer_l.info(f"[DOC] Зашифрованный ZIP: {enc_err}")
+                return self._fail_text("encrypted")
+
+            if len(text.strip()) >= self.MIN_TEXT_LEN:
+                tracer_l.info(f"[DOC] OOXML-парсер: извлечено {len(text)} символов.")
+                return text
+
+            tracer_l.warning(
+                f"[DOC] В ZIP мало текста ({len(text.strip())} симв.), media={has_media}. "
+                f"Части архива: {names[:40]}"
+            )
+
+        soffice_text = self._convert_with_soffice(path)
+        if len(soffice_text.strip()) >= self.MIN_TEXT_LEN:
+            return soffice_text
+
+        if has_media:
+            self.parse_error = "images_only"
+        elif not self.parse_error:
+            self.parse_error = "too_little_text"
+        return text
+
+    def _read_ooxml_parts(self, zf, parts):
+        chunks = []
+        for part in parts:
+            try:
+                chunk = self._ooxml_to_text(zf.read(part))
+            except RuntimeError:
+                raise
+            except Exception as part_err:
+                tracer_l.info(f"[DOC] Не удалось разобрать {part}: {part_err}")
+                continue
+            if chunk.strip():
+                chunks.append(chunk.strip())
+        return "\n\n".join(chunks)
+
+    def _zip_is_safe(self, zf):
+        infos = zf.infolist()
+        if len(infos) > self.ZIP_MAX_MEMBERS:
+            tracer_l.warning(f"[DOC] ZIP: слишком много файлов ({len(infos)})")
+            return False
+
+        total = 0
+        for info in infos:
+            if info.file_size > self.ZIP_MAX_PART_UNCOMPRESSED:
+                tracer_l.warning(f"[DOC] ZIP: часть {info.filename} слишком большая ({info.file_size})")
+                return False
+            total += info.file_size
+            if (info.file_size > 10 * 1024 * 1024 and info.compress_size > 0
+                    and info.file_size / info.compress_size > self.ZIP_MAX_RATIO):
+                tracer_l.warning(f"[DOC] ZIP: подозрительная степень сжатия у {info.filename}")
+                return False
+
+        if total > self.ZIP_MAX_TOTAL_UNCOMPRESSED:
+            tracer_l.warning(f"[DOC] ZIP: суммарный распакованный размер {total} превышает лимит")
+            return False
+        return True
+
+    @staticmethod
+    def _ooxml_text_parts(zf, name_set):
+        """Основная часть документа (по _rels/.rels, если имя нестандартное) + сноски."""
+        main_part = None
+        if "_rels/.rels" in name_set:
+            try:
+                rels = zf.read("_rels/.rels").decode("utf-8", errors="ignore")
+                for m in re.finditer(r"<Relationship\b[^>]*>", rels):
+                    tag = m.group(0)
+                    if "/officeDocument" in tag:
+                        target = re.search(r'Target="([^"]+)"', tag)
+                        if target:
+                            candidate = target.group(1).lstrip("/")
+                            if candidate in name_set:
+                                main_part = candidate
+                                break
+            except Exception:
+                pass
+
+        if not main_part:
+            if "word/document.xml" in name_set:
+                main_part = "word/document.xml"
+            else:
+                candidates = sorted(n for n in name_set if n.endswith(".xml") and "document" in n.lower())
+                main_part = candidates[0] if candidates else None
+
+        parts = [main_part] if main_part else []
+        base_dir = main_part.rsplit("/", 1)[0] + "/" if main_part and "/" in main_part else ""
+        for extra in ("footnotes.xml", "endnotes.xml"):
+            if base_dir + extra in name_set:
+                parts.append(base_dir + extra)
+        return parts
+
+    @staticmethod
+    def _ooxml_to_text(raw):
+        """Извлекает текст из WordprocessingML независимо от префикса пространства имён
+        (w:, ns0:, без префикса). Учитывает надписи, таблицы, формулы; пропускает
+        удалённые правки, коды полей и дубли из mc:Fallback."""
+        if re.search(rb"<!DOCTYPE|<!ENTITY", raw[:65536], re.I):
+            raise ValueError("DOCTYPE/ENTITY внутри OOXML — отклонено")
+
+        skip_tags = {"Fallback", "delText", "instrText"}
+        out = []
+        try:
+            skip_depth = 0
+            for event, el in ET.iterparse(io.BytesIO(raw), events=("start", "end")):
+                name = el.tag.rsplit("}", 1)[-1] if isinstance(el.tag, str) else ""
+                if event == "start":
+                    if name in skip_tags:
+                        skip_depth += 1
+                    continue
+                if name in skip_tags:
+                    skip_depth -= 1
+                    el.clear()
+                    continue
+                if skip_depth:
+                    continue
+                if name == "t":
+                    out.append(el.text or "")
+                elif name in ("tab", "ptab"):
+                    out.append("\t")
+                elif name in ("br", "cr"):
+                    out.append("\n")
+                elif name == "p":
+                    out.append("\n")
+                    el.clear()
+                elif name == "tc":
+                    out.append("\t")
+            return "".join(out)
+        except ET.ParseError:
+            # Битый XML — достаём текст регуляркой, без привязки к префиксу
+            import html as html_lib
+            s = raw.decode("utf-8", errors="ignore")
+            s = re.sub(r"<(?:[\w.-]+:)?Fallback\b.*?</(?:[\w.-]+:)?Fallback>", "", s, flags=re.S)
+            s = re.sub(r"</(?:[\w.-]+:)?p>", "\n", s)
+            pieces = re.findall(r"<(?:[\w.-]+:)?t(?:\s[^>]*)?>(.*?)</(?:[\w.-]+:)?t>|(\n)", s, flags=re.S)
+            return html_lib.unescape("".join(a or b for a, b in pieces))
+
+    @staticmethod
+    def _odf_to_text(raw):
+        if re.search(rb"<!DOCTYPE|<!ENTITY", raw[:65536], re.I):
+            raise ValueError("DOCTYPE/ENTITY внутри ODF — отклонено")
+        root = ET.fromstring(raw)
+        lines = []
+        for el in root.iter():
+            name = el.tag.rsplit("}", 1)[-1] if isinstance(el.tag, str) else ""
+            if name in ("p", "h"):
+                lines.append("".join(el.itertext()))
+        return "\n".join(lines)
+
+    # ------------------------------------------------------------------
+    # DOC (OLE2, Word 97-2003) — и зашифрованные DOCX, которые тоже OLE
+    # ------------------------------------------------------------------
+    def _parse_ole_document(self, path):
+        with open(path, "rb") as f:
+            data = f.read()
+
+        # Запароленный .docx хранится как OLE с потоком EncryptedPackage
+        if "EncryptedPackage".encode("utf-16-le") in data or "EncryptionInfo".encode("utf-16-le") in data:
+            return self._fail_text("encrypted")
+
+        is_word = "WordDocument".encode("utf-16-le") in data
+        del data
+
+        if is_word:
+            antiword_bin = shutil.which("antiword")
+            if antiword_bin:
+                out, err = self._run_cli([antiword_bin, "-m", "UTF-8.txt", path], with_stderr=True)
+                if "encrypt" in err.lower():
+                    return self._fail_text("encrypted")
+                if len(out.strip()) >= self.MIN_TEXT_LEN:
+                    tracer_l.info(f"[DOC] antiword: извлечено {len(out)} символов.")
+                    return out
+
+            catdoc_bin = shutil.which("catdoc")
+            if catdoc_bin:
+                out = self._run_cli([catdoc_bin, "-dutf-8", path])
+                if len(out.strip()) >= self.MIN_TEXT_LEN:
+                    tracer_l.info(f"[DOC] catdoc: извлечено {len(out)} символов.")
+                    return out
+
+        text = self._convert_with_soffice(path)
+        if len(text.strip()) >= self.MIN_TEXT_LEN:
+            return text
+
+        if not is_word:
+            # Excel/PowerPoint/что-то ещё в OLE-контейнере под видом .doc
+            return self._fail_text("unsupported")
+
+        tracer_l.info("[DOC] Внешние парсеры не сработали. Аварийное извлечение строк из бинарника...")
+        return self._extract_clean_text_fallback(path)
+
+    def _extract_clean_text_fallback(self, file_path, max_bytes=20 * 1024 * 1024):
+        """Последний рубеж для .doc: вытаскиваем из бинарника читаемые строки.
+        Word хранит текст либо в UTF-16LE (почти всегда для кириллицы), либо в 8-битной
+        кодировке. Берём тот вариант, где больше букв, и выкидываем мусорные строки."""
+        try:
+            with open(file_path, "rb") as f:
+                data = f.read(max_bytes)
+        except Exception as e:
+            tracer_l.info(f"[DOC] fallback: не удалось прочитать файл: {e}")
+            return ""
+
+        # UTF-16LE: ASCII (xx 00), кириллица U+0401..U+045F (xx 04), типографика (–—«»“”№)
+        utf16_re = re.compile(
+            rb"(?:[\x20-\x7e\t\r\n]\x00|[\x01-\x5f]\x04|[\x13\x14\x18\x19\x1c\x1d\x26]\x20|\x16\x21|[\xa0\xab\xbb]\x00){12,}"
+        )
+        utf16_text = "\n".join(m.decode("utf-16-le", errors="ignore") for m in utf16_re.findall(data))
+
+        cp_re = re.compile(rb"[\x20-\x7e\xa8\xb8\xab\xbb\x96\x97\xb9\xc0-\xff\t\r\n]{24,}")
+        cp_text = "\n".join(m.decode("cp1251", errors="ignore") for m in cp_re.findall(data))
+
+        def letters(s):
+            return sum(1 for c in s if c.isalpha())
+
+        raw_text = utf16_text if letters(utf16_text) >= letters(cp_text) else cp_text
+
+        good_lines = []
+        prev = None
+        for line in re.split(r"[\r\n]+", raw_text):
+            line = re.sub(r"\s+", " ", line).strip()
+            if len(line) < 12 or len(line.split()) < 3:
+                continue
+            alpha_ratio = sum(1 for c in line if c.isalpha() or c == " ") / len(line)
+            if alpha_ratio < 0.7:
+                continue
+            if line == prev:
+                continue
+            good_lines.append(line)
+            prev = line
+
+        result = "\n".join(good_lines)
+        tracer_l.info(f"[DOC] fallback: извлечено {len(result)} символов.")
+        return result
+
+    # ------------------------------------------------------------------
+    # RTF / HTML / MHT / Word 2003 XML — то, что часто лежит под расширением .doc
+    # ------------------------------------------------------------------
+    def _parse_rtf(self, path):
+        text = self._convert_with_soffice(path)
+        if len(text.strip()) >= self.MIN_TEXT_LEN:
+            return text
+        with open(path, "rb") as f:
+            raw = f.read()
+        return self._rtf_to_text(raw.decode("latin-1"))
+
+    @staticmethod
+    def _rtf_to_text(rtf):
+        """Минимальный RTF → текст (группы-назначения выкидываются, \\'hh и \\uN декодируются)."""
+        destinations = {
+            "aftncn", "aftnsep", "aftnsepc", "annotation", "atnauthor", "atndate", "atnicn", "atnid",
+            "atnparent", "atnref", "atntime", "atrfend", "atrfstart", "author", "background",
+            "bkmkend", "bkmkstart", "blipuid", "buptim", "category", "colorschememapping",
+            "colortbl", "comment", "company", "creatim", "datafield", "datastore", "defchp", "defpap",
+            "do", "doccomm", "docvar", "dptxbxtext", "ebcend", "ebcstart", "factoidname", "falt",
+            "fchars", "ffdeftext", "ffentrymcr", "ffexitmcr", "ffformat", "ffhelptext", "ffl",
+            "ffname", "ffstattext", "field", "file", "filetbl", "fldinst", "fldtype", "fname",
+            "fontemb", "fontfile", "fonttbl", "footer", "footerf", "footerl", "footerr", "footnote",
+            "formfield", "ftncn", "ftnsep", "ftnsepc", "g", "generator", "gridtbl", "header",
+            "headerf", "headerl", "headerr", "hl", "hlfr", "hlinkbase", "hlloc", "hlsrc", "hsv",
+            "htmltag", "info", "keycode", "keywords", "latentstyles", "lchars", "levelnumbers",
+            "leveltext", "lfolevel", "linkval", "list", "listlevel", "listname", "listoverride",
+            "listoverridetable", "listpicture", "liststylename", "listtable", "listtext",
+            "lsdlockedexcept", "macc", "maccPr", "mailmerge", "maln", "malnScr", "manager", "margPr",
+            "mbar", "mbarPr", "mbaseJc", "mbegChr", "mborderBox", "mborderBoxPr", "mbox", "mboxPr",
+            "mchr", "mcount", "mctrlPr", "md", "mdeg", "mdegHide", "mden", "mdiff", "mdPr", "me",
+            "mendChr", "meqArr", "meqArrPr", "mf", "mfName", "mfPr", "mfunc", "mfuncPr", "mgroupChr",
+            "mgroupChrPr", "mgrow", "mhideBot", "mhideLeft", "mhideRight", "mhideTop", "mhtmltag",
+            "mlim", "mlimloc", "mlimlow", "mlimlowPr", "mlimupp", "mlimuppPr", "mm", "mmaddfieldname",
+            "mmath", "mmathPict", "mmathPr", "mmaxdist", "mmc", "mmcJc", "mmconnectstr",
+            "mmconnectstrdata", "mmcPr", "mmcs", "mmdatasource", "mmheadersource", "mmmailsubject",
+            "mmodso", "mmodsofilter", "mmodsofldmpdata", "mmodsomappedname", "mmodsoname",
+            "mmodsorecipdata", "mmodsosort", "mmodsosrc", "mmodsotable", "mmodsoudl",
+            "mmodsoudldata", "mmodsouniquetag", "mmPr", "mmquery", "mmr", "mnary", "mnaryPr",
+            "mnoBreak", "mnum", "mobjDist", "moMath", "moMathPara", "moMathParaPr", "mopEmu",
+            "mphant", "mphantPr", "mplcHide", "mpos", "mr", "mrad", "mradPr", "mrPr", "msepChr",
+            "mshow", "mshp", "msPre", "msPrePr", "msSub", "msSubPr", "msSubSup", "msSubSupPr",
+            "msSup", "msSupPr", "mstrikeBLTR", "mstrikeH", "mstrikeTLBR", "mstrikeV", "msub",
+            "msubHide", "msup", "msupHide", "mtransp", "mtype", "mvertJc", "mvfmf", "mvfml",
+            "mvtof", "mvtol", "mzeroAsc", "mzeroDesc", "mzeroWid", "nesttableprops", "nextfile",
+            "nonesttables", "objalias", "objclass", "objdata", "object", "objname", "objsect",
+            "objtime", "oldcprops", "oldpprops", "oldsprops", "oldtprops", "oleclsid", "operator",
+            "panose", "password", "passwordhash", "pgp", "pgptbl", "picprop", "pict", "pn", "pnseclvl",
+            "pntext", "pntxta", "pntxtb", "printim", "private", "propname", "protend", "protstart",
+            "protusertbl", "pxe", "result", "revtbl", "revtim", "rsidtbl", "rxe", "shp", "shpgrp",
+            "shpinst", "shppict", "shprslt", "shptxt", "sn", "sp", "staticval", "stylesheet",
+            "subject", "sv", "svb", "tc", "template", "themedata", "title", "txe", "ud", "upr",
+            "userprops", "wgrffmtfilter", "windowcaption", "writereservation", "writereservhash",
+            "xe", "xform", "xmlattrname", "xmlattrvalue", "xmlclose", "xmlname", "xmlnstbl", "xmlopen",
+        }
+        specialchars = {
+            "par": "\n", "sect": "\n\n", "page": "\n\n", "line": "\n", "tab": "\t",
+            "emdash": "—", "endash": "–", "emspace": " ", "enspace": " ", "qmspace": " ",
+            "bullet": "•", "lquote": "‘", "rquote": "’", "ldblquote": "«", "rdblquote": "»",
+            "row": "\n", "cell": "\t", "nestcell": "\t",
+        }
+        m_cp = re.search(r"\\ansicpg(\d+)", rtf)
+        codepage = f"cp{m_cp.group(1)}" if m_cp else "cp1251"
+        try:
+            "".encode(codepage)
+        except LookupError:
+            codepage = "cp1251"
+
+        pattern = re.compile(
+            r"\\([a-z]{1,32})(-?\d{1,10})?[ ]?|\\'([0-9a-f]{2})|\\([^a-z])|([{}])|[\r\n]+|(.)",
+            re.I | re.S,
+        )
+        stack = []
+        ignorable = False
+        ucskip = 1
+        curskip = 0
+        out = []
+        hexbuf = bytearray()
+
+        def flush_hex():
+            if hexbuf:
+                out.append(hexbuf.decode(codepage, errors="ignore"))
+                hexbuf.clear()
+
+        for match in pattern.finditer(rtf):
+            word, arg, hexcode, char, brace, tchar = match.groups()
+            if hexcode is None:
+                flush_hex()
+            if brace:
+                curskip = 0
+                if brace == "{":
+                    stack.append((ucskip, ignorable))
+                elif stack:
+                    ucskip, ignorable = stack.pop()
+            elif char:
+                curskip = 0
+                if char == "~":
+                    if not ignorable:
+                        out.append("\xa0")
+                elif char in "{}\\":
+                    if not ignorable:
+                        out.append(char)
+                elif char == "*":
+                    ignorable = True
+            elif word:
+                curskip = 0
+                if word in destinations:
+                    ignorable = True
+                elif ignorable:
+                    pass
+                elif word in specialchars:
+                    out.append(specialchars[word])
+                elif word == "uc":
+                    ucskip = int(arg or 1)
+                elif word == "u":
+                    c = int(arg)
+                    if c < 0:
+                        c += 0x10000
+                    out.append(chr(c))
+                    curskip = ucskip
+            elif hexcode:
+                if curskip > 0:
+                    curskip -= 1
+                elif not ignorable:
+                    hexbuf.append(int(hexcode, 16))
+            elif tchar:
+                if curskip > 0:
+                    curskip -= 1
+                elif not ignorable:
+                    out.append(tchar)
+        flush_hex()
+        return "".join(out)
+
+    def _parse_html(self, path):
+        with open(path, "rb") as f:
+            raw = f.read()
+        return self._html_bytes_to_text(raw)
+
+    @staticmethod
+    def _html_bytes_to_text(raw, charset=None):
+        if not charset:
+            m = re.search(rb"charset=[\"']?([\w-]+)", raw[:4096], re.I)
+            charset = m.group(1).decode("ascii", errors="ignore") if m else None
+        try:
+            html_text = raw.decode(charset or "utf-8")
+        except (UnicodeDecodeError, LookupError):
+            enc = (chardet.detect(raw[:200_000]) or {}).get("encoding") or "cp1251"
+            html_text = raw.decode(enc, errors="ignore")
+        soup = BeautifulSoup(html_text, "html.parser")
+        for tag in soup(["script", "style", "head", "xml"]):
+            tag.decompose()
+        return soup.get_text("\n")
+
+    def _parse_mht(self, path):
+        import email
+        from email import policy
+
+        with open(path, "rb") as f:
+            msg = email.message_from_binary_file(f, policy=policy.compat32)
+
+        for part in msg.walk():
+            ctype = part.get_content_type()
+            if ctype in ("text/html", "text/plain"):
+                payload = part.get_payload(decode=True) or b""
+                charset = part.get_content_charset()
+                if ctype == "text/html":
+                    return self._html_bytes_to_text(payload, charset)
+                return payload.decode(charset or "utf-8", errors="ignore")
+        return ""
+
+    def _parse_word_xml(self, path):
+        with open(path, "rb") as f:
+            raw = f.read()
+        try:
+            return self._ooxml_to_text(raw)
+        except Exception:
+            return self._html_bytes_to_text(raw)
+
+    # ------------------------------------------------------------------
+    # ВНЕШНИЕ УТИЛИТЫ
+    # ------------------------------------------------------------------
+    def _convert_with_soffice(self, path):
+        """LibreOffice headless с ОТДЕЛЬНЫМ профилем на каждый вызов.
+        Без этого параллельные загрузки дерутся за ~/.config/libreoffice
+        (а у www-data HOME часто вообще недоступен на запись) — soffice молча
+        ничего не конвертирует, и файл «не читается»."""
+        import pathlib
+        import signal
+
         soffice_bin = shutil.which("soffice") or shutil.which("libreoffice")
         if not soffice_bin:
-            for potential_path in ["/usr/bin/soffice", "/usr/bin/libreoffice", "/usr/local/bin/soffice"]:
-                if os.path.exists(potential_path) and os.access(potential_path, os.X_OK):
-                    soffice_bin = potential_path
+            for candidate in ("/usr/bin/soffice", "/usr/bin/libreoffice", "/usr/local/bin/soffice",
+                              "/opt/libreoffice/program/soffice"):
+                if os.path.exists(candidate) and os.access(candidate, os.X_OK):
+                    soffice_bin = candidate
                     break
+        if not soffice_bin:
+            return ""
 
-        if soffice_bin:
+        with TemporaryDirectory(prefix="lo_") as work_dir:
+            profile_uri = pathlib.Path(work_dir, "profile").as_uri()
+            src_copy = os.path.join(work_dir, "input" + (os.path.splitext(path)[1] or ".bin"))
+            shutil.copyfile(path, src_copy)
+
+            env = os.environ.copy()
+            env["HOME"] = work_dir
+
+            cmd = [
+                soffice_bin,
+                f"-env:UserInstallation={profile_uri}",
+                "--headless", "--norestore", "--nolockcheck", "--nodefault", "--nofirststartwizard",
+                "--convert-to", "txt:Text (encoded):UTF8",
+                "--outdir", work_dir,
+                src_copy,
+            ]
             try:
-                with TemporaryDirectory() as out_dir:
-                    cmd = [
-                        soffice_bin,
-                        "--headless",
-                        "--convert-to", "txt:Text",
-                        "--outdir", out_dir,
-                        file_path
-                    ]
-                    process = subprocess.run(cmd, capture_output=True, text=True, timeout=25, check=False)
-                    
-                    base_name = os.path.splitext(os.path.basename(file_path))[0]
-                    txt_path = os.path.join(out_dir, f"{base_name}.txt")
-
-                    if os.path.exists(txt_path):
-                        with open(txt_path, "r", encoding="utf-8", errors="ignore") as f:
-                            text = f.read().strip()
-                        if len(text) > 30:
-                            tracer_l.info(f"[DOC] МЕТОД 1 (LibreOffice): успешно извлечено {len(text)} символов.")
-                            return text
-                    else:
-                        tracer_l.warning(f"[DOC] LibreOffice не создал txt: {process.stderr}")
-            except Exception as e:
-                tracer_l.warning(f"[DOC] LibreOffice ошибка выполнения: {e}")
-
-        # ------------------------------------------------------------------
-        # МЕТОД 2: ЕСЛИ ЭТО ZIP/OPENXML
-        # ------------------------------------------------------------------
-        if zipfile.is_zipfile(file_path):
-            tracer_l.info("[DOC] Файл является ZIP-архивом. Запуск извлечения OpenXML...")
-
-            # 2.1 Пробуем стандартный python-docx
-            try:
-                doc = docx.Document(file_path)
-                paragraphs = [p.text for p in doc.paragraphs if p.text.strip()]
-                tables = []
-                for t in doc.tables:
-                    for row in t.rows:
-                        row_text = " | ".join(c.text.strip() for c in row.cells if c.text.strip())
-                        if row_text:
-                            tables.append(row_text)
-                full_text = "\n".join(paragraphs + tables).strip()
-                if len(full_text) > 30:
-                    tracer_l.info(f"[DOC] МЕТОД 2.1 (python-docx): успешно извлечено {len(full_text)} символов.")
-                    return full_text
-            except Exception as e:
-                tracer_l.warning(f"[DOC] python-docx споткнулся ({e}). Переходим к прямому чтению тегов <w:t>...")
-
-            # 2.2 УНИВЕРСАЛЬНЫЙ XML-ПАРСЕР ТЕГОВ <w:t>
-            try:
-                extracted_pieces = []
-                with zipfile.ZipFile(file_path, 'r') as z:
-                    xml_files = [
-                        name for name in z.namelist() 
-                        if name.endswith('.xml') and ('word/' in name or 'document' in name.lower())
-                    ]
-
-                    xml_files.sort(key=lambda x: 0 if 'document.xml' in x.lower() else 1)
-
-                    for xml_name in xml_files:
-                        try:
-                            raw_xml = z.read(xml_name).decode('utf-8', errors='ignore')
-                            raw_xml = re.sub(r'</w:p>', '\n', raw_xml)
-                            
-                            matches = re.findall(r'<w:t(?:\s+[^>]*)?>(.*?)</w:t>', raw_xml, flags=re.DOTALL)
-                            if matches:
-                                piece_text = "".join(matches)
-                                piece_text = (piece_text
-                                              .replace('&lt;', '<')
-                                              .replace('&gt;', '>')
-                                              .replace('&amp;', '&')
-                                              .replace('&quot;', '"')
-                                              .replace('&apos;', "'"))
-                                if piece_text.strip():
-                                    extracted_pieces.append(piece_text.strip())
-                        except Exception as read_err:
-                            tracer_l.debug(f"[DOC] Ошибка чтения {xml_name}: {read_err}")
-
-                combined_xml_text = "\n\n".join(extracted_pieces).strip()
-                combined_xml_text = re.sub(r'[ \t]+', ' ', combined_xml_text)
-                combined_xml_text = re.sub(r'\n{3,}', '\n\n', combined_xml_text)
-
-                if len(combined_xml_text) > 30:
-                    tracer_l.info(f"[DOC] МЕТОД 2.2 (Прямой парсер <w:t>): успешно извлечено {len(combined_xml_text)} символов!")
-                    return combined_xml_text
-            except Exception as z_err:
-                tracer_l.error(f"[DOC] Сбой парсера <w:t>: {z_err}")
-
-        # МЕТОД 3: СТАРЫЙ БИНАРНЫЙ WORD 97-2003 (.DOC)
-        tracer_l.info("[DOC] Попытка чтения через утилиты бинарного DOC (antiword / catdoc)...")
-        
-        antiword_bin = shutil.which("antiword") or "/usr/bin/antiword"
-        if os.path.exists(antiword_bin):
-            try:
-                proc = subprocess.run(
-                    [antiword_bin, "-m", "UTF-8.txt", file_path],
-                    capture_output=True,
-                    text=True,
-                    timeout=15,
-                    check=False
+                proc = subprocess.Popen(
+                    cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                    env=env, start_new_session=True,
                 )
-                if proc.returncode == 0 and len(proc.stdout.strip()) > 30:
-                    tracer_l.info(f"[DOC] МЕТОД 3.1 (antiword): извлечено {len(proc.stdout)} символов.")
-                    return proc.stdout.strip()
+                try:
+                    _, stderr = proc.communicate(timeout=self.SOFFICE_TIMEOUT)
+                except subprocess.TimeoutExpired:
+                    try:
+                        os.killpg(proc.pid, signal.SIGKILL)
+                    except ProcessLookupError:
+                        pass
+                    proc.communicate()
+                    tracer_l.warning(f"[DOC] LibreOffice: таймаут {self.SOFFICE_TIMEOUT}с, процесс убит")
+                    return ""
             except Exception as e:
-                tracer_l.info(f"[DOC] antiword ошибка: {e}")
+                tracer_l.info(f"[DOC] LibreOffice: ошибка запуска: {e}")
+                return ""
 
-        catdoc_bin = shutil.which("catdoc") or "/usr/bin/catdoc"
-        if os.path.exists(catdoc_bin):
+            txt_path = os.path.join(work_dir, "input.txt")
+            if not os.path.exists(txt_path):
+                tracer_l.info(f"[DOC] LibreOffice не создал txt: {stderr.decode('utf-8', 'ignore')[:300]}")
+                return ""
+
+            with open(txt_path, "r", encoding="utf-8", errors="ignore") as f:
+                text = f.read(self.READ_SYMBOLS_LIMIT * 2)
+
+        if len(text.strip()) >= self.MIN_TEXT_LEN:
+            tracer_l.info(f"[DOC] LibreOffice: извлечено {len(text)} символов.")
+        return text
+
+    def _run_cli(self, cmd, with_stderr=False):
+        import signal
+
+        try:
+            proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True)
             try:
-                proc = subprocess.run(
-                    [catdoc_bin, "-dutf-8", file_path],
-                    capture_output=True,
-                    text=True,
-                    timeout=15,
-                    check=False
-                )
-                if proc.returncode == 0 and len(proc.stdout.strip()) > 30:
-                    tracer_l.info(f"[DOC] МЕТОД 3.2 (catdoc): извлечено {len(proc.stdout)} символов.")
-                    return proc.stdout.strip()
-            except Exception as e:
-                tracer_l.info(f"[DOC] catdoc ошибка: {e}")
+                out, err = proc.communicate(timeout=self.CLI_TIMEOUT)
+            except subprocess.TimeoutExpired:
+                try:
+                    os.killpg(proc.pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+                proc.communicate()
+                tracer_l.info(f"[DOC] {os.path.basename(cmd[0])}: таймаут")
+                out, err = b"", b""
+        except Exception as e:
+            tracer_l.info(f"[DOC] {os.path.basename(cmd[0])}: ошибка запуска: {e}")
+            out, err = b"", b""
 
-        # МЕТОД 4: РЕЗЕРВНЫЙ БИНАРНЫЙ ДЕКОДЕР
-        tracer_l.info("[DOC] Внешние парсеры не сработали. Запуск аварийного извлечения строк...")
-        fallback_text = self._extract_clean_text_fallback(file_path)
-        if len(fallback_text.strip()) > 30:
-            tracer_l.info(f"[DOC] МЕТОД 4 (Аварийный fallback): извлечено {len(fallback_text)} символов.")
-            return fallback_text
+        out_s = out.decode("utf-8", errors="ignore")
+        if with_stderr:
+            return out_s, err.decode("utf-8", errors="ignore")
+        return out_s
 
-        tracer_l.error(f"[DOC] КРИТИЧЕСКИЙ СБОЙ: ни один метод не смог извлечь текст из {file_path}")
-        return ""
+    # ------------------------------------------------------------------
+    # ОЧИСТКА
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _clean_text(text):
+        if not text:
+            return ""
+        text = str(text).replace("\r\n", "\n").replace("\r", "\n")
+        text = "".join(
+            c for c in text
+            if not (0xD800 <= ord(c) <= 0xDFFF) and (c in "\n\t" or ord(c) >= 32) and c != "\x7f"
+        )
+        text = text.replace("\xa0", " ")
+        text = re.sub(r"[ \t]+\n", "\n", text)
+        text = re.sub(r"[ \t]{2,}", " ", text)
+        text = re.sub(r"\n{3,}", "\n\n", text)
+        return text.strip()
 
 
 @method_decorator(login_required, name="dispatch")
