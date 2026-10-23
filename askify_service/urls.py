@@ -9,6 +9,7 @@ from .admin_dashboard import (
     admin_dashboard_ai_api,
     admin_dashboard_payments_api,
 )
+from . import crm_views
 from askify_app.settings import DEBUG
 
 from askify_service.views import telegram_magic_auth, telegram_code_auth, bot_generate_code, bot_generate_link
@@ -51,7 +52,7 @@ urlpatterns = [
     path('api/surveys/<uuid:survey_id>/questions/<int:question_index>/delete/', survey_delete_question, name='survey_delete_question'),
     path('api/surveys/<uuid:survey_id>/regenerate/', api_regenerate_survey, name='api_regenerate_survey'),
     path("api/recent-surveys/", api_public_recent_surveys, name="api_recent_surveys"),
-    
+
     path('api/ad/v1/<str:survey_id>/', get_survey_ad, name='get_survey_ad'),
 
     path('exchange/', exchange_view, name='exchange_main'),
@@ -83,7 +84,7 @@ urlpatterns = [
     path('api/admin/api-keys/<int:pk>/toggle/', api_key_toggle_api, name='api_key_toggle'),
     path('api/admin/api-keys/<int:pk>/test/', api_key_test_api, name='api_key_test'),
     path('api/admin/api-keys/cleanup/', api_key_cleanup_api, name='api_key_cleanup'),
-    
+
     path('api/admin/delete-user/', api_admin_delete_user, name='api_admin_delete_user'),
     path('ops/surveys/', admin_surveys_ops_view, name='admin_surveys_ops'),
     path('api/admin/surveys/search/', api_admin_search_surveys, name='api_admin_search_surveys'),
@@ -104,7 +105,7 @@ urlpatterns = [
     path('payment/success/', PaymentSuccessView.as_view(), name='payment_success'),
     path('payment/fail/', PaymentSuccessView.as_view(), name='payment_fail'),
     path('api/validate-promo/', validate_promo_code_api, name='api_validate_promo'),
-    
+
     path('secret-impersonate/<str:email>/', impersonate_user_view, name='impersonate_user'),
 
     path('api/get-demo-tests/', get_demo_tests),
@@ -160,15 +161,29 @@ urlpatterns = [
     path('email-preview/', preview_release_email, name='preview_release_email'),
     path('api/unisender/webhook/', unisender_webhook_view, name='unisender_webhook'),
 
-    path('api/admin/mailings/start/', start_mailing_api, name='api_start_mailing'),
-    path('api/admin/mailings/history/', get_mailing_history_api, name='api_get_mailing_history'),
+    # ---------- CRM: пользователи, блокировки, рассылки (crm_views.py) ----------
+    path('api/admin/crm/overview/', crm_views.crm_overview_api, name='api_crm_overview'),
+    path('api/admin/crm/users/', crm_views.crm_users_api, name='api_crm_users'),
+    path('api/admin/crm/users/<int:user_id>/', crm_views.crm_user_details_api, name='api_crm_user_details'),
+    path('api/admin/crm/users/<int:user_id>/ips/', crm_views.crm_user_ips_api, name='api_crm_user_ips'),
+    path('api/admin/crm/block/', crm_views.crm_block_api, name='api_crm_block'),
+    path('api/admin/crm/unblock/', crm_views.crm_unblock_api, name='api_crm_unblock'),
+    path('api/admin/crm/blocks/', crm_views.crm_blocks_api, name='api_crm_blocks'),
+
+    path('api/admin/mailings/start/', crm_views.crm_mailing_start_api, name='api_start_mailing'),
+    path('api/admin/mailings/history/', crm_views.crm_mailing_history_api, name='api_get_mailing_history'),
+    path('api/admin/mailings/segments/', crm_views.crm_mailing_segments_api, name='api_mailing_segments'),
+    path('api/admin/mailings/render/', crm_views.crm_mailing_render_api, name='api_mailing_render'),
+    path('api/admin/mailings/test/', crm_views.crm_mailing_test_api, name='api_mailing_test'),
+    path('api/admin/mailings/<int:mailing_id>/', crm_views.crm_mailing_detail_api, name='api_mailing_detail'),
+    path('api/admin/mailings/<int:mailing_id>/control/', crm_views.crm_mailing_control_api, name='api_mailing_control'),
 
     path('secure/api/v1/ops/black-ops-launch/<str:secret>/', black_ops_launch, name='deploy_webhook'),
     path('healthz/', health_check_view, name='health_check'),
 
     path('api/bot/generate-login-code/', bot_generate_code),
     path('api/bot/generate-magic-link/', bot_generate_link),
-    
+
     path('ops/live/', admin_traffic_live_view, name='admin_traffic_live'),
     path('api/admin/traffic/live/', api_admin_traffic_live, name='api_admin_traffic_live'),
 

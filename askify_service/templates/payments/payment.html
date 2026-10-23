@@ -1,472 +1,766 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Безопасная оплата | Летучка</title>
     {% load static %}
-    <link rel="shortcut icon" href="{% static 'img/logo.png' %}" type="image/png" />
-    <script src="https://securepay.tinkoff.ru/html/payForm/js/tinkoff_v2.js"></script>
-    <link rel="stylesheet" href="{% static 'css/footer.css' %}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Оплата | Летучка</title>
+    <meta name="robots" content="noindex">
+    <meta name="theme-color" content="#0F0E13">
+    <link rel="icon" href="{% static 'img/favicon.ico' %}" type="image/x-icon">
 
-    {% if debug %}
-        <script src="https://cdn.tailwindcss.com"></script>
-        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-    {% else %}
-        <script src="{% static 'vendor/tailwind.full.min.js' %}"></script>
-        <script src="{% static 'vendor/jquery.min.js' %}"></script>
-    {% endif %}
+    <script src="https://securepay.tinkoff.ru/html/payForm/js/tinkoff_v2.js"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=Wix+Madefor+Display:wght@600;700;800&display=swap" rel="stylesheet">
 
     <!-- Yandex.Metrika counter -->
-    <script type="text/javascript" >
+    <script type="text/javascript">
         setTimeout(function() {
             (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
             m[i].l=1*new Date();
             for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
             k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
             (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
-        
-            ym(98823704, "init", {
-                clickmap:true,
-                trackLinks:true,
-                accurateTrackBounce:true,
-                webvisor:true
-            });
+            ym(98823704, "init", { clickmap:true, trackLinks:true, accurateTrackBounce:true, webvisor:true });
         }, 1000);
     </script>
-    <noscript><div><img src="https://mc.yandex.ru/watch/98823704" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+    <noscript><div><img src="https://mc.yandex.ru/watch/98823704" style="position:absolute; left:-9999px;" alt=""></div></noscript>
     <!-- /Yandex.Metrika counter -->
 
+    <link rel="stylesheet" href="{% static 'css/tactile.css' %}">
+    <script src="{% static 'js/tactile.js' %}" defer></script>
+
     <style>
+        /*
+          Каркас: слева док навигации, затем две колонки.
+          Колонка 1 — выбор (заголовок → формат → вариант), ниже детали.
+          Колонка 2 — кассовый чек с формой оплаты, липкий.
+          На телефоне: выбор → чек с кнопкой → детали; нижний док и плашка «К оплате».
+        */
         :root {
-            --bg: #0F0818;
-            --surface: rgba(30, 24, 48, 0.5);
-            --border: rgba(97, 109, 240, 0.2);
-            --text: #f0f0f0;
-            --text-dim: #a0a0b0;
-            --accent: #616DF0;
-            --color-accent-primary: #616DF0;
-            --color-text-secondary: #79EF66;
-            --radius-lg: 1.5rem;
-            --radius-md: 1rem;
-            --color-border: rgba(97, 109, 240, 0.2);
-        }
-        html, body {
-            margin: 0; padding: 0;
-            color: var(--text);
-            font-family: 'Namu Pro', sans-serif;
-            background-color: var(--bg);
-        }
-        @keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-        .animate-fadeIn{animation:fade 0.5s ease-out forwards}
-
-        @media (min-width: 768px) {
-            main.max-w-xl { max-width: 42rem; }
-            footer .max-w-xl { max-width: 42rem; }
-        }
-
-        .plan-card {
-            position: relative; padding: 12px;
-            border: 2px solid var(--surface);
-            background: var(--surface);
-            border-radius: var(--radius-lg);
-            text-align: center; cursor: pointer;
-            transition: all 0.2s ease-in-out;
-            user-select: none;
-        }
-        .plan-card:hover {
-            transform: translateY(-4px); border-color: var(--accent);
-        }
-        .plan-card:active {
-            transform: translateY(2px);
-        }
-        .plan-card.selected {
-            border-color: var(--accent); background: var(--accent);
-        }
-        .plan-card.selected .text-lg, .plan-card.selected .text-sm { color: white; }
-
-        /* Стили для карточек пакетов */
-        .package-card {
-            position: relative;
-            padding: 20px;
-            border: 2px solid var(--surface);
-            background: var(--surface);
-            border-radius: var(--radius-lg);
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s ease-in-out;
-            user-select: none;
-        }
-        .package-card:hover {
-            transform: translateY(-4px);
-            border-color: #22c55e;
-            background: rgba(34, 197, 94, 0.1);
-        }
-        .package-card:active {
-            transform: translateY(2px);
-            border-color: #22c55e;
-            background: rgba(34, 197, 94, 0.1);
-        }
-        .package-card.selected {
-            border-color: #22c55e;
-            background: rgba(34, 197, 94, 0.2);
-        }
-        .plan-badge {
-            position: absolute; top: -12px; left: 50%;
-            transform: translateX(-50%); background: var(--accent);
-            color: white; padding: 4px 10px; font-size: 0.7rem;
-            font-weight: 600; border-radius: 9999px; white-space: nowrap;
-        }
-        .plan-card.selected .plan-badge { background: white; color: var(--accent); }
-
-        /* Список фич */
-        .feature-item {
-            display: flex; align-items: center; gap: 16px;
-            padding: 12px; background: var(--surface); border-radius: var(--radius-md);
-        }
-        .feature-icon {
-            flex-shrink: 0; width: 36px; height: 36px;
-            display: flex; align-items: center; justify-content: center;
-            background: var(--accent); border-radius: 50%; font-size: 1rem;
-            animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-            animation-delay: var(--delay);
-        }
-        .feature-text { font-size: 0.9rem; line-height: 1.4; color: var(--text-dim); }
-        .feature-text strong { color: var(--text); font-weight: 600; }
-
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.2); }
+            --bg: #0F0E13;
+            --surface: #15141B;
+            --surface-2: #1B1A22;
+            --line: rgba(255,255,255,.08);
+            --line-2: rgba(255,255,255,.14);
+            --fg: #F4F4F5;
+            --fg-2: #A1A1AA;
+            --fg-3: #71717A;
+            --accent: #4F46E5;
+            --accent-press: #4338CA;
+            --accent-soft: #A5B4FC;
+            --accent-tint: rgba(79,70,229,.10);
+            --paper: #F5F4F7;
+            --ink: #17161C;
+            --ink-2: #5C5A66;
+            --ease: cubic-bezier(0.16, 1, 0.3, 1);
+            --spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+            --f-display: 'Wix Madefor Display', 'Golos Text', system-ui, sans-serif;
+            --f-body: 'Golos Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            --f-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            --r-lg: 24px;
+            --r-md: 18px;
+            --r-sm: 12px;
+            color-scheme: dark;
         }
 
-        .plan-card.long-term {
-            text-align: left;
-            padding: 20px;
+        *, *::before, *::after { box-sizing: border-box; }
+        html { -webkit-text-size-adjust: 100%; }
+        html, body { overflow-x: clip; }
+        body {
+            margin: 0; background: var(--bg); color: var(--fg);
+            font: 400 15px/1.55 var(--f-body); letter-spacing: -0.011em;
+            -webkit-font-smoothing: antialiased;
         }
+        h1, h2, h3 { font-family: var(--f-display); letter-spacing: -0.03em; margin: 0; text-wrap: balance; color: #fff; }
+        p { margin: 0; }
+        a { color: inherit; }
+        button { font: inherit; color: inherit; }
+        .icon { width: 1em; height: 1em; display: inline-block; flex-shrink: 0; vertical-align: -0.125em; }
+        :focus-visible { outline: 2px solid var(--accent-soft); outline-offset: 2px; }
 
-        #promo-container input::placeholder {
-            color: #6B7280;
-            font-weight: 500;
+        /* ====================================================== */
+        /*   ДОК НАВИГАЦИИ (как на остальных страницах сервиса)   */
+        /* ====================================================== */
+        .dock-btn {
+            width: 44px; height: 44px; border-radius: 16px; display: grid; place-items: center;
+            color: var(--fg-2); background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.05);
+            text-decoration: none; font-size: 16px;
+            transition: color .2s ease, background-color .2s ease, transform .35s var(--spring);
         }
-        #promo-container:focus-within {
-            border-color: var(--color-accent-primary);
-            box-shadow: 0 0 15px rgba(97, 109, 240, 0.3);
-        }
-        .promo-success { color: var(--color-accent-secondary); }
-        .promo-error { color: #F87171; }
+        .dock-btn:hover { color: #fff; background: rgba(255,255,255,.09); }
+        .dock-btn:active { transform: scale(.94); }
+        .dock-btn--home { width: 40px; height: 40px; border-radius: 14px; }
+        .dock-btn--home img { width: 20px; height: auto; display: block; }
+        .dock-btn--primary { color: #fff; background: var(--accent); border-color: transparent; }
+        .dock-btn--primary:hover { color: #fff; background: #5B54EA; }
+        .dock-btn--exit { background: transparent; border-color: transparent; color: var(--fg-3); }
+        .dock-btn--exit:hover { color: #FDA4AF; background: rgba(244,63,94,.1); }
+        .dock-sep { width: 24px; height: 1px; background: rgba(255,255,255,.1); }
 
-
-        /* Анимация переливания неона */
-        @keyframes neon-flow {
-            0% { border-color: #7928CA; box-shadow: 0 0 15px rgba(121, 40, 202, 0.3); }
-            50% { border-color: #FF0080; box-shadow: 0 0 25px rgba(255, 0, 128, 0.4); }
-            100% { border-color: #007CF0; box-shadow: 0 0 15px rgba(0, 124, 240, 0.3); }
+        .dock-desktop {
+            display: none; position: fixed; left: 20px; top: 50%; z-index: 40;
+            flex-direction: column; align-items: center; gap: 22px; padding: 22px 13px; border-radius: 28px;
+            background: rgba(21,20,27,.72); border: 1px solid var(--line);
+            -webkit-backdrop-filter: blur(20px) saturate(160%); backdrop-filter: blur(20px) saturate(160%);
+            opacity: 0; transform: translateY(calc(-50% + 12px)) scale(.99); filter: blur(4px);
+            animation: dockDesktopArrival .45s var(--ease) .05s forwards;
         }
+        .dock-desktop nav { display: flex; flex-direction: column; gap: 14px; }
+        @keyframes dockDesktopArrival { to { opacity: 1; transform: translateY(-50%) scale(1); filter: blur(0); } }
+        @media (min-width: 1024px) { .dock-desktop { display: flex; } }
 
-        .plan-card.premium-neon {
-            position: relative;
-            border: 2px solid #7928CA;
-            border-radius: 1.5rem;
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(10px);
-            transition: all 0.3s ease;
-            animation: neon-flow 4s infinite alternate;
-            z-index: 1;
+        .dock-mobile {
+            position: fixed; left: 50%; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 40;
+            display: flex; align-items: center; gap: 26px; padding: 10px 24px; border-radius: 999px;
+            background: rgba(21,20,27,.86); border: 1px solid var(--line);
+            -webkit-backdrop-filter: blur(20px) saturate(160%); backdrop-filter: blur(20px) saturate(160%);
+            opacity: 0; transform: translate(-50%, 12px) scale(.99); filter: blur(4px);
+            animation: dockMobileArrival .45s var(--ease) .05s forwards;
         }
+        .dock-mobile a { color: var(--fg-2); font-size: 18px; display: grid; place-items: center; text-decoration: none; }
+        .dock-mobile a:hover { color: #fff; }
+        .dock-mobile .dock-plus { width: 38px; height: 38px; border-radius: 999px; color: #fff; background: var(--accent); font-size: 15px; }
+        .dock-mobile .dock-login { font-size: 12.5px; font-weight: 600; color: var(--accent-soft); }
+        @keyframes dockMobileArrival { to { opacity: 1; transform: translate(-50%, 0) scale(1); filter: blur(0); } }
+        @media (min-width: 1024px) { .dock-mobile { display: none; } }
 
-        .plan-card.premium-neon .plan-badge {
-            position: absolute;
-            top: -12px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 10;
-            background: linear-gradient(45deg, #7928CA, #FF0080);
-            box-shadow: 0 0 15px rgba(255, 0, 128, 0.4);
-            border: none;
-            color: #fff;
-            white-space: nowrap;
+        /* ====================================================== */
+        /*   КАРКАС                                                */
+        /* ====================================================== */
+        .page {
+            padding-left: max(16px, env(safe-area-inset-left, 0px));
+            padding-right: max(16px, env(safe-area-inset-right, 0px));
+            padding-block: 32px 132px;
         }
+        @media (min-width: 1024px) {
+            .page { padding-left: max(120px, env(safe-area-inset-left, 0px)); padding-right: max(32px, env(safe-area-inset-right, 0px)); padding-block: 64px 96px; }
+        }
+        .co {
+            max-width: 1080px; margin: 0 auto;
+            display: grid; gap: 40px; grid-template-columns: minmax(0, 1fr);
+            grid-template-areas: "choice" "checkout" "details";
+        }
+        @media (min-width: 1024px) {
+            .co {
+                grid-template-columns: minmax(0, 1fr) 360px; column-gap: 56px; row-gap: 72px;
+                grid-template-areas: "choice checkout" "details checkout";
+            }
+        }
+        .co-choice { grid-area: choice; display: grid; gap: 28px; min-width: 0; }
+        .co-details { grid-area: details; display: grid; gap: 64px; min-width: 0; }
+        .co-checkout { grid-area: checkout; min-width: 0; }
+        @media (min-width: 1024px) { .co-checkout { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 32px); align-self: start; } }
 
-        .plan-card.premium-neon:hover {
-            transform: translateY(-4px);
-            z-index: 2;
-        }
+        .sec { display: grid; gap: 20px; min-width: 0; }
+        .sec-title { font-size: 22px; line-height: 1.2; font-weight: 700; }
+        .sec-lead { font-size: 14px; color: var(--fg-2); max-width: 60ch; margin-top: -10px; }
 
-        .plan-card.premium-neon.selected {
-            border-color: #fff;
-            box-shadow: 0 0 35px rgba(255, 255, 255, 0.4);
+        /* ---------- Заголовок ---------- */
+        .hero { display: grid; gap: 14px; padding-bottom: 4px; }
+        .hero h1 { font-size: clamp(32px, 5vw, 52px); line-height: 1.04; font-weight: 800; letter-spacing: -0.045em; }
+        .hero h1 span { display: block; }
+        .hero p { font-size: 16px; line-height: 1.5; color: var(--fg-2); max-width: 46ch; }
+
+        /* ---------- Формат: пакет / абонемент ---------- */
+        .modes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .mode {
+            text-align: left; cursor: pointer; display: grid; gap: 6px; align-content: start;
+            padding: 18px; border-radius: var(--r-md); border: 0;
+            background: var(--surface); box-shadow: inset 0 0 0 1px var(--line);
+            transition: box-shadow .2s ease, background-color .2s ease;
         }
+        @media (min-width: 640px) { .mode { padding: 20px 22px; } }
+        .mode:hover { box-shadow: inset 0 0 0 1px var(--line-2); }
+        .mode[aria-selected="true"] { background: var(--surface-2); box-shadow: inset 0 0 0 1.5px var(--accent-soft); }
+        .mode-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+        .mode-title { font: 700 17px/1.2 var(--f-display); letter-spacing: -0.02em; color: #fff; }
+        @media (min-width: 640px) { .mode-title { font-size: 19px; } }
+        .mode-from { font-size: 13px; font-weight: 600; color: var(--fg-3); white-space: nowrap; font-variant-numeric: tabular-nums; }
+        .mode[aria-selected="true"] .mode-from { color: var(--accent-soft); }
+        .mode-text { font-size: 13px; line-height: 1.45; color: var(--fg-2); }
+        @media (min-width: 640px) { .mode-text { font-size: 14px; } }
+
+        /* ---------- Варианты ---------- */
+        .panel { display: grid; gap: 12px; }
+        .opts { display: grid; gap: 8px; }
+        .opt {
+            width: 100%; cursor: pointer; text-align: left; border: 0;
+            display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-items: center; gap: 16px;
+            padding: 18px 20px; border-radius: var(--r-md);
+            background: var(--surface); box-shadow: inset 0 0 0 1px var(--line);
+            transition: box-shadow .2s ease, background-color .2s ease;
+        }
+        .opt:hover { box-shadow: inset 0 0 0 1px var(--line-2); }
+        .opt[aria-checked="true"] { background: var(--surface-2); box-shadow: inset 0 0 0 1.5px var(--accent-soft); }
+        .opt-radio { width: 20px; height: 20px; border-radius: 99px; box-shadow: inset 0 0 0 1.5px #52525B; display: grid; place-items: center; transition: box-shadow .2s ease; }
+        .opt-radio::after { content: ''; width: 10px; height: 10px; border-radius: 99px; background: var(--accent-soft); transform: scale(0); transition: transform .3s var(--spring); }
+        .opt[aria-checked="true"] .opt-radio { box-shadow: inset 0 0 0 1.5px var(--accent-soft); }
+        .opt[aria-checked="true"] .opt-radio::after { transform: scale(1); }
+        .opt-body { display: grid; gap: 4px; min-width: 0; }
+        .opt-title { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font: 700 17px/1.2 var(--f-display); letter-spacing: -0.02em; color: #fff; }
+        .opt-sub { font-size: 13px; color: var(--fg-2); }
+        .opt-sub em { font-style: normal; color: var(--accent-soft); font-weight: 600; }
+        .tag { display: inline-flex; align-items: center; height: 22px; padding: 0 9px; border-radius: 99px; font: 600 11.5px/1 var(--f-body); white-space: nowrap; color: #E0E7FF; background: var(--accent); }
+        .tag--quiet { color: var(--fg-2); background: rgba(255,255,255,.06); }
+        .opt-price { display: grid; gap: 3px; justify-items: end; text-align: right; }
+        .opt-price b { font: 800 20px/1 var(--f-display); letter-spacing: -0.03em; color: #fff; font-variant-numeric: tabular-nums; white-space: nowrap; }
+        .opt-price s { font-size: 12px; color: var(--fg-3); white-space: nowrap; font-variant-numeric: tabular-nums; }
+        .panel-note { display: flex; gap: 10px; align-items: flex-start; padding: 2px 4px; font-size: 13px; color: var(--fg-3); }
+        .panel-note .icon { color: var(--fg-2); margin-top: 3px; }
+
+        /* ====================================================== */
+        /*   ЧЕК + ОПЛАТА                                          */
+        /* ====================================================== */
+        .checkout { display: grid; gap: 12px; }
+        .rcpt {
+            color: var(--ink); background: var(--paper); border-radius: 18px 18px 0 0; padding: 22px 22px 28px;
+            -webkit-mask: radial-gradient(circle 5px at 50% 100%, transparent 4.5px, #000 5px) 0 0 / 14px 100% repeat-x;
+                    mask: radial-gradient(circle 5px at 50% 100%, transparent 4.5px, #000 5px) 0 0 / 14px 100% repeat-x;
+        }
+        .rcpt-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding-bottom: 12px; border-bottom: 1px dashed rgba(23,22,28,.22); font: 600 12px/1 var(--f-mono); color: var(--ink-2); }
+        .rcpt-head b { color: var(--ink); letter-spacing: .14em; font-weight: 800; }
+        .rcpt-item { padding: 16px 0 14px; display: grid; gap: 4px; }
+        .rcpt-item small { font: 500 12px/1.2 var(--f-mono); color: var(--ink-2); }
+        .rcpt-item strong { font: 800 22px/1.15 var(--f-display); letter-spacing: -0.03em; }
+        .rcpt-lines { display: grid; gap: 8px; padding-bottom: 14px; border-bottom: 1px dashed rgba(23,22,28,.22); }
+        .rcpt-line { display: flex; align-items: baseline; gap: 8px; font: 500 12.5px/1.3 var(--f-mono); color: var(--ink-2); }
+        .rcpt-line i { flex: 1; min-width: 12px; border-bottom: 1px dotted rgba(23,22,28,.28); transform: translateY(-3px); }
+        .rcpt-line b { color: var(--ink); font-weight: 600; text-align: right; }
+        .rcpt-total { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding-top: 14px; }
+        .rcpt-total span { font: 800 12px/1 var(--f-mono); letter-spacing: .14em; }
+        .rcpt-total strong { font: 800 36px/1 var(--f-display); letter-spacing: -0.045em; font-variant-numeric: tabular-nums; }
+        .rcpt-total strong small { font-size: 20px; margin-left: 2px; }
+        .rcpt.flash .rcpt-item strong, .rcpt.flash .rcpt-total strong { animation: rcptIn .45s var(--ease); }
+        @keyframes rcptIn { from { opacity: .2; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+
+        .payform { display: grid; gap: 10px; padding-top: 6px; }
+        .mail { display: grid; gap: 6px; }
+        .mail label { font-size: 12.5px; font-weight: 500; color: var(--fg-2); }
+        .mail input {
+            width: 100%; height: 48px; padding: 0 14px; border-radius: var(--r-sm);
+            background: var(--surface); border: 1px solid var(--line-2); color: #fff;
+            font: 500 15px/1 var(--f-body); outline: none; transition: border-color .2s ease;
+        }
+        .mail input::placeholder { color: #52525B; }
+        .mail input:focus { border-color: var(--accent-soft); }
+
+        #payment-button {
+            position: relative; width: 100%; min-height: 56px; padding: 0 20px; border: 0; border-radius: 14px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            font: 700 16px/1.2 var(--f-body); letter-spacing: -0.01em; color: #fff; background: var(--accent);
+            transition: background-color .15s ease, transform .15s ease;
+        }
+        #payment-button::before {
+            content: ''; width: 18px; height: 18px; flex-shrink: 0; background: currentColor; opacity: .9;
+            -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='2' y='5' width='20' height='14' rx='3'/%3E%3Cline x1='2' y1='10' x2='22' y2='10'/%3E%3C/svg%3E") center / contain no-repeat;
+                    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='2' y='5' width='20' height='14' rx='3'/%3E%3Cline x1='2' y1='10' x2='22' y2='10'/%3E%3C/svg%3E") center / contain no-repeat;
+        }
+        #payment-button:hover { background: #5B54EA; }
+        #payment-button:active { background: var(--accent-press); transform: translateY(1px); }
+        #payment-button:disabled { cursor: progress; background: var(--accent-press); }
+
+        .pay-legal { font-size: 12px; line-height: 1.5; color: var(--fg-3); text-align: center; text-wrap: balance; }
+        .pay-legal a { color: var(--fg-2); }
+
+        .secure { display: grid; gap: 12px; margin-top: 6px; padding: 16px; border-radius: var(--r-md); background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); }
+        .secure-row { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; color: var(--fg-2); }
+        .secure-row .icon { font-size: 16px; color: var(--fg); margin-top: 1px; }
+        .secure-row b { color: var(--fg); font-weight: 600; }
+
+        .methods { display: flex; flex-wrap: wrap; gap: 6px; }
+        .pm {
+            height: 30px; padding: 0 11px; display: inline-flex; align-items: center; gap: 6px; border-radius: 9px;
+            font: 700 12px/1 var(--f-body); letter-spacing: -0.01em; color: #E4E4E7;
+            background: rgba(255,255,255,.05); box-shadow: inset 0 0 0 1px var(--line);
+        }
+        .pm img { height: 14px; width: auto; display: block; }
+
+        /* Плашка «К оплате» на телефоне, когда чек вне экрана */
+        .to-pay {
+            position: fixed; left: 50%; z-index: 39;
+            bottom: calc(env(safe-area-inset-bottom, 0px) + 16px + 58px + 10px);
+            display: flex; align-items: center; gap: 12px; height: 46px; padding: 0 8px 0 18px; border: 0; border-radius: 999px; cursor: pointer;
+            font: 600 14px/1 var(--f-body); color: #fff; background: var(--accent);
+            transform: translate(-50%, 16px); opacity: 0; pointer-events: none;
+            transition: transform .35s var(--ease), opacity .25s ease;
+        }
+        .to-pay b { height: 32px; padding: 0 12px; display: grid; place-items: center; border-radius: 999px; background: rgba(255,255,255,.16); font-weight: 700; font-variant-numeric: tabular-nums; }
+        .to-pay.is-on { transform: translate(-50%, 0); opacity: 1; pointer-events: auto; }
+        @media (min-width: 1024px) { .to-pay { display: none; } }
+
+        /* ====================================================== */
+        /*   ДЕТАЛИ                                                */
+        /* ====================================================== */
+        .incl { display: grid; gap: 4px 32px; grid-template-columns: 1fr; padding: 8px 20px; border-radius: var(--r-lg); background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); }
+        @media (min-width: 640px) { .incl { grid-template-columns: 1fr 1fr; padding: 12px 24px; } }
+        .incl li { list-style: none; display: grid; grid-template-columns: 18px minmax(0,1fr); gap: 12px; padding: 14px 0; border-top: 1px solid var(--line); }
+        .incl li:first-child { border-top: 0; }
+        @media (min-width: 640px) { .incl li:nth-child(2) { border-top: 0; } }
+        .incl .icon { font-size: 16px; color: var(--accent-soft); margin-top: 2px; }
+        .incl b { display: block; font-size: 14.5px; font-weight: 600; color: #fff; }
+        .incl span { display: block; margin-top: 2px; font-size: 13px; color: var(--fg-2); }
+        .incl { margin: 0; }
+
+        .cmp { border-radius: var(--r-lg); overflow: hidden; box-shadow: inset 0 0 0 1px var(--line); }
+        .cmp-row { display: grid; grid-template-columns: minmax(0,.8fr) minmax(0,1fr) minmax(0,1fr); }
+        .cmp-row + .cmp-row { border-top: 1px solid var(--line); }
+        .cmp-row > * { padding: 14px 16px; font-size: 13.5px; min-width: 0; color: var(--fg); }
+        .cmp-row > :first-child { color: var(--fg-3); }
+        .cmp-row > * + * { border-left: 1px solid var(--line); }
+        .cmp-head > * { font: 700 14px/1.2 var(--f-display); letter-spacing: -0.01em; color: #fff; }
+        .cmp .is-on { background: var(--accent-tint); }
+
+        .proof { border-radius: var(--r-lg); background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); overflow: hidden; }
+        .proof-stats { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); }
+        .proof-stats div { padding: 20px; display: grid; gap: 6px; }
+        .proof-stats div + div { border-left: 1px solid var(--line); }
+        .proof-stats strong { font: 800 clamp(22px, 3vw, 30px)/1 var(--f-display); letter-spacing: -0.04em; color: #fff; font-variant-numeric: tabular-nums; }
+        .proof-stats span { font-size: 12.5px; line-height: 1.35; color: var(--fg-2); }
+        .proof-math { padding: 16px 20px; border-top: 1px solid var(--line); font-size: 14px; color: var(--fg-2); }
+        .proof-math b { color: #fff; font-weight: 600; }
+
+        .trust { display: grid; border-radius: var(--r-lg); background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); }
+        .trust-cols { display: grid; grid-template-columns: 1fr; }
+        @media (min-width: 640px) { .trust-cols { grid-template-columns: repeat(3, minmax(0,1fr)); } }
+        .trust-cols div { padding: 20px; display: grid; gap: 6px; align-content: start; }
+        .trust-cols div + div { border-top: 1px solid var(--line); }
+        @media (min-width: 640px) { .trust-cols div + div { border-top: 0; border-left: 1px solid var(--line); } }
+        .trust-cols .icon { font-size: 18px; color: var(--fg); margin-bottom: 4px; }
+        .trust-cols b { font-size: 14.5px; color: #fff; }
+        .trust-cols p { font-size: 13px; color: var(--fg-2); }
+        .trust-pay { padding: 16px 20px; border-top: 1px solid var(--line); display: grid; gap: 10px; }
+        .trust-pay p { font-size: 13px; color: var(--fg-2); }
+
+        .faq { display: grid; border-radius: var(--r-lg); box-shadow: inset 0 0 0 1px var(--line); overflow: hidden; }
+        .faq details + details { border-top: 1px solid var(--line); }
+        .faq summary { list-style: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 18px 20px; font-size: 14.5px; font-weight: 600; color: #E4E4E7; }
+        .faq summary::-webkit-details-marker { display: none; }
+        .faq summary:hover { color: #fff; }
+        .faq summary .icon { color: var(--fg-3); transition: transform .3s var(--ease); }
+        .faq details[open] summary .icon { transform: rotate(180deg); }
+        .faq details p { padding: 0 20px 18px; font-size: 14px; color: var(--fg-2); max-width: 64ch; }
+        .faq a { color: var(--accent-soft); }
+
+        .legal-foot { padding-top: 24px; border-top: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 12px; color: var(--fg-3); }
+        .legal-foot a { color: var(--fg-2); text-decoration: none; }
+        .legal-foot a:hover { color: #fff; }
+
+        /* ====================================================== */
+        /*   ПЕРЕХОД В Т-БАНК (показывается, пока идёт инициализация) */
+        /* ====================================================== */
+        .handoff {
+            position: fixed; inset: 0; z-index: 80; display: grid; place-items: center;
+            padding: 24px max(16px, env(safe-area-inset-right, 0px)) 24px max(16px, env(safe-area-inset-left, 0px));
+            background: rgba(10,9,14,.78); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+            opacity: 0; visibility: hidden; transition: opacity .25s ease, visibility 0s linear .25s;
+        }
+        .handoff.is-on { opacity: 1; visibility: visible; transition: opacity .25s ease; }
+        .handoff-card {
+            width: 100%; max-width: 380px; display: grid; gap: 18px; justify-items: center; text-align: center;
+            padding: 32px 24px 24px; border-radius: var(--r-lg); background: var(--surface); box-shadow: inset 0 0 0 1px var(--line-2);
+            transform: translateY(10px) scale(.98); transition: transform .4s var(--ease);
+        }
+        .handoff.is-on .handoff-card { transform: none; }
+        .handoff-seal { position: relative; width: 64px; height: 64px; display: grid; place-items: center; color: #fff; font-size: 24px; }
+        .handoff-seal svg.ring { position: absolute; inset: 0; width: 100%; height: 100%; animation: spin 1.1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .handoff h2 { font-size: 19px; line-height: 1.25; }
+        .handoff-sub { font-size: 13.5px; color: var(--fg-2); margin-top: -8px; }
+        .handoff-steps { width: 100%; display: grid; gap: 2px; margin: 0; padding: 0; text-align: left; }
+        .handoff-steps li { list-style: none; display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; font-size: 13.5px; color: var(--fg-3); transition: color .25s ease, background-color .25s ease; }
+        .handoff-steps li i { width: 18px; height: 18px; border-radius: 99px; box-shadow: inset 0 0 0 1.5px #3F3F46; display: grid; place-items: center; flex-shrink: 0; transition: background-color .25s ease, box-shadow .25s ease; }
+        .handoff-steps li i svg { width: 10px; height: 10px; opacity: 0; color: #fff; transition: opacity .2s ease; }
+        .handoff-steps li.is-now { color: #fff; background: rgba(255,255,255,.04); }
+        .handoff-steps li.is-now i { box-shadow: inset 0 0 0 1.5px var(--accent-soft); }
+        .handoff-steps li.is-done { color: var(--fg-2); }
+        .handoff-steps li.is-done i { background: var(--accent); box-shadow: none; }
+        .handoff-steps li.is-done i svg { opacity: 1; }
+        .handoff-note { font-size: 12px; color: var(--fg-3); }
+
+        /* ---------- Вход страницы: один короткий момент ---------- */
+        @keyframes rise { from { opacity: .001; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+        .rise { animation: rise .7s var(--ease) var(--t, 0s) both; }
+
+        @media (max-width: 420px) {
+            .modes { gap: 8px; }
+            .mode { padding: 16px; }
+            .opt { padding: 16px; gap: 12px; }
+            .opt-price b { font-size: 18px; }
+            .cmp-row > * { padding: 12px 10px; font-size: 12.5px; }
+            .proof-stats div { padding: 16px 12px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+        }
+        [hidden] { display: none !important; }
     </style>
 </head>
 
-<body class="bg-[var(--bg)] text-[var(--text)] font-['Namu_Pro']">
-    {% include 'header.html' %}
+<body>
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+        <symbol id="i-plus" viewBox="0 0 16 16"><path d="M8 3v10M3 8h10" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></symbol>
+        <symbol id="i-history" viewBox="0 0 24 24"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M3.5 3.5v4.4h4.4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 7.5V12l3 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+        <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4.5 20.5c1.2-3.6 4-5.5 7.5-5.5s6.3 1.9 7.5 5.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+        <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 10.5L12 4l8 6.5V19a1.5 1.5 0 0 1-1.5 1.5H15v-6H9v6H5.5A1.5 1.5 0 0 1 4 19z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+        <symbol id="i-login" viewBox="0 0 24 24"><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4M10 8l4 4-4 4M14 12H4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+        <symbol id="i-logout" viewBox="0 0 24 24"><path d="M10 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4M15 8l4 4-4 4M19 12H9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+        <symbol id="i-chevron" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+        <symbol id="i-check" viewBox="0 0 16 16"><path d="M3.5 8.5L6.5 11.5L12.5 4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+        <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="1.9"/></symbol>
+        <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 21.5s8-4 8-10V5l-8-3-8 3v6.5c0 6 8 10 8 10z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/><path d="M8.5 11.5l2.5 2.5 4.5-5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+        <symbol id="i-norepeat" viewBox="0 0 24 24"><path d="M17 3l3 3-3 3M4 11V9.5A3.5 3.5 0 0 1 7.5 6H20M7 21l-3-3 3-3M20 13v1.5a3.5 3.5 0 0 1-3.5 3.5H4" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 3l18 18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></symbol>
+        <symbol id="i-chat" viewBox="0 0 24 24"><path d="M20.5 12a8 8 0 0 1-11.6 7.1L3.5 20.5l1.4-4.9A8 8 0 1 1 20.5 12z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></symbol>
+        <symbol id="i-inf" viewBox="0 0 24 24"><path d="M7 8.5c-2 0-3.5 1.6-3.5 3.5S5 15.5 7 15.5c3.5 0 6.5-7 10-7 2 0 3.5 1.6 3.5 3.5S19 15.5 17 15.5c-3.5 0-6.5-7-10-7z" fill="none" stroke="currentColor" stroke-width="1.9"/></symbol>
+    </svg>
 
-    <!-- ГЛАВНЫЙ КОНТЕЙНЕР СТРАНИЦЫ -->
-    <main class="max-w-3xl mx-auto px-4 pt-24 pb-48">
-
-        <div class="max-w-lg mx-auto flex justify-center px-4 mt-2 mb-6">
-            <img src="{% static 'img/logo-header.webp' %}" alt="Логотип Летучка" class="w-48 h-auto">
-        </div>
-        
-        <!-- ЗАГОЛОВОК -->
-        <div class="text-center mb-8 animate-fadeIn">
-            <div class="flex justify-center items-center gap-3 mb-2">
-                <h1 class="text-2xl font-['Unbounded_Medium'] font-bold text-white">Летучка <span class="gradient-text">Премиум</span></h1>
-            </div>
-            <p class="mt-2 text-[var(--text-dim)] pricing-subtitle">Прекратите тратить вечера на рутину и освободите время для себя.</p>
-        </div>
-
-        <!-- ПЕРЕКЛЮЧАТЕЛЬ: Подписки / Пакеты -->
-        <div class="flex justify-center mb-8 animate-fadeIn">
-            <div class="bg-[var(--surface)] p-1 rounded-full border border-[var(--color-border)] flex">
-                <button type="button" id="tab-packs" class="relative px-6 py-2 rounded-full text-sm font-bold transition-all bg-[var(--accent)] text-white" onclick="switchTab('packs')">
-                    Пакеты тестов
-                    <span class="absolute -top-2 -right-3 bg-red-500 text-white text-[10px] uppercase font-black px-2 py-0.5 rounded-full shadow-[0_0_8px_rgba(239,68,68,0.8)] animate-pulse border border-red-400 z-10">
-                        от 290 ₽
-                    </span>
-                </button>
-                <button type="button" id="tab-subs" class="px-6 py-2 rounded-full text-sm font-bold transition-all text-gray-400 hover:text-white" onclick="switchTab('subs')">
-                    Подписки
-                </button>
-            </div>
-        </div>
-
-        <!-- КОНТЕЙНЕР ПОДПИСОК -->
-        <div id="container-subs" class="hidden">
-            <div class="grid grid-cols-3 gap-2 mb-8 animate-fadeIn" style="animation-delay: 0.1s;" id="plans-container">
-        {% if is_veteran %}
-            <!-- ГОД PREMIUM -->
-            <div class="plan-card premium-neon" data-plan="premium-year" data-price="4800" data-original-price="4800" data-desc="Премиум Год">
-                <div class="plan-badge">Макс. выгода</div>
-                <p class="sm:text-sm text-xs font-semibold">Год</p>
-                <p class="text-lg sm:text-xl text-white/60 line-through">8280 р</p>
-                <p id="price-year" class="text-lg sm:text-2xl font-bold">4800 р</p>
-                <p class="text-sm font-semibold text-white/50">~92 р / неделя</p>
-            </div>
-
-            <!-- 3 МЕСЯЦА PREMIUM -->
-            <div class="plan-card" data-plan="premium-quarter" data-price="1440" data-original-price="1440" data-desc="Премиум 3 мес">
-                <div class="plan-badge">Популярный</div>
-                <p class="sm: text-sm text-xs font-semibold">3 месяца</p>
-                <p class="text-lg sm:text-xl text-white/60 line-through">2070 р</p>
-                <p id="price-three-months" class="text-lg sm:text-3xl font-bold">1440 р</p>
-                <p class="text-sm font-semibold text-white/50">~120 р / неделя</p>
-            </div>
-
-            <!-- МЕСЯЦ PREMIUM -->
-            <div class="plan-card popular" data-plan="premium-month" data-price="690" data-original-price="690" data-desc="Премиум">
-                <p class="sm:text-sm text-xs font-semibold">Месяц</p>
-                <p id="price-month" class="text-lg sm:text-2xl font-bold">690 р</p>
-                <p class="text-sm sm:text-sm text-white/50">~172 р / неделя</p>
-            </div>
-            
-        {% else %}
-            <!-- МЕСЯЦ PREMIUM (популярный для новичков) -->
-            <div class="plan-card popular" data-plan="premium-month" data-price="690" data-original-price="690" data-desc="Премиум">
-                <div class="plan-badge">Лучший выбор</div>
-                <p class="sm:text-sm text-xs font-semibold">Месяц</p>
-                <p class="text-lg sm:text-xl text-white/60 line-through">900 р</p>
-                <p id="price-month" class="text-lg sm:text-2xl font-bold">690 р</p>
-                <p class="text-sm sm:text-sm text-white/50">~172 р / неделя</p>
-            </div>
-
-            <!-- 3 МЕСЯЦА PREMIUM -->
-            <div class="plan-card" data-plan="premium-quarter" data-price="1440" data-original-price="1440" data-desc="Премиум 3 мес">
-                <div class="plan-badge">Макс. выгода</div>
-                <p class="sm: text-sm text-xs font-semibold">3 месяца</p>
-                <p id="price-three-months" class="text-2xl sm:text-2xl font-bold">1440 р</p>
-                <p class="text-sm font-semibold text-white/50">~120 р / неделя</p>
-            </div>
-            
-            <!-- НЕДЕЛЯ PREMIUM -->
-            <div class="plan-card" data-plan="premium-week" data-price="390" data-original-price="390" data-desc="Премиум неделя">
-                <div class="plan-badge">Тест-драйв</div>
-                <p class="sm:text-sm text-xs font-semibold">Неделя</p>
-                <p id="price-week" class="text-lg sm:text-2xl font-bold">390 р</p>
-            </div>
-
+    <!-- ЛЕВЫЙ ВЕРТИКАЛЬНЫЙ ДОК (DESKTOP) -->
+    <aside class="dock-desktop" aria-label="Навигация">
+        <a href="/" class="dock-btn dock-btn--home" title="Главная">
+            <img src="{% static 'img/logo.png' %}" alt="Летучка">
+        </a>
+        {% if username == 0 %}
+            <a href="{% url 'login' %}" class="dock-btn" title="Войти"><svg class="icon"><use href="#i-login"/></svg></a>
         {% endif %}
-        </div>
-        </div>
+        <div class="dock-sep"></div>
+        <nav>
+            <a href="{% url 'create' %}" class="dock-btn dock-btn--primary" title="Создать тест"><svg class="icon"><use href="#i-plus"/></svg></a>
+            {% if request.user.is_authenticated %}
+                <a href="{% url 'history' %}" class="dock-btn" title="Мои тесты"><svg class="icon"><use href="#i-history"/></svg></a>
+                <a href="{% url 'profile_redirect' %}" class="dock-btn" title="Профиль"><svg class="icon"><use href="#i-user"/></svg></a>
+            {% endif %}
+        </nav>
+        {% if request.user.is_authenticated %}
+            <div class="dock-sep"></div>
+            <a href="{% url 'logout' %}" class="dock-btn dock-btn--exit" title="Выйти"><svg class="icon"><use href="#i-logout"/></svg></a>
+        {% endif %}
+    </aside>
 
-        <!-- КОНТЕЙНЕР ПАКЕТОВ -->
-        <div id="container-packs">
-            <div class="text-center mb-6">
-                <h3 class="text-xl font-bold text-white">Пакеты тестов</h3>
-                <p class="text-sm text-gray-400 mt-1">Покупайте тесты поштучно — они не сгорают</p>
-            </div>
-            <div class="grid grid-cols-3 gap-4 mb-8 animate-fadeIn">
-                <!-- Пакет SMALL -->
-                <div class="plan-card package-card" data-package="package-small" data-desc="package-small" data-price="290" data-tests="5">
-                    <div class="plan-badge">Вход</div>
-                    <p class="text-2xl sm:text-3xl font-bold">5 тестов</p>
-                    <p class="text-lg sm:text-xl font-bold text-white/80">290 р</p>
-                    <p class="text-xs text-white/50">58 р / тест</p>
-                </div>
+    <!-- МОБИЛЬНЫЙ НИЖНИЙ DOCK -->
+    <nav class="dock-mobile" aria-label="Навигация">
+        <a href="/" title="Главная"><svg class="icon"><use href="#i-home"/></svg></a>
+        <a href="{% url 'create' %}" class="dock-plus" title="Создать тест"><svg class="icon"><use href="#i-plus"/></svg></a>
+        {% if request.user.is_authenticated %}
+            <a href="{% url 'history' %}" title="Мои тесты"><svg class="icon"><use href="#i-history"/></svg></a>
+            <a href="{% url 'profile_redirect' %}" title="Профиль"><svg class="icon"><use href="#i-user"/></svg></a>
+        {% else %}
+            <a href="/login" class="dock-login">Войти</a>
+        {% endif %}
+    </nav>
 
-                <!-- Пакет MEDIUM -->
-                <div class="plan-card package-card" data-package="package-medium" data-plan="package-medium" data-desc="package-medium" data-price="450" data-tests="15">
-                    <div class="plan-badge">Мастер</div>
-                    <p class="text-2xl sm:text-3xl font-bold">15 тестов</p>
-                    <p class="text-lg sm:text-xl font-bold text-white/80">450 р</p>
-                    <p class="text-xs text-white/50">~30 р / тест</p>
-                </div>
+    <div class="page">
+    <main class="co">
 
-                <!-- Пакет LARGE -->
-                <div class="plan-card package-card" data-package="package-large" data-desc="package-large" data-price="690" data-tests="35">
-                    <div class="plan-badge">Эксперт</div>
-                    <p class="text-2xl sm:text-3xl font-bold">35 тестов</p>
-                    <p class="text-lg sm:text-xl font-bold text-white/80">690 р</p>
-                    <p class="text-xs text-white/50">~20 р / тест</p>
-                </div>
-            </div>
-            <div class="text-center mt-4 mb-4 p-4 bg-green-500/10 rounded-xl border border-green-500/20">
-                <p class="text-sm text-green-400"><i class="fas fa-infinity mr-2"></i>Пакеты не сгорают – используйте когда удобно</p>
-            </div>
-        </div>
+        <!-- ===================== ВЫБОР ===================== -->
+        <div class="co-choice">
+            <header class="hero">
+                <h1 class="rise"><span>ТЕСТЫ<br>ЛЕТУЧКА<br>СОСТАВИТ</span></h1>
+                <p class="rise" style="--t:.08s">Платите один раз, без автосписаний</p>
+            </header>
 
-        <!-- СПИСОК ФИЧ PREMIUM -->
-        <div class="space-y-3 animate-fadeIn">
-            
-            <div class="feature-item">
-                <div class="feature-icon animate-fadeIn" style="animation-delay: 80ms;"><i class="fas fa-file-pdf"></i></div>
-                <p class="feature-text text-sm sm:text-base"><strong>Генерация из PDF и Word.</strong> Загрузили документ — получили готовый тест. Никакой ручной копипасты.</p>
-            </div>
-
-            <div class="feature-item">
-                <div class="feature-icon animate-fadeIn" style="animation-delay: 320ms;"><i class="fas fa-check-double"></i></div>
-                <p class="feature-text text-sm sm:text-base"><strong>Больше вопросов.</strong> До 30 вопросов вместо 8 вопросов на тест.</p>
-            </div>
-
-            <div class="feature-item">
-                <div class="feature-icon animate-fadeIn" style="animation-delay: 480ms;"><i class="fas fa-print"></i></div>
-                <p class="feature-text"><strong>Тесты без водяных знаков.</strong> Скачивайте тесты, которые сразу готовы к печати.</p>
-            </div>
-
-            <div class="feature-item">
-                <div class="feature-icon animate-fadeIn" style="animation-delay: 160ms;"><i class="fas fa-chart-pie"></i></div>
-                <p class="feature-text text-sm sm:text-base"><strong>Прозрачная аналитика.</strong> Детальная статистика по каждому человеку и карта ошибок. Сразу видно, кто вообще не читал материал.</p>
-            </div>
-
-            <div class="feature-item">
-                <div class="feature-icon animate-fadeIn" style="animation-delay: 240ms;"><i class="fas fa-file-excel"></i></div>
-                <p class="feature-text text-sm sm:text-base"><strong>Экспорт в Excel.</strong> Готовые таблицы с оценками для деканата, руководства или личного архива в один клик.</p>
-            </div>
-
-            <div class="feature-item">
-                <div class="feature-icon animate-fadeIn" style="animation-delay: 320ms;"><i class="fas fa-check-double"></i></div>
-                <p class="feature-text text-sm sm:text-base"><strong>Режим самопроверки.</strong> Прокликайте тест сами перед отправкой, чтобы убедиться в идеальном качестве вопросов.</p>
-            </div>
-
-            <!-- ЭКсклюзив ПОДПИСКИ -->
-            <div class="feature-item bg-[var(--surface-hover)] p-2 rounded-2xl border border-[var(--accent)] mt-4">
-                <div class="feature-icon animate-fadeIn text-[var(--accent)]" style="animation-delay: 480ms;"><i class="fa-regular fa-gem" style="color: rgb(158, 178, 236);"></i></div>
-                <p class="feature-text text-sm sm:text-base">
-                    <span class="text-[var(--accent)] font-bold uppercase text-xs tracking-wider mb-1 block">Только в подписке</span>
-                    <strong>Расширенные лимиты.</strong> До 50 тестов в сутки. Идеально для тех, у кого проверки стоят на потоке.
-                </p>
-            </div>
-
-        </div>
-
-        <div class="mt-12 mb-8 text-center">
-            <p class="text-7xl font-extrabold gradient-text">
-                3,200+
-            </p>
-            <p class="mt-2 font-semibold text-gray-400">
-                Учителей, преподавателей, HR-специалистов и студентов уже в Летучке!
-            </p>
-        </div>
-
-        <div class="mt-12 mb-8 text-center">
-            <p class="text-7xl font-extrabold gradient-text">
-                40,000+
-            </p>
-            <p class="mt-2 font-semibold text-gray-400">
-                Тестов уже создано преподавателями и студентами
-            </p>
-        </div>
-
-        <div class="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <!-- КАРТОЧКА 1: БЕЗОПАСНОСТЬ -->
-            <div class="bg-[var(--surface)] p-6 rounded-3xl border border-[var(--color-border)] flex flex-col gap-3">
-                <div class="flex items-center justify-center h-12 w-12 rounded-full bg-[var(--color-accent-primary)]/10 border border-[var(--color-border)]">
-                    <i class="fas fa-shield-alt text-xl text-[var(--color-accent-primary)]"></i>
-                </div>
-                <div>
-                    <h4 class="font-['Unbounded_Medium'] font-bold text-white/90">Безопасно</h4>
-                    <p class="mt-1 text-sm text-white/75 leading-relaxed">
-                        Платежи защищены TLS-шифрованием. Мы не храним данные карты — они передаются банку напрямую.
-                    </p>
-                </div>
-            </div>
-
-            <!-- КАРТОЧКА 2: КОНТРОЛЬ -->
-            <div class="bg-[var(--surface)] p-6 rounded-3xl border border-[var(--color-border)] flex flex-col gap-3">
-                <div class="flex items-center justify-center h-12 w-12 rounded-full bg-[var(--color-accent-primary)]/10 border border-[var(--color-border)]">
-                    <i class="fas fa-undo-alt text-xl text-[var(--color-accent-primary)]"></i>
-                </div>
-                <div>
-                    <h4 class="font-['Unbounded_Medium'] font-bold text-white/90">Контроль</h4>
-                    <p class="mt-1 text-sm text-white/75 leading-relaxed">
-                        Мы ценим Ваш комфорт: Оплата разовая. Подписка не продлится автоматически, пока Вы не решите ее обновить сами.
-                    </p>
-                </div>
-            </div>
-
-            <!-- КАРТОЧКА 3: ПОДДЕРЖКА -->
-            <div class="bg-[var(--surface)] p-6 rounded-3xl border border-[var(--color-border)] flex flex-col gap-3">
-                <div class="flex items-center justify-center h-12 w-12 rounded-full bg-[var(--color-accent-primary)]/10 border border-[var(--color-border)]">
-                    <i class="fas fa-headset text-xl text-[var(--color-accent-primary)]"></i>
-                </div>
-                <div>
-                    <h4 class="font-['Unbounded_Medium'] font-bold text-white/90">Поддержка 24/7</h4>
-                    <p class="mt-1 text-sm text-white/75 leading-relaxed">
-                        Отвечаем быстро — в течение часа в рабочее время. Пишите, если что-то пошло не так.
-                    </p>
-                </div>
-            </div>
-
-        </div>
-
-        <div class="max-w-3xl mx-auto px-4 sm:px-8">
-            <div class="mt-8 mb-4 pt-8 border-t border-[var(--color-border)] flex flex-col sm:flex-row justify-between items-center text-xs text-gray-600 text-center">
-                <p>2024-2026 Летучка AI. Design & Development <a class="text-gray-500 hover:text-[var(--color-accent-primary)]" rel='nofollow' href="https://dprofile.ru/kozak_developer" target="_blank">by Kozak</a></p>
-                <div class="mt-2 sm:mt-0">
-                    <a href="/docs/public-offer" class="hover:text-gray-400">Публичная оферта</a>
-                    <span class="mx-2">|</span>
-                    <a href="/docs/privacy-policy" class="hover:text-gray-400">Политика конфиденциальности</a>
-                </div>
-            </div>
-        </div>
-
-    </main>
-    
-    <!-- ПРИЛИПАЮЩИЙ ФУТЕР С ОПЛАТОЙ -->
-    <footer class="fixed bottom-0 left-0 right-0 z-50 p-4 bg-gradient-to-t from-[var(--bg)] via-[var(--bg)] to-transparent">
-        <div class="max-w-xl mx-auto">
-            <form name="payform-tbank" id="payform-tbank">
-                {% csrf_token %}
-                <input type="hidden" name="amount" id="amount_price" />
-                <input type="hidden" name="order" value="{{order_id}}" />
-                <input type="hidden" name="description" id="description_order" />
-                <input type="hidden" name="email" value="{{email}}" />
-                <input type="hidden" name="phone" value="{{phone}}" />
-
-                <input id="user-email" class="w-full p-2 mb-2 bg-[var(--surface)] border border-[var(--border)] rounded-xl text-white placeholder-[var(--text-dim)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]" 
-                       placeholder="E‑mail для чека" name="email" value="{{email}}" required/>
-                
-                <button class="w-full py-4 font-bold text-center rounded-3xl bg-[var(--accent)] text-white sm:text-lg text-base transition-transform hover:scale-105 active:scale-95 shadow-lg shadow-[var(--accent)]/30" id="payment-button" type="submit">
-                    <!-- Заполняется через JS -->
+            <div class="modes rise" style="--t:.14s" role="tablist" aria-label="Формат">
+                <button type="button" class="mode" id="tab-packs" role="tab" aria-selected="true" aria-controls="container-packs" onclick="switchTab('packs')">
+                    <span class="mode-head"><span class="mode-title">Пакет тестов</span><span class="mode-from">от 290 ₽</span></span>
+                    <span class="mode-text">Бессрочны и&nbsp;не&nbsp;сгорают</span>
                 </button>
-            </form>
-            <p class="text-xs text-center text-[var(--text-dim)] mt-3">
-                Разовая оплата. Без автопродления. Нажимая кнопку, вы соглашаетесь с <a href="/docs/public-offer" target="_blank" class="underline">офертой</a>.
-            </p>
+                <button type="button" class="mode" id="tab-subs" role="tab" aria-selected="false" aria-controls="container-subs" onclick="switchTab('subs')">
+                    <span class="mode-head"><span class="mode-title">Абонемент</span><span class="mode-from">{% if is_veteran %}от 690 ₽{% else %}от 390 ₽{% endif %}</span></span>
+                    <span class="mode-text">До&nbsp;50 тестов в&nbsp;день</span>
+                </button>
+            </div>
+
+            <!-- ПАКЕТЫ -->
+            <div id="container-packs" class="panel rise" style="--t:.2s" role="tabpanel" aria-labelledby="tab-packs">
+                <div class="opts" role="radiogroup" aria-label="Пакеты тестов">
+                    <button type="button" class="opt" role="radio" aria-checked="false"
+                            data-kind="pack" data-package="package-small" data-desc="package-small" data-price="290" data-tests="5"
+                            data-title="5 тестов" data-format="Пакет тестов" data-unit="58 ₽ за тест" data-term="Без срока">
+                        <span class="opt-radio" aria-hidden="true"></span>
+                        <span class="opt-body">
+                            <span class="opt-title">5 тестов</span>
+                            <span class="opt-sub">58 ₽ за тест. Для первого знакомства</span>
+                        </span>
+                        <span class="opt-price"><b>290 ₽</b></span>
+                    </button>
+
+                    <button type="button" class="opt" role="radio" aria-checked="false"
+                            data-kind="pack" data-package="package-medium" data-desc="package-medium" data-price="450" data-tests="15" data-default
+                            data-title="15 тестов" data-format="Пакет тестов" data-unit="30 ₽ за тест" data-term="Без срока">
+                        <span class="opt-radio" aria-hidden="true"></span>
+                        <span class="opt-body">
+                            <span class="opt-title">15 тестов <span class="tag">Чаще всего берут</span></span>
+                            <span class="opt-sub">30 ₽ за тест, <em>дешевле на 48%</em></span>
+                        </span>
+                        <span class="opt-price"><b>450 ₽</b></span>
+                    </button>
+
+                    <button type="button" class="opt" role="radio" aria-checked="false"
+                            data-kind="pack" data-package="package-large" data-desc="package-large" data-price="690" data-tests="35"
+                            data-title="35 тестов" data-format="Пакет тестов" data-unit="≈20 ₽ за тест" data-term="Без срока">
+                        <span class="opt-radio" aria-hidden="true"></span>
+                        <span class="opt-body">
+                            <span class="opt-title">35 тестов</span>
+                            <span class="opt-sub">≈20 ₽ за тест, <em>дешевле на 66%</em></span>
+                        </span>
+                        <span class="opt-price"><b>690 ₽</b></span>
+                    </button>
+                </div>
+                <p class="panel-note"><svg class="icon"><use href="#i-inf"/></svg><span>Тест списывается, только когда Вы его создаёте. Остаток <b>хранится без срока</b>.</span></p>
+            </div>
+
+            <!-- АБОНЕМЕНТЫ -->
+            <div id="container-subs" class="panel" role="tabpanel" aria-labelledby="tab-subs" hidden>
+                <div class="opts" role="radiogroup" aria-label="Срок абонемента">
+                {% if is_veteran %}
+                    <button type="button" class="opt" role="radio" aria-checked="false"
+                            data-kind="sub" data-plan="premium-month" data-desc="Премиум" data-price="690"
+                            data-title="Абонемент на месяц" data-format="Абонемент" data-unit="23 ₽ в день" data-term="30 дней">
+                        <span class="opt-radio" aria-hidden="true"></span>
+                        <span class="opt-body">
+                            <span class="opt-title">Месяц</span>
+                            <span class="opt-sub">23 ₽ в день, до 50 тестов ежедневно</span>
+                        </span>
+                        <span class="opt-price"><b>690 ₽</b></span>
+                    </button>
+
+                    <button type="button" class="opt" role="radio" aria-checked="false"
+                            data-kind="sub" data-plan="premium-quarter" data-desc="Премиум 3 мес" data-price="1440"
+                            data-title="Абонемент на 3 месяца" data-format="Абонемент" data-unit="16 ₽ в день" data-term="92 дня">
+                        <span class="opt-radio" aria-hidden="true"></span>
+                        <span class="opt-body">
+                            <span class="opt-title">3 месяца <span class="tag tag--quiet">На семестр</span></span>
+                            <span class="opt-sub">16 ₽ в день, <em>выгоднее месяца на 32%</em></span>
+                        </span>
+                        <span class="opt-price"><b>1 440 ₽</b><s>2 070 ₽</s></span>
+                    </button>
+
+                    <button type="button" class="opt" role="radio" aria-checked="false"
+                            data-kind="sub" data-plan="premium-year" data-desc="Премиум Год" data-price="4800" data-default
+                            data-title="Абонемент на год" data-format="Абонемент" data-unit="13 ₽ в день" data-term="365 дней">
+                        <span class="opt-radio" aria-hidden="true"></span>
+                        <span class="opt-body">
+                            <span class="opt-title">Год <span class="tag">Максимальная выгода</span></span>
+                            <span class="opt-sub">13 ₽ в день, <em>выгоднее месяца на 43%</em></span>
+                        </span>
+                        <span class="opt-price"><b>4 800 ₽</b><s>8 280 ₽</s></span>
+                    </button>
+                {% else %}
+                    <button type="button" class="opt" role="radio" aria-checked="false"
+                            data-kind="sub" data-plan="premium-week" data-desc="Премиум неделя" data-price="390"
+                            data-title="Абонемент на неделю" data-format="Абонемент" data-unit="56 ₽ в день" data-term="7 дней">
+                        <span class="opt-radio" aria-hidden="true"></span>
+                        <span class="opt-body">
+                            <span class="opt-title">Неделя</span>
+                            <span class="opt-sub">56 ₽ в день. Чтобы попробовать в деле</span>
+                        </span>
+                        <span class="opt-price"><b>390 ₽</b></span>
+                    </button>
+
+                    <button type="button" class="opt" role="radio" aria-checked="false"
+                            data-kind="sub" data-plan="premium-month" data-desc="Премиум" data-price="690" data-default
+                            data-title="Абонемент на месяц" data-format="Абонемент" data-unit="23 ₽ в день" data-term="30 дней">
+                        <span class="opt-radio" aria-hidden="true"></span>
+                        <span class="opt-body">
+                            <span class="opt-title">Месяц <span class="tag">Лучший выбор</span></span>
+                            <span class="opt-sub">23 ₽ в день, <em>в 2,4 раза выгоднее недели</em></span>
+                        </span>
+                        <span class="opt-price"><b>690 ₽</b></span>
+                    </button>
+
+                    <button type="button" class="opt" role="radio" aria-checked="false"
+                            data-kind="sub" data-plan="premium-quarter" data-desc="Премиум 3 мес" data-price="1440"
+                            data-title="Абонемент на 3 месяца" data-format="Абонемент" data-unit="16 ₽ в день" data-term="92 дня">
+                        <span class="opt-radio" aria-hidden="true"></span>
+                        <span class="opt-body">
+                            <span class="opt-title">3 месяца <span class="tag tag--quiet">На семестр</span></span>
+                            <span class="opt-sub">16 ₽ в день, <em>выгоднее месяца на 32%</em></span>
+                        </span>
+                        <span class="opt-price"><b>1 440 ₽</b><s>2 070 ₽</s></span>
+                    </button>
+                {% endif %}
+                </div>
+                <p class="panel-note"><svg class="icon"><use href="#i-norepeat"/></svg><span>Абонемент <b>без автопродления</b>. Когда срок закончится, доступ <b>просто приостановится</b>. <br> Повторных списаний не будет.</span></p>
+            </div>
         </div>
-    </footer>
+
+        <!-- ===================== ЧЕК + ОПЛАТА ===================== -->
+        <aside class="co-checkout" id="checkout" aria-label="Ваш заказ">
+            <div class="checkout">
+                <div class="rcpt" id="rcpt" aria-live="polite">
+                    <div class="rcpt-head"><b>ЧЕК</b><span>letychka.ru</span></div>
+                    <div class="rcpt-item">
+                        <small id="rc-format">Пакет тестов</small>
+                        <strong id="rc-title">15 тестов</strong>
+                    </div>
+                    <div class="rcpt-lines">
+                        <div class="rcpt-line"><span>Стоимость</span><i></i><b id="rc-unit">30 ₽ за тест</b></div>
+                        <div class="rcpt-line"><span>Срок</span><i></i><b id="rc-term">Без срока</b></div>
+                        <div class="rcpt-line"><span>Автопродление</span><i></i><b>Нет</b></div>
+                    </div>
+                    <div class="rcpt-total"><span>ИТОГО</span><strong id="rc-price">450<small>₽</small></strong></div>
+                </div>
+
+                <!-- Форма: поля и id без изменений -->
+                <form name="payform-tbank" id="payform-tbank" class="payform">
+                    {% csrf_token %}
+                    <input type="hidden" name="amount" id="amount_price">
+                    <input type="hidden" name="order" value="{{order_id}}">
+                    <input type="hidden" name="description" id="description_order">
+                    <input type="hidden" name="email" value="{{email}}">
+                    <input type="hidden" name="phone" value="{{phone}}">
+
+                    <div class="mail">
+                        <label for="user-email">Почта для электронного чека</label>
+                        <input id="user-email" type="email" inputmode="email" autocomplete="email" placeholder="you@school.ru" name="email" value="{{email}}" required>
+                    </div>
+
+                    <button id="payment-button" type="submit">Оплатить 450 ₽</button>
+                </form>
+
+                <p class="pay-legal">Нажимая кнопку, Вы принимаете условия <a href="/docs/public-offer" target="_blank">оферты</a>.</p>
+
+                <div class="secure">
+                    <p class="secure-row"><svg class="icon"><use href="#i-lock"/></svg><span><b>Оплата на странице Т-Банка</b></span></p>
+                    <div class="methods" aria-label="Способы оплаты">
+                        <span class="pm" data-brand="mir">Мир</span>
+                        <span class="pm" data-brand="sbp">СБП</span>
+                        <span class="pm" data-brand="tpay">T-Pay</span>
+                        <span class="pm" data-brand="sberpay">SberPay</span>
+                        <span class="pm" data-brand="dolyami">Долями</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ===================== ДЕТАЛИ ===================== -->
+        <div class="co-details">
+
+            <section class="sec" aria-labelledby="inc-title">
+                <h2 class="sec-title" id="inc-title">Что входит в пакет и абонемент</h2>
+                <ul class="incl">
+                    <li><svg class="icon"><use href="#i-check"/></svg><div><b>До 30 вопросов в тесте</b><span>Вместо 8 на бесплатном. Хватит на полноценную контрольную.</span></div></li>
+                    <li><svg class="icon"><use href="#i-check"/></svg><div><b>Тесты из PDF и Word</b><span>Загрузите методичку, текст копировать не нужно.</span></div></li>
+                    <li><svg class="icon"><use href="#i-check"/></svg><div><b>Бланки без водяных знаков</b><span>PDF на А4 сразу уходит в печать.</span></div></li>
+                    <li><svg class="icon"><use href="#i-check"/></svg><div><b>Аналитика и карта ошибок</b><span>Видно, кто какие темы не понял.</span></div></li>
+                    <li><svg class="icon"><use href="#i-check"/></svg><div><b>Ведомость в Excel</b><span>Оценки для журнала или деканата в один клик.</span></div></li>
+                    <li><svg class="icon"><use href="#i-check"/></svg><div><b>Режим самопроверки</b><span>Пройдите тест сами перед тем, как отправить ученикам.</span></div></li>
+                </ul>
+
+                <div class="cmp" role="table" aria-label="Пакет и абонемент">
+                    <div class="cmp-row cmp-head" role="row">
+                        <span role="columnheader"></span>
+                        <span role="columnheader" data-col="packs">Пакет</span>
+                        <span role="columnheader" data-col="subs">Абонемент</span>
+                    </div>
+                    <div class="cmp-row" role="row">
+                        <span role="rowheader">Тестов</span>
+                        <span role="cell" data-col="packs">Сколько купили: 5, 15 или 35</span>
+                        <span role="cell" data-col="subs">До 50 каждый день</span>
+                    </div>
+                    <div class="cmp-row" role="row">
+                        <span role="rowheader">Срок</span>
+                        <span role="cell" data-col="packs">Не сгорают</span>
+                        <span role="cell" data-col="subs">{% if is_veteran %}Месяц, квартал или год{% else %}Неделя, месяц или квартал{% endif %}</span>
+                    </div>
+                    <div class="cmp-row" role="row">
+                        <span role="rowheader">Удобно, если</span>
+                        <span role="cell" data-col="packs">Тесты нужны к&nbsp;контрольным и&nbsp;зачётам</span>
+                        <span role="cell" data-col="subs">Проверяете несколько групп каждую неделю</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="sec" aria-labelledby="proof-title">
+                <h2 class="sec-title" id="proof-title">Летучкой уже пользуются</h2>
+                <div class="proof">
+                    <div class="proof-stats">
+                        <div><strong>3 200+</strong><span>учителей, преподавателей и&nbsp;HR</span></div>
+                        <div><strong>40 000+</strong><span>тестов создано</span></div>
+                        <div><strong>15 сек</strong><span>от&nbsp;файла до&nbsp;готового теста</span></div>
+                    </div>
+                    <p class="proof-math">Тест на&nbsp;20 вопросов вручную собирается около часа. В&nbsp;Летучке он&nbsp;готов за&nbsp;15&nbsp;секунд и&nbsp;стоит <b>от&nbsp;20&nbsp;₽</b>.</p>
+                </div>
+            </section>
+
+            <section class="sec" aria-labelledby="safe-title">
+                <h2 class="sec-title" id="safe-title">Оплата без сюрпризов</h2>
+                <div class="trust">
+                    <div class="trust-cols">
+                        <div><svg class="icon"><use href="#i-shield"/></svg><b>Через Т-Банк</b><p>Платёж проходит на&nbsp;защищённой странице банка. Мы не&nbsp;видим и&nbsp;не&nbsp;храним данные карты.</p></div>
+                        <div><svg class="icon"><use href="#i-norepeat"/></svg><b>Без автосписаний</b><p>Карта не&nbsp;привязывается. Продлить или докупить можно только вручную.</p></div>
+                        <div><svg class="icon"><use href="#i-chat"/></svg><b>Поддержка на связи</b><p>Отвечаем быстро: <b>support@letychka.ru</b></p></div>
+                    </div>
+                    <div class="trust-pay">
+                        <p>Подойдёт карта любого российского банка, СБП, T-Pay, SberPay или оплата частями через Долями.</p>
+                        <div class="methods" aria-hidden="true">
+                            <span class="pm" data-brand="mir">Мир</span>
+                            <span class="pm" data-brand="sbp">СБП</span>
+                            <span class="pm" data-brand="tpay">T-Pay</span>
+                            <span class="pm" data-brand="sberpay">SberPay</span>
+                            <span class="pm" data-brand="dolyami">Долями</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="sec" aria-labelledby="faq-title">
+                <h2 class="sec-title" id="faq-title">Частые вопросы</h2>
+                <div class="faq">
+                    <details>
+                        <summary>Когда начислятся тесты или абонемент?<svg class="icon"><use href="#i-chevron"/></svg></summary>
+                        <p>Сразу после оплаты. Банк вернёт вас на сайт и покажет подтверждение, дождитесь этой страницы. Если что-то пошло не так, напишите на support@letychka.ru, и мы проверим платёж вручную.</p>
+                    </details>
+                    <details>
+                        <summary>Будут ли повторные списания?<svg class="icon"><use href="#i-chevron"/></svg></summary>
+                        <p>Нет. Карта не привязывается к регулярным платежам. Когда срок абонемента закончится, доступ просто приостановится.</p>
+                    </details>
+                    <details>
+                        <summary>Что выбрать: пакет или абонемент?<svg class="icon"><use href="#i-chevron"/></svg></summary>
+                        <p>Если тесты нужны к контрольным и зачётам, хватит пакета, он не сгорает. Если вы проверяете несколько групп каждую неделю, абонемент выйдет дешевле в пересчёте на тест.</p>
+                    </details>
+                    <details>
+                        <summary>Можно оплатить частями?<svg class="icon"><use href="#i-chevron"/></svg></summary>
+                        <p>Да, на странице Т-Банка доступна оплата через Долями. Также подойдут карты российских банков, СБП, T-Pay и SberPay.</p>
+                    </details>
+                    <details>
+                        <summary>Будет ли чек?<svg class="icon"><use href="#i-chevron"/></svg></summary>
+                        <p>Да, электронный чек придёт на почту, которую вы указали при оплате. Условия описаны в <a href="/docs/public-offer" target="_blank">публичной оферте</a>.</p>
+                    </details>
+                </div>
+            </section>
+
+            <footer class="legal-foot">
+                <a href="/docs/public-offer" target="_blank">Публичная оферта</a>
+                <a href="/docs/privacy-policy" target="_blank">Политика конфиденциальности</a>
+                <span>ИНН 773613171558, ОГРНИП 3245081071286</span>
+                <span>© 2024–2026 Летучка AI</span>
+            </footer>
+        </div>
+    </main>
+    </div>
+
+    <!-- Плашка «К оплате» (телефон) -->
+    <button type="button" class="to-pay" id="to-pay" aria-hidden="true" tabindex="-1">К оплате <b id="to-pay-price">450 ₽</b></button>
+
+    <!-- Переход на страницу Т-Банка -->
+    <div class="handoff" id="handoff" role="status" aria-live="polite">
+        <div class="handoff-card">
+            <div class="handoff-seal">
+                <svg class="ring" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="29" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="3"/><path d="M32 3a29 29 0 0 1 29 29" fill="none" stroke="#A5B4FC" stroke-width="3" stroke-linecap="round"/></svg>
+                <svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg>
+            </div>
+            <h2>Переходим на защищённую страницу Т-Банка</h2>
+            <p class="handoff-sub">Там вы выберете способ оплаты и введёте данные карты.</p>
+            <ol class="handoff-steps">
+                <li data-step="0"><i><svg viewBox="0 0 16 16"><use href="#i-check"/></svg></i>Создаём заказ</li>
+                <li data-step="1"><i><svg viewBox="0 0 16 16"><use href="#i-check"/></svg></i>Шифруем соединение с банком</li>
+                <li data-step="2"><i><svg viewBox="0 0 16 16"><use href="#i-check"/></svg></i>Открываем страницу оплаты</li>
+            </ol>
+            <p class="handoff-note">После оплаты банк вернёт вас обратно на сайт.</p>
+        </div>
+    </div>
 
     <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -477,93 +771,136 @@
         const containerSubs = document.getElementById('container-subs');
         const containerPacks = document.getElementById('container-packs');
 
+        /* ============================================================
+           1. ВЫБОР ВАРИАНТА (только интерфейс).
+           Пишет в форму ровно те же значения, что и раньше:
+           amount_price  = data-price
+           description   = "package-small|medium|large" для пакетов,
+                           "Премиум" / "Премиум неделя" / "Премиум 3 мес" / "Премиум Год" для абонементов.
+           ============================================================ */
+        const nf = new Intl.NumberFormat('ru-RU');
+        const rcpt = document.getElementById('rcpt');
+        const ui = {
+            format: document.getElementById('rc-format'),
+            title: document.getElementById('rc-title'),
+            unit: document.getElementById('rc-unit'),
+            term: document.getElementById('rc-term'),
+            price: document.getElementById('rc-price'),
+            chipPrice: document.getElementById('to-pay-price')
+        };
+
         function selectPlan(card) {
             if (!card) return;
 
-            document.querySelectorAll('.plan-card, .package-card').forEach(c => c.classList.remove('selected'));
-            card.classList.add('selected');
+            document.querySelectorAll('.opt').forEach(c => c.setAttribute('aria-checked', 'false'));
+            card.setAttribute('aria-checked', 'true');
 
             const price = card.dataset.price;
+            const priceText = nf.format(+price);
             paymentButton.disabled = false;
-            
-            if (card.classList.contains('package-card')) {
-                const pType = card.dataset.package; // например "package-small" или "small"
-                // Защита от дублирования "package-package-small"
-                const desc = pType.includes('package') ? pType : `package-${pType}`;
-                const tests = card.dataset.tests || 'несколько';
-                
-                amountInput.value = price;
-                descInput.value = desc; // СТРОГО "package-small", "package-medium" и т.д.
 
-                paymentButton.textContent = `Купить ${tests} тестов за ${price} ₽`;
-                paymentButton.style.background = 'var(--accent)';
-                paymentButton.style.boxShadow = 'none';
-            } 
-            // Логика для ПОДПИСОК
-            else {
+            if (card.dataset.kind === 'pack') {
+                const pType = card.dataset.package;
+                const desc = pType.includes('package') ? pType : `package-${pType}`;
                 amountInput.value = price;
-                descInput.value = card.dataset.desc; // "Премиум", "Премиум неделя" и т.д.
-                
-                const cardText = card.innerText;
-                if (cardText.includes('3 месяца')) {
-                    paymentButton.textContent = `Оплатить ${price} руб на 3 месяца`;
-                } else if (cardText.includes('Месяц')) {
-                    paymentButton.textContent = `Оплатить ${price} руб на месяц`;
-                } else if (cardText.includes('Год')) {
-                    paymentButton.textContent = `Оплатить ${price} руб на год`;
-                    paymentButton.style.background = 'linear-gradient(45deg, #7928CA, #FF0080)';
-                    paymentButton.style.boxShadow = '0 0 20px rgba(255, 0, 128, 0.4)';
-                    return; // Выходим, чтобы не сбить стили ниже
-                } else {
-                    paymentButton.textContent = `Оплатить ${price} руб на неделю`;
-                }
-                paymentButton.style.background = 'var(--accent)';
-                paymentButton.style.boxShadow = 'none';
+                descInput.value = desc;
+            } else {
+                amountInput.value = price;
+                descInput.value = card.dataset.desc;
             }
+            paymentButton.textContent = `Оплатить ${priceText} ₽`;
+
+            // Живой чек
+            ui.format.textContent = card.dataset.format;
+            ui.title.textContent = card.dataset.title;
+            ui.unit.textContent = card.dataset.unit;
+            ui.term.textContent = card.dataset.term;
+            ui.price.innerHTML = priceText + '<small>₽</small>';
+            ui.chipPrice.textContent = priceText + ' ₽';
+            rcpt.classList.remove('flash'); void rcpt.offsetWidth; rcpt.classList.add('flash');
         }
 
-        // === 2. ПЕРЕКЛЮЧЕНИЕ ТАБОВ ===
+        // === 2. ПЕРЕКЛЮЧЕНИЕ ФОРМАТА ===
         window.switchTab = function(tab) {
-            const tabSubs = document.getElementById('tab-subs');
-            const tabPacks = document.getElementById('tab-packs');
+            const packs = tab === 'packs';
+            document.getElementById('tab-packs').setAttribute('aria-selected', String(packs));
+            document.getElementById('tab-subs').setAttribute('aria-selected', String(!packs));
+            containerPacks.hidden = !packs;
+            containerSubs.hidden = packs;
+            document.querySelectorAll('.cmp [data-col]').forEach(el => {
+                el.classList.toggle('is-on', el.dataset.col === (packs ? 'packs' : 'subs'));
+            });
 
-            if (tab === 'packs') {
-                tabPacks.classList.add('bg-[var(--accent)]', 'text-white');
-                tabPacks.classList.remove('text-gray-400');
-                tabSubs.classList.remove('bg-[var(--accent)]', 'text-white');
-                tabSubs.classList.add('text-gray-400');
-                
-                containerPacks.classList.remove('hidden');
-                containerSubs.classList.add('hidden');
-                
-                // Авто-выбор среднего пакета
-                const defaultPack = containerPacks.querySelector('.package-card[data-package="package-medium"]') || containerPacks.querySelector('.package-card');
-                selectPlan(defaultPack);
-            } else {
-                tabSubs.classList.add('bg-[var(--accent)]', 'text-white');
-                tabSubs.classList.remove('text-gray-400');
-                tabPacks.classList.remove('bg-[var(--accent)]', 'text-white');
-                tabPacks.classList.add('text-gray-400');
-                
-                containerSubs.classList.remove('hidden');
-                containerPacks.classList.add('hidden');
-                
-                // Авто-выбор первой подписки
-                const firstSub = containerSubs.querySelector('.plan-card');
-                selectPlan(firstSub);
-            }
+            const box = packs ? containerPacks : containerSubs;
+            const current = box.querySelector('.opt[aria-checked="true"]');
+            selectPlan(current || box.querySelector('.opt[data-default]') || box.querySelector('.opt'));
         };
 
-        // Слушаем клики по карточкам
         document.querySelector('main').addEventListener('click', (e) => {
-            const card = e.target.closest('.plan-card, .package-card');
+            const card = e.target.closest('.opt');
             if (card) selectPlan(card);
         });
+
+        // Стрелки внутри группы вариантов
+        document.querySelectorAll('.opts').forEach(group => {
+            group.addEventListener('keydown', (e) => {
+                if (!['ArrowDown', 'ArrowUp', 'ArrowRight', 'ArrowLeft'].includes(e.key)) return;
+                const items = [...group.querySelectorAll('.opt')];
+                const i = items.indexOf(document.activeElement);
+                if (i < 0) return;
+                e.preventDefault();
+                const next = items[(i + (e.key === 'ArrowDown' || e.key === 'ArrowRight' ? 1 : -1) + items.length) % items.length];
+                next.focus(); selectPlan(next);
+            });
+        });
+
+        // Плашка «К оплате»: видна на телефоне, пока чек с кнопкой вне экрана
+        const toPay = document.getElementById('to-pay');
+        const checkout = document.getElementById('checkout');
+        toPay.addEventListener('click', () => {
+            checkout.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+        if ('IntersectionObserver' in window) {
+            new IntersectionObserver((entries) => {
+                const on = !entries[0].isIntersecting;
+                toPay.classList.toggle('is-on', on);
+                toPay.setAttribute('aria-hidden', String(!on));
+                toPay.tabIndex = on ? 0 : -1;
+            }, { threshold: 0.15 }).observe(paymentButton);
+        }
+
+        // Экран перехода в Т-Банк: следит за состоянием кнопки, сам узел оплаты не трогает
+        const handoff = document.getElementById('handoff');
+        const steps = [...handoff.querySelectorAll('[data-step]')];
+        let stepTimers = [];
+        function setStep(n) {
+            steps.forEach((li, i) => {
+                li.classList.toggle('is-done', i < n);
+                li.classList.toggle('is-now', i === n);
+            });
+        }
+        function showHandoff() {
+            if (handoff.classList.contains('is-on')) return;
+            handoff.classList.add('is-on');
+            setStep(0);
+            stepTimers = [setTimeout(() => setStep(1), 450), setTimeout(() => setStep(2), 1100)];
+        }
+        function hideHandoff() {
+            stepTimers.forEach(clearTimeout);
+            handoff.classList.remove('is-on');
+        }
+        new MutationObserver(() => {
+            if (paymentButton.disabled && paymentButton.textContent === 'Инициализация оплаты...') showHandoff();
+            else if (!paymentButton.disabled) hideHandoff();
+        }).observe(paymentButton, { attributes: true, attributeFilter: ['disabled'], childList: true, characterData: true, subtree: true });
+
+        // Возврат «Назад» со страницы банка: браузер может показать страницу из кэша с заблокированной кнопкой
+        window.addEventListener('pageshow', (e) => { if (e.persisted) window.location.reload(); });
 
         // === 3. ИНИЦИАЛИЗАЦИЯ: ПАКЕТЫ ПЕРВЫЕ ===
         switchTab('packs');
 
-        // === 4. ОТПРАВКА ДАННЫХ ===
+        // === 4. ОТПРАВКА ДАННЫХ (узел оплаты — без изменений) ===
         paymentButton.addEventListener('click', function(e) {
             e.preventDefault();
             if (this.disabled) return;
@@ -639,7 +976,5 @@
         });
     });
     </script>
-
-    {% include 'footer-s.html' %}
 </body>
 </html>

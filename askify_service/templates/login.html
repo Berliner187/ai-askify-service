@@ -13,39 +13,45 @@
 
     {% if debug %}
         <script src="https://cdn.tailwindcss.com"></script>
-        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     {% else %}
         <script src="{% static 'vendor/tailwind.full.min.js' %}"></script>
-        <script src="{% static 'vendor/jquery.min.js' %}"></script>
     {% endif %}
 
+    <!-- Шрифты и иконки грузятся без блокировки отрисовки -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&family=Wix+Madefor+Display:wght@700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&family=Wix+Madefor+Display:wght@700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" media="print" onload="this.media='all'">
+    <noscript>
+        <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&family=Wix+Madefor+Display:wght@700;800&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    </noscript>
 
-    <!-- Yandex.Metrika counter -->
-    <script type="text/javascript" >
-        setTimeout(function() {
-            (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
-            m[i].l=1*new Date();
-            for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
-            k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
-            (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
-        
-            ym(98823704, "init", { clickmap:true, trackLinks:true, accurateTrackBounce:true, webvisor:true });
-        }, 1000);
+    <!-- Yandex.Metrika: после полной загрузки страницы, Вебвизор выключен на форме входа -->
+    <script type="text/javascript">
+        window.addEventListener('load', function () {
+            setTimeout(function () {
+                (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+                m[i].l=1*new Date();
+                for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+                k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+                (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+                ym(98823704, "init", { clickmap:true, trackLinks:true, accurateTrackBounce:true, webvisor:false });
+            }, 3000);
+        });
     </script>
     <noscript><div><img src="https://mc.yandex.ru/watch/98823704" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
 
     <style>
         :root {
             --bg-canvas: #0e0e14;
-            --panel-bg: rgba(22, 21, 30, 0.75);
             --border-subtle: rgba(255, 255, 255, 0.08);
             --border-highlight: rgba(255, 255, 255, 0.14);
             --spring-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
         }
+
+        html { -webkit-text-size-adjust: 100%; }
 
         body {
             background-color: var(--bg-canvas);
@@ -53,6 +59,9 @@
             color: #F3F4F6;
             letter-spacing: -0.01em;
             overflow-x: hidden;
+            min-height: 100vh;
+            min-height: 100dvh;
+            -webkit-tap-highlight-color: transparent;
         }
 
         h1, .font-display {
@@ -65,14 +74,42 @@
             letter-spacing: -0.02em;
         }
 
+        /* Свечение фона: градиент вместо блюра на больших блоках (блюр сильно тормозит iOS) */
+        .ambient {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            background: radial-gradient(560px circle at 50% 22%, rgba(99, 102, 241, 0.14), transparent 70%);
+        }
+
+        /* Остров-шапка: на телефоне без backdrop-filter */
+        .island {
+            background: rgba(22, 21, 32, 0.94);
+            box-shadow: 0 10px 28px -8px rgba(0, 0, 0, 0.6);
+        }
+
+        /* Карточка: на телефоне плотный фон без blur */
         .glass-card {
-            background: var(--panel-bg);
-            backdrop-filter: blur(28px) saturate(180%);
-            -webkit-backdrop-filter: blur(28px) saturate(180%);
+            background: linear-gradient(180deg, rgba(27, 26, 37, 0.97), rgba(20, 19, 28, 0.97));
             border: 1px solid var(--border-subtle);
-            box-shadow: 
-                0 32px 64px -16px rgba(0, 0, 0, 0.8),
+            box-shadow:
+                0 24px 48px -16px rgba(0, 0, 0, 0.7),
                 inset 0 1px 0 0 var(--border-highlight);
+        }
+
+        /* Стекло только на десктопе с мышью */
+        @media (min-width: 1024px) and (hover: hover) {
+            .island {
+                background: rgba(22, 21, 32, 0.8);
+                -webkit-backdrop-filter: blur(16px);
+                backdrop-filter: blur(16px);
+            }
+            .glass-card {
+                background: rgba(22, 21, 30, 0.75);
+                -webkit-backdrop-filter: blur(24px) saturate(160%);
+                backdrop-filter: blur(24px) saturate(160%);
+            }
         }
 
         .glass-input {
@@ -81,23 +118,26 @@
             box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.3);
             transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
         }
-        .glass-input:hover {
-            border-color: rgba(255, 255, 255, 0.18);
-        }
         .glass-input:focus {
             border-color: rgba(99, 102, 241, 0.7);
             background: rgba(17, 16, 24, 0.95);
             box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18), inset 0 2px 4px 0 rgba(0, 0, 0, 0.2);
         }
 
+        /* iOS зумит страницу при фокусе на поле с шрифтом меньше 16px — отсюда рывки и «зависания» */
+        @media (hover: none) {
+            .glass-input { font-size: 16px !important; }
+        }
+        @media (hover: hover) {
+            .glass-input:hover { border-color: rgba(255, 255, 255, 0.18); }
+            .spring-btn:hover { transform: translateY(-1px); }
+        }
+
         .spring-btn {
             transition: transform 0.2s var(--spring-bounce), background-color 0.15s, border-color 0.15s, box-shadow 0.15s;
         }
-        .spring-btn:hover { 
-            transform: translateY(-1px); 
-        }
-        .spring-btn:active { 
-            transform: scale(0.98) translateY(1px); 
+        .spring-btn:active {
+            transform: scale(0.98) translateY(1px);
         }
 
         .btn-loading #btn-text-layer {
@@ -110,7 +150,6 @@
         }
         .btn-loading {
             pointer-events: none;
-            filter: brightness(1.05);
         }
 
         @keyframes cardShake {
@@ -123,29 +162,32 @@
         .shake-active {
             animation: cardShake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
         }
+
+        @media (prefers-reduced-motion: reduce) {
+            .shake-active { animation: none; }
+            .spring-btn, #btn-text-layer, #btn-loader-layer { transition: none; }
+        }
     </style>
 </head>
 <body class="min-h-full flex flex-col antialiased selection:bg-indigo-600 selection:text-white relative bg-[#0e0e14]">
 
     <!-- АМБИЕНТНОЕ СВЕЧЕНИЕ ФОНА -->
-    <div class="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        <div class="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[520px] h-[520px] bg-indigo-600/10 rounded-full blur-[140px]"></div>
-    </div>
+    <div class="ambient"></div>
 
     <!-- ДИНАМИЧЕСКИЙ ОСТРОВОК (STICKY ISLAND HEADER) -->
     <header class="sticky top-4 z-40 w-full px-4 flex justify-center pointer-events-none">
-        <nav class="pointer-events-auto flex items-center justify-between gap-3 px-4 py-2 sm:px-5 sm:py-2.5 rounded-full bg-[#161520]/80 backdrop-blur-xl border border-white/10 shadow-2xl max-w-4xl w-full">
+        <nav class="island pointer-events-auto flex items-center justify-between gap-3 px-4 py-2 sm:px-5 sm:py-2.5 rounded-full border border-white/10 max-w-4xl w-full">
             
             <div class="flex items-center gap-2.5 text-xs">
                 <a href="/" class="flex items-center gap-2 group transition-opacity hover:opacity-85">
-                    <img src="{% static 'img/logo-header.webp' %}" alt="Летучка" class="h-6 sm:h-7 w-auto object-contain">
+                    <img src="{% static 'img/logo-header.webp' %}" alt="Летучка" width="120" height="28" class="h-6 sm:h-7 w-auto object-contain">
                 </a>
                 <span class="text-zinc-600 select-none">/</span>
                 <span class="text-white font-medium">Авторизация</span>
             </div>
 
             <div class="flex items-center gap-2 font-mono-nums">
-                <a href="{% url 'register' %}{% if next %}?next={{ next|urlencode }}{% elif next_url %}?next={{ next_url|urlencode }}{% endif %}" class="px-3.5 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-zinc-200 hover:text-white transition-all spring-btn flex items-center gap-1.5">
+                <a href="{% url 'register' %}{% if next %}?next={{ next|urlencode }}{% elif next_url %}?next={{ next_url|urlencode }}{% endif %}" class="px-3.5 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-zinc-200 hover:text-white transition-colors spring-btn flex items-center gap-1.5">
                     <span>Регистрация</span>
                     <i class="fas fa-arrow-right text-[10px] text-zinc-400"></i>
                 </a>
@@ -199,11 +241,12 @@
                         <input type="hidden" name="next" value="{{ next_url }}">
                     {% endif %}
 
-                    <!-- EMAIL (С АВТОФОКУСОМ) -->
+                    <!-- EMAIL (автофокус включается скриптом только на десктопе) -->
                     <div class="space-y-1.5 text-left">
                         <label for="id_email" class="block text-xs font-semibold text-zinc-300">Email</label>
                         <div class="relative">
-                            <input type="email" name="email" id="id_email" required autofocus autocomplete="email"
+                            <input type="email" name="email" id="id_email" required autocomplete="email"
+                                   inputmode="email" autocapitalize="none" autocorrect="off" spellcheck="false"
                                    placeholder="email@yandex.ru"
                                    class="w-full glass-input rounded-2xl pl-4 pr-11 py-3.5 text-sm text-white placeholder-zinc-600 focus:outline-none">
                             <span class="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 text-xs pointer-events-none">
@@ -222,7 +265,7 @@
                             <input type="password" name="password" id="id_password" required autocomplete="current-password"
                                    placeholder="••••••••"
                                    class="w-full glass-input rounded-2xl pl-4 pr-11 py-3.5 text-sm text-white placeholder-zinc-600 focus:outline-none">
-                            <button type="button" id="toggle-pwd-btn" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 text-xs transition-colors p-1" title="Показать пароль">
+                            <button type="button" id="toggle-pwd-btn" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 text-xs transition-colors p-1" title="Показать пароль" aria-label="Показать пароль">
                                 <i class="fas fa-eye"></i>
                             </button>
                         </div>
@@ -231,7 +274,7 @@
                     <!-- САБМИТ -->
                     <div class="pt-1">
                         <button type="submit" id="submit-btn"
-                                class="group relative w-full h-[50px] rounded-2xl flex items-center justify-center select-none overflow-hidden cursor-pointer bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-bold text-xs sm:text-sm tracking-tight shadow-xl shadow-indigo-600/30 border border-white/20 spring-btn">
+                                class="group relative w-full h-[50px] rounded-2xl flex items-center justify-center select-none overflow-hidden cursor-pointer bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-bold text-xs sm:text-sm tracking-tight shadow-lg shadow-indigo-600/25 border border-white/20 spring-btn">
                             
                             <div class="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/40 to-transparent pointer-events-none"></div>
 
@@ -260,7 +303,7 @@
                 <!-- ВХОД ПО ССЫЛКЕ БЕЗ ПАРОЛЯ -->
                 <div>
                     <a href="{% url 'passwordless_auth' %}" 
-                       class="w-full flex items-center justify-center gap-2.5 py-3 px-4 rounded-2xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.08] text-xs font-semibold text-zinc-300 hover:text-white transition-all spring-btn">
+                       class="w-full flex items-center justify-center gap-2.5 py-3 px-4 rounded-2xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.08] text-xs font-semibold text-zinc-300 hover:text-white transition-colors spring-btn">
                         <i class="fas fa-envelope text-indigo-400 text-xs"></i>
                         <span>Войти в 1 клик по ссылке</span>
                     </a>
@@ -280,7 +323,7 @@
     </main>
 
     <!-- СТРОГИЙ ЧИСТЫЙ ФУТЕР -->
-    <footer class="relative z-10 border-t border-white/[0.06] bg-[#0C0B0F]/90 mt-auto">
+    <footer class="relative z-10 border-t border-white/[0.06] bg-[#0C0B0F] mt-auto">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 py-6">
             <div class="flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-zinc-500 text-center sm:text-left">
                 <div>
@@ -297,13 +340,19 @@
         </div>
     </footer>
 
-    <!-- JS СКРИПТ: УПРАВЛЕНИЕ ПАРОЛЕМ, ТРЯСКА КАРТОЧКИ, ЛОАДЕР -->
+    <!-- JS: ПАРОЛЬ, ТРЯСКА КАРТОЧКИ, ЛОАДЕР -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const form = document.getElementById('auth-form');
             const submitBtn = document.getElementById('submit-btn');
             const loginCard = document.getElementById('login-card');
-            
+            const emailInput = document.getElementById('id_email');
+
+            // 0. Автофокус только на устройствах с мышью: на iPhone он открывает клавиатуру при загрузке и дёргает страницу
+            if (emailInput && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+                emailInput.focus({ preventScroll: true });
+            }
+
             // 1. Показ/скрытие пароля
             const pwdInput = document.getElementById('id_password');
             const togglePwdBtn = document.getElementById('toggle-pwd-btn');
@@ -323,13 +372,21 @@
                 }
             {% endif %}
 
-            // 3. Активация лоадера при отправке валидной формы
+            // 3. Лоадер при отправке валидной формы
             if (form) {
                 form.addEventListener('submit', function() {
                     if (this.checkValidity()) {
                         submitBtn.classList.add('btn-loading');
                     }
                 });
+            }
+        });
+
+        // 4. Кнопка «Назад» в Safari возвращает страницу из кэша вместе с крутящимся лоадером — сбрасываем
+        window.addEventListener('pageshow', (e) => {
+            if (e.persisted) {
+                const btn = document.getElementById('submit-btn');
+                if (btn) btn.classList.remove('btn-loading');
             }
         });
     </script>

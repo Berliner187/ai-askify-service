@@ -547,7 +547,6 @@
                     {% if is_creator %}
                         <a href="{% url 'preview_test' survey.survey_id %}" 
                            class="master-pill-btn w-full h-[52px] rounded-full text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 select-none mb-4">
-                            <i class="fas fa-chart-pie text-xs"></i>
                             <i class="fas fa-list-check text-xs"></i>
                             <span>Вернуться к вопросам</span>
                         </a>
@@ -707,6 +706,44 @@
             }
         });
 
+        async function registerSurveyView() {
+            if (!surveyId) return;
+            try {
+                const rawString = `${navigator.userAgent}-${navigator.language}-${new Date().getTimezoneOffset()}`;
+                const encoder = new TextEncoder();
+                const data = encoder.encode(rawString);
+                const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+                const visitorHash = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+
+                const response = await fetch(`/register-view/${surveyId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({ hash: visitorHash })
+                });
+
+                const resData = await response.json();
+                if (resData.success && resData.view_count !== undefined) {
+                    const $counter = $('#dynamic-island .fa-eye').next('span');
+                    const currentCount = parseInt($counter.text(), 10) || 0;
+                    
+                    if (resData.new_view && resData.view_count > currentCount) {
+                        $counter.text(resData.view_count);
+                        $counter.parent().addClass('border-indigo-500/40 text-white');
+                        setTimeout(() => {
+                            $counter.parent().removeClass('border-indigo-500/40 text-white');
+                        }, 1200);
+                    } else {
+                        $counter.text(resData.view_count);
+                    }
+                }
+            } catch (e) {
+                console.warn('View tracking unavailable');
+            }
+        }
+
         // СТАРТ ТЕСТА
         $('#start-test-form').on('submit', function(e) {
             e.preventDefault();
@@ -717,6 +754,8 @@
             $('#questions-view').removeClass('hidden');
             $('#total-q-num').text(totalQuestions);
             renderQuestion(currentIdx);
+
+            registerSurveyView();
         });
 
         // ОТРИСОВКА ВОПРОСА

@@ -11,6 +11,7 @@ from django.conf import settings
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.db import transaction
+from django.contrib.auth.signals import user_logged_in
 import secrets
 
 from datetime import timedelta, datetime
@@ -78,11 +79,11 @@ class Survey(models.Model):
     )
     questions_count = models.PositiveIntegerField(default=0, db_index=True)
     source_text = models.TextField(
-        blank=True, null=True, 
+        blank=True, null=True,
         help_text="Исходный текст пользователя для перегенерации"
     )
     generation_params = models.JSONField(
-        default=dict, blank=True, 
+        default=dict, blank=True,
         help_text="Параметры генерации (сложность, типы вопросов и т.д.)"
     )
 
@@ -93,13 +94,13 @@ class Survey(models.Model):
 
     def __str__(self):
         return self.title
-    
+
     def save_questions(self, questions_data, shuffle=False):
         """
         Сохраняет вопросы в формате JSON.
         Если shuffle=True — перемешивает порядок самих вопросов.
         Варианты ответов перемешиваются всегда для исключения предсказуемости.
-        
+
         Args:
             questions_data (list): Список словарей вопросов. Каждый словарь должен
                                    содержать 'question', 'options' и 'correct_answer'.
@@ -134,7 +135,7 @@ class Survey(models.Model):
 
     def generate_pdf(self, subscription_level):
         return PDFGenerator.generate_from_survey(self, subscription_level)
-    
+
     def get_normalized_questions(self):
         """
         Возвращает вопросы с гарантированной структурой:
@@ -438,14 +439,106 @@ class TransactionTracker(models.Model):
         )
 
 
+class ActiveBlockManager(models.Manager):
+    """
+    Менеджер по умолчанию отдаёт ТОЛЬКО действующие блокировки:
+    бессрочные (expires_at пуст) и те, у которых срок ещё не вышел.
+    Поэтому весь существующий код вида BlockedUsers.objects.filter(ip_address=ip).exists()
+    (декоратор check_blocked, middleware) автоматически перестаёт блокировать
+    после истечения срока — править его не нужно.
+    Все записи, включая истёкшие, доступны через BlockedUsers.all_objects.
+    """
+
+    def get_queryset(self):
+        now = timezone.now()
+        return super().get_queryset().filter(
+            models.Q(expires_at__isnull=True) | models.Q(expires_at__gt=now)
+        )
+
+    def is_blocked(self, ip):
+        return bool(ip) and self.filter(ip_address=ip).exists()
+
+
 class BlockedUsers(models.Model):
-    id_staff = models.UUIDField(null=True, blank=True, unique=True)
+    id_staff = models.UUIDField(null=True, blank=True, db_index=True)
     ip_address = models.GenericIPAddressField(unique=True)
     reason = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(
+        blank=True, null=True, db_index=True,
+        help_text="До какого момента действует блокировка. Пусто — бессрочно.",
+    )
+    created_by = models.CharField(max_length=150, blank=True, default="")
+
+    objects = ActiveBlockManager()
+    all_objects = models.Manager()
+
+    class Meta:
+        base_manager_name = "all_objects"
+
+    @property
+    def is_active(self):
+        return self.expires_at is None or self.expires_at > timezone.now()
+
+    @classmethod
+    def purge_expired(cls, older_than_days=30):
+        edge = timezone.now() - timedelta(days=older_than_days)
+        return cls.all_objects.filter(expires_at__isnull=False, expires_at__lt=edge).delete()
 
     def __str__(self):
         return self.ip_address
+
+
+class UserIPHistory(models.Model):
+    """
+    С каких IP заходил пользователь. Пишется при каждом входе (сигнал user_logged_in)
+    и, если подключён crm_middleware.TrackUserIPMiddleware, раз в час на активную сессию.
+    Нужна CRM, чтобы блокировать конкретного юзера по его реальным адресам.
+    """
+    user = models.ForeignKey("AuthUser", on_delete=models.CASCADE, related_name="ip_history")
+    ip_address = models.GenericIPAddressField(db_index=True)
+    user_agent = models.CharField(max_length=255, blank=True, default="")
+    first_seen = models.DateTimeField(auto_now_add=True)
+    last_seen = models.DateTimeField(default=timezone.now, db_index=True)
+    hits = models.PositiveIntegerField(default=1)
+
+    class Meta:
+        unique_together = ("user", "ip_address")
+        ordering = ["-last_seen"]
+
+    @classmethod
+    def touch(cls, user, ip, user_agent=""):
+        if not user or not getattr(user, "pk", None) or not ip:
+            return
+        ua = (user_agent or "")[:255]
+        updated = cls.objects.filter(user=user, ip_address=ip).update(
+            last_seen=timezone.now(), hits=F("hits") + 1, user_agent=ua
+        )
+        if not updated:
+            try:
+                cls.objects.create(user=user, ip_address=ip, user_agent=ua)
+            except Exception:
+                cls.objects.filter(user=user, ip_address=ip).update(last_seen=timezone.now())
+
+    def __str__(self):
+        return f"{self.user_id} @ {self.ip_address}"
+
+
+def _request_ip(request):
+    xff = request.META.get("HTTP_X_FORWARDED_FOR")
+    if xff:
+        return xff.split(",")[0].strip()
+    return request.META.get("REMOTE_ADDR")
+
+
+@receiver(user_logged_in)
+def remember_login_ip(sender, request, user, **kwargs):
+    if request is None:
+        return
+    try:
+        UserIPHistory.touch(user, _request_ip(request), request.META.get("HTTP_USER_AGENT", ""))
+    except Exception:
+        pass
 
 
 class FeedbackFromAI(models.Model):
@@ -880,16 +973,37 @@ class Mailing(models.Model):
     """Модель для хранения самой рассылки."""
 
     SEGMENT_CHOICES = [
-        ("all", "Всем пользователям"),
+        ("all", "Все подписанные"),
         ("active_subs", "С активной подпиской"),
         ("inactive_subs", "Без активной подписки"),
-        ("no_tests", "Кто не создал ни одного теста"),
+        ("no_tests", "Не создали ни одного теста"),
+        ("paying", "Платили хотя бы раз"),
+        ("never_paid", "Ни разу не платили"),
+        ("new_7d", "Зарегистрировались за 7 дней"),
+        ("dormant_30d", "Не заходили больше 30 дней"),
+        ("expiring_7d", "Подписка кончается в ближайшие 7 дней"),
+        ("has_balance", "Есть тесты на балансе"),
+    ]
+
+    STATUS_CHOICES = [
+        ("draft", "Черновик"),
+        ("scheduled", "Запланирована"),
+        ("queued", "В очереди"),
+        ("processing", "Отправляется"),
+        ("paused", "На паузе"),
+        ("completed", "Завершена"),
+        ("canceled", "Отменена"),
+        ("failed", "Ошибка"),
     ]
 
     title = models.CharField(
         max_length=255, help_text="Внутреннее название для админки"
     )
     subject = models.CharField(max_length=255, help_text="Тема письма для Email")
+    preheader = models.CharField(
+        max_length=255, blank=True, default="",
+        help_text="Короткий текст-превью, который почтовики показывают рядом с темой",
+    )
     message_body = models.TextField(
         help_text="Основной текст сообщения (HTML для Email, Markdown для Telegram)"
     )
@@ -902,18 +1016,19 @@ class Mailing(models.Model):
     )
 
     created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.CharField(max_length=150, blank=True, default="")
+    scheduled_at = models.DateTimeField(blank=True, null=True)
     sent_at = models.DateTimeField(
         blank=True, null=True, help_text="Время начала фактической отправки"
     )
+    finished_at = models.DateTimeField(blank=True, null=True)
+    total_recipients = models.PositiveIntegerField(default=0)
+    last_error = models.TextField(blank=True, default="")
 
     status = models.CharField(
         max_length=20,
         default="draft",
-        choices=[
-            ("draft", "Черновик"),
-            ("processing", "В процессе"),
-            ("completed", "Завершена"),
-        ],
+        choices=STATUS_CHOICES,
     )
 
     def __str__(self):
@@ -927,6 +1042,7 @@ class MailingRecipient(models.Model):
         Mailing, on_delete=models.CASCADE, related_name="recipients"
     )
     user = models.ForeignKey(AuthUser, on_delete=models.CASCADE)
+    email = models.CharField(max_length=254, blank=True, default="")
 
     channel = models.CharField(
         max_length=10, choices=[("email", "Email"), ("telegram", "Telegram")]
@@ -941,12 +1057,14 @@ class MailingRecipient(models.Model):
             ("failed", "Ошибка"),
         ],
     )
+    attempts = models.PositiveSmallIntegerField(default=0)
 
     sent_at = models.DateTimeField(blank=True, null=True)
     error_message = models.TextField(blank=True, null=True)
 
     class Meta:
         unique_together = ("mailing", "user")
+        indexes = [models.Index(fields=["mailing", "status"], name="idx_mrecip_mailing_status")]
 
 
 class MagicLinkToken(models.Model):

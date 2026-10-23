@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="x-apple-disable-message-reformatting">
+    <meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
+    <meta name="color-scheme" content="light">
+    <meta name="supported-color-schemes" content="light">
+    <title>{{ subject }}</title>
+    <!--[if mso]><style>table,td,div,p,a{font-family:Arial,sans-serif !important;}</style><![endif]-->
+    <style>
+        body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+        body { margin: 0 !important; padding: 0 !important; width: 100% !important; background: #F2F2F6; }
+        img { border: 0; outline: none; text-decoration: none; display: block; }
+        a { color: #4F46E5; }
+        /* Текст письма из CRM */
+        .content p { margin: 0 0 16px; }
+        .content p:last-child { margin-bottom: 0; }
+        .content a { color: #4F46E5; font-weight: 600; }
+        .content b, .content strong { color: #17161C; }
+        .content h2 { margin: 28px 0 10px; font-size: 20px; line-height: 1.3; color: #17161C; font-weight: 800; letter-spacing: -0.02em; }
+        .content h3 { margin: 24px 0 8px; font-size: 17px; line-height: 1.35; color: #17161C; font-weight: 700; letter-spacing: -0.01em; }
+        .content ul, .content ol { margin: 0 0 18px; padding-left: 22px; }
+        .content li { margin: 0 0 8px; padding-left: 2px; }
+        .content img { max-width: 100%; height: auto; border-radius: 14px; margin: 6px 0 18px; }
+        .content blockquote { margin: 0 0 18px; padding: 14px 18px; border-left: 3px solid #6366F1; background: #F5F5FF; border-radius: 0 12px 12px 0; color: #3A3942; }
+        .tile:hover { background: #EEEEFF !important; }
+        @media (max-width: 620px) {
+            .wrap { width: 100% !important; }
+            .pad { padding-left: 24px !important; padding-right: 24px !important; }
+            .hero-title { font-size: 25px !important; line-height: 1.2 !important; }
+            .btn-td, .btn-a { display: block !important; width: 100% !important; box-sizing: border-box; text-align: center !important; }
+            .tiles td.tcol { display: block !important; width: 100% !important; padding: 0 0 8px 0 !important; }
+            .hide-sm { display: none !important; }
+        }
+    </style>
+</head>
+<body style="margin:0;padding:0;background:#F2F2F6;">
+
+    {% if preheader %}
+    <div style="display:none;max-height:0;max-width:0;overflow:hidden;opacity:0;mso-hide:all;font-size:1px;line-height:1px;color:#F2F2F6;">
+        {{ preheader }}&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;
+    </div>
+    {% endif %}
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F2F2F6;">
+        <tr>
+            <td align="center" style="padding:28px 12px 40px;">
+                <table role="presentation" class="wrap" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:600px;">
+
+                    <!-- ===== Верхняя строка: логотип ===== -->
+                    <tr>
+                        <td style="padding:0 8px 16px;">
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                                <tr>
+                                    <td align="left" style="vertical-align:middle;">
+                                        <a href="{{ site_url }}" target="_blank" style="text-decoration:none;color:#17161C;display:inline-block;">
+                                            <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+                                                <td style="vertical-align:middle;padding-right:10px;">
+                                                    <img src="{{ site_url }}/static/img/logo.png" width="28" height="28" alt="" style="width:28px;height:28px;border-radius:8px;">
+                                                </td>
+                                                <td style="vertical-align:middle;font:800 19px/1 -apple-system,'Segoe UI',Roboto,Arial,sans-serif;letter-spacing:-0.02em;color:#17161C;">Летучка</td>
+                                            </tr></table>
+                                        </a>
+                                    </td>
+                                    <td align="right" class="hide-sm" style="vertical-align:middle;font:500 12.5px/1 -apple-system,'Segoe UI',Roboto,Arial,sans-serif;color:#8B8A94;">
+                                        Тесты по&nbsp;тексту за&nbsp;15&nbsp;секунд
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- ===== Карточка ===== -->
+                    <tr>
+                        <td style="background:#FFFFFF;border-radius:24px;border:1px solid #E6E5EE;overflow:hidden;">
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+
+                                <!-- Шапка с темой письма -->
+                                <tr>
+                                    <td bgcolor="#4F46E5" style="background:#4F46E5;background-image:linear-gradient(135deg,#5B54EA 0%,#4338CA 55%,#312E81 100%);border-radius:24px 24px 0 0;">
+                                        <!--[if gte mso 9]><v:rect xmlns:v="urn:schemas-microsoft-com:vml" fill="true" stroke="false" style="width:600px;"><v:fill type="gradient" color="#5B54EA" color2="#312E81" angle="135"/><v:textbox inset="0,0,0,0"><![endif]-->
+                                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                                            <tr>
+                                                <td class="pad" style="padding:34px 40px 32px;">
+                                                    <p style="margin:0 0 14px;font:600 11px/1 'SFMono-Regular',Menlo,Consolas,monospace;letter-spacing:0.14em;text-transform:uppercase;color:#C7D2FE;">
+                                                        [&nbsp;Летучка&nbsp;//&nbsp;новости&nbsp;]
+                                                    </p>
+                                                    <h1 class="hero-title" style="margin:0;font:800 29px/1.18 -apple-system,'Segoe UI',Roboto,Arial,sans-serif;letter-spacing:-0.03em;color:#FFFFFF;">
+                                                        {{ subject }}
+                                                    </h1>
+                                                    {% if preheader %}
+                                                    <p style="margin:12px 0 0;font:400 15px/1.5 -apple-system,'Segoe UI',Roboto,Arial,sans-serif;color:#E0E7FF;">{{ preheader }}</p>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                        </table>
+                                        <!--[if gte mso 9]></v:textbox></v:rect><![endif]-->
+                                    </td>
+                                </tr>
+
+                                <!-- Текст письма -->
+                                <tr>
+                                    <td class="pad content" style="padding:34px 40px 8px;font:400 16px/1.65 -apple-system,'Segoe UI',Roboto,Arial,sans-serif;color:#3A3942;">
+                                        {{ body_html|safe }}
+                                    </td>
+                                </tr>
+
+                                <!-- Кнопка -->
+                                {% if button_text and button_url %}
+                                <tr>
+                                    <td class="pad" style="padding:24px 40px 6px;">
+                                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" class="btn-td">
+                                            <tr>
+                                                <td class="btn-td" bgcolor="#4F46E5" style="border-radius:14px;background:#4F46E5;box-shadow:0 8px 20px -8px rgba(79,70,229,0.6);">
+                                                    <!--[if mso]><v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" href="{{ button_url }}" style="height:52px;v-text-anchor:middle;width:280px;" arcsize="26%" stroke="f" fillcolor="#4F46E5"><w:anchorlock/><center style="color:#ffffff;font-family:Arial,sans-serif;font-size:16px;font-weight:bold;">{{ button_text }}</center></v:roundrect><![endif]-->
+                                                    <!--[if !mso]><!-- -->
+                                                    <a href="{{ button_url }}" target="_blank" class="btn-a"
+                                                       style="display:inline-block;padding:16px 30px;border-radius:14px;background:#4F46E5;color:#FFFFFF;font:700 16px/1.2 -apple-system,'Segoe UI',Roboto,Arial,sans-serif;text-decoration:none;letter-spacing:-0.01em;">
+                                                        {{ button_text }}&nbsp;&nbsp;&rarr;
+                                                    </a>
+                                                    <!--<![endif]-->
+                                                </td>
+                                            </tr>
+                                        </table>
+                                        <p style="margin:12px 0 0;font:400 12.5px/1.5 -apple-system,'Segoe UI',Roboto,Arial,sans-serif;color:#9A99A3;">
+                                            Кнопка не нажимается? Откройте ссылку: <a href="{{ button_url }}" target="_blank" style="color:#6B6A75;word-break:break-all;">{{ button_url }}</a>
+                                        </p>
+                                    </td>
+                                </tr>
+                                {% endif %}
+
+                                <!-- Подпись -->
+                                <tr>
+                                    <td class="pad" style="padding:30px 40px 34px;">
+                                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #EEEDF3;">
+                                            <tr>
+                                                <td style="padding-top:22px;vertical-align:middle;width:44px;">
+                                                    <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+                                                        <td width="40" height="40" align="center" bgcolor="#EEF0FF" style="width:40px;height:40px;border-radius:12px;background:#EEF0FF;font:800 16px/40px -apple-system,'Segoe UI',Roboto,Arial,sans-serif;color:#4F46E5;">Л</td>
+                                                    </tr></table>
+                                                </td>
+                                                <td style="padding:22px 0 0 12px;vertical-align:middle;font:400 14px/1.45 -apple-system,'Segoe UI',Roboto,Arial,sans-serif;color:#6B6A75;">
+                                                    <b style="color:#17161C;font-weight:700;">Команда Летучки</b><br>
+                                                    Есть вопрос или идея? Просто ответьте на&nbsp;это письмо&nbsp;— читаем всё.
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- ===== Быстрые ссылки ===== -->
+                    <tr>
+                        <td style="padding:16px 0 0;">
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="tiles">
+                                <tr>
+                                    <td class="tcol" width="33%" style="padding:0 4px 0 0;vertical-align:top;">
+                                        <a href="{{ site_url }}/create/" target="_blank" class="tile" style="display:block;padding:16px 18px;border-radius:18px;background:#FFFFFF;border:1px solid #E6E5EE;text-decoration:none;">
+                                            <span style="display:block;font:700 14px/1.3 -apple-system,'Segoe UI',Roboto,Arial,sans-serif;color:#17161C;">Создать тест&nbsp;&rarr;</span>
+                                            <span style="display:block;margin-top:4px;font:400 12.5px/1.4 -apple-system,'Segoe UI',Roboto,Arial,sans-serif;color:#8B8A94;">Из текста, PDF или Word</span>
+                                        </a>
+                                    </td>
+                                    <td class="tcol" width="33%" style="padding:0 2px;vertical-align:top;">
+                                        <a href="{{ site_url }}/history/" target="_blank" class="tile" style="display:block;padding:16px 18px;border-radius:18px;background:#FFFFFF;border:1px solid #E6E5EE;text-decoration:none;">
+                                            <span style="display:block;font:700 14px/1.3 -apple-system,'Segoe UI',Roboto,Arial,sans-serif;color:#17161C;">Мои тесты&nbsp;&rarr;</span>
+                                            <span style="display:block;margin-top:4px;font:400 12.5px/1.4 -apple-system,'Segoe UI',Roboto,Arial,sans-serif;color:#8B8A94;">Результаты и ведомости</span>
+                                        </a>
+                                    </td>
+                                    <td class="tcol" width="33%" style="padding:0 0 0 4px;vertical-align:top;">
+                                        <a href="{{ site_url }}/payment/" target="_blank" class="tile" style="display:block;padding:16px 18px;border-radius:18px;background:#FFFFFF;border:1px solid #E6E5EE;text-decoration:none;">
+                                            <span style="display:block;font:700 14px/1.3 -apple-system,'Segoe UI',Roboto,Arial,sans-serif;color:#17161C;">Тарифы&nbsp;&rarr;</span>
+                                            <span style="display:block;margin-top:4px;font:400 12.5px/1.4 -apple-system,'Segoe UI',Roboto,Arial,sans-serif;color:#8B8A94;">Пакеты от&nbsp;290&nbsp;₽</span>
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- ===== Подвал ===== -->
+                    <tr>
+                        <td class="pad" align="center" style="padding:30px 30px 0;font:400 12.5px/1.65 -apple-system,'Segoe UI',Roboto,Arial,sans-serif;color:#8B8A94;text-align:center;">
+                            <a href="https://t.me/LetychkaRobot" target="_blank" style="color:#4F46E5;text-decoration:none;font-weight:600;">Telegram</a>
+                            &nbsp;&middot;&nbsp;
+                            <a href="mailto:support@letychka.ru" style="color:#4F46E5;text-decoration:none;font-weight:600;">support@letychka.ru</a>
+                            &nbsp;&middot;&nbsp;
+                            <a href="{{ site_url }}" target="_blank" style="color:#4F46E5;text-decoration:none;font-weight:600;">letychka.ru</a>
+                            <br><br>
+                            Вы получили это письмо, потому что зарегистрированы в&nbsp;Летучке.<br>
+                            Не хотите получать рассылку? <a href="{{ unsubscribe_url }}" target="_blank" style="color:#6B6A75;text-decoration:underline;">Отписаться в&nbsp;один клик</a>.
+                            <br><br>
+                            <span style="color:#B0AFB8;">© {{ year }} Летучка AI · ИНН 773613171558</span>
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

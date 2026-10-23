@@ -3,76 +3,245 @@
 <head>
     {% load static %}
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Ошибка{% endblock %} | Летучка</title>
-    <link rel="icon" href="{% static 'img/favicon.ico' %}" type="image/ico">
-    
-    <!-- ПРАВИЛЬНЫЙ, БЛЯТЬ, ИМПОРТ -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="robots" content="noindex">
+    <meta name="theme-color" content="#0F0E13">
+    <title>{% block title %}Ошибка{% endblock %}</title>
+    <link rel="icon" href="{% static 'img/favicon.ico' %}" type="image/x-icon">
+
     <script src="{% static 'vendor/tailwind.full.min.js' %}"></script>
-    
-    <!-- ШРИФТЫ -->
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Unbounded:wght@500;900&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=Wix+Madefor+Display:wght@600;700;800&display=swap" rel="stylesheet">
 
     <style>
-        :root {
-            --color-bg: #0F0818;
-            --color-surface: rgba(30, 24, 48, 0.5);
-            --color-border: rgba(97, 109, 240, 0.2);
-            --color-text-primary: #f0f0f0;
-            --color-text-secondary: #a0a0b0;
-            --color-accent-primary: #616DF0;
-            --color-accent-secondary: #79EF66;
+        :root { --bg: #0F0E13; --ease: cubic-bezier(0.16, 1, 0.3, 1); }
+        *, *::before, *::after { box-sizing: border-box; }
+        html, body { overflow-x: clip; }
+        body {
+            margin: 0; min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column;
+            background: var(--bg); color: #E5E7EB;
+            font: 400 15px/1.55 'Golos Text', -apple-system, BlinkMacSystemFont, sans-serif;
+            letter-spacing: -0.012em; -webkit-font-smoothing: antialiased;
         }
-        body { 
-            background-color: var(--color-bg); 
-            font-family: 'Inter', sans-serif; 
-            overflow: hidden;
-            position: relative;
+        ::selection { background: rgba(99,102,241,.45); color: #fff; }
+        a { color: inherit; text-decoration: none; }
+        .display { font-family: 'Wix Madefor Display', 'Golos Text', sans-serif; letter-spacing: -0.03em; }
+        .icon { width: 1em; height: 1em; display: inline-block; flex-shrink: 0; }
+        :focus-visible { outline: 2px solid #818CF8; outline-offset: 3px; border-radius: 12px; }
+
+        /* ---------- Фон: сетка, свет, шум ---------- */
+        .bg-grid {
+            position: fixed; inset: 0; z-index: 0; pointer-events: none;
+            background-image: linear-gradient(to right, rgba(216,216,230,.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(230,230,238,.03) 1px, transparent 1px);
+            background-size: 64px 64px;
+            -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 30%, transparent 75%);
+                    mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 30%, transparent 75%);
         }
-        h1, h2, h3 { 
-            font-family: 'Unbounded', sans-serif;
-            font-weight: 900;
+        .bg-light { position: fixed; left: 50%; top: -6vh; z-index: 0; width: 220vw; max-width: 3200px; transform: translateX(-50%); pointer-events: none; opacity: 0; animation: glow 2.2s var(--ease) .3s forwards; }
+        .bg-light img { display: block; width: 100%; height: auto; mix-blend-mode: screen; }
+        @keyframes glow { to { opacity: .55; } }
+        .bg-orb { position: fixed; left: 50%; top: 32%; z-index: 0; width: 720px; height: 520px; transform: translate(-50%, -50%); border-radius: 50%; background: radial-gradient(closest-side, rgba(99,102,241,.22), transparent); filter: blur(30px); pointer-events: none; }
+
+        /* ---------- Остров-шапка ---------- */
+        .isl { position: relative; z-index: 10; width: min(1080px, calc(100% - 24px)); margin: calc(12px + env(safe-area-inset-top, 0px)) auto 0; border-radius: 22px; background: rgba(20,19,26,.55); -webkit-backdrop-filter: blur(20px) saturate(160%); backdrop-filter: blur(20px) saturate(160%); animation: up .7s var(--ease) both; }
+        .isl::before { content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none; background: linear-gradient(180deg, rgba(255,255,255,.15), rgba(255,255,255,.045) 45%, rgba(255,255,255,.07)); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; }
+        .isl-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; height: 54px; padding: 0 8px 0 16px; }
+        .isl-logo img { display: block; height: 26px; width: auto; }
+        .code-chip { display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 14px; border-radius: 14px; font: 600 11.5px/1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .1em; text-transform: uppercase; color: #A1A1AA; background: rgba(255,255,255,.04); }
+        .code-chip i { width: 7px; height: 7px; border-radius: 99px; background: #FB7185; box-shadow: 0 0 0 0 rgba(251,113,133,.6); animation: ping 1.8s ease-out infinite; }
+        @keyframes ping { to { box-shadow: 0 0 0 9px rgba(251,113,133,0); } }
+
+        /* ---------- Главный блок ---------- */
+        main { position: relative; z-index: 5; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 16px 24px; text-align: center; }
+        .kicker { display: inline-flex; gap: 6px; font: 500 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .1em; text-transform: uppercase; color: #A1A1AA; animation: track 1.1s var(--ease) both; }
+        .kicker span:first-child, .kicker span:last-child { color: #52525B; }
+        @keyframes track { from { letter-spacing: .5em; opacity: 0; } to { letter-spacing: .1em; opacity: 1; } }
+
+        /* Огромный код ошибки */
+        .code-wrap { position: relative; margin: 18px 0 6px; perspective: 900px; }
+        .code {
+            position: relative; display: inline-flex; gap: .02em; margin: 0;
+            font: 800 clamp(8.5rem, 31vw, 19rem)/.86 'Wix Madefor Display', sans-serif; letter-spacing: -0.06em;
+            transform: translate3d(var(--px, 0), var(--py, 0), 0) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+            transition: transform .6s var(--ease);
+            user-select: none;
         }
-        .gradient-text {
-            background: linear-gradient(45deg, var(--color-accent-primary), var(--color-accent-secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+        .code > span {
+            display: inline-block;
+            background: linear-gradient(180deg, #FFFFFF 0%, #C7D2FE 38%, #6366F1 78%, rgba(67,56,202,.25) 100%);
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+            filter: drop-shadow(0 24px 60px rgba(79,70,229,.35));
+            animation: digit 1.2s var(--ease) calc(.15s + var(--i) * .12s) both, float 6s ease-in-out calc(1.4s + var(--i) * .5s) infinite;
         }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+        @keyframes digit { from { opacity: 0; transform: translateY(60px) scale(.9); } to { opacity: 1; transform: none; filter: drop-shadow(0 24px 60px rgba(79,70,229,.35)); } }
+        @keyframes float { 0%, 100% { translate: 0 0; } 50% { translate: 0 -10px; } }
+        /* блик, пробегающий по цифрам */
+        .code::after {
+            content: attr(data-code); position: absolute; inset: 0; pointer-events: none;
+            background: linear-gradient(105deg, transparent 35%, rgba(255,255,255,.75) 48%, transparent 60%) no-repeat;
+            background-size: 250% 100%; background-position: 160% 0;
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+            animation: sheen 5.5s var(--ease) 2s infinite;
+        }
+        @keyframes sheen { 0% { background-position: 160% 0; } 40%, 100% { background-position: -60% 0; } }
+        /* отражение-контур под цифрами */
+        .code-shadow {
+            position: absolute; left: 50%; bottom: -.55em; transform: translateX(-50%) scaleY(-1); pointer-events: none;
+            font: 800 clamp(8.5rem, 31vw, 19rem)/.86 'Wix Madefor Display', sans-serif; letter-spacing: -0.06em; white-space: nowrap;
+            color: transparent; -webkit-text-stroke: 1px rgba(129,140,248,.14);
+            -webkit-mask-image: linear-gradient(to top, transparent 55%, #000); mask-image: linear-gradient(to top, transparent 55%, #000);
+            opacity: 0; animation: fade 1.4s var(--ease) 1s forwards;
+        }
+        @keyframes fade { to { opacity: 1; } }
+
+        h1.title { margin: 22px auto 0; max-width: 20ch; font: 800 clamp(1.6rem, 4.4vw, 2.6rem)/1.12 'Wix Madefor Display', sans-serif; letter-spacing: -0.035em; color: #fff; text-wrap: balance; animation: up .9s var(--ease) .55s both; }
+        .sub { margin: 14px auto 0; max-width: 52ch; font-size: clamp(14px, 1.6vw, 16px); line-height: 1.6; color: #A1A1AA; text-wrap: pretty; animation: up .9s var(--ease) .65s both; }
+        @keyframes up { from { opacity: 0; transform: translateY(18px); filter: blur(8px); } to { opacity: 1; transform: none; filter: blur(0); } }
+
+        /* Кнопки */
+        .actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 28px; animation: up .9s var(--ease) .75s both; }
+        @property --a { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+        @keyframes spinA { to { --a: 360deg; } }
+        .cta { position: relative; display: inline-flex; padding: 2px; border-radius: 999px; overflow: hidden; transition: transform .25s var(--ease); }
+        .cta::before { content: ''; position: absolute; inset: 0; border-radius: inherit; animation: spinA 2.4s linear infinite; background: conic-gradient(from var(--a), transparent 0%, transparent 65%, #818cf8 82%, #6366f1 92%, #4338ca 100%); }
+        .cta:hover { transform: scale(1.03); } .cta:active { transform: scale(.98); }
+        .cta a { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 10px; height: 48px; padding: 0 26px; border-radius: 999px; background: #4F46E5; color: #fff; font-size: 14px; font-weight: 700; box-shadow: 0 4px 24px -2px rgba(79,70,229,.5), inset 0 1px 0 rgba(255,255,255,.2); transition: background-color .3s ease; }
+        .cta:hover a { background: #111119; }
+        .cta a b { width: 22px; height: 22px; border-radius: 99px; display: grid; place-items: center; background: rgba(255,255,255,.2); transition: transform .3s var(--ease); }
+        .cta:hover a b { transform: translateX(2px); }
+        .ghost { display: inline-flex; align-items: center; gap: 8px; height: 52px; padding: 0 22px; border-radius: 999px; font-size: 14px; font-weight: 600; color: #D4D4D8; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.09); cursor: pointer; font-family: inherit; transition: color .2s ease, background-color .2s ease, border-color .2s ease; }
+        .ghost:hover { color: #fff; background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.16); }
+
+        /* Слот под видео / картинку — рамка как у видео на главной */
+        .slot { width: 100%; max-width: 640px; margin-top: 40px; animation: frame 1.3s var(--ease) .9s both; transform-origin: 50% 0; }
+        .slot:empty { display: none; }
+        @keyframes frame { from { opacity: 0; transform: perspective(1400px) rotateX(14deg) translateY(50px) scale(.94); } to { opacity: 1; transform: none; } }
+        .frame { padding: 6px; border-radius: 30px; background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.02)); border: 1px solid rgba(255,255,255,.06); box-shadow: 0 30px 70px -20px rgba(0,0,0,.85); }
+        .frame-in { position: relative; border-radius: 25px; overflow: hidden; background: #09090B; }
+        .frame-in video, .frame-in img, .frame-in iframe { display: block; width: 100%; max-height: 720px; object-fit: cover; border: 0; }
+        .frame-bar { display: flex; align-items: center; gap: 6px; padding: 9px 12px 9px 14px; }
+        .frame-bar i { width: 9px; height: 9px; border-radius: 99px; background: rgba(255,255,255,.12); }
+        .frame-bar span { margin-left: auto; font: 500 10.5px/1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .08em; color: #71717A; text-transform: uppercase; }
+
+        /* Быстрые ссылки */
+        .quick { width: 100%; max-width: 640px; margin-top: 28px; display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; animation: up .9s var(--ease) 1.05s both; }
+        @media (max-width: 560px) { .quick { grid-template-columns: 1fr; } }
+        .q { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 20px; text-align: left; background: #121117; border: 1px solid rgba(255,255,255,.07); transition: border-color .25s ease, transform .25s var(--ease), background-color .25s ease; }
+        .q:hover { border-color: rgba(129,140,248,.4); background: #15141C; transform: translateY(-2px); }
+        .q-ic { width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center; flex: none; color: #A5B4FC; background: rgba(99,102,241,.1); border: 1px solid rgba(99,102,241,.2); font-size: 16px; }
+        .q b { display: block; font-size: 13.5px; font-weight: 600; color: #F4F4F5; }
+        .q small { display: block; font-size: 12px; color: #71717A; margin-top: 1px; }
+
+        footer { position: relative; z-index: 5; display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; padding: 18px 16px calc(18px + env(safe-area-inset-bottom, 0px)); font-size: 12px; color: #52525B; }
+        footer a:hover { color: #D4D4D8; }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; animation-delay: 0s !important; transition-duration: .01ms !important; }
         }
     </style>
 </head>
-<body class="flex items-center justify-center min-h-screen text-white p-4">
+<body>
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+        <symbol id="i-arrow" viewBox="0 0 16 16"><path d="M3 8h9M8.5 4L12.5 8l-4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+        <symbol id="i-back" viewBox="0 0 16 16"><path d="M13 8H4M7.5 4L3.5 8l4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+        <symbol id="i-plus" viewBox="0 0 16 16"><path d="M8 3v10M3 8h10" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></symbol>
+        <symbol id="i-history" viewBox="0 0 24 24"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M3.5 3.5v4.4h4.4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 7.5V12l3 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+        <symbol id="i-chat" viewBox="0 0 24 24"><path d="M20.5 12a8 8 0 0 1-11.6 7.1L3.5 20.5l1.4-4.9A8 8 0 1 1 20.5 12z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></symbol>
+    </svg>
 
-    <div class="absolute inset-0 flex items-center justify-center sm:justify-start overflow-hidden z-0">
-        <h1 class="text-[20rem] sm:text-[30rem] lg:text-[45rem] font-black text-white/5 whitespace-nowrap -translate-x-1/4 sm:-translate-x-1/4">
-            {% block error_code %}404{% endblock %}
-        </h1>
-    </div>
+    <div class="bg-grid" aria-hidden="true"></div>
+    <div class="bg-orb" aria-hidden="true"></div>
+    <div class="bg-light" aria-hidden="true"><img src="{% static 'img/hero-light-bridge.webp' %}" alt="" decoding="async"></div>
 
-    <div class="relative z-10 flex flex-col items-center text-center max-w-xl mx-auto" style="animation: fadeIn 1s ease-out 0.2s forwards; opacity: 0;">
-        
-        <h2 class="mt-8 text-4xl sm:text-3xl text-white leading-tight">
-            {% block message %}{% endblock %}
-        </h2>
+    <header class="isl">
+        <div class="isl-bar">
+            <a href="/" class="isl-logo" title="Летучка — на главную"><img src="{% static 'img/logo-header.webp' %}" alt="Летучка" height="26"></a>
+            <span class="code-chip"><i aria-hidden="true"></i>Ошибка&nbsp;<span id="chip-code"></span></span>
+        </div>
+    </header>
 
-        <p class="mt-4 text-base sm:text-lg text-gray-400">
-            {% block sub_message %}{% endblock %}
-        </p>
-        
-        <div class="mt-8">
-            <a href="/" 
-               class="inline-block bg-[var(--color-accent-primary)] text-white font-bold px-8 py-3 sm:px-10 sm:py-4 rounded-full 
-                      transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-[var(--color-accent-primary)]/30">
-                Вернуться в реальность
-            </a>
+    <main>
+        <div class="kicker"><span>[</span><span>{% block kicker %}Что-то пошло не по плану{% endblock %}</span><span>]</span></div>
+
+        <div class="code-wrap" aria-hidden="true">
+            <p class="code" id="code" data-code="">{% block error_code %}404{% endblock %}</p>
+            <div class="code-shadow" id="code-shadow"></div>
         </div>
 
-        {% block extra_content %}{% endblock %}
-    </div>
+        <h1 class="title">{% block message %}Что-то пошло не так{% endblock %}</h1>
+        <p class="sub">{% block sub_message %}Страница не найдена или была перемещена. Проверьте адрес или вернитесь назад.{% endblock %}</p>
 
+        <div class="actions">
+            <span class="cta"><a href="/">На главную<b><svg class="icon text-[11px]"><use href="#i-arrow"/></svg></b></a></span>
+            <button type="button" class="ghost" onclick="if (history.length > 1) history.back(); else location.href='/';"><svg class="icon text-[13px]"><use href="#i-back"/></svg>Назад</button>
+        </div>
+
+        <!-- Слот под видео / картинку / свой контент -->
+        <div class="slot" id="slot">{% block extra_content %}{% endblock %}</div>
+
+        <nav class="quick" aria-label="Куда можно пойти">
+            <a class="q" href="/create/"><span class="q-ic"><svg class="icon"><use href="#i-plus"/></svg></span><span><b>Создать тест</b><small>Из файлов</small></span></a>
+            <a class="q" href="/history/"><span class="q-ic"><svg class="icon"><use href="#i-history"/></svg></span><span><b>Мои тесты</b><small>Результаты</small></span></a>
+            <a class="q" href="mailto:support@letychka.ru"><span class="q-ic"><svg class="icon"><use href="#i-chat"/></svg></span><span><b>Поддержка</b><small>support@letychka.ru</small></span></a>
+        </nav>
+    </main>
+
+    <footer>
+        <span>© {% now "Y" %} Летучка AI</span>
+        <a href="https://t.me/LetychkaRobot" target="_blank" rel="noopener">Telegram</a>
+        <a href="/docs/privacy-policy">Конфиденциальность</a>
+    </footer>
+
+    <script>
+    (function () {
+        'use strict';
+        var codeEl = document.getElementById('code');
+        var code = (codeEl.textContent || '').trim() || 'Ой';
+        document.getElementById('chip-code').textContent = code;
+        codeEl.setAttribute('data-code', code);
+        // каждая цифра — отдельный элемент, чтобы появлялись по очереди и «плавали»
+        codeEl.textContent = '';
+        Array.from(code).forEach(function (ch, i) {
+            var s = document.createElement('span');
+            s.textContent = ch;
+            s.style.setProperty('--i', i);
+            codeEl.appendChild(s);
+        });
+        document.getElementById('code-shadow').textContent = code;
+
+        // видео/картинку из extra_content оборачиваем в «экран» как на главной
+        var slot = document.getElementById('slot');
+        var media = slot.querySelector('video, img, iframe');
+        if (media && !slot.querySelector('.frame')) {
+            media.removeAttribute('class');
+            if (media.tagName === 'VIDEO') { media.muted = true; media.playsInline = true; var p = media.play && media.play(); if (p && p.catch) p.catch(function () {}); }
+            var frame = document.createElement('div');
+            frame.className = 'frame';
+            frame.innerHTML = '<div class="frame-bar" aria-hidden="true"><i></i><i></i><i></i><span>letychka.ru / ' + code + '</span></div><div class="frame-in"></div>';
+            frame.querySelector('.frame-in').appendChild(media);
+            slot.innerHTML = '';
+            slot.appendChild(frame);
+        }
+        if (!slot.innerHTML.trim()) slot.innerHTML = '';
+
+        // лёгкий 3D-наклон цифр за курсором
+        if (window.matchMedia('(hover: hover)').matches && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            var raf = 0;
+            window.addEventListener('pointermove', function (e) {
+                if (raf) return;
+                raf = requestAnimationFrame(function () {
+                    raf = 0;
+                    var x = e.clientX / window.innerWidth - 0.5, y = e.clientY / window.innerHeight - 0.5;
+                    codeEl.style.setProperty('--px', (x * 18).toFixed(1) + 'px');
+                    codeEl.style.setProperty('--py', (y * 12).toFixed(1) + 'px');
+                    codeEl.style.setProperty('--ry', (x * 10).toFixed(2) + 'deg');
+                    codeEl.style.setProperty('--rx', (-y * 8).toFixed(2) + 'deg');
+                });
+            }, { passive: true });
+        }
+    })();
+    </script>
 </body>
 </html>

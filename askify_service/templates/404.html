@@ -1,21 +1,12 @@
 {% extends "error_base.html" %}
 
 {% load static %}
-{% block title %}Страница не найдена | Летучка{% endblock %}
+{% block title %}Улетела в стратосферу · 404 | Летучка{% endblock %}
+{% block kicker %}Э-э-э крч тут 404{% endblock %}
 {% block error_code %}404{% endblock %}
-{% block message %}у нас что-то происходит, но мы пока не знаем что именно{% endblock %}
-{% block sub_message %}Мы не знаем что это такое, если бы мы знали что это такое, мы не знаем что... Попробуйте обновить страницу через минуту{% endblock %}
+{% block message %}Летучка оказалась летучей и улетела, пупупу...{% endblock %}
+{% block sub_message %}Либо ссылка кривая, либо тест кто-то стёр, либо ваще хз. Крч тыкайте на главную, а мне лень дописывать текст всё не могу побежал писять{% endblock %}
 
 {% block extra_content %}
-    <div class="my-8">
-        <div class="aspect-w-16 aspect-h-9 max-w-lg mx-auto rounded-2xl overflow-hidden shadow-2xl">
-            <video class="w-full h-full object-cover" 
-                   src="{% static 'blog_img/mem.mp4' %}" 
-                   autoplay 
-                   loop 
-                   muted 
-                   playsinline>
-            </video>
-        </div>
-    </div>
+    <video src="{% static 'blog_img/mem.mp4' %}" autoplay loop muted playsinline preload="metadata"></video>
 {% endblock %}

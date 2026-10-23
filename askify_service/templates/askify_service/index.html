@@ -70,6 +70,50 @@
             background: conic-gradient(from var(--border-angle), transparent 0%, transparent 65%, #818cf8 82%, #6366f1 92%, #4338ca 100%);
         }
 
+        /* ---------- CTA первого экрана ---------- */
+        .cta-wrap { position: relative; display: inline-flex; padding: 3px; border-radius: 999px; isolation: isolate; transition: transform .3s var(--ease); }
+        .cta-wrap:hover  { transform: translateY(-1px) scale(1.02); }
+        .cta-wrap:active { transform: scale(.98); }
+
+        /* бегущая рамка + размытое свечение под ней */
+        .cta-ring, .cta-glow {
+            position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: -1;
+            background: conic-gradient(from var(--border-angle),
+                rgba(255,255,255,.18) 0%, rgba(255,255,255,.18) 35%,
+                #A5B4FC 55%, #FFFFFF 66%, #818CF8 78%, rgba(255,255,255,.18) 100%);
+            animation: spinAngle 3s linear infinite;
+        }
+        .cta-glow { inset: -4px; filter: blur(12px); opacity: .45; }
+
+        /* волна-пульс от кнопки */
+        .cta-wrap::after {
+            content: ''; position: absolute; inset: 0; border-radius: inherit; z-index: -2;
+            animation: cta-ping 2.6s var(--ease) infinite;
+        }
+        @keyframes cta-ping {
+            0%        { box-shadow: 0 0 0 0 rgba(165,180,252,.35); }
+            70%, 100% { box-shadow: 0 0 0 16px rgba(165,180,252,0); }
+        }
+
+        .cta-btn {
+            position: relative; display: inline-flex; align-items: center; gap: 14px;
+            height: 54px; padding: 0 8px 0 28px; border-radius: 999px;
+            background: #FFFFFF; color: #0F0E13;
+            font-size: 14px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; white-space: nowrap;
+            box-shadow: inset 0 -2px 0 rgba(15,14,19,.08), 0 10px 32px -10px rgba(165,180,252,.55);
+            transition: background-color .2s ease;
+        }
+        @media (min-width: 640px) { .cta-btn { height: 62px; padding: 0 10px 0 36px; font-size: 15px; } }
+        .cta-wrap:hover .cta-btn { background: #F1F2FF; }
+
+        .cta-arrow {
+            width: 38px; height: 38px; border-radius: 999px; display: grid; place-items: center;
+            background: #4F46E5; color: #fff; font-size: 14px;
+            transition: transform .3s var(--ease), background-color .2s ease;
+        }
+        @media (min-width: 640px) { .cta-arrow { width: 44px; height: 44px; } }
+        .cta-wrap:hover .cta-arrow { transform: translateX(3px); background: #4338CA; }
+
         /* ---------- ВСТУПИТЕЛЬНАЯ АНИМАЦИЯ HERO ---------- */
         @keyframes intro-up {
             from { opacity: 0; transform: translateY(26px); filter: blur(10px); }
@@ -685,7 +729,7 @@
             font-size: 10px; font-weight: 700; color: #FDA4AF; background: rgba(244,63,94,0.12); vertical-align: 1px;
         }
 
-                /* ====================================================== */
+        /* ====================================================== */
         /*   #features: дополнения к .fx-* (редактор и печать)     */
         /* ====================================================== */
         /* 2 колонки на планшете (третья на всю ширину), 3 на десктопе */
@@ -1056,21 +1100,19 @@
             За&nbsp;15&nbsp;секунд ИИ выделит главное, составит задания с&nbsp;вариантами ответов и&nbsp;подготовит всё к&nbsp;уроку: ссылку с&nbsp;автопроверкой для&nbsp;учеников или бланк для&nbsp;печати на&nbsp;листах&nbsp;А4.
         </p>
 
-        <div class="intro mt-7 sm:mt-9 flex flex-col items-center gap-3 sm:gap-4 w-full" style="--t:.56s">
-            <div class="group relative inline-flex items-center justify-center p-[2px] rounded-full overflow-hidden transition-transform duration-300 hover:scale-[1.02] active:scale-[0.98]">
-                <div class="absolute inset-0 rounded-full animate-liquid-border-fast pointer-events-none"></div>
-                <a href="{% url 'create' %}"
-                   class="relative z-10 inline-flex items-center justify-center gap-2.5 h-11 sm:h-12 px-6 sm:px-8 rounded-full bg-indigo-600 text-white font-bold text-xs sm:text-sm shadow-[0_4px_24px_-2px_rgba(79,70,229,0.5),0_8px_24px_-4px_rgba(0,0,0,0.6)] group-hover:bg-[#111119] group-hover:shadow-[0_0_32px_rgba(99,102,241,0.45)] transition-all duration-300">
-                    <span class="uppercase tracking-wider">Сгенерировать тест бесплатно</span>
-                    <span class="w-5 h-5 rounded-full bg-white/20 group-hover:bg-white/10 flex items-center justify-center transition-transform duration-300 group-hover:translate-x-0.5">
-                        <svg class="icon text-[12px]"><use href="#i-arrow"/></svg>
-                    </span>
+        <div class="intro mt-8 sm:mt-10 flex flex-col items-center gap-4 sm:gap-5 w-full" style="--t:.56s">
+            <div class="cta-wrap">
+                <span class="cta-glow" aria-hidden="true"></span>
+                <span class="cta-ring" aria-hidden="true"></span>
+                <a href="{% url 'create' %}" class="cta-btn">
+                    <span>Сгенерировать тест бесплатно</span>
+                    <span class="cta-arrow"><svg class="icon"><use href="#i-arrow"/></svg></span>
                 </a>
             </div>
-            <div class="flex items-center gap-3 text-[11px] sm:text-xs text-zinc-500">
+            <div class="flex items-center gap-3 text-[11px] sm:text-xs text-zinc-400">
                 <span>1 тест без регистрации</span>
-                <span aria-hidden="true">•</span>
-                <span class="text-zinc-400">PDF, Word, TXT</span>
+                <span aria-hidden="true" class="text-zinc-600">•</span>
+                <span>PDF, Word, TXT</span>
             </div>
         </div>
 
@@ -1427,7 +1469,7 @@
                 <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 via-white to-zinc-300">и&nbsp;что меняется в&nbsp;работе</span>
             </h2>
             <p class="text-sm md:text-base text-zinc-400 max-w-xl mx-auto leading-relaxed">
-                Выберите роль&nbsp;&mdash; покажем, как было и&nbsp;как стало.
+                Выберите свою роль&nbsp;&mdash; покажем, как было и&nbsp;как стало.
             </p>
         </div>
 
@@ -1439,7 +1481,7 @@
                     <button type="button" class="uc-tab" role="tab" id="uc-tab-uni" aria-controls="uc-p-uni" aria-selected="false" tabindex="-1" data-sub="Билеты к&nbsp;зачётам и&nbsp;экзаменам по&nbsp;курсу лекций">ВУЗы и&nbsp;кафедры</button>
                     <button type="button" class="uc-tab" role="tab" id="uc-tab-student" aria-controls="uc-p-student" aria-selected="false" tabindex="-1" data-sub="Самопроверка перед зачётом по&nbsp;своим конспектам">Студенты</button>
                     <button type="button" class="uc-tab" role="tab" id="uc-tab-tutor" aria-controls="uc-p-tutor" aria-selected="false" tabindex="-1" data-sub="Домашние задания ссылкой и&nbsp;входная диагностика">Репетиторы</button>
-                    <button type="button" class="uc-tab" role="tab" id="uc-tab-hr" aria-controls="uc-p-hr" aria-selected="false" tabindex="-1" data-sub="Аттестация по&nbsp;регламентам и&nbsp;инструкциям по&nbsp;ТБ">Обучение персонала</button>
+                    <button type="button" class="uc-tab" role="tab" id="uc-tab-hr" aria-controls="uc-p-hr" aria-selected="false" tabindex="-1" data-sub="Аттестация по&nbsp;регламентам и&nbsp;инструкциям">Обучение персонала</button>
                 </div>
                 <button type="button" class="uc-play" aria-pressed="false" aria-label="Остановить смену сценариев">
                     <svg class="i-pause" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><rect x="3.5" y="2.5" width="3" height="11" rx="1"/><rect x="9.5" y="2.5" width="3" height="11" rx="1"/></svg>
@@ -1542,7 +1584,7 @@
                     <div class="uc-copy">
                         <p class="uc-pain"><span class="uc-strike">Аттестация по&nbsp;регламентам растягивается на&nbsp;недели, а&nbsp;итоги сводят вручную.</span></p>
                         <div class="uc-in" style="--a:.55s">
-                            <h3 class="uc-title">Регламент → тест → отчёт для&nbsp;отдела</h3>
+                            <h3 class="uc-title">→ Регламент <br>→ Тест <br> → Отчет для&nbsp;отдела</h3>
                             <p class="uc-text">Загрузите инструкцию по&nbsp;охране труда или стандарт компании. Сотрудники проходят тест по&nbsp;ссылке, итоги собираются в&nbsp;одну таблицу.</p>
                             <ul class="uc-facts"><li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>DOCX и&nbsp;PDF до&nbsp;25&nbsp;МБ</li><li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>Результат каждого</li><li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>Выгрузка в&nbsp;Excel</li></ul>
                         </div>

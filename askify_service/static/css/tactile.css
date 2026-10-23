@@ -1,0 +1,81 @@
+/* ==========================================================
+   Тактильный отклик кнопок — Летучка
+   Нажатие: быстро «продавливается» (90 мс), отпускание: мягко
+   пружинит обратно. Главные кнопки дополнительно дают «волну»
+   от точки касания. Классы ставит tactile.js, HTML трогать не нужно.
+   ========================================================== */
+
+:root {
+    --t-in: cubic-bezier(.2, 0, .2, 1);         /* вдавливание: резко и коротко */
+    --t-out: cubic-bezier(.34, 1.56, .64, 1);   /* отпускание: с лёгкой пружиной */
+}
+
+.tactile {
+    --press: .96;                               /* глубина нажатия, меняется по типу элемента */
+    transition:
+        transform .5s var(--t-out),
+        box-shadow .2s ease,
+        background-color .2s ease,
+        color .2s ease,
+        filter .2s ease;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;                 /* без задержки 300 мс на телефонах */
+    -webkit-user-select: none;
+    user-select: none;
+}
+.tactile.is-pressed {
+    transform: scale(var(--press)) translateY(1px);
+    filter: brightness(.92);
+    transition-duration: .09s;
+    transition-timing-function: var(--t-in);
+}
+
+/* Глубина по типу: крупные карточки — едва заметно, мелкие иконки — глубже */
+.opt.tactile, .mode.tactile { --press: .985; }
+.dock-btn.tactile, .dock-mobile a.tactile { --press: .9; }
+
+/* Кнопка оплаты описана через id, поэтому перекрываем точечно */
+#payment-button.tactile {
+    transition: transform .5s var(--t-out), background-color .15s ease, filter .15s ease;
+}
+#payment-button.tactile:active { transform: none; }
+#payment-button.tactile.is-pressed {
+    transform: scale(.97);
+    transition-duration: .09s;
+    transition-timing-function: var(--t-in);
+}
+
+/* «К оплате» центрирована через translate, его надо сохранить */
+.to-pay.tactile { transition: transform .5s var(--t-out), opacity .25s ease, filter .15s ease; }
+.to-pay.tactile.is-pressed {
+    transform: translate(-50%, 1px) scale(.95);
+    transition-duration: .09s;
+    transition-timing-function: var(--t-in);
+}
+
+/* Волна от точки касания (только у главных кнопок) */
+.tactile--ripple { overflow: hidden; isolation: isolate; }
+.tactile--ripple::after {
+    content: '';
+    position: absolute; z-index: -1;            /* под текстом, над фоном кнопки */
+    left: var(--rx, 50%); top: var(--ry, 50%);
+    width: var(--rs, 0px); height: var(--rs, 0px);
+    margin: calc(var(--rs, 0px) / -2) 0 0 calc(var(--rs, 0px) / -2);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .22);
+    opacity: 0; transform: scale(.15);
+    pointer-events: none;
+}
+.tactile--ripple.is-rippling::after { animation: tactile-ripple .65s cubic-bezier(.16, 1, .3, 1); }
+@keyframes tactile-ripple {
+    0%   { opacity: 1; transform: scale(.15); }
+    100% { opacity: 0; transform: scale(1); }
+}
+
+/* Кто просит меньше движения — только затемнение, без масштаба и волны */
+@media (prefers-reduced-motion: reduce) {
+    .tactile.is-pressed,
+    #payment-button.tactile.is-pressed { transform: none; }
+    .to-pay.tactile.is-pressed { transform: translate(-50%, 0); }
+    .tactile--ripple.is-rippling::after { animation: none; }
+}

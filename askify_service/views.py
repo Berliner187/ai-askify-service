@@ -1897,7 +1897,9 @@ class FileUploadView(View):
             }
 
             if kind == "image":
-                return self._fail("image_file")
+                text = self._ocr_with_openai(tmp_path)
+                if len(text.strip()) < self.MIN_TEXT_LEN:
+                    return self._fail("image_file")
 
             handler = handlers.get(kind)
             if handler is None:
@@ -2032,6 +2034,13 @@ class FileUploadView(View):
                 tracer_l.info(f"[DOC] pdftotext: извлечено {len(out)} символов.")
                 return out
 
+        tracer_l.info("[DOC] Текстовый слой в PDF не найден. Запускаем OpenAI OCR...")
+        ocr_text = self._ocr_with_openai(path)
+        if len(ocr_text.strip()) >= self.MIN_TEXT_LEN:
+            tracer_l.info(f"[DOC] OpenAI OCR: успешно извлечено {len(ocr_text)} символов.")
+            self.parse_error = None
+            return ocr_text
+
         if not self.parse_error:
             self.parse_error = "scanned_pdf"
         return text
@@ -2039,6 +2048,115 @@ class FileUploadView(View):
     def _fail_text(self, reason):
         self.parse_error = reason
         return ""
+    
+    # ------------------------------------------------------------------
+    # OCR ЧЕРЕЗ OPENAI (ДЛЯ СКАНОВ)
+    # ------------------------------------------------------------------
+    def _ocr_with_openai(self, path):
+        """Распознавание сканов документов через OpenAI с поддержкой прокси."""
+        import base64
+        import httpx
+        from django.conf import settings
+        from openai import OpenAI
+
+        api_key = getattr(settings, "OPENAI_API_KEY", None) or os.getenv("OPENAI_API_KEY")
+        proxy_url = getattr(settings, "OPENAI_PROXY_URL", None) or os.getenv("OPENAI_PROXY_URL")
+        # По умолчанию gpt-4o-mini (быстрый, дешёвый и отлично читает сканы)
+        model = getattr(settings, "OPENAI_OCR_MODEL", "gpt-4o-mini")
+
+        if not api_key:
+            tracer_l.warning("[DOC] OCR пропущен: OPENAI_API_KEY не найден в settings/env.")
+            return ""
+
+        try:
+            client_kwargs = {
+                "api_key": api_key,
+                "timeout": 120.0,
+            }
+
+            if proxy_url:
+                proxy_url = proxy_url.strip()
+                # Если в переменной указан адрес API-шлюза (reverse-proxy, напр. https://proxy.com/v1)
+                if "/v1" in proxy_url or "api" in proxy_url:
+                    client_kwargs["base_url"] = proxy_url
+                else:
+                    # Если это классический forward-прокси (http://ip:port или socks5://...)
+                    try:
+                        client_kwargs["http_client"] = httpx.Client(proxy=proxy_url, timeout=120.0)
+                    except TypeError:
+                        client_kwargs["http_client"] = httpx.Client(proxies=proxy_url, timeout=120.0)
+
+            client = OpenAI(**client_kwargs)
+
+            with open(path, "rb") as f:
+                raw_bytes = f.read()
+
+            b64_data = base64.b64encode(raw_bytes).decode("utf-8")
+
+            tracer_l.info(f"[DOC] Отправляем скан в OpenAI ({model}) через прокси для OCR...")
+
+            # 1. Пробуем передать напрямую Base64 PDF
+            try:
+                response = client.chat.completions.create(
+                    model=model,
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": [
+                                {
+                                    "type": "file",
+                                    "file": {
+                                        "filename": os.path.basename(path),
+                                        "file_data": f"data:application/pdf;base64,{b64_data}",
+                                    },
+                                },
+                                {
+                                    "type": "text",
+                                    "text": (
+                                        "Извлеки и распознай весь текст из этого документа (OCR). "
+                                        "Сохраняй логический порядок, заголовки и таблицы. Не сокращай. "
+                                        "Выведи ТОЛЬКО распознанный текст без приветствий, пояснений и вводных слов."
+                                    ),
+                                },
+                            ],
+                        }
+                    ],
+                    max_tokens=16000,
+                )
+                return (response.choices[0].message.content or "").strip()
+
+            except Exception as direct_err:
+                tracer_l.info(f"[DOC] Прямая передача base64 не удалась ({direct_err}), пробуем через Files API...")
+                # 2. Фолбэк через Files API (на случай, если прокси-шлюз не пропускает inline base64)
+                with open(path, "rb") as f:
+                    file_obj = client.files.create(file=f, purpose="user_data")
+                try:
+                    response = client.chat.completions.create(
+                        model=model,
+                        messages=[
+                            {
+                                "role": "user",
+                                "content": [
+                                    {"type": "file", "file": {"file_id": file_obj.id}},
+                                    {
+                                        "type": "text",
+                                        "text": "Распознай и извлеки весь текст из этого документа (OCR). Выведи только текст.",
+                                    },
+                                ],
+                            }
+                        ],
+                        max_tokens=16000,
+                    )
+                    return (response.choices[0].message.content or "").strip()
+                finally:
+                    try:
+                        client.files.delete(file_obj.id)
+                    except Exception:
+                        pass
+
+        except Exception as e:
+            tracer_l.error(f"[DOC] Ошибка при выполнении OpenAI OCR: {e}", exc_info=True)
+            return ""
 
     # ------------------------------------------------------------------
     # TXT
@@ -2544,6 +2662,7 @@ class FileUploadView(View):
 
             env = os.environ.copy()
             env["HOME"] = work_dir
+            env["PATH"] = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:" + env.get("PATH", "")
 
             cmd = [
                 soffice_bin,
@@ -3385,8 +3504,15 @@ def main_test_card(request, survey_id):
         display_author = "Преподаватель"
     else:
         display_author = raw_username if len(raw_username) < 40 else "Преподаватель"
-
-    date_create = survey.created_at.strftime("%d.%m.%Y")
+    
+    MONTHS_RU = {
+        1: "января", 2: "февраля", 3: "марта", 4: "апреля",
+        5: "мая", 6: "июня", 7: "июля", 8: "августа",
+        9: "сентября", 10: "октября", 11: "ноября", 12: "декабря"
+    }
+    
+    dt = survey.created_at
+    date_create = f"{dt.day} {MONTHS_RU[dt.month]} {dt.year}"
     subscription_level = get_subscription_level(request)
 
     tracer_l.info(f"{request.user.username} {client_ip} --- preview {survey.title} (indexed={is_indexable})")
@@ -7896,8 +8022,8 @@ class PaymentInitiateView(View):
 
         print(int(amount), description, plan_prices.get(description))
 
-        # if int(amount) != plan_prices.get(description):
-        #     tracer_l.warning(f'ADMIN. {request.user.username}: Неверная сумма. code 400')
+        if int(amount) != plan_prices.get(description):
+            tracer_l.warning(f'ADMIN. {request.user.username}: Неверная сумма. code 400 - {int(amount)} - {plan_prices.get(description)}')
         #     return JsonResponse({'Success': False, 'Message': 'Неверная сумма.'}, status=400)
 
         order_id = generate_payment_id()
@@ -10562,7 +10688,7 @@ def _detect_subject_tag(title):
 def api_public_recent_surveys(request):
     """
     Публичная ручка ленты активности для лендинга:
-    возвращает 12 последних видимых тестов с кешированием на 15 секунд.
+    возвращает 12 последних тестов с кешированием на 15 секунд.
     """
     cache_key = "landing_recent_surveys_feed_v1"
     cached_data = cache.get(cache_key)
@@ -10573,8 +10699,9 @@ def api_public_recent_surveys(request):
     now = timezone.now()
 
     surveys = (
-        Survey.objects.filter(is_visible=True)
+        Survey.objects.filter()
         .exclude(title__isnull=True)
+        .exclude(title="")
         .only("survey_id", "title", "questions_count", "created_at")
         .order_by("-created_at")[:12]
     )
