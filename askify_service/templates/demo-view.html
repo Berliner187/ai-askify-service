@@ -13,7 +13,56 @@
     <meta name="csrf-token" content="{{ csrf_token }}">
     {% load static %}
     <link rel="icon" href="{% static 'img/favicon.ico' %}" type="image/ico">
-    
+
+    <!--
+        MOTION BOOTSTRAP — выполняется ДО первой отрисовки, чтобы не было вспышки контента.
+        Решает: играть ли интро-сборку теста (первый запуск этого теста в этом браузере).
+
+        Ручное управление для QA:
+          ?intro=1   — форсировать интро (игнорирует флаг «уже видел»)
+          ?intro=0   — выключить интро на эту загрузку
+          LetychkaIntro.replay()   — проиграть заново без перезагрузки
+          LetychkaIntro.reset()    — сбросить флаг для этого теста
+          LetychkaIntro.resetAll() — сбросить флаги для всех тестов
+          LetychkaIntro.disable() / .enable() — глобально выкл/вкл в этом браузере
+    -->
+    <script>
+        (function () {
+            var d = document.documentElement;
+            d.classList.add('js-anim');
+            window.LETYCHKA_INTRO = {
+                key: 'letychka:intro:v1:{{ survey_id }}',
+                prefix: 'letychka:intro:v1:',
+                disabledKey: 'letychka:intro:disabled',
+                // Кому показываем интро. Убери роль из списка — и ей интро не будет.
+                roles: ['guest_owner', 'guest', 'owner', 'visitor'],
+                role: '{{ viewer_role|default:"guest" }}',
+                count: {{ questions|length|default:0 }}
+            };
+            try {
+                var cfg = window.LETYCHKA_INTRO;
+                var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                var p = new URLSearchParams(location.search).get('intro');
+                var quick = sessionStorage.getItem('letychka:quick') === '1';
+                if (quick) { sessionStorage.removeItem('letychka:quick'); d.classList.add('rv-fast'); }
+                var force = (p === '1' || p === 'force');
+                var off = (p === '0' || p === 'off' || localStorage.getItem(cfg.disabledKey) === '1');
+                var seen = localStorage.getItem(cfg.key) === '1';
+                var roleOk = cfg.roles.indexOf(cfg.role) !== -1;
+                if (cfg.count > 0 && !reduce && (force || (!off && !quick && !seen && roleOk))) {
+                    d.classList.add('intro-pending');
+                }
+            } catch (e) {}
+            // Страховка: если JS упал — показываем всё как есть.
+            setTimeout(function () {
+                if (!window.__rvBooted) {
+                    d.classList.remove('intro-pending', 'intro-running');
+                    d.classList.add('anim-failsafe');
+                }
+            }, 5000);
+        })();
+    </script>
+
     {% if debug %}
         <script src="https://cdn.tailwindcss.com"></script>
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
@@ -30,7 +79,7 @@
             for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
             k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
             (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
-        
+
             ym(98823704, "init", {
                 clickmap:true,
                 trackLinks:true,
@@ -41,7 +90,7 @@
     </script>
     <noscript><div><img src="https://mc.yandex.ru/watch/98823704" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
     <!-- /Yandex.Metrika counter -->
-    
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -57,7 +106,12 @@
             --card-border: rgba(255, 255, 255, 0.08);
             --spring-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
             --spring-smooth: cubic-bezier(0.16, 1, 0.3, 1);
+            --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+            --ease-io: cubic-bezier(0.65, 0, 0.35, 1);
         }
+
+        /* Резерв под скроллбар: на время интро скролл блокируется, без резерва макет прыгнет */
+        html { scrollbar-gutter: stable; }
 
         body {
             background: var(--bg-main);
@@ -72,7 +126,7 @@
         }
 
         .font-mono-nums {
-            font-family: 'JetBrains Mono', monospace;
+            font-family: 'Golos Text';
             letter-spacing: -0.03em;
         }
 
@@ -91,7 +145,7 @@
             border: 1px solid rgba(255, 255, 255, 0.12);
             box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.25);
             border-radius: 9999px;
-            transition: 
+            transition:
                 max-width 0.45s var(--spring-bounce),
                 padding 0.35s var(--spring-smooth),
                 background-color 0.3s ease,
@@ -162,10 +216,13 @@
 
         /* ИНТЕРАКТИВНЫЕ СТРОКИ ОТВЕТОВ */
         .option-row {
+            position: relative;
+            overflow: hidden;
+            isolation: isolate;
             cursor: pointer;
             user-select: none;
             -webkit-user-select: none;
-            transition: transform 0.18s var(--spring-bounce), background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+            transition: transform 0.18s var(--spring-bounce), background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
         }
         .option-row:hover:not(.is-locked) {
             transform: translateX(3px);
@@ -175,12 +232,474 @@
         .option-row:active:not(.is-locked) {
             transform: scale(0.99);
         }
+
+        /* ==========================================================================
+           MOTION: ПОЯВЛЕНИЕ БЛОКОВ
+           Анимируем только opacity / translate / scale / filter — НЕ transform,
+           чтобы не ломать tailwind-трансформы (-translate-y-1/2 и т.п.) и hover.
+           Fill-mode = backwards: после окончания на элементе не остаётся filter,
+           иначе ломается backdrop-filter у glass-панелей.
+           ========================================================================== */
+        html.js-anim [data-rv]:not(.rv-in):not(.rv-done) { opacity: 0; }
+        html.anim-failsafe [data-rv] { opacity: 1 !important; animation: none !important; }
+
+        @keyframes rv-rise {
+            from { opacity: 0; translate: 0 16px; filter: blur(8px); }
+            to   { opacity: 1; translate: 0 0;    filter: blur(0); }
+        }
+        @keyframes rv-drop {
+            from { opacity: 0; translate: 0 -12px; scale: 0.97; filter: blur(6px); }
+            to   { opacity: 1; translate: 0 0;     scale: 1;    filter: blur(0); }
+        }
+        @keyframes rv-left {
+            from { opacity: 0; translate: -18px 0; filter: blur(6px); }
+            to   { opacity: 1; translate: 0 0;     filter: blur(0); }
+        }
+        @keyframes rv-fade { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes rv-opt {
+            from { opacity: 0; translate: -10px 0; }
+            to   { opacity: 1; translate: 0 0; }
+        }
+        @keyframes rv-num {
+            from { opacity: 0; translate: 0 70%; }
+            to   { opacity: 1; translate: 0 0; }
+        }
+        @keyframes rv-text {
+            from { opacity: 0; translate: 0 6px; filter: blur(4px); }
+            to   { opacity: 1; translate: 0 0;   filter: blur(0); }
+        }
+        @keyframes rv-glint {
+            0%   { opacity: 0; scale: 0 1; }
+            25%  { opacity: 1; }
+            70%  { opacity: 1; scale: 1 1; }
+            100% { opacity: 0; scale: 1 1; }
+        }
+
+        [data-rv].rv-in {
+            animation: rv-rise 0.75s var(--ease-out) backwards;
+            animation-delay: var(--d, 0ms);
+        }
+        [data-rv="drop"].rv-in { animation-name: rv-drop; }
+        [data-rv="left"].rv-in { animation-name: rv-left; }
+        [data-rv="fade"].rv-in { animation-name: rv-fade; animation-duration: 0.6s; }
+
+        /* Карточка вопроса: внутренняя хореография */
+        .question-card::before {
+            content: '';
+            position: absolute;
+            left: 28px; right: 28px; top: -1px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+            transform-origin: left center;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .question-card.rv-in::before {
+            animation: rv-glint 1.1s var(--ease-out) backwards;
+            animation-delay: calc(var(--d, 0ms) + 80ms);
+        }
+        .question-card.rv-in .q-num-inner {
+            display: inline-block;
+            animation: rv-num 0.55s var(--ease-out) backwards;
+            animation-delay: calc(var(--d, 0ms) + 60ms);
+        }
+        .question-card.rv-in .q-title {
+            animation: rv-text 0.6s var(--ease-out) backwards;
+            animation-delay: calc(var(--d, 0ms) + 100ms);
+        }
+        .question-card.rv-in .option-row {
+            animation: rv-opt 0.55s var(--ease-out) backwards;
+            animation-delay: calc(var(--d, 0ms) + 170ms + var(--i, 0) * 55ms);
+        }
+        /* «Приземление» из интро: сама карточка уже на месте, анимируем только начинку */
+        .question-card.rv-in.rv-land { animation: none; }
+
+        /* Быстрый режим после softReload (сохранение вопроса и т.п.) — без каскада */
+        html.rv-fast [data-rv].rv-in { animation-name: rv-fade !important; animation-duration: 0.3s !important; animation-delay: 0ms !important; }
+        html.rv-fast .question-card.rv-in .option-row,
+        html.rv-fast .question-card.rv-in .q-title,
+        html.rv-fast .question-card.rv-in .q-num-inner,
+        html.rv-fast .question-card.rv-in::before { animation: none !important; }
+
+        /* ==========================================================================
+           MOTION: ФИДБЕК НА ОТВЕТ
+           ========================================================================== */
+        .option-row::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            z-index: -1;
+            background: linear-gradient(100deg, transparent 15%, var(--fx-color, rgba(16, 185, 129, 0.22)) 50%, transparent 85%);
+            translate: -110% 0;
+            pointer-events: none;
+        }
+        .option-row.fx-ok::after   { animation: fx-sweep 0.75s var(--ease-out); }
+        .option-row.fx-hint::after { animation: fx-sweep 0.9s var(--ease-out) backwards; animation-delay: var(--fx-d, 120ms); }
+        .option-row.fx-bad         { animation: fx-shake 0.34s var(--ease-io); }
+        .option-row.fx-bad::after  { --fx-color: rgba(244, 63, 94, 0.2); animation: fx-sweep 0.55s var(--ease-out); }
+        .opt-badge.fx-pop          { animation: fx-pop 0.42s var(--spring-bounce); }
+
+        @keyframes fx-sweep { from { translate: -110% 0; } to { translate: 110% 0; } }
+        @keyframes fx-shake {
+            0%, 100% { translate: 0 0; }
+            20% { translate: -5px 0; }
+            40% { translate: 4px 0; }
+            60% { translate: -3px 0; }
+            80% { translate: 2px 0; }
+        }
+        @keyframes fx-pop {
+            0%   { scale: 0.5; }
+            60%  { scale: 1.15; }
+            100% { scale: 1; }
+        }
+
+        /* Счётчик в бейдже «Вопросы» */
+        .badge-tick { animation: fx-pop 0.3s var(--spring-bounce); }
+
+        /* ==========================================================================
+           MOTION: МОДАЛКИ
+           ========================================================================== */
+        @keyframes m-fade-in  { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes m-fade-out { from { opacity: 1; } to { opacity: 0; } }
+        @keyframes m-pop-in {
+            from { opacity: 0; translate: 0 14px; scale: 0.965; filter: blur(4px); }
+            to   { opacity: 1; translate: 0 0;    scale: 1;     filter: blur(0); }
+        }
+        @keyframes m-pop-out {
+            from { opacity: 1; translate: 0 0;   scale: 1; }
+            to   { opacity: 0; translate: 0 8px; scale: 0.98; }
+        }
+        .m-in  > .fixed                 { animation: m-fade-in 0.28s ease both; }
+        .m-in  .spring-modal-content    { animation: m-pop-in 0.42s var(--ease-out) both; }
+        .m-out > .fixed                 { animation: m-fade-out 0.2s ease both; }
+        .m-out .spring-modal-content    { animation: m-pop-out 0.2s ease both; }
+
+        /* Тонкий бегущий штрих по верхней грани CTA-блоков */
+        .cta-trace { position: relative; }
+        .cta-trace::after {
+            content: '';
+            position: absolute;
+            top: -1px; left: 0;
+            width: 38%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+            opacity: 0;
+            pointer-events: none;
+        }
+        .cta-trace.rv-in::after { animation: cta-run 1.6s var(--ease-io) backwards; animation-delay: calc(var(--d, 0ms) + 350ms); }
+        @keyframes cta-run {
+            0%   { opacity: 0; translate: -40% 0; }
+            15%  { opacity: 1; }
+            85%  { opacity: 1; }
+            100% { opacity: 0; translate: 260% 0; }
+        }
+
+        /* ==========================================================================
+           INTRO STAGE — «сборка теста» при первом открытии
+           Строго: монохром, тонкие линии, моно-цифры. Без свечений и градиентной каши.
+           ========================================================================== */
+        #intro-stage {
+            position: fixed;
+            inset: 0;
+            z-index: 70;
+            display: none;
+            place-items: center;
+            background-color: var(--bg-main);
+            transition: background-color 0.5s var(--ease-io);
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+        html.intro-pending #intro-stage,
+        html.intro-running #intro-stage { display: grid; }
+        html.intro-running, html.intro-running body { overflow: hidden; }
+
+        #intro-stage .is-grid {
+            position: absolute;
+            inset: 0;
+            background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+            background-size: 24px 24px;
+            -webkit-mask-image: radial-gradient(ellipse 55% 50% at 50% 50%, #000 0%, transparent 78%);
+                    mask-image: radial-gradient(ellipse 55% 50% at 50% 50%, #000 0%, transparent 78%);
+            opacity: 0;
+            transition: opacity 0.8s ease;
+        }
+
+        #intro-stage .is-chrome {
+            opacity: 0;
+            translate: 0 8px;
+            transition: opacity 0.5s var(--ease-out), translate 0.6s var(--ease-out);
+        }
+        /* Пока JS грузится — сцена уже собирается чистым CSS, без пустого экрана */
+        @keyframes is-chrome-in { from { opacity: 0; translate: 0 8px; } to { opacity: 1; translate: 0 0; } }
+        @keyframes is-grid-in { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes is-corner-in { to { translate: 0 0; } }
+        html.intro-pending #intro-stage .is-grid { animation: is-grid-in 0.8s ease both; }
+        html.intro-pending #intro-stage .is-chrome { animation: is-chrome-in 0.5s var(--ease-out) both; }
+        html.intro-pending #intro-stage .is-chrome.c2 { animation-delay: 0.07s; }
+        html.intro-pending #intro-stage .is-chrome.c3 { animation-delay: 0.14s; }
+        html.intro-pending #intro-stage .is-frame i { animation: is-corner-in 0.6s var(--ease-out) 0.1s both; }
+
+        #intro-stage.is-on .is-grid { opacity: 1; }
+        #intro-stage.is-on .is-chrome { opacity: 1; translate: 0 0; }
+        #intro-stage.is-on .is-chrome.c1 { transition-delay: 0.05s; }
+        #intro-stage.is-on .is-chrome.c2 { transition-delay: 0.12s; }
+        #intro-stage.is-on .is-chrome.c3 { transition-delay: 0.2s; }
+
+        #intro-stage.is-out { background-color: rgba(17, 17, 25, 0); pointer-events: none; }
+        #intro-stage.is-out .is-grid { opacity: 0; transition-duration: 0.35s; }
+        #intro-stage.is-out .is-chrome { opacity: 0; translate: 0 -6px; transition-duration: 0.3s; transition-delay: 0s; }
+
+        .is-top {
+            position: absolute;
+            top: 28px; left: 0; right: 0;
+            display: flex; justify-content: center; align-items: center; gap: 10px;
+            font: 500 11px/1 'JetBrains Mono', monospace;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: #71717A;
+        }
+        .is-top .is-brand { color: #E4E4E7; }
+        .is-top .is-dot {
+            width: 6px; height: 6px; border-radius: 999px;
+            background: #3F3F46;
+            transition: background-color 0.3s ease;
+        }
+        .is-top.is-ready .is-dot { background: #34D399; }
+
+        .is-center {
+            position: relative;
+            display: flex; flex-direction: column; align-items: center;
+        }
+
+        .is-drum {
+            position: relative;
+            width: var(--W);
+            height: calc(var(--H) + 240px);
+            display: grid;
+            place-items: center;
+            -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 30%, #000 70%, transparent 100%);
+                    mask-image: linear-gradient(to bottom, transparent 0%, #000 30%, #000 70%, transparent 100%);
+        }
+        .is-viewport {
+            position: relative;
+            width: var(--W);
+            height: var(--H);
+            perspective: 1100px;
+        }
+        .is-ring {
+            position: absolute;
+            inset: 0;
+            transform-style: preserve-3d;
+            will-change: transform;
+        }
+
+        .is-frame {
+            position: absolute;
+            left: 50%; top: 50%;
+            width: calc(var(--W) + 30px);
+            height: calc(var(--H) + 22px);
+            translate: -50% -50%;
+            pointer-events: none;
+        }
+        .is-frame i {
+            position: absolute;
+            width: 14px; height: 14px;
+            border-color: rgba(255, 255, 255, 0.45);
+            border-style: solid;
+            border-width: 0;
+            transition: translate 0.5s var(--ease-out), border-color 0.3s ease;
+        }
+        .is-frame i:nth-child(1) { left: 0;  top: 0;    border-left-width: 1.5px;  border-top-width: 1.5px;    border-top-left-radius: 6px;     translate: -8px -8px; }
+        .is-frame i:nth-child(2) { right: 0; top: 0;    border-right-width: 1.5px; border-top-width: 1.5px;    border-top-right-radius: 6px;    translate: 8px -8px; }
+        .is-frame i:nth-child(3) { left: 0;  bottom: 0; border-left-width: 1.5px;  border-bottom-width: 1.5px; border-bottom-left-radius: 6px;  translate: -8px 8px; }
+        .is-frame i:nth-child(4) { right: 0; bottom: 0; border-right-width: 1.5px; border-bottom-width: 1.5px; border-bottom-right-radius: 6px; translate: 8px 8px; }
+        #intro-stage.is-on .is-frame i { translate: 0 0; }
+        #intro-stage.is-lock .is-frame i { border-color: rgba(255, 255, 255, 0.9); }
+
+        .is-meta {
+            margin-top: 6px;
+            width: var(--W);
+            display: flex; flex-direction: column; align-items: center; gap: 10px;
+        }
+        .is-count {
+            display: flex; align-items: baseline; gap: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: -0.04em;
+        }
+        .is-count b { font-size: 44px; font-weight: 700; color: #FAFAFA; line-height: 1; }
+        .is-count span { font-size: 18px; font-weight: 500; color: #52525B; }
+        .is-title {
+            max-width: 100%;
+            font: 600 14px/1.35 'Wix Madefor Display', sans-serif;
+            color: #A1A1AA;
+            text-align: center;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .is-bar {
+            margin-top: 6px;
+            width: min(240px, 70%);
+            height: 1px;
+            background: rgba(255, 255, 255, 0.08);
+            overflow: hidden;
+        }
+        .is-bar i {
+            display: block; height: 100%;
+            background: #FAFAFA;
+            transform-origin: left center;
+            transform: scaleX(0);
+        }
+
+        .is-skip {
+            position: absolute;
+            bottom: 28px; left: 50%;
+            translate: -50% 0;
+            font: 500 11px/1 'JetBrains Mono', monospace;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #52525B;
+            padding: 8px 12px;
+            border-radius: 999px;
+            transition: color 0.2s ease;
+        }
+        .is-skip:hover { color: #D4D4D8; }
+        .is-skip kbd {
+            margin-left: 6px;
+            padding: 2px 5px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 4px;
+            font: inherit;
+            font-size: 10px;
+        }
+        @media (max-width: 1023px) { .is-skip { bottom: 22px; } }
+
+        /* Карточки-призраки (в барабане и в полёте) */
+        .gh {
+            position: absolute;
+            inset: 0;
+            padding: 20px 22px;
+            border-radius: 24px;
+            background: #17171F;
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            overflow: hidden;
+            transition: border-color 0.15s ease;
+            color: #E4E4E7;
+        }
+        .gh.is-front { border-color: rgba(255, 255, 255, 0.26); }
+        #intro-stage.is-lock .gh.is-front { border-color: rgba(255, 255, 255, 0.55); }
+        .gh-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+        .gh-num {
+            width: 28px; height: 28px; border-radius: 10px;
+            display: inline-flex; align-items: center; justify-content: center;
+            background: #111119;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            font: 700 11px/1 'JetBrains Mono', monospace;
+            color: #D4D4D8;
+            flex-shrink: 0;
+        }
+        .gh-type {
+            font: 500 10px/1 'JetBrains Mono', monospace;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #71717A;
+        }
+        .gh-q {
+            font: 600 15px/1.35 'Wix Madefor Display', sans-serif;
+            letter-spacing: -0.02em;
+            color: #F4F4F5;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .gh-opts { display: flex; gap: 6px; margin-top: 14px; }
+        .gh-opts i {
+            display: block;
+            height: 6px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.09);
+        }
+        .intro-flight {
+            position: fixed;
+            inset: 0;
+            z-index: 71;
+            pointer-events: none;
+        }
+        .intro-flight .gh { inset: auto; position: fixed; will-change: left, top, width, height, opacity; }
+
+        /* Dev-переключатель интро (DEBUG / staff) */
+        #intro-dev {
+            position: fixed;
+            right: 16px; bottom: 84px;
+            z-index: 45;
+            display: flex; gap: 4px;
+            padding: 4px;
+            border-radius: 999px;
+            background: rgba(17, 17, 25, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            font: 500 10px/1 'JetBrains Mono', monospace;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+        @media (min-width: 1024px) { #intro-dev { bottom: 16px; } }
+        #intro-dev button {
+            padding: 7px 10px;
+            border-radius: 999px;
+            color: #A1A1AA;
+            transition: background-color 0.15s, color 0.15s;
+        }
+        #intro-dev button:hover { background: rgba(255, 255, 255, 0.08); color: #FAFAFA; }
+
+        @media (prefers-reduced-motion: reduce) {
+            html.js-anim [data-rv] { opacity: 1 !important; }
+            [data-rv].rv-in, [data-rv].rv-in *, [data-rv].rv-in::before,
+            .option-row, .option-row::after, .opt-badge,
+            .m-in .spring-modal-content, .m-out .spring-modal-content { animation: none !important; }
+            #intro-stage { display: none !important; }
+        }
     </style>
 </head>
 <body class="min-h-full flex flex-col antialiased selection:bg-indigo-600 selection:text-white">
 
+    <!-- ============================================================== -->
+    <!--   INTRO STAGE (рисуется до JS, чтобы не было вспышки контента) -->
+    <!-- ============================================================== -->
+    <div id="intro-stage" aria-hidden="true">
+        <div class="is-grid"></div>
+
+        <div class="is-top is-chrome c1" id="is-top">
+            <span class="is-dot"></span>
+            <span class="is-brand">Летучка</span>
+            <span>/</span>
+            <span id="is-step">сборка теста</span>
+        </div>
+
+        <div class="is-center">
+            <div class="is-drum is-chrome c2">
+                <div class="is-viewport">
+                    <div class="is-ring" id="is-ring"></div>
+                </div>
+                <div class="is-frame"><i></i><i></i><i></i><i></i></div>
+            </div>
+
+            <div class="is-meta is-chrome c3">
+                <div class="is-count">
+                    <b id="is-cur">00</b><span>/</span><span id="is-total">{{ questions|length|stringformat:"02d" }}</span>
+                </div>
+                <div class="is-title">{{ title }}</div>
+                <div class="is-bar"><i id="is-bar"></i></div>
+            </div>
+        </div>
+
+        <button type="button" class="is-skip is-chrome c3" id="is-skip">Пропустить<kbd>Esc</kbd></button>
+    </div>
+
     <!-- ЛЕВЫЙ ВЕРТИКАЛЬНЫЙ ДОК (DESKTOP) -->
-    <aside class="hidden lg:flex fixed left-5 top-1/2 -translate-y-1/2 flex-col items-center gap-6 py-6 px-3.5 glass-panel rounded-[28px] z-40 shadow-2xl">
+    <aside data-rv="left" data-rv-order="0" class="hidden lg:flex fixed left-5 top-1/2 -translate-y-1/2 flex-col items-center gap-6 py-6 px-3.5 glass-panel rounded-[28px] z-40 shadow-2xl">
         <a href="/" class="w-10 h-10 rounded-2xl bg-white/5 border border-white/5 text-gray-500 flex items-center justify-center hover:text-indigo-400 hover:bg-white/10 spring-btn" title="Главная">
             <img src="{% static 'img/logo.png' %}" alt="Logo" class="w-5 h-auto">
         </a>
@@ -216,14 +735,18 @@
     </aside>
 
     <!-- МОБИЛЬНЫЙ НИЖНИЙ DOCK -->
-    <nav class="lg:hidden fixed bottom-4 left-1/2 -translate-x-1/2 island-capsule rounded-full px-5 py-2 flex items-center gap-6 z-40 shadow-2xl">
-        <a href="/" class="text-gray-400 hover:text-white"><i class="fas fa-home text-base"></i></a>
+    <nav data-rv data-rv-order="5" class="lg:hidden fixed bottom-4 left-1/2 -translate-x-1/2 island-capsule rounded-full px-5 py-2 flex items-center gap-6 z-40 shadow-2xl">
+        <a href="/" class="w-10 h-10 rounded-2xl bg-white/5 border border-white/5 text-gray-500 flex items-center justify-center hover:text-indigo-400 hover:bg-white/10 spring-btn" title="Главная">
+            <img src="{% static 'img/logo.png' %}" alt="Logo" class="w-5 h-auto">
+        </a>
         <a href="{% url 'create' %}" class="w-9 h-9 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-600/30"><i class="fas fa-plus text-sm"></i></a>
         {% if username != 0 %}
             <a href="{% url 'history' %}" class="text-gray-400 hover:text-white"><i class="fa-sharp fa-solid fa-clock-rotate-left text-base"></i></a>
             <a href="{% url 'profile_redirect' %}" class="text-gray-400 hover:text-white"><i class="fas fa-user text-base"></i></a>
-        {% elif is_creator %}
+        {% elif is_guest_owner %}
             <button type="button" onclick="openRegisterModal('nav')" class="text-xs font-bold text-indigo-400">Сохранить</button>
+        {% else %}
+            <a href="{% url 'login' %}" class="text-gray-400 hover:text-white" title="Войти"><i class="fa-solid fa-right-to-bracket text-base"></i></a>
         {% endif %}
     </nav>
 
@@ -231,9 +754,9 @@
     <div class="lg:pl-28 flex-grow flex flex-col">
 
         <!-- DYNAMIC ISLAND HEADER -->
-        <header class="sticky top-4 z-40 px-4 flex justify-center pointer-events-none">
+        <header data-rv="drop" data-rv-order="0" class="sticky top-4 z-40 px-4 flex justify-center pointer-events-none">
             <div id="dynamic-island" class="island-capsule mode-header pointer-events-auto flex items-center justify-center relative overflow-hidden min-h-[48px]">
-                
+
                 <!-- 1. ДЕФОЛТНЫЙ СЛОЙ: ЭЛЕМЕНТЫ УПРАВЛЕНИЯ ТЕСТОМ -->
                 <div id="island-controls" class="island-content-layer w-full flex items-center justify-between gap-4 opacity-100 scale-100">
                     <div class="flex items-center gap-3 min-w-0">
@@ -253,7 +776,7 @@
                     </div>
 
                     <div class="flex items-center gap-2.5 flex-shrink-0">
-                        {% if username == 0 and is_guest_author %}
+                        {% if is_guest_owner %}
                             <button type="button" onclick="openRegisterModal('header')" class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-md shadow-indigo-600/30 spring-btn">
                                 <i class="fas fa-floppy-disk text-[10px]"></i>
                                 <span>Сохранить</span>
@@ -264,10 +787,15 @@
                                 <span>{{ view_count }}</span>
                             </div>
 
-                            {% if is_creator %}
+                            {% if is_owner %}
                                 <a href="{% url 'preview_test_result' survey_id %}" class="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-indigo-600/10 border border-indigo-500/20 text-indigo-400 hover:bg-indigo-600/20 text-xs font-semibold transition-colors spring-btn">
                                     <i class="fas fa-chart-pie text-[10px]"></i>
                                     <span>Аналитика</span>
+                                </a>
+                            {% elif is_anon_visitor %}
+                                <a href="{% url 'create' %}" class="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-white text-zinc-900 hover:bg-zinc-200 text-xs font-bold transition-colors spring-btn">
+                                    <i class="fas fa-plus text-[10px]"></i>
+                                    <span>Создать свой</span>
                                 </a>
                             {% endif %}
                         {% endif %}
@@ -288,9 +816,9 @@
         <!-- BENTO GRID -->
         <main class="max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 mt-4 sm:mt-6 flex-grow">
 
-            <!-- ХУК-БАННЕР ДЛЯ ГОСТЯ -->
-            {% if username == 0 and is_guest_author %}
-            <div class="mb-6 rounded-[24px] sm:rounded-[28px] bg-gradient-to-r from-indigo-950/40 via-[#181724] to-indigo-950/20 border border-indigo-500/30 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xl relative overflow-hidden">
+            {% if is_guest_owner %}
+            <!-- ХУК-БАННЕР: ГОСТЬ СМОТРИТ СВОЙ ТОЛЬКО ЧТО СОЗДАННЫЙ ТЕСТ -->
+            <div data-rv data-rv-order="1" class="cta-trace mb-6 rounded-[24px] sm:rounded-[28px] bg-gradient-to-r from-indigo-950/40 via-[#181724] to-indigo-950/20 border border-indigo-500/30 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xl relative overflow-hidden">
                 <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
                 <div class="flex items-start sm:items-center gap-3.5 relative z-10">
@@ -300,7 +828,7 @@
                     <div>
                         <div class="flex items-center gap-2">
                             <span class="text-xs sm:text-sm font-bold text-white tracking-tight">Тест готов к проверке</span>
-                            <span class="px-2 py-0.5 rounded-full bg-amber-500/15 border border-gray-500/30 text-amber-300 text-[12px] font-bold">Черновик</span>
+                            <span class="px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[12px] font-bold">Черновик</span>
                         </div>
                         <p class="text-xs text-gray-400 mt-1 max-w-xl leading-relaxed">
                             Нажмите на любой вариант, чтобы проверить ключи. Чтобы отправить ссылку ученикам или распечатать бланки — сохраните тест в свой кабинет.
@@ -315,18 +843,66 @@
                     </button>
                 </div>
             </div>
+            {% elif is_anon_visitor %}
+            <!-- БАННЕР: АНОНИМ СМОТРИТ ЧУЖОЙ ТЕСТ → «СОБЕРИ СВОЙ» -->
+            <div data-rv data-rv-order="1" class="cta-trace mb-6 rounded-[24px] sm:rounded-[28px] bg-[#15151E] border border-white/10 p-4 sm:p-5 hidden sm:flex sm:flex-row sm:items-center justify-between gap-4 relative overflow-hidden">
+                <div class="flex items-start sm:items-center gap-3.5 relative z-10">
+                    <div class="w-10 h-10 rounded-2xl bg-white/[0.04] border border-white/10 text-zinc-200 flex items-center justify-center flex-shrink-0">
+                        <i class="fa-solid fa-wand-magic-sparkles text-sm"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs sm:text-sm font-bold text-white tracking-tight">Этот тест собран в Летучке</span>
+                            <span class="px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-zinc-400 text-[11px] font-mono-nums">~30 сек</span>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-1 max-w-xl leading-relaxed">
+                            Загрузите конспект, PDF или просто напишите тему — нейросеть соберёт тест с ключами, ссылкой для учеников и PDF-бланком.
+                            {% if can_generate %}Первый тест — без регистрации.{% else %}После регистрации — 5 тестов бесплатно.{% endif %}
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2 sm:flex-shrink-0 relative z-10 w-full sm:w-auto">
+                    <a href="{% url 'create' %}" class="w-full sm:w-auto px-5 py-3 rounded-xl sm:rounded-full bg-white hover:bg-zinc-200 text-zinc-900 text-xs font-bold transition-colors spring-btn text-center flex items-center justify-center gap-2">
+                        <span>Создать свой тест</span>
+                        <i class="fas fa-arrow-right text-[10px]"></i>
+                    </a>
+                </div>
+            </div>
             {% endif %}
 
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                
+
                 <!-- ЛЕВАЯ СЕКЦИЯ: ВОПРОСЫ (col-span-8) -->
                 <section class="lg:col-span-8 space-y-4">
-                    <div class="flex items-center justify-between px-2 pb-2">
+
+                    <!-- МОБИЛЬНЫЙ БАР ДЕЙСТВИЙ: НАВЕРХУ ТОЛЬКО НА ТЕЛЕФОНАХ -->
+                    <div class="lg:hidden p-3.5 rounded-2xl bg-indigo-950/40 border border-indigo-500/30 flex items-center justify-between gap-3">
+                        <div class="min-w-0">
+                            <span class="text-xs font-bold text-white block truncate">
+                                {% if is_creator or is_guest_owner %}Предпросмотр теста{% else %}Режим сдачи теста{% endif %}
+                            </span>
+                            <span class="text-[11px] text-zinc-400 block truncate">
+                                {% if is_creator or is_guest_owner %}Вы автор: проверка ключей{% else %}Для отправки ответов автору{% endif %}
+                            </span>
+                        </div>
+                        <div class="flex items-center gap-2 flex-shrink-0">
+                            <a href="{% url 'take_test' survey_id %}" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-indigo-600/30">
+                                <i class="fas fa-play text-[10px]"></i>
+                                <span>Пройти</span>
+                            </a>
+                            {% if is_creator or is_guest_owner %}
+                            <button type="button" data-action="share" data-share-url="{% url 'take_test' survey_id %}" class="p-2 rounded-xl bg-white/5 border border-white/10 text-zinc-300 text-xs">
+                                <i class="fas fa-link"></i>
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div data-rv="fade" data-rv-order="2" class="flex items-center justify-between px-2 pb-2">
                         <div class="flex items-center gap-2.5">
                             <span class="text-xs font-bold uppercase tracking-wider text-gray-400">Вопросы</span>
-                            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold font-mono-nums bg-white/5 border border-white/10 text-gray-300" id="total-questions-badge">
-                                {{ questions|length }}
-                            </span>
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold font-mono-nums bg-white/5 border border-white/10 text-gray-300" id="total-questions-badge">{{ questions|length }}</span>
                             <span class="text-[11px] text-zinc-500 font-mono-nums hidden sm:inline">• Кликайте по вариантам для проверки</span>
                         </div>
                         <span class="text-xs text-gray-500 font-medium font-mono-nums">{{ model_name }}</span>
@@ -334,15 +910,15 @@
 
                     <div id="questions-stream" class="space-y-4">
                         {% for question in questions %}
-                        <article class="question-card glass-panel rounded-[28px] p-6 transition-all relative border border-white/[0.08]" 
-                                 data-question-index="{{ forloop.counter0 }}" 
+                        <article data-rv data-rv-order="3" class="question-card glass-panel rounded-[28px] p-6 transition-all relative border border-white/[0.08]"
+                                 data-question-index="{{ forloop.counter0 }}"
                                  data-question-type="{{ question.type|default:'single' }}">
-                            
+
                             <!-- ШАПКА КАРТОЧКИ: ТИП + ВСЕГДА ДОСТУПНЫЙ КАРАНДАШ -->
                             <div class="flex items-start justify-between gap-4 mb-4">
                                 <div class="flex items-center gap-2.5">
-                                    <span class="w-8 h-8 rounded-xl bg-[#18171C] border border-white/10 font-mono-nums text-xs font-bold text-gray-300 flex items-center justify-center">
-                                        {{ forloop.counter }}
+                                    <span class="w-8 h-8 rounded-xl bg-[#18171C] border border-white/10 font-mono-nums text-xs font-bold text-gray-300 flex items-center justify-center overflow-hidden">
+                                        <span class="q-num-inner">{{ forloop.counter }}</span>
                                     </span>
                                     {% if question.type == 'multiple' %}
                                         <span class="px-2.5 py-1 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[11px] font-semibold flex items-center gap-1.5">
@@ -357,33 +933,29 @@
 
                                 <!-- ЭКШЕНЫ ВОПРОСА: ПОСТОЯННЫЙ КАРАНДАШ + КНОПКИ САЙДБАР-РЕЖИМА -->
                                 <div class="flex items-center gap-1">
-                                    <!-- 1. ПОСТОЯННЫЙ КАРАНДАШ (ВИДЕН ВСЕГДА) -->
                                     {% if username != 0 and is_creator %}
-                                        <button type="button" 
-                                                class="always-pencil-btn text-zinc-400 hover:text-white p-2 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] border border-white/5 transition-all spring-btn flex items-center gap-1.5" 
-                                                onclick="editExistingQuestion({{ forloop.counter0 }})" 
+                                        <button type="button"
+                                                class="always-pencil-btn text-zinc-400 hover:text-white p-2 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] border border-white/5 transition-all spring-btn flex items-center gap-1.5"
+                                                onclick="editExistingQuestion({{ forloop.counter0 }})"
                                                 title="Редактировать этот вопрос">
                                             <i class="fas fa-pen text-[11px] text-indigo-400"></i>
                                             <span class="text-[11px] font-medium hidden sm:inline text-zinc-300">Изменить</span>
                                         </button>
-                                    {% endif %}
 
-                                    <!-- 2. КНОПКА УДАЛЕНИЯ (ТОЛЬКО В РЕЖИМЕ ПРАВКИ) -->
-                                    {% if username != 0 and is_creator %}
-                                    <div class="edit-actions hidden items-center gap-1">
-                                        <button type="button" 
-                                                class="text-gray-400 hover:text-rose-400 p-2 rounded-xl hover:bg-rose-500/10 transition-colors spring-btn" 
-                                                onclick="deleteQuestion({{ forloop.counter0 }})" 
-                                                title="Удалить вопрос">
-                                            <i class="fas fa-trash-can text-xs"></i>
-                                        </button>
-                                    </div>
+                                        <div class="edit-actions hidden items-center gap-1">
+                                            <button type="button"
+                                                    class="text-gray-400 hover:text-rose-400 p-2 rounded-xl hover:bg-rose-500/10 transition-colors spring-btn"
+                                                    onclick="deleteQuestion({{ forloop.counter0 }})"
+                                                    title="Удалить вопрос">
+                                                <i class="fas fa-trash-can text-xs"></i>
+                                            </button>
+                                        </div>
                                     {% endif %}
                                 </div>
                             </div>
 
                             <!-- ТЕКСТ ВОПРОСА -->
-                            <h3 class="text-base sm:text-lg font-semibold text-zinc-100 mb-5 leading-snug">
+                            <h3 class="q-title text-base sm:text-lg font-semibold text-zinc-100 mb-5 leading-snug">
                                 {{ question.question }}
                             </h3>
 
@@ -391,31 +963,31 @@
                             <div class="options-container space-y-2.5">
                                 {% for option in question.options %}
                                 <div class="option-row flex items-center gap-3 p-3.5 rounded-2xl border text-sm transition-all
-                                    {% if username != 0 and show_answers and option in question.correct_answers %}
+                                    {% if show_answers and option in question.correct_answers %}
                                         is-correct bg-emerald-500/10 border-emerald-500/30 text-emerald-300 font-medium
                                     {% else %}
                                         {% if option in question.correct_answers %}is-correct{% endif %} bg-[#111119]/70 border-indigo-300/10 bg-white/[0.04] text-gray-300
                                     {% endif %}"
                                     data-is-correct="{% if option in question.correct_answers %}true{% else %}false{% endif %}"
                                     data-option-text="{{ option|escapejs }}">
-                                    
+
                                     <span class="opt-badge w-6 h-6 rounded-lg flex items-center justify-center text-xs flex-shrink-0
-                                        {% if username != 0 and show_answers and option in question.correct_answers %}
+                                        {% if show_answers and option in question.correct_answers %}
                                             bg-emerald-500 text-black font-bold
                                         {% else %}
                                             bg-white/5 border border-white/10 text-gray-400
                                         {% endif %}">
                                         {% if question.type == 'multiple' %}
-                                            <i class="opt-icon fas {% if username != 0 and show_answers and option in question.correct_answers %}fa-check{% else %}fa-square text-[9px] opacity-40{% endif %}"></i>
+                                            <i class="opt-icon fas {% if show_answers and option in question.correct_answers %}fa-check{% else %}fa-square text-[9px] opacity-40{% endif %}"></i>
                                         {% else %}
-                                            <i class="opt-icon fas {% if username != 0 and show_answers and option in question.correct_answers %}fa-check{% else %}fa-circle text-[7px] opacity-40{% endif %}"></i>
+                                            <i class="opt-icon fas {% if show_answers and option in question.correct_answers %}fa-check{% else %}fa-circle text-[7px] opacity-40{% endif %}"></i>
                                         {% endif %}
                                     </span>
-                                    
+
                                     <span class="flex-grow select-none">{{ option }}</span>
 
                                     <!-- ИНЛАЙН СТАТУС ВЕРДИКТА -->
-                                    <span class="opt-label text-[11px] font-mono-nums uppercase tracking-wider text-emerald-400 font-bold 
+                                    <span class="opt-label text-[11px] font-mono-nums uppercase tracking-wider text-emerald-400 font-bold
                                         {% if not show_answers or option not in question.correct_answers %}hidden{% endif %}">
                                         Верно
                                     </span>
@@ -425,64 +997,100 @@
 
                         </article>
 
-                        <!-- ИНЛАЙН-МАГНИТ ПОСЛЕ 2-ГО ВОПРОСА ДЛЯ НЕАВТОРИЗОВАННОГО -->
-                        {% if username == 0 and is_guest_author and forloop.counter == 2 %}
-                        <div class="relative my-6 rounded-[28px] border border-indigo-500/30 bg-gradient-to-b from-[#181726] to-[#12111A] p-6 sm:p-7 shadow-2xl overflow-hidden">
-                            <!-- Фоновый радиальный градиент -->
-                            <div class="absolute -top-24 -right-24 w-64 h-64 bg-indigo-600/15 rounded-full blur-3xl pointer-events-none"></div>
+                        {% if forloop.counter == 2 or forloop.last and forloop.counter == 1 %}
+                            {% if is_guest_owner %}
+                            <!-- ИНЛАЙН-МАГНИТ: ГОСТЬ-АВТОР → СОХРАНИТЬ -->
+                            <div data-rv data-rv-order="3" class="cta-trace relative my-6 rounded-[28px] border border-indigo-500/30 bg-gradient-to-b from-[#181726] to-[#12111A] p-6 sm:p-7 shadow-2xl overflow-hidden">
+                                <div class="absolute -top-24 -right-24 w-64 h-64 bg-indigo-600/15 rounded-full blur-3xl pointer-events-none"></div>
 
-                            <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                                <div class="space-y-3 max-w-lg">
-                                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/25 text-indigo-400 text-[11px] font-semibold">
-                                        <i class="fa-solid fa-wand-magic-sparkles text-[10px]"></i>
-                                        <span>Что доступно после сохранения</span>
+                                <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                                    <div class="space-y-3 max-w-lg">
+                                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/25 text-indigo-400 text-[11px] font-semibold">
+                                            <i class="fa-solid fa-wand-magic-sparkles text-[10px]"></i>
+                                            <span>Что доступно после сохранения</span>
+                                        </div>
+
+                                        <h4 class="text-base sm:text-lg font-bold text-white tracking-tight">
+                                            Проводите тестирование целой группы с&nbsp;любым кол-вом респондентов
+                                        </h4>
+
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                                            <div class="flex items-center gap-2.5 text-xs text-zinc-300">
+                                                <span class="w-5 h-5 rounded-md bg-white/5 border border-white/10 text-indigo-400 flex items-center justify-center text-[10px] flex-shrink-0">
+                                                    <i class="fas fa-file-pdf"></i>
+                                                </span>
+                                                <span>Экспорт в PDF с отдельным листом ответов</span>
+                                            </div>
+                                            <div class="flex items-center gap-2.5 text-xs text-zinc-300">
+                                                <span class="w-5 h-5 rounded-md bg-white/5 border border-white/10 text-indigo-400 flex items-center justify-center text-[10px] flex-shrink-0">
+                                                    <i class="fas fa-qrcode"></i>
+                                                </span>
+                                                <span>Прохождение по прямой ссылке или QR-коду</span>
+                                            </div>
+                                            <div class="flex items-center gap-2.5 text-xs text-zinc-300">
+                                                <span class="w-5 h-5 rounded-md bg-white/5 border border-white/10 text-indigo-400 flex items-center justify-center text-[10px] flex-shrink-0">
+                                                    <i class="fas fa-bolt"></i>
+                                                </span>
+                                                <span>Свободный вход участников без регистрации</span>
+                                            </div>
+                                            <div class="flex items-center gap-2.5 text-xs text-zinc-300">
+                                                <span class="w-5 h-5 rounded-md bg-white/5 border border-white/10 text-indigo-400 flex items-center justify-center text-[10px] flex-shrink-0">
+                                                    <i class="fas fa-chart-column"></i>
+                                                </span>
+                                                <span>Автопроверка и сводка сложных вопросов</span>
+                                            </div>
+                                        </div>
                                     </div>
 
-                                    <h4 class="text-base sm:text-lg font-bold text-white tracking-tight">
-                                        Проводите тестирование целой группы с&nbsp;любым кол-вом респондентов
-                                    </h4>
-
-                                    <!-- Сетка фич вместо унылого абзаца текста -->
-                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
-                                        <div class="flex items-center gap-2.5 text-xs text-zinc-300">
-                                            <span class="w-5 h-5 rounded-md bg-white/5 border border-white/10 text-indigo-400 flex items-center justify-center text-[10px] flex-shrink-0">
-                                                <i class="fas fa-file-pdf"></i>
-                                            </span>
-                                            <span>Экспорт в PDF с отдельным листом ответов</span>
-                                        </div>
-                                        <div class="flex items-center gap-2.5 text-xs text-zinc-300">
-                                            <span class="w-5 h-5 rounded-md bg-white/5 border border-white/10 text-indigo-400 flex items-center justify-center text-[10px] flex-shrink-0">
-                                                <i class="fas fa-qrcode"></i>
-                                            </span>
-                                            <span>Прохождение по прямой ссылке или QR-коду</span>
-                                        </div>
-                                        <div class="flex items-center gap-2.5 text-xs text-zinc-300">
-                                            <span class="w-5 h-5 rounded-md bg-white/5 border border-white/10 text-indigo-400 flex items-center justify-center text-[10px] flex-shrink-0">
-                                                <i class="fas fa-bolt"></i>
-                                            </span>
-                                            <span>Свободный вход участников без регистрации</span>
-                                        </div>
-                                        <div class="flex items-center gap-2.5 text-xs text-zinc-300">
-                                            <span class="w-5 h-5 rounded-md bg-white/5 border border-white/10 text-indigo-400 flex items-center justify-center text-[10px] flex-shrink-0">
-                                                <i class="fas fa-chart-column"></i>
-                                            </span>
-                                            <span>Автопроверка и сводка сложных вопросов</span>
-                                        </div>
+                                    <div class="flex-shrink-0 md:self-center">
+                                        <button type="button"
+                                                onclick="openRegisterModal('in_feed')"
+                                                class="w-full md:w-auto px-6 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-bold shadow-xl shadow-indigo-600/30 hover:shadow-indigo-600/50 transition-all spring-btn flex items-center justify-center gap-2.5">
+                                            <span>Зарегистрироваться и сохранить</span>
+                                            <i class="fas fa-arrow-right text-xs"></i>
+                                        </button>
+                                        <span class="block text-[11px] text-zinc-500 text-center mt-2 font-mono-nums ">Бесплатно • 5 тестов в подарок</span>
                                     </div>
-                                </div>
-
-                                <!-- Кнопка-действие с визуальным якорем -->
-                                <div class="flex-shrink-0 md:self-center">
-                                    <button type="button" 
-                                            onclick="openRegisterModal('in_feed')" 
-                                            class="w-full md:w-auto px-6 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-bold shadow-xl shadow-indigo-600/30 hover:shadow-indigo-600/50 transition-all spring-btn flex items-center justify-center gap-2.5">
-                                        <span>Зарегистрироваться и сохранить</span>
-                                        <i class="fas fa-arrow-right text-xs"></i>
-                                    </button>
-                                    <span class="block text-[11px] text-zinc-500 text-center mt-2 font-mono-nums ">Бесплатно • 5 тестов в подарок</span>
                                 </div>
                             </div>
-                        </div>
+                            {% elif is_anon_visitor %}
+                            <!-- ИНЛАЙН-МАГНИТ: АНОНИМ НА ЧУЖОМ ТЕСТЕ → СОБРАТЬ СВОЙ -->
+                            <div data-rv data-rv-order="3" class="cta-trace relative my-6 rounded-[28px] border border-white/10 bg-[#14141C] p-6 sm:p-7 overflow-hidden">
+                                <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                                    <div class="space-y-3 max-w-lg">
+                                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.04] border border-white/10 text-zinc-300 text-[11px] font-mono-nums uppercase tracking-wider">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                                            <span>Как это сделано</span>
+                                        </div>
+                                        <h4 class="text-base sm:text-lg font-bold text-white tracking-tight">
+                                            Материал на входе – <br> готовый тест на выходе
+                                        </h4>
+                                        <div class="grid grid-cols-3 gap-2 pt-1">
+                                            <div class="p-3 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
+                                                <span class="block text-[10px] font-mono-nums text-zinc-500">01</span>
+                                                <span class="block text-xs text-zinc-200 mt-1">Текст, PDF или тема</span>
+                                            </div>
+                                            <div class="p-3 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
+                                                <span class="block text-[10px] font-mono-nums text-zinc-500">02</span>
+                                                <span class="block text-xs text-zinc-200 mt-1">ИИ собирает вопросы и ключи</span>
+                                            </div>
+                                            <div class="p-3 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
+                                                <span class="block text-[10px] font-mono-nums text-zinc-500">03</span>
+                                                <span class="block text-xs text-zinc-200 mt-1">Ссылка, QR и PDF-бланк</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex-shrink-0 md:self-center">
+                                        <a href="{% url 'create' %}" class="w-full md:w-auto px-6 py-3.5 rounded-2xl bg-white hover:bg-zinc-200 text-zinc-900 text-xs sm:text-sm font-bold transition-colors spring-btn flex items-center justify-center gap-2.5">
+                                            <span>Собрать свой тест</span>
+                                            <i class="fas fa-arrow-right text-xs"></i>
+                                        </a>
+                                        <span class="block text-[11px] text-zinc-500 text-center mt-2 font-mono-nums">{% if can_generate %}Без регистрации{% else %}5 тестов бесплатно{% endif %}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
                         {% endif %}
 
                         {% endfor %}
@@ -500,26 +1108,26 @@
                 <!-- ПРАВАЯ СЕКЦИЯ: ПАНЕЛЬ ДЕЙСТВИЙ -->
                 <aside class="lg:col-span-4 space-y-5 lg:sticky lg:top-24">
 
-                    <div class="glass-panel rounded-[28px] p-5 sm:p-6 shadow-2xl space-y-4 border border-white/[0.08] align-center">
+                    <div data-rv data-rv-order="4" class="glass-panel rounded-[28px] p-5 sm:p-6 shadow-2xl space-y-4 border border-white/[0.08] align-center">
                         {% if username != 0 %}
                             <!-- АВТОРИЗОВАННЫЙ ПОЛЬЗОВАТЕЛЬ -->
                             <div class="space-y-2">
-                                <button type="button" 
-                                        data-action="share" 
-                                        data-share-url="{% url 'take_test' survey_id %}" 
+                                <button type="button"
+                                        data-action="share"
+                                        data-share-url="{% url 'take_test' survey_id %}"
                                         class="w-full mb-4 flex items-center justify-center gap-2.5 py-3.5 px-4 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-semibold shadow-lg shadow-indigo-600/25 transition-all spring-btn">
                                     <i class="fas fa-link text-xs"></i>
                                     <span>Скопировать ссылку на тест</span>
                                 </button>
-                                
+
                                 <div class="grid grid-cols-2 gap-2">
-                                    <button type="button" 
-                                            onclick="showClassroomQR()" 
+                                    <button type="button"
+                                            onclick="showClassroomQR()"
                                             class="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-xs font-medium text-zinc-200 transition-all spring-btn">
                                         <i class="fas fa-qrcode text-zinc-400"></i>
                                         <span>QR-код</span>
                                     </button>
-                                    <a href="{% url 'download-survey_pdf' survey_id %}" 
+                                    <a href="{% url 'download-survey_pdf' survey_id %}"
                                     class="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-xs font-medium text-zinc-200 transition-all spring-btn">
                                         <i class="fas fa-file-pdf text-zinc-400"></i>
                                         <span>Бланк PDF</span>
@@ -529,7 +1137,7 @@
 
                             <div class="h-px bg-white/5 my-1"></div>
 
-                            <a href="{% url 'take_test' survey_id %}" 
+                            <a href="{% url 'take_test' survey_id %}"
                             class="w-full flex items-center justify-center gap-2 py-2 text-indigo-400 hover:text-white transition-colors border border-white/10 rounded-xl hover:border-white/10 text-xs font-medium">
                                 <i class="fas fa-play text-[10px] text-indigo-500"></i>
                                 <span>Пройти тестирование</span>
@@ -542,8 +1150,8 @@
                                 </div>
 
                                 <!-- Поделиться -->
-                                <button type="button" 
-                                        onclick="openRegisterModal('share')" 
+                                <button type="button"
+                                        onclick="openRegisterModal('share')"
                                         class="w-full flex items-center justify-between p-3 rounded-2xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 text-white transition-all spring-btn text-left group">
                                     <div class="flex items-center gap-3">
                                         <span class="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center text-xs group-hover:bg-indigo-500/20 transition-colors">
@@ -558,8 +1166,8 @@
                                 </button>
 
                                 <!-- Скачать PDF -->
-                                <button type="button" 
-                                        onclick="openRegisterModal('pdf')" 
+                                <button type="button"
+                                        onclick="openRegisterModal('pdf')"
                                         class="w-full flex items-center justify-between p-3 rounded-2xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 text-white transition-all spring-btn text-left group">
                                     <div class="flex items-center gap-3">
                                         <span class="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center text-xs group-hover:bg-indigo-500/20 transition-colors">
@@ -573,9 +1181,8 @@
                                     <i class="fas fa-lock text-[10px] text-zinc-600 pr-1 group-hover:text-zinc-400 transition-colors"></i>
                                 </button>
 
-                                <!-- Акцентная кнопка на всю ширину -->
                                 <div class="pt-2 border-t border-white/5">
-                                    <a href="{% url 'take_test' survey_id %}" 
+                                    <a href="{% url 'take_test' survey_id %}"
                                         class="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-indigo-600/10 hover:bg-indigo-600 border border-indigo-500/20 hover:border-indigo-500 text-xs font-semibold text-indigo-400 hover:text-white transition-all spring-btn group">
                                         <i class="fas fa-arrow-right text-[10px] transition-transform group-hover:translate-x-0.5"></i>
                                         <span>Пройти тестирование</span>
@@ -586,7 +1193,7 @@
                     </div>
 
                     <!-- ПАНЕЛЬ УПРАВЛЕНИЯ ТЕСТОМ -->
-                    <div class="glass-panel rounded-[32px] p-6 space-y-5">
+                    <div data-rv data-rv-order="4" class="glass-panel rounded-[32px] p-6 space-y-5">
                         <span class="text-xs font-bold uppercase tracking-wider text-gray-400 block">Управление тестом</span>
 
                         <!-- 1. Тумблер ответов -->
@@ -613,8 +1220,8 @@
                                     <div class="w-11 h-6 bg-[#18171A] border border-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-400 peer-checked:after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
                                 </label>
                             {% else %}
-                                <button type="button" 
-                                        onclick="{% if username == 0 %}openRegisterModal('answers'){% else %}Island.warn('Переключать ответы может только автор теста', 'fa-eye-slash'){% endif %}" 
+                                <button type="button"
+                                        onclick="{% if username == 0 %}openRegisterModal('answers'){% else %}Island.warn('Переключать ответы может только автор теста', 'fa-eye-slash'){% endif %}"
                                         class="relative inline-block w-11 h-6 cursor-pointer focus:outline-none group">
                                     <div class="w-11 h-6 bg-[#18171A] border border-white/10 rounded-full relative transition-colors group-hover:border-amber-400/40">
                                         <span class="absolute top-[2px] left-[2px] bg-zinc-700 rounded-full h-5 w-5 flex items-center justify-center text-[9px] text-amber-300">
@@ -642,8 +1249,8 @@
                                     Править
                                 </button>
                             {% else %}
-                                <button type="button" 
-                                        onclick="{% if username == 0 %}openRegisterModal('edit'){% else %}Island.warn('Это чужой тест. Создайте свой в конструкторе, чтобы редактировать!', 'fa-pen-slash'){% endif %}" 
+                                <button type="button"
+                                        onclick="{% if username == 0 %}openRegisterModal('edit'){% else %}Island.warn('Это чужой тест. Создайте свой в конструкторе, чтобы редактировать!', 'fa-pen-slash'){% endif %}"
                                         class="px-3 py-1.5 rounded-xl bg-[#18171A] border border-white/10 text-xs font-semibold text-gray-400 hover:text-white hover:border-amber-400/40 spring-btn inline-flex items-center gap-1.5">
                                     <i class="fas fa-lock text-[9px] text-amber-400"></i>
                                     <span>Править</span>
@@ -668,8 +1275,8 @@
                                     Пересобрать
                                 </button>
                             {% else %}
-                                <button type="button" 
-                                        onclick="{% if username == 0 %}openRegisterModal('regenerate'){% else %}Island.warn('Пересобрать тест может только его автор. Создайте свой!', 'fa-rotate'){% endif %}" 
+                                <button type="button"
+                                        onclick="{% if username == 0 %}openRegisterModal('regenerate'){% else %}Island.warn('Пересобрать тест может только его автор. Создайте свой!', 'fa-rotate'){% endif %}"
                                         class="px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-xs font-semibold text-gray-400 hover:text-white hover:border-amber-400/40 spring-btn inline-flex items-center gap-1.5">
                                     <i class="fas fa-lock text-[9px] text-amber-400"></i>
                                     <span>Пересобрать</span>
@@ -689,7 +1296,7 @@
 
                     <!-- ЭКСПРЕСС-АНАЛИТИКА ТЕСТА -->
                     {% if is_creator and username != 0 %}
-                    <div class="glass-panel rounded-[32px] p-6 space-y-4 relative overflow-hidden border border-white/[0.08]">
+                    <div data-rv data-rv-order="4" class="glass-panel rounded-[32px] p-6 space-y-4 relative overflow-hidden border border-white/[0.08]">
 
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-2.5">
@@ -701,14 +1308,9 @@
                                     <span class="text-[10px] text-gray-500 font-mono-nums">Активность прохождений</span>
                                 </div>
                             </div>
-
-                            <div class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-mono-nums text-emerald-400 font-semibold">
-                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                                <span>LIVE</span>
-                            </div>
                         </div>
 
-                        <div id="" class="space-y-3.5 relative {% if subscription_level == 0 %}filter blur-sm opacity-40 pointer-events-none select-none{% endif %}">
+                        <div class="space-y-3.5 relative {% if subscription_level == 0 %}filter blur-sm opacity-40 pointer-events-none select-none{% endif %}">
                             <div class="grid grid-cols-2 gap-2 pt-1">
                                 <div class="p-3 rounded-2xl bg-[#16151A] border border-white/5 space-y-1">
                                     <span class="text-[10px] text-gray-500 uppercase tracking-wider block font-semibold">Сдано тестов</span>
@@ -742,7 +1344,7 @@
                             </div>
 
                             <div class="pt-1">
-                                <a href="{% url 'preview_test_result' survey_id %}" 
+                                <a href="{% url 'preview_test_result' survey_id %}"
                                    class="master-pill-btn group w-full h-[46px] rounded-2xl text-white text-xs font-bold flex items-center justify-center gap-2 select-none spring-btn">
                                     <span>Открыть полную аналитику</span>
                                     <i class="fas fa-arrow-right text-[10px] text-indigo-200 group-hover:translate-x-1 transition-transform"></i>
@@ -773,7 +1375,7 @@
                 </aside>
             </div>
 
-            <footer class="mt-16 sm:mt-24">
+            <footer data-rv="fade" data-rv-order="6" class="mt-16 sm:mt-24">
                 <div class="max-w-3xl mx-auto px-4 sm:px-8">
                     <div class="mt-8 mb-4 pt-8 border-t border-white/5 flex flex-col sm:flex-row justify-between items-center text-xs text-gray-600 text-center">
                         <p>2024-2026 Летучка AI. Design & Development <a class="text-gray-500 hover:text-indigo-400" rel='nofollow' href="https://dprofile.ru/kozak_developer" target="_blank">by Kozak</a></p>
@@ -792,7 +1394,7 @@
         <!-- ============================================================== -->
         <div id="quick-register-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
             <div class="fixed inset-0 bg-black/85 backdrop-blur-md" onclick="closeRegisterModal()"></div>
-            
+
             <div class="relative w-full max-w-md glass-panel rounded-[32px] p-6 sm:p-8 shadow-2xl z-10 space-y-5 spring-modal-content border border-white/10">
                 <div class="flex items-start justify-between pb-3 border-b border-white/10">
                     <div>
@@ -813,23 +1415,23 @@
                     {% csrf_token %}
                     <div>
                         <label for="reg-email" class="block text-xs font-semibold text-gray-300 mb-1.5">Ваш Email</label>
-                        <input type="email" name="email" id="reg-email" required placeholder="email@yandex.ru" 
+                        <input type="email" name="email" id="reg-email" required placeholder="email@yandex.ru"
                                class="w-full bg-[#111119] border border-white/10 rounded-2xl p-3.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 transition-colors">
                     </div>
 
                     <div>
                         <label for="reg-password" class="block text-xs font-semibold text-gray-300 mb-1.5">Придумайте пароль</label>
-                        <input type="password" name="password1" id="reg-password" required placeholder="••••••••" 
+                        <input type="password" name="password1" id="reg-password" required placeholder="••••••••"
                                class="w-full bg-[#111119] border border-white/10 rounded-2xl p-3.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 transition-colors">
                     </div>
 
                     <!-- ЧЕКБОКС 152-ФЗ -->
                     <div class="pt-1">
                         <label class="flex items-start gap-2.5 cursor-pointer text-[11px] text-gray-400 leading-tight select-none">
-                            <input type="checkbox" id="reg-terms" name="terms" required 
+                            <input type="checkbox" id="reg-terms" name="terms" required
                                    class="mt-0.5 rounded border-white/20 bg-[#18171A] text-indigo-600 focus:ring-0 w-4 h-4 flex-shrink-0">
                             <span>
-                                Даю согласие на обработку персональных данных в соответствии с<a href="/docs/privacy-policy" target="_blank" class="text-indigo-400 underline">Политикой конфиденциальности</a> и принимаю условия 
+                                Даю согласие на обработку персональных данных в соответствии с <a href="/docs/privacy-policy" target="_blank" class="text-indigo-400 underline">Политикой конфиденциальности</a> и принимаю условия
                                 <a href="/docs/public-offer" target="_blank" class="text-indigo-400 underline">Публичной оферты</a>.
                             </span>
                         </label>
@@ -916,7 +1518,7 @@
                 </div>
                 <h3 class="text-base font-bold text-white mb-2">Удалить тест безвозвратно?</h3>
                 <p class="text-xs text-gray-400 mb-6 leading-relaxed">
-                    Тест <span id="modal-survey-title" class="text-white font-semibold"></span> будет стерт без возможности восстановления.
+                    Тест <span id="modal-survey-title" class="text-white font-semibold"></span> будет УДАЛЕН без возможности восстановления.
                 </p>
                 <div class="grid grid-cols-2 gap-3">
                     <button onclick="closeDeleteModal()" class="py-3 rounded-2xl bg-white/5 text-xs font-semibold text-gray-300">Отмена</button>
@@ -935,12 +1537,569 @@
 
     </div>
 
+    {% if debug or user.is_staff %}
+    <!-- DEV: ручное управление интро (видно только в DEBUG и staff) -->
+    <div id="intro-dev">
+        <button type="button" onclick="LetychkaIntro.replay()" title="Проиграть интро заново">▶ Intro</button>
+        <button type="button" onclick="LetychkaIntro.resetAll(); Island.info('Флаги интро сброшены', 'fa-rotate-left')" title="Сбросить «уже видел» для всех тестов">Сброс</button>
+    </div>
+    {% endif %}
+
     {{ questions|json_script:"questions-data" }}
+
+    <!-- ============================================================== -->
+    <!--   MOTION ENGINE: ревилы блоков + интро-сборка теста            -->
+    <!-- ============================================================== -->
+    <script>
+        (function () {
+            const root = document.documentElement;
+            const CFG = window.LETYCHKA_INTRO || {};
+            const reduceMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+            let introQuestions = [];
+            try {
+                const el = document.getElementById('questions-data');
+                if (el && el.textContent) introQuestions = JSON.parse(el.textContent) || [];
+            } catch (e) { introQuestions = []; }
+
+            const ls = {
+                get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+                set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
+                del(k) { try { localStorage.removeItem(k); } catch (e) {} }
+            };
+            const goal = (name) => { try { if (window.ym) window.ym(98823704, 'reachGoal', name); } catch (e) {} };
+            const pad2 = (n) => String(n).padStart(2, '0');
+
+            /* ======================================================================
+               MOTION: каскадное появление блоков + scroll-reveal
+               ====================================================================== */
+            const Motion = (() => {
+                const CARD_BUDGET = 1600;
+                const BLOCK_BUDGET = 900;
+                let io = null;
+
+                function finalize(el) {
+                    el.classList.remove('rv-in', 'rv-land');
+                    el.classList.add('rv-done');
+                }
+
+                function isHidden(el) {
+                    return el.getClientRects().length === 0;
+                }
+
+                function reveal(el, delay = 0, opts = {}) {
+                    if (!el || el.classList.contains('rv-in') || el.classList.contains('rv-done')) return;
+                    if (reduceMotion) { finalize(el); return; }
+
+                    const isCard = el.classList.contains('question-card');
+                    if (isCard) {
+                        el.querySelectorAll('.option-row').forEach((row, i) => row.style.setProperty('--i', Math.min(i, 8)));
+                    }
+                    el.style.setProperty('--d', Math.round(delay) + 'ms');
+                    if (opts.land) el.classList.add('rv-land');
+                    el.classList.add('rv-in');
+                    const budget = delay + (isCard ? CARD_BUDGET : BLOCK_BUDGET) + (el.classList.contains('cta-trace') ? 1300 : 0);
+                    setTimeout(() => finalize(el), budget);
+                }
+
+                function observe(els) {
+                    const list = Array.from(els).filter(Boolean);
+                    if (!list.length) return;
+                    if (!('IntersectionObserver' in window)) { list.forEach((e) => reveal(e)); return; }
+                    if (!io) {
+                        io = new IntersectionObserver((entries) => {
+                            let k = 0;
+                            entries
+                                .filter((e) => e.isIntersecting)
+                                .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
+                                .forEach((e) => {
+                                    io.unobserve(e.target);
+                                    reveal(e.target, (k++) * 80);
+                                });
+                        }, { threshold: 0.08, rootMargin: '0px 0px -6% 0px' });
+                    }
+                    list.forEach((e) => io.observe(e));
+                }
+
+                function cascade(opts = {}) {
+                    const exclude = opts.exclude || new Set();
+                    const base = opts.baseDelay || 0;
+                    const step = opts.step != null ? opts.step : 65;
+                    const pending = Array.from(document.querySelectorAll('[data-rv]'))
+                        .filter((e) => !exclude.has(e) && !e.classList.contains('rv-in') && !e.classList.contains('rv-done'));
+
+                    const now = [], later = [];
+                    const vh = window.innerHeight;
+                    pending.forEach((e) => {
+                        if (isHidden(e)) { finalize(e); return; }
+                        const r = e.getBoundingClientRect();
+                        const fixedish = getComputedStyle(e).position === 'fixed';
+                        (fixedish || (r.top < vh * 0.96 && r.bottom > 0) ? now : later).push(e);
+                    });
+
+                    now.sort((a, b) => {
+                        const oa = +(a.dataset.rvOrder || 9), ob = +(b.dataset.rvOrder || 9);
+                        if (oa !== ob) return oa - ob;
+                        return a.getBoundingClientRect().top - b.getBoundingClientRect().top;
+                    });
+                    now.forEach((e, i) => reveal(e, base + Math.min(i * step, 780)));
+                    observe(later);
+                }
+
+                function resetAll() {
+                    if (io) { io.disconnect(); io = null; }
+                    document.querySelectorAll('[data-rv]').forEach((e) => {
+                        e.classList.remove('rv-in', 'rv-done', 'rv-land');
+                        e.style.removeProperty('--d');
+                    });
+                }
+
+                /* Перезапускаемая одноразовая анимация (fx-ok / fx-bad / fx-pop …).
+                   Снимаем класс по таймеру, а не по animationend: события всплывают
+                   от детей (бейдж) и псевдоэлементов и рвут анимацию раньше времени. */
+                const FX_MS = { 'fx-ok': 800, 'fx-bad': 600, 'fx-hint': 1000, 'fx-pop': 460 };
+                function fx(el, cls, delayMs) {
+                    if (!el || reduceMotion) return;
+                    const node = el.jquery ? el[0] : el;
+                    if (!node) return;
+                    node._fxT = node._fxT || {};
+                    clearTimeout(node._fxT[cls]);
+                    node.classList.remove(cls);
+                    if (delayMs != null) node.style.setProperty('--fx-d', delayMs + 'ms');
+                    void node.offsetWidth;
+                    node.classList.add(cls);
+                    node._fxT[cls] = setTimeout(() => node.classList.remove(cls), (FX_MS[cls] || 800) + (delayMs || 0));
+                }
+
+                return { reveal, observe, cascade, resetAll, finalize, fx };
+            })();
+
+            /* ======================================================================
+               INTRO: барабан из всех вопросов → раскладка карточек по местам
+               ====================================================================== */
+            const Intro = (() => {
+                let running = false;
+                let skipped = false;
+                let raf = 0;
+                let timers = [];
+                let anims = [];
+                let flightLayer = null;
+
+                const $ = (id) => document.getElementById(id);
+                const stage = $('intro-stage');
+                const ring = $('is-ring');
+                const curEl = $('is-cur');
+                const barEl = $('is-bar');
+                const stepEl = $('is-step');
+                const topEl = $('is-top');
+
+                const sleep = (ms) => new Promise((res) => { timers.push(setTimeout(res, ms)); });
+
+                function eligible() {
+                    return !reduceMotion && introQuestions.length > 0 && !!stage && !!ring;
+                }
+
+                function geometry() {
+                    const vw = window.innerWidth;
+                    const W = Math.min(560, vw - 40);
+                    const H = vw < 640 ? 132 : 148;
+                    return { W, H };
+                }
+
+                function makeGhost(q, i) {
+                    const g = document.createElement('div');
+                    g.className = 'gh';
+
+                    const head = document.createElement('div');
+                    head.className = 'gh-head';
+                    const num = document.createElement('span');
+                    num.className = 'gh-num';
+                    num.textContent = String(i + 1);
+                    const type = document.createElement('span');
+                    type.className = 'gh-type';
+                    type.textContent = (q && q.type === 'multiple') ? 'Несколько вариантов' : 'Один вариант';
+                    head.append(num, type);
+
+                    const text = document.createElement('div');
+                    text.className = 'gh-q';
+                    text.textContent = (q && q.question) || '';
+
+                    const opts = document.createElement('div');
+                    opts.className = 'gh-opts';
+                    const list = (q && Array.isArray(q.options)) ? q.options.slice(0, 5) : [];
+                    list.forEach((o) => {
+                        const bar = document.createElement('i');
+                        const len = String(o || '').length;
+                        bar.style.width = Math.max(18, Math.min(70, 14 + len * 1.4)) + 'px';
+                        opts.appendChild(bar);
+                    });
+
+                    g.append(head, text, opts);
+                    return g;
+                }
+
+                function buildRing() {
+                    const { W, H } = geometry();
+                    stage.style.setProperty('--W', W + 'px');
+                    stage.style.setProperty('--H', H + 'px');
+
+                    ring.innerHTML = '';
+                    const n = introQuestions.length;
+                    const S = Math.max(n, 8);
+                    const step = 360 / S;
+                    const R = Math.round((H / 2) / Math.tan(Math.PI / S) + 14);
+
+                    const slots = [];
+                    for (let j = 0; j < S; j++) {
+                        const qi = j % n;
+                        const g = makeGhost(introQuestions[qi], qi);
+                        g.style.transform = `rotateX(${-j * step}deg) translateZ(${R}px)`;
+                        g.style.opacity = '0';
+                        ring.appendChild(g);
+                        slots.push({ el: g, angle: j * step, qi });
+                    }
+                    return { slots, S, step, R, n };
+                }
+
+                function spin(model, duration) {
+                    const { slots, S, step, R, n } = model;
+                    const turns = n <= 3 ? 1.25 : 1.6;
+                    const theta0 = -360 * turns;
+                    const over = step * 0.14;                          // перелёт за рамку перед защёлкиванием
+                    const settle = 280;                                // мс на возврат в рамку
+                    const main = Math.max(500, duration - settle);
+                    const t0 = performance.now();
+                    let lastCount = -1;
+                    let front = null;
+
+                    // Фаза 1: быстрый разгон → торможение с перелётом на +over (easeOutCubic).
+                    // Фаза 2: пружинное возвращение в 0 — карточка «щёлкает» в рамку.
+                    const angleAt = (ms) => {
+                        if (ms < main) {
+                            const t = ms / main;
+                            const e = 1 - Math.pow(1 - t, 3);
+                            return { theta: theta0 + (over - theta0) * e, e, done: false };
+                        }
+                        const t = Math.min(1, (ms - main) / settle);
+                        const e = 1 - Math.pow(1 - t, 2);
+                        return { theta: over * (1 - e), e: 1, done: t >= 1 };
+                    };
+
+                    return new Promise((resolve) => {
+                        const frame = (now) => {
+                            if (skipped) return resolve();
+                            const st = angleAt(now - t0);
+                            const e = st.e;
+                            const theta = st.theta;
+                            const t = st.done ? 1 : 0;
+
+                            ring.style.transform = `translateZ(${-R}px) rotateX(${theta}deg)`;
+
+                            let best = null, bestD = 999;
+                            for (let k = 0; k < slots.length; k++) {
+                                const s = slots[k];
+                                let d = ((theta - s.angle) % 360 + 540) % 360 - 180;   // -180..180
+                                const ad = Math.abs(d);
+                                let op = 0;
+                                if (ad < 90) op = 0.1 + 0.9 * Math.pow(Math.cos(ad * Math.PI / 180), 6);
+                                s.el.style.opacity = op.toFixed(3);
+                                if (ad < bestD) { bestD = ad; best = s; }
+                            }
+                            if (best !== front) {
+                                if (front) front.el.classList.remove('is-front');
+                                front = best;
+                                front.el.classList.add('is-front');
+                            }
+
+                            const count = Math.max(1, Math.ceil(e * n));
+                            if (count !== lastCount) { curEl.textContent = pad2(count); lastCount = count; }
+                            barEl.style.transform = `scaleX(${e})`;
+
+                            if (t < 1) raf = requestAnimationFrame(frame);
+                            else resolve();
+                        };
+                        raf = requestAnimationFrame(frame);
+                    });
+                }
+
+                async function deal(model) {
+                    const frontSlot = model.slots[0];
+                    const start = frontSlot.el.getBoundingClientRect();
+                    const cards = Array.from(document.querySelectorAll('#questions-stream .question-card'));
+
+                    // Сцена уходит, страница начинает собираться вокруг летящих карточек
+                    stage.classList.add('is-out');
+                    Motion.cascade({ exclude: new Set(cards), baseDelay: 140, step: 70 });
+                    countUpBadge(model.n);
+
+                    flightLayer = document.createElement('div');
+                    flightLayer.className = 'intro-flight';
+                    document.body.appendChild(flightLayer);
+
+                    const vh = window.innerHeight;
+                    const jobs = [];
+
+                    introQuestions.forEach((q, i) => {
+                        const target = cards[i];
+                        if (!target) return;
+                        const tr = target.getBoundingClientRect();
+                        const onScreen = tr.top < vh - 24;
+
+                        // Карточки ниже экрана не летят: призрак, пролетающий поверх
+                        // чужих карточек к цели за кадром, и давал глитч на длинных тестах.
+                        // Они проявятся обычным reveal при скролле.
+                        if (!onScreen) {
+                            Motion.observe([target]);
+                            return;
+                        }
+
+                        const g = makeGhost(q, i);
+                        g.style.left = start.left + 'px';
+                        g.style.top = start.top + 'px';
+                        g.style.width = start.width + 'px';
+                        g.style.height = start.height + 'px';
+                        g.style.opacity = i === 0 ? '1' : '0';
+                        if (i === 0) g.classList.add('is-front');
+                        flightLayer.appendChild(g);
+
+                        const anim = g.animate([
+                            { left: start.left + 'px', top: start.top + 'px', width: start.width + 'px', height: start.height + 'px', opacity: i === 0 ? 1 : 0, borderRadius: '24px' },
+                            { opacity: 1, offset: 0.22 },
+                            { left: tr.left + 'px', top: tr.top + 'px', width: tr.width + 'px', height: tr.height + 'px', opacity: onScreen ? 1 : 0, borderRadius: '28px' }
+                        ], {
+                            duration: 680,
+                            delay: i * 55,
+                            easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+                            fill: 'both'
+                        });
+                        anims.push(anim);
+
+                        jobs.push(anim.finished.then(() => {
+                            if (skipped) return;
+                            if (onScreen) {
+                                Motion.reveal(target, 0, { land: true });
+                                const out = g.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 260, easing: 'ease-out', fill: 'forwards' });
+                                anims.push(out);
+                                return out.finished.then(() => g.remove());
+                            }
+                            g.remove();
+                            Motion.observe([target]);
+                        }).catch(() => {}));
+                    });
+
+                    // Барабан больше не нужен — первая карточка уже в слое полёта
+                    ring.innerHTML = '';
+                    await Promise.all(jobs);
+                }
+
+                function countUpBadge(n) {
+                    const badge = document.getElementById('total-questions-badge');
+                    if (!badge || reduceMotion) return;
+                    let k = 0;
+                    badge.textContent = '0';
+                    const tick = () => {
+                        if (skipped) { badge.textContent = String(n); return; }
+                        k++;
+                        badge.textContent = String(k);
+                        badge.classList.remove('badge-tick'); void badge.offsetWidth; badge.classList.add('badge-tick');
+                        if (k < n) timers.push(setTimeout(tick, Math.max(40, 520 / n)));
+                    };
+                    timers.push(setTimeout(tick, 260));
+                }
+
+                function bindSkip(on) {
+                    const fn = on ? 'addEventListener' : 'removeEventListener';
+                    stage[fn]('click', skip);
+                    window[fn]('keydown', onKey);
+                    window[fn]('wheel', skip, { passive: true });
+                    window[fn]('touchmove', skip, { passive: true });
+                }
+                function onKey(e) {
+                    if (e.key === 'Escape' || e.key === ' ' || e.key === 'Enter') { e.preventDefault(); skip(); }
+                }
+
+                function cleanup() {
+                    cancelAnimationFrame(raf);
+                    timers.forEach(clearTimeout);
+                    timers = [];
+                    anims.forEach((a) => { try { a.cancel(); } catch (e) {} });
+                    anims = [];
+                    if (flightLayer) { flightLayer.remove(); flightLayer = null; }
+                    bindSkip(false);
+                }
+
+                function finish() {
+                    cleanup();
+                    running = false;
+                    ring.innerHTML = '';
+                    ring.style.transform = '';
+                    stage.classList.remove('is-on', 'is-out', 'is-lock');
+                    topEl && topEl.classList.remove('is-ready');
+                    root.classList.remove('intro-pending', 'intro-running');
+                    ls.set(CFG.key, '1');
+                    const badge = document.getElementById('total-questions-badge');
+                    if (badge) badge.textContent = String(introQuestions.length);
+                }
+
+                function skip() {
+                    if (!running || skipped) return;
+                    skipped = true;
+                    goal('intro_skip');
+                    stage.classList.add('is-out');
+                    setTimeout(() => {
+                        finish();
+                        Motion.cascade({ step: 45 });
+                    }, 220);
+                }
+
+                async function play() {
+                    if (running) return;
+                    if (!eligible()) { abort(); return; }
+                    running = true;
+                    skipped = false;
+
+                    try {
+                        if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+                        window.scrollTo(0, 0);
+                        stage.classList.remove('is-out', 'is-lock');
+                        stepEl.textContent = 'сборка теста';
+                        curEl.textContent = '00';
+                        barEl.style.transform = 'scaleX(0)';
+
+                        const wasPending = root.classList.contains('intro-pending');
+                        const model = buildRing();
+                        bindSkip(true);
+                        goal('intro_play');
+
+                        // is-on ставим ДО снятия pending: CSS-анимация сцены передаёт
+                        // эстафету transition-состоянию без мигания
+                        root.classList.add('intro-running');
+                        if (!wasPending) void stage.offsetWidth;
+                        stage.classList.add('is-on');
+                        root.classList.remove('intro-pending');
+                        await sleep(wasPending ? 60 : 160);
+                        if (skipped) return;
+
+                        await spin(model, model.n <= 3 ? 950 : 1150);
+                        if (skipped) return;
+
+                        // Фиксация: рамка вспыхивает, статус «готово»
+                        stage.classList.add('is-lock');
+                        topEl && topEl.classList.add('is-ready');
+                        stepEl.textContent = model.n + ' ' + plural(model.n, ['вопрос', 'вопроса', 'вопросов']) + ' · готово';
+                        await sleep(170);
+                        if (skipped) return;
+
+                        await deal(model);
+                        if (skipped) return;
+
+                        finish();
+                        Motion.cascade();   // добиваем всё, что ещё не появилось
+                    } catch (err) {
+                        console.warn('[intro] fallback', err);
+                        skipped = true;
+                        finish();
+                        Motion.cascade({ step: 40 });
+                    }
+                }
+
+                function abort() {
+                    root.classList.remove('intro-pending', 'intro-running');
+                    Motion.cascade();
+                }
+
+                function plural(n, forms) {
+                    const a = Math.abs(n) % 100, b = a % 10;
+                    if (a > 10 && a < 20) return forms[2];
+                    if (b > 1 && b < 5) return forms[1];
+                    if (b === 1) return forms[0];
+                    return forms[2];
+                }
+
+                return {
+                    play,
+                    isRunning: () => running,
+                    replay() {
+                        if (running) return;
+                        Motion.resetAll();
+                        root.classList.remove('rv-fast');
+                        play();
+                    },
+                    reset() { ls.del(CFG.key); },
+                    resetAll() {
+                        try {
+                            Object.keys(localStorage)
+                                .filter((k) => k.indexOf(CFG.prefix) === 0)
+                                .forEach((k) => localStorage.removeItem(k));
+                        } catch (e) {}
+                    },
+                    disable() { ls.set(CFG.disabledKey, '1'); },
+                    enable() { ls.del(CFG.disabledKey); },
+                    status() {
+                        return {
+                            survey: CFG.key,
+                            seen: ls.get(CFG.key) === '1',
+                            disabled: ls.get(CFG.disabledKey) === '1',
+                            role: CFG.role,
+                            roles: CFG.roles,
+                            questions: introQuestions.length
+                        };
+                    }
+                };
+            })();
+
+            /* softReload: перезагрузка после правок без повторного каскада */
+            function softReload() {
+                try { sessionStorage.setItem('letychka:quick', '1'); } catch (e) {}
+                window.location.reload();
+            }
+
+            window.Motion = Motion;
+            window.LetychkaIntro = Intro;
+            window.softReload = softReload;
+
+            /* ======================================================================
+               BOOT — ждём два кадра, чтобы tailwind-JIT успел расставить стили
+               ====================================================================== */
+            function boot() {
+                window.__rvBooted = true;
+                if (reduceMotion) {
+                    root.classList.remove('intro-pending');
+                    document.querySelectorAll('[data-rv]').forEach((e) => Motion.finalize(e));
+                    return;
+                }
+                if (root.classList.contains('intro-pending')) {
+                    const go = () => Intro.play();
+                    // Шрифты влияют на высоту карточек → меряем после них (но не ждём вечно)
+                    if (document.fonts && document.fonts.ready) {
+                        Promise.race([document.fonts.ready, new Promise((r) => setTimeout(r, 300))]).then(go);
+                    } else {
+                        go();
+                    }
+                } else {
+                    Motion.cascade();
+                }
+            }
+
+            const start = () => requestAnimationFrame(() => requestAnimationFrame(boot));
+            if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+            else start();
+
+            // Alt+Shift+I — проиграть интро заново (для ручных проверок)
+            window.addEventListener('keydown', (e) => {
+                if (e.altKey && e.shiftKey && (e.code === 'KeyI')) { e.preventDefault(); Intro.replay(); }
+            });
+        })();
+    </script>
 
     <script>
         const surveyId = '{{ survey_id }}';
         const isUserAuthenticated = ("{{ username }}" !== "0" && "{{ username }}" !== "" && "{{ username }}" !== "None");
-        
+        const VIEWER_ROLE = '{{ viewer_role|default:"guest" }}';
+        const QUESTION_COUNT = {{ questions|length|default:0 }};
+        const CREATE_URL = "{% url 'create' %}";
+        let answersRevealed = {% if show_answers %}true{% else %}false{% endif %};
+
         let rawQuestions = [];
         try {
             const qDataEl = document.getElementById('questions-data');
@@ -953,7 +2112,8 @@
 
         let currentQuestionType = 'single';
         let isEditMode = false;
-        let guestAnswerCounter = 0;
+        const answeredQuestions = new Set();
+        let guestFinalShown = false;
 
         function getCookie(name) {
             let cookieValue = null;
@@ -974,10 +2134,54 @@
             return cookieValue;
         }
 
+        /* ==========================================================================
+        МОДАЛКИ С АНИМАЦИЕЙ (общий хелпер)
+        ========================================================================== */
+        const Modal = {
+            open(id) {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.classList.remove('hidden', 'm-out');
+                el.style.display = 'flex';
+                void el.offsetWidth;
+                el.classList.add('m-in');
+            },
+            close(id) {
+                const el = document.getElementById(id);
+                if (!el || el.style.display === 'none' || el.classList.contains('hidden')) return;
+                el.classList.remove('m-in');
+                el.classList.add('m-out');
+                setTimeout(() => {
+                    el.classList.add('hidden');
+                    el.classList.remove('m-out');
+                    el.style.display = 'none';
+                }, 200);
+            }
+        };
+
+        /* Тексты модалки регистрации.
+           guest_owner — гость смотрит СВОЙ тест: «сохраните тест».
+           guest       — гость смотрит ЧУЖОЙ тест: «соберите свой». */
         const MODAL_PRESETS = {
             banner: {
                 title: "Сохраните созданный тест",
                 desc: "Зарегистрируйтесь, чтобы закрепить тест за своим аккаунтом и получить ещё 5 тестов в подарок."
+            },
+            header: {
+                title: "Сохраните созданный тест",
+                desc: "Создайте аккаунт за 10 секунд — тест закрепится за вами и не потеряется."
+            },
+            nav: {
+                title: "Сохраните созданный тест",
+                desc: "Создайте аккаунт за 10 секунд — тест закрепится за вами и не потеряется."
+            },
+            island: {
+                title: "Тест проверен — сохраните его",
+                desc: "Зарегистрируйтесь, чтобы раздать тест ученикам по ссылке и получить ещё 5 тестов в подарок."
+            },
+            history: {
+                title: "История ваших тестов",
+                desc: "Сохраните тест в кабинет — все созданные тесты будут храниться в одном месте."
             },
             take_test: {
                 title: "Запуск теста для прохождения",
@@ -1009,20 +2213,62 @@
             },
             in_feed: {
                 title: "Сохранить и продолжить работу",
-                desc: "Зарегистрируйтесь за 10 секунд, чтобы настроить этот тест и забрать 3 бонусных теста."
+                desc: "Зарегистрируйтесь за 10 секунд, чтобы настроить этот тест и забрать 5 бонусных тестов."
             }
         };
 
+        const VISITOR_PRESETS = {
+            default: {
+                title: "Соберите свой тест",
+                desc: "Это тест другого автора. Зарегистрируйтесь — и соберите свой из конспекта, PDF или темы. 5 тестов бесплатно."
+            },
+            share: {
+                title: "Делитесь своими тестами",
+                desc: "Ссылкой и QR-кодом делится автор. Создайте аккаунт — соберите свой тест и раздавайте его ученикам."
+            },
+            pdf: {
+                title: "PDF-бланки для своих тестов",
+                desc: "Бланк для печати выгружает автор. Зарегистрируйтесь — и получайте PDF к каждому своему тесту."
+            },
+            answers: {
+                title: "Ключи видит только автор",
+                desc: "Создайте аккаунт и соберите свой тест — ключи, автопроверка и аналитика будут у вас."
+            },
+            edit: {
+                title: "Это чужой тест",
+                desc: "Редактировать может только автор. Зарегистрируйтесь и соберите свой — нейросеть сделает это за полминуты."
+            },
+            regenerate: {
+                title: "Это чужой тест",
+                desc: "Пересобрать может только автор. Создайте аккаунт и соберите свой вариант по этой же теме."
+            },
+            history: {
+                title: "История ваших тестов",
+                desc: "Создайте аккаунт — все ваши тесты будут храниться в одном кабинете."
+            }
+        };
+
+        function registerSubmitLabel() {
+            return VIEWER_ROLE === 'guest' ? 'Создать аккаунт' : 'Сохранить и продолжить';
+        }
+        function resetRegisterButton() {
+            $('#btn-submit-register').prop('disabled', false)
+                .html(`<span>${registerSubmitLabel()}</span><i class="fas fa-arrow-right text-[10px]"></i>`);
+        }
+
         function openRegisterModal(trigger = 'banner') {
-            const config = MODAL_PRESETS[trigger] || MODAL_PRESETS.banner;
+            const config = (VIEWER_ROLE === 'guest')
+                ? (VISITOR_PRESETS[trigger] || VISITOR_PRESETS.default)
+                : (MODAL_PRESETS[trigger] || MODAL_PRESETS.banner);
             $('#reg-modal-title').text(config.title);
             $('#reg-modal-desc').text(config.desc);
             $('#reg-form-error').addClass('hidden').text('');
-            $('#quick-register-modal').removeClass('hidden').css('display', 'flex');
+            resetRegisterButton();
+            Modal.open('quick-register-modal');
         }
 
         function closeRegisterModal() {
-            $('#quick-register-modal').addClass('hidden').css('display', 'none');
+            Modal.close('quick-register-modal');
         }
 
         /* ==========================================================================
@@ -1112,66 +2358,71 @@
         /* ==========================================================================
         ИНТЕРАКТИВНЫЙ КЛИК ПО ВАРИАНТАМ (ТЕСТ-ДРАЙВ В ПРЕВЬЮ)
         ========================================================================== */
+        const ROW_IDLE = 'bg-[#111119]/70 border-white/[0.04] text-gray-300';
+        const BADGE_IDLE = 'bg-white/5 border border-white/10 text-gray-400';
+
         function initInteractiveQuizPreview() {
+            const isOwner = {% if is_creator or is_guest_owner %}true{% else %}false{% endif %};
+
             $('.options-container').on('click', '.option-row', function(e) {
                 if (isEditMode) return;
+                if (answersRevealed) return;
+
+                // Если кликает НЕ автор (ученик, перешедший по ссылке /c/) — не даем тыкать вхолостую:
+                if (!isOwner) {
+                    Island.notify('Чтобы сдать тест, нажмите «Пройти»', 'info', 'fa-play', 3500);
+                    // Мягко подсвечиваем кнопку прохождения
+                    $('a[href*="take_test"]').first().addClass('ring-2 ring-indigo-400');
+                    setTimeout(() => $('a[href*="take_test"]').first().removeClass('ring-2 ring-indigo-400'), 1500);
+                    return;
+                }
 
                 const $row = $(this);
                 const $article = $row.closest('article');
                 const qType = $article.attr('data-question-type') || 'single';
-                const isMasterShow = $('#answersToggle').is(':checked');
-
-                if (isMasterShow) return;
-
                 const isCorrect = ($row.attr('data-is-correct') === 'true');
 
                 if (qType === 'single') {
                     $article.find('.option-row').each(function() {
                         const $r = $(this);
-                        $r.removeClass('bg-emerald-500/15 border-emerald-500/40 text-emerald-200 bg-rose-500/15 border-rose-500/40 text-rose-200')
-                          .addClass('bg-[#111119]/70 border-white/[0.04] text-gray-300');
-                        
+                        $r.removeClass('bg-emerald-500/15 border-emerald-500/40 text-emerald-200 bg-emerald-500/10 border-emerald-500/30 text-emerald-300 bg-rose-500/15 border-rose-500/40 text-rose-200')
+                          .addClass(ROW_IDLE);
+
                         const $b = $r.find('.opt-badge');
-                        $b.removeClass('bg-emerald-500 bg-rose-500 text-black text-white font-bold')
-                          .addClass('bg-white/5 border border-white/10 text-gray-400');
+                        $b.removeClass('bg-emerald-500 bg-emerald-500/30 text-emerald-300 bg-rose-500 text-black text-white font-bold')
+                          .addClass(BADGE_IDLE);
                         $b.find('.opt-icon').attr('class', 'opt-icon fas fa-circle text-[7px] opacity-40');
                         $r.find('.opt-label').addClass('hidden').hide();
                     });
 
-                    // 2. ПОДСВЕЧИВАЕМ ВЫБРАННЫЙ
                     const $badge = $row.find('.opt-badge');
                     const $icon = $badge.find('.opt-icon');
                     const $label = $row.find('.opt-label');
 
                     if (isCorrect) {
-                        // Угадал!
-                        $row.removeClass('bg-[#111119]/70 border-white/[0.04] text-gray-300')
-                            .addClass('bg-emerald-500/15 border-emerald-500/40 text-emerald-200');
-                        $badge.removeClass('bg-white/5 border border-white/10 text-gray-400')
-                              .addClass('bg-emerald-500 text-black font-bold');
+                        $row.removeClass(ROW_IDLE).addClass('bg-emerald-500/15 border-emerald-500/40 text-emerald-200');
+                        $badge.removeClass(BADGE_IDLE).addClass('bg-emerald-500 text-black font-bold');
                         $icon.attr('class', 'opt-icon fas fa-check');
                         $label.text('').removeClass('hidden text-rose-400').addClass('text-emerald-400').show();
+                        Motion.fx($row, 'fx-ok');
                     } else {
-                        // Ошибся!
-                        $row.removeClass('bg-[#111119]/70 border-white/[0.04] text-gray-300')
-                            .addClass('bg-rose-500/15 border-rose-500/40 text-rose-200');
-                        $badge.removeClass('bg-white/5 border border-white/10 text-gray-400')
-                              .addClass('bg-rose-500 text-white font-bold');
+                        $row.removeClass(ROW_IDLE).addClass('bg-rose-500/15 border-rose-500/40 text-rose-200');
+                        $badge.removeClass(BADGE_IDLE).addClass('bg-rose-500 text-white font-bold');
                         $icon.attr('class', 'opt-icon fas fa-xmark text-[9px]');
                         $label.text('Неверно').removeClass('hidden text-emerald-400').addClass('text-rose-400 font-bold').show();
+                        Motion.fx($row, 'fx-bad');
 
                         // Показываем, где был правильный ответ
                         const $correctRow = $article.find('.option-row[data-is-correct="true"]');
                         if ($correctRow.length) {
-                            $correctRow.removeClass('bg-[#111119]/70 border-white/[0.04] text-gray-300')
-                                       .addClass('bg-emerald-500/10 border-emerald-500/30 text-emerald-300');
-                            $correctRow.find('.opt-badge')
-                                       .removeClass('bg-white/5 border border-white/10 text-gray-400')
-                                       .addClass('bg-emerald-500/30 text-emerald-300 font-bold');
+                            $correctRow.removeClass(ROW_IDLE).addClass('bg-emerald-500/10 border-emerald-500/30 text-emerald-300');
+                            $correctRow.find('.opt-badge').removeClass(BADGE_IDLE).addClass('bg-emerald-500/30 text-emerald-300 font-bold');
                             $correctRow.find('.opt-icon').attr('class', 'opt-icon fas fa-check text-[9px]');
                             $correctRow.find('.opt-label').text('').removeClass('hidden').addClass('text-emerald-400').show();
+                            $correctRow.each(function(i) { Motion.fx(this, 'fx-hint', 160 + i * 60); });
                         }
                     }
+                    Motion.fx($badge, 'fx-pop');
 
                 } else {
                     // НЕСКОЛЬКО ВАРИАНТОВ (MULTIPLE)
@@ -1180,50 +2431,55 @@
                     const $label = $row.find('.opt-label');
 
                     if ($row.hasClass('is-checked-preview')) {
-                        // Снимаем выбор
                         $row.removeClass('is-checked-preview bg-emerald-500/15 border-emerald-500/40 text-emerald-200 bg-rose-500/15 border-rose-500/40 text-rose-200')
-                            .addClass('bg-[#111119]/70 border-white/[0.04] text-gray-300');
-                        $badge.removeClass('bg-emerald-500 bg-rose-500 text-black text-white font-bold')
-                              .addClass('bg-white/5 border border-white/10 text-gray-400');
+                            .addClass(ROW_IDLE);
+                        $badge.removeClass('bg-emerald-500 bg-rose-500 text-black text-white font-bold').addClass(BADGE_IDLE);
                         $icon.attr('class', 'opt-icon fas fa-square text-[9px] opacity-40');
                         $label.addClass('hidden').hide();
                     } else {
-                        // Ставим выбор
                         $row.addClass('is-checked-preview');
                         if (isCorrect) {
-                            $row.removeClass('bg-[#111119]/70 border-white/[0.04] text-gray-300')
-                                .addClass('bg-emerald-500/15 border-emerald-500/40 text-emerald-200');
-                            $badge.removeClass('bg-white/5 border border-white/10 text-gray-400')
-                                  .addClass('bg-emerald-500 text-black font-bold');
+                            $row.removeClass(ROW_IDLE).addClass('bg-emerald-500/15 border-emerald-500/40 text-emerald-200');
+                            $badge.removeClass(BADGE_IDLE).addClass('bg-emerald-500 text-black font-bold');
                             $icon.attr('class', 'opt-icon fas fa-check');
                             $label.text('').removeClass('hidden text-rose-400').addClass('text-emerald-400').show();
+                            Motion.fx($row, 'fx-ok');
                         } else {
-                            $row.removeClass('bg-[#111119]/70 border-white/[0.04] text-gray-300')
-                                .addClass('bg-rose-500/15 border-rose-500/40 text-rose-200');
-                            $badge.removeClass('bg-white/5 border border-white/10 text-gray-400')
-                                  .addClass('bg-rose-500 text-white font-bold');
+                            $row.removeClass(ROW_IDLE).addClass('bg-rose-500/15 border-rose-500/40 text-rose-200');
+                            $badge.removeClass(BADGE_IDLE).addClass('bg-rose-500 text-white font-bold');
                             $icon.attr('class', 'opt-icon fas fa-xmark text-[9px]');
                             $label.text('Неверно').removeClass('hidden text-emerald-400').addClass('text-rose-400 font-bold').show();
+                            Motion.fx($row, 'fx-bad');
                         }
+                        Motion.fx($badge, 'fx-pop');
                     }
                 }
 
-                // Интеллектуальный крючок в Dynamic Island
+                // Крючок в Dynamic Island — только для гостей
                 if (!isUserAuthenticated) {
-                    guestAnswerCounter++;
-                    let question_count = {{questions|length}};
-                    
-                    if (guestAnswerCounter === 1) {
+                    const qIndex = parseInt($article.attr('data-question-index'), 10);
+                    const firstAnswer = answeredQuestions.size === 0;
+                    answeredQuestions.add(qIndex);
+
+                    if (firstAnswer) {
                         Island.info('Ответы сверяются на лету', 'fa-bolt', 3000);
-                    } else if (guestAnswerCounter === question_count) {
+                    } else if (!guestFinalShown && answeredQuestions.size >= QUESTION_COUNT) {
+                        guestFinalShown = true;
                         setTimeout(() => {
-                            Island.notify('Тест проверен. Нажмите, чтобы сохранить', 'info', 'fa-floppy-disk', 6000);
-                            
                             const $island = $('#dynamic-island');
-                            $island.addClass('cursor-pointer ring-2 ring-indigo-500/50').off('click.guestSave').one('click.guestSave', function() {
-                                openRegisterModal('island');
-                                $island.removeClass('cursor-pointer ring-2 ring-indigo-500/50');
-                            });
+                            if (VIEWER_ROLE === 'guest_owner') {
+                                Island.notify('Тест проверен. Нажмите, чтобы сохранить', 'info', 'fa-floppy-disk', 6000);
+                                $island.addClass('cursor-pointer ring-2 ring-indigo-500/50').off('click.guestSave').one('click.guestSave', function() {
+                                    openRegisterModal('island');
+                                    $island.removeClass('cursor-pointer ring-2 ring-indigo-500/50');
+                                });
+                            } else {
+                                Island.notify('Тест пройден. Соберите свой — нажмите', 'info', 'fa-wand-magic-sparkles', 6000);
+                                $island.addClass('cursor-pointer ring-2 ring-white/30').off('click.guestSave').one('click.guestSave', function() {
+                                    window.location.href = CREATE_URL;
+                                });
+                            }
+                            setTimeout(() => $island.removeClass('cursor-pointer ring-2 ring-indigo-500/50 ring-white/30').off('click.guestSave'), 6200);
                         }, 400);
                     }
                 }
@@ -1234,54 +2490,33 @@
         ПЕРЕКЛЮЧЕНИЕ ПРАВИЛЬНЫХ ОТВЕТОВ В DOM (МАСТЕР-ТУМБЛЕР)
         ========================================================================== */
         function toggleAnswersInDOM(show) {
+            answersRevealed = !!show;
+            let revealIdx = 0;
+
             $('.option-row').each(function() {
-                const isCorrect = $(this).attr('data-is-correct') === 'true';
-                const isMultiple = $(this).closest('article').find('.fa-list-check').length > 0;
-                const $badge = $(this).find('.opt-badge');
-                const $icon = $(this).find('.opt-icon');
-                const $label = $(this).find('.opt-label');
+                const $row = $(this);
+                const isCorrect = $row.attr('data-is-correct') === 'true';
+                const isMultiple = ($row.closest('article').attr('data-question-type') === 'multiple');
+                const $badge = $row.find('.opt-badge');
+                const $icon = $row.find('.opt-icon');
+                const $label = $row.find('.opt-label');
+                const idleIcon = isMultiple ? 'opt-icon fas fa-square text-[9px] opacity-40' : 'opt-icon fas fa-circle text-[7px] opacity-40';
 
-                // Очищаем интерактивные классы тест-драйва
-                $(this).removeClass('is-checked-preview bg-rose-500/15 border-rose-500/40 text-rose-200');
+                // Сбрасываем всё, что натыкали в тест-драйве
+                $row.removeClass('is-checked-preview bg-rose-500/15 border-rose-500/40 text-rose-200 bg-emerald-500/15 border-emerald-500/40 text-emerald-200');
+                $badge.removeClass('bg-rose-500 bg-emerald-500/30 text-emerald-300 text-white');
 
-                if (isCorrect) {
-                    if (show) {
-                        $(this)
-                            .removeClass('bg-[#111119]/70 border-white/[0.04] text-gray-300')
-                            .addClass('bg-emerald-500/10 border-emerald-500/30 text-emerald-300 font-medium');
-                        $badge
-                            .removeClass('bg-white/5 border border-white/10 text-gray-400')
-                            .addClass('bg-emerald-500 text-black font-bold');
-                        $icon.attr('class', 'opt-icon fas fa-check');
-                        $label.text('Верно').removeClass('hidden text-rose-400').addClass('text-emerald-400').show();
-                    } else {
-                        $(this)
-                            .addClass('bg-[#111119]/70 border-white/[0.04] text-gray-300')
-                            .removeClass('bg-emerald-500/10 border-emerald-500/30 text-emerald-300 font-medium');
-                        $badge
-                            .addClass('bg-white/5 border border-white/10 text-gray-400')
-                            .removeClass('bg-emerald-500 text-black font-bold');
-                        
-                        if (isMultiple) {
-                            $icon.attr('class', 'opt-icon fas fa-square text-[9px] opacity-40');
-                        } else {
-                            $icon.attr('class', 'opt-icon fas fa-circle text-[7px] opacity-40');
-                        }
-                        $label.addClass('hidden').hide();
-                    }
+                if (isCorrect && show) {
+                    $row.removeClass(ROW_IDLE).addClass('bg-emerald-500/10 border-emerald-500/30 text-emerald-300 font-medium');
+                    $badge.removeClass(BADGE_IDLE).addClass('bg-emerald-500 text-black font-bold');
+                    $icon.attr('class', 'opt-icon fas fa-check');
+                    $label.text('Верно').removeClass('hidden text-rose-400').addClass('text-emerald-400').show();
+                    Motion.fx($row, 'fx-hint', Math.min(revealIdx * 45, 600));
+                    revealIdx++;
                 } else {
-                    $(this)
-                        .addClass('bg-[#111119]/70 border-white/[0.04] text-gray-300')
-                        .removeClass('bg-emerald-500/10 border-emerald-500/30 text-emerald-300 font-medium');
-                    $badge
-                        .addClass('bg-white/5 border border-white/10 text-gray-400')
-                        .removeClass('bg-emerald-500 text-black font-bold');
-                    
-                    if (isMultiple) {
-                        $icon.attr('class', 'opt-icon fas fa-square text-[9px] opacity-40');
-                    } else {
-                        $icon.attr('class', 'opt-icon fas fa-circle text-[7px] opacity-40');
-                    }
+                    $row.addClass(ROW_IDLE).removeClass('bg-emerald-500/10 border-emerald-500/30 text-emerald-300 font-medium');
+                    $badge.addClass(BADGE_IDLE).removeClass('bg-emerald-500 text-black font-bold');
+                    $icon.attr('class', idleIcon);
                     $label.addClass('hidden').hide();
                 }
             });
@@ -1311,18 +2546,22 @@
         function addOptionRow(value = '', isChecked = false) {
             const rowId = 'opt-row-' + Math.random().toString(36).substring(2, 9);
             const inputType = (currentQuestionType === 'single') ? 'radio' : 'checkbox';
-            const nameAttr = (currentQuestionType === 'single') ? 'name="correct_opt"' : '';
 
-            const rowHtml = `
+            const $row = $(`
                 <div class="flex items-center gap-2.5 bg-[#18171A] border border-white/10 rounded-2xl p-2.5" id="${rowId}">
-                    <input type="${inputType}" ${nameAttr} ${isChecked ? 'checked' : ''} class="opt-check text-indigo-600 focus:ring-0 ml-1 rounded cursor-pointer">
-                    <input type="text" required value="${value}" class="opt-val flex-grow bg-transparent border-0 text-sm text-white focus:outline-none" placeholder="Текст ответа">
-                    <button type="button" onclick="$('#${rowId}').remove()" class="text-gray-500 hover:text-rose-400 p-1 text-xs">
+                    <input type="${inputType}" class="opt-check text-indigo-600 focus:ring-0 ml-1 rounded cursor-pointer">
+                    <input type="text" required class="opt-val flex-grow bg-transparent border-0 text-sm text-white focus:outline-none" placeholder="Текст ответа">
+                    <button type="button" class="text-gray-500 hover:text-rose-400 p-1 text-xs">
                         <i class="fas fa-xmark"></i>
                     </button>
                 </div>
-            `;
-            $('#modal-options-list').append(rowHtml);
+            `);
+            // Значение ставим через .val(), а не в разметку — кавычки в ответах больше не ломают инпут
+            $row.find('.opt-val').val(value);
+            const $check = $row.find('.opt-check').prop('checked', !!isChecked);
+            if (currentQuestionType === 'single') $check.attr('name', 'correct_opt');
+            $row.find('button').on('click', () => $row.remove());
+            $('#modal-options-list').append($row);
         }
 
         function openNewQuestionModal() {
@@ -1333,7 +2572,7 @@
             setQuestionType('single');
             addOptionRow('', true);
             addOptionRow('', false);
-            $('#question-editor-modal').removeClass('hidden').css('display', 'flex');
+            Modal.open('question-editor-modal');
         }
 
         function editExistingQuestion(index) {
@@ -1361,11 +2600,11 @@
                 });
             }
 
-            $('#question-editor-modal').removeClass('hidden').css('display', 'flex');
+            Modal.open('question-editor-modal');
         }
 
         function closeQuestionModal() {
-            $('#question-editor-modal').addClass('hidden').css('display', 'none');
+            Modal.close('question-editor-modal');
         }
 
         async function deleteQuestion(index) {
@@ -1378,7 +2617,7 @@
                 const data = await res.json();
                 if (res.ok && data.status === 'success') {
                     Island.success('Вопрос удален');
-                    setTimeout(() => window.location.reload(), 600);
+                    setTimeout(() => softReload(), 600);
                 } else {
                     Island.error(data.error || 'Ошибка при удалении');
                 }
@@ -1388,11 +2627,11 @@
         }
 
         function openEditTitleModal() {
-            $('#title-modal').removeClass('hidden').css('display', 'flex');
+            Modal.open('title-modal');
         }
 
         function closeEditTitleModal() {
-            $('#title-modal').addClass('hidden').css('display', 'none');
+            Modal.close('title-modal');
         }
 
         async function saveSurveyTitle() {
@@ -1430,16 +2669,16 @@
                 return;
             }
 
-            if (!confirm('Летучка составит совершенно новые вопросы по этой теме. Будет списание одного теста с баланса. Продолжить?')) return;
+            if (!confirm('Летучка составит совершенно новые вопросы по этой теме. Будет списание одного теста с баланса. Все попытки прохождения будут удалены. Продолжить?')) return;
 
             Island.info('ИИ пересобирает тест...', 'fa-rotate fa-spin', 25000);
 
             try {
                 const res = await fetch(`/api/surveys/${surveyId}/regenerate/`, {
                     method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json', 
-                        'X-CSRFToken': getCookie('csrftoken') 
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
                     }
                 });
 
@@ -1447,6 +2686,8 @@
 
                 if (res.ok && data.status === 'success') {
                     Island.success('Тест успешно пересобран!', 'fa-check');
+                    // Новые вопросы = новая «выгрузка»: сбрасываем флаг, чтобы интро сыграло для свежего набора
+                    LetychkaIntro.reset();
                     setTimeout(() => {
                         window.location.reload();
                     }, 800);
@@ -1495,11 +2736,11 @@
         function openDeleteModal(id, title) {
             $('#modal-survey-title').text(`«${title}»`);
             $('#confirm-delete-link').attr('href', `/drop-survey/${id}/`);
-            $('#delete-modal').removeClass('hidden').css('display', 'flex');
+            Modal.open('delete-modal');
         }
 
         function closeDeleteModal() {
-            $('#delete-modal').addClass('hidden').css('display', 'none');
+            Modal.close('delete-modal');
         }
 
         async function registerSurveyView() {
@@ -1524,7 +2765,7 @@
                 if (resData.success && resData.view_count !== undefined) {
                     const $counter = $('#dynamic-island .fa-eye').next('span');
                     const currentCount = parseInt($counter.text(), 10) || 0;
-                    
+
                     if (resData.new_view && resData.view_count > currentCount) {
                         $counter.text(resData.view_count);
                         $counter.parent().addClass('border-indigo-500/40 text-white');
@@ -1548,6 +2789,12 @@
             // 1. ИНИЦИАЛИЗАЦИЯ ИНТЕРАКТИВНОГО КВИЗА (ТЕСТ-ДРАЙВ)
             initInteractiveQuizPreview();
 
+            // Esc закрывает открытые модалки (если не идёт интро)
+            $(document).on('keydown', function(e) {
+                if (e.key !== 'Escape' || (window.LetychkaIntro && LetychkaIntro.isRunning())) return;
+                ['quick-register-modal', 'question-editor-modal', 'title-modal', 'delete-modal'].forEach(id => Modal.close(id));
+            });
+
             // 2. ТУМБЛЕР ОТВЕТОВ
             $('#answersToggle').off('change').on('change', async function() {
                 if (!isUserAuthenticated) {
@@ -1564,9 +2811,9 @@
                 try {
                     const response = await fetch(`/api/surveys/${surveyId}/toggle-answers/`, {
                         method: 'POST',
-                        headers: { 
-                            'Content-Type': 'application/json', 
-                            'X-CSRFToken': csrftoken 
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': csrftoken
                         },
                         body: JSON.stringify({ show_answers: showAnswers })
                     });
@@ -1664,7 +2911,7 @@
                     if (res.ok && data.status === 'success') {
                         closeQuestionModal();
                         Island.success('Вопрос сохранен');
-                        setTimeout(() => window.location.reload(), 700);
+                        setTimeout(() => softReload(), 700);
                     } else {
                         Island.error(data.error || 'Ошибка при сохранении');
                     }
@@ -1689,7 +2936,7 @@
                     return;
                 }
 
-                $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-2"></i> Сохраняем...');
+                $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-2"></i> ' + (VIEWER_ROLE === 'guest' ? 'Создаём...' : 'Сохраняем...'));
 
                 try {
                     const res = await fetch('/api/quick-register/', {
@@ -1708,14 +2955,20 @@
                     const data = await res.json();
                     if (res.ok && data.redirect) {
                         closeRegisterModal();
-                        Island.success('Аккаунт создан! Тест сохранен');
-                        setTimeout(() => window.location.reload(), 600);
+                        if (VIEWER_ROLE === 'guest') {
+                            // Чужой тест сохранять некуда — ведём собирать свой
+                            Island.success('Аккаунт создан! Собираем ваш тест');
+                            setTimeout(() => { window.location.href = CREATE_URL; }, 600);
+                        } else {
+                            Island.success('Аккаунт создан! Тест сохранен');
+                            setTimeout(() => softReload(), 600);
+                        }
                     } else {
-                        $btn.prop('disabled', false).html('<span>Сохранить и продолжить</span><i class="fas fa-arrow-right text-[10px]"></i>');
+                        resetRegisterButton();
                         $err.removeClass('hidden').text(data.error || 'Ошибка регистрации.');
                     }
                 } catch (err) {
-                    $btn.prop('disabled', false).html('<span>Сохранить и продолжить</span><i class="fas fa-arrow-right text-[10px]"></i>');
+                    resetRegisterButton();
                     $err.removeClass('hidden').text('Сбой связи с сервером.');
                 }
             });
@@ -1771,7 +3024,7 @@
                     const totalAttempts = activityData.reduce((acc, v) => acc + v, 0);
 
                     $('#qa-total-attempts').text(totalAttempts);
-                    
+
                     const views = parseInt('{{ view_count|default:0 }}', 10);
                     if (views > 0 && totalAttempts > 0) {
                         const rawCr = Math.round((totalAttempts / views) * 100);
@@ -1783,7 +3036,7 @@
 
                     const scoreCounts = (data.scores_distribution_chart?.data || []).map(v => parseInt(v, 10) || 0);
                     const totalScoreRecords = scoreCounts.reduce((acc, v) => acc + v, 0);
-                    
+
                     if (totalScoreRecords > 0 && scoreCounts.length >= 4) {
                         const passed = (scoreCounts[2] || 0) + (scoreCounts[3] || 0);
                         const successPct = Math.round((passed / totalScoreRecords) * 100);

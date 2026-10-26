@@ -7,6 +7,15 @@
     {% load static %}
     <link rel="icon" href="{% static 'img/logo.png' %}" type="image/png">
 
+    <!-- Motion bootstrap: прячем блоки до первого кадра, чтобы каскад не мигал -->
+    <script>
+        (function () {
+            var d = document.documentElement;
+            d.classList.add('js-anim');
+            setTimeout(function () { if (!window.__rvBooted) d.classList.add('anim-failsafe'); }, 3500);
+        })();
+    </script>
+
     {% if debug %}
         <script src="https://cdn.tailwindcss.com"></script>
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
@@ -15,12 +24,10 @@
         <script src="{% static 'vendor/jquery.min.js' %}"></script>
     {% endif %}
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=Golos:wght@400;500;600;700&family=Wix+Madefor+Display:wght@600;700;800&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&family=Wix+Madefor+Display:wght@600;700;800&display=swap" rel="stylesheet">
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- Yandex.Metrika counter -->
@@ -40,14 +47,31 @@
         :root {
             --bg-main: #111119;
             --card-bg: rgba(24, 24, 36, 0.7);
-            --card-border: rgba(255, 255, 255, 0.07);
-            --card-border-hover: rgba(255, 255, 255, 0.15);
-            --accent-indigo: #4F46E5;
-            --accent-emerald: #10B981;
-            --accent-rose: #EF4444;
+            --card: #15151D;
+            --well: rgba(255, 255, 255, 0.025);
+            --line: rgba(255, 255, 255, 0.08);
+            --line-2: rgba(255, 255, 255, 0.14);
+            --fg-1: #D4D4D8;
+            --fg-2: #A1A1AA;
+            --fg-3: #71717A;
+            --fg-4: #52525B;
+            --accent: #4F46E5;
+            --accent-hi: #5B54EA;
+            --indigo: #818CF8;
+            --indigo-soft: #A5B4FC;
+            --indigo-tint: rgba(99, 102, 241, 0.14);
+            --mint: #34D399;
+            --amber: #FBBF24;
+            --rose: #FB7185;
             --spring-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
             --spring-smooth: cubic-bezier(0.16, 1, 0.3, 1);
+            --spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+            --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+            --ease-io: cubic-bezier(0.65, 0, 0.35, 1);
+            --f-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
         }
+
+        html { scrollbar-gutter: stable; }
 
         body {
             background-color: var(--bg-main);
@@ -61,15 +85,14 @@
             letter-spacing: -0.02em;
         }
 
-        .font-mono-nums { 
-            font-family: 'Golos', monospace; 
-        }
+        .font-mono-nums { font-family: var(--f-mono); letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+        .num { font-variant-numeric: tabular-nums; }
 
         .glass-panel {
             background: var(--card-bg);
             backdrop-filter: blur(24px);
             -webkit-backdrop-filter: blur(24px);
-            border: 1px solid var(--card-border);
+            border: 1px solid rgba(255, 255, 255, 0.07);
         }
 
         /* DYNAMIC ISLAND CAPSULE */
@@ -84,23 +107,446 @@
             will-change: max-width, transform;
         }
         .island-capsule.mode-header { max-width: 52rem; width: 100%; padding: 0.5rem 1.25rem; }
-        .island-capsule.mode-notify { max-width: 24rem; width: auto; padding: 0.5rem 1.25rem; transform: scale(1.02); background: rgba(18, 17, 20, 0.98); }
 
-        .island-capsule.theme-success { border-color: rgba(16, 185, 129, 0.45); }
-        .island-capsule.theme-error { border-color: rgba(239, 68, 68, 0.45); }
-        .island-capsule.theme-info { border-color: rgba(79, 70, 229, 0.45); }
-
-        .spring-btn {
-            transition: transform 0.2s var(--spring-bounce), background-color 0.15s, border-color 0.15s;
-        }
+        .spring-btn { transition: transform 0.2s var(--spring-bounce), background-color 0.15s, border-color 0.15s, color 0.15s; }
         .spring-btn:hover { transform: translateY(-1px); }
         .spring-btn:active { transform: scale(0.97) translateY(1px); }
+
+        /* ==========================================================================
+           КАРТОЧКИ
+           ========================================================================== */
+        .card {
+            position: relative;
+            min-width: 0;
+            border-radius: 28px;
+            padding: 20px;
+            background: var(--card);
+            border: 1px solid var(--line);
+            transition: border-color 0.3s ease;
+        }
+        @media (min-width: 640px) { .card { padding: 24px; } }
+        .card:hover { border-color: rgba(255, 255, 255, 0.12); }
+        .card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+        .card-title { display: flex; align-items: center; gap: 10px; }
+        .card-title h2 { font-size: 16px; line-height: 1.25; font-weight: 700; letter-spacing: -0.02em; color: #fff; }
+        .card-sub { margin-top: 3px; font-size: 12.5px; color: var(--fg-3); }
+        .card-ico {
+            width: 34px; height: 34px; border-radius: 12px;
+            display: grid; place-items: center; flex-shrink: 0;
+            font-size: 13px; color: var(--fg-1);
+            background: rgba(255, 255, 255, 0.05); border: 1px solid var(--line);
+        }
+        .tag {
+            height: 26px; padding: 0 10px; border-radius: 99px;
+            display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0;
+            font: 600 11px/1 var(--f-mono); letter-spacing: 0.02em;
+            color: var(--fg-2); background: rgba(255, 255, 255, 0.04); border: 1px solid var(--line);
+            white-space: nowrap;
+        }
+        .tag b { color: #fff; font-weight: 700; }
+        .kicker { font: 500 10.5px/1 var(--f-mono); letter-spacing: 0.16em; text-transform: uppercase; color: var(--fg-3); }
+
+        /* ==========================================================================
+           HERO: аватар, план
+           ========================================================================== */
+        .ava {
+            width: 64px; height: 64px; border-radius: 22px; flex-shrink: 0;
+            display: grid; place-items: center;
+            font: 800 24px/1 'Wix Madefor Display', sans-serif; color: #fff;
+            background: linear-gradient(180deg, #5B54EA 0%, #4338CA 100%);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
+        }
+        @media (min-width: 640px) { .ava { width: 72px; height: 72px; font-size: 28px; } }
+
+        .chip {
+            height: 28px; padding: 0 11px; border-radius: 99px;
+            display: inline-flex; align-items: center; gap: 7px;
+            font-size: 12px; color: var(--fg-2);
+            background: var(--well); border: 1px solid var(--line);
+            white-space: nowrap;
+        }
+        .chip b { color: #fff; font-weight: 600; }
+        .chip i { font-size: 10px; color: var(--fg-3); }
+        .chip.is-live { color: #A7F3D0; border-color: rgba(52, 211, 153, 0.25); background: rgba(16, 185, 129, 0.08); }
+        .chip.is-live::before { content: ''; width: 6px; height: 6px; border-radius: 99px; background: var(--mint); }
+        .chip.is-pkg { color: var(--indigo-soft); border-color: rgba(99, 102, 241, 0.3); background: var(--indigo-tint); }
+
+        .feat {
+            display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 10px; align-items: center;
+            padding: 10px 12px; border-radius: 16px;
+            background: var(--well); border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .feat-ico { width: 28px; height: 28px; border-radius: 10px; display: grid; place-items: center; font-size: 11px; }
+        .feat.on .feat-ico { color: var(--mint); background: rgba(52, 211, 153, 0.12); }
+        .feat.off .feat-ico { color: var(--fg-4); background: rgba(255, 255, 255, 0.04); }
+        .feat b { display: block; font-size: 12.5px; font-weight: 600; color: #fff; }
+        .feat > div > span { display: block; margin-top: 1px; font-size: 11.5px; color: var(--fg-3); }
+        .feat.off b { color: var(--fg-2); }
+
+        /* кольцо «осталось дней» / квота */
+        .gauge { position: relative; width: 132px; height: 132px; flex-shrink: 0; }
+        .gauge svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+        .gauge .trk { fill: none; stroke: rgba(255, 255, 255, 0.07); stroke-width: 7; }
+        .gauge .bar { fill: none; stroke-width: 7; stroke-linecap: round; stroke-dasharray: 0 100; transition: stroke-dasharray 1.3s var(--ease-io) 0.25s; }
+        .gauge.in .bar { stroke-dasharray: var(--v) 100; }
+        .gauge-c { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; }
+        .gauge-c strong { font: 800 34px/1 'Wix Madefor Display', sans-serif; letter-spacing: -0.04em; color: #fff; font-variant-numeric: tabular-nums; }
+        .gauge-c span { margin-top: 5px; font: 500 10.5px/1.2 var(--f-mono); color: var(--fg-3); }
+
+        .mini-ring { position: relative; width: 46px; height: 46px; flex-shrink: 0; }
+        .mini-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+        .mini-ring .trk { fill: none; stroke: rgba(255, 255, 255, 0.08); stroke-width: 4; }
+        .mini-ring .bar { fill: none; stroke: var(--indigo); stroke-width: 4; stroke-linecap: round; stroke-dasharray: 0 100; transition: stroke-dasharray 1.2s var(--ease-io) 0.3s; }
+        .mini-ring.in .bar { stroke-dasharray: var(--v) 100; }
+        .mini-ring span { position: absolute; inset: 0; display: grid; place-items: center; font: 700 11px/1 var(--f-mono); color: #fff; }
+
+        /* ==========================================================================
+           KPI
+           ========================================================================== */
+        .kpis { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        @media (min-width: 768px) { .kpis { gap: 16px; } }
+        @media (min-width: 1100px) { .kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+        .kpi { display: flex; flex-direction: column; justify-content: space-between; gap: 14px; min-height: 150px; padding: 18px; border-radius: 26px; overflow: hidden; }
+        @media (min-width: 640px) { .kpi { padding: 20px; min-height: 164px; } }
+        .kpi-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+        .kpi-label { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-3); }
+        .kpi-ico { width: 30px; height: 30px; border-radius: 10px; display: grid; place-items: center; font-size: 12px; flex-shrink: 0; color: var(--fg-1); background: rgba(255, 255, 255, 0.05); }
+        .kpi-mid { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; }
+        .kpi-val { font: 800 36px/0.95 'Wix Madefor Display', sans-serif; letter-spacing: -0.045em; color: #fff; font-variant-numeric: tabular-nums; white-space: nowrap; }
+        @media (min-width: 640px) { .kpi-val { font-size: 42px; } }
+        .kpi-val small { font-size: 0.5em; font-weight: 700; letter-spacing: -0.02em; color: var(--fg-3); margin-left: 2px; }
+        .kpi-foot { font-size: 12px; line-height: 1.4; color: var(--fg-3); }
+        .kpi-foot b { color: var(--fg-1); font-weight: 600; }
+
+        .kpi--accent { background: linear-gradient(180deg, #4F46E5 0%, #4338CA 58%, #312E81 100%); border-color: rgba(129, 140, 248, 0.45); }
+        .kpi--accent:hover { border-color: rgba(165, 180, 252, 0.7); }
+        .kpi--accent .kpi-label { color: rgba(224, 231, 255, 0.75); }
+        .kpi--accent .kpi-ico { color: #fff; background: rgba(255, 255, 255, 0.14); }
+        .kpi--accent .kpi-foot { color: rgba(224, 231, 255, 0.8); }
+        .kpi--accent .kpi-foot b { color: #fff; }
+        .kpi--accent::after {
+            content: ''; position: absolute; inset: -20% auto -20% -60%; width: 45%;
+            background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.18), transparent);
+            transform: skewX(-18deg); opacity: 0; pointer-events: none;
+        }
+        .kpi--accent.rv-in::after { animation: shine 1.6s var(--ease-out) 0.5s both; }
+        @keyframes shine { 0% { opacity: 0; transform: skewX(-18deg) translateX(0); } 20% { opacity: 1; } 100% { opacity: 0; transform: skewX(-18deg) translateX(420%); } }
+
+        .spark { display: flex; align-items: flex-end; gap: 4px; height: 40px; }
+        .spark i { width: 7px; border-radius: 99px; background: rgba(255, 255, 255, 0.28); height: var(--h, 12%); min-height: 4px; transform-origin: bottom; transform: scaleY(0); transition: transform 0.9s var(--ease-out) calc(0.1s + var(--k, 0) * 50ms); }
+        .spark i.is-max { background: #fff; }
+        .spark.in i { transform: none; }
+
+        .kpi-skel { display: inline-block; width: 64px; height: 30px; border-radius: 10px; background: linear-gradient(90deg, rgba(255,255,255,.04), rgba(255,255,255,.09), rgba(255,255,255,.04)); background-size: 200% 100%; animation: skel 1.2s linear infinite; vertical-align: middle; }
+        .kpi--accent .kpi-skel { background: linear-gradient(90deg, rgba(255,255,255,.1), rgba(255,255,255,.22), rgba(255,255,255,.1)); background-size: 200% 100%; }
+        @keyframes skel { to { background-position: -200% 0; } }
+
+        /* ==========================================================================
+           ГРАФИК АКТИВНОСТИ (как на странице аналитики) + переключатель рядов
+           ========================================================================== */
+        .seg { position: relative; display: inline-grid; grid-auto-flow: column; grid-auto-columns: 1fr; padding: 4px; border-radius: 14px; background: var(--well); border: 1px solid var(--line); }
+        .seg button { position: relative; z-index: 1; height: 30px; padding: 0 12px; border-radius: 10px; font-size: 12px; font-weight: 600; color: var(--fg-3); white-space: nowrap; transition: color 0.2s ease; }
+        .seg button:hover { color: var(--fg-1); }
+        .seg button[aria-pressed="true"] { color: #fff; }
+        .seg-ind { position: absolute; top: 4px; bottom: 4px; left: 0; border-radius: 10px; background: rgba(255, 255, 255, 0.08); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06); transition: transform 0.45s var(--ease-out), width 0.45s var(--ease-out); }
+
+        .act { position: relative; height: 240px; }
+        .act-plot { height: 100%; display: grid; grid-template-rows: minmax(0, 1fr) auto; padding-left: 30px; }
+        .act-cols { position: relative; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; align-items: end; padding-top: 34px; }
+        .act-gl { position: absolute; left: 0; right: 0; border-top: 1px dashed rgba(255, 255, 255, 0.07); pointer-events: none; }
+        .act-yl { position: absolute; left: -30px; width: 22px; text-align: right; transform: translateY(-50%); font: 500 10.5px/1 var(--f-mono); color: var(--fg-4); pointer-events: none; }
+        .act-col { position: relative; height: 100%; display: flex; align-items: flex-end; justify-content: center; outline: none; }
+        .act-bar {
+            position: relative; width: min(44px, 100%); height: var(--h); min-height: 10px; border-radius: 99px;
+            background: repeating-linear-gradient(135deg, rgba(165, 180, 252, 0.34) 0 1.5px, transparent 1.5px 6px);
+            box-shadow: inset 0 0 0 1px rgba(165, 180, 252, 0.22);
+            transform-origin: bottom; transform: scaleY(0);
+            transition: transform 0.9s var(--ease-out) calc(0.05s + var(--k) * 55ms), height 0.55s var(--ease-out), box-shadow 0.2s ease;
+        }
+        .act-bar::before { content: ''; position: absolute; left: 50%; top: 6px; width: 8px; height: 8px; margin-left: -4px; border-radius: 99px; background: var(--indigo-soft); }
+        .act.in .act-bar { transform: none; }
+        .act-col.is-zero .act-bar { background: rgba(255, 255, 255, 0.04); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06); }
+        .act-col.is-zero .act-bar::before { display: none; }
+        .act-col.is-peak .act-bar { background: linear-gradient(180deg, #A5B4FC 0%, #6366F1 55%, #4F46E5 100%); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3); }
+        .act-col.is-peak .act-bar::before { background: #fff; }
+        .act-col:hover .act-bar, .act-col:focus-visible .act-bar { box-shadow: inset 0 0 0 1.5px var(--indigo-soft); }
+        .act-col.is-peak:hover .act-bar { box-shadow: inset 0 0 0 1.5px #fff; }
+        .act-tip {
+            position: absolute; left: 50%; bottom: calc(var(--h) + 12px); transform: translate(-50%, 4px); z-index: 2;
+            padding: 6px 10px; border-radius: 12px; white-space: nowrap; text-align: center; pointer-events: none;
+            background: #1D1C24; border: 1px solid var(--line-2);
+            opacity: 0; transition: opacity 0.2s ease, transform 0.3s var(--ease-out), bottom 0.55s var(--ease-out);
+        }
+        .act-tip b { display: block; font: 800 16px/1.1 'Wix Madefor Display', sans-serif; color: #fff; font-variant-numeric: tabular-nums; }
+        .act-tip span { display: block; margin-top: 2px; font: 500 10.5px/1 var(--f-mono); color: var(--fg-3); }
+        .act-col.is-peak .act-tip, .act-col:hover .act-tip, .act-col:focus-visible .act-tip { opacity: 1; transform: translate(-50%, 0); }
+        .act-cols:hover .act-col.is-peak:not(:hover) .act-tip { opacity: 0; }
+        .act:not(.in) .act-tip { opacity: 0 !important; }
+        .act-x { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; padding-top: 12px; text-align: center; }
+        .act-x span { display: grid; gap: 2px; font-size: 11.5px; font-weight: 600; color: var(--fg-2); }
+        .act-x small { font: 500 10px/1 var(--f-mono); color: var(--fg-4); }
+        .act-x .is-today { color: #fff; }
+        .act-empty { position: absolute; inset: 34px 0 0; display: grid; place-items: center; text-align: center; font-size: 12.5px; color: var(--fg-3); pointer-events: none; }
+        .act-sum { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--fg-3); }
+        .act-sum b { color: #fff; font-weight: 600; }
+
+        /* ==========================================================================
+           КОЛЬЦО ОЦЕНОК
+           ========================================================================== */
+        .dist { display: grid; gap: 20px; align-items: center; }
+        @media (min-width: 480px) { .dist { grid-template-columns: auto minmax(0, 1fr); gap: 24px; } }
+        .donut { position: relative; width: 168px; height: 168px; margin: 0 auto; }
+        .donut svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+        .donut .trk { fill: none; stroke: rgba(255, 255, 255, 0.06); stroke-width: 13; }
+        .donut .sg { fill: none; stroke-width: 13; stroke-dasharray: 0 100; stroke-dashoffset: var(--off); transition: stroke-dasharray 1s var(--ease-io) calc(0.1s + var(--k) * 140ms), stroke-width 0.25s ease, opacity 0.25s ease; }
+        .donut.in .sg { stroke-dasharray: var(--len) 100; }
+        .donut.has-focus .sg { opacity: 0.28; }
+        .donut.has-focus .sg.is-focus { opacity: 1; stroke-width: 16; }
+        .donut-c { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; pointer-events: none; }
+        .donut-c strong { font: 800 34px/1 'Wix Madefor Display', sans-serif; letter-spacing: -0.04em; color: #fff; font-variant-numeric: tabular-nums; }
+        .donut-c span { margin-top: 6px; font-size: 11.5px; color: var(--fg-3); }
+        .legend { display: grid; gap: 4px; }
+        .legend li { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 12px; cursor: default; transition: background-color 0.2s ease; }
+        .legend li:hover, .legend li.is-focus { background: rgba(255, 255, 255, 0.04); }
+        .legend i { width: 10px; height: 10px; border-radius: 4px; background: var(--c); }
+        .legend .lg-name { min-width: 0; display: grid; gap: 1px; }
+        .legend .lg-name b { font-size: 13px; font-weight: 600; color: #F4F4F5; }
+        .legend .lg-name span { font: 500 11px/1.2 var(--f-mono); color: var(--fg-3); }
+        .legend .lg-val { text-align: right; display: grid; gap: 1px; }
+        .legend .lg-val b { font: 700 15px/1.1 'Wix Madefor Display', sans-serif; color: #fff; font-variant-numeric: tabular-nums; }
+        .legend .lg-val span { font: 500 11px/1.2 var(--f-mono); color: var(--fg-3); }
+
+        /* ==========================================================================
+           ПИКОВЫЕ ЧАСЫ — тепловая полоса 24×1
+           ========================================================================== */
+        .heat { display: grid; grid-template-columns: repeat(24, minmax(0, 1fr)); gap: 3px; }
+        @media (min-width: 640px) { .heat { gap: 4px; } }
+        .heat i {
+            height: 56px; border-radius: 8px;
+            background: rgba(255, 255, 255, 0.035);
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+            transform-origin: bottom; transform: scaleY(0.2); opacity: 0;
+            transition: transform 0.6s var(--spring) calc(var(--k) * 18ms), opacity 0.3s ease calc(var(--k) * 18ms), box-shadow 0.15s ease;
+            cursor: default;
+        }
+        .heat.in i { transform: none; opacity: 1; }
+        .heat i[data-l="1"] { background: rgba(99, 102, 241, 0.22); }
+        .heat i[data-l="2"] { background: rgba(99, 102, 241, 0.42); }
+        .heat i[data-l="3"] { background: rgba(129, 140, 248, 0.68); }
+        .heat i[data-l="4"] { background: linear-gradient(180deg, #A5B4FC, #6366F1); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3); }
+        .heat i:hover, .heat i.is-hl { box-shadow: inset 0 0 0 1.5px #fff; }
+        .heat-x { display: grid; grid-template-columns: repeat(24, minmax(0, 1fr)); gap: 3px; margin-top: 8px; font: 500 9.5px/1 var(--f-mono); color: var(--fg-4); }
+        @media (min-width: 640px) { .heat-x { gap: 4px; } }
+        .heat-x span { text-align: center; }
+        .heat-readout { display: flex; align-items: baseline; gap: 10px; min-height: 22px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--fg-3); }
+        .heat-readout b { color: #fff; font-weight: 600; }
+
+        /* ==========================================================================
+           ТОП ТЕСТОВ / СОСТАВ
+           ========================================================================== */
+        .hbars { display: grid; gap: 10px; }
+        .hb { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; }
+        .hb-n { font: 700 12px/1 var(--f-mono); color: var(--fg-4); text-align: center; }
+        .hb:nth-child(1) .hb-n { color: var(--amber); }
+        .hb-t { min-width: 0; font-size: 13px; color: var(--fg-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .hb-v { font: 700 13px/1 var(--f-mono); color: #fff; }
+        .hb-bar { grid-column: 2 / -1; height: 6px; border-radius: 99px; background: rgba(255, 255, 255, 0.05); overflow: hidden; }
+        .hb-bar i { display: block; height: 100%; border-radius: inherit; background: var(--indigo); transform-origin: left; transform: scaleX(0); transition: transform 1s var(--ease-out) calc(0.15s + var(--k) * 70ms); }
+        .hb:nth-child(1) .hb-bar i { background: linear-gradient(90deg, #6366F1, #A5B4FC); }
+        .hbars.in .hb-bar i { transform: scaleX(var(--p)); }
+
+        .stack { display: flex; height: 14px; border-radius: 99px; overflow: hidden; background: rgba(255, 255, 255, 0.05); gap: 2px; }
+        .stack i { height: 100%; background: var(--c); flex: 0 0 var(--w); transform-origin: left; transform: scaleX(0); transition: transform 0.9s var(--ease-out) calc(0.1s + var(--k) * 110ms); }
+        .stack i:first-child { border-radius: 99px 0 0 99px; }
+        .stack i:last-child { border-radius: 0 99px 99px 0; }
+        .stack.in i { transform: none; }
+        .stack-lg { display: grid; gap: 6px; margin-top: 14px; }
+        .stack-lg li { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto auto; align-items: center; gap: 10px; font-size: 12.5px; color: var(--fg-2); }
+        .stack-lg i { width: 10px; height: 10px; border-radius: 4px; background: var(--c); }
+        .stack-lg b { font: 700 12.5px/1 var(--f-mono); color: #fff; }
+        .stack-lg em { font: 500 11px/1 var(--f-mono); font-style: normal; color: var(--fg-3); min-width: 36px; text-align: right; }
+
+        .empty { display: grid; justify-items: center; gap: 6px; padding: 30px 16px; text-align: center; color: var(--fg-3); font-size: 12.5px; }
+        .empty-ico { width: 40px; height: 40px; border-radius: 14px; display: grid; place-items: center; font-size: 14px; color: var(--fg-2); background: rgba(255, 255, 255, 0.04); border: 1px solid var(--line); margin-bottom: 4px; }
+        .empty b { font-size: 13.5px; color: var(--fg-1); font-weight: 600; }
+
+        /* ==========================================================================
+           ПЕЙВОЛЛ: полный оффер при первом показе, дальше — тихая плашка
+           ========================================================================== */
+        .gate { position: relative; }
+        .gate-blur { filter: blur(6px) saturate(0.7); opacity: 0.4; pointer-events: none; user-select: none; }
+        .gate-over { position: absolute; inset: 0; z-index: 5; display: flex; justify-content: center; align-items: flex-start; padding: 28px 0; }
+        .gate-over::before { content: ''; position: absolute; inset: 0; background: radial-gradient(60% 50% at 50% 28%, rgba(17, 17, 25, 0.6), transparent 70%); pointer-events: none; }
+
+        .offer {
+            position: sticky; top: 96px; width: min(100%, 520px); padding: 28px; border-radius: 32px;
+            background: linear-gradient(180deg, rgba(25, 24, 33, 0.97), rgba(17, 16, 22, 0.97));
+            box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08);
+        }
+        @media (min-width: 640px) { .offer { padding: 34px; } }
+        .offer::before {
+            content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none;
+            background: linear-gradient(180deg, rgba(165, 180, 252, 0.55), rgba(99, 102, 241, 0.12) 40%, rgba(255, 255, 255, 0.04));
+            -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude;
+        }
+        .offer-k { display: inline-flex; align-items: center; gap: 7px; height: 26px; padding: 0 11px; border-radius: 99px; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--indigo-soft); background: var(--indigo-tint); border: 1px solid rgba(99, 102, 241, 0.3); }
+        .offer h3 { margin-top: 16px; font-size: clamp(22px, 3vw, 28px); line-height: 1.15; font-weight: 800; letter-spacing: -0.035em; color: #fff; }
+        .offer > p { margin-top: 10px; font-size: 14px; line-height: 1.55; color: var(--fg-2); }
+        .offer > p b { color: #fff; font-weight: 700; font-variant-numeric: tabular-nums; }
+        .offer-list { margin-top: 20px; display: grid; gap: 8px; }
+        .offer-list li { display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 12px; align-items: center; padding: 10px 12px; border-radius: 16px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .offer-ico { width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center; font-size: 13px; color: var(--indigo-soft); background: var(--indigo-tint); }
+        .offer-list b { display: block; font-size: 13.5px; font-weight: 600; color: #fff; }
+        .offer-list div > span { display: block; margin-top: 1px; font-size: 12px; color: var(--fg-3); }
+
+        @property --border-angle { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+        @keyframes spinAngle { to { --border-angle: 360deg; } }
+        .cta-wrap { position: relative; margin-top: 22px; padding: 2px; border-radius: 18px; overflow: hidden; transition: transform 0.3s var(--spring); }
+        .cta-wrap:hover { transform: scale(1.015); }
+        .cta-wrap:active { transform: scale(0.985); }
+        .cta-wrap::before { content: ''; position: absolute; inset: 0; border-radius: inherit; background: rgba(129, 140, 248, 0.35); }
+        .gate.is-first .cta-wrap::before { animation: spinAngle 2.6s linear infinite; background: conic-gradient(from var(--border-angle), transparent 0%, transparent 65%, #818cf8 82%, #6366f1 92%, #4338ca 100%); }
+        .cta {
+            position: relative; z-index: 1; height: 52px; border-radius: 16px; display: flex; align-items: center; justify-content: center; gap: 10px;
+            font-size: 14.5px; font-weight: 700; color: #fff; background: var(--accent);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+            transition: background-color 0.25s ease;
+        }
+        .cta:hover { background: var(--accent-hi); }
+        .cta .arr { width: 22px; height: 22px; border-radius: 99px; display: grid; place-items: center; background: rgba(255, 255, 255, 0.18); font-size: 10px; transition: transform 0.3s var(--ease-out); }
+        .cta:hover .arr { transform: translateX(2px); }
+        .offer-fine { margin-top: 14px; display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 14px; font-size: 12px; color: var(--fg-3); }
+        .offer-fine span { display: inline-flex; align-items: center; gap: 6px; }
+        .offer-later { display: block; margin: 10px auto 0; height: 32px; padding: 0 12px; border-radius: 10px; font-size: 12px; font-weight: 600; color: var(--fg-3); transition: color 0.2s ease, background-color 0.2s ease; }
+        .offer-later:hover { color: #fff; background: rgba(255, 255, 255, 0.05); }
+
+        /* «Вау» только при первом показе: оффер выезжает пружиной, по нему проходит блик */
+        .gate.is-first .offer { animation: offer-in 0.9s var(--spring) 0.35s both; }
+        @keyframes offer-in { from { opacity: 0; translate: 0 26px; scale: 0.96; } to { opacity: 1; translate: 0 0; scale: 1; } }
+        .gate.is-first .offer::after {
+            content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+            background: linear-gradient(110deg, transparent 35%, rgba(255, 255, 255, 0.07) 50%, transparent 65%);
+            background-size: 250% 100%; background-position: 120% 0;
+            animation: offer-shine 1.4s var(--ease-io) 1.05s both;
+        }
+        @keyframes offer-shine { to { background-position: -120% 0; } }
+
+        /* Тихий режим: компактная плашка, без анимаций */
+        .gate-pill {
+            position: sticky; z-index: 6; top: 84px;
+            width: fit-content; margin: 0 auto -50px;
+            display: none; align-items: center; gap: 12px;
+            padding: 8px 8px 8px 14px; border-radius: 99px;
+            background: rgba(21, 21, 30, 0.94); border: 1px solid rgba(129, 140, 248, 0.3);
+            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            font-size: 12.5px; color: var(--fg-1); white-space: nowrap;
+            max-width: calc(100% - 24px);
+        }
+        .gate-pill i.fa-lock { color: var(--indigo-soft); font-size: 11px; }
+        .gate-pill a { height: 32px; padding: 0 14px; border-radius: 99px; display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: #fff; background: var(--accent); transition: background-color 0.2s ease; }
+        .gate-pill a:hover { background: var(--accent-hi); }
+        .gate-pill button { font-size: 12px; color: var(--fg-3); padding: 0 6px; transition: color 0.2s ease; }
+        .gate-pill button:hover { color: #fff; }
+        @media (max-width: 520px) { .gate-pill .pill-txt { display: none; } }
+        .gate.is-quiet .gate-over { display: none; }
+        .gate.is-quiet .gate-pill { display: flex; }
+
+        /* ==========================================================================
+           ПОПУЛЯРНЫЕ ТЕСТЫ / ТРАНЗАКЦИИ / АККАУНТ
+           ========================================================================== */
+        .pop {
+            position: relative; display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; align-items: center; gap: 12px;
+            padding: 12px 12px; border-radius: 18px; background: var(--well); border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: border-color 0.18s ease, background-color 0.18s ease, transform 0.22s var(--spring-bounce);
+        }
+        .pop:hover { border-color: var(--line-2); background: rgba(255, 255, 255, 0.04); transform: translateY(-1px); }
+        .pop:active { transform: scale(0.99); }
+        .pop-n { font: 800 15px/1 'Wix Madefor Display', sans-serif; text-align: center; color: var(--fg-4); }
+        .pop:nth-child(1) .pop-n { color: var(--amber); }
+        .pop-t { min-width: 0; }
+        .pop-t b { display: block; font-size: 13.5px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .pop-t span { display: block; margin-top: 2px; font: 500 11px/1 var(--f-mono); color: var(--fg-3); }
+        .pop-go { width: 30px; height: 30px; border-radius: 10px; display: grid; place-items: center; font-size: 10px; color: var(--fg-2); background: rgba(255, 255, 255, 0.04); transition: background-color 0.18s ease, color 0.18s ease; }
+        .pop-go i { transition: transform 0.3s var(--spring-bounce); }
+        .pop:hover .pop-go { background: #FAFAFA; color: #111119; }
+        .pop:hover .pop-go i { transform: translateX(2px); }
+
+        .tx { position: relative; display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 16px; transition: background-color 0.2s ease; }
+        .tx:hover { background: rgba(255, 255, 255, 0.03); }
+        .tx + .tx::before { content: ''; position: absolute; left: 12px; right: 12px; top: -1px; height: 1px; background: rgba(255, 255, 255, 0.05); pointer-events: none; }
+        .tx-ico { width: 34px; height: 34px; border-radius: 12px; display: grid; place-items: center; font-size: 12px; }
+        .tx-ok .tx-ico { color: var(--mint); background: rgba(52, 211, 153, 0.1); }
+        .tx-bad .tx-ico { color: var(--rose); background: rgba(251, 113, 133, 0.1); }
+        .tx-wait .tx-ico { color: var(--amber); background: rgba(251, 191, 36, 0.1); }
+        .tx b { display: block; font-size: 13px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .tx .min-w-0 { display: block; }
+        .tx .min-w-0 > span { display: block; margin-top: 2px; font: 500 10.5px/1.2 var(--f-mono); color: var(--fg-3); }
+        .tx-sum { text-align: right; }
+        .tx-sum strong { display: block; font: 700 14px/1 var(--f-mono); color: #fff; white-space: nowrap; }
+        .tx-sum em { display: block; margin-top: 4px; font: 500 10px/1 var(--f-mono); font-style: normal; color: var(--fg-3); }
+        .tx-bad .tx-sum strong { color: var(--fg-3); text-decoration: line-through; }
+
+        .field { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border-radius: 16px; background: var(--well); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .field span.k { display: block; font: 500 10px/1 var(--f-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg-3); }
+        .field b { display: block; margin-top: 6px; font-size: 13.5px; font-weight: 600; color: #fff; word-break: break-all; }
+        .copy-btn { width: 30px; height: 30px; border-radius: 10px; display: grid; place-items: center; font-size: 11px; color: var(--fg-3); flex-shrink: 0; transition: color 0.15s ease, background-color 0.15s ease, transform 0.2s var(--spring-bounce); }
+        .copy-btn:hover { color: #fff; background: rgba(255, 255, 255, 0.06); }
+        .copy-btn:active { transform: scale(0.9); }
+        .copy-btn.is-done { color: var(--mint); background: rgba(16, 185, 129, 0.1); }
+
+        .btn {
+            height: 40px; padding: 0 14px; border-radius: 14px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            font-size: 12.5px; font-weight: 600; color: var(--fg-1); white-space: nowrap;
+            background: rgba(255, 255, 255, 0.04); border: 1px solid var(--line);
+            transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.3s var(--spring);
+        }
+        .btn:hover { color: #fff; border-color: var(--line-2); background: rgba(255, 255, 255, 0.07); }
+        .btn:active { transform: scale(0.97); }
+        .btn i { font-size: 11px; color: var(--fg-3); transition: color 0.2s ease; }
+        .btn:hover i { color: var(--fg-1); }
+        .btn--primary { color: #fff; border: 0; background: var(--accent); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18); }
+        .btn--primary i { color: rgba(255, 255, 255, 0.85); }
+        .btn--primary:hover { background: var(--accent-hi); }
+        .btn--primary:hover i { color: #fff; }
+        .btn--danger { color: #FDA4AF; background: rgba(244, 63, 94, 0.08); border-color: rgba(244, 63, 94, 0.2); }
+        .btn--danger i { color: #FDA4AF; }
+        .btn--danger:hover { color: #fff; background: rgba(244, 63, 94, 0.18); border-color: rgba(244, 63, 94, 0.35); }
+
+        /* ==========================================================================
+           MOTION: ПОЯВЛЕНИЕ (быстро)
+           ========================================================================== */
+        html.js-anim [data-rv]:not(.rv-in):not(.rv-done) { opacity: 0; }
+        html.anim-failsafe [data-rv] { opacity: 1 !important; animation: none !important; }
+        @keyframes rv-rise { from { opacity: 0; translate: 0 14px; filter: blur(6px); } to { opacity: 1; translate: 0 0; filter: blur(0); } }
+        @keyframes rv-drop { from { opacity: 0; translate: 0 -10px; scale: 0.97; } to { opacity: 1; translate: 0 0; scale: 1; } }
+        @keyframes rv-left { from { opacity: 0; translate: -14px 0; } to { opacity: 1; translate: 0 0; } }
+        @keyframes rv-fade { from { opacity: 0; } to { opacity: 1; } }
+        [data-rv].rv-in { animation: rv-rise 0.55s var(--ease-out) backwards; animation-delay: var(--d, 0ms); }
+        [data-rv="drop"].rv-in { animation-name: rv-drop; }
+        [data-rv="left"].rv-in { animation-name: rv-left; }
+        [data-rv="fade"].rv-in { animation-name: rv-fade; animation-duration: 0.45s; }
+
+        /* Модалка */
+        @keyframes m-fade-in  { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes m-fade-out { from { opacity: 1; } to { opacity: 0; } }
+        @keyframes m-pop-in   { from { opacity: 0; translate: 0 12px; scale: 0.965; } to { opacity: 1; translate: 0 0; scale: 1; } }
+        @keyframes m-pop-out  { from { opacity: 1; } to { opacity: 0; translate: 0 6px; scale: 0.98; } }
+        .m-in  > .m-backdrop { animation: m-fade-in 0.24s ease both; }
+        .m-in  .m-panel      { animation: m-pop-in 0.36s var(--ease-out) both; }
+        .m-out > .m-backdrop { animation: m-fade-out 0.18s ease both; }
+        .m-out .m-panel      { animation: m-pop-out 0.18s ease both; }
+
+        @media (prefers-reduced-motion: reduce) {
+            html.js-anim [data-rv] { opacity: 1 !important; }
+            *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; transition-delay: 0ms !important; }
+        }
     </style>
 </head>
-<body class="min-h-full flex flex-col antialiased selection:bg-indigo-600 selection:text-white">
+<body class="min-h-full flex flex-col antialiased selection:bg-indigo-600 selection:text-white"
+      data-premium="{% if subscription_level >= 1 %}1{% else %}0{% endif %}">
 
     <!-- ЛЕВЫЙ ВЕРТИКАЛЬНЫЙ ДОК (DESKTOP) -->
-    <aside class="hidden lg:flex fixed left-5 top-1/2 -translate-y-1/2 flex-col items-center gap-6 py-6 px-3.5 glass-panel rounded-[28px] z-40 shadow-2xl">
+    <aside data-rv="left" class="hidden lg:flex fixed left-5 top-1/2 -translate-y-1/2 flex-col items-center gap-6 py-6 px-3.5 glass-panel rounded-[28px] z-40 shadow-2xl">
         <a href="/" class="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors" title="Главная">
             <img src="{% static 'img/logo.png' %}" alt="Logo" class="w-5 h-auto">
         </a>
@@ -109,45 +555,40 @@
             <a href="{% url 'create' %}" class="w-11 h-11 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 flex items-center justify-center hover:bg-indigo-600 hover:text-white spring-btn group" title="Создать тест">
                 <i class="fas fa-plus text-sm group-hover:rotate-90 transition-transform duration-300"></i>
             </a>
-            <a href="{% url 'history' %}" class="w-11 h-11 rounded-2xl bg-white/5 text-white flex items-center justify-center shadow-lg shadow-indigo-600/30 spring-btn" title="История тестов">
+            <a href="{% url 'history' %}" class="w-11 h-11 rounded-2xl bg-white/5 border border-white/5 text-gray-400 flex items-center justify-center hover:text-white hover:bg-white/10 spring-btn" title="История тестов">
                 <i class="fa-sharp fa-solid fa-clock-rotate-left fa-layer-group text-sm"></i>
             </a>
-            <a href="{% url 'profile_redirect' %}" class="w-11 h-11 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-600/30 spring-btn" title="Профиль">
+            <a href="{% url 'profile_redirect' %}" class="w-11 h-11 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-600/30 spring-btn" title="Профиль" aria-current="page">
                 <i class="fas fa-user-astronaut text-sm"></i>
             </a>
         </nav>
         <div class="w-6 h-px bg-white/10 mt-auto"></div>
-        <button onclick="openLogoutModal()" class="w-11 h-11 rounded-2xl text-gray-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors flex items-center justify-center" title="Выйти">
+        <button type="button" onclick="openLogoutModal()" class="w-11 h-11 rounded-2xl text-gray-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors flex items-center justify-center" title="Выйти">
             <i class="fas fa-arrow-right-from-bracket text-sm"></i>
         </button>
     </aside>
 
     <!-- МОБИЛЬНЫЙ DOCK -->
-    <nav class="lg:hidden fixed bottom-4 left-1/2 -translate-x-1/2 island-capsule rounded-full px-6 py-3 flex items-center gap-6 z-40 shadow-2xl">
+    <nav data-rv class="lg:hidden fixed bottom-4 left-1/2 -translate-x-1/2 island-capsule rounded-full px-6 py-3 flex items-center gap-6 z-40 shadow-2xl">
         <a href="/" class="text-gray-400 hover:text-white"><i class="fas fa-home text-base"></i></a>
         <a href="{% url 'create' %}" class="text-gray-400 hover:text-white"><i class="fas fa-plus text-base"></i></a>
         <a href="{% url 'history' %}" class="text-gray-400 hover:text-white"><i class="fas fa-layer-group text-base"></i></a>
-        <a href="{% url 'profile_redirect' %}" class="w-9 h-9 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-600/30"><i class="fas fa-user text-sm"></i></a>
+        <a href="{% url 'profile_redirect' %}" class="w-9 h-9 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-600/30" aria-current="page"><i class="fas fa-user text-sm"></i></a>
     </nav>
 
-    <!-- ОСНОВНОЙ КОНТЕНТНЫЙ БЛОК -->
     <div class="lg:pl-28 flex-grow flex flex-col">
 
-        <!-- DYNAMIC ISLAND HEADER: UNIX PATH STYLE -->
-        <header class="sticky top-4 z-40 w-full px-4 flex justify-center pointer-events-none">
+        <!-- DYNAMIC ISLAND -->
+        <header data-rv="drop" class="sticky top-4 z-40 w-full px-4 flex justify-center pointer-events-none">
             <div id="dynamic-island" class="island-capsule mode-header pointer-events-auto flex items-center justify-between relative overflow-hidden min-h-[44px]">
-                
-                <div id="island-controls" class="w-full flex items-center justify-between gap-4">
-                    <div class="flex items-center gap-3">
-                        <div class="flex items-center gap-2.5 text-xs font-semibold">
-                            <a href="/" class="flex-shrink-0 transition-opacity hover:opacity-80 mr-1">
-                                <img src="{% static 'img/logo.png' %}" alt="Logo" class="w-5 h-auto">
-                            </a>
-                            <span class="text-gray-500 select-none">/</span>
-                            <span class="text-white font-medium">Профиль</span>
-                        </div>
+                <div class="w-full flex items-center justify-between gap-4">
+                    <div class="flex items-center gap-2.5 text-xs font-semibold">
+                        <a href="/" class="flex-shrink-0 transition-opacity hover:opacity-80 mr-1">
+                            <img src="{% static 'img/logo.png' %}" alt="Logo" class="w-5 h-auto">
+                        </a>
+                        <span class="text-gray-600 select-none">/</span>
+                        <span class="text-white font-medium">Профиль</span>
                     </div>
-
                     <div class="flex items-center gap-2 font-mono-nums text-xs">
                         <span class="text-gray-400 font-semibold truncate max-w-[140px] sm:max-w-xs">{{ username }}</span>
                         {% if user.is_superuser %}
@@ -155,312 +596,551 @@
                         {% endif %}
                     </div>
                 </div>
-
-                <div id="island-notice" class="hidden w-full items-center justify-center gap-3 select-none">
-                    <span id="island-icon-box" class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] flex-shrink-0">
-                        <i id="island-icon" class="fas fa-check"></i>
-                    </span>
-                    <span id="island-text" class="text-xs font-semibold text-white tracking-wide truncate"></span>
-                </div>
-
             </div>
         </header>
 
-        <!-- BENTO WORKSPACE -->
-        <main class="max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 flex-grow space-y-6 mt-12">
-            
-            <!-- ВЕРХНИЙ BENTO-РЯД: ТАРИФ И КВОТЫ ИСПОЛЬЗОВАНИЯ -->
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
-                
-                <!-- КАРТОЧКА ПЛАНА / БАЛАНСА (col-span-7) -->
-                <section class="lg:col-span-7 glass-panel rounded-[28px] p-6 sm:p-7 relative overflow-hidden flex flex-col justify-between space-y-6">
-                    <div>
-                        <div class="flex items-center justify-between gap-4 mb-4">
-                            <span class="text-xs font-bold uppercase tracking-wider text-gray-400 font-display flex items-center gap-2">
-                                <i class="fas fa-gem text-indigo-400 text-xs"></i> Текущий план
-                            </span>
-                            
-                            {% if subscription_level >= 1 %}
-                                <span class="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono-nums">
-                                    Премиум активен
-                                </span>
-                            {% elif plan_type == 'package' or tokens.tests_total_limit > 0 %}
-                                <span class="px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 font-mono-nums">
-                                    Пакетный доступ
-                                </span>
-                            {% else %}
-                                <span class="px-3 py-1 rounded-full text-xs font-semibold bg-white/5 border border-white/10 text-gray-400 font-mono-nums">
-                                    Базовый тариф
-                                </span>
-                            {% endif %}
-                        </div>
+        <main class="max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 flex-grow space-y-5 mt-8">
 
-                        <div class="space-y-1">
-                            <h2 class="text-xl sm:text-2xl font-black text-white tracking-tight">
-                                {% if plan_type == 'package' %}
-                                    Пакет генераций
+            <!-- ============================================================ -->
+            <!--  1. HERO + ТАРИФ                                              -->
+            <!-- ============================================================ -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+
+                <!-- КАРТОЧКА ПРОФИЛЯ И ПОДПИСКИ -->
+                <section data-rv class="card lg:col-span-7 flex flex-col justify-between gap-6">
+                    
+                    <!-- 1. ВЕРХНИЙ БЛОК: АВАТАР И СТАТУС -->
+                    <div class="flex items-start gap-4">
+                        <div class="ava w-12 h-12 rounded-2xl bg-indigo-600 text-white font-bold flex items-center justify-center text-lg flex-shrink-0" aria-hidden="true">
+                            {{ username|first|upper }}
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <span class="kicker text-[11px] font-semibold uppercase tracking-wider text-zinc-500">Профиль</span>
+                            <h1 class="mt-1 text-2xl sm:text-[28px] font-extrabold text-white tracking-tight truncate font-display">
+                                {{ username }}
+                            </h1>
+                            <div class="mt-2.5 flex flex-wrap gap-2">
+                                {% if subscription_level >= 1 %}
+                                    <span class="chip is-live inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                                        Премиум активен
+                                    </span>
+                                {% elif plan_type == 'package' %}
+                                    <span class="chip is-pkg inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-500/10 border border-indigo-500/20 text-indigo-300">
+                                        <i class="fas fa-box text-[11px] text-indigo-400"></i>
+                                        Пакетный доступ
+                                    </span>
                                 {% else %}
-                                    {{ subscription.plan_name|default:"Стартовый" }}
+                                    <span class="chip inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-white/[0.04] border border-white/[0.08] text-zinc-400">
+                                        Базовый тариф
+                                    </span>
                                 {% endif %}
+                                
+                                {% if date_join %}
+                                    <span class="chip inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-white/[0.04] border border-white/[0.08] text-zinc-400">
+                                        <i class="fas fa-calendar text-[10px] text-zinc-500"></i>
+                                        <span>С нами с <b class="text-zinc-200 font-semibold">{{ date_join }}</b></span>
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. СРЕДНИЙ БЛОК: ТЕКУЩИЙ ПЛАН И ДНИ ОСТАТКА (БЕЗ БУБЛИКА) -->
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-5 border-t border-white/[0.06]">
+                        <div class="min-w-0">
+                            <span class="kicker text-[11px] font-semibold uppercase tracking-wider text-zinc-500">Текущий план</span>
+                            <h2 class="mt-1 text-xl font-extrabold text-white tracking-tight font-display">
+                                {% if plan_type == 'package' %}Пакет генераций{% else %}{{ subscription.plan_name|default:"Стартовый" }}{% endif %}
                             </h2>
-                            <p class="text-xs text-gray-400 font-mono-nums">
+                            <p class="mt-1 text-xs text-zinc-400 font-medium">
                                 {% if plan_type == 'package' %}
-                                    Остаток: {{ extra_credits|default:tokens.tests_total_limit }} тестов (не сгорают)
-                                {% elif subscription.plan_end_date %}
-                                    Действует до: {{ subscription.plan_end_date }}
+                                    Остаток: {{ extra_credits|default:tokens.tests_total_limit }} тестов · не сгорают
+                                {% elif subscription.plan_end_date and subscription.plan_end_date != 'Закончился' %}
+                                    Действует до {{ subscription.plan_end_date }}
+                                {% elif subscription.plan_end_date == 'Закончился' %}
+                                    Срок подписки закончился
                                 {% else %}
                                     Лимит до 7 вопросов на тест
                                 {% endif %}
                             </p>
                         </div>
+
+                        <!-- Чистый типографический счетчик дней (вместо неуклюжего круга) -->
+                        {% if plan_type == 'subscription' and subscription.days_until_end > 0 %}
+                        <div id="days-ring" data-days="{{ subscription.days_until_end }}" class="flex-shrink-0 px-4 py-2.5 rounded-2xl bg-white/[0.03] border border-white/[0.08] flex items-center gap-3">
+                            <!-- Скрытая заглушка для штатного скрипта days() -->
+                            <svg class="hidden" style="display:none" aria-hidden="true"><circle class="trk"></circle><circle class="bar"></circle></svg>
+                            <span class="text-2xl font-extrabold text-white font-display leading-none">
+                                {{ subscription.days_until_end }}
+                            </span>
+                            <span class="text-[11px] text-zinc-400 leading-tight font-medium">
+                                дней<br>осталось
+                            </span>
+                        </div>
+                        {% endif %}
                     </div>
 
-                    <!-- Фичи активного тарифа -->
-                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-4 border-t border-white/5">
-                        <div class="p-3 rounded-2xl bg-[var(--bg-main)] border border-white/5">
-                            <span class="text-[10px] text-gray-500 uppercase font-mono-nums block">Лимит теста</span>
-                            <span class="text-sm font-bold text-white">
-                                {% if subscription_level >= 1 %}до 30 вопр.{% else %}до 7 вопр.{% endif %}
+                    <!-- 3. ФИЧИ (ПОДНЯТЫ ПЕРЕД КНОПКАМИ) -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                        
+                        <div class="p-3 rounded-2xl bg-white/[0.025] border border-white/[0.06] flex items-center gap-3">
+                            <span class="w-7 h-7 rounded-xl flex items-center justify-center text-xs flex-shrink-0 {% if subscription_level >= 1 %}bg-indigo-500/15 text-indigo-400 border border-indigo-500/25{% else %}bg-white/[0.04] text-zinc-500 border border-white/[0.06]{% endif %}">
+                                <i class="fas {% if subscription_level >= 1 %}fa-check{% else %}fa-list-ol{% endif %}"></i>
                             </span>
+                            <div class="min-w-0">
+                                <b class="block text-xs font-bold text-white truncate">
+                                    {% if subscription_level >= 1 %}До 30 вопросов{% else %}До 7 вопросов{% endif %}
+                                </b>
+                                <span class="block text-[11px] text-zinc-400 truncate">в одном тесте</span>
+                            </div>
                         </div>
-                        <div class="p-3 rounded-2xl bg-[var(--bg-main)] border border-white/5">
-                            <span class="text-[10px] text-gray-500 uppercase font-mono-nums block">Импорт файлов</span>
-                            <span class="text-sm font-bold {% if subscription_level >= 1 or plan_type == 'package' %}text-emerald-400{% else %}text-gray-500{% endif %}">
-                                {% if subscription_level >= 1 or plan_type == 'package' %}Word, PDF, TXT{% else %}Заблокирован{% endif %}
+
+                        <div class="p-3 rounded-2xl bg-white/[0.025] border border-white/[0.06] flex items-center gap-3">
+                            <span class="w-7 h-7 rounded-xl flex items-center justify-center text-xs flex-shrink-0 {% if subscription_level >= 1 or plan_type == 'package' %}bg-indigo-500/15 text-indigo-400 border border-indigo-500/25{% else %}bg-white/[0.04] text-zinc-500 border border-white/[0.06]{% endif %}">
+                                <i class="fas {% if subscription_level >= 1 or plan_type == 'package' %}fa-check{% else %}fa-lock{% endif %}"></i>
                             </span>
+                            <div class="min-w-0">
+                                <b class="block text-xs font-bold text-white truncate">Импорт файлов</b>
+                                <span class="block text-[11px] text-zinc-400 truncate">
+                                    {% if subscription_level >= 1 or plan_type == 'package' %}Word, PDF, TXT{% else %}Заблокирован{% endif %}
+                                </span>
+                            </div>
                         </div>
-                        <div class="p-3 rounded-2xl bg-[var(--bg-main)] border border-white/5 col-span-2 sm:col-span-1">
-                            <span class="text-[10px] text-gray-500 uppercase font-mono-nums block">Аналитика ответов</span>
-                            <span class="text-sm font-bold {% if subscription_level >= 1 %}text-emerald-400{% else %}text-gray-500{% endif %}">
-                                {% if subscription_level >= 1 %}Включена{% else %}Базовая{% endif %}
+
+                        <div class="p-3 rounded-2xl bg-white/[0.025] border border-white/[0.06] flex items-center gap-3">
+                            <span class="w-7 h-7 rounded-xl flex items-center justify-center text-xs flex-shrink-0 {% if subscription_level >= 1 %}bg-indigo-500/15 text-indigo-400 border border-indigo-500/25{% else %}bg-white/[0.04] text-zinc-500 border border-white/[0.06]{% endif %}">
+                                <i class="fas {% if subscription_level >= 1 %}fa-check{% else %}fa-lock{% endif %}"></i>
                             </span>
+                            <div class="min-w-0">
+                                <b class="block text-xs font-bold text-white truncate">Аналитика</b>
+                                <span class="block text-[11px] text-zinc-400 truncate">
+                                    {% if subscription_level >= 1 %}Полная ведомость{% else %}Базовая{% endif %}
+                                </span>
+                            </div>
                         </div>
+
                     </div>
 
-                    <!-- Действие -->
-                    <div class="pt-2 flex flex-wrap items-center gap-3">
+                    <!-- 4. НИЖНИЙ БЛОК: КНОПКИ ДЕЙСТВИЯ (ОПУЩЕНЫ В САМЫЙ НИЗ) -->
+                    <div class="flex flex-wrap items-center gap-2.5 pt-4 border-t border-white/[0.06] mt-auto">
                         {% if subscription_level == 0 %}
-                            <a href="{% url 'payment' %}" class="px-5 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-lg shadow-indigo-600/30 spring-btn">
-                                Перейти на Премиум &rarr;
+                            <a href="{% url 'payment' %}" class="btn btn--primary flex-1 h-11 rounded-2xl flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-bold transition-all duration-200 active:scale-98 shadow-sm">
+                                <span>Перейти на Премиум</span>
+                                <i class="fas fa-arrow-right text-xs"></i>
+                            </a>
+                            <a href="{% url 'payment' %}" class="btn h-11 px-5 rounded-2xl flex items-center justify-center gap-2 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-zinc-200 hover:text-white text-xs sm:text-sm font-semibold transition-all duration-200 active:scale-98">
+                                <i class="fas fa-box text-xs"></i>
+                                <span>Докупить пакет</span>
                             </a>
                         {% else %}
-                            <a href="{% url 'payment' %}" class="px-5 py-3 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-white text-xs font-semibold spring-btn">
-                                Управление подпиской
+                            <a href="{% url 'payment' %}" class="btn flex-1 h-11 rounded-2xl flex items-center justify-center gap-2 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-zinc-200 hover:text-white text-xs sm:text-sm font-semibold transition-all duration-200 active:scale-98">
+                                <i class="fas fa-sliders text-xs"></i>
+                                <span>Управление подпиской</span>
+                            </a>
+                            <a href="{% url 'payment' %}" class="btn h-11 px-5 rounded-2xl flex items-center justify-center gap-2 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-zinc-200 hover:text-white text-xs sm:text-sm font-semibold transition-all duration-200 active:scale-98">
+                                <i class="fas fa-box text-xs"></i>
+                                <span>Докупить пакет</span>
                             </a>
                         {% endif %}
                     </div>
+
                 </section>
 
-                <!-- КАРТОЧКА КВОТ И ЛИМИТОВ (col-span-5) -->
-                <section class="lg:col-span-5 glass-panel rounded-[28px] p-6 sm:p-7 flex flex-col justify-between space-y-6">
-                    <div>
-                        <span class="text-xs font-bold uppercase tracking-wider text-gray-400 font-display flex items-center gap-2 mb-4">
-                            <i class="fas fa-gauge-high text-indigo-400 text-xs"></i> Расход квот
-                        </span>
-
-                        <div class="space-y-3">
-                            <div class="flex items-center justify-between font-mono-nums text-xs">
-                                <span class="text-gray-400">
-                                    {% if plan_type == 'package' %}Баланс пакета{% else %}Генерации сегодня{% endif %}
+                <!-- КАРТОЧКА КВОТЫ И БАЛАНСА -->
+                <section data-rv class="card lg:col-span-5 flex flex-col justify-between gap-5 p-6 sm:p-7 rounded-[28px] border border-white/[0.08]">
+                    
+                    <!-- Шапка карточки -->
+                    <div class="card-head flex items-start justify-between gap-3" style="margin-bottom:0">
+                        <div>
+                            <div class="card-title flex items-center gap-2 text-white font-bold text-base sm:text-lg">
+                                <span class="card-ico w-8 h-8 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-zinc-300 text-xs">
+                                    <i class="fas fa-gauge-high"></i>
                                 </span>
-                                <span class="font-bold text-white">
-                                    {% if plan_type == 'package' %}
-                                        {{ tokens.tests_total_limit }} тестов
-                                    {% else %}
-                                        {{ tokens.tests_remaining_count_limit }} / {{ tokens.tests_total_limit }}
-                                    {% endif %}
-                                </span>
+                                <h2>{% if plan_type == 'package' %}Баланс пакета{% else %}Генерации сегодня{% endif %}</h2>
                             </div>
-
-                            <!-- Прогресс-бар -->
-                            <div class="w-full bg-[var(--bg-main)] rounded-full h-2.5 overflow-hidden border border-white/5 p-0.5">
-                                <div class="bg-indigo-500 h-full rounded-full transition-all duration-500" 
-                                     style="width: {% if plan_type == 'package' %}100{% else %}{{ tokens.tests_usage_percentage|default:0 }}{% endif %}%;"></div>
-                            </div>
+                            <p class="card-sub text-xs text-zinc-400 mt-1">
+                                {% if plan_type == 'package' %}Пакетные тесты не сгорают{% else %}Сброс лимитов в 03:00 МСК{% endif %}
+                            </p>
                         </div>
                     </div>
 
-                    <div class="p-4 rounded-2xl bg-[var(--bg-main)] border border-white/5 space-y-2">
-                        <div class="flex items-center justify-between text-xs font-mono-nums">
-                            <span class="text-gray-500">Сброс счетчика:</span>
-                            <span class="text-gray-300">Каждые 24 часа</span>
+                    <!-- Основной блок квоты с сетчатым прогресс-баром -->
+                    <div id="quota-gauge"
+                         class="space-y-4"
+                         data-plan="{{ plan_type }}"
+                         data-remaining="{{ tokens.tests_remaining_count_limit|default:0 }}"
+                         data-total="{{ tokens.tests_total_limit|default:50 }}"
+                         data-credits="{{ extra_credits|default:0 }}">
+                        
+                        <!-- Крупная цифра остатка -->
+                        <div class="flex items-baseline gap-2.5">
+                            <span id="quota-val" class="text-4xl sm:text-5xl font-extrabold text-white font-display tracking-tight">
+                                {{ tokens.tests_remaining_count_limit|default:0 }}
+                            </span>
+                            <span id="quota-cap" class="text-xs text-zinc-400 font-medium">
+                                {% if plan_type == 'package' %}
+                                    осталось в пакете
+                                {% else %}
+                                    из {{ tokens.tests_total_limit|default:50 }} на сегодня
+                                {% endif %}
+                            </span>
                         </div>
-                        <div class="flex items-center justify-between text-xs font-mono-nums">
-                            <span class="text-gray-500">Скорость генерации:</span>
-                            <span class="text-emerald-400 font-medium">~12 секунд</span>
+
+                        <!-- 20-сегментный прогресс-бар как в админке -->
+                        <div class="flex items-center gap-1.5 w-full py-1" id="quota-segments-bar">
+                            <!-- Деления заполняются автоматически скриптом ниже -->
                         </div>
+
+                        <!-- Скрытый SVG для защиты от сбоя существующих скриптов -->
+                        <svg class="hidden" aria-hidden="true"><circle id="quota-bar" cx="0" cy="0" r="0"></circle></svg>
                     </div>
 
-                    <a href="{% url 'payment' %}" class="w-full block py-3 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-center text-xs font-semibold text-gray-300 hover:text-white spring-btn">
-                        Докупить пакет тестов
+                    <!-- Нижние плашки метрик (как на референсе: Повторные / Доля) -->
+                    <div class="grid {% if extra_credits and plan_type == 'subscription' %}grid-cols-3{% else %}grid-cols-2{% endif %} gap-2.5 pt-1">
+                        
+                        <!-- <div class="p-3 rounded-2xl bg-white/[0.025] border border-white/[0.06] flex flex-col justify-between">
+                            <span class="text-[11px] text-zinc-400 font-medium">Сборка теста</span>
+                            <div class="text-sm font-bold text-white font-display mt-1">
+                                ~12 сек <span class="text-[11px] text-zinc-500 font-normal">среднее</span>
+                            </div>
+                        </div> -->
+
+                        {% if extra_credits and plan_type == 'subscription' %}
+                        <div class="p-3 rounded-2xl bg-white/[0.025] border border-white/[0.06] flex flex-col justify-between">
+                            <span class="text-[11px] text-zinc-400 font-medium">В запасе</span>
+                            <div class="text-sm font-bold text-white font-display mt-1">
+                                {{ extra_credits }} <span class="text-[11px] text-zinc-500 font-normal">пакетных</span>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <div class="p-3 rounded-2xl bg-white/[0.025] border border-white/[0.06] flex flex-col justify-between">
+                            <span class="text-[11px] text-zinc-400 font-medium">Создано всего</span>
+                            <div class="text-sm font-bold text-white font-display mt-1">
+                                {{ statistics.total_tests|default:0 }} <span class="text-[11px] text-zinc-500 font-normal">тестов</span>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Кнопка действия -->
+                    <a href="{% url 'create' %}" class="btn btn--primary w-full h-11 rounded-2xl flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-bold transition-all duration-200 active:scale-98 shadow-sm">
+                        <i class="fas fa-plus text-xs"></i>
+                        <span>Собрать тест</span>
                     </a>
-                </section>
 
+                    <!-- Скрипт отрисовки 20 сегментов с цветовой индикацией -->
+                    <script>
+                        (function() {
+                            function renderQuotaSegments() {
+                                const gauge = document.getElementById('quota-gauge');
+                                const bar = document.getElementById('quota-segments-bar');
+                                if (!gauge || !bar) return;
+
+                                const remaining = parseFloat(gauge.getAttribute('data-remaining')) || 0;
+                                const total = parseFloat(gauge.getAttribute('data-total')) || 50;
+                                const ratio = total > 0 ? Math.max(0, Math.min(1, remaining / total)) : 0;
+                                
+                                // 20 сегментов
+                                const totalSegments = 20;
+                                const activeSegments = Math.round(ratio * totalSegments);
+
+                                // Цветовая логика по порогу остатка
+                                let activeColor = 'bg-indigo-500'; // Норма
+                                if (ratio <= 0.15) {
+                                    activeColor = 'bg-rose-500'; // Критически мало (< 15%)
+                                } else if (ratio <= 0.35) {
+                                    activeColor = 'bg-amber-400'; // Заканчивается (15% - 35%)
+                                }
+
+                                bar.innerHTML = '';
+                                for (let i = 0; i < totalSegments; i++) {
+                                    const segment = document.createElement('div');
+                                    const isActive = i < activeSegments;
+                                    segment.className = `flex-1 h-3.5 sm:h-4 rounded-[3px] transition-all duration-300 ${isActive ? activeColor : 'bg-white/[0.06]'}`;
+                                    bar.appendChild(segment);
+                                }
+                            }
+
+                            if (document.readyState === 'loading') {
+                                document.addEventListener('DOMContentLoaded', renderQuotaSegments);
+                            } else {
+                                renderQuotaSegments();
+                            }
+                        })();
+                    </script>
+                </section>
             </div>
 
-            <!-- СРЕДНИЙ РЯД: АНАЛИТИКА И АКТИВНОСТЬ (ЧАРТЫ) -->
-            <section class="glass-panel rounded-[28px] p-6 sm:p-7 space-y-6">
-                <div class="flex flex-wrap items-center justify-between gap-4 border-b border-white/5 pb-4">
-                    <div>
-                        <h3 class="text-base font-bold text-white tracking-tight">Аналитика платформы</h3>
-                        <p class="text-xs text-gray-400">Сводная динамика генераций и вовлеченности участников</p>
+            <!-- ============================================================ -->
+            <!--  2. KPI ЗА НЕДЕЛЮ (видно всем — реальные цифры)               -->
+            <!-- ============================================================ -->
+            <section class="kpis" aria-label="Неделя в цифрах">
+                <article data-rv class="card kpi kpi--accent" title="Сколько раз ваши тесты прошли за 7 дней">
+                    <div class="kpi-top"><span class="kpi-label">Прохождения · 7 дн.</span><span class="kpi-ico"><i class="fas fa-user-group"></i></span></div>
+                    <div class="kpi-mid">
+                        <span class="kpi-val" id="kpi-attempts"><span class="kpi-skel"></span></span>
+                        <div class="spark" id="kpi-spark" aria-hidden="true"></div>
                     </div>
-
-                    {% if subscription_level == 0 %}
-                        <span class="px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
-                            Демо-режим
-                        </span>
-                    {% endif %}
-                </div>
-
-                <!-- 2 ГЛАВНЫХ ГРАФИКА В BENTO СЕТКЕ -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 relative">
-                    {% if subscription_level == 0 %}
-                        <div class="absolute inset-0 bg-[#111119]/80 backdrop-blur-sm z-10 rounded-2xl flex flex-col items-center justify-center p-6 text-center">
-                            <div class="w-12 h-12 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 flex items-center justify-center mb-3">
-                                <i class="fas fa-chart-line text-lg"></i>
-                            </div>
-                            <h4 class="text-sm font-bold text-white mb-1">Детальная статистика доступна в Премиум</h4>
-                            <p class="text-xs text-gray-400 max-w-sm mb-4">
-                                Отслеживайте количество попыток, средние баллы учеников и пиковые часы прохождения.
-                            </p>
-                            <a href="{% url 'payment' %}" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold spring-btn">
-                                Разблокировать графики
-                            </a>
-                        </div>
-                    {% endif %}
-
-                    <!-- График 1: Активность создания и просмотров -->
-                    <div class="p-4 sm:p-5 rounded-2xl bg-[var(--bg-main)] border border-white/5 space-y-3">
-                        <div class="flex items-center justify-between">
-                            <span class="text-xs font-bold text-gray-300 font-display">Динамика создания тестов (7 дней)</span>
-                            <span class="text-[10px] font-mono-nums text-gray-500">Кол-во</span>
-                        </div>
-                        <div class="h-56 relative w-full">
-                            <canvas id="personalActivityChart"></canvas>
-                        </div>
+                    <p class="kpi-foot" id="kpi-attempts-foot">Считаем…</p>
+                </article>
+                <article data-rv class="card kpi" title="Уникальные просмотры ваших тестов за 7 дней">
+                    <div class="kpi-top"><span class="kpi-label">Просмотры · 7 дн.</span><span class="kpi-ico"><i class="fas fa-eye"></i></span></div>
+                    <div class="kpi-mid"><span class="kpi-val" id="kpi-views"><span class="kpi-skel"></span></span></div>
+                    <p class="kpi-foot" id="kpi-views-foot">&nbsp;</p>
+                </article>
+                <article data-rv class="card kpi" title="Сколько тестов вы собрали за 7 дней">
+                    <div class="kpi-top"><span class="kpi-label">Новых тестов</span><span class="kpi-ico"><i class="fas fa-layer-group"></i></span></div>
+                    <div class="kpi-mid"><span class="kpi-val" id="kpi-tests"><span class="kpi-skel"></span></span></div>
+                    <p class="kpi-foot">за последние 7 дней</p>
+                </article>
+                <article data-rv class="card kpi" title="Доля прохождений на 80% и выше">
+                    <div class="kpi-top"><span class="kpi-label">На «отлично»</span><span class="kpi-ico" style="color:var(--mint)"><i class="fas fa-crown"></i></span></div>
+                    <div class="kpi-mid">
+                        <span class="kpi-val" id="kpi-great"><span class="kpi-skel"></span></span>
+                        <div class="mini-ring" id="kpi-great-ring" aria-hidden="true"><svg viewBox="0 0 40 40"><circle class="trk" cx="20" cy="20" r="16"/><circle class="bar" cx="20" cy="20" r="16" pathLength="100" style="stroke:var(--mint)"/></svg></div>
                     </div>
-
-                    <!-- График 2: Результаты прохождений учеников -->
-                    <div class="p-4 sm:p-5 rounded-2xl bg-[var(--bg-main)] border border-white/5 space-y-3">
-                        <div class="flex items-center justify-between">
-                            <span class="text-xs font-bold text-gray-300 font-display">Распределение оценок участников</span>
-                            <span class="text-[10px] font-mono-nums text-gray-500">Баллы</span>
-                        </div>
-                        <div class="h-56 relative w-full">
-                            <canvas id="studentScoresChart"></canvas>
-                        </div>
-                    </div>
-                </div>
+                    <p class="kpi-foot" id="kpi-great-foot">прохождений на 80%+</p>
+                </article>
             </section>
 
-            <!-- НИЖНИЙ РЯД: БЕЗОПАСНОСТЬ, ПЛАТЕЖИ И СЛУЖЕБНЫЙ СТЕК -->
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
-                
-                <!-- УЧЕТНЫЕ ДАННЫЕ И БЕЗОПАСНОСТЬ (col-span-6) -->
-                <section class="lg:col-span-6 glass-panel rounded-[28px] p-6 space-y-5">
-                    <span class="text-xs font-bold uppercase tracking-wider text-gray-400 font-display block">
-                        Учетная запись
-                    </span>
+            <!-- ============================================================ -->
+            <!--  3. АНАЛИТИКА (пейволл для free)                              -->
+            <!-- ============================================================ -->
+            <section class="gate" id="analytics-gate" aria-label="Аналитика">
+                {% if subscription_level == 0 %}
+                <div class="gate-pill" id="gate-pill">
+                    <i class="fas fa-lock"></i>
+                    <span class="pill-txt">Аналитика открывается в Премиуме</span>
+                    <button type="button" id="gate-more">Подробнее</button>
+                    <a href="{% url 'payment' %}">Открыть <i class="fas fa-arrow-right text-[9px]"></i></a>
+                </div>
+                {% endif %}
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 {% if subscription_level == 0 %}gate-blur{% endif %}" {% if subscription_level == 0 %}aria-hidden="true" inert{% endif %}>
 
-                    <div class="space-y-3">
-                        <div class="p-3.5 rounded-2xl bg-[var(--bg-main)] border border-white/5 flex items-center justify-between">
+                    <!-- Динамика с переключателем рядов -->
+                    <article data-rv class="card lg:col-span-7">
+                        <div class="card-head flex-wrap">
                             <div>
-                                <span class="text-[10px] text-gray-500 uppercase font-mono-nums block">Логин</span>
-                                <span class="text-sm font-semibold text-white font-mono-nums">{{ username }}</span>
+                                <div class="card-title"><span class="card-ico"><i class="fas fa-chart-column"></i></span><h2>Динамика за неделю</h2></div>
+                                <p class="card-sub" id="act-sub">Прохождения ваших тестов по дням</p>
                             </div>
-                            <span class="px-2.5 py-1 rounded-lg bg-white/5 text-gray-400 text-xs font-mono-nums">UID: {{ user.id_staff|stringformat:".8s" }}</span>
+                            <div class="seg" id="act-seg" role="group" aria-label="Что показать">
+                                <span class="seg-ind" aria-hidden="true"></span>
+                                <button type="button" data-k="attempts" aria-pressed="true">Сдачи</button>
+                                <button type="button" data-k="views" aria-pressed="false">Просмотры</button>
+                                <button type="button" data-k="tests" aria-pressed="false">Тесты</button>
+                            </div>
                         </div>
+                        <div class="act" id="act">
+                            <div class="act-plot">
+                                <div class="act-cols" id="act-cols"><div class="act-empty">Загружаем данные…</div></div>
+                                <div class="act-x" id="act-x"></div>
+                            </div>
+                        </div>
+                        <div class="act-sum">
+                            <span>Всего: <b id="act-total">—</b></span>
+                            <span>Пик: <b id="act-peak">—</b></span>
+                        </div>
+                    </article>
 
-                        {% if user.email %}
-                        <div class="p-3.5 rounded-2xl bg-[var(--bg-main)] border border-white/5 flex items-center justify-between">
+                    <!-- Оценки -->
+                    <article data-rv class="card lg:col-span-5">
+                        <div class="card-head">
                             <div>
-                                <span class="text-[10px] text-gray-500 uppercase font-mono-nums block">E-mail</span>
-                                <span class="text-sm font-semibold text-white">{{ user.email }}</span>
+                                <div class="card-title"><span class="card-ico"><i class="fas fa-chart-pie"></i></span><h2>Оценки учеников</h2></div>
+                                <p class="card-sub">Все прохождения ваших тестов</p>
                             </div>
-                            <i class="fas fa-check-circle text-emerald-400 text-xs" title="Подтвержден"></i>
                         </div>
-                        {% endif %}
+                        <div class="dist">
+                            <div class="donut" id="donut">
+                                <svg viewBox="0 0 120 120" aria-hidden="true"><circle class="trk" cx="60" cy="60" r="46"/><g id="donut-segs"></g></svg>
+                                <div class="donut-c"><strong id="donut-total" class="num">—</strong><span>прохождений</span></div>
+                            </div>
+                            <ul class="legend" id="legend">
+                                <li data-g="0" style="--c:#6366F1"><i></i><span class="lg-name"><b>Отлично</b><span>80–100%</span></span><span class="lg-val"><b>—</b><span>&nbsp;</span></span></li>
+                                <li data-g="1" style="--c:#A5B4FC"><i></i><span class="lg-name"><b>Хорошо</b><span>50–79%</span></span><span class="lg-val"><b>—</b><span>&nbsp;</span></span></li>
+                                <li data-g="2" style="--c:#FB7185"><i></i><span class="lg-name"><b>Слабо</b><span>до 50%</span></span><span class="lg-val"><b>—</b><span>&nbsp;</span></span></li>
+                            </ul>
+                        </div>
+                    </article>
+
+                    <!-- Пиковые часы -->
+                    <article data-rv class="card lg:col-span-7">
+                        <div class="card-head">
+                            <div>
+                                <div class="card-title"><span class="card-ico"><i class="fas fa-clock"></i></span><h2>Когда проходят тесты</h2></div>
+                                <p class="card-sub">Прохождения по часам за последние 7 дней</p>
+                            </div>
+                            <span class="tag">24 ч</span>
+                        </div>
+                        <div class="heat" id="heat"></div>
+                        <div class="heat-x">
+                            <span>0</span><span></span><span></span><span>3</span><span></span><span></span><span>6</span><span></span><span></span><span>9</span><span></span><span></span>
+                            <span>12</span><span></span><span></span><span>15</span><span></span><span></span><span>18</span><span></span><span></span><span>21</span><span></span><span></span>
+                        </div>
+                        <p class="heat-readout" id="heat-readout">Наведите на час, чтобы увидеть активность</p>
+                    </article>
+
+                    <!-- Топ по прохождениям -->
+                    <article data-rv class="card lg:col-span-5">
+                        <div class="card-head">
+                            <div>
+                                <div class="card-title"><span class="card-ico" style="color:var(--amber)"><i class="fas fa-trophy"></i></span><h2>Чаще всего проходят</h2></div>
+                                <p class="card-sub">Тесты с наибольшим числом сдач</p>
+                            </div>
+                        </div>
+                        <ol class="hbars" id="hbars"><li class="empty"><b>Загружаем…</b></li></ol>
+                    </article>
+
+                    <!-- Состав тестов -->
+                    <article data-rv class="card lg:col-span-12">
+                        <div class="card-head">
+                            <div>
+                                <div class="card-title"><span class="card-ico"><i class="fas fa-shapes"></i></span><h2>Из чего состоят ваши тесты</h2></div>
+                                <p class="card-sub">Длина тестов и характер вопросов по всем вашим тестам</p>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div>
+                                <span class="kicker">Длина теста</span>
+                                <div class="stack mt-3" id="stack-len"></div>
+                                <ul class="stack-lg" id="stack-len-lg"></ul>
+                            </div>
+                            <div>
+                                <span class="kicker">Тип вопросов</span>
+                                <div class="stack mt-3" id="stack-type"></div>
+                                <ul class="stack-lg" id="stack-type-lg"></ul>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+
+                {% if subscription_level == 0 %}
+                <div class="gate-over">
+                    <div class="offer" role="dialog" aria-labelledby="offer-title">
+                        <span class="offer-k"><i class="fas fa-wand-magic-sparkles text-[10px]"></i>Аналитика</span>
+                        <h3 id="offer-title">Смотрите, как проходят ваши тесты</h3>
+                        <p id="offer-text">Динамика по дням, оценки, пиковые часы и самые востребованные тесты — в одном месте.</p>
+                        <ul class="offer-list">
+                            <li><span class="offer-ico"><i class="fas fa-chart-column"></i></span><div><b>Динамика за неделю</b><span>Сдачи, просмотры и новые тесты по дням</span></div></li>
+                            <li><span class="offer-ico"><i class="fas fa-chart-pie"></i></span><div><b>Оценки учеников</b><span>Кто справился на отлично, а кому нужна помощь</span></div></li>
+                            <li><span class="offer-ico"><i class="fas fa-clock"></i></span><div><b>Пиковые часы</b><span>Когда класс реально садится за тесты</span></div></li>
+                            <li><span class="offer-ico"><i class="fas fa-trophy"></i></span><div><b>Рейтинг тестов</b><span>Какие тесты проходят чаще всего</span></div></li>
+                        </ul>
+                        <div class="cta-wrap">
+                            <a href="{% url 'payment' %}" class="cta"><span>Открыть аналитику</span><span class="arr"><i class="fas fa-arrow-right"></i></span></a>
+                        </div>
+                        <div class="offer-fine">
+                            <span><i class="fas fa-rotate-left text-[10px]"></i>Разовая оплата, без автосписаний</span>
+                            <span>Пакеты от 290 ₽</span>
+                        </div>
+                        <button type="button" class="offer-later" id="offer-later">Не сейчас</button>
                     </div>
+                </div>
+                {% endif %}
+            </section>
 
-                    <!-- Кнопки безопасности -->
-                    <div class="pt-2 flex flex-wrap items-center gap-3">
+            <!-- ============================================================ -->
+            <!--  4. АККАУНТ / ПОПУЛЯРНЫЕ / ПЛАТЕЖИ                            -->
+            <!-- ============================================================ -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+
+                <section data-rv class="card lg:col-span-4 space-y-4">
+                    <div class="card-head" style="margin-bottom:6px">
+                        <div class="card-title"><span class="card-ico"><i class="fas fa-user-shield"></i></span><h2>Учётная запись</h2></div>
+                    </div>
+                    <div class="field">
+                        <div class="min-w-0"><span class="k">Логин</span><b>{{ username }}</b></div>
+                    </div>
+                    {% if user.email %}
+                    <div class="field">
+                        <div class="min-w-0"><span class="k">E-mail</span><b>{{ user.email }}</b></div>
+                        <i class="fas fa-circle-check text-emerald-400 text-xs" title="Подтверждён"></i>
+                    </div>
+                    {% endif %}
+                    <div class="field">
+                        <div class="min-w-0"><span class="k">UID</span><b class="font-mono-nums">{{ user.id_staff|stringformat:".8s" }}</b></div>
+                        <button type="button" class="copy-btn" data-copy="{{ user.id_staff }}" title="Скопировать полный UID" aria-label="Скопировать UID"><i class="fas fa-copy"></i></button>
+                    </div>
+                    {% if date_last_login %}
+                    <p class="text-[11px] text-zinc-500 font-mono-nums px-1">Последний вход: {{ date_last_login }}</p>
+                    {% endif %}
+
+                    <div class="flex flex-wrap gap-2 pt-1">
                         <form method="post" action="{% url 'password_reset' %}" class="m-0">
                             {% csrf_token %}
-                            <button type="submit" class="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-gray-300 hover:text-white spring-btn">
-                                Сбросить пароль
-                            </button>
+                            <button type="submit" class="btn"><i class="fas fa-key"></i><span>Сбросить пароль</span></button>
                         </form>
-
-                        <button onclick="openLogoutModal()" class="px-4 py-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-xs font-semibold text-rose-400 spring-btn">
-                            Выйти из системы
-                        </button>
+                        <button type="button" onclick="openLogoutModal()" class="btn btn--danger"><i class="fas fa-arrow-right-from-bracket"></i><span>Выйти</span></button>
                     </div>
 
-                    <!-- ЗОНА АДМИНИСТРАТОРА (ROOT COCKPIT) -->
                     {% if user.is_superuser %}
                     <div class="pt-4 border-t border-white/5 space-y-3">
-                        <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-400 font-mono-nums block">
-                            Инженерный терминал
-                        </span>
-                        <div class="grid grid-cols-2 gap-2.5">
-                            <a href="{% url 'stats2975' %}" class="p-3 rounded-xl bg-indigo-600/10 border border-indigo-500/20 text-indigo-300 hover:bg-indigo-600/20 text-xs font-semibold flex items-center gap-2 transition-colors">
-                                <i class="fas fa-shield-halved text-xs"></i>
-                                <span>Панель управления</span>
-                            </a>
-                            <a href="{% url 'user_ops_center' %}" class="p-3 rounded-xl bg-indigo-600/10 border border-indigo-500/20 text-indigo-300 hover:bg-indigo-600/20 text-xs font-semibold flex items-center gap-2 transition-colors">
-                                <i class="fas fa-users-gear text-xs"></i>
-                                <span>Центр операций CRM</span>
-                            </a>
+                        <span class="kicker" style="color:var(--indigo-soft)">Инженерный терминал</span>
+                        <div class="grid grid-cols-1 gap-2">
+                            <a href="{% url 'stats2975' %}" class="btn justify-start"><i class="fas fa-shield-halved"></i><span>Панель управления</span></a>
+                            <a href="{% url 'user_ops_center' %}" class="btn justify-start"><i class="fas fa-users-gear"></i><span>Центр операций CRM</span></a>
                         </div>
                     </div>
                     {% endif %}
                 </section>
 
-                <!-- ИСТОРИЯ ОПЕРАЦИЙ И ПЛАТЕЖЕЙ (col-span-6) -->
-                <section class="lg:col-span-6 glass-panel rounded-[28px] p-6 space-y-4 flex flex-col justify-between">
-                    <div>
-                        <span class="text-xs font-bold uppercase tracking-wider text-gray-400 font-display block mb-4">
-                            История транзакций
-                        </span>
-
-                        <div class="space-y-2.5 max-h-72 overflow-y-auto pr-1">
-                            {% for payment in payments %}
-                            <div class="p-3.5 rounded-2xl bg-[var(--bg-main)] border border-white/5 flex items-center justify-between gap-3">
-                                <div class="flex items-center gap-3 min-w-0">
-                                    <span class="w-2 h-2 rounded-full flex-shrink-0 
-                                        {% if payment.status == 'completed' %}bg-emerald-500 shadow-[0_0_6px_#10B981]
-                                        {% elif payment.status == 'failed' %}bg-rose-500
-                                        {% else %}bg-amber-500{% endif %}">
-                                    </span>
-                                    <div class="min-w-0">
-                                        <p class="text-xs font-bold text-white truncate">{{ payment.subscription.get_human_plan|default:"Пополнение" }}</p>
-                                        <span class="text-[10px] text-gray-500 font-mono-nums">{{ payment.created_at|date:"d.m.Y, H:i" }}</span>
-                                    </div>
-                                </div>
-                                <span class="text-xs font-bold font-mono-nums text-white flex-shrink-0">
-                                    {{ payment.amount_display }} ₽
-                                </span>
-                            </div>
-                            {% empty %}
-                            <div class="text-center py-10 text-gray-500 space-y-1">
-                                <i class="fas fa-receipt text-lg opacity-40"></i>
-                                <p class="text-xs font-medium">Платежи отсутствуют</p>
-                            </div>
-                            {% endfor %}
+                <section data-rv class="card lg:col-span-4">
+                    <div class="card-head">
+                        <div>
+                            <div class="card-title"><span class="card-ico"><i class="fas fa-fire"></i></span><h2>Популярные тесты</h2></div>
+                            <p class="card-sub">По просмотрам</p>
                         </div>
                     </div>
-
-                    <p class="text-[10px] text-gray-500 font-mono-nums text-center pt-2">
-                        Все чеки отправляются на указанный при оплате email
-                    </p>
+                    <div class="space-y-2">
+                        {% for s in top_surveys %}
+                        <a href="{% url 'preview_test' s.survey_id %}" class="pop">
+                            <span class="pop-n">{{ forloop.counter }}</span>
+                            <span class="pop-t"><b>{{ s.title }}</b><span><i class="fas fa-eye text-[9px] mr-1 text-zinc-600"></i>{{ s.view_count }} · {{ s.created_at }}</span></span>
+                            <span class="pop-go"><i class="fas fa-arrow-right"></i></span>
+                        </a>
+                        {% empty %}
+                        <div class="empty">
+                            <span class="empty-ico"><i class="fas fa-fire"></i></span>
+                            <b>Пока без просмотров</b>
+                            <span>Поделитесь ссылкой на тест — и он появится здесь</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <a href="{% url 'history' %}" class="btn w-full mt-4"><span>Все тесты</span><i class="fas fa-arrow-right"></i></a>
                 </section>
 
+                <section data-rv class="card lg:col-span-4 flex flex-col">
+                    <div class="card-head">
+                        <div>
+                            <div class="card-title"><span class="card-ico"><i class="fas fa-receipt"></i></span><h2>Платежи</h2></div>
+                            <p class="card-sub">Чеки приходят на email, указанный при оплате</p>
+                        </div>
+                    </div>
+                    <div class="max-h-80 overflow-y-auto -mx-2 px-0.5">
+                        {% for payment in payments %}
+                        <div class="tx {% if payment.status == 'completed' %}tx-ok{% elif payment.status == 'failed' %}tx-bad{% else %}tx-wait{% endif %}">
+                            <span class="tx-ico"><i class="fas {% if payment.status == 'completed' %}fa-check{% elif payment.status == 'failed' %}fa-xmark{% else %}fa-hourglass-half{% endif %}"></i></span>
+                            <span class="min-w-0"><b>{{ payment.subscription.get_human_plan|default:"Пополнение" }}</b><span>{{ payment.created_at|date:"d.m.Y, H:i" }}</span></span>
+                            <span class="tx-sum">
+                                <strong>{{ payment.amount_display }} ₽</strong>
+                                <em>{% if payment.status == 'completed' %}оплачен{% elif payment.status == 'failed' %}ошибка{% else %}в обработке{% endif %}</em>
+                            </span>
+                        </div>
+                        {% empty %}
+                        <div class="empty">
+                            <span class="empty-ico"><i class="fas fa-receipt"></i></span>
+                            <b>Платежей пока нет</b>
+                            <span>Здесь появится история оплат</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </section>
             </div>
-
         </main>
 
-        <footer class="mt-16 sm:mt-24">
+        <footer data-rv="fade" class="mt-16 sm:mt-24">
             <div class="max-w-3xl mx-auto px-4 sm:px-8">
                 <div class="mt-8 mb-4 pt-8 border-t border-white/5 flex flex-col sm:flex-row justify-between items-center text-xs text-gray-600 text-center">
                     <p>2024-2026 Летучка AI. Design & Development <a class="text-gray-500 hover:text-indigo-400" rel='nofollow' href="https://dprofile.ru/kozak_developer" target="_blank">by Kozak</a></p>
@@ -474,115 +1154,487 @@
         </footer>
     </div>
 
-    <!-- МОДАЛКА LOGOUT (APPLE STYLE) -->
-    <div id="logout-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
-        <div class="fixed inset-0 bg-black/80 backdrop-blur-md" onclick="closeLogoutModal()"></div>
-        <div class="relative w-full max-w-xs glass-panel rounded-[28px] p-6 text-center shadow-2xl z-10">
-            <div class="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-500 flex items-center justify-center mx-auto mb-3">
+    <!-- МОДАЛКА LOGOUT -->
+    <div id="logout-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="logout-title">
+        <div class="m-backdrop fixed inset-0 bg-black/80 backdrop-blur-md" onclick="closeLogoutModal()"></div>
+        <div class="m-panel relative w-full max-w-xs glass-panel rounded-[28px] p-6 text-center shadow-2xl z-10">
+            <div class="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center mx-auto mb-3">
                 <i class="fas fa-arrow-right-from-bracket text-base"></i>
             </div>
-            <h3 class="text-sm font-bold text-white mb-1.5">Выйти из аккаунта?</h3>
-            <p class="text-xs text-gray-400 mb-5 leading-relaxed">
-                Потребуется повторная авторизация для доступа к вашим тестам.
-            </p>
+            <h3 id="logout-title" class="text-base font-bold text-white mb-1.5">Выйти из аккаунта?</h3>
+            <p class="text-xs text-gray-400 mb-5 leading-relaxed">Потребуется повторная авторизация для доступа к вашим тестам.</p>
             <div class="grid grid-cols-2 gap-2.5">
-                <button onclick="closeLogoutModal()" class="py-2.5 rounded-xl bg-white/5 text-xs font-semibold text-gray-300 hover:bg-white/10">Отмена</button>
-                <a href="{% url 'logout' %}" class="py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-xs font-bold text-white text-center spring-btn">Выйти</a>
+                <button type="button" onclick="closeLogoutModal()" class="py-2.5 rounded-xl bg-white/5 text-xs font-semibold text-gray-300 hover:bg-white/10 spring-btn">Отмена</button>
+                <a href="{% url 'logout' %}" id="logout-confirm" class="py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-xs font-bold text-white text-center spring-btn">Выйти</a>
             </div>
         </div>
     </div>
 
     <script>
-        function openLogoutModal() {
-            $('#logout-modal').removeClass('hidden').addClass('flex');
+    (function () {
+        'use strict';
+        var body = document.body;
+        var premium = body.dataset.premium === '1';
+        var reduceMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+        var nf = new Intl.NumberFormat('ru-RU');
+        var WEEK = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
+
+        function $(id) { return document.getElementById(id); }
+        function esc(s) {
+            return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+            });
         }
-        function closeLogoutModal() {
-            $('#logout-modal').addClass('hidden').removeClass('flex');
+        function plural(n, one, few, many) {
+            var m10 = n % 10, m100 = n % 100;
+            if (m10 === 1 && m100 !== 11) return one;
+            if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return few;
+            return many;
+        }
+        function sum(a) { return (a || []).reduce(function (s, v) { return s + (+v || 0); }, 0); }
+        function niceMax(v) {
+            if (v <= 2) return 2;
+            if (v <= 10) return v + (v % 2);
+            var p = Math.pow(10, Math.floor(Math.log10(v))) / 2;
+            return Math.ceil(v / p) * p;
         }
 
-        // КОНФИГУРАЦИЯ ДВУХ КЛЮЧЕВЫХ ГРАФИКОВ
-        const chartFont = { family: 'Golos Text', size: 10 };
-        const baseOptions = {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: { color: '#6B7280', font: chartFont, precision: 0 },
-                    grid: { color: 'rgba(255, 255, 255, 0.04)' }
-                },
-                x: {
-                    ticks: { color: '#6B7280', font: chartFont },
-                    grid: { display: false }
-                }
+        /* ======================================================================
+           MOTION: каскад + IO; графики получают .in, когда карточка видна
+           ====================================================================== */
+        var Motion = (function () {
+            var io = null;
+            function finalize(el) { el.classList.remove('rv-in'); el.classList.add('rv-done'); }
+            function reveal(el, delay) {
+                if (!el || el.classList.contains('rv-in') || el.classList.contains('rv-done')) return;
+                if (reduceMotion) { finalize(el); armCharts(el); return; }
+                el.style.setProperty('--d', Math.round(delay || 0) + 'ms');
+                el.classList.add('rv-in');
+                setTimeout(function () { armCharts(el); }, (delay || 0) + 120);
+                setTimeout(function () { finalize(el); }, (delay || 0) + 2200);
             }
+            function observe(list) {
+                if (!list.length) return;
+                if (!('IntersectionObserver' in window)) { list.forEach(function (e) { reveal(e, 0); }); return; }
+                io = io || new IntersectionObserver(function (entries) {
+                    var k = 0;
+                    entries.filter(function (e) { return e.isIntersecting; })
+                        .sort(function (a, b) { return a.boundingClientRect.top - b.boundingClientRect.top; })
+                        .forEach(function (e) { io.unobserve(e.target); reveal(e.target, (k++) * 50); });
+                }, { threshold: 0.06, rootMargin: '0px 0px -5% 0px' });
+                list.forEach(function (e) { io.observe(e); });
+            }
+            function cascade() {
+                var now = [], later = [], vh = innerHeight;
+                document.querySelectorAll('[data-rv]').forEach(function (e) {
+                    if (e.getClientRects().length === 0) { finalize(e); return; }
+                    var r = e.getBoundingClientRect();
+                    var fixed = getComputedStyle(e).position === 'fixed';
+                    (fixed || (r.top < vh * 0.98 && r.bottom > 0) ? now : later).push(e);
+                });
+                now.sort(function (a, b) { return a.getBoundingClientRect().top - b.getBoundingClientRect().top; });
+                now.forEach(function (e, i) { reveal(e, Math.min(i * 45, 450)); });
+                observe(later);
+            }
+            return { cascade: cascade };
+        })();
+
+        /* Узлы-графики анимируются, когда их карточка проявилась И пришли данные */
+        var CHART_SEL = '.act, .donut, .heat, .hbars, .stack, .spark, .gauge, .mini-ring';
+        function armCharts(scope) {
+            scope.querySelectorAll(CHART_SEL).forEach(function (n) { n.dataset.armed = '1'; if (n.dataset.ready === '1') n.classList.add('in'); });
+            if (scope.matches && scope.matches(CHART_SEL)) { scope.dataset.armed = '1'; if (scope.dataset.ready === '1') scope.classList.add('in'); }
+        }
+        function ready(node, replay) {
+            if (!node) return;
+            node.dataset.ready = '1';
+            if (node.dataset.armed !== '1') return;
+            if (replay) { node.classList.remove('in'); void node.offsetWidth; }
+            requestAnimationFrame(function () { node.classList.add('in'); });
+        }
+
+        /* Счётчик с докруткой */
+        function countTo(el, to, suffix) {
+            suffix = suffix || '';
+            if (reduceMotion || !to) { el.innerHTML = nf.format(to || 0) + suffix; return; }
+            var t0 = performance.now(), dur = 900;
+            (function tick(now) {
+                var p = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - p, 3);
+                el.innerHTML = nf.format(Math.round(to * e)) + suffix;
+                if (p < 1) requestAnimationFrame(tick);
+            })(t0);
+        }
+
+        /* ======================================================================
+           КВОТА И ДНИ ПОДПИСКИ (данные из шаблона)
+           ====================================================================== */
+        (function quota() {
+            var g = $('quota-gauge'); if (!g) return;
+            var plan = g.dataset.plan, rem = +g.dataset.remaining || 0, tot = +g.dataset.total || 0, cr = +g.dataset.credits || 0;
+            var bar = $('quota-bar'), val, cap, pct, color;
+            if (plan === 'package') {
+                val = cr || tot; cap = plural(val, 'тест', 'теста', 'тестов') + ' в пакете'; pct = val > 0 ? 100 : 0; color = '#818CF8';
+            } else if (tot > 0) {
+                val = rem; cap = 'осталось'; pct = Math.max(0, Math.min(100, rem / tot * 100));
+                color = pct > 50 ? '#818CF8' : pct > 20 ? '#FBBF24' : '#FB7185';
+            } else {
+                val = 0; cap = 'нет доступа'; pct = 0; color = '#52525B';
+            }
+            bar.style.stroke = color;
+            g.style.setProperty('--v', pct.toFixed(1));
+            $('quota-cap').textContent = cap;
+            ready(g);
+            setTimeout(function () { countTo($('quota-val'), val); }, 250);
+        })();
+        (function days() {
+            var r = $('days-ring'); if (!r) return;
+            var d = +r.dataset.days || 0;
+            r.style.setProperty('--v', Math.max(4, Math.min(100, d / 30 * 100)).toFixed(1));
+            r.querySelector('.bar').style.stroke = d > 7 ? '#818CF8' : '#FBBF24';
+            ready(r);
+        })();
+
+        /* ======================================================================
+           ДАННЫЕ ДЛЯ ГРАФИКОВ: два существующих API, параллельно
+           Для free тоже грузим: KPI-цифры — открытый тизер, а под размытием
+           лежат реальные графики (свои же данные). Если данных нет — для free
+           показываем демо-набор, чтобы размытый превью не выглядел пустым.
+           ====================================================================== */
+        var DEMO = {
+            labels: (function () { var a = [], t = new Date(); for (var i = 6; i >= 0; i--) { var d = new Date(t); d.setDate(t.getDate() - i); a.push(('0' + d.getDate()).slice(-2) + '.' + ('0' + (d.getMonth() + 1)).slice(-2)); } return a; })(),
+            attempts: [4, 9, 6, 14, 11, 18, 12], views: [12, 20, 15, 31, 22, 40, 27], tests: [1, 0, 2, 1, 3, 1, 2],
+            scores: [24, 31, 9],
+            hourly: [0,0,0,0,0,0,0,1,4,9,12,10,7,5,8,11,14,9,6,4,2,1,0,0],
+            top: { labels: ['Строение клетки', 'Петровские реформы', 'Квадратные уравнения', 'Present Perfect'], data: [38, 27, 19, 11] },
+            quality: { labels: ['Короткие (1-4)', 'Оптимальные (5-8)', 'Длинные (9+)'], data: [3, 11, 4] },
+            types: { labels: ['Факты (Что, Кто, Где)', 'Анализ (Почему, Как)', 'Классификация (Какой, Выберите)', 'Прочее'], data: [42, 18, 27, 9] }
         };
 
-        function initDashboardCharts() {
-            const subLevel = {{ subscription_level|default:0 }};
-            if (subLevel === 0) return;
-
-            // 1. График активности создания
-            fetch("{% url 'personal_charts_api' %}")
-                .then(r => r.json())
-                .then(d => {
-                    const ctx = document.getElementById('personalActivityChart')?.getContext('2d');
-                    if (ctx && d.activity_chart) {
-                        new Chart(ctx, {
-                            type: 'bar',
-                            data: {
-                                labels: d.activity_chart.labels,
-                                datasets: [{
-                                    data: d.activity_chart.data,
-                                    backgroundColor: '#4F46E5',
-                                    borderRadius: 8,
-                                    hoverBackgroundColor: '#4338CA'
-                                }]
-                            },
-                            options: baseOptions
-                        });
-                    }
-                })
-                .catch(() => {});
-
-            // 2. График результатов прохождений учеников
-            fetch("{% url 'student_charts_api' %}")
-                .then(r => r.json())
-                .then(d => {
-                    const ctx = document.getElementById('studentScoresChart')?.getContext('2d');
-                    if (ctx && d.scores_chart) {
-                        new Chart(ctx, {
-                            type: 'doughnut',
-                            data: {
-                                labels: d.scores_chart.labels,
-                                datasets: [{
-                                    data: d.scores_chart.data,
-                                    backgroundColor: ['#10B981', '#F59E0B', '#EF4444'],
-                                    borderColor: 'var(--bg-main)',
-                                    borderWidth: 4,
-                                    hoverOffset: 4
-                                }]
-                            },
-                            options: {
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                cutout: '75%',
-                                plugins: {
-                                    legend: {
-                                        display: true,
-                                        position: 'bottom',
-                                        labels: { color: '#9CA3AF', font: chartFont, boxWidth: 10, padding: 12 }
-                                    }
-                                }
-                            }
-                        });
-                    }
-                })
-                .catch(() => {});
+        function getJSON(url) {
+            return fetch(url, { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+                .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
         }
 
-        document.addEventListener('DOMContentLoaded', initDashboardCharts);
+        var series = { labels: [], attempts: [], views: [], tests: [] };
+
+        Promise.allSettled([
+            getJSON("{% url 'personal_charts_api' %}"),
+            getJSON("{% url 'student_charts_api' %}")
+        ]).then(function (res) {
+            var P = res[0].status === 'fulfilled' ? res[0].value : null;
+            var S = res[1].status === 'fulfilled' ? res[1].value : null;
+
+            var act = (P && P.activity_chart) || {}, vw = (P && P.views_chart) || {}, at = (S && S.attempts_activity_chart) || {};
+            series.labels = at.labels || act.labels || vw.labels || DEMO.labels;
+            series.attempts = (at.data || []).map(Number);
+            series.views = (vw.data || []).map(Number);
+            series.tests = (act.data || []).map(Number);
+            var scores = ((S && S.scores_chart && S.scores_chart.data) || []).map(Number);
+
+            renderKPIs(series, scores, !!S, !!P);
+            renderOfferNumbers(series, scores);
+
+            // Для free с пустыми данными — демо под размытием
+            var useDemo = !premium && sum(series.attempts) + sum(series.views) + sum(scores) === 0;
+            var chartSeries = useDemo ? { labels: DEMO.labels, attempts: DEMO.attempts, views: DEMO.views, tests: DEMO.tests } : series;
+
+            if (!P && !S && premium) { failAll(); return; }
+
+            renderActivity(chartSeries, currentKey);
+            renderDonut(useDemo ? DEMO.scores : scores);
+            renderHeat(useDemo ? DEMO.hourly : ((S && S.hourly_activity_chart && S.hourly_activity_chart.data) || []).map(Number));
+            renderTop(useDemo ? DEMO.top : ((S && S.survey_engagement_chart) || {}));
+            renderStack('stack-len', useDemo ? DEMO.quality : ((P && P.quality_chart) || {}), ['#6366F1', '#A5B4FC', '#FBBF24'], 'тест', 'теста', 'тестов');
+            renderStack('stack-type', useDemo ? DEMO.types : ((P && P.question_types_chart) || {}), ['#6366F1', '#A5B4FC', '#34D399', '#52525B'], 'вопрос', 'вопроса', 'вопросов');
+            window.__profileSeries = chartSeries;
+        });
+
+        function failAll() {
+            $('act-cols').innerHTML = '<div class="act-empty">Не удалось загрузить графики. Обновите страницу</div>';
+            ['kpi-attempts', 'kpi-views', 'kpi-tests', 'kpi-great'].forEach(function (id) { $(id).textContent = '—'; });
+        }
+
+        /* ---------- KPI ---------- */
+        function renderKPIs(s, scores, okS, okP) {
+            var att = sum(s.attempts), vws = sum(s.views), tst = sum(s.tests), tot = sum(scores);
+            if (okS) countTo($('kpi-attempts'), att); else $('kpi-attempts').textContent = '—';
+            if (okP) countTo($('kpi-views'), vws); else $('kpi-views').textContent = '—';
+            if (okP) countTo($('kpi-tests'), tst); else $('kpi-tests').textContent = '—';
+
+            $('kpi-attempts-foot').innerHTML = att > 0
+                ? (vws > 0 ? '<b class="num">' + Math.min(100, Math.round(att / vws * 100)) + '%</b> от просмотров' : 'за последние 7 дней')
+                : 'Поделитесь тестом с классом';
+            $('kpi-views-foot').innerHTML = vws > 0 ? 'в среднем <b class="num">' + nf.format(Math.round(vws / 7)) + '</b> в день' : 'уникальных просмотров';
+
+            var great = tot > 0 ? Math.round(scores[0] / tot * 100) : 0;
+            if (okS) countTo($('kpi-great'), great, '<small>%</small>'); else $('kpi-great').textContent = '—';
+            $('kpi-great-foot').innerHTML = tot > 0 ? '<b class="num">' + nf.format(scores[0]) + '</b> из ' + nf.format(tot) + ' прохождений' : 'прохождений на 80%+';
+            var ring = $('kpi-great-ring'); ring.style.setProperty('--v', great); ready(ring);
+
+            // мини-столбики прохождений — видны всем, это тизер
+            var data = s.attempts.length ? s.attempts : [0, 0, 0, 0, 0, 0, 0];
+            var mx = Math.max.apply(null, data.concat([1])), peak = data.lastIndexOf(Math.max.apply(null, data));
+            $('kpi-spark').innerHTML = data.map(function (v, i) {
+                return '<i class="' + (v > 0 && i === peak ? 'is-max' : '') + '" style="--h:' + Math.max(10, v / mx * 100) + '%;--k:' + i + '"></i>';
+            }).join('');
+            ready($('kpi-spark'));
+        }
+
+        /* ---------- Текст оффера с реальными цифрами ---------- */
+        function renderOfferNumbers(s, scores) {
+            var el = $('offer-text'); if (!el) return;
+            var att = sum(s.attempts), vws = sum(s.views), tot = sum(scores);
+            if (att > 0 || vws > 0) {
+                el.innerHTML = 'За неделю ваши тесты открыли <b>' + nf.format(vws) + '</b> ' + plural(vws, 'раз', 'раза', 'раз') +
+                    ' и прошли <b>' + nf.format(att) + '</b> ' + plural(att, 'раз', 'раза', 'раз') + '. Посмотрите, как именно — по дням, часам и оценкам.';
+            } else if (tot > 0) {
+                el.innerHTML = 'У ваших тестов уже <b>' + nf.format(tot) + '</b> ' + plural(tot, 'прохождение', 'прохождения', 'прохождений') + '. Откройте полный разбор: оценки, пиковые часы и самые востребованные тесты.';
+            }
+        }
+
+        /* ---------- Динамика с переключателем ---------- */
+        var currentKey = 'attempts';
+        var KEY_META = {
+            attempts: { sub: 'Прохождения ваших тестов по дням', unit: ['прохождение', 'прохождения', 'прохождений'], empty: 'За неделю прохождений не было' },
+            views:    { sub: 'Уникальные просмотры ваших тестов по дням', unit: ['просмотр', 'просмотра', 'просмотров'], empty: 'За неделю просмотров не было' },
+            tests:    { sub: 'Сколько тестов вы собрали по дням', unit: ['тест', 'теста', 'тестов'], empty: 'За неделю новых тестов не было' }
+        };
+
+        function renderActivity(s, key) {
+            var meta = KEY_META[key];
+            var labels = s.labels || [], data = (s[key] || []).map(Number);
+            while (data.length < labels.length) data.unshift(0);
+            var max = Math.max.apply(null, data.concat([0])), top = niceMax(max), total = sum(data);
+            var peakI = max > 0 ? data.lastIndexOf(max) : -1;
+            var today = new Date();
+            var area = function (f) { return 'top:calc(34px + (100% - 34px) * ' + f + ')'; };
+            var u = meta.unit;
+
+            var cols = $('act-cols');
+            var existing = cols.querySelectorAll('.act-col');
+            var canMorph = existing.length === data.length;
+
+            var grid = [0, 0.5, 1].map(function (f) {
+                return '<i class="act-gl" style="' + area(f) + '"></i><span class="act-yl" style="' + area(f) + '">' + nf.format(Math.round(top * (1 - f))) + '</span>';
+            }).join('');
+
+            if (canMorph) {
+                // Плавно перетекаем столбиками между рядами — без пересборки DOM
+                cols.querySelectorAll('.act-gl, .act-yl, .act-empty').forEach(function (n) { n.remove(); });
+                cols.insertAdjacentHTML('afterbegin', grid);
+                existing.forEach(function (col, i) {
+                    var v = data[i], hh = v > 0 ? Math.max(8, v / top * 100) : 0;
+                    col.style.setProperty('--h', hh + '%');
+                    col.classList.toggle('is-peak', i === peakI);
+                    col.classList.toggle('is-zero', v === 0);
+                    col.setAttribute('aria-label', labels[i] + ': ' + v + ' ' + plural(v, u[0], u[1], u[2]));
+                    col.querySelector('.act-tip').innerHTML = '<b>' + nf.format(v) + '</b><span>' + plural(v, u[0], u[1], u[2]) + '</span>';
+                });
+                if (total === 0) cols.insertAdjacentHTML('beforeend', '<div class="act-empty">' + meta.empty + '</div>');
+            } else {
+                var h = grid + data.map(function (v, i) {
+                    var hh = v > 0 ? Math.max(8, v / top * 100) : 0;
+                    return '<div class="act-col' + (i === peakI ? ' is-peak' : '') + (v === 0 ? ' is-zero' : '') + '" tabindex="0" style="--h:' + hh + '%;--k:' + i + '" aria-label="' + esc(labels[i]) + ': ' + v + ' ' + plural(v, u[0], u[1], u[2]) + '">' +
+                        '<span class="act-tip"><b>' + nf.format(v) + '</b><span>' + plural(v, u[0], u[1], u[2]) + '</span></span>' +
+                        '<span class="act-bar"></span></div>';
+                }).join('');
+                if (total === 0) h += '<div class="act-empty">' + meta.empty + '</div>';
+                cols.innerHTML = h;
+                $('act-x').innerHTML = labels.map(function (l, i) {
+                    var last = i === labels.length - 1;
+                    var d = new Date(today); d.setDate(today.getDate() - (labels.length - 1 - i));
+                    return '<span class="' + (last ? 'is-today' : '') + '">' + (last ? 'Сегодня' : WEEK[d.getDay()]) + '<small>' + esc(l) + '</small></span>';
+                }).join('');
+                ready($('act'));
+            }
+            $('act-sub').textContent = meta.sub;
+            $('act-total').textContent = nf.format(total) + ' ' + plural(total, u[0], u[1], u[2]);
+            $('act-peak').textContent = peakI > -1 ? (labels[peakI] + ' · ' + nf.format(data[peakI])) : '—';
+        }
+
+        (function segInit() {
+            var seg = $('act-seg'), ind = seg.querySelector('.seg-ind');
+            function place() {
+                var b = seg.querySelector('[aria-pressed="true"]');
+                ind.style.width = b.offsetWidth + 'px';
+                ind.style.transform = 'translateX(' + b.offsetLeft + 'px)';
+            }
+            seg.addEventListener('click', function (e) {
+                var b = e.target.closest('button'); if (!b || b.getAttribute('aria-pressed') === 'true') return;
+                seg.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+                currentKey = b.dataset.k; place();
+                if (window.__profileSeries) renderActivity(window.__profileSeries, currentKey);
+            });
+            addEventListener('resize', place, { passive: true });
+            if (document.fonts && document.fonts.ready) document.fonts.ready.then(place);
+            place();
+        })();
+
+        /* ---------- Кольцо оценок ---------- */
+        function renderDonut(data) {
+            data = [0, 1, 2].map(function (i) { return +data[i] || 0; });
+            var total = sum(data), colors = ['#6366F1', '#A5B4FC', '#FB7185'], off = 0;
+            var gap = total > 0 && data.filter(Boolean).length > 1 ? 1.2 : 0, segs = '';
+            data.forEach(function (v, k) {
+                var len = total ? v / total * 100 : 0;
+                if (len > 0) segs += '<circle class="sg" data-g="' + k + '" cx="60" cy="60" r="46" pathLength="100" stroke="' + colors[k] + '" style="--len:' + Math.max(0, len - gap) + ';--off:' + (-off) + ';--k:' + k + '"/>';
+                off += len;
+            });
+            $('donut-segs').innerHTML = segs;
+            $('donut-total').textContent = nf.format(total);
+            document.querySelectorAll('#legend li').forEach(function (li) {
+                var g = +li.dataset.g, v = data[g] || 0, vals = li.querySelectorAll('.lg-val b, .lg-val span');
+                vals[0].textContent = nf.format(v);
+                vals[1].textContent = total ? Math.round(v / total * 100) + '%' : '0%';
+            });
+            ready($('donut'));
+        }
+        (function donutFocus() {
+            var donut = $('donut'), legend = $('legend');
+            function focus(g) {
+                donut.classList.toggle('has-focus', g != null);
+                legend.querySelectorAll('li').forEach(function (li) { li.classList.toggle('is-focus', g != null && li.dataset.g === String(g)); });
+                donut.querySelectorAll('.sg').forEach(function (s) { s.classList.toggle('is-focus', g != null && s.dataset.g === String(g)); });
+            }
+            legend.addEventListener('pointerover', function (e) { var li = e.target.closest('li'); focus(li ? li.dataset.g : null); });
+            legend.addEventListener('pointerleave', function () { focus(null); });
+            donut.addEventListener('pointerover', function (e) { var s = e.target.closest('.sg'); focus(s ? s.dataset.g : null); });
+            donut.addEventListener('pointerleave', function () { focus(null); });
+        })();
+
+        /* ---------- Тепловая полоса по часам ---------- */
+        function renderHeat(data) {
+            var d = []; for (var i = 0; i < 24; i++) d.push(+data[i] || 0);
+            var mx = Math.max.apply(null, d), total = sum(d), peak = mx > 0 ? d.indexOf(mx) : -1;
+            var heat = $('heat');
+            heat.innerHTML = d.map(function (v, h) {
+                var l = v === 0 ? 0 : v === mx ? 4 : Math.max(1, Math.ceil(v / mx * 3));
+                return '<i data-l="' + l + '" data-h="' + h + '" data-v="' + v + '" style="--k:' + h + '" aria-label="' + h + ':00 — ' + v + '"></i>';
+            }).join('');
+            var ro = $('heat-readout');
+            function base() {
+                ro.innerHTML = total > 0
+                    ? 'Пик активности — <b>' + peak + ':00–' + (peak + 1) + ':00</b>, ' + nf.format(mx) + ' ' + plural(mx, 'прохождение', 'прохождения', 'прохождений')
+                    : 'За неделю прохождений не было';
+                heat.querySelectorAll('.is-hl').forEach(function (n) { n.classList.remove('is-hl'); });
+                if (peak > -1) heat.children[peak].classList.add('is-hl');
+            }
+            heat.onpointerover = function (e) {
+                var c = e.target.closest('i'); if (!c) return;
+                heat.querySelectorAll('.is-hl').forEach(function (n) { n.classList.remove('is-hl'); });
+                var v = +c.dataset.v, h = +c.dataset.h;
+                ro.innerHTML = '<b>' + h + ':00–' + (h + 1) + ':00</b> · ' + nf.format(v) + ' ' + plural(v, 'прохождение', 'прохождения', 'прохождений');
+            };
+            heat.onpointerleave = base;
+            base();
+            ready(heat);
+        }
+
+        /* ---------- Топ тестов по прохождениям ---------- */
+        function renderTop(chart) {
+            var labels = chart.labels || [], data = (chart.data || []).map(Number), box = $('hbars');
+            if (!labels.length) {
+                box.innerHTML = '<li class="empty"><span class="empty-ico"><i class="fas fa-trophy"></i></span><b>Пока никто не проходил</b><span>Отправьте ссылку ученикам — рейтинг соберётся сам</span></li>';
+                return;
+            }
+            var mx = Math.max.apply(null, data.concat([1]));
+            box.innerHTML = labels.slice(0, 6).map(function (l, i) {
+                return '<li class="hb"><span class="hb-n">' + (i + 1) + '</span><span class="hb-t" title="' + esc(l) + '">' + esc(l) + '</span><span class="hb-v">' + nf.format(data[i]) + '</span>' +
+                    '<span class="hb-bar"><i style="--p:' + (data[i] / mx).toFixed(3) + ';--k:' + i + '"></i></span></li>';
+            }).join('');
+            ready(box);
+        }
+
+        /* ---------- Составные полосы ---------- */
+        function renderStack(id, chart, colors, one, few, many) {
+            var labels = chart.labels || [], data = (chart.data || []).map(Number), total = sum(data);
+            var bar = $(id), lg = $(id + '-lg');
+            if (!total) {
+                bar.innerHTML = '';
+                lg.innerHTML = '<li style="grid-template-columns:1fr;color:var(--fg-3)">Появится после первых тестов</li>';
+                return;
+            }
+            bar.innerHTML = data.map(function (v, i) {
+                if (!v) return '';
+                return '<i style="--w:calc(' + (v / total * 100).toFixed(2) + '% - 2px);--c:' + colors[i % colors.length] + ';--k:' + i + '" title="' + esc(labels[i]) + ': ' + v + '"></i>';
+            }).join('');
+            lg.innerHTML = data.map(function (v, i) {
+                return '<li style="--c:' + colors[i % colors.length] + '"><i></i><span>' + esc(labels[i]) + '</span><b>' + nf.format(v) + '</b><em>' + Math.round(v / total * 100) + '%</em></li>';
+            }).join('');
+            ready(bar);
+        }
+
+        /* ======================================================================
+           ПЕЙВОЛЛ: полный оффер — при первом показе и раз в 14 дней,
+           в остальное время — тихая плашка без анимаций.
+           ====================================================================== */
+        (function paywall() {
+            var gate = $('analytics-gate');
+            if (premium || !gate || !$('gate-pill')) return;
+            var KEY = 'letychka:pw:profile:v1', FULL_EVERY = 14 * 864e5;
+            var last = 0;
+            try { last = +localStorage.getItem(KEY) || 0; } catch (e) {}
+            var showFull = !last || (Date.now() - last > FULL_EVERY);
+            function mark() { try { localStorage.setItem(KEY, String(Date.now())); } catch (e) {} }
+
+            if (showFull) {
+                gate.classList.add('is-first');
+                mark();
+            } else {
+                gate.classList.add('is-quiet');
+            }
+            $('offer-later').addEventListener('click', function () {
+                gate.classList.remove('is-first'); gate.classList.add('is-quiet'); mark();
+            });
+            $('gate-more').addEventListener('click', function () {
+                gate.classList.remove('is-quiet');   // без is-first: спокойно, без вау-анимации
+            });
+        })();
+
+        /* ======================================================================
+           КОПИРОВАНИЕ UID / МОДАЛКА ВЫХОДА
+           ====================================================================== */
+        document.querySelectorAll('[data-copy]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var text = btn.dataset.copy, icon = btn.querySelector('i');
+                var ok = function () {
+                    btn.classList.add('is-done'); icon.className = 'fas fa-check';
+                    clearTimeout(btn._t); btn._t = setTimeout(function () { btn.classList.remove('is-done'); icon.className = 'fas fa-copy'; }, 1400);
+                };
+                var fallback = function () {
+                    var ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.left = '-9999px';
+                    document.body.appendChild(ta); ta.select();
+                    try { document.execCommand('copy'); ok(); } catch (e) {}
+                    ta.remove();
+                };
+                if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).then(ok).catch(fallback);
+                else fallback();
+            });
+        });
+
+        var lastFocus = null;
+        window.openLogoutModal = function () {
+            var el = $('logout-modal'); lastFocus = document.activeElement;
+            el.classList.remove('hidden', 'm-out'); el.style.display = 'flex';
+            void el.offsetWidth; el.classList.add('m-in');
+            setTimeout(function () { $('logout-confirm').focus(); }, 50);
+        };
+        window.closeLogoutModal = function () {
+            var el = $('logout-modal'); if (el.classList.contains('hidden')) return;
+            el.classList.remove('m-in'); el.classList.add('m-out');
+            setTimeout(function () { el.classList.add('hidden'); el.classList.remove('m-out'); el.style.display = 'none'; if (lastFocus && lastFocus.focus) lastFocus.focus(); }, 180);
+        };
+        document.addEventListener('keydown', function (e) { if (e.key === 'Escape') window.closeLogoutModal(); });
+
+        /* BOOT */
+        requestAnimationFrame(function () { requestAnimationFrame(function () {
+            window.__rvBooted = true;
+            Motion.cascade();
+        }); });
+        addEventListener('pageshow', function (e) {
+            if (e.persisted) document.querySelectorAll('[data-rv]').forEach(function (el) { el.classList.remove('rv-in'); el.classList.add('rv-done'); armCharts(el); });
+        });
+    })();
     </script>
 </body>
 </html>

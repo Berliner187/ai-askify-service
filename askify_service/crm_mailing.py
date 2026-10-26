@@ -101,7 +101,8 @@ def segment_queryset(segment):
     qs = (
         AuthUser.objects.filter(is_active=True, is_subscribed=True, email__contains="@")
         .annotate(_ulen=Length("username"))
-        .filter(_ulen__lte=40)  # гостевые аккаунты с длинным служебным username не трогаем
+        .filter(_ulen__lte=50)
+        .exclude(username__startswith="guest_")
     )
     blocked = blocked_staff_ids()
     if blocked:

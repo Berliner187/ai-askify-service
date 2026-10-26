@@ -314,7 +314,16 @@
         .cmp .is-on { background: var(--accent-tint); }
 
         .proof { border-radius: var(--r-lg); background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); overflow: hidden; }
-        .proof-stats { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); }
+        .proof-stats {
+            display: grid;
+            grid-template-columns: repeat(1, minmax(0, 1fr));
+            gap: 16px;
+        }
+        @media (min-width: 640px) {
+            .proof-stats {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+        }
         .proof-stats div { padding: 20px; display: grid; gap: 6px; }
         .proof-stats div + div { border-left: 1px solid var(--line); }
         .proof-stats strong { font: 800 clamp(22px, 3vw, 30px)/1 var(--f-display); letter-spacing: -0.04em; color: #fff; font-variant-numeric: tabular-nums; }
@@ -497,14 +506,14 @@
                     </button>
 
                     <button type="button" class="opt" role="radio" aria-checked="false"
-                            data-kind="pack" data-package="package-large" data-desc="package-large" data-price="690" data-tests="35"
-                            data-title="35 тестов" data-format="Пакет тестов" data-unit="≈20 ₽ за тест" data-term="Без срока">
+                            data-kind="pack" data-package="package-large" data-desc="package-large" data-price="850" data-tests="35"
+                            data-title="35 тестов" data-format="Пакет тестов" data-unit="≈24 ₽ за тест" data-term="Без срока">
                         <span class="opt-radio" aria-hidden="true"></span>
                         <span class="opt-body">
                             <span class="opt-title">35 тестов</span>
-                            <span class="opt-sub">≈20 ₽ за тест, <em>дешевле на 66%</em></span>
+                            <span class="opt-sub">≈24 ₽ за тест, <em>дешевле на 58%</em></span>
                         </span>
-                        <span class="opt-price"><b>690 ₽</b></span>
+                        <span class="opt-price"><b>850 ₽</b></span>
                     </button>
                 </div>
                 <p class="panel-note"><svg class="icon"><use href="#i-inf"/></svg><span>Тест списывается, только когда Вы его создаёте. Остаток <b>хранится без срока</b>.</span></p>
@@ -526,14 +535,14 @@
                     </button>
 
                     <button type="button" class="opt" role="radio" aria-checked="false"
-                            data-kind="sub" data-plan="premium-quarter" data-desc="Премиум 3 мес" data-price="1440"
+                            data-kind="sub" data-plan="premium-quarter" data-desc="Премиум 3 мес" data-price="1650"
                             data-title="Абонемент на 3 месяца" data-format="Абонемент" data-unit="16 ₽ в день" data-term="92 дня">
                         <span class="opt-radio" aria-hidden="true"></span>
                         <span class="opt-body">
                             <span class="opt-title">3 месяца <span class="tag tag--quiet">На семестр</span></span>
-                            <span class="opt-sub">16 ₽ в день, <em>выгоднее месяца на 32%</em></span>
+                            <span class="opt-sub">18 ₽ в день, <em>выгоднее месяца на 20%</em></span>
                         </span>
-                        <span class="opt-price"><b>1 440 ₽</b><s>2 070 ₽</s></span>
+                        <span class="opt-price"><b>1 650 ₽</b><s>2 070 ₽</s></span>
                     </button>
 
                     <button type="button" class="opt" role="radio" aria-checked="false"
@@ -570,14 +579,14 @@
                     </button>
 
                     <button type="button" class="opt" role="radio" aria-checked="false"
-                            data-kind="sub" data-plan="premium-quarter" data-desc="Премиум 3 мес" data-price="1440"
+                            data-kind="sub" data-plan="premium-quarter" data-desc="Премиум 3 мес" data-price="1650"
                             data-title="Абонемент на 3 месяца" data-format="Абонемент" data-unit="16 ₽ в день" data-term="92 дня">
                         <span class="opt-radio" aria-hidden="true"></span>
                         <span class="opt-body">
                             <span class="opt-title">3 месяца <span class="tag tag--quiet">На семестр</span></span>
                             <span class="opt-sub">16 ₽ в день, <em>выгоднее месяца на 32%</em></span>
                         </span>
-                        <span class="opt-price"><b>1 440 ₽</b><s>2 070 ₽</s></span>
+                        <span class="opt-price"><b>1 650 ₽</b><s>2 070 ₽</s></span>
                     </button>
                 {% endif %}
                 </div>
@@ -678,9 +687,9 @@
                     <div class="proof-stats">
                         <div><strong>3 200+</strong><span>учителей, преподавателей и&nbsp;HR</span></div>
                         <div><strong>40 000+</strong><span>тестов создано</span></div>
-                        <div><strong>15 сек</strong><span>от&nbsp;файла до&nbsp;готового теста</span></div>
+                        <div><strong>15 секунд</strong><span>от&nbsp;файла до&nbsp;готового теста</span></div>
                     </div>
-                    <p class="proof-math">Тест на&nbsp;20 вопросов вручную собирается около часа. В&nbsp;Летучке он&nbsp;готов за&nbsp;15&nbsp;секунд и&nbsp;стоит <b>от&nbsp;20&nbsp;₽</b>.</p>
+                    <p class="proof-math">Тест на&nbsp;20 вопросов вручную собирается около часа. В&nbsp;Летучке он&nbsp;готов за&nbsp;15&nbsp;секунд и&nbsp;стоит <b>от&nbsp;13&nbsp;₽</b> за шт.</p>
                 </div>
             </section>
 

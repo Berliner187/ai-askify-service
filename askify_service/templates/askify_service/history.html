@@ -5,26 +5,14 @@
     {% load static %}
     {% include 'components/linker.html' %}
 
-    <!-- Yandex.Metrika counter -->
-    <script type="text/javascript" >
-        setTimeout(function() {
-            (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
-            m[i].l=1*new Date();
-            for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
-            k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
-            (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
-        
-            ym(98823704, "init", {
-                clickmap:true,
-                trackLinks:true,
-                accurateTrackBounce:true,
-                webvisor:true
-            });
-        }, 1000);
+    <script>
+        (function () {
+            var d = document.documentElement;
+            d.classList.add('js-anim');
+            setTimeout(function () { if (!window.__rvBooted) d.classList.add('anim-failsafe'); }, 3500);
+        })();
     </script>
-    <noscript><div><img src="https://mc.yandex.ru/watch/98823704" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
-    <!-- /Yandex.Metrika counter -->
-    
+
     {% if debug %}
         <script src="https://cdn.tailwindcss.com"></script>
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
@@ -37,8 +25,28 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=Golos:wght@400;500;600;700&family=Wix+Madefor+Display:wght@600;700;800&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=Wix+Madefor+Display:wght@600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Yandex.Metrika counter -->
+    <script type="text/javascript" >
+        setTimeout(function() {
+            (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+            m[i].l=1*new Date();
+            for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+            k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+            (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+            ym(98823704, "init", {
+                clickmap:true,
+                trackLinks:true,
+                accurateTrackBounce:true,
+                webvisor:true
+            });
+        }, 1000);
+    </script>
+    <noscript><div><img src="https://mc.yandex.ru/watch/98823704" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+    <!-- /Yandex.Metrika counter -->
+
     <style>
         :root {
             --bg-main: #111119;
@@ -50,7 +58,11 @@
             --accent-rose: #EF4444;
             --spring-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
             --spring-smooth: cubic-bezier(0.16, 1, 0.3, 1);
+            --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+            --ease-io: cubic-bezier(0.65, 0, 0.35, 1);
         }
+
+        html { scrollbar-gutter: stable; }
 
         body {
             background-color: var(--bg-main);
@@ -64,8 +76,10 @@
             letter-spacing: -0.02em;
         }
 
-        .font-mono-nums { 
-            font-family: 'Golos', monospace; 
+        .font-mono-nums {
+            font-family: 'Golos Text';
+            letter-spacing: -0.03em;
+            font-variant-numeric: tabular-nums;
         }
 
         .glass-panel {
@@ -84,26 +98,363 @@
             border: 1px solid rgba(255, 255, 255, 0.12);
             box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.8);
             border-radius: 9999px;
-            transition: max-width 0.45s var(--spring-bounce), padding 0.35s var(--spring-smooth), transform 0.4s var(--spring-bounce);
+            transition: max-width 0.45s var(--spring-bounce), padding 0.35s var(--spring-smooth), transform 0.4s var(--spring-bounce), border-color 0.3s ease;
             will-change: max-width, transform;
         }
         .island-capsule.mode-header { max-width: 52rem; width: 100%; padding: 0.5rem 1.25rem; }
         .island-capsule.mode-notify { max-width: 24rem; width: auto; padding: 0.5rem 1.25rem; transform: scale(1.02); background: rgba(18, 17, 20, 0.98); }
-
         .island-capsule.theme-success { border-color: rgba(16, 185, 129, 0.45); }
         .island-capsule.theme-error { border-color: rgba(239, 68, 68, 0.45); }
+        .island-layer { transition: opacity 0.22s var(--ease-out), transform 0.3s var(--spring-bounce); }
 
         .spring-btn {
-            transition: transform 0.2s var(--spring-bounce), background-color 0.15s, border-color 0.15s;
+            transition: transform 0.2s var(--spring-bounce), background-color 0.15s, border-color 0.15s, color 0.15s;
         }
         .spring-btn:hover { transform: translateY(-1px); }
-        .spring-btn:active { transform: scale(0.97) translateY(1px); }
+        .spring-btn:active { transform: scale(0.96) translateY(1px); }
+
+        /* ==========================================================================
+           ПОИСК
+           ========================================================================== */
+        .h-search {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px 12px 16px;
+            border-radius: 20px;
+            background: rgba(22, 22, 32, 0.75);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            transition: border-color 0.2s ease, background-color 0.2s ease;
+            overflow: hidden;
+        }
+        .h-search:focus-within { border-color: rgba(255, 255, 255, 0.24); background: rgba(24, 24, 34, 0.9); }
+        .h-search .h-search-icon { color: #52525B; font-size: 13px; transition: color 0.2s ease; }
+        .h-search:focus-within .h-search-icon { color: #E4E4E7; }
+        .h-search input::placeholder { color: #52525B; }
+        .h-search-progress {
+            position: absolute;
+            left: 0; right: 0; bottom: 0;
+            height: 1px;
+            overflow: hidden;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        .h-search-progress::before {
+            content: '';
+            position: absolute;
+            top: 0; bottom: 0;
+            width: 35%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.7), transparent);
+            animation: h-scan 0.9s var(--ease-io) infinite;
+        }
+        .h-search.is-loading .h-search-progress { opacity: 1; }
+        @keyframes h-scan { from { left: -35%; } to { left: 100%; } }
+
+        .h-found {
+            font: 500 11px/1 'JetBrains Mono', monospace;
+            letter-spacing: 0.02em;
+            color: #71717A;
+            white-space: nowrap;
+        }
+
+        /* ==========================================================================
+           ГРУППЫ ПО ДАТАМ
+           ========================================================================== */
+        .h-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 4px 2px;
+            font: 500 10px/1 'JetBrains Mono', monospace;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: #71717A;
+        }
+        .h-group::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, rgba(255, 255, 255, 0.08), transparent);
+        }
+        .h-group:first-child { padding-top: 2px; }
+
+        /* ==========================================================================
+           КАРТОЧКА ТЕСТА — кликабельна целиком (stretched link)
+           ========================================================================== */
+        .h-card {
+            position: relative;
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr) auto;
+            align-items: center;
+            gap: 16px;
+            padding: 14px 14px 14px 14px;
+            border-radius: 22px;
+            background: rgba(23, 23, 33, 0.72);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            cursor: pointer;
+            isolation: isolate;
+            overflow: hidden;
+            transition:
+                transform 0.22s var(--spring-bounce),
+                border-color 0.18s ease,
+                background-color 0.18s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+        @media (min-width: 640px) { .h-card { padding: 16px 16px 16px 16px; gap: 18px; } }
+
+        .h-card:hover {
+            border-color: rgba(255, 255, 255, 0.16);
+            background: rgba(28, 28, 40, 0.85);
+            transform: translateY(-1px);
+        }
+        .h-card:active:not(:has(.h-act:active)) {
+            transform: scale(0.992);
+            transition-duration: 0.08s;
+        }
+        .h-card:has(.h-card-link:focus-visible) {
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Ссылка натянута на всю карточку: работает клик, Ctrl/Cmd+клик, средняя кнопка, «Открыть в новой вкладке» */
+        .h-card-link {
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            border-radius: inherit;
+            outline: none;
+        }
+
+        /* Блик по верхней грани на hover */
+        .h-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 24px; right: 24px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+            transform: scaleX(0);
+            transform-origin: left center;
+            opacity: 0;
+            transition: transform 0.5s var(--ease-out), opacity 0.3s ease;
+            pointer-events: none;
+            z-index: 2;
+        }
+        .h-card:hover::before { transform: scaleX(1); opacity: 1; }
+
+        .h-title {
+            font-size: 15px;
+            line-height: 1.3;
+            font-weight: 700;
+            color: #F4F4F5;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-align: start;
+            word-break: break-word;
+            transition: color 0.18s ease;
+        }
+        @media (min-width: 640px) { .h-title { font-size: 16px; } }
+        .h-card:hover .h-title { color: #FFFFFF; }
+
+        .h-meta {
+            margin-top: 7px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            column-gap: 12px;
+            row-gap: 4px;
+            font: 500 11px/1.2 'Golos Text';
+            letter-spacing: -0.01em;
+            color: #71717A;
+        }
+        .h-meta i { font-size: 9px; color: #52525B; margin-right: 5px; }
+        .h-meta .h-live { color: #6EE7B7; }
+        .h-meta .h-live::before {
+            content: '';
+            display: inline-block;
+            width: 6px; height: 6px;
+            margin-right: 6px;
+            border-radius: 999px;
+            background: #34D399;
+            vertical-align: 1px;
+        }
+        .h-meta .h-idle { color: #52525B; }
+
+        /* Экшены: поверх ссылки (z-index), чтобы клик по ним не открывал тест */
+        .h-actions {
+            position: relative;
+            z-index: 3;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .h-act {
+            width: 36px; height: 36px;
+            border-radius: 12px;
+            display: inline-flex; align-items: center; justify-content: center;
+            color: #71717A;
+            font-size: 12px;
+            background: transparent;
+            border: 1px solid transparent;
+            transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, transform 0.2s var(--spring-bounce);
+        }
+        .h-act:hover { color: #FAFAFA; background: rgba(255, 255, 255, 0.06); border-color: rgba(255, 255, 255, 0.08); }
+        .h-act:active { transform: scale(0.9); }
+        .h-act:focus-visible { outline: 1.5px solid rgba(255, 255, 255, 0.6); outline-offset: 1px; }
+        .h-act.is-danger:hover { color: #FB7185; background: rgba(244, 63, 94, 0.1); border-color: rgba(244, 63, 94, 0.2); }
+        .h-act.is-done { color: #34D399; background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.25); }
+        .h-act i { transition: transform 0.25s var(--spring-bounce); }
+        .h-act.is-done i { animation: h-pop 0.38s var(--spring-bounce); }
+
+        /* На десктопе второстепенные экшены приглушены, проявляются при наведении на карточку */
+        @media (hover: hover) and (min-width: 640px) {
+            .h-act.is-soft { opacity: 0.45; }
+            .h-card:hover .h-act.is-soft, .h-act.is-soft:focus-visible { opacity: 1; }
+        }
+
+        .h-chevron {
+            width: 36px; height: 36px;
+            margin-left: 2px;
+            border-radius: 12px;
+            display: inline-flex; align-items: center; justify-content: center;
+            color: #A1A1AA;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            font-size: 11px;
+            pointer-events: none;
+            transition: background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+        }
+        .h-chevron i { transition: transform 0.3s var(--spring-bounce); }
+        .h-card:hover .h-chevron { background: #FAFAFA; color: #111119; border-color: #FAFAFA; }
+        .h-card:hover .h-chevron i { transform: translateX(2px); }
+        @media (max-width: 639px) { .h-chevron { display: none; } }
+
+        /* Удаление: карточка схлопывается перед переходом */
+        .h-card.is-removing {
+            animation: h-collapse 0.32s var(--ease-io) forwards;
+            pointer-events: none;
+        }
+        @keyframes h-collapse {
+            0%   { opacity: 1; translate: 0 0; max-height: 200px; }
+            40%  { opacity: 0; translate: 24px 0; max-height: 200px; }
+            100% { opacity: 0; translate: 24px 0; max-height: 0; padding-top: 0; padding-bottom: 0; margin-top: -12px; border-width: 0; }
+        }
+
+        @keyframes h-pop { 0% { transform: scale(0.4); } 60% { transform: scale(1.2); } 100% { transform: scale(1); } }
+
+        /* Живой поиск: выход старых результатов */
+        .h-list-out > * {
+            transition: opacity 0.12s ease, translate 0.12s ease;
+            opacity: 0;
+            translate: 0 -4px;
+        }
+
+        /* ==========================================================================
+           ПРАВАЯ КОЛОНКА
+           ========================================================================== */
+        .h-stat {
+            padding: 12px 14px;
+            border-radius: 16px;
+            background: #111119;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .h-stat span {
+            display: block;
+            font: 500 10px/1 'Golos Text';
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: #71717A;
+        }
+        .h-stat b {
+            display: block;
+            margin-top: 9px;
+            font: 700 22px/1 'Golos Text';
+            letter-spacing: -0.04em;
+            color: #FAFAFA;
+        }
+
+        .h-top {
+            position: relative;
+            display: block;
+            padding: 18px;
+            border-radius: 24px;
+            background: rgba(23, 23, 33, 0.72);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: border-color 0.18s ease, transform 0.22s var(--spring-bounce), background-color 0.18s ease;
+        }
+        .h-top:hover { border-color: rgba(255, 255, 255, 0.18); background: rgba(28, 28, 40, 0.85); transform: translateY(-1px); }
+        .h-top:active { transform: scale(0.99); }
+        .h-top .h-top-go i { transition: transform 0.3s var(--spring-bounce); }
+        .h-top:hover .h-top-go i { transform: translateX(3px); }
+
+        /* Пагинация */
+        .h-page {
+            min-width: 36px; height: 36px;
+            padding: 0 12px;
+            border-radius: 12px;
+            display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+            font: 500 12px/1 'Golos Text';
+            color: #A1A1AA;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, transform 0.2s var(--spring-bounce);
+        }
+        .h-page:hover { color: #FAFAFA; border-color: rgba(255, 255, 255, 0.18); }
+        .h-page:active { transform: scale(0.95); }
+        .h-page.is-current { color: #111119; background: #FAFAFA; border-color: #FAFAFA; }
+
+        /* ==========================================================================
+           MOTION: ПОЯВЛЕНИЕ (быстро — 0.5с, шаг 35мс)
+           Только opacity/translate/filter, fill = backwards: после анимации на элементе
+           не остаётся filter, иначе ломается backdrop-filter.
+           ========================================================================== */
+        html.js-anim [data-rv]:not(.rv-in):not(.rv-done) { opacity: 0; }
+        html.anim-failsafe [data-rv] { opacity: 1 !important; animation: none !important; }
+
+        @keyframes rv-rise {
+            from { opacity: 0; translate: 0 12px; filter: blur(6px); }
+            to   { opacity: 1; translate: 0 0;    filter: blur(0); }
+        }
+        @keyframes rv-drop {
+            from { opacity: 0; translate: 0 -10px; scale: 0.97; }
+            to   { opacity: 1; translate: 0 0;     scale: 1; }
+        }
+        @keyframes rv-left {
+            from { opacity: 0; translate: -14px 0; }
+            to   { opacity: 1; translate: 0 0; }
+        }
+        @keyframes rv-fade { from { opacity: 0; } to { opacity: 1; } }
+
+        [data-rv].rv-in { animation: rv-rise 0.5s var(--ease-out) backwards; animation-delay: var(--d, 0ms); }
+        [data-rv="drop"].rv-in { animation-name: rv-drop; }
+        [data-rv="left"].rv-in { animation-name: rv-left; }
+        [data-rv="fade"].rv-in { animation-name: rv-fade; animation-duration: 0.4s; }
+
+        /* Модалка удаления */
+        @keyframes m-fade-in  { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes m-fade-out { from { opacity: 1; } to { opacity: 0; } }
+        @keyframes m-pop-in   { from { opacity: 0; translate: 0 12px; scale: 0.965; } to { opacity: 1; translate: 0 0; scale: 1; } }
+        @keyframes m-pop-out  { from { opacity: 1; } to { opacity: 0; translate: 0 6px; scale: 0.98; } }
+        .m-in  > .m-backdrop { animation: m-fade-in 0.24s ease both; }
+        .m-in  .m-panel      { animation: m-pop-in 0.36s var(--ease-out) both; }
+        .m-out > .m-backdrop { animation: m-fade-out 0.18s ease both; }
+        .m-out .m-panel      { animation: m-pop-out 0.18s ease both; }
+
+        @media (prefers-reduced-motion: reduce) {
+            html.js-anim [data-rv] { opacity: 1 !important; }
+            [data-rv].rv-in, .h-card.is-removing, .m-in .m-panel, .m-out .m-panel,
+            .m-in > .m-backdrop, .m-out > .m-backdrop, .h-act.is-done i { animation: none !important; }
+            .h-card, .h-card::before, .h-chevron i { transition: none !important; }
+        }
     </style>
 </head>
 <body class="min-h-full flex flex-col antialiased selection:bg-indigo-600 selection:text-white">
 
     <!-- ЛЕВЫЙ ВЕРТИКАЛЬНЫЙ ДОК (DESKTOP) -->
-    <aside class="hidden lg:flex fixed left-5 top-1/2 -translate-y-1/2 flex-col items-center gap-6 py-6 px-3.5 glass-panel z-40 shadow-2xl">
+    <aside data-rv="left" data-rv-order="0" class="hidden lg:flex fixed left-5 top-1/2 -translate-y-1/2 flex-col items-center gap-6 py-6 px-3.5 glass-panel z-40 shadow-2xl">
         <a href="/" class="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors" title="Главная">
             <img src="{% static 'img/logo.png' %}" alt="Logo" class="w-5 h-auto">
         </a>
@@ -112,7 +463,7 @@
             <a href="{% url 'create' %}" class="w-11 h-11 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 flex items-center justify-center hover:bg-indigo-600 hover:text-white spring-btn group" title="Создать тест">
                 <i class="fas fa-plus text-sm group-hover:rotate-90 transition-transform duration-300"></i>
             </a>
-            <a href="{% url 'history' %}" class="w-11 h-11 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-600/30 spring-btn" title="История тестов">
+            <a href="{% url 'history' %}" class="w-11 h-11 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-600/30 spring-btn" title="История тестов" aria-current="page">
                 <i class="fa-sharp fa-solid fa-clock-rotate-left fa-layer-group text-sm"></i>
             </a>
             <a href="{% url 'profile_redirect' %}" class="w-11 h-11 rounded-2xl bg-white/5 border border-white/5 text-gray-400 flex items-center justify-center hover:text-white hover:bg-white/10 spring-btn" title="Профиль">
@@ -126,34 +477,29 @@
     </aside>
 
     <!-- МОБИЛЬНЫЙ DOCK -->
-    <nav class="lg:hidden fixed bottom-4 left-1/2 -translate-x-1/2 island-capsule rounded-full px-6 py-3 flex items-center gap-6 z-40 shadow-2xl">
+    <nav data-rv data-rv-order="5" class="lg:hidden fixed bottom-4 left-1/2 -translate-x-1/2 island-capsule rounded-full px-6 py-3 flex items-center gap-6 z-40 shadow-2xl">
         <a href="/" class="text-gray-400 hover:text-white"><i class="fas fa-home text-base"></i></a>
         <a href="{% url 'create' %}" class="text-gray-400 hover:text-white"><i class="fas fa-plus text-base"></i></a>
-        <a href="{% url 'history' %}" class="w-9 h-9 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-600/30"><i class="fas fa-layer-group text-sm"></i></a>
+        <a href="{% url 'history' %}" class="w-9 h-9 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-600/30" aria-current="page"><i class="fas fa-layer-group text-sm"></i></a>
         <a href="{% url 'profile_redirect' %}" class="text-gray-400 hover:text-white"><i class="fas fa-user text-base"></i></a>
     </nav>
 
     <!-- ОСНОВНОЙ КОНТЕНТНЫЙ БЛОК -->
     <div class="lg:pl-28 flex-grow flex flex-col">
 
-        <!-- DYNAMIC ISLAND HEADER: UNIX PATH STYLE -->
-        <header class="sticky top-4 z-40 w-full px-4 flex justify-center pointer-events-none">
+        <!-- DYNAMIC ISLAND HEADER -->
+        <header data-rv="drop" data-rv-order="0" class="sticky top-4 z-40 w-full px-4 flex justify-center pointer-events-none">
             <div id="dynamic-island" class="island-capsule mode-header pointer-events-auto flex items-center justify-between relative overflow-hidden min-h-[44px]">
-                
-                <!-- Дефолтный слой пути -->
-                <div id="island-controls" class="w-full flex items-center justify-between gap-4">
 
-                    <div class="flex items-center gap-3">
-                        <div class="flex items-center gap-2.5 text-xs font-semibold">
-                            <a href="/" class="flex-shrink-0 transition-opacity hover:opacity-80 mr-1">
-                                <img src="{% static 'img/logo.png' %}" alt="Logo" class="w-5 h-auto">
-                            </a>
-                            <span class="text-gray-500 select-none">/</span>
-                            <span class="text-white font-medium">Мои тесты</span>
-                        </div>
+                <div id="island-controls" class="island-layer w-full flex items-center justify-between gap-4">
+                    <div class="flex items-center gap-2.5 text-xs font-semibold">
+                        <a href="/" class="flex-shrink-0 transition-opacity hover:opacity-80 mr-1">
+                            <img src="{% static 'img/logo.png' %}" alt="Logo" class="w-5 h-auto">
+                        </a>
+                        <span class="text-gray-600 select-none">/</span>
+                        <span class="text-white font-medium">Мои тесты</span>
                     </div>
 
-                    <!-- Чистый счетчик без слопа -->
                     <div class="flex items-center gap-2 font-mono-nums">
                         <span class="text-[10px] uppercase tracking-wider text-gray-500 hidden sm:inline">Всего</span>
                         <span class="px-2.5 py-0.5 rounded-full bg-white/5 border border-white/10 text-xs font-semibold text-gray-300">
@@ -162,8 +508,7 @@
                     </div>
                 </div>
 
-                <!-- Слой уведомлений -->
-                <div id="island-notice" class="hidden w-full items-center justify-center gap-3 select-none">
+                <div id="island-notice" class="island-layer hidden w-full items-center justify-center gap-3 select-none">
                     <span id="island-icon-box" class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] flex-shrink-0">
                         <i id="island-icon" class="fas fa-check"></i>
                     </span>
@@ -174,164 +519,175 @@
         </header>
 
         <!-- РАБОЧАЯ СЕТКА (8 / 4) -->
-        <main class="max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 flex-grow space-y-6 mt-12">
-            
+        <main class="max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 flex-grow space-y-6 mt-10">
+
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                
-                <!-- ЛЕВАЯ КОЛОНКА: ПОИСК И СПИСОК (col-span-8) -->
-                <section class="lg:col-span-8 space-y-3.5 w-full">
-                    
-                    <!-- Поисковая панель -->
-                    <div class="glass-panel px-3.5 py-2.5 flex items-center gap-3 border border-white/10 focus-within:border-indigo-500/50 transition-colors w-full">
-                        <i class="fas fa-magnifying-glass text-gray-500 text-xs ml-1"></i>
-                        <input type="text" id="history-search-input" value="{{ search_query }}" 
-                               placeholder="Поиск по названию теста..." 
-                               class="w-full bg-transparent border-none text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-0">
-                        
-                        <div class="flex items-center gap-1.5 flex-shrink-0">
-                            <button type="button" id="clear-search-btn" class="hidden text-gray-500 hover:text-white p-1 text-xs">
+
+                <!-- ЛЕВАЯ КОЛОНКА: ПОИСК И СПИСОК -->
+                <section class="lg:col-span-8 space-y-3 w-full">
+
+                    <div data-rv data-rv-order="1" class="flex items-end justify-between gap-4 px-1 pb-1">
+                        <div>
+                            <h1 class="text-xl sm:text-2xl font-extrabold text-white tracking-tight">Мои тесты</h1>
+                        </div>
+                    </div>
+
+                    <!-- Поиск -->
+                    <div data-rv data-rv-order="1" class="h-search" id="history-search">
+                        <i class="fas fa-magnifying-glass h-search-icon"></i>
+                        <input type="text" id="history-search-input" value="{{ search_query }}"
+                               placeholder="Поиск по названию теста"
+                               autocomplete="off" spellcheck="false"
+                               aria-label="Поиск по названию теста"
+                               class="w-full bg-transparent border-none text-sm text-white focus:outline-none focus:ring-0 p-0">
+                        <div class="flex items-center gap-2 flex-shrink-0">
+                            <span id="search-found" class="h-found hidden"></span>
+                            <button type="button" id="clear-search-btn" class="{% if not search_query %}hidden{% endif %} w-6 h-6 rounded-lg text-gray-500 hover:text-white hover:bg-white/10 flex items-center justify-center text-xs transition-colors" aria-label="Очистить поиск">
                                 <i class="fas fa-xmark"></i>
                             </button>
-                            <kbd class="hidden sm:inline-block px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-[10px] font-mono-nums text-gray-500 select-none">
-                                /
-                            </kbd>
+                            <kbd class="hidden sm:inline-flex items-center justify-center w-6 h-6 rounded-md bg-white/5 border border-white/10 text-[11px] font-mono-nums text-gray-500 select-none">/</kbd>
                         </div>
+                        <div class="h-search-progress"></div>
                     </div>
 
                     <!-- СПИСОК ТЕСТОВ -->
-                    <div id="surveys-list-container" class="space-y-3 w-full">
+                    <div id="surveys-list-container" class="space-y-3 w-full" role="list">
                         {% for survey in page_obj %}
-                        <article class="survey-card w-full glass-panel p-4 sm:p-5 border border-white/[0.07] hover:border-white/20 transition-all flex items-center justify-between gap-4 group" id="card-{{ survey.survey_id }}">
-                            
-                            <!-- Левая часть: Метаданные + Название -->
-                            <div class="min-w-0 flex-1 pr-2">
-                                <div class="flex items-center gap-2 text-[11px] font-mono-nums text-gray-500 mb-1.5">
-                                    <span>{{ survey.created_at|date:"d.m.Y" }}</span>
-                                    <span class="text-white/15">•</span>
-                                    <span class="text-indigo-400 font-medium">{{ survey.questions_count }} вопр.</span>
-                                    <span class="text-white/15">•</span>
-                                    <span class="flex items-center gap-1 text-gray-400">
-                                        <i class="fas fa-eye text-[9px] text-gray-500"></i>
-                                        {{ survey.view_count }}
-                                    </span>
+                            {% ifchanged survey.group_label %}
+                                <div class="h-group" data-rv="fade" data-rv-order="2">{{ survey.group_label }}</div>
+                            {% endifchanged %}
+                            <article class="h-card" data-rv data-rv-order="2" role="listitem" id="card-{{ survey.survey_id }}">
+                                <a class="h-card-link" href="{% url 'preview_test' survey.survey_id %}" aria-label="Открыть тест «{{ survey.title }}»"></a>
 
-                                    <span class="flex items-center gap-1 text-gray-400">
-                                        <i class="fa-solid fa-user-group text-[9px] text-gray-500"></i>
-                                        {{ survey.total_attempts }} {{ survey.total_attempts|pluralize:"сдача,сдачи,сдач" }}
-                                    </span>
+                                <div class="h-tile" aria-hidden="true"></div>
 
+                                <div class="min-w-0">
+                                    <h3 class="h-title">{{ survey.title }}</h3>
+                                    <div class="h-meta">
+                                        <span>{{ survey.created_at|date:"d.m.Y" }}</span>
+                                        <span> • </span>
+                                        <span>{{ survey.questions_count|default:0|stringformat:"2d" }} вопросов</span>
+                                        <span><i class="fas fa-eye"></i>{{ survey.view_count }}</span>
+                                        {% if survey.total_attempts %}
+                                            <span class="h-live">{{ survey.attempts_label }}</span>
+                                        {% else %}
+                                            <span class="h-idle">Без сдач</span>
+                                        {% endif %}
+                                    </div>
                                 </div>
 
-                                <h3 class="text-sm sm:text-base font-bold text-white text-left truncate group-hover:text-indigo-300 transition-colors">
-                                    <a href="{% url 'preview_test' survey.survey_id %}">{{ survey.title }}</a>
-                                </h3>
-                            </div>
-
-                            <!-- Правая часть -->
-                            <div class="flex items-center gap-2 flex-shrink-0 ml-auto">
-                                <button onclick="copySurveyLink('{% url 'take_test' survey.survey_id %}')" 
-                                        class="w-9 h-9 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/15 text-gray-400 hover:text-white flex items-center justify-center transition-colors spring-btn" 
-                                        title="Копировать ссылку">
-                                    <i class="fas fa-link text-xs"></i>
-                                </button>
-                                
-                                <a href="{% url 'preview_test' survey.survey_id %}" 
-                                   class="w-9 h-9 rounded-xl bg-indigo-600/15 border border-indigo-500/30 text-indigo-400 hover:bg-indigo-600 hover:text-white flex items-center justify-center transition-all spring-btn" 
-                                   title="Открыть тест">
-                                    <i class="fas fa-arrow-right text-xs"></i>
-                                </a>
-                                
-                                <button onclick="openDeleteModal('{{ survey.survey_id }}', '{{ survey.title|escapejs }}')" 
-                                        class="w-9 h-9 rounded-xl text-gray-500 hover:text-rose-400 hover:bg-rose-500/10 flex items-center justify-center transition-colors" 
-                                        title="Удалить">
-                                    <i class="fas fa-trash-can text-xs"></i>
-                                </button>
-                            </div>
-
-                        </article>
+                                <div class="h-actions">
+                                    <button type="button" class="h-act is-soft" data-copy="{% url 'take_test' survey.survey_id %}" title="Скопировать ссылку для учеников" aria-label="Скопировать ссылку">
+                                        <i class="fas fa-link"></i>
+                                    </button>
+                                    <button type="button" class="h-act is-soft is-danger" data-delete="{{ survey.survey_id }}" data-title="{{ survey.title }}" title="Удалить" aria-label="Удалить тест">
+                                        <i class="fas fa-trash-can"></i>
+                                    </button>
+                                    <span class="h-chevron" aria-hidden="true"><i class="fas fa-arrow-right"></i></span>
+                                </div>
+                            </article>
                         {% empty %}
-                        <div class="text-center py-14 glass-panel border border-white/5 space-y-2.5">
-                            <p class="text-sm font-semibold text-white">Тесты не найдены</p>
-                            <p class="text-xs text-gray-500 max-w-xs mx-auto">Создайте свой первый квиз или измените поисковый запрос</p>
-                            <a href="{% url 'create' %}" class="inline-block mt-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-semibold spring-btn">
-                                Собрать тест
-                            </a>
-                        </div>
+                            <div data-rv data-rv-order="2" class="h-empty text-center py-14 px-6 rounded-[24px] border border-white/[0.06] bg-[#15151E]">
+                                <div class="w-11 h-11 mx-auto rounded-2xl bg-white/[0.04] border border-white/10 flex items-center justify-center text-zinc-400">
+                                    <i class="fas {% if search_query %}fa-magnifying-glass{% else %}fa-layer-group{% endif %} text-sm"></i>
+                                </div>
+                                <p class="text-sm font-semibold text-white mt-4">{% if search_query %}Ничего не найдено{% else %}Здесь будут ваши тесты{% endif %}</p>
+                                <p class="text-xs text-zinc-500 max-w-xs mx-auto mt-1.5">{% if search_query %}Попробуйте другой запрос{% else %}Загрузите конспект, PDF или напишите тему — тест соберётся за полминуты{% endif %}</p>
+                                <a href="{% url 'create' %}" class="inline-flex items-center gap-2 mt-5 px-4 py-2.5 rounded-xl bg-white text-zinc-900 hover:bg-zinc-200 text-xs font-bold spring-btn">
+                                    <i class="fas fa-plus text-[10px]"></i> Собрать тест
+                                </a>
+                            </div>
                         {% endfor %}
                     </div>
 
-                    <!-- Пагинация -->
+                    <!-- «Показать ещё» для живого поиска -->
+                    <div id="load-more-wrap" class="hidden pt-2 flex justify-center">
+                        <button type="button" id="load-more-btn" class="h-page">
+                            <span>Показать ещё</span>
+                            <i class="fas fa-arrow-down text-[10px]"></i>
+                        </button>
+                    </div>
+
+                    <!-- Серверная пагинация -->
                     {% if page_obj.has_other_pages %}
-                    <div class="flex items-center justify-center gap-3 pt-4">
+                    <nav id="server-pagination" data-rv="fade" data-rv-order="3" class="flex items-center justify-center gap-2 pt-4" aria-label="Страницы">
                         {% if page_obj.has_previous %}
-                            <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}" class="px-3.5 py-1.5 rounded-xl bg-white/5 border border-white/10 text-xs font-medium text-gray-300 hover:text-white spring-btn">
-                                &larr; Назад
+                            <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}" class="h-page" aria-label="Назад">
+                                <i class="fas fa-arrow-left text-[10px]"></i>
                             </a>
                         {% endif %}
 
-                        <span class="text-xs font-mono-nums text-gray-500">
-                            {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
-                        </span>
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if num == page_obj.number %}
+                                <span class="h-page is-current" aria-current="page">{{ num }}</span>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <a href="?page={{ num }}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}" class="h-page">{{ num }}</a>
+                            {% elif num == 1 or num == page_obj.paginator.num_pages %}
+                                <a href="?page={{ num }}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}" class="h-page">{{ num }}</a>
+                            {% elif num == page_obj.number|add:'-3' or num == page_obj.number|add:'3' %}
+                                <span class="text-zinc-600 font-mono-nums text-xs px-1">…</span>
+                            {% endif %}
+                        {% endfor %}
 
                         {% if page_obj.has_next %}
-                            <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}" class="px-3.5 py-1.5 rounded-xl bg-white/5 border border-white/10 text-xs font-medium text-gray-300 hover:text-white spring-btn">
-                                Вперед &rarr;
+                            <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}" class="h-page" aria-label="Вперёд">
+                                <i class="fas fa-arrow-right text-[10px]"></i>
                             </a>
                         {% endif %}
-                    </div>
+                    </nav>
                     {% endif %}
 
                 </section>
 
-                <!-- ПРАВАЯ КОЛОНКА: АНАЛИТИЧЕСКИЙ СТЕК (col-span-4) -->
+                <!-- ПРАВАЯ КОЛОНКА -->
                 <aside class="lg:col-span-4 space-y-4 lg:sticky lg:top-20 w-full">
-                    
-                    <!-- Сводные метрики -->
-                    <div class="glass-panel p-5 space-y-4">
-                        <span class="text-[11px] font-bold uppercase tracking-wider text-gray-400 block font-display">
-                            Сводные показатели
-                        </span>
 
-                        <div class="grid grid-cols-2 gap-2.5">
-                            <div class="p-3 rounded-xl bg-[var(--bg-main)] border border-white/5">
-                                <span class="text-[10px] text-gray-500 block mb-0.5">Всего тестов</span>
-                                <span class="text-base font-bold font-mono-nums text-white">{{ total_surveys }}</span>
-                            </div>
-                            <div class="p-3 rounded-xl bg-[var(--bg-main)] border border-white/5">
-                                <span class="text-[10px] text-gray-500 block mb-0.5">Просмотров</span>
-                                <span class="text-base font-bold font-mono-nums text-indigo-400">{{ total_views }}</span>
-                            </div>
-                        </div>
+                    <div data-rv data-rv-order="3" class="glass-panel p-5 space-y-3.5">
+                        <span class="text-[10px] font-mono-nums uppercase tracking-[0.16em] text-zinc-500 block">Сводка</span>
 
-                        <div class="p-3 rounded-xl bg-[var(--bg-main)] border border-white/5 flex items-center justify-between">
-                            <span class="text-[10px] text-gray-500">Сгенерировано вопросов</span>
-                            <span class="text-sm font-bold font-mono-nums text-emerald-400">{{ total_questions }}</span>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div class="h-stat">
+                                <span>Тестов</span>
+                                <b data-count="{{ total_surveys }}">{{ total_surveys }}</b>
+                            </div>
+                            <div class="h-stat">
+                                <span>Сдач</span>
+                                <b data-count="{{ total_attempts_all }}" class="!text-emerald-300">{{ total_attempts_all }}</b>
+                            </div>
+                            <div class="h-stat">
+                                <span>Просмотров</span>
+                                <b data-count="{{ total_views }}">{{ total_views }}</b>
+                            </div>
+                            <div class="h-stat">
+                                <span>Вопросов</span>
+                                <b data-count="{{ total_questions }}">{{ total_questions }}</b>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Топовый тест -->
                     {% if top_survey %}
-                    <div class="glass-panel p-5 space-y-2.5 border border-white/10">
-                        <div class="flex items-center gap-1.5 text-amber-400 text-xs font-semibold">
-                            <i class="fas fa-fire text-[10px]"></i>
-                            <span class="text-[11px] uppercase tracking-wider font-display">Самый популярный</span>
+                    <a data-rv data-rv-order="3" href="{% url 'preview_test' top_survey.survey_id %}" class="h-top space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] font-mono-nums uppercase tracking-[0.16em] text-zinc-500">Самый популярный</span>
+                            <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
                         </div>
-                        <h4 class="text-xs font-bold text-white truncate">{{ top_survey.title }}</h4>
-                        <div class="flex justify-between items-center text-[11px] text-gray-400 pt-2 border-t border-white/5 font-mono-nums">
-                            <span>{{ top_survey.view_count }} просм.</span>
-                            <a href="{% url 'preview_test' top_survey.survey_id %}" class="text-indigo-400 hover:text-indigo-300 font-semibold font-sans">
-                                Открыть &rarr;
-                            </a>
+                        <h4 class="text-sm font-bold text-white leading-snug line-clamp-2">{{ top_survey.title }}</h4>
+                        <div class="flex justify-between items-center pt-3 border-t border-white/5 font-mono-nums text-[11px] text-zinc-500">
+                            <span class="flex items-center gap-3">
+                                <span><i class="fas fa-eye text-[9px] text-zinc-600 mr-1"></i>{{ top_survey.view_count }}</span>
+                                <span>{{ top_survey.attempts_label }}</span>
+                            </span>
+                            <span class="h-top-go text-zinc-200 font-sans font-semibold text-xs">Открыть <i class="fas fa-arrow-right text-[10px] ml-1"></i></span>
                         </div>
-                    </div>
+                    </a>
                     {% endif %}
 
-                    <!-- CTA Создания -->
-                    <div class="glass-panel p-5 text-center space-y-3 border border-indigo-500/20">
-                        <h4 class="text-xs font-bold text-white font-display">Нужен новый тест?</h4>
-                        <p class="text-[11px] text-gray-400 leading-relaxed">Вставьте конспект или файл — ИИ подготовит вопросы за 15 секунд.</p>
-                        <a href="{% url 'create' %}" class="w-full block py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-md shadow-indigo-600/30 spring-btn">
-                            Собрать опросник
+                    <div data-rv data-rv-order="3" class="glass-panel p-5 space-y-3 border border-indigo-500/20">
+                        <h4 class="text-sm font-bold text-white font-display">Нужен новый тест?</h4>
+                        <p class="text-xs text-gray-400 leading-relaxed">Вставьте конспект или файл — ИИ подготовит вопросы за 15 секунд.</p>
+                        <a href="{% url 'create' %}" class="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-md shadow-indigo-600/30 spring-btn">
+                            <i class="fas fa-plus text-[10px]"></i>
+                            Собрать тест
                         </a>
                     </div>
 
@@ -341,7 +697,7 @@
 
         </main>
 
-        <footer class="mt-16 sm:mt-24">
+        <footer data-rv="fade" data-rv-order="6" class="mt-16 sm:mt-24">
             <div class="max-w-3xl mx-auto px-4 sm:px-8">
                 <div class="mt-8 mb-4 pt-8 border-t border-white/5 flex flex-col sm:flex-row justify-between items-center text-xs text-gray-600 text-center">
                     <p>2024-2026 Летучка AI. Design & Development <a class="text-gray-500 hover:text-indigo-400" rel='nofollow' href="https://dprofile.ru/kozak_developer" target="_blank">by Kozak</a></p>
@@ -356,25 +712,107 @@
     </div>
 
     <!-- МОДАЛКА УДАЛЕНИЯ -->
-    <div id="delete-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
-        <div class="fixed inset-0 bg-black/80 backdrop-blur-md" onclick="closeDeleteModal()"></div>
-        <div class="relative w-full max-w-sm glass-panel rounded-2xl p-6 text-center shadow-2xl z-10">
-            <div class="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-500 flex items-center justify-center mx-auto mb-3">
+    <div id="delete-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title">
+        <div class="m-backdrop fixed inset-0 bg-black/80 backdrop-blur-md" onclick="closeDeleteModal()"></div>
+        <div class="m-panel relative w-full max-w-sm glass-panel rounded-[28px] p-6 text-center shadow-2xl z-10">
+            <div class="w-11 h-11 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center mx-auto mb-4">
                 <i class="fas fa-trash-can text-sm"></i>
             </div>
-            <h3 class="text-sm font-bold text-white mb-1.5">Удалить этот тест?</h3>
-            <p class="text-xs text-gray-400 mb-5 leading-relaxed">
+            <h3 id="delete-modal-title" class="text-base font-bold text-white mb-1.5">Удалить этот тест?</h3>
+            <p class="text-xs text-gray-400 mb-6 leading-relaxed">
                 Тест <span id="modal-survey-title" class="text-white font-semibold"></span> будет скрыт из архива.
             </p>
             <div class="grid grid-cols-2 gap-2.5">
-                <button onclick="closeDeleteModal()" class="py-2 rounded-xl bg-white/5 text-xs font-semibold text-gray-300 hover:bg-white/10">Отмена</button>
-                <a id="confirm-delete-link" href="" class="py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-xs font-bold text-white text-center spring-btn">Удалить</a>
+                <button type="button" onclick="closeDeleteModal()" class="py-2.5 rounded-xl bg-white/5 text-xs font-semibold text-gray-300 hover:bg-white/10 spring-btn">Отмена</button>
+                <a id="confirm-delete-link" href="" class="py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-xs font-bold text-white text-center spring-btn">Удалить</a>
             </div>
         </div>
     </div>
 
     <script>
-        // DYNAMIC ISLAND ENGINE
+        const reduceMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+        const PREVIEW_URL = (id) => `/c/${id}/`;
+        const TAKE_URL = (id) => `/t/${id}/`;
+
+        const escapeHtml = (s) => String(s == null ? '' : s)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        const pad2 = (n) => String(parseInt(n, 10) || 0).padStart(2, '0');
+
+        /* ==========================================================================
+           MOTION — каскад появления + scroll-reveal
+           ========================================================================== */
+        const Motion = (() => {
+            let io = null;
+            const BUDGET = 700;
+
+            function finalize(el) { el.classList.remove('rv-in'); el.classList.add('rv-done'); }
+
+            function reveal(el, delay = 0) {
+                if (!el || el.classList.contains('rv-in') || el.classList.contains('rv-done')) return;
+                if (reduceMotion) { finalize(el); return; }
+                el.style.setProperty('--d', Math.round(delay) + 'ms');
+                el.classList.add('rv-in');
+                setTimeout(() => finalize(el), delay + BUDGET);
+            }
+
+            function observe(list) {
+                if (!list.length) return;
+                if (!('IntersectionObserver' in window)) { list.forEach((e) => reveal(e)); return; }
+                io = io || new IntersectionObserver((entries) => {
+                    let k = 0;
+                    entries.filter((e) => e.isIntersecting)
+                        .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
+                        .forEach((e) => { io.unobserve(e.target); reveal(e.target, (k++) * 35); });
+                }, { threshold: 0.05, rootMargin: '0px 0px -4% 0px' });
+                list.forEach((e) => io.observe(e));
+            }
+
+            function cascade(scope = document, { step = 35, base = 0, cap = 420 } = {}) {
+                const pending = Array.from(scope.querySelectorAll('[data-rv]'))
+                    .filter((e) => !e.classList.contains('rv-in') && !e.classList.contains('rv-done'));
+                const now = [], later = [];
+                const vh = window.innerHeight;
+                pending.forEach((e) => {
+                    if (e.getClientRects().length === 0) { finalize(e); return; }
+                    const r = e.getBoundingClientRect();
+                    const fixed = getComputedStyle(e).position === 'fixed';
+                    (fixed || (r.top < vh * 0.98 && r.bottom > 0) ? now : later).push(e);
+                });
+                now.sort((a, b) => {
+                    const oa = +(a.dataset.rvOrder || 9), ob = +(b.dataset.rvOrder || 9);
+                    return oa !== ob ? oa - ob : a.getBoundingClientRect().top - b.getBoundingClientRect().top;
+                });
+                now.forEach((e, i) => reveal(e, base + Math.min(i * step, cap)));
+                observe(later);
+            }
+
+            return { reveal, cascade, finalize };
+        })();
+
+        /* Числа в сводке «докручиваются» до значения */
+        function countUp() {
+            document.querySelectorAll('[data-count]').forEach((el, i) => {
+                const target = parseInt(el.dataset.count, 10) || 0;
+                if (reduceMotion || target === 0) { el.textContent = target.toLocaleString('ru-RU'); return; }
+                const dur = 650, delay = 120 + i * 40;
+                el.textContent = '0';
+                setTimeout(() => {
+                    const t0 = performance.now();
+                    const tick = (now) => {
+                        const t = Math.min(1, (now - t0) / dur);
+                        const e = 1 - Math.pow(1 - t, 3);
+                        el.textContent = Math.round(target * e).toLocaleString('ru-RU');
+                        if (t < 1) requestAnimationFrame(tick);
+                    };
+                    requestAnimationFrame(tick);
+                }, delay);
+            });
+        }
+
+        /* ==========================================================================
+           DYNAMIC ISLAND
+           ========================================================================== */
         const Island = (() => {
             const $island = $('#dynamic-island');
             const $controls = $('#island-controls');
@@ -392,23 +830,27 @@
             function notify(message, type = 'success', customIcon = null, duration = 2200) {
                 if (timer) clearTimeout(timer);
                 const config = THEMES[type] || THEMES.success;
-                const chosenIcon = customIcon || config.icon;
 
-                $island.removeClass('theme-success theme-error');
-                $controls.addClass('hidden');
-
-                $text.text(message);
-                $icon.attr('class', `fas ${chosenIcon}`);
-                $iconBox.attr('class', `w-5 h-5 rounded-full flex items-center justify-center text-[10px] flex-shrink-0 ${config.iconBg}`);
-
-                $island.removeClass('mode-header').addClass(`mode-notify ${config.themeClass}`);
-                $notice.removeClass('hidden').addClass('flex');
+                $controls.css({ opacity: 0, transform: 'scale(0.94)' });
+                setTimeout(() => {
+                    $controls.addClass('hidden');
+                    $text.text(message);
+                    $icon.attr('class', `fas ${customIcon || config.icon}`);
+                    $iconBox.attr('class', `w-5 h-5 rounded-full flex items-center justify-center text-[10px] flex-shrink-0 ${config.iconBg}`);
+                    $island.removeClass('mode-header theme-success theme-error').addClass(`mode-notify ${config.themeClass}`);
+                    $notice.removeClass('hidden').addClass('flex').css({ opacity: 0, transform: 'scale(0.85)' });
+                    requestAnimationFrame(() => $notice.css({ opacity: 1, transform: 'scale(1)' }));
+                }, 120);
 
                 timer = setTimeout(() => {
-                    $notice.addClass('hidden').removeClass('flex');
-                    $island.removeClass('mode-notify theme-success theme-error').addClass('mode-header');
-                    $controls.removeClass('hidden');
-                    timer = null;
+                    $notice.css({ opacity: 0, transform: 'scale(0.85)' });
+                    setTimeout(() => {
+                        $notice.addClass('hidden').removeClass('flex');
+                        $island.removeClass('mode-notify theme-success theme-error').addClass('mode-header');
+                        $controls.removeClass('hidden');
+                        requestAnimationFrame(() => $controls.css({ opacity: 1, transform: 'scale(1)' }));
+                        timer = null;
+                    }, 160);
                 }, duration);
             }
 
@@ -418,110 +860,306 @@
             };
         })();
 
-        // КОПИРОВАНИЕ ССЫЛКИ
-        function copySurveyLink(url) {
+        /* ==========================================================================
+           КОПИРОВАНИЕ ССЫЛКИ — кнопка морфится в галочку
+           ========================================================================== */
+        function copySurveyLink(url, btn) {
             const fullUrl = window.location.protocol + '//' + window.location.host + url;
-            navigator.clipboard.writeText(fullUrl).then(() => {
+            const ok = () => {
                 Island.success('Ссылка скопирована', 'fa-link');
-            }).catch(() => {
-                Island.error('Ошибка буфера');
-            });
-        }
-
-        // ЖИВОЙ ПОИСК С ДЕБАУНСОМ
-        let searchTimer = null;
-        $('#history-search-input').on('input', function() {
-            const query = this.value.trim();
-            $('#clear-search-btn').toggleClass('hidden', query.length === 0);
-
-            clearTimeout(searchTimer);
-            searchTimer = setTimeout(() => {
-                performSearch(query);
-            }, 250);
-        });
-
-        $('#clear-search-btn').on('click', function() {
-            $('#history-search-input').val('').trigger('input');
-        });
-
-        // Хоткей фокуса на поиск по нажатию "/"
-        $(document).on('keydown', function(e) {
-            if (e.key === '/' && !$(e.target).is('input, textarea')) {
-                e.preventDefault();
-                $('#history-search-input').focus();
-            }
-        });
-
-        async function performSearch(query) {
-            try {
-                const res = await fetch(`/api/history/search/?q=${encodeURIComponent(query)}`);
-                const data = await res.json();
-                renderSurveysList(data.surveys);
-            } catch (e) {
-                console.error(e);
+                if (!btn) return;
+                const $i = $(btn).find('i');
+                $(btn).addClass('is-done');
+                $i.attr('class', 'fas fa-check');
+                clearTimeout(btn._t);
+                btn._t = setTimeout(() => { $(btn).removeClass('is-done'); $i.attr('class', 'fas fa-link'); }, 1400);
+            };
+            const fallback = () => {
+                const ta = document.createElement('textarea');
+                ta.value = fullUrl; ta.style.position = 'fixed'; ta.style.left = '-9999px';
+                document.body.appendChild(ta); ta.select();
+                try { document.execCommand('copy'); ok(); } catch (e) { Island.error('Не удалось скопировать'); }
+                ta.remove();
+            };
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(fullUrl).then(ok).catch(fallback);
+            } else {
+                fallback();
             }
         }
 
-        function renderSurveysList(surveys) {
-            const $container = $('#surveys-list-container');
-            if (!surveys || surveys.length === 0) {
-                $container.html(`
-                    <div class="text-center py-12 glass-panel rounded-2xl border border-white/5 space-y-2">
-                        <p class="text-xs font-semibold text-white">Ничего не найдено</p>
-                        <p class="text-[11px] text-gray-500">Попробуйте другой запрос</p>
+        /* ==========================================================================
+           РЕНДЕР КАРТОЧЕК (для живого поиска) — всё через escapeHtml
+           ========================================================================== */
+        function cardHtml(s) {
+            const id = escapeHtml(s.survey_id);
+            const title = escapeHtml(s.title);
+            const attempts = parseInt(s.total_attempts, 10) || 0;
+            const status = attempts > 0
+                ? `<span class="h-live">${escapeHtml(s.attempts_label || (attempts + ' сдач'))}</span>`
+                : `<span class="h-idle">Без сдач</span>`;
+            return `
+                <article class="h-card" data-rv role="listitem" id="card-${id}">
+                    <a class="h-card-link" href="${PREVIEW_URL(id)}" aria-label="Открыть тест «${title}»"></a>
+                    <div class="h-tile" aria-hidden="true"></div>
+                    <div class="min-w-0 align-left">
+                        <h3 class="h-title">${title}</h3>
+                        <div class="h-meta">
+                            <span>${escapeHtml(s.created_at)}</span>
+                            <span><i class="fas fa-eye"></i>${parseInt(s.view_count, 10) || 0}</span>
+                            ${status}
+                        </div>
                     </div>
-                `);
-                return;
-            }
-
-            let html = '';
-            surveys.forEach(s => {
-                html += `
-                    <article class="survey-card w-full glass-panel rounded-2xl p-4 sm:p-5 border border-white/[0.07] hover:border-white/20 transition-all flex items-center justify-between gap-4 group" id="card-${s.survey_id}">
-                        <div class="min-w-0 flex-1 pr-2">
-                            <div class="flex items-center gap-2 text-[11px] font-mono-nums text-gray-500 mb-1.5">
-                                <span>${s.created_at}</span>
-                                <span class="text-white/15">•</span>
-                                <span class="text-indigo-400 font-medium">${s.questions_count} вопр.</span>
-                                <span class="text-white/15">•</span>
-                                <span class="flex items-center gap-1 text-gray-400">
-                                    <i class="fas fa-eye text-[9px] text-gray-500"></i>
-                                    ${s.view_count}
-                                </span>
-                            </div>
-                            <h3 class="text-sm sm:text-base font-bold text-white truncate group-hover:text-indigo-300 transition-colors text-left">
-                                <a href="/c/${s.survey_id}/">${s.title}</a>
-                            </h3>
-                        </div>
-                        <div class="flex items-center gap-2 flex-shrink-0 ml-auto">
-                            <button onclick="copySurveyLink('/t/${s.survey_id}/')" 
-                                    class="w-9 h-9 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 text-gray-400 hover:text-white flex items-center justify-center transition-colors spring-btn" title="Копировать ссылку">
-                                <i class="fas fa-link text-xs"></i>
-                            </button>
-                            <a href="/c/${s.survey_id}/" 
-                               class="w-9 h-9 rounded-xl bg-indigo-600/15 border border-indigo-500/30 text-indigo-400 hover:bg-indigo-600 hover:text-white flex items-center justify-center transition-all spring-btn" title="Открыть тест">
-                                <i class="fas fa-arrow-right text-xs"></i>
-                            </a>
-                            <button onclick="openDeleteModal('${s.survey_id}', '${s.title.replace(/'/g, "\\'")}')" 
-                                    class="w-9 h-9 rounded-xl text-gray-500 hover:text-rose-400 hover:bg-rose-500/10 flex items-center justify-center transition-colors" title="Удалить">
-                                <i class="fas fa-trash-can text-xs"></i>
-                            </button>
-                        </div>
-                    </article>
-                `;
-            });
-            $container.html(html);
+                    <div class="h-actions">
+                        <button type="button" class="h-act is-soft" data-copy="${TAKE_URL(id)}" title="Скопировать ссылку для учеников" aria-label="Скопировать ссылку"><i class="fas fa-link"></i></button>
+                        <button type="button" class="h-act is-soft is-danger" data-delete="${id}" data-title="${title}" title="Удалить" aria-label="Удалить тест"><i class="fas fa-trash-can"></i></button>
+                        <span class="h-chevron" aria-hidden="true"><i class="fas fa-arrow-right"></i></span>
+                    </div>
+                </article>`;
         }
 
-        // МОДАЛКА УДАЛЕНИЯ
+        function emptyHtml(query) {
+            return `
+                <div data-rv class="text-center py-12 px-6 rounded-[24px] border border-white/[0.06] bg-[#15151E]">
+                    <div class="w-11 h-11 mx-auto rounded-2xl bg-white/[0.04] border border-white/10 flex items-center justify-center text-zinc-400">
+                        <i class="fas fa-magnifying-glass text-sm"></i>
+                    </div>
+                    <p class="text-sm font-semibold text-white mt-4">Ничего не найдено</p>
+                    <p class="text-xs text-zinc-500 mt-1.5">По запросу «${escapeHtml(query)}» тестов нет — попробуйте другое слово</p>
+                </div>`;
+        }
+
+        /* lastGroup — чтобы заголовки «Сегодня / Вчера…» не дублировались при «Показать ещё» */
+        let lastGroup = null;
+        function listHtml(surveys) {
+            let html = '';
+            surveys.forEach((s) => {
+                if (s.group_label && s.group_label !== lastGroup) {
+                    html += `<div class="h-group" data-rv="fade">${escapeHtml(s.group_label)}</div>`;
+                    lastGroup = s.group_label;
+                }
+                html += cardHtml(s);
+            });
+            return html;
+        }
+
+        /* ==========================================================================
+           ЖИВОЙ ПОИСК: дебаунс 220мс, отмена устаревших запросов, «Показать ещё»
+           ========================================================================== */
+        const Search = (() => {
+            const $input = $('#history-search-input');
+            const $box = $('#history-search');
+            const $list = $('#surveys-list-container');
+            const $found = $('#search-found');
+            const $more = $('#load-more-wrap');
+            const $moreBtn = $('#load-more-btn');
+            const initialQuery = $input.val().trim();
+
+            let timer = null;
+            let ctrl = null;
+            let page = 1;
+            let currentQuery = initialQuery;
+            let liveMode = false;
+
+            function setUrl(q) {
+                const url = new URL(window.location.href);
+                url.searchParams.delete('page');
+                if (q) url.searchParams.set('q', q); else url.searchParams.delete('q');
+                history.replaceState(null, '', url.pathname + url.search);
+            }
+
+            function pluralTests(n) {
+                const a = n % 100, b = n % 10;
+                if (a > 10 && a < 20) return 'тестов';
+                if (b === 1) return 'тест';
+                if (b > 1 && b < 5) return 'теста';
+                return 'тестов';
+            }
+
+            async function fetchPage(q, p) {
+                if (ctrl) ctrl.abort();
+                ctrl = new AbortController();
+                $box.addClass('is-loading');
+                try {
+                    const res = await fetch(`/api/history/search/?q=${encodeURIComponent(q)}&page=${p}`, { signal: ctrl.signal });
+                    return await res.json();
+                } finally {
+                    $box.removeClass('is-loading');
+                }
+            }
+
+            async function run(q) {
+                currentQuery = q;
+                page = 1;
+                let data;
+                try {
+                    data = await fetchPage(q, 1);
+                } catch (e) {
+                    if (e.name !== 'AbortError') Island.error('Поиск недоступен');
+                    return;
+                }
+                if (q !== currentQuery) return;
+
+                if (!liveMode) { liveMode = true; $('#server-pagination').remove(); }
+                setUrl(q);
+
+                const total = parseInt(data.total_found, 10) || 0;
+                if (q) $found.text(`${total} ${pluralTests(total)}`).removeClass('hidden');
+                else $found.addClass('hidden');
+
+                // Старые результаты коротко уходят, новые каскадом въезжают
+                $list.addClass('h-list-out');
+                setTimeout(() => {
+                    lastGroup = null;
+                    $list.removeClass('h-list-out');
+                    const surveys = data.surveys || [];
+                    $list.html(surveys.length ? listHtml(surveys) : emptyHtml(q));
+                    Motion.cascade($list[0], { step: 30, cap: 300 });
+                    $more.toggleClass('hidden', !data.has_next);
+                }, reduceMotion ? 0 : 120);
+            }
+
+            async function more() {
+                $moreBtn.prop('disabled', true).css('opacity', 0.6);
+                try {
+                    const data = await fetchPage(currentQuery, page + 1);
+                    page = data.page || page + 1;
+                    const $chunk = $(`<div class="space-y-3">${listHtml(data.surveys || [])}</div>`);
+                    $list.append($chunk);
+                    Motion.cascade($chunk[0], { step: 30, cap: 300 });
+                    $more.toggleClass('hidden', !data.has_next);
+                } catch (e) {
+                    if (e.name !== 'AbortError') Island.error('Не удалось загрузить');
+                } finally {
+                    $moreBtn.prop('disabled', false).css('opacity', '');
+                }
+            }
+
+            function init() {
+                $input.on('input', function () {
+                    const q = this.value.trim();
+                    $('#clear-search-btn').toggleClass('hidden', q.length === 0);
+                    clearTimeout(timer);
+                    if (q === currentQuery) return;
+                    timer = setTimeout(() => run(q), 220);
+                });
+                $input.on('keydown', function (e) {
+                    if (e.key === 'Escape') {
+                        if (this.value) { this.value = ''; $(this).trigger('input'); }
+                        else this.blur();
+                    }
+                    if (e.key === 'ArrowDown') {
+                        const first = document.querySelector('#surveys-list-container .h-card-link');
+                        if (first) { e.preventDefault(); first.focus(); }
+                    }
+                    if (e.key === 'Enter') {
+                        const first = document.querySelector('#surveys-list-container .h-card-link');
+                        if (first && this.value.trim()) { e.preventDefault(); first.click(); }
+                    }
+                });
+                $('#clear-search-btn').on('click', function () {
+                    $input.val('').trigger('input').focus();
+                });
+                $moreBtn.on('click', more);
+            }
+
+            return { init };
+        })();
+
+        /* ==========================================================================
+           МОДАЛКА УДАЛЕНИЯ — с анимацией и схлопыванием карточки
+           ========================================================================== */
+        let pendingDeleteId = null;
+        let lastFocus = null;
+
         function openDeleteModal(id, title) {
+            pendingDeleteId = id;
+            lastFocus = document.activeElement;
             $('#modal-survey-title').text(`«${title}»`);
-            $('#confirm-delete-link').attr('href', `/drop-survey/${id}/`);
-            $('#delete-modal').removeClass('hidden').addClass('flex');
+            $('#confirm-delete-link').attr('href', `/drop-survey/${encodeURIComponent(id)}/`);
+            const el = document.getElementById('delete-modal');
+            el.classList.remove('hidden', 'm-out');
+            el.style.display = 'flex';
+            void el.offsetWidth;
+            el.classList.add('m-in');
+            setTimeout(() => $('#confirm-delete-link').focus(), 50);
         }
         function closeDeleteModal() {
-            $('#delete-modal').addClass('hidden').removeClass('flex');
+            const el = document.getElementById('delete-modal');
+            if (el.classList.contains('hidden')) return;
+            el.classList.remove('m-in');
+            el.classList.add('m-out');
+            setTimeout(() => {
+                el.classList.add('hidden');
+                el.classList.remove('m-out');
+                el.style.display = 'none';
+                if (lastFocus && lastFocus.focus) lastFocus.focus();
+            }, 180);
         }
+
+        /* ==========================================================================
+           BOOT
+           ========================================================================== */
+        $(function () {
+            Search.init();
+
+            // Делегирование: работает и для карточек из живого поиска
+            $('#surveys-list-container')
+                .on('click', '[data-copy]', function (e) {
+                    e.preventDefault(); e.stopPropagation();
+                    copySurveyLink(this.dataset.copy, this);
+                })
+                .on('click', '[data-delete]', function (e) {
+                    e.preventDefault(); e.stopPropagation();
+                    openDeleteModal(this.dataset.delete, this.dataset.title || '');
+                });
+
+            // Подтверждение удаления: модалка закрывается, карточка схлопывается, затем переход
+            $('#confirm-delete-link').on('click', function (e) {
+                const href = this.getAttribute('href');
+                const card = pendingDeleteId && document.getElementById('card-' + pendingDeleteId);
+                if (!href || !card || reduceMotion) return;
+                e.preventDefault();
+                closeDeleteModal();
+                setTimeout(() => card.classList.add('is-removing'), 120);
+                setTimeout(() => { window.location.href = href; }, 440);
+            });
+
+            // Клавиатура: "/" — поиск, ↑/↓ — по карточкам, Esc — закрыть модалку
+            $(document).on('keydown', function (e) {
+                if (e.key === 'Escape') { closeDeleteModal(); return; }
+                if (e.key === '/' && !$(e.target).is('input, textarea')) {
+                    e.preventDefault();
+                    $('#history-search-input').focus();
+                    return;
+                }
+                if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && $(e.target).is('.h-card-link')) {
+                    e.preventDefault();
+                    const links = Array.from(document.querySelectorAll('#surveys-list-container .h-card-link'));
+                    const i = links.indexOf(e.target);
+                    const next = e.key === 'ArrowDown' ? links[i + 1] : links[i - 1];
+                    if (next) { next.focus(); next.scrollIntoView({ block: 'nearest', behavior: reduceMotion ? 'auto' : 'smooth' }); }
+                    else if (e.key === 'ArrowUp') $('#history-search-input').focus();
+                }
+            });
+
+            // Если пришли по ?q= — показываем счётчик сразу
+            if ($('#history-search-input').val().trim()) {
+                const n = $('#surveys-list-container .h-card').length;
+                if (!$('#server-pagination').length) $('#search-found').text(`${n} найдено`).removeClass('hidden');
+            }
+
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                window.__rvBooted = true;
+                Motion.cascade();
+                countUp();
+            }));
+        });
+
+        // bfcache: после «Назад» из теста — без повторного каскада и с живыми числами
+        window.addEventListener('pageshow', (e) => {
+            if (e.persisted) document.querySelectorAll('[data-rv]').forEach((el) => Motion.finalize(el));
+        });
     </script>
 </body>
 </html>
