@@ -2096,6 +2096,7 @@
                         <a href="#the-choice" class="hover:text-white transition-colors">Предметы</a>
                         <a href="#pricing" class="hover:text-white transition-colors">Тарифы</a>
                         <a href="#faq" class="hover:text-white transition-colors">Вопросы и ответы</a>
+                        <a href="/test-dlya-uchenikov" class="hover:text-white transition-colors">Тест для учеников</a>
                         <a href="/create" class="hover:text-white transition-colors">Конструктор тестов</a>
                     </div>
                 </div>
@@ -2158,7 +2159,11 @@
                 </div>
                 <label class="flex items-start gap-2.5 cursor-pointer text-[11px] text-zinc-400 leading-tight select-none pt-1">
                     <input type="checkbox" id="land-terms" name="terms" required class="mt-0.5 rounded border-white/20 bg-[#111116] text-indigo-600 w-4 h-4 flex-shrink-0 cursor-pointer">
-                    <span>Я даю согласие на обработку персональных данных в соответствии с <a href="/docs/privacy-policy" target="_blank" class="text-indigo-400 underline">Политикой конфиденциальности</a> и принимаю условия <a href="/docs/public-offer" target="_blank" class="text-indigo-400 underline">Публичной оферты</a>.</span>
+                    <span class="text-xs text-gray-400">
+                        Я принимаю условия <a href="{% url 'document_view' 'public-offer' %}" target="_blank" class="text-indigo-400 underline">Лицензионного договора</a>, 
+                        ознакомлен(-а) с <a href="{% url 'document_view' 'privacy-policy' %}" target="_blank" class="text-indigo-400 underline">Политикой конфиденциальности</a> 
+                        и даю <a href="{% url 'document_view' 'consent' %}" target="_blank" class="text-indigo-400 underline">Согласие на обработку данных</a>.
+                    </span>
                 </label>
                 <div id="land-form-error" class="hidden text-xs text-rose-400 font-semibold p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20"></div>
                 <button type="submit" id="btn-submit-land-register" class="w-full py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center gap-2 disabled:opacity-60">

@@ -20,9 +20,9 @@ urlpatterns = [
 
     path('dlya-prepodavateley/', for_prepods, name='for_prepods'),
     path('testirovanie-online/', pro_landing, name='pro_landing'),
-    path('solving-tests/', solving_tests_promo, name='solving_tests_promo'),
-    path('for-teachers/', teachers_promo, name='teachers_promo'),
-    path('for-medics/', medicine_promo, name='medicine_promo'),
+    path('test-dlya-uchenikov/', dlya_uchenikov, name='dlya_uchenikov'),
+    path('neyroset-dlya-testov/', neyroset_dlya_testov, name='neyroset_dlya_testov'),
+    path('testy-dlya-medikov/', medicine_promo, name='medicine_promo'),
     path('available-plans/', available_plans, name='available_plans'),
 
     path('api/quick-register/', quick_register_api, name='api_quick_register'),

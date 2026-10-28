@@ -1,81 +1,801 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
+    {% load static %}
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ title }}</title>
+    <title>{{ title }} | Летучка</title>
+    <meta name="description" content="{{ doc.description }}">
+    <meta name="theme-color" content="#0F0E13">
+    <link rel="canonical" href="{{ canonical_url }}">
 
-    <meta name="description" content="Создайте персонализированные тесты за считанные секунды при помощи нейросети. Загружайте учебные материалы и получайте мгновенные квизы для эффективной подготовки к экзаменам.">
-    <meta name="keywords" content="создание тестов, генерация тестов, тесты с ИИ, персонализированные квизы, подготовка к экзаменам, учебные материалы, онлайн тесты, автоматизация обучения, интерактивные тесты, образовательные технологии">
-    <meta name="author" content="Летучка/Letychka by Kozak Developer">
-    
-    <meta property="og:title" content="Создание тестов с ИИ - Летучка">
-    <meta property="og:description" content="Используйте ИИ для создания тестов на основе ваших учебных материалов. Быстро, удобно и эффективно!">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="{{ canonical_url }}">
+    <meta property="og:title" content="{{ title }} | Летучка">
+    <meta property="og:description" content="{{ doc.description }}">
     <meta property="og:image" content="https://letychka.ru/static/letychka-banner-1703.webp">
-    <meta property="og:url" content="https://letychka.ru/create">
-    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Летучка — ИИ-генератор тестов по тексту">
 
-    <!-- Yandex.Metrika counter -->
-    <script type="text/javascript" >
-        setTimeout(function() {
-            (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
-            m[i].l=1*new Date();
-            for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
-            k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
-            (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
-        
-            ym(98823704, "init", {
-                clickmap:true,
-                trackLinks:true,
-                accurateTrackBounce:true,
-                webvisor:true
-            });
-        }, 1000);
+    <link rel="icon" href="{% static 'img/favicon.ico' %}" type="image/x-icon">
+    <link rel="apple-touch-icon" sizes="180x180" href="{% static 'img/apple-touch-icon.png' %}">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=Wix+Madefor+Display:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/document.css' %}">
+
+    <!-- Yandex.Metrika: стартует после загрузки, как на главной -->
+    <script>
+        window.addEventListener('load', function () {
+            setTimeout(function () {
+                (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+                m[i].l=1*new Date();
+                for (var j = 0; j < document.scripts.length; j++) { if (document.scripts[j].src === r) { return; } }
+                k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+                (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+                ym(98823704, "init", { clickmap: true, trackLinks: true, accurateTrackBounce: true, webvisor: true });
+            }, 1500);
+        });
     </script>
-    <noscript><div><img src="https://mc.yandex.ru/watch/98823704" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
-    <!-- /Yandex.Metrika counter -->
+    <noscript><div><img src="https://mc.yandex.ru/watch/98823704" style="position:absolute; left:-9999px;" alt=""></div></noscript>
+    <style>
+        /* ==========================================================
+        Летучка — страница документа (Markdown → HTML)
+        Визуальный язык главной: тёмный фон, Golos Text +
+        Wix Madefor Display. Документ — спокойный лист без теней;
+        индиго только у ссылок и маркера текущего раздела.
+        ========================================================== */
 
-    {% load static %}
-    <link rel="shortcut icon" href="{% static 'img/favicon.ico' %}" type="image/ico">
-    <link rel="stylesheet" href="{% static 'css/adaptive.css' %}">
-    <link rel="stylesheet" href="{% static 'css/docu.css' %}">
-    <link rel="stylesheet" href="{% static 'css/nav.css' %}">
-    <link rel="stylesheet" href="{% static 'css/footer.css' %}">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,300..900;1,300..900&family=Unbounded:wght@200..900&display=swap" rel="stylesheet">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@200..900&display=swap" rel="stylesheet">
+        :root {
+            --bg: #0F0E13;
+            --sheet: #131218;
+            --raise: #1A1920;
+            --line: rgba(255,255,255,.07);
+            --line-2: rgba(255,255,255,.12);
+            --ink: #F4F4F5;
+            --text: #C9C9CF;
+            --muted: #9C9CA6;
+            --faint: #6E6E78;
+            --dim: #4E4E57;
+            --indigo: #4F46E5;
+            --indigo-2: #818CF8;
+            --indigo-3: #A5B4FC;
+            --ease: cubic-bezier(0.16, 1, 0.3, 1);
+            --nav-offset: 92px;
+            --gutter: 3.25rem;   /* поле под номера пунктов */
+        }
+
+        *, *::before, *::after { box-sizing: border-box; }
+        html, body { overflow-x: clip; }
+        @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: #E5E7EB;
+            font-family: 'Golos Text', -apple-system, BlinkMacSystemFont, sans-serif;
+            letter-spacing: -0.012em;
+            -webkit-font-smoothing: antialiased;
+        }
+        a { color: inherit; text-decoration: none; }
+        img { max-width: 100%; }
+        .icon { width: 1em; height: 1em; display: inline-block; flex-shrink: 0; }
+
+        /* ==========================================================
+        ОСТРОВ-НАВИГАЦИЯ (порт с главной, тени мягче)
+        ========================================================== */
+        .isl-wrap {
+            --g: 12px; --top: 12px; --max: 1280px; --h: 56px; --pad: 8px; --r: 24px;
+            --bh: calc(var(--h) - var(--pad) * 2);
+            --br: calc(var(--r) - var(--pad));
+            position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+            padding: calc(var(--top) + env(safe-area-inset-top, 0px)) var(--g) 0;
+            pointer-events: none;
+            transition: padding-top .6s var(--ease);
+        }
+        @media (min-width: 640px) { .isl-wrap { --g: 16px; --top: 16px; } }
+        .isl-wrap.is-compact { --top: 8px; --h: 52px; --pad: 6px; }
+        @media (min-width: 1024px) { .isl-wrap.is-compact { --top: 10px; --max: 1080px; --h: 48px; } }
+
+        .isl {
+            position: relative; pointer-events: auto;
+            width: 100%; max-width: var(--max); margin-inline: auto;
+            border-radius: var(--r);
+            background: rgba(20,19,26,.55);
+            -webkit-backdrop-filter: blur(20px) saturate(160%);
+            backdrop-filter: blur(20px) saturate(160%);
+            transition: max-width .7s var(--ease), background-color .4s ease;
+        }
+        .isl::before {
+            content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none;
+            background: linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.04) 45%, rgba(255,255,255,.06));
+            -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+            -webkit-mask-composite: xor; mask-composite: exclude;
+        }
+        .is-compact .isl { background: rgba(14,13,19,.85); }
+        .is-open .isl { background: rgba(16,15,21,.96); }
+        @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+            .isl, .is-compact .isl { background: rgba(16,15,21,.96); }
+        }
+
+        .isl-bar {
+            display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px;
+            height: var(--h); padding: 0 var(--pad);
+            transition: height .6s var(--ease), padding .6s var(--ease);
+        }
+        @media (min-width: 1024px) { .isl-bar { grid-template-columns: 1fr auto 1fr; gap: 16px; } }
+
+        .isl-logo { justify-self: start; display: flex; align-items: center; margin-left: 8px; border-radius: 10px; }
+        .isl-logo img { display: block; height: 26px; width: auto; transition: height .6s var(--ease); }
+        @media (min-width: 640px) { .isl-logo img { height: 30px; } .is-compact .isl-logo img { height: 26px; } }
+
+        .isl-links { display: none; align-items: center; gap: 2px; }
+        @media (min-width: 1024px) { .isl-links { display: flex; } }
+        .isl-links a {
+            display: inline-flex; align-items: center; height: 32px; padding: 0 12px; border-radius: 12px;
+            font-size: 13.5px; font-weight: 500; color: var(--muted); white-space: nowrap;
+            transition: color .2s ease;
+        }
+        .isl-links a:hover { color: var(--ink); }
+
+        .isl-actions { justify-self: end; display: flex; align-items: center; gap: 6px; }
+        .isl-btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+            height: var(--bh); padding: 0 16px; border: 0; border-radius: var(--br); cursor: pointer;
+            background: none; font: 600 12px/1 'Golos Text', sans-serif; white-space: nowrap;
+            transition: height .6s var(--ease), border-radius .6s var(--ease), background-color .2s ease, color .2s ease;
+        }
+        .isl-btn--ghost { color: #D4D4D8; }
+        .isl-btn--ghost:hover { color: #fff; background: rgba(255,255,255,.06); }
+        .isl-btn--primary { color: #fff; background: var(--indigo); box-shadow: inset 0 1px 0 rgba(255,255,255,.18); }
+        .isl-btn--primary:hover { background: #5B54EA; }
+        .isl-arrow { font-size: 12px; opacity: .8; transition: transform .25s var(--ease); }
+        .isl-btn--primary:hover .isl-arrow { transform: translateX(2px); }
+        .isl-login { display: none; }
+        @media (min-width: 640px) { .isl-login { display: inline-flex; } }
+        @media (max-width: 639px) { .isl-arrow { display: none; } .isl-btn--primary { padding: 0 14px; } }
+
+        .isl-burger { position: relative; width: var(--bh); padding: 0; }
+        .isl-burger i {
+            position: absolute; left: 50%; top: 50%; width: 16px; height: 1.5px; margin: -.75px 0 0 -8px;
+            border-radius: 2px; background: currentColor; transition: transform .45s var(--ease);
+        }
+        .isl-burger i:first-child { transform: translateY(-3.5px); }
+        .isl-burger i:last-child { transform: translateY(3.5px); }
+        .is-open .isl-burger { color: #fff; background: rgba(255,255,255,.06); }
+        .is-open .isl-burger i:first-child { transform: rotate(45deg); }
+        .is-open .isl-burger i:last-child { transform: rotate(-45deg); }
+        @media (min-width: 1024px) { .isl-burger { display: none; } }
+
+        .isl-menu { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .5s var(--ease); }
+        .isl-menu > div { min-height: 0; overflow: hidden; }
+        .is-open .isl-menu { grid-template-rows: 1fr; }
+        @media (min-width: 1024px) { .isl-menu { display: none; } }
+        .isl-menu-inner { padding: 0 var(--pad) var(--pad); }
+        .isl-menu nav { display: grid; gap: 2px; padding-top: 6px; border-top: 1px solid var(--line); }
+        .isl-menu nav a {
+            display: flex; align-items: center; min-height: 48px; padding: 8px 12px; border-radius: var(--br);
+            font-size: 16px; font-weight: 500; color: #D4D4D8;
+            opacity: 0; transform: translateY(-6px);
+            transition: opacity .3s ease, transform .45s var(--ease), background-color .2s ease, color .2s ease;
+        }
+        .is-open .isl-menu nav a { opacity: 1; transform: none; transition-delay: calc(var(--i, 0) * 35ms + 90ms); }
+        .isl-menu nav a:hover, .isl-menu nav a[aria-current="page"] { color: #fff; background: rgba(255,255,255,.06); }
+
+        .isl-progress {
+            position: absolute; left: var(--r); right: var(--r); bottom: 0; height: 1px;
+            overflow: hidden; pointer-events: none; opacity: 0; transition: opacity .4s ease;
+        }
+        .isl-progress i { display: block; height: 100%; background: rgba(165,180,252,.7); transform-origin: left; transform: scaleX(0); }
+        .is-compact .isl-progress { opacity: 1; }
+        .is-open .isl-progress { opacity: 0; }
+
+        .isl-scrim {
+            position: fixed; inset: 0; z-index: 49; background: rgba(8,8,11,.55);
+            -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px);
+            opacity: 0; visibility: hidden; transition: opacity .35s ease, visibility 0s linear .35s;
+        }
+        .isl-scrim.is-on { opacity: 1; visibility: visible; transition: opacity .35s ease; }
+        html.isl-lock { overflow: hidden; }
+
+        /* ==========================================================
+        КАРКАС: поле слева + лист
+        ========================================================== */
+        .dc { max-width: 1200px; margin: 0 auto; padding: 96px 16px 80px; }
+        @media (min-width: 640px) { .dc { padding: 120px 24px 112px; } }
+        @media (min-width: 1024px) { .dc { padding: 128px 32px 128px; } }
+
+        .dc-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; align-items: start; }
+        @media (min-width: 1024px) { .dc-layout { grid-template-columns: 240px minmax(0, 1fr); gap: 48px; } }
+
+        /* на мобиле лист идёт первым, навигация по документам — над ним */
+        .dc-aside { display: grid; gap: 12px; min-width: 0; }
+        @media (min-width: 1024px) {
+            .dc-aside {
+                gap: 36px; padding-top: 8px;
+                position: sticky; top: var(--nav-offset);
+                max-height: calc(100vh - var(--nav-offset) - 24px);
+                overflow-y: auto; overscroll-behavior: contain;
+                scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.1) transparent;
+            }
+        }
+
+        .dc-aside-h {
+            display: flex; align-items: center; justify-content: space-between;
+            margin: 0 0 10px; padding-left: 12px;
+            font-size: 12.5px; font-weight: 500; color: var(--faint);
+            list-style: none;
+        }
+        .dc-aside-h::-webkit-details-marker { display: none; }
+
+        /* --- Список документов: обычная колонка ссылок --- */
+        .dc-switch { display: flex; flex-direction: column; gap: 2px; }
+        .dc-switch a {
+            display: block; padding: 9px 12px; border-radius: 12px;
+            font-size: 14px; font-weight: 500; line-height: 1.35; color: var(--muted);
+            overflow-wrap: anywhere;
+            transition: color .2s ease, background-color .2s ease;
+        }
+        .dc-switch a:hover { color: var(--ink); background: rgba(255,255,255,.03); }
+        .dc-switch a[aria-current="page"] { color: #fff; background: var(--raise); box-shadow: inset 0 0 0 1px var(--line); }
+
+        /* --- Оглавление --- */
+        .dc-toc ol { margin: 0; padding: 0; list-style: none; border-left: 1px solid var(--line); margin-left: 12px; }
+        .dc-toc a {
+            position: relative; display: grid; grid-template-columns: 2.1em minmax(0, 1fr); gap: 2px;
+            margin-left: -1px; padding: 7px 0 7px 14px; border-left: 1px solid transparent;
+            font-size: 13px; line-height: 1.4; color: var(--faint);
+            transition: color .2s ease, border-color .2s ease;
+        }
+        .dc-toc a .n { color: var(--dim); font-variant-numeric: tabular-nums; transition: color .2s ease; }
+        .dc-toc a .n:empty { display: none; }
+        .dc-toc a .n:empty + span { grid-column: 1 / -1; }
+        .dc-toc a:hover { color: var(--ink); }
+        .dc-toc a[aria-current="true"] { color: #fff; border-left-color: var(--indigo-2); }
+        .dc-toc a[aria-current="true"] .n { color: var(--indigo-3); }
+        .dc-toc-chev { color: var(--faint); transition: transform .3s var(--ease); }
+        .dc-toc details[open] .dc-toc-chev { transform: rotate(180deg); }
+
+        @media (min-width: 1024px) {
+            .dc-toc summary { pointer-events: none; }
+            .dc-toc-chev { display: none; }
+        }
+
+        /* мобильный вид: документы и оглавление — две тихие плашки */
+        @media (max-width: 1023px) {
+            .dc-switch, .dc-toc details {
+                padding: 6px; border-radius: 18px; background: var(--sheet); box-shadow: inset 0 0 0 1px var(--line);
+            }
+            .dc-switch .dc-aside-h { display: none; }
+            .dc-toc summary { margin: 0; padding: 10px 10px 10px 12px; cursor: pointer; font-size: 14px; color: var(--ink); }
+            .dc-toc ol { margin: 4px 6px 8px 12px; }
+        }
+
+        /* ==========================================================
+        ЛИСТ
+        ========================================================== */
+        .dc-paper {
+            min-width: 0;
+            padding: 28px 20px 24px; border-radius: 24px;
+            background: var(--sheet); box-shadow: inset 0 0 0 1px var(--line);
+        }
+        @media (min-width: 640px) { .dc-paper { padding: 56px 56px 40px; border-radius: 28px; } }
+        @media (min-width: 1280px) { .dc-paper { padding: 72px 88px 48px; } }
+
+        /* Шапка документа — левая выключка, как у настоящего договора */
+        .dc-head { max-width: 68ch; padding-bottom: 32px; margin-bottom: 40px; border-bottom: 1px solid var(--line); }
+        @media (min-width: 640px) { .dc-head { padding-bottom: 40px; margin-bottom: 48px; } }
+
+        .dc-crumbs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; font-size: 13px; color: var(--faint); }
+        .dc-crumbs a:hover { color: var(--ink); }
+        .dc-crumbs span[aria-hidden] { color: var(--dim); }
+
+        .dc-title {
+            margin: 0;
+            font: 800 clamp(1.75rem, 4.4vw, 3rem)/1.08 'Wix Madefor Display', 'Golos Text', sans-serif;
+            letter-spacing: -0.035em; color: #fff;
+            text-wrap: balance; overflow-wrap: anywhere;
+        }
+
+        .dc-meta {
+            display: flex; flex-wrap: wrap; align-items: center; gap: 6px 20px;
+            margin-top: 20px; font-size: 13.5px; color: var(--faint);
+        }
+        .dc-meta time { color: var(--text); }
+        .dc-print {
+            display: inline-flex; align-items: center; gap: 7px; margin-left: auto;
+            height: 34px; padding: 0 14px; border: 0; border-radius: 99px; cursor: pointer;
+            font: 500 13px/1 'Golos Text', sans-serif; color: var(--text);
+            background: rgba(255,255,255,.05); box-shadow: inset 0 0 0 1px var(--line);
+            transition: color .2s ease, background-color .2s ease;
+        }
+        .dc-print:hover { color: #fff; background: rgba(255,255,255,.09); }
+        @media (max-width: 639px) { .dc-print { margin-left: 0; } }
+
+        .dc-end {
+            display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px 24px;
+            max-width: 68ch; margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--line);
+            font-size: 13.5px; color: var(--faint);
+        }
+        .dc-end p { margin: 0; }
+        .dc-end p a { color: var(--text); text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; }
+        .dc-end p a:hover { color: #fff; text-decoration-color: currentColor; }
+        .dc-up { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-weight: 500; }
+        .dc-up:hover { color: #fff; }
+
+        .dc-totop {
+            position: fixed; right: 16px; bottom: 16px; z-index: 40;
+            width: 44px; height: 44px; border-radius: 99px; display: grid; place-items: center;
+            font-size: 17px; color: var(--ink);
+            background: rgba(26,25,32,.85); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+            box-shadow: inset 0 0 0 1px var(--line-2);
+            opacity: 0; visibility: hidden; transform: translateY(8px);
+            transition: opacity .3s ease, transform .4s var(--ease), visibility 0s linear .3s, background-color .2s ease;
+        }
+        .dc-totop.is-on { opacity: 1; visibility: visible; transform: none; transition: opacity .3s ease, transform .4s var(--ease), background-color .2s ease; }
+        .dc-totop:hover { background: #26252D; }
+        @media (min-width: 1024px) { .dc-totop { right: 24px; bottom: 24px; } }
+
+        /* ==========================================================
+        MARKDOWN
+        ========================================================== */
+        .md {
+            max-width: 68ch;
+            font-size: 15.5px; line-height: 1.72; color: var(--text);
+            overflow-wrap: break-word; hyphens: auto;
+        }
+        @media (min-width: 640px) { .md { font-size: 16.5px; } }
+        .md > :first-child { margin-top: 0 !important; }
+        .md > :last-child { margin-bottom: 0; }
+
+        /* Заголовки разделов: номер вынесен на поле слева */
+        .md h2, .md h3, .md h4, .md h5, .md h6 {
+            position: relative; scroll-margin-top: calc(var(--nav-offset) + 16px);
+            color: #fff; text-wrap: balance; hyphens: manual;
+        }
+        .md h2 {
+            margin: 3.2em 0 1em;
+            font: 700 clamp(1.25rem, 2.4vw, 1.55rem)/1.25 'Wix Madefor Display', 'Golos Text', sans-serif;
+            letter-spacing: -0.028em;
+        }
+        .md h3 {
+            margin: 2.2em 0 .7em;
+            font: 700 1.1em/1.35 'Wix Madefor Display', 'Golos Text', sans-serif; letter-spacing: -0.02em;
+        }
+        .md h4, .md h5, .md h6 { margin: 1.8em 0 .5em; font-size: 1em; font-weight: 600; color: var(--ink); }
+
+        .md h2 .n, .md h3 .n { color: var(--dim); font-variant-numeric: tabular-nums; margin-right: .35em; }
+
+        /* Пункты «1.1.» — висячий номер */
+        .md p.cl { position: relative; }
+        .md p.cl .n { color: var(--faint); font-variant-numeric: tabular-nums; margin-right: .3em; }
+
+        @media (min-width: 900px) {
+            .md { padding-left: var(--gutter); }
+            .md h2 .n, .md h3 .n, .md p.cl .n {
+                position: absolute; left: calc(var(--gutter) * -1); width: calc(var(--gutter) - 12px);
+                margin: 0; text-align: right;
+            }
+            .md p.cl .n { top: 0; font-size: .875em; line-height: 1.97; }
+            .md h2 .n { color: var(--indigo-3); }
+            .dc-head { padding-left: var(--gutter); }
+            .dc-end { margin-left: var(--gutter); }
+        }
+
+        .md p { margin: 0 0 1.05em; }
+        .md strong { font-weight: 600; color: var(--ink); }
+        .md em { color: var(--ink); }
+
+        .md a {
+            color: var(--indigo-3);
+            text-decoration: underline; text-decoration-color: rgba(165,180,252,.3);
+            text-decoration-thickness: 1px; text-underline-offset: 3px;
+            transition: text-decoration-color .2s ease, color .2s ease;
+        }
+        .md a:hover { color: #C7D2FE; text-decoration-color: currentColor; }
+
+        /* якорь у заголовка (toc permalink) */
+        .md .headerlink {
+            margin-left: .35em; color: var(--dim); font-weight: 500; text-decoration: none;
+            opacity: 0; transition: opacity .2s ease, color .2s ease;
+        }
+        .md h2:hover .headerlink, .md h3:hover .headerlink, .md h4:hover .headerlink,
+        .md .headerlink:focus-visible { opacity: 1; }
+        .md .headerlink:hover { color: var(--muted); }
+        @media (hover: none) { .md .headerlink { display: none; } }
+
+        /* списки */
+        .md ul, .md ol { margin: 0 0 1.1em; padding-left: 1.35em; }
+        .md li { margin: .4em 0; padding-left: .3em; }
+        .md li > ul, .md li > ol { margin: .4em 0 .6em; }
+        .md li > p { margin-bottom: .4em; }
+        .md ul > li::marker { content: '–  '; color: var(--faint); }
+        .md ol > li::marker { color: var(--faint); font-variant-numeric: tabular-nums; }
+
+        /* цитата = примечание на полях */
+        .md blockquote {
+            margin: 1.8em 0; padding: 2px 0 2px 20px;
+            border-left: 2px solid var(--line-2);
+            color: var(--ink);
+        }
+        .md blockquote > :last-child { margin-bottom: 0; }
+
+        /* код */
+        .md code {
+            padding: .12em .4em; border-radius: 6px;
+            font: .86em/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--ink);
+            background: rgba(255,255,255,.06);
+        }
+        .md pre {
+            margin: 1.6em 0; padding: 16px 20px; border-radius: 14px; overflow-x: auto;
+            background: var(--bg); box-shadow: inset 0 0 0 1px var(--line);
+        }
+        .md pre code { padding: 0; background: none; font-size: 13.5px; }
+
+        /* таблицы (обёртка .doc-table добавляется во вьюхе) */
+        .md .doc-table {
+            margin: 1.8em 0; overflow-x: auto; border-radius: 14px;
+            box-shadow: inset 0 0 0 1px var(--line);
+            -webkit-overflow-scrolling: touch;
+        }
+        .md table { width: 100%; border-collapse: collapse; font-size: 14px; line-height: 1.5; hyphens: manual; }
+        .md th, .md td { min-width: 120px; padding: 12px 16px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
+        .md th { font-weight: 500; font-size: 13px; color: var(--muted); background: rgba(255,255,255,.025); white-space: nowrap; }
+        .md td { color: var(--text); font-variant-numeric: tabular-nums; }
+        .md tbody tr:last-child td { border-bottom: 0; }
+
+        /* прочее */
+        .md hr { height: 1px; margin: 3em 0; border: 0; background: var(--line); }
+        .md hr + h2 { margin-top: 0; }
+        .md img { height: auto; border-radius: 14px; }
+        .md dl { margin: 0 0 1em; }
+        .md dt { margin-top: .9em; font-weight: 600; color: var(--ink); }
+        .md dd { margin: .2em 0 0 1.2em; }
+        .md abbr[title] { text-decoration: underline dotted; cursor: help; }
+        .md sup { line-height: 0; }
+        .md .footnote { margin-top: 3em; font-size: .9em; color: var(--muted); }
+        .md .footnote hr { margin: 0 0 1.4em; }
+
+        /* ==========================================================
+        ФУТЕР
+        ========================================================== */
+        .ft { border-top: 1px solid rgba(255,255,255,.06); background: #0C0B0F; }
+        .ft-in { max-width: 1280px; margin: 0 auto; padding: 56px 16px; }
+        @media (min-width: 640px) { .ft-in { padding-inline: 32px; } }
+        .ft-grid { display: grid; gap: 40px; grid-template-columns: 1fr; }
+        @media (min-width: 768px) { .ft-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+        .ft-brand img { height: 32px; width: auto; }
+        .ft-brand p { margin: 16px 0 0; font-size: 12px; line-height: 1.6; color: var(--faint); }
+        .ft-social { display: flex; gap: 12px; margin-top: 20px; font-size: 16px; color: var(--muted); }
+        .ft-social a:hover { color: #fff; }
+        .ft-col { display: flex; flex-direction: column; gap: 8px; font-size: 12px; color: var(--muted); }
+        .ft-col p { margin: 0; line-height: 1.6; }
+        .ft-col a:hover { color: #fff; }
+        .ft-h { margin-bottom: 4px; font-weight: 700; color: #fff; text-transform: uppercase; letter-spacing: .06em; }
+        .ft-dim { color: var(--dim); }
+        .ft-link { color: var(--indigo-2); }
+        .ft-bottom {
+            display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px;
+            margin-top: 48px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,.04);
+            font-size: 12px; color: var(--dim);
+        }
+        .ft-bottom p { margin: 0; }
+        .ft-bottom a { color: var(--faint); }
+        .ft-bottom a:hover { color: #fff; }
+
+        /* ==========================================================
+        ФОКУС, МОТОР, ПЕЧАТЬ
+        ========================================================== */
+        a:focus-visible, button:focus-visible, summary:focus-visible {
+            outline: 2px solid var(--indigo-2); outline-offset: 2px; border-radius: 8px;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; transition-delay: 0ms !important; }
+        }
+
+        @media print {
+            @page { margin: 18mm 16mm; }
+            body { background: #fff; color: #000; }
+            .isl-wrap, .isl-scrim, .dc-aside, .dc-print, .dc-totop, .dc-end, .dc-crumbs, .ft { display: none !important; }
+            .dc { padding: 0; max-width: none; }
+            .dc-layout { display: block; }
+            .dc-paper { padding: 0; background: none; box-shadow: none; }
+            .dc-head { padding-left: 0; border-color: #ccc; margin-bottom: 24px; padding-bottom: 16px; }
+            .dc-title { color: #000; font-size: 22pt; }
+            .dc-meta, .dc-meta time { color: #444; }
+            .md { max-width: none; padding-left: 0; color: #111; font-size: 10.5pt; line-height: 1.55; }
+            .md h2, .md h3, .md strong, .md em, .md blockquote { color: #000; }
+            .md h2 { margin-top: 1.8em; break-after: avoid; }
+            .md h2 .n, .md h3 .n, .md p.cl .n { position: static; width: auto; color: #000; margin-right: .3em; font-size: inherit; line-height: inherit; }
+            .md a { color: #000; text-decoration-color: #999; }
+            .md .headerlink { display: none; }
+            .md .doc-table, .md pre { box-shadow: 0 0 0 1px #ccc; }
+            .md th { color: #000; background: #f2f2f2; }
+            .md td { color: #111; }
+            .md code { background: #f2f2f2; color: #000; }
+            .md blockquote { border-color: #999; }
+            .md hr { background: #ccc; }
+        }
+    </style>
 </head>
-<body>
-    <header>
-        <a href="{% url 'home' %}">
-            <img src="{% static 'img/logo-header.webp' %}" alt="">
-        </a>
-        
-        <div class="burger" id="burger">
-            <div></div>
-            <div></div>
-            <div></div>
+<body id="top">
+
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+        <symbol id="i-arrow" viewBox="0 0 16 16"><path d="M3 8h9M8.5 4L12.5 8l-4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+        <symbol id="i-chevron" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+        <symbol id="i-up" viewBox="0 0 16 16"><path d="M8 13V3M4 7l4-4 4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+        <symbol id="i-print" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 9V3h10v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M7 14h10v7H7z"/></g></symbol>
+        <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M4 7l8 6 8-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+        <symbol id="i-tg" viewBox="0 0 24 24"><path d="M21.5 4.2L2.9 11.4c-1.3.5-1.2 1.3-.2 1.6l4.7 1.5 1.8 5.6c.2.6.4.8.9.8.4 0 .6-.2.9-.4l2.3-2.2 4.7 3.5c.9.5 1.5.2 1.7-.8l3.1-14.5c.3-1.3-.5-1.9-1.3-1.5zM9.6 14.3l8.6-7.6c.4-.3-.1-.5-.6-.2L7.9 13.3" fill="currentColor"/></symbol>
+    </svg>
+
+    <!-- ===== Остров-навигация (как на главной) ===== -->
+    <div id="island-scrim" class="isl-scrim" aria-hidden="true"></div>
+    <header id="island-nav" class="isl-wrap">
+        <div class="isl">
+            <div class="isl-bar">
+                <a href="/" class="isl-logo" title="Летучка — генератор тестов">
+                    <img src="{% static 'img/logo-header.webp' %}" alt="Летучка" height="32">
+                </a>
+
+                <nav class="isl-links" aria-label="Сайт">
+                    <a href="/#features">Возможности</a>
+                    <a href="/#pricing">Тарифы</a>
+                    <a href="/#faq">FAQ</a>
+                </nav>
+
+                <div class="isl-actions">
+                    {% if username and username != 0 and username != "0" %}
+                        <a href="/create" class="isl-btn isl-btn--ghost">{{ username }}</a>
+                    {% else %}
+                        <a href="/login" class="isl-btn isl-btn--ghost isl-login">Войти</a>
+                        <a href="/create" class="isl-btn isl-btn--primary">
+                            <span>Создать тест</span>
+                            <svg class="icon isl-arrow" aria-hidden="true"><use href="#i-arrow"/></svg>
+                        </a>
+                    {% endif %}
+                    <button id="burger-btn" type="button" class="isl-btn isl-btn--ghost isl-burger"
+                            aria-label="Открыть меню" aria-expanded="false" aria-controls="island-menu"><i></i><i></i></button>
+                </div>
+            </div>
+
+            <div id="island-menu" class="isl-menu" inert>
+                <div>
+                    <div class="isl-menu-inner">
+                        <nav aria-label="Меню">
+                            <a href="/#features" style="--i:0">Возможности</a>
+                            <a href="/#pricing" style="--i:1">Тарифы</a>
+                            <a href="/#faq" style="--i:2">FAQ</a>
+                            {% for d in documents %}
+                            <a href="/docs/{{ d.slug }}" style="--i:{{ forloop.counter|add:2 }}"{% if d.slug == doc.slug %} aria-current="page"{% endif %}>{{ d.title }}</a>
+                            {% endfor %}
+                        </nav>
+                    </div>
+                </div>
+            </div>
+
+            <span class="isl-progress" aria-hidden="true"><i id="island-progress"></i></span>
         </div>
-        
-        <nav id="nav">
-            <ul>
-                <li><a href="/create">Начать создавать</a></li>
-                <li><a href="/docs/public-offer">Публичная оферта</a></li>
-                <li><a href="/docs/privacy-policy">Политика конфиденциальности</a></li>
-            </ul>
-        </nav>
     </header>
 
-    <main>
-        <div>{{ view_count }}</div>
-        <div>{{ content|safe }}</div>
+    <main class="dc">
+        <!-- ===== Шапка документа ===== -->
+        <div class="dc-layout">
+            <!-- ===== Боковая навигация ===== -->
+            <aside class="dc-aside">
+                {% if documents|length > 1 %}
+                <nav class="dc-switch" aria-label="Документы">
+                    <p class="dc-aside-h">Документы</p>
+                    {% for d in documents %}
+                    <a href="/docs/{{ d.slug }}"{% if d.slug == doc.slug %} aria-current="page"{% endif %}>{{ d.title }}</a>
+                    {% endfor %}
+                </nav>
+                {% endif %}
+
+                {% if doc.toc %}
+                <nav class="dc-toc" aria-label="Содержание">
+                    <details id="dc-toc">
+                        <summary class="dc-aside-h">
+                            Содержание
+                            <svg class="icon dc-toc-chev" aria-hidden="true"><use href="#i-chevron"/></svg>
+                        </summary>
+                        <ol>
+                            {% for s in doc.toc %}
+                            <li><a href="#{{ s.id }}"><span class="n">{{ s.num }}</span><span>{{ s.name }}</span></a></li>
+                            {% endfor %}
+                        </ol>
+                    </details>
+                </nav>
+                {% endif %}
+            </aside>
+
+            <!-- ===== Текст ===== -->
+            <article class="dc-paper">
+                <header class="dc-head">
+                    <nav class="dc-crumbs" aria-label="Путь">
+                        <a href="/">Летучка</a><span aria-hidden="true">/</span><span>Документы</span>
+                    </nav>
+                    <h1 class="dc-title">{{ doc.title }}</h1>
+                    <div class="dc-meta">
+                        <span>Редакция от <time datetime="{{ doc.updated_iso }}">{{ doc.updated }}</time></span>
+                        <span>{{ doc.minutes }} мин чтения</span>
+                        {% if view_count %}<span>Просмотров: {{ view_count }}</span>{% endif %}
+                        <button type="button" class="dc-print" onclick="window.print()">
+                            <svg class="icon" aria-hidden="true"><use href="#i-print"/></svg>Распечатать
+                        </button>
+                    </div>
+                </header>
+
+                <div class="md">
+                    {{ doc.html|safe }}
+                </div>
+
+                <div class="dc-end">
+                    <p>Вопросы по работе сервиса: <a href="mailto:support@letychka.ru">support@letychka.ru</a></p>
+                    <a href="#top" class="dc-up"><svg class="icon" aria-hidden="true"><use href="#i-up"/></svg>Наверх</a>
+                </div>
+            </article>
+        </div>
     </main>
 
-    {% include 'footer.html' %}
+    <a href="#top" id="dc-totop" class="dc-totop" aria-label="Наверх"><svg class="icon" aria-hidden="true"><use href="#i-up"/></svg></a>
 
-    <script src="{% static 'js/nav.js' %}"></script>
+    <!-- ===== Футер (как на главной, без Tailwind) ===== -->
+    <footer class="ft">
+        <div class="ft-in">
+            <div class="ft-grid">
+                <div class="ft-brand">
+                    <a href="/"><img src="{% static 'img/logo-header.webp' %}" alt="Летучка" height="32" loading="lazy"></a>
+                    <p>Российский сервис генерации тестов по&nbsp;тексту и&nbsp;файлам с&nbsp;автопроверкой и&nbsp;аналитикой успеваемости.</p>
+                    <div class="ft-social">
+                        <a href="https://t.me/LetychkaRobot" target="_blank" rel="noopener" aria-label="Telegram"><svg class="icon"><use href="#i-tg"/></svg></a>
+                        <a href="mailto:support@letychka.ru" aria-label="Почта"><svg class="icon"><use href="#i-mail"/></svg></a>
+                    </div>
+                </div>
+                <div class="ft-col">
+                    <span class="ft-h">Продукт</span>
+                    <a href="/#features">Возможности</a>
+                    <a href="/#pricing">Тарифы</a>
+                    <a href="/#faq">Вопросы и ответы</a>
+                    <a href="/create">Конструктор тестов</a>
+                </div>
+                <div class="ft-col">
+                    <span class="ft-h">Документы</span>
+                    <a href="/docs/public-offer">Публичная оферта</a>
+                    <a href="/docs/privacy-policy">Политика конфиденциальности</a>
+                    <span class="ft-dim">ИНН 773613171558 / ОГРНИП 3245081071286</span>
+                </div>
+                <div class="ft-col">
+                    <span class="ft-h">Поддержка</span>
+                    <p>Вопросы по работе сервиса и предложения:<br><a class="ft-link" href="mailto:support@letychka.ru">support@letychka.ru</a></p>
+                </div>
+            </div>
+            <div class="ft-bottom">
+                <p>© 2024–{{ year }} Летучка AI. Все права защищены.</p>
+                <p>Design &amp; Development <a href="https://dprofile.ru/kozak_developer" target="_blank" rel="noopener">by Kozak</a></p>
+            </div>
+        </div>
+    </footer>
+    
+    <script>
+        (function () {
+            'use strict';
+
+            var nav = document.getElementById('island-nav');
+            var burger = document.getElementById('burger-btn');
+            var menu = document.getElementById('island-menu');
+            var scrim = document.getElementById('island-scrim');
+            var progress = document.getElementById('island-progress');
+            var toTop = document.getElementById('dc-totop');
+            var toc = document.getElementById('dc-toc');
+            var paper = document.querySelector('.dc-paper');
+            var desktop = window.matchMedia('(min-width: 1024px)');
+
+            /* ---------- Остров: компакт + прогресс чтения ---------- */
+            var compact = false;
+            function navState() {
+                var y = window.scrollY;
+                var next = compact ? y > 32 : y > 80;
+                if (next !== compact) { compact = next; nav.classList.toggle('is-compact', compact); }
+
+                // прогресс считаем по самому документу, а не по всей странице
+                if (paper && progress) {
+                    var start = paper.offsetTop - 120;
+                    var end = paper.offsetTop + paper.offsetHeight - window.innerHeight;
+                    var p = end > start ? (y - start) / (end - start) : 1;
+                    progress.style.transform = 'scaleX(' + Math.min(1, Math.max(0, p)).toFixed(4) + ')';
+                }
+                if (toTop) toTop.classList.toggle('is-on', y > 700);
+            }
+
+            /* ---------- Мобильное меню ---------- */
+            var menuOpen = false;
+            function setMenu(open) {
+                if (open === menuOpen) return;
+                menuOpen = open;
+                nav.classList.toggle('is-open', open);
+                scrim.classList.toggle('is-on', open);
+                document.documentElement.classList.toggle('isl-lock', open);
+                burger.setAttribute('aria-expanded', String(open));
+                burger.setAttribute('aria-label', open ? 'Закрыть меню' : 'Открыть меню');
+                if (open) menu.removeAttribute('inert'); else menu.setAttribute('inert', '');
+            }
+            burger.addEventListener('click', function () { setMenu(!menuOpen); });
+            scrim.addEventListener('click', function () { setMenu(false); });
+            menu.addEventListener('click', function (e) { if (e.target.closest('a')) setMenu(false); });
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && menuOpen) { setMenu(false); burger.focus(); }
+            });
+
+            /* ---------- Оглавление: открыто на десктопе, свёрнуто на мобиле ---------- */
+            function syncToc() {
+                if (desktop.matches) setMenu(false);
+                if (toc) toc.open = desktop.matches;
+            }
+            syncToc();
+            if (desktop.addEventListener) desktop.addEventListener('change', syncToc);
+            else desktop.addListener(syncToc);
+
+            if (toc) {
+                toc.addEventListener('click', function (e) {
+                    if (e.target.closest('a') && !desktop.matches) toc.open = false;
+                });
+            }
+
+            /* ---------- Подсветка текущего раздела ---------- */
+            var links = {}, headings = [], current = null;
+            if (toc) {
+                toc.querySelectorAll('a[href^="#"]').forEach(function (a) {
+                    links[decodeURIComponent(a.getAttribute('href').slice(1))] = a;
+                });
+                headings = [].filter.call(document.querySelectorAll('.md h2[id], .md h3[id]'), function (h) {
+                    return links[h.id];
+                });
+            }
+
+            function spy() {
+                if (!headings.length) return;
+                var line = window.innerHeight * 0.3;
+                var active = null;
+                for (var i = 0; i < headings.length; i++) {
+                    if (headings[i].getBoundingClientRect().top <= line) active = headings[i].id;
+                    else break;
+                }
+                // долистали до конца — подсвечиваем последний раздел
+                if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4) {
+                    active = headings[headings.length - 1].id;
+                }
+                if (active === current) return;
+                if (current && links[current]) links[current].removeAttribute('aria-current');
+                current = active;
+                if (active && links[active]) {
+                    links[active].setAttribute('aria-current', 'true');
+                    if (desktop.matches) {
+                        var box = toc.closest('.dc-aside');
+                        // offsetTop у ссылки считается от <li>, поэтому берём геометрию через getBoundingClientRect
+                        var a = links[active];
+                        if (box.scrollHeight > box.clientHeight) {
+                            var br = box.getBoundingClientRect(), ar = a.getBoundingClientRect();
+                            if (ar.top < br.top + 40 || ar.bottom > br.bottom - 40) {
+                                box.scrollTo({ top: box.scrollTop + (ar.top - br.top) - box.clientHeight / 2, behavior: 'smooth' });
+                            }
+                        }
+                    }
+                }
+            }
+
+            /* ---------- Один обработчик скролла ---------- */
+            var ticking = false;
+            function onScroll() {
+                if (ticking) return;
+                ticking = true;
+                requestAnimationFrame(function () { ticking = false; navState(); spy(); });
+            }
+            window.addEventListener('scroll', onScroll, { passive: true });
+            window.addEventListener('resize', onScroll, { passive: true });
+            navState(); spy();
+        })();
+    </script>
 </body>
 </html>

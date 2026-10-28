@@ -1,305 +1,547 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" class="scroll-smooth">
 <head>
+    {% load static %}
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Медицинские тесты и подготовка НМО | Тренажер тестов с ответами | Летучка</title>
-    <meta name="description" content="Тренажер для подготовки к медицинским тестам: НМО, аккредитация, вступительные экзамены в колледж. Бесплатные тесты с ответами по всем медицинским дисциплинам.">
-    <meta name="keywords" content="медицинские тесты, НМО с ответами, аккредитация врачей, психологический тест в медколледж, тесты для медиков, подготовка к медицинским экзаменам, НМО онлайн, тесты с ответами, скоррея помощь тест">
+    <title>Тесты по сестринскому делу и аттестации: создать онлайн с ИИ | Летучка</title>
+    <meta name="description" content="Создайте тест по сестринскому делу, фармакологии или анатомии из своих материалов: загрузите методичку, приказ или конспект — ИИ составит вопросы. Автопроверка, Excel, печать.">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <meta name="theme-color" content="#0F0E13">
+    <link rel="canonical" href="https://letychka.ru/testy-dlya-medikov/">
+
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://letychka.ru">
+    <meta property="og:url" content="https://letychka.ru/testy-dlya-medikov/">
+    <meta property="og:title" content="Тесты по сестринскому делу и аттестации — создайте из своих материалов">
+    <meta property="og:description" content="Загрузите методичку, приказ или конспект — ИИ составит тест для колледжа, обучения персонала или подготовки к аттестации.">
     <meta property="og:image" content="https://letychka.ru/static/letychka-banner-1703.webp">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
-    <meta name="twitter:card" content="https://letychka.ru/static/letychka-banner-1703.webp"/>
-    <meta name="twitter:image" content="https://letychka.ru/static/letychka-banner-1703.webp"/>
-    <meta property="og:site_name" content="Летучка – создание тестов с помощью ИИ">
-    <meta name="theme-color" content="#0F0818">
-    <link rel="canonical" href="https://letychka.ru" />
+    <meta property="og:site_name" content="Летучка — ИИ-генератор тестов по тексту">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://letychka.ru/static/letychka-banner-1703.webp">
 
-    <meta name="csrf-token" content="{{ csrf_token }}">
-    {% load static %}
+    <link rel="icon" href="{% static 'img/favicon.ico' %}" type="image/x-icon">
     <link rel="apple-touch-icon" sizes="180x180" href="{% static 'img/apple-touch-icon.png' %}">
-    <link rel="shortcut icon" href="{% static 'img/favicon.ico' %}" type="image/ico">
-    <link rel="stylesheet" href="{% static 'css/themes-carusel.css' %}?v=1.2">
-    <link rel="stylesheet" href="{% static 'css/start.css' %}?v=3.21">
-    <link rel="stylesheet" href="{% static 'css/footer.css' %}">
+    <meta name="yandex-verification" content="be2137152cc2e9ac">
+
+    <script>document.documentElement.classList.add('js')</script>
+
+    <link rel="preload" as="image" href="{% static 'poster.webp' %}" fetchpriority="high">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=Wix+Madefor+Display:wght@600;700;800&display=swap" rel="stylesheet">
+
+    {% if debug %}
+        <script src="https://cdn.tailwindcss.com"></script>
+    {% else %}
+        <script src="{% static 'vendor/tailwind.full.min.js' %}"></script>
+    {% endif %}
+
+    <style>
+        :root { --bg-base:#0F0E13; --ease:cubic-bezier(0.16,1,0.3,1); }
+        html, body { overflow-x: clip; }
+        body { background-color:var(--bg-base); font-family:'Golos Text',-apple-system,BlinkMacSystemFont,sans-serif; color:#E5E7EB; letter-spacing:-0.012em; -webkit-font-smoothing:antialiased; }
+        h1,h2,h3,h4,.font-display { font-family:'Wix Madefor Display','Golos Text',sans-serif; letter-spacing:-0.03em; }
+        details summary::-webkit-details-marker { display:none; }
+        details summary { list-style:none; }
+        .icon { width:1em; height:1em; display:inline-block; flex-shrink:0; }
+        section[id] { scroll-margin-top:84px; }
+
+        /* CTA */
+        @property --border-angle { syntax:'<angle>'; initial-value:0deg; inherits:false; }
+        @keyframes spinAngle { to { --border-angle:360deg; } }
+        .cta-wrap { position:relative; display:inline-flex; padding:3px; border-radius:999px; isolation:isolate; transition:transform .3s var(--ease); }
+        .cta-wrap:hover { transform:translateY(-1px) scale(1.02); }
+        .cta-wrap:active { transform:scale(.98); }
+        .cta-ring,.cta-glow { position:absolute; inset:0; border-radius:inherit; pointer-events:none; z-index:-1;
+            background:conic-gradient(from var(--border-angle),rgba(255,255,255,.18) 0%,rgba(255,255,255,.18) 35%,#A5B4FC 55%,#FFF 66%,#818CF8 78%,rgba(255,255,255,.18) 100%);
+            animation:spinAngle 3s linear infinite; }
+        .cta-glow { inset:-4px; filter:blur(12px); opacity:.45; }
+        .cta-btn { position:relative; display:inline-flex; align-items:center; gap:14px; height:54px; padding:0 8px 0 28px; border-radius:999px; background:#fff; color:#0F0E13; font-size:14px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; white-space:nowrap; box-shadow:inset 0 -2px 0 rgba(15,14,19,.08),0 10px 32px -10px rgba(165,180,252,.55); }
+        @media (min-width:640px){ .cta-btn { height:62px; padding:0 10px 0 36px; font-size:15px; } }
+        .cta-arrow { width:38px; height:38px; border-radius:999px; display:grid; place-items:center; background:#4F46E5; color:#fff; font-size:14px; transition:transform .3s var(--ease); }
+        @media (min-width:640px){ .cta-arrow { width:44px; height:44px; } }
+        .cta-wrap:hover .cta-arrow { transform:translateX(3px); }
+
+        /* intro */
+        @keyframes intro-up { from{opacity:0;transform:translateY(26px);filter:blur(10px)} to{opacity:1;transform:none;filter:blur(0)} }
+        @keyframes intro-frame { from{opacity:0;transform:perspective(1400px) rotateX(16deg) translateY(70px) scale(.93)} to{opacity:1;transform:none} }
+        @keyframes intro-glow { 0%{opacity:0;transform:scale(.86)} 60%{opacity:1} 100%{opacity:1;transform:scale(1)} }
+        @keyframes intro-track { from{letter-spacing:.5em;opacity:0} to{letter-spacing:.1em;opacity:1} }
+        @keyframes intro-nav { from{opacity:0;transform:translateY(-14px)} to{opacity:1;transform:none} }
+        .intro { animation:intro-up .9s var(--ease) var(--t,0s) both; }
+        .intro-track { animation:intro-track 1.1s var(--ease) both; }
+        .intro-frame { animation:intro-frame 1.4s var(--ease) .55s both; transform-origin:50% 0; }
+        .intro-glow { animation:intro-glow 2s var(--ease) .45s both; }
+        .intro-nav { animation:intro-nav .7s var(--ease) .05s backwards; }
+
+        /* reveal */
+        html.js [data-reveal] { opacity:0; transform:translateY(32px); filter:blur(6px);
+            transition:opacity .8s var(--ease) calc(var(--i,0)*90ms),transform 1s var(--ease) calc(var(--i,0)*90ms),filter .8s var(--ease) calc(var(--i,0)*90ms); }
+        html.js [data-reveal].in { opacity:1; transform:none; filter:none; }
+
+        /* nav island */
+        .isl-wrap { position:fixed; top:0; left:0; right:0; z-index:50; padding:12px 12px 0; pointer-events:none; }
+        @media (min-width:640px){ .isl-wrap { padding:16px 16px 0; } }
+        .isl { position:relative; pointer-events:auto; max-width:1280px; margin-inline:auto; border-radius:24px; background:rgba(20,19,26,.55); -webkit-backdrop-filter:blur(20px) saturate(160%); backdrop-filter:blur(20px) saturate(160%); transition:max-width .7s var(--ease),background-color .4s ease; }
+        .isl::before { content:''; position:absolute; inset:0; border-radius:inherit; padding:1px; pointer-events:none;
+            background:linear-gradient(180deg,rgba(255,255,255,.15),rgba(255,255,255,.045) 45%,rgba(255,255,255,.07));
+            -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0); -webkit-mask-composite:xor; mask-composite:exclude; }
+        .is-compact .isl { background:rgba(14,13,19,.85); }
+        @media (min-width:1024px){ .is-compact .isl { max-width:960px; } }
+        .isl-bar { display:flex; align-items:center; justify-content:space-between; gap:12px; height:56px; padding:0 8px 0 16px; }
+        .isl-logo img { display:block; height:26px; width:auto; }
+        @media (min-width:640px){ .isl-logo img { height:30px; } }
+        .isl-links { display:none; align-items:center; gap:2px; }
+        @media (min-width:1024px){ .isl-links { display:flex; } }
+        .isl-links a { display:inline-flex; align-items:center; height:32px; padding:0 12px; border-radius:12px; font-size:13.5px; font-weight:500; color:#A1A1AA; transition:color .2s ease,background-color .2s ease; }
+        .isl-links a:hover { color:#F4F4F5; background:rgba(255,255,255,.05); }
+        .isl-btn { display:inline-flex; align-items:center; justify-content:center; gap:10px; height:40px; padding:0 16px; border-radius:16px; font-size:12px; font-weight:600; white-space:nowrap; color:#fff; background:#4F46E5; box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 6px 18px -8px rgba(79,70,229,.8); transition:background-color .2s ease; }
+        .isl-btn:hover { background:#5B54EA; }
+        .isl-ghost { background:none; box-shadow:none; color:#D4D4D8; }
+        .isl-ghost:hover { background:rgba(255,255,255,.06); color:#fff; }
+        @media (max-width:639px){ .isl-login { display:none; } }
+
+        /* step number & cards */
+        .card { position:relative; border-radius:32px; background:#121117; border:1px solid rgba(255,255,255,.09); transition:border-color .3s ease; }
+        .card:hover { border-color:rgba(255,255,255,.16); }
+        .card::before { content:''; position:absolute; top:0; left:12%; right:12%; height:1px; pointer-events:none; background:linear-gradient(90deg,transparent,rgba(255,255,255,.14),transparent); }
+        .qr-box { width:150px; padding:12px; border-radius:22px; background:#fff; }
+        .phone { width:100%; max-width:250px; border-radius:34px; padding:8px; background:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,.03)); }
+        .phone-in { border-radius:28px; background:#16151C; padding:18px 14px; }
+        .opt { display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:12px; font-size:12.5px; color:#A1A1AA; background:rgba(255,255,255,.03); box-shadow:inset 0 0 0 1px rgba(255,255,255,.06); }
+        .opt.ok { color:#fff; background:rgba(99,102,241,.14); box-shadow:inset 0 0 0 1px rgba(129,140,248,.45); }
+        .opt i { width:20px; height:20px; border-radius:7px; display:grid; place-items:center; font-style:normal; font-size:10px; font-weight:700; background:rgba(255,255,255,.06); }
+        .opt.ok i { background:#4F46E5; color:#fff; }
+        .bar-track { height:8px; border-radius:99px; background:rgba(255,255,255,.06); overflow:hidden; }
+        .bar-track i { display:block; height:100%; border-radius:inherit; background:#818CF8; }
+        .bar-track.low i { background:#FB7185; }
+        @media (prefers-reduced-motion:reduce){ *,*::before,*::after { animation-duration:.01ms!important; animation-iteration-count:1!important; transition-duration:.01ms!important; transition-delay:0ms!important; } }
+    </style>
+
+    <script>
+        window.addEventListener('load', function () {
+            setTimeout(function () {
+                (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+                m[i].l=1*new Date();
+                for (var j = 0; j < document.scripts.length; j++) { if (document.scripts[j].src === r) { return; } }
+                k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+                (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+                ym(98823704, "init", { clickmap: true, trackLinks: true, accurateTrackBounce: true, webvisor: true });
+            }, 1500);
+        });
+    </script>
+    <noscript><div><img src="https://mc.yandex.ru/watch/98823704" style="position:absolute; left:-9999px;" alt=""></div></noscript>
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {"@type": "ListItem", "position": 1, "name": "Летучка", "item": "https://letychka.ru/"},
+        {"@type": "ListItem", "position": 2, "name": "Тесты для медиков", "item": "https://letychka.ru/testy-dlya-medikov/"}
+      ]
+    }
+    </script>
 </head>
-<body>
-    <!-- Хедер -->
-    <header class="header" id="critical-header">
-        <div class="logo">
-            <a href="/">
-                <img src="{% static 'img/logo-header.webp' %}" alt="Логотип Летучка" class="logo-img">
-            </a>
+<body class="min-h-screen">
+
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+        <symbol id="i-arrow" viewBox="0 0 16 16"><path d="M3 8h9M8.5 4L12.5 8l-4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+        <symbol id="i-chevron" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+        <symbol id="i-check" viewBox="0 0 16 16"><path d="M3.5 8.5L6.5 11.5L12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+        <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M4 7l8 6 8-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+        <symbol id="i-tg" viewBox="0 0 24 24"><path d="M21.5 4.2L2.9 11.4c-1.3.5-1.2 1.3-.2 1.6l4.7 1.5 1.8 5.6c.2.6.4.8.9.8.4 0 .6-.2.9-.4l2.3-2.2 4.7 3.5c.9.5 1.5.2 1.7-.8l3.1-14.5c.3-1.3-.5-1.9-1.3-1.5zM9.6 14.3l8.6-7.6c.4-.3-.1-.5-.6-.2L7.9 13.3" fill="currentColor"/></symbol>
+    </svg>
+
+    <header id="island-nav" class="isl-wrap">
+        <div class="isl intro-nav">
+            <div class="isl-bar">
+                <a href="/" class="isl-logo" title="Летучка — генератор тестов">
+                    <img src="{% static 'img/logo-header.webp' %}" alt="Летучка" height="32">
+                </a>
+                <nav class="isl-links" aria-label="Разделы страницы">
+                    <a href="#topics">Темы</a>
+                    <a href="#scenarios">Сценарии</a>
+                    <a href="#quality">Качество</a>
+                    <a href="#faq">FAQ</a>
+                </nav>
+                <div class="flex items-center gap-1.5">
+                    {% if username and username != 0 and username != "0" %}
+                        <a href="{% url 'create' %}" class="isl-btn">Личный кабинет</a>
+                    {% else %}
+                        <a href="/login" class="isl-btn isl-ghost isl-login">Войти</a>
+                        <a href="{% url 'create' %}" class="isl-btn">Создать тест <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+                    {% endif %}
+                </div>
+            </div>
         </div>
-        <nav class="nav">
-            <div class="nav-links">
-                <a href="#gif-section" class="nav-link">Как работает</a>
-                <a href="#how-it-works" class="nav-link">Начать</a>
-                <a href="#features" class="nav-link">Фичи</a>
-                <a href="#success-cases" class="nav-link">Кейсы</a>
-                <a href="/login" class="nav-link login-button">Войти</a>
-            </div>
-            <div class="burger" id="burger">
-                <div class="burger-line"></div>
-                <div class="burger-line"></div>
-                <div class="burger-line"></div>
-            </div>
-        </nav>
     </header>
-    <section class="hero" id="critical-hero">
-        <div class="hero-content">
-            <h1 class="hero-title">
-                <span class="gradient-text">Тесты для медицинского образования</span><br>и аккредитации специалистов
-            </h1>
-            <p class="hero-subtitle">
-                Создавайте задания для НМО, вступительных экзаменов и проверки знаний<br>
-                <strong>По фармакологии, анатомии, сестринскому делу и клинической практике</strong>
-            </p>
-            <a href="#create-now" class="cta-button cta-button-accent">СОЗДАТЬ МЕДИЦИНСКИЙ ТЕСТ →</a>
-            
-            <div class="hero-stats">
-                <div class="stat-item">
-                    <div class="stat-value">150+</div>
-                    <div class="stat-label">медицинских дисциплин</div>
+
+    <main>
+    <section id="hero" class="relative pt-28 sm:pt-36 pb-12 sm:pb-20 max-w-7xl mx-auto text-center flex flex-col items-center px-4 sm:px-6">
+        <div class="intro-track inline-flex items-center gap-1.5 font-mono text-[10px] sm:text-xs uppercase text-zinc-400 select-none mb-4 sm:mb-8">
+            <span class="text-zinc-600">[</span><span>Для колледжей, клиник и подготовки к аттестации</span><span class="text-zinc-600">]</span>
+        </div>
+        <h1 class="text-[1.7rem] sm:text-5xl md:text-6xl font-extrabold uppercase tracking-tight text-white leading-[1.15] sm:leading-[1.08] max-w-4xl mx-auto font-display">
+            <span class="intro block" style="--t:.12s">Тесты по сестринскому делу и&nbsp;медицине:</span>
+            <span class="intro block text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 via-white to-zinc-300" style="--t:.24s">создайте из&nbsp;своих материалов</span>
+        </h1>
+        <p class="intro mt-4 sm:mt-6 text-sm sm:text-base text-zinc-300 max-w-md sm:max-w-2xl mx-auto leading-relaxed" style="--t:.38s">
+            Загрузите методичку, приказ, СанПиН или конспект&nbsp;— нейросеть составит вопросы с&nbsp;вариантами ответов. Подойдёт для колледжа, обучения персонала и подготовки к&nbsp;аттестации.
+        </p>
+        <p class="intro mt-2 text-sm sm:text-base text-zinc-400 max-w-md sm:max-w-2xl mx-auto leading-relaxed" style="--t:.46s">
+            Автопроверка, ведомость в&nbsp;Excel, печать на&nbsp;А4. Тест строится по&nbsp;вашему документу, а&nbsp;любой вопрос можно поправить.
+        </p>
+        <div class="intro mt-8 sm:mt-10 flex flex-col items-center gap-4 sm:gap-5 w-full" style="--t:.56s">
+            <div class="cta-wrap">
+                    <span class="cta-glow" aria-hidden="true"></span>
+                    <span class="cta-ring" aria-hidden="true"></span>
+                    <a href="{% url 'create' %}" class="cta-btn">
+                        <span>Создать тест по медицине</span>
+                        <span class="cta-arrow"><svg class="icon"><use href="#i-arrow"/></svg></span>
+                    </a>
                 </div>
-                <div class="stat-item">
-                    <div class="stat-value">98%</div>
-                    <div class="stat-label">соответствие стандартам НМО</div>
-                </div>
+            <div class="flex flex-wrap justify-center items-center gap-x-3 gap-y-1 text-[11px] sm:text-xs text-zinc-400">
+                <span>1 тест без регистрации</span><span aria-hidden="true" class="text-zinc-600">•</span>
+                <span>PDF, Word, TXT</span><span aria-hidden="true" class="text-zinc-600">•</span>
+                <span>Сотрудникам без регистрации</span>
             </div>
         </div>
-        <div class="hero-image">
-            <img src="{% static 'medical-hero.webp' %}" alt="Медицинские тесты для образования и аккредитации" class="hero-img">
+        <div class="mt-10 sm:mt-14 relative w-full max-w-4xl mx-auto">
+            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-screen sm:w-[240vw] max-w-none sm:max-w-[3600px] pointer-events-none -z-10 select-none">
+                <div class="intro-glow"><img src="{% static 'img/hero-light-bridge.webp' %}" alt="" width="1400" height="770" class="w-full h-auto mix-blend-screen" decoding="async" fetchpriority="low"></div>
+            </div>
+            <div class="intro-frame relative w-full rounded-[20px] sm:rounded-[36px] p-1 sm:p-1.5 bg-gradient-to-b from-white/[0.12] to-white/[0.02] shadow-[0_16px_40px_-10px_rgba(0,0,0,0.8)] border border-white/[0.06]">
+                <div class="relative rounded-[16px] sm:rounded-[32px] overflow-hidden bg-zinc-950 aspect-[16/9]">
+                    <video autoplay loop muted playsinline preload="metadata" poster="{% static 'poster.webp' %}" class="w-full h-full object-cover" aria-label="Как Летучка создаёт медицинский тест">
+                        <source src="{% static 'letychka-hero.mp4' %}" type="video/mp4">
+                    </video>
+                </div>
+            </div>
         </div>
     </section>
 
-    <section class="generator-section" id="create-now">
-        <!-- Блок генератора с медицинской спецификой -->
-        <div class="gen-container glassy-box">
-            <div class="gen-header">
-                <div class="theme-suggestions">
-                    <div class="theme-carousel">
-                        <div class="theme-item active" data-theme="pharmacology">
-                            Создать тест по <span class="typing-animation"></span>
-                        </div>
+    <section id="topics" class="relative py-20 md:py-28 max-w-7xl mx-auto px-4 md:px-8">
+        <div class="max-w-3xl mx-auto text-center space-y-4 mb-14 md:mb-16" data-reveal>
+            <div class="inline-flex items-center gap-1.5 font-mono text-[10px] sm:text-[11px] tracking-widest text-zinc-400 uppercase select-none mb-3 sm:mb-6">
+                <span class="text-zinc-600">[ 01</span><span class="text-zinc-700">//</span><span>Темы ]</span>
+            </div>
+            <h2 class="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-white leading-tight font-display">
+                Любое направление <br class="hidden sm:inline">
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 via-white to-zinc-300">медицины</span>
+            </h2>
+            <p class="text-sm md:text-base text-zinc-400 max-w-xl mx-auto leading-relaxed">Тесты по этим темам создают в Летучке. Укажите свою тему или загрузите материал.</p>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <article class="card p-6" data-reveal style="--i:0">
+                <h3 class="text-lg font-bold text-white font-display">Сестринское дело</h3>
+                <p class="mt-2.5 text-sm text-zinc-400 leading-relaxed">Основы ухода, манипуляции, уход в терапии и гинекологии, операционное дело.</p>
+                <div class="mt-5 pt-4 border-t border-white/[0.07] text-[12px] text-zinc-500">Пример темы<span class="block mt-1 text-zinc-300 font-medium">«Сестринское дело: неотложная помощь и уход»</span></div>
+            </article>
+            <article class="card p-6" data-reveal style="--i:1">
+                <h3 class="text-lg font-bold text-white font-display">Фармакология</h3>
+                <p class="mt-2.5 text-sm text-zinc-400 leading-relaxed">Рецептура, общая и частная фармакология, классификация препаратов.</p>
+                <div class="mt-5 pt-4 border-t border-white/[0.07] text-[12px] text-zinc-500">Пример темы<span class="block mt-1 text-zinc-300 font-medium">«Фармакология: рецептура и общая фармакология»</span></div>
+            </article>
+            <article class="card p-6" data-reveal style="--i:2">
+                <h3 class="text-lg font-bold text-white font-display">Анатомия и физиология</h3>
+                <p class="mt-2.5 text-sm text-zinc-400 leading-relaxed">Системы органов, нервная система, топографическая анатомия, гистология.</p>
+                <div class="mt-5 pt-4 border-t border-white/[0.07] text-[12px] text-zinc-500">Пример темы<span class="block mt-1 text-zinc-300 font-medium">«Анатомия и физиология зрительного нерва»</span></div>
+            </article>
+            <article class="card p-6" data-reveal style="--i:0">
+                <h3 class="text-lg font-bold text-white font-display">Хирургия</h3>
+                <p class="mt-2.5 text-sm text-zinc-400 leading-relaxed">Асептика и антисептика, хирургические инструменты, хирургическая инфекция.</p>
+                <div class="mt-5 pt-4 border-t border-white/[0.07] text-[12px] text-zinc-500">Пример темы<span class="block mt-1 text-zinc-300 font-medium">«Асептика и антисептика в хирургии»</span></div>
+            </article>
+            <article class="card p-6" data-reveal style="--i:1">
+                <h3 class="text-lg font-bold text-white font-display">Инфекционная безопасность</h3>
+                <p class="mt-2.5 text-sm text-zinc-400 leading-relaxed">Профилактика ИСМП, стерилизация, санитарно-эпидемиологический режим.</p>
+                <div class="mt-5 pt-4 border-t border-white/[0.07] text-[12px] text-zinc-500">Пример темы<span class="block mt-1 text-zinc-300 font-medium">«Тест по профилактике инфекций в медицинской помощи»</span></div>
+            </article>
+            <article class="card p-6" data-reveal style="--i:2">
+                <h3 class="text-lg font-bold text-white font-display">Педиатрия и акушерство</h3>
+                <p class="mt-2.5 text-sm text-zinc-400 leading-relaxed">Заболевания детского возраста, рахит, спазмофилия, гинекология.</p>
+                <div class="mt-5 pt-4 border-t border-white/[0.07] text-[12px] text-zinc-500">Пример темы<span class="block mt-1 text-zinc-300 font-medium">«Педиатрия: рахит, гипервитаминоз D, спазмофилия»</span></div>
+            </article>
+        </div>
+    </section>
+
+    <section id="scenarios" class="relative py-20 md:py-28 max-w-7xl mx-auto px-4 md:px-8">
+        <div class="max-w-3xl mx-auto text-center space-y-4 mb-14 md:mb-16" data-reveal>
+            <div class="inline-flex items-center gap-1.5 font-mono text-[10px] sm:text-[11px] tracking-widest text-zinc-400 uppercase select-none mb-3 sm:mb-6">
+                <span class="text-zinc-600">[ 02</span><span class="text-zinc-700">//</span><span>Сценарии ]</span>
+            </div>
+            <h2 class="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-white leading-tight font-display">
+                Три задачи, <br class="hidden sm:inline">
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 via-white to-zinc-300">один сервис</span>
+            </h2>
+            <p class="text-sm md:text-base text-zinc-400 max-w-xl mx-auto leading-relaxed">Выберите свою: ответы и результаты собираются автоматически.</p>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            <article class="card p-6 sm:p-8" data-reveal style="--i:0">
+                <span class="inline-block px-2.5 py-1 rounded-full text-[11px] font-semibold text-indigo-300 bg-indigo-500/10 ring-1 ring-indigo-400/25">Преподаватель колледжа</span>
+                <h3 class="mt-4 text-xl font-bold text-white font-display">Тесты по темам МДК</h3>
+                <ul class="mt-4 space-y-3 text-sm text-zinc-300"><li class="flex gap-2.5"><svg class="icon text-base text-indigo-400 mt-0.5"><use href="#i-check"/></svg>Загрузите лекцию или параграф и получите 10–30 вопросов</li><li class="flex gap-2.5"><svg class="icon text-base text-indigo-400 mt-0.5"><use href="#i-check"/></svg>QR-код или ссылка для группы, без регистрации студентов</li><li class="flex gap-2.5"><svg class="icon text-base text-indigo-400 mt-0.5"><use href="#i-check"/></svg>Баллы каждого студента и ведомость в Excel</li></ul>
+                <p class="mt-5 text-xs text-zinc-500 leading-relaxed">Для печати: два варианта в PDF и ключи отдельным листом.</p>
+            </article>
+            <article class="card p-6 sm:p-8" data-reveal style="--i:1">
+                <span class="inline-block px-2.5 py-1 rounded-full text-[11px] font-semibold text-indigo-300 bg-indigo-500/10 ring-1 ring-indigo-400/25">Обучение персонала</span>
+                <h3 class="mt-4 text-xl font-bold text-white font-display">Тесты по приказам и СанПиН</h3>
+                <ul class="mt-4 space-y-3 text-sm text-zinc-300"><li class="flex gap-2.5"><svg class="icon text-base text-indigo-400 mt-0.5"><use href="#i-check"/></svg>Загрузите приказ, инструкцию или регламент (PDF, Word)</li><li class="flex gap-2.5"><svg class="icon text-base text-indigo-400 mt-0.5"><use href="#i-check"/></svg>Сотрудники проходят тест по ссылке со смартфона</li><li class="flex gap-2.5"><svg class="icon text-base text-indigo-400 mt-0.5"><use href="#i-check"/></svg>Итоги по отделению одной таблицей для отчёта</li></ul>
+                <p class="mt-5 text-xs text-zinc-500 leading-relaxed">Подходит для инфекционной безопасности, стерилизации и охраны труда.</p>
+            </article>
+            <article class="card p-6 sm:p-8" data-reveal style="--i:2">
+                <span class="inline-block px-2.5 py-1 rounded-full text-[11px] font-semibold text-indigo-300 bg-indigo-500/10 ring-1 ring-indigo-400/25">Подготовка к аттестации</span>
+                <h3 class="mt-4 text-xl font-bold text-white font-display">Тест по вашим конспектам</h3>
+                <ul class="mt-4 space-y-3 text-sm text-zinc-300"><li class="flex gap-2.5"><svg class="icon text-base text-indigo-400 mt-0.5"><use href="#i-check"/></svg>Загрузите билеты, конспекты или нормативные документы</li><li class="flex gap-2.5"><svg class="icon text-base text-indigo-400 mt-0.5"><use href="#i-check"/></svg>Пройдите тест сами и увидите верные ответы после сдачи</li><li class="flex gap-2.5"><svg class="icon text-base text-indigo-400 mt-0.5"><use href="#i-check"/></svg>Перегенерация даёт новые вопросы по тому же материалу</li></ul>
+                <p class="mt-5 text-xs text-zinc-500 leading-relaxed">Готовых аттестационных тестов и «ответов» в сервисе нет: тест строится по вашему материалу.</p>
+            </article>
+        </div>
+    </section>
+
+    <section id="quality" class="relative py-20 md:py-28 max-w-4xl mx-auto px-4 md:px-8">
+        <div class="card p-8 sm:p-12" data-reveal>
+            <div class="inline-flex items-center gap-1.5 font-mono text-[10px] sm:text-[11px] tracking-widest text-zinc-400 uppercase select-none mb-5">
+                <span class="text-zinc-600">[ 03</span><span class="text-zinc-700">//</span><span>Точность ]</span>
+            </div>
+            <h2 class="text-2xl sm:text-4xl font-extrabold tracking-tight text-white leading-tight font-display">В&nbsp;медицине ответ <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 via-white to-zinc-300">проверяет специалист</span></h2>
+            <p class="mt-4 text-sm sm:text-base text-zinc-400 leading-relaxed">Нейросеть может ошибаться, поэтому мы строим вопросы по&nbsp;вашему документу, а&nbsp;не по&nbsp;общим знаниям модели. Загрузите методичку или приказ&nbsp;— и&nbsp;вопросы будут опираться на&nbsp;него.</p>
+            <ul class="mt-6 grid sm:grid-cols-2 gap-3 text-sm text-zinc-300">
+                <li class="flex gap-2.5"><svg class="icon text-base text-indigo-400 mt-0.5"><use href="#i-check"/></svg>Каждый вопрос и вариант ответа редактируется</li>
+                <li class="flex gap-2.5"><svg class="icon text-base text-indigo-400 mt-0.5"><use href="#i-check"/></svg>Неудачный вопрос заменяется перегенерацией</li>
+                <li class="flex gap-2.5"><svg class="icon text-base text-indigo-400 mt-0.5"><use href="#i-check"/></svg>Тест по теме без текста менее глубокий, чем по документу</li>
+                <li class="flex gap-2.5"><svg class="icon text-base text-indigo-400 mt-0.5"><use href="#i-check"/></svg>Перед выдачей тест просматривает автор</li>
+            </ul>
+        </div>
+    </section>
+
+    <section id="faq" class="relative py-20 md:py-28 max-w-4xl mx-auto px-4 md:px-8">
+        <div class="text-center space-y-4 mb-14" data-reveal>
+            <div class="inline-flex items-center gap-1.5 font-mono text-[10px] sm:text-[11px] tracking-widest text-zinc-400 uppercase">
+                <span class="text-zinc-600">[ 04</span><span class="text-zinc-700">//</span><span>FAQ ]</span>
+            </div>
+            <h2 class="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-white font-display">Вопросы медиков</h2>
+        </div>
+        <div class="space-y-3">
+            <details data-reveal style="--i:0" class="group rounded-[24px] bg-white/[0.02] border border-white/[0.06] hover:border-white/[0.12] overflow-hidden">
+                <summary class="flex items-center justify-between gap-4 p-6 cursor-pointer select-none">
+                    <h3 class="font-bold text-sm sm:text-base text-zinc-200">Как создать тест по сестринскому делу онлайн?</h3>
+                    <span class="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-zinc-400 group-open:rotate-180 transition-transform flex-shrink-0"><svg class="icon text-xs"><use href="#i-chevron"/></svg></span>
+                </summary>
+                <div class="px-6 pb-6 text-sm text-zinc-400 leading-relaxed border-t border-white/[0.04] pt-4">
+                    <strong class="text-zinc-300">Загрузите методичку, конспект или вставьте текст темы — Летучка составит вопросы с вариантами ответов за секунды.</strong> Выберите сложность и количество вопросов, поправьте формулировки в редакторе и отправьте тест ссылкой или распечатайте на А4. Работы проверяются автоматически, результаты выгружаются в Excel.
+                </div>
+            </details>
+
+            <details data-reveal style="--i:1" class="group rounded-[24px] bg-white/[0.02] border border-white/[0.06] hover:border-white/[0.12] overflow-hidden">
+                <summary class="flex items-center justify-between gap-4 p-6 cursor-pointer select-none">
+                    <h3 class="font-bold text-sm sm:text-base text-zinc-200">Можно ли подготовиться к аттестации с помощью Летучки?</h3>
+                    <span class="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-zinc-400 group-open:rotate-180 transition-transform flex-shrink-0"><svg class="icon text-xs"><use href="#i-chevron"/></svg></span>
+                </summary>
+                <div class="px-6 pb-6 text-sm text-zinc-400 leading-relaxed border-t border-white/[0.04] pt-4">
+                    <strong class="text-zinc-300">Да, но по вашим материалам: Летучка не хранит готовых аттестационных тестов и не публикует «ответы».</strong> Загрузите билеты, конспекты или нормативные документы — сервис составит тест для самопроверки по этому материалу. Так вы тренируетесь на том, что действительно изучаете.
+                </div>
+            </details>
+
+            <details data-reveal style="--i:2" class="group rounded-[24px] bg-white/[0.02] border border-white/[0.06] hover:border-white/[0.12] overflow-hidden">
+                <summary class="flex items-center justify-between gap-4 p-6 cursor-pointer select-none">
+                    <h3 class="font-bold text-sm sm:text-base text-zinc-200">Можно ли сделать тест по приказу, СанПиН или инструкции?</h3>
+                    <span class="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-zinc-400 group-open:rotate-180 transition-transform flex-shrink-0"><svg class="icon text-xs"><use href="#i-chevron"/></svg></span>
+                </summary>
+                <div class="px-6 pb-6 text-sm text-zinc-400 leading-relaxed border-t border-white/[0.04] pt-4">
+                    <strong class="text-zinc-300">Да, загрузите документ в PDF или Word (до 25 МБ) или вставьте текст — вопросы строятся строго по нему.</strong> Это удобно для обучения персонала: профилактика инфекций, стерилизация, санитарный режим, охрана труда. Сотрудники проходят тест по ссылке без регистрации.
+                </div>
+            </details>
+
+            <details data-reveal style="--i:3" class="group rounded-[24px] bg-white/[0.02] border border-white/[0.06] hover:border-white/[0.12] overflow-hidden">
+                <summary class="flex items-center justify-between gap-4 p-6 cursor-pointer select-none">
+                    <h3 class="font-bold text-sm sm:text-base text-zinc-200">Как провести тестирование медицинского персонала?</h3>
+                    <span class="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-zinc-400 group-open:rotate-180 transition-transform flex-shrink-0"><svg class="icon text-xs"><use href="#i-chevron"/></svg></span>
+                </summary>
+                <div class="px-6 pb-6 text-sm text-zinc-400 leading-relaxed border-t border-white/[0.04] pt-4">
+                    <strong class="text-zinc-300">Создайте тест, отправьте сотрудникам ссылку и получите результаты каждого в личном кабинете.</strong> Баллы считаются автоматически, а сводка выгружается в Excel для отчёта отделу кадров или обучения. Сотрудникам регистрироваться не нужно.
+                </div>
+            </details>
+
+            <details data-reveal style="--i:4" class="group rounded-[24px] bg-white/[0.02] border border-white/[0.06] hover:border-white/[0.12] overflow-hidden">
+                <summary class="flex items-center justify-between gap-4 p-6 cursor-pointer select-none">
+                    <h3 class="font-bold text-sm sm:text-base text-zinc-200">Нейросеть может ошибиться в медицинских вопросах?</h3>
+                    <span class="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-zinc-400 group-open:rotate-180 transition-transform flex-shrink-0"><svg class="icon text-xs"><use href="#i-chevron"/></svg></span>
+                </summary>
+                <div class="px-6 pb-6 text-sm text-zinc-400 leading-relaxed border-t border-white/[0.04] pt-4">
+                    <strong class="text-zinc-300">Да, ИИ может ошибаться, поэтому медицинский тест перед использованием должен просмотреть специалист.</strong> Для точности загружайте свой материал: вопросы строятся по нему, а не по общим знаниям модели. Любой вопрос и вариант ответа редактируется, а неудачный вопрос можно перегенерировать.
+                </div>
+            </details>
+
+            <details data-reveal style="--i:5" class="group rounded-[24px] bg-white/[0.02] border border-white/[0.06] hover:border-white/[0.12] overflow-hidden">
+                <summary class="flex items-center justify-between gap-4 p-6 cursor-pointer select-none">
+                    <h3 class="font-bold text-sm sm:text-base text-zinc-200">Можно ли создать тест по фармакологии или анатомии?</h3>
+                    <span class="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-zinc-400 group-open:rotate-180 transition-transform flex-shrink-0"><svg class="icon text-xs"><use href="#i-chevron"/></svg></span>
+                </summary>
+                <div class="px-6 pb-6 text-sm text-zinc-400 leading-relaxed border-t border-white/[0.04] pt-4">
+                    <strong class="text-zinc-300">Да, Летучка работает с любым предметом: фармакология, анатомия и физиология, хирургия, педиатрия и другие.</strong> Укажите тему или загрузите материал. Тест по теме без текста получается менее глубоким, по загруженному тексту — точнее.
+                </div>
+            </details>
+
+            <details data-reveal style="--i:6" class="group rounded-[24px] bg-white/[0.02] border border-white/[0.06] hover:border-white/[0.12] overflow-hidden">
+                <summary class="flex items-center justify-between gap-4 p-6 cursor-pointer select-none">
+                    <h3 class="font-bold text-sm sm:text-base text-zinc-200">Сколько стоит и можно ли попробовать бесплатно?</h3>
+                    <span class="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-zinc-400 group-open:rotate-180 transition-transform flex-shrink-0"><svg class="icon text-xs"><use href="#i-chevron"/></svg></span>
+                </summary>
+                <div class="px-6 pb-6 text-sm text-zinc-400 leading-relaxed border-t border-white/[0.04] pt-4">
+                    <strong class="text-zinc-300">Да, демо-тест создаётся без регистрации, затем на баланс начисляются 5 бесплатных тестов.</strong> Дальше доступна подписка или пакет тестов, автосписаний нет. <a href="/#pricing" class="text-indigo-400 hover:underline">Посмотреть тарифы</a>.
+                </div>
+            </details>
+        </div>
+        <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Как создать тест по сестринскому делу онлайн?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Загрузите методичку, конспект или вставьте текст темы — Летучка составит вопросы с вариантами ответов за секунды. Выберите сложность и количество вопросов, поправьте формулировки в редакторе и отправьте тест ссылкой или распечатайте на А4. Работы проверяются автоматически, результаты выгружаются в Excel."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Можно ли подготовиться к аттестации с помощью Летучки?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Да, но по вашим материалам: Летучка не хранит готовых аттестационных тестов и не публикует «ответы». Загрузите билеты, конспекты или нормативные документы — сервис составит тест для самопроверки по этому материалу. Так вы тренируетесь на том, что действительно изучаете."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Можно ли сделать тест по приказу, СанПиН или инструкции?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Да, загрузите документ в PDF или Word (до 25 МБ) или вставьте текст — вопросы строятся строго по нему. Это удобно для обучения персонала: профилактика инфекций, стерилизация, санитарный режим, охрана труда. Сотрудники проходят тест по ссылке без регистрации."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Как провести тестирование медицинского персонала?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Создайте тест, отправьте сотрудникам ссылку и получите результаты каждого в личном кабинете. Баллы считаются автоматически, а сводка выгружается в Excel для отчёта отделу кадров или обучения. Сотрудникам регистрироваться не нужно."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Нейросеть может ошибиться в медицинских вопросах?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Да, ИИ может ошибаться, поэтому медицинский тест перед использованием должен просмотреть специалист. Для точности загружайте свой материал: вопросы строятся по нему, а не по общим знаниям модели. Любой вопрос и вариант ответа редактируется, а неудачный вопрос можно перегенерировать."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Можно ли создать тест по фармакологии или анатомии?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Да, Летучка работает с любым предметом: фармакология, анатомия и физиология, хирургия, педиатрия и другие. Укажите тему или загрузите материал. Тест по теме без текста получается менее глубоким, по загруженному тексту — точнее."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Сколько стоит и можно ли попробовать бесплатно?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Да, демо-тест создаётся без регистрации, затем на баланс начисляются 5 бесплатных тестов. Дальше доступна подписка или пакет тестов, автосписаний нет. Посмотреть тарифы."
+      }
+    }
+  ]
+}
+        </script>
+    </section>
+
+    <section id="final" class="relative pb-24 md:pb-32 max-w-4xl mx-auto px-4 md:px-8">
+        <div class="card p-8 sm:p-12 text-center" data-reveal>
+            <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-white leading-tight font-display">Тест по&nbsp;вашему материалу <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 via-white to-zinc-300">за&nbsp;минуту</span></h2>
+            <p class="mt-4 text-sm sm:text-base text-zinc-400 max-w-lg mx-auto leading-relaxed">Первый тест можно создать без регистрации, а&nbsp;после регистрации на&nbsp;баланс начисляются 5&nbsp;бесплатных тестов.</p>
+            <div class="mt-8 flex justify-center"><div class="cta-wrap">
+                    <span class="cta-glow" aria-hidden="true"></span>
+                    <span class="cta-ring" aria-hidden="true"></span>
+                    <a href="{% url 'create' %}" class="cta-btn">
+                        <span>Создать тест по медицине</span>
+                        <span class="cta-arrow"><svg class="icon"><use href="#i-arrow"/></svg></span>
+                    </a>
+                </div></div>
+            <p class="mt-5 text-xs text-zinc-500">Тест для группы с&nbsp;QR-кодом&nbsp;— <a href="/test-dlya-uchenikov/" class="text-indigo-400 hover:underline">для преподавателей</a>. Нужен тест по&nbsp;любой теме&nbsp;— <a href="/neyroset-dlya-testov/" class="text-indigo-400 hover:underline">нейросеть для тестов</a>.</p>
+        </div>
+    </section>
+    </main>
+
+    <!-- ============ ФУТЕР ============ -->
+    <footer class="border-t border-white/[0.06] bg-[#0C0B0F]">
+        <div class="max-w-7xl mx-auto px-4 sm:px-8 py-14">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-10">
+                <div class="space-y-4">
+                    <a href="/" class="inline-flex"><img src="{% static 'img/logo-header.webp' %}" alt="Летучка" height="32" class="h-8 w-auto" loading="lazy"></a>
+                    <p class="text-xs text-zinc-500 leading-relaxed">Российский сервис генерации тестов по&nbsp;тексту и&nbsp;файлам с&nbsp;автопроверкой и&nbsp;аналитикой успеваемости.</p>
+                    <div class="pt-2 flex items-center gap-3 text-zinc-400 text-base">
+                        <a href="https://t.me/LetychkaRobot" target="_blank" rel="noopener" class="hover:text-white transition-colors" title="Telegram" aria-label="Telegram"><svg class="icon"><use href="#i-tg"/></svg></a>
+                        <a href="mailto:support@letychka.ru" class="hover:text-white transition-colors" title="Почта" aria-label="Почта"><svg class="icon"><use href="#i-mail"/></svg></a>
                     </div>
                 </div>
-                <p class="gen-subtitle">Загрузите методички, протоколы лечения или лекции → Получите тест с ответами</p>
-            </div>
-
-            <div class="medical-categories">
-                <h3>Популярные медицинские категории:</h3>
-                <div class="categories-grid">
-                    <a href="#pharmacology" class="category-card">Фармакология</a>
-                    <a href="#nursing" class="category-card">Сестринское дело</a>
-                    <a href="#surgery" class="category-card">Хирургия</a>
-                    <a href="#psychology" class="category-card">Медицинская психология</a>
-                    <a href="#nmo" class="category-card">Тесты НМО</a>
-                    <a href="#emergency" class="category-card">Неотложная помощь</a>
+                <div class="space-y-3 text-xs">
+                    <span class="font-bold text-white uppercase tracking-wider block">Продукт</span>
+                    <div class="flex flex-col space-y-2 text-zinc-400">
+                        <a href="/" class="hover:text-white transition-colors">Генератор тестов по тексту</a>
+                        <a href="/test-dlya-uchenikov/" class="hover:text-white transition-colors">Тест для учеников</a>
+                        <a href="/testy-dlya-medikov/" class="hover:text-white transition-colors">Тесты для медиков</a>
+                        <a href="/#pricing" class="hover:text-white transition-colors">Тарифы</a>
+                        <a href="/create" class="hover:text-white transition-colors">Конструктор тестов</a>
+                    </div>
+                </div>
+                <div class="space-y-3 text-xs">
+                    <span class="font-bold text-white uppercase tracking-wider block">Документы</span>
+                    <div class="flex flex-col space-y-2 text-zinc-400">
+                        <a href="/docs/public-offer" class="hover:text-white transition-colors">Публичная оферта</a>
+                        <a href="/docs/privacy-policy" class="hover:text-white transition-colors">Политика конфиденциальности</a>
+                        <span class="text-zinc-600">ИНН 773613171558 / ОГРНИП 3245081071286</span>
+                    </div>
+                </div>
+                <div class="space-y-3 text-xs">
+                    <span class="font-bold text-white uppercase tracking-wider block">Поддержка</span>
+                    <p class="text-zinc-400">Вопросы по работе сервиса и предложения:<br><a href="mailto:support@letychka.ru" class="text-indigo-400 hover:underline">support@letychka.ru</a></p>
                 </div>
             </div>
-            
-            <!-- Остальной блок генератора без изменений -->
+            <div class="mt-12 pt-6 border-t border-white/[0.04] flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-zinc-600">
+                <p>© 2024–2026 Летучка AI. Все права защищены.</p>
+                <p>Design &amp; Development <a href="https://dprofile.ru/kozak_developer" target="_blank" rel="noopener" class="text-zinc-500 hover:text-white transition-colors">by Kozak</a></p>
+            </div>
         </div>
-    </section>
+    </footer>
 
-    <section class="benefits-section glass-block">
-        <h2 class="section-title">Почему медицинские преподаватели выбирают Летучку</h2>
-        
-        <div class="benefits-grid">
-            <div class="benefit-card glass-card">
-                <div class="benefit-icon">📋</div>
-                <h3>Стандарты НМО</h3>
-                <p>Автоматическое соответствие требованиям непрерывного медицинского образования</p>
-            </div>
-            
-            <div class="benefit-card glass-card">
-                <div class="benefit-icon">🏥</div>
-                <h3>Клинические кейсы</h3>
-                <p>Генерация ситуационных задач на основе реальных клинических случаев</p>
-            </div>
-            
-            <div class="benefit-card glass-card">
-                <div class="benefit-icon">📊</div>
-                <h3>Аналитика пробелов</h3>
-                <p>Выявление слабых мест в знаниях студентов по конкретным темам</p>
-            </div>
-        </div>
-    </section>
-
-    <section class="medical-use-cases">
-        <h2 class="section-title">Решения для медицинского образования</h2>
-        
-        <div class="case-tabs">
-            <button class="tab-btn active" data-tab="college">Для медицинских колледжей</button>
-            <button class="tab-btn" data-tab="nmo">Для НМО и аккредитации</button>
-            <button class="tab-btn" data-tab="admission">Для вступительных экзаменов</button>
-        </div>
-        
-        <div class="tab-content active" id="college-content">
-            <div class="case-content">
-                <div class="case-text">
-                    <h3>Подготовка студентов медицинских колледжей</h3>
-                    <ul>
-                        <li>Тесты по сестринскому делу с эталонами ответов</li>
-                        <li>Задания по медицинской манипуляционной технике</li>
-                        <li>Контрольные работы по анатомии и физиологии</li>
-                        <li>Ситуационные задачи по клинической практике</li>
-                    </ul>
-                    <a href="#create" class="cta-button">Создать тест для колледжа</a>
-                </div>
-                <div class="case-image">
-                    <img src="{% static 'medical-college.webp' %}" alt="Тесты для медицинских колледжей">
-                </div>
-            </div>
-        </div>
-        
-        <div class="tab-content" id="nmo-content">
-            <!-- Контент для НМО -->
-        </div>
-        
-        <div class="tab-content" id="admission-content">
-            <!-- Контент для вступительных экзаменов -->
-        </div>
-    </section>
-
-    <section class="test-types">
-        <h2 class="section-title">Готовые шаблоны медицинских тестов</h2>
-        
-        <div class="test-cards">
-            <div class="test-card glass-card">
-                <div class="test-icon">💊</div>
-                <h3>Фармакология</h3>
-                <ul>
-                    <li>Классификация лекарственных средств</li>
-                    <li>Механизмы действия препаратов</li>
-                    <li>Побочные эффекты и противопоказания</li>
-                </ul>
-                <button class="use-template">Использовать шаблон</button>
-            </div>
-            
-            <div class="test-card glass-card">
-                <div class="test-icon">🩺</div>
-                <h3>Сестринское дело</h3>
-                <ul>
-                    <li>Техника выполнения манипуляций</li>
-                    <li>Документация и отчетность</li>
-                    <li>Этика и деонтология</li>
-                </ul>
-                <button class="use-template">Использовать шаблон</button>
-            </div>
-            
-            <div class="test-card glass-card">
-                <div class="test-icon">🚨</div>
-                <h3>Неотложная помощь</h3>
-                <ul>
-                    <li>Алгоритмы действий при ЧС</li>
-                    <li>Диагностика неотложных состояний</li>
-                    <li>Протоколы экстренной помощи</li>
-                </ul>
-                <button class="use-template">Использовать шаблон</button>
-            </div>
-        </div>
-    </section>
-
-    <section class="pricing" id="pricing">
-        <div class="pricing-intro">
-            <h2 class="section-title">
-                <span class="gradient-text">Специальные тарифы для медицинских учреждений</span>
-            </h2>
-        </div>
-
-        <div class="pricing-grid">
-            <!-- Для преподавателей -->
-            <div class="pricing-card glass">
-                <div class="badge">Для преподавателей</div>
-                <h3 class="plan-name">Медицинский</h3>
-                <div class="price-container">
-                    <span class="price">590₽</span>
-                    <span class="period">/месяц</span>
-                </div>
-                
-                <ul class="plan-features">
-                    <li>100 медицинских тестов</li>
-                    <li>До 20 вопросов в тесте</li>
-                    <li>Шаблоны по НМО и аккредитации</li>
-                    <li>PDF для печати без водяных знаков</li>
-                </ul>
-                <button class="cta-button primary">Выбрать для преподавателя</button>
-            </div>
-            
-            <!-- Для колледжей -->
-            <div class="pricing-card glass popular">
-                <div class="badge">Для колледжей</div>
-                <h3 class="plan-name">Профессиональный</h3>
-                <div class="price-container">
-                    <span class="price">2 990₽</span>
-                    <span class="period">/месяц</span>
-                </div>
-                
-                <ul class="plan-features">
-                    <li>Неограниченное число тестов</li>
-                    <li>До 30 вопросов в тесте</li>
-                    <li>White-label решение</li>
-                    <li>Аналитика по группам и потокам</li>
-                    <li>Интеграция с Moodle</li>
-                </ul>
-                <button class="cta-button primary">Для медицинских колледжей</button>
-            </div>
-            
-            <!-- Для НМО -->
-            <div class="pricing-card glass">
-                <div class="badge">Для НМО</div>
-                <h3 class="plan-name">Аккредитационный</h3>
-                <div class="price-container">
-                    <span class="price">1 290₽</span>
-                    <span class="period">/месяц</span>
-                </div>
-                
-                <ul class="plan-features">
-                    <li>Тесты для аккредитации</li>
-                    <li>Автоматическая генерация отчетов НМО</li>
-                    <li>Обновляемые базы вопросов</li>
-                    <li>Поддержка стандартов Минздрава</li>
-                </ul>
-                <button class="cta-button">Для центров НМО</button>
-            </div>
-        </div>
-    </section>
-
-    <section class="faq-section">
-        <h2 class="section-title">Частые вопросы о медицинских тестах</h2>
-        
-        <div class="faq-grid">
-            <div class="faq-card glass-card">
-                <h3>Как создать тест для НМО?</h3>
-                <p>Загрузите актуальные клинические рекомендации → выберите категорию "Аккредитация" → сгенерируйте тест с ответами → экспортируйте результаты в формате, подходящем для системы НМО.</p>
-            </div>
-            
-            <div class="faq-card glass-card">
-                <h3>Есть ли шаблоны для вступительных испытаний?</h3>
-                <p>Да, в разделе "Шаблоны" доступны готовые структуры тестов по медицинской психологии, биологии и основам сестринского дела, соответствующие требованиям медицинских колледжей.</p>
-            </div>
-            
-            <div class="faq-card glass-card">
-                <h3>Можно ли создать ситуационные задачи?</h3>
-                <p>Да, при загрузке клинических случаев система автоматически генерирует кейсы с вопросами по диагностике и тактике лечения.</p>
-            </div>
-        </div>
-    </section>
-
-    <section class="cta-section glass-block">
-        <h2 class="section-title">Начните создавать профессиональные медицинские тесты</h2>
-        <p class="section-subtitle">Первый тест - бесплатно, без регистрации</p>
-        
-        <div class="cta-buttons">
-            <a href="#create-now" class="glass-button">Создать медицинский тест</a>
-            <a href="#templates" class="cta-button ghost">Посмотреть шаблоны</a>
-        </div>
-    </section>
-
-    <!-- Остальные секции (footer и т.д.) без изменений -->
+    <script>
+    (function () {
+        'use strict';
+        var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        var targets = document.querySelectorAll('[data-reveal]');
+        if ('IntersectionObserver' in window && !reduce) {
+            var io = new IntersectionObserver(function (entries) {
+                entries.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+            }, { rootMargin: '0px 0px -12% 0px', threshold: 0.15 });
+            targets.forEach(function (el) { io.observe(el); });
+        } else {
+            targets.forEach(function (el) { el.classList.add('in'); });
+        }
+        var nav = document.getElementById('island-nav');
+        var compact = false;
+        function onScroll() {
+            var y = window.scrollY, next = compact ? y > 32 : y > 80;
+            if (next !== compact) { compact = next; nav.classList.toggle('is-compact', compact); }
+        }
+        window.addEventListener('scroll', onScroll, { passive: true });
+        onScroll();
+    })();
+    </script>
 </body>
 </html>

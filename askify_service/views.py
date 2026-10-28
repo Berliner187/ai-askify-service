@@ -75,6 +75,7 @@ from askify_app.middleware import check_blocked, subscription_required, check_le
 
 import openai
 import markdown
+from markdown.extensions.toc import slugify_unicode
 import requests
 import aiofiles
 import PyPDF2
@@ -89,6 +90,7 @@ from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
 from urllib.parse import quote
 import docx
+import html
 
 
 from reportlab.lib import colors
@@ -147,6 +149,16 @@ MAX_LOGIN_ATTEMPTS = 5
 LOCKOUT_TIME = 60 * 30
 FREE_TEST_LIMIT__TEXT = 5
 
+DOCS_DIR = os.path.join(BASE_DIR, "docs")
+SLUG_RE = re.compile(r"^[a-z0-9-]+$")
+H1_RE = re.compile(r"<h1[^>]*>.*?</h1>\s*", re.S)
+TABLE_RE = re.compile(r"(<table>.*?</table>)", re.S)
+FIRST_P_RE = re.compile(r"<p>(.*?)</p>", re.S)
+TAG_RE = re.compile(r"<[^>]+>")
+NUM_RE = re.compile(r"(\d+(?:\.\d+)*\.?)\s+")
+HEAD_NUM_RE = re.compile(r"(<h[23][^>]*>)(\d+(?:\.\d+)*\.?)\s+")
+CLAUSE_RE = re.compile(r"<p>(\d+\.\d+(?:\.\d+)*\.?)\s+")
+
 MOSCOW_TZ = ZoneInfo("Europe/Moscow")
 
 
@@ -172,13 +184,8 @@ def pro_landing(request):
     return render(request, 'pro_landing.html', context)
 
 
-@check_legal_process
 def for_prepods(request):
-    context = {
-        'username': request.user.username if request.user.is_authenticated else 0,
-        'debug': DEBUG
-    }
-    return render(request, 'askify_service/for_prepods.html', context)
+    return redirect("neyroset_dlya_testov")
 
 
 def solving_tests_promo(request):
@@ -187,6 +194,14 @@ def solving_tests_promo(request):
 
 def teachers_promo(request):
     return render(request, 'landings/teachers.html')
+
+
+def dlya_uchenikov(request):
+    return render(request, 'landings/dlya-uchenikov.html')
+
+
+def neyroset_dlya_testov(request):
+    return render(request, 'landings/neyroset-dlya-testov.html')
 
 
 def medicine_promo(request):
@@ -1234,20 +1249,24 @@ def api_update_survey_title(request, survey_id):
     """Быстрое редактирование названия теста."""
     survey = Survey.objects.filter(survey_id=survey_id).first()
     if not survey:
+        tracer_l.warning("Тест не найден")
         return JsonResponse({"error": "Тест не найден"}, status=404)
 
     allowed, error_msg = check_survey_edit_permissions(request, survey)
     if not allowed:
+        tracer_l.warning(f"{error_msg}")
         return JsonResponse({"error": error_msg}, status=403)
 
     try:
         data = json.loads(request.body)
         new_title = data.get("title", "").strip()
         if not new_title or len(new_title) > 255:
+            tracer_l.warning("Некорректная длина названия")
             return JsonResponse({"error": "Некорректная длина названия (1-255 символов)"}, status=400)
 
         survey.title = new_title
         survey.save(update_fields=["title", "updated_at"])
+        tracer_l.info(f"success new title: {survey.title}")
         return JsonResponse({"status": "success", "title": survey.title})
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=400)
@@ -2696,6 +2715,7 @@ def take_test(request, survey_id):
         "author": author_username if len(author_username) < 40 else "Аноним",
         "page_title": f"{survey.title} ({survey.created_at})",
         "is_creator": get_is_creator(request, survey),
+        "username": get_username(request) if request.user.is_authenticated else ""
     }
     log_traffic(request, "Пройти тест")
     
@@ -8352,26 +8372,143 @@ class TelegramAuthView(View):
             )
 
 
+SHORT_TITLES = {
+    "public-offer": "Публичная оферта",
+    "privacy-policy": "Политика конфиденциальности",
+}
+ 
+MONTHS_RU = [
+    "января", "февраля", "марта", "апреля", "мая", "июня",
+    "июля", "августа", "сентября", "октября", "ноября", "декабря",
+]
+ 
+ 
+def _make_md():
+    return markdown.Markdown(
+        extensions=["meta", "extra", "sane_lists", "smarty", "toc"],
+        extension_configs={
+            "toc": {
+                # Кириллица в якорях: #общие-положения, а не пустой id
+                "slugify": slugify_unicode,
+                "permalink": "#",
+                "permalink_title": "Ссылка на раздел",
+            },
+            "smarty": {
+                "substitutions": {
+                    "left-double-quote": "«",
+                    "right-double-quote": "»",
+                },
+            },
+        },
+        output_format="html",
+    )
+ 
+ 
+def _ru_date(dt):
+    return f"{dt.day} {MONTHS_RU[dt.month - 1]} {dt.year}"
+ 
+ 
+def _plain(text):
+    return html.unescape(TAG_RE.sub("", text)).strip()
+ 
+ 
+@lru_cache(maxsize=64)
+def _render_doc(path, mtime):
+    """Кэш по (путь, mtime): правишь .md на сервере — страница обновляется сама."""
+    with open(path, "r", encoding="utf-8") as f:
+        source = f.read()
+ 
+    md = _make_md()
+    body = md.convert(source)
+    meta = {k: " ".join(v) for k, v in getattr(md, "Meta", {}).items()}
+    tokens = md.toc_tokens
+ 
+    slug = os.path.splitext(os.path.basename(path))[0]
+    title = meta.get("title")
+ 
+    if tokens and tokens[0]["level"] == 1:
+        title = title or html.unescape(tokens[0]["name"])
+        sections = tokens[0]["children"] + tokens[1:]
+        body = H1_RE.sub("", body, count=1)
+    else:
+        sections = tokens
+    title = title or slug.replace("-", " ").capitalize()
+ 
+    def _split_num(name):
+        name = html.unescape(name)
+        m = NUM_RE.match(name)
+        return (m.group(1), name[m.end():]) if m else ("", name)
+ 
+    toc = []
+    for t in sections:
+        num, name = _split_num(t["name"])
+        toc.append({
+            "id": t["id"],
+            "num": num,
+            "name": name,
+            "children": [
+                dict(zip(("num", "name"), _split_num(c["name"])), id=c["id"])
+                for c in t["children"]
+            ],
+        })
+ 
+    body = HEAD_NUM_RE.sub(r'\1<span class="n">\2</span>', body)
+    body = CLAUSE_RE.sub(r'<p class="cl"><span class="n">\1</span>', body)
+    body = TABLE_RE.sub(r'<div class="doc-table">\1</div>', body)
+ 
+    first_p = FIRST_P_RE.search(body)
+    description = _plain(first_p.group(1))[:160] if first_p else title
+ 
+    words = len(re.findall(r"\w+", _plain(body)))
+    updated_dt = datetime.fromtimestamp(mtime)
+ 
+    return {
+        "slug": slug,
+        "title": title,
+        "short": meta.get("short") or SHORT_TITLES.get(slug) or title,
+        "html": body,
+        "toc": toc,
+        "description": meta.get("description", description),
+        "updated": meta.get("updated") or _ru_date(updated_dt),
+        "updated_iso": updated_dt.date().isoformat(),
+        "minutes": max(1, round(words / 180)),
+    }
+ 
+ 
+def _load_doc(path):
+    return _render_doc(path, os.path.getmtime(path))
+ 
+ 
+def _list_docs():
+    items = []
+    for name in sorted(os.listdir(DOCS_DIR)):
+        if name.endswith(".md"):
+            doc = _load_doc(os.path.join(DOCS_DIR, name))
+            items.append({"slug": doc["slug"], "title": doc["short"]})
+    return items
+ 
+ 
 @check_legal_process
 def document_view(request, slug):
-    file_path = os.path.join(BASE_DIR, "docs", f"{slug}.md")
-    tracer_l.debug(f"file_path: {file_path}")
-
-    if not os.path.exists(file_path):
+    if not SLUG_RE.fullmatch(slug):
         return render(request, "404.html", status=404)
-
-    with open(file_path, "r", encoding="utf-8") as file:
-        content = file.read()
-
-    content_html = markdown.markdown(content)
-
-    content = {
-        "title": slug.replace("-", " ").title(),
-        "content": content_html,
+ 
+    file_path = os.path.join(DOCS_DIR, f"{slug}.md")
+    tracer_l.debug(f"file_path: {file_path}")
+ 
+    if not os.path.isfile(file_path):
+        return render(request, "404.html", status=404)
+ 
+    doc = _load_doc(file_path)
+ 
+    context = {
+        "title": doc["title"],
+        "doc": doc,
+        "documents": _list_docs(),
+        "canonical_url": request.build_absolute_uri(request.path),
         "year": get_year_now(),
     }
-
-    return render(request, "document.html", content)
+    return render(request, "document.html", context)
 
 
 @check_legal_process

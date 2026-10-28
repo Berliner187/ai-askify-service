@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="ru" class="scroll-smooth">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест для учеников онлайн — платформа для учителя с автопроверкой | Летучка</title>
+    <meta name="description" content="Создайте тест для учеников онлайн бесплатно: QR-код на доску, сдача со смартфона без регистрации, автопроверка и ведомость в Excel.">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <meta name="theme-color" content="#0F0E13">
+    <link rel="canonical" href="https://letychka.ru/test-dlya-uchenikov/">
+
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://letychka.ru/test-dlya-uchenikov/">
+    <meta property="og:title" content="Тест для учеников онлайн — QR на доску, автопроверка, ведомость в Excel">
+    <meta property="og:description" content="Загрузите параграф, выведите QR-код на доску — ученики сдают со смартфонов без регистрации, Летучка проверяет сама.">
+    <meta property="og:image" content="https://letychka.ru/static/letychka-banner-1703.webp">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:site_name" content="Летучка — ИИ-генератор тестов по тексту">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://letychka.ru/static/letychka-banner-1703.webp">
+
+    <link rel="icon" href="{% static 'img/favicon.ico' %}" type="image/x-icon">
+    <link rel="apple-touch-icon" sizes="180x180" href="{% static 'img/apple-touch-icon.png' %}">
+    <meta name="yandex-verification" content="be2137152cc2e9ac">
+
+    <script>document.documentElement.classList.add('js')</script>
+
+    <link rel="preload" as="image" href="{% static 'poster.webp' %}" fetchpriority="high">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=Wix+Madefor+Display:wght@600;700;800&display=swap" rel="stylesheet">
+
+    {% if debug %}
+        <script src="https://cdn.tailwindcss.com"></script>
+    {% else %}
+        <script src="{% static 'vendor/tailwind.full.min.js' %}"></script>
+    {% endif %}
+
+    <style>
+        :root { --bg-base:#0F0E13; --ease:cubic-bezier(0.16,1,0.3,1); }
+        html, body { overflow-x: clip; }
+        body { background-color:var(--bg-base); font-family:'Golos Text',-apple-system,BlinkMacSystemFont,sans-serif; color:#E5E7EB; letter-spacing:-0.012em; -webkit-font-smoothing:antialiased; }
+        h1,h2,h3,h4,.font-display { font-family:'Wix Madefor Display','Golos Text',sans-serif; letter-spacing:-0.03em; }
+        details summary::-webkit-details-marker { display:none; }
+        details summary { list-style:none; }
+        .icon { width:1em; height:1em; display:inline-block; flex-shrink:0; }
+        section[id] { scroll-margin-top:84px; }
+
+        /* CTA */
+        @property --border-angle { syntax:'<angle>'; initial-value:0deg; inherits:false; }
+        @keyframes spinAngle { to { --border-angle:360deg; } }
+        .cta-wrap { position:relative; display:inline-flex; padding:3px; border-radius:999px; isolation:isolate; transition:transform .3s var(--ease); }
+        .cta-wrap:hover { transform:translateY(-1px) scale(1.02); }
+        .cta-wrap:active { transform:scale(.98); }
+        .cta-ring,.cta-glow { position:absolute; inset:0; border-radius:inherit; pointer-events:none; z-index:-1;
+            background:conic-gradient(from var(--border-angle),rgba(255,255,255,.18) 0%,rgba(255,255,255,.18) 35%,#A5B4FC 55%,#FFF 66%,#818CF8 78%,rgba(255,255,255,.18) 100%);
+            animation:spinAngle 3s linear infinite; }
+        .cta-glow { inset:-4px; filter:blur(12px); opacity:.45; }
+        .cta-btn { position:relative; display:inline-flex; align-items:center; gap:14px; height:54px; padding:0 8px 0 28px; border-radius:999px; background:#fff; color:#0F0E13; font-size:14px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; white-space:nowrap; box-shadow:inset 0 -2px 0 rgba(15,14,19,.08),0 10px 32px -10px rgba(165,180,252,.55); }
+        @media (min-width:640px){ .cta-btn { height:62px; padding:0 10px 0 36px; font-size:15px; } }
+        .cta-arrow { width:38px; height:38px; border-radius:999px; display:grid; place-items:center; background:#4F46E5; color:#fff; font-size:14px; transition:transform .3s var(--ease); }
+        @media (min-width:640px){ .cta-arrow { width:44px; height:44px; } }
+        .cta-wrap:hover .cta-arrow { transform:translateX(3px); }
+
+        /* intro */
+        @keyframes intro-up { from{opacity:0;transform:translateY(26px);filter:blur(10px)} to{opacity:1;transform:none;filter:blur(0)} }
+        @keyframes intro-frame { from{opacity:0;transform:perspective(1400px) rotateX(16deg) translateY(70px) scale(.93)} to{opacity:1;transform:none} }
+        @keyframes intro-glow { 0%{opacity:0;transform:scale(.86)} 60%{opacity:1} 100%{opacity:1;transform:scale(1)} }
+        @keyframes intro-track { from{letter-spacing:.5em;opacity:0} to{letter-spacing:.1em;opacity:1} }
+        @keyframes intro-nav { from{opacity:0;transform:translateY(-14px)} to{opacity:1;transform:none} }
+        .intro { animation:intro-up .9s var(--ease) var(--t,0s) both; }
+        .intro-track { animation:intro-track 1.1s var(--ease) both; }
+        .intro-frame { animation:intro-frame 1.4s var(--ease) .55s both; transform-origin:50% 0; }
+        .intro-glow { animation:intro-glow 2s var(--ease) .45s both; }
+        .intro-nav { animation:intro-nav .7s var(--ease) .05s backwards; }
+
+        /* reveal */
+        html.js [data-reveal] { opacity:0; transform:translateY(32px); filter:blur(6px);
+            transition:opacity .8s var(--ease) calc(var(--i,0)*90ms),transform 1s var(--ease) calc(var(--i,0)*90ms),filter .8s var(--ease) calc(var(--i,0)*90ms); }
+        html.js [data-reveal].in { opacity:1; transform:none; filter:none; }
+
+        /* nav island */
+        .isl-wrap { position:fixed; top:0; left:0; right:0; z-index:50; padding:12px 12px 0; pointer-events:none; }
+        @media (min-width:640px){ .isl-wrap { padding:16px 16px 0; } }
+        .isl { position:relative; pointer-events:auto; max-width:1280px; margin-inline:auto; border-radius:24px; background:rgba(20,19,26,.55); -webkit-backdrop-filter:blur(20px) saturate(160%); backdrop-filter:blur(20px) saturate(160%); transition:max-width .7s var(--ease),background-color .4s ease; }
+        .isl::before { content:''; position:absolute; inset:0; border-radius:inherit; padding:1px; pointer-events:none;
+            background:linear-gradient(180deg,rgba(255,255,255,.15),rgba(255,255,255,.045) 45%,rgba(255,255,255,.07));
+            -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0); -webkit-mask-composite:xor; mask-composite:exclude; }
+        .is-compact .isl { background:rgba(14,13,19,.85); }
+        @media (min-width:1024px){ .is-compact .isl { max-width:960px; } }
+        .isl-bar { display:flex; align-items:center; justify-content:space-between; gap:12px; height:56px; padding:0 8px 0 16px; }
+        .isl-logo img { display:block; height:26px; width:auto; }
+        @media (min-width:640px){ .isl-logo img { height:30px; } }
+        .isl-links { display:none; align-items:center; gap:2px; }
+        @media (min-width:1024px){ .isl-links { display:flex; } }
+        .isl-links a { display:inline-flex; align-items:center; height:32px; padding:0 12px; border-radius:12px; font-size:13.5px; font-weight:500; color:#A1A1AA; transition:color .2s ease,background-color .2s ease; }
+        .isl-links a:hover { color:#F4F4F5; background:rgba(255,255,255,.05); }
+        .isl-btn { display:inline-flex; align-items:center; justify-content:center; gap:10px; height:40px; padding:0 16px; border-radius:16px; font-size:12px; font-weight:600; white-space:nowrap; color:#fff; background:#4F46E5; box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 6px 18px -8px rgba(79,70,229,.8); transition:background-color .2s ease; }
+        .isl-btn:hover { background:#5B54EA; }
+        .isl-ghost { background:none; box-shadow:none; color:#D4D4D8; }
+        .isl-ghost:hover { background:rgba(255,255,255,.06); color:#fff; }
+        @media (max-width:639px){ .isl-login { display:none; } }
+
+        /* step number & cards */
+        .card { position:relative; border-radius:32px; background:#121117; border:1px solid rgba(255,255,255,.09); transition:border-color .3s ease; }
+        .card:hover { border-color:rgba(255,255,255,.16); }
+        .card::before { content:''; position:absolute; top:0; left:12%; right:12%; height:1px; pointer-events:none; background:linear-gradient(90deg,transparent,rgba(255,255,255,.14),transparent); }
+        .qr-box { width:150px; padding:12px; border-radius:22px; background:#fff; }
+        .phone { width:100%; max-width:250px; border-radius:34px; padding:8px; background:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,.03)); }
+        .phone-in { border-radius:28px; background:#16151C; padding:18px 14px; }
+        .opt { display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:12px; font-size:12.5px; color:#A1A1AA; background:rgba(255,255,255,.03); box-shadow:inset 0 0 0 1px rgba(255,255,255,.06); }
+        .opt.ok { color:#fff; background:rgba(99,102,241,.14); box-shadow:inset 0 0 0 1px rgba(129,140,248,.45); }
+        .opt i { width:20px; height:20px; border-radius:7px; display:grid; place-items:center; font-style:normal; font-size:10px; font-weight:700; background:rgba(255,255,255,.06); }
+        .opt.ok i { background:#4F46E5; color:#fff; }
+        .bar-track { height:8px; border-radius:99px; background:rgba(255,255,255,.06); overflow:hidden; }
+        .bar-track i { display:block; height:100%; border-radius:inherit; background:#818CF8; }
+        .bar-track.low i { background:#FB7185; }
+        @media (prefers-reduced-motion:reduce){ *,*::before,*::after { animation-duration:.01ms!important; animation-iteration-count:1!important; transition-duration:.01ms!important; transition-delay:0ms!important; } }
+    </style>
+
+    <script>
+        window.addEventListener('load', function () {
+            setTimeout(function () {
+                (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+                m[i].l=1*new Date();
+                for (var j = 0; j < document.scripts.length; j++) { if (document.scripts[j].src === r) { return; } }
+                k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+                (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+                ym(98823704, "init", { clickmap: true, trackLinks: true, accurateTrackBounce: true, webvisor: true });
+            }, 1500);
+        });
+    </script>
+    <noscript><div><img src="https://mc.yandex.ru/watch/98823704" style="position:absolute; left:-9999px;" alt=""></div></noscript>
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {"@type": "ListItem", "position": 1, "name": "Летучка", "item": "https://letychka.ru/"},
+        {"@type": "ListItem", "position": 2, "name": "Тест для учеников онлайн", "item": "https://letychka.ru/test-dlya-uchenikov/"}
+      ]
+    }
+    </script>
+</head>
+<body class="min-h-screen">
+
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+        <symbol id="i-arrow" viewBox="0 0 16 16"><path d="M3 8h9M8.5 4L12.5 8l-4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+        <symbol id="i-chevron" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+        <symbol id="i-check" viewBox="0 0 16 16"><path d="M3.5 8.5L6.5 11.5L12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+        <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M4 7l8 6 8-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+        <symbol id="i-tg" viewBox="0 0 24 24"><path d="M21.5 4.2L2.9 11.4c-1.3.5-1.2 1.3-.2 1.6l4.7 1.5 1.8 5.6c.2.6.4.8.9.8.4 0 .6-.2.9-.4l2.3-2.2 4.7 3.5c.9.5 1.5.2 1.7-.8l3.1-14.5c.3-1.3-.5-1.9-1.3-1.5zM9.6 14.3l8.6-7.6c.4-.3-.1-.5-.6-.2L7.9 13.3" fill="currentColor"/></symbol>
+    </svg>
+
+    <header id="island-nav" class="isl-wrap">
+        <div class="isl intro-nav">
+            <div class="isl-bar">
+                <a href="/" class="isl-logo" title="Летучка — генератор тестов">
+                    <img src="{% static 'img/logo-header.webp' %}" alt="Летучка" height="32">
+                </a>
+                <nav class="isl-links" aria-label="Разделы страницы">
+                    <a href="#how">Как проходит урок</a>
+                    <a href="#results">Результаты</a>
+                    <a href="#formats">Форматы</a>
+                    <a href="#faq">FAQ</a>
+                </nav>
+                <div class="flex items-center gap-1.5">
+                    {% if username and username != 0 and username != "0" %}
+                        <a href="{% url 'create' %}" class="isl-btn">Личный кабинет</a>
+                    {% else %}
+                        <a href="/login" class="isl-btn isl-ghost isl-login">Войти</a>
+                        <a href="{% url 'create' %}" class="isl-btn">Создать тест <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main>
+    <!-- ============ HERO ============ -->
+    <section id="hero" class="relative pt-28 sm:pt-36 pb-12 sm:pb-20 max-w-7xl mx-auto text-center flex flex-col items-center px-4 sm:px-6">
+        <div class="intro-track inline-flex items-center gap-1.5 font-mono text-[10px] sm:text-xs uppercase text-zinc-400 select-none mb-4 sm:mb-8">
+            <span class="text-zinc-600">[</span><span>Для учителей и репетиторов</span><span class="text-zinc-600">]</span>
+        </div>
+
+        <h1 class="text-[1.7rem] sm:text-5xl md:text-6xl font-extrabold uppercase tracking-tight text-white leading-[1.15] sm:leading-[1.08] max-w-4xl mx-auto font-display">
+            <span class="intro block" style="--t:.12s">Тест для учеников онлайн:</span>
+            <span class="intro block text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 via-white to-zinc-300" style="--t:.24s">раздайте классу и&nbsp;получите оценки</span>
+        </h1>
+
+        <p class="intro mt-4 sm:mt-6 text-sm sm:text-base text-zinc-300 max-w-md sm:max-w-2xl mx-auto leading-relaxed" style="--t:.38s">
+            Загрузите параграф или методичку и&nbsp;выведите QR-код на&nbsp;доску. Ученики сдают тест со&nbsp;смартфонов без регистрации, а&nbsp;Летучка проверяет работы сама.
+        </p>
+        <p class="intro mt-2 text-sm sm:text-base text-zinc-400 max-w-md sm:max-w-2xl mx-auto leading-relaxed" style="--t:.46s">
+            Вечер с&nbsp;красной ручкой над&nbsp;стопкой тетрадей больше не&nbsp;нужен: баллы и&nbsp;ответы каждого ученика уже в&nbsp;кабинете.
+        </p>
+
+        <div class="intro mt-8 sm:mt-10 flex flex-col items-center gap-4 sm:gap-5 w-full" style="--t:.56s">
+            <div class="cta-wrap">
+                <span class="cta-glow" aria-hidden="true"></span>
+                <span class="cta-ring" aria-hidden="true"></span>
+                <a href="{% url 'create' %}" class="cta-btn">
+                    <span>Создать тест для класса</span>
+                    <span class="cta-arrow"><svg class="icon"><use href="#i-arrow"/></svg></span>
+                </a>
+            </div>
+            <div class="flex flex-wrap justify-center items-center gap-x-3 gap-y-1 text-[11px] sm:text-xs text-zinc-400">
+                <span>Ученикам без регистрации</span>
+                <span aria-hidden="true" class="text-zinc-600">•</span>
+                <span>QR-код и ссылка</span>
+                <span aria-hidden="true" class="text-zinc-600">•</span>
+                <span>Ведомость в Excel</span>
+            </div>
+        </div>
+
+        <div class="mt-10 sm:mt-14 relative w-full max-w-4xl mx-auto">
+            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-screen sm:w-[240vw] max-w-none sm:max-w-[3600px] pointer-events-none -z-10 select-none">
+                <div class="intro-glow">
+                    <img src="{% static 'img/hero-light-bridge.webp' %}" alt="" width="1400" height="770" class="w-full h-auto mix-blend-screen" decoding="async" fetchpriority="low">
+                </div>
+            </div>
+            <div class="intro-frame relative w-full rounded-[20px] sm:rounded-[36px] p-1 sm:p-1.5 bg-gradient-to-b from-white/[0.12] to-white/[0.02] shadow-[0_16px_40px_-10px_rgba(0,0,0,0.8)] border border-white/[0.06]">
+                <div class="relative rounded-[16px] sm:rounded-[32px] overflow-hidden bg-zinc-950 aspect-[16/9]">
+                    <video autoplay loop muted playsinline preload="metadata" poster="{% static 'poster.webp' %}" class="w-full h-full object-cover" aria-label="Как создать тест для учеников в Летучке">
+                        <source src="{% static 'letychka-hero.mp4' %}" type="video/mp4">
+                    </video>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ КАК ПРОХОДИТ УРОК ============ -->
+    <section id="how" class="relative py-20 md:py-28 max-w-7xl mx-auto px-4 md:px-8">
+        <div class="max-w-3xl mx-auto text-center space-y-4 mb-14 md:mb-16" data-reveal>
+            <div class="inline-flex items-center gap-1.5 font-mono text-[10px] sm:text-[11px] tracking-widest text-zinc-400 uppercase select-none mb-3 sm:mb-6">
+                <span class="text-zinc-600">[ 01</span><span class="text-zinc-700">//</span><span>Как проходит урок ]</span>
+            </div>
+            <h2 class="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-white leading-tight font-display">
+                Три шага от&nbsp;параграфа <br class="hidden sm:inline">
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 via-white to-zinc-300">до&nbsp;оценок в&nbsp;журнале</span>
+            </h2>
+            <p class="text-sm md:text-base text-zinc-400 max-w-xl mx-auto leading-relaxed">
+                Подготовка занимает несколько минут, а&nbsp;проверочная идёт на&nbsp;уроке, пока вы&nbsp;занимаетесь классом.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            <!-- 1 -->
+            <article class="card p-6 sm:p-8 flex flex-col" data-reveal style="--i:0">
+                <div class="flex items-center justify-between font-mono text-[11px] tracking-wider text-zinc-500 uppercase"><span>Шаг</span><span class="text-zinc-300">01 / 03</span></div>
+                <h3 class="mt-5 text-xl sm:text-2xl font-bold text-white font-display">Загрузите материал урока</h3>
+                <p class="mt-3 text-sm text-zinc-400 leading-relaxed">Вставьте текст параграфа или прикрепите PDF, Word, TXT до&nbsp;25&nbsp;МБ. Нейросеть составит вопросы с&nbsp;вариантами ответов за&nbsp;считанные секунды.</p>
+                <div class="mt-auto pt-7">
+                    <div class="rounded-2xl bg-white/[0.03] ring-1 ring-white/[0.07] p-4 text-[12.5px] leading-relaxed text-zinc-400">
+                        <div class="flex items-center justify-between text-[11px] font-semibold text-zinc-500 mb-2"><span>§14. Строение клетки</span><span class="font-mono">10 вопросов</span></div>
+                        Митохондрии — двумембранные органоиды, в&nbsp;которых идёт синтез АТФ. Внутренняя мембрана образует кристы…
+                    </div>
+                </div>
+            </article>
+            <!-- 2 -->
+            <article class="card p-6 sm:p-8 flex flex-col" data-reveal style="--i:1">
+                <div class="flex items-center justify-between font-mono text-[11px] tracking-wider text-zinc-500 uppercase"><span>Шаг</span><span class="text-zinc-300">02 / 03</span></div>
+                <h3 class="mt-5 text-xl sm:text-2xl font-bold text-white font-display">Выведите QR-код на&nbsp;доску</h3>
+                <p class="mt-3 text-sm text-zinc-400 leading-relaxed">Ученики наводят камеру, вводят имя и&nbsp;фамилию и&nbsp;отвечают. Регистрация и&nbsp;приложение не&nbsp;нужны. Ссылку можно отправить и&nbsp;в&nbsp;чат класса.</p>
+                <div class="mt-auto pt-7 flex items-center gap-4">
+                    <div class="qr-box shrink-0"><svg viewBox="0 0 21 21" shape-rendering="crispEdges" aria-hidden="true" style="display:block;width:100%;height:auto"><path d="M0 0h7v7h-7zM14 0h7v7h-7zM0 14h7v7h-7z" fill="#0F0E13"/><path d="M1 1h5v5h-5zM15 1h5v5h-5zM1 15h5v5h-5z" fill="#fff"/><path d="M2 2h3v3h-3zM16 2h3v3h-3zM2 16h3v3h-3zM9 0h2v2h-2zM8 3h2v2h-2zM11 4h2v2h-2zM8 8h2v2h-2zM12 8h3v2h-3zM16 9h2v2h-2zM19 8h2v3h-2zM9 11h3v2h-3zM14 12h2v3h-2zM17 14h4v2h-4zM9 15h2v3h-2zM12 17h3v2h-3zM16 18h2v3h-2zM19 18h2v2h-2zM9 19h2v2h-2zM0 9h2v2h-2zM3 9h3v2h-3zM6 12h2v2h-2z" fill="#0F0E13"/></svg></div>
+                    <div class="text-sm leading-snug"><b class="text-white font-semibold">Строение клетки, §14</b><span class="block mt-1 text-xs text-zinc-500">10 вопросов, около 7&nbsp;минут</span></div>
+                </div>
+            </article>
+            <!-- 3 -->
+            <article class="card p-6 sm:p-8 flex flex-col" data-reveal style="--i:2">
+                <div class="flex items-center justify-between font-mono text-[11px] tracking-wider text-zinc-500 uppercase"><span>Шаг</span><span class="text-zinc-300">03 / 03</span></div>
+                <h3 class="mt-5 text-xl sm:text-2xl font-bold text-white font-display">Получите результаты сразу</h3>
+                <p class="mt-3 text-sm text-zinc-400 leading-relaxed">Работы проверяются сами. Ответы каждого ученика видны в&nbsp;кабинете, а&nbsp;сводку по&nbsp;группе можно выгрузить в&nbsp;Excel для&nbsp;журнала.</p>
+                <div class="mt-auto pt-7">
+                    <div class="rounded-2xl bg-white/[0.03] ring-1 ring-white/[0.07] p-4">
+                        <div class="flex items-baseline justify-between"><span class="text-[11px] font-semibold text-zinc-500">Сдали</span><span class="font-display text-2xl font-extrabold text-white">24<span class="text-zinc-500 text-base"> из&nbsp;28</span></span></div>
+                        <div class="bar-track mt-3"><i style="width:86%"></i></div>
+                    </div>
+                </div>
+            </article>
+        </div>
+    </section>
+
+    <!-- ============ РЕЗУЛЬТАТЫ ============ -->
+    <section id="results" class="relative py-20 md:py-28 max-w-7xl mx-auto px-4 md:px-8">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+            <div class="space-y-5" data-reveal>
+                <div class="inline-flex items-center gap-1.5 font-mono text-[10px] sm:text-[11px] tracking-widest text-zinc-400 uppercase select-none">
+                    <span class="text-zinc-600">[ 02</span><span class="text-zinc-700">//</span><span>Что видит учитель ]</span>
+                </div>
+                <h2 class="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-white leading-tight font-display">
+                    Результаты каждого ученика <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 via-white to-zinc-300">и&nbsp;слабые темы класса</span>
+                </h2>
+                <p class="text-sm md:text-base text-zinc-400 leading-relaxed max-w-lg">
+                    Сразу после сдачи у&nbsp;вас есть баллы, разбор ответов и&nbsp;таблица для журнала. По&nbsp;процентам верных ответов видно, какую тему стоит повторить завтра.
+                </p>
+                <ul class="space-y-3 text-sm text-zinc-300 pt-2">
+                    <li class="flex items-center gap-2.5"><svg class="icon text-base text-indigo-400"><use href="#i-check"/></svg>Ответы и&nbsp;баллы каждого ученика в&nbsp;личном кабинете</li>
+                    <li class="flex items-center gap-2.5"><svg class="icon text-base text-indigo-400"><use href="#i-check"/></svg>Ведомость группы в&nbsp;Excel</li>
+                    <li class="flex items-center gap-2.5"><svg class="icon text-base text-indigo-400"><use href="#i-check"/></svg>Процент верных по&nbsp;каждому вопросу и&nbsp;топ участников <span class="text-zinc-500">(в платных тарифах)</span></li>
+                </ul>
+            </div>
+
+            <div class="card p-6 sm:p-8" data-reveal style="--i:1">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold text-zinc-500">Итоги летучки · 8«Б»</span>
+                    <span class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-[11px] font-semibold text-zinc-300 bg-white/[0.04] ring-1 ring-white/[0.06]"><i class="w-1.5 h-1.5 rounded-full bg-indigo-400"></i>27 из&nbsp;27 сдали</span>
+                </div>
+                <div class="mt-3 flex items-baseline gap-2"><b class="font-display text-5xl font-extrabold text-white">71%</b><span class="text-xs text-zinc-500">средний результат</span></div>
+                <div class="mt-7 space-y-4">
+                    <div><div class="flex justify-between text-xs mb-1.5"><span class="text-zinc-300">1. Определения терминов</span><b class="text-white">92%</b></div><div class="bar-track"><i style="width:92%"></i></div></div>
+                    <div><div class="flex justify-between text-xs mb-1.5"><span class="text-zinc-300">2. Причины и&nbsp;следствия</span><b class="text-white">74%</b></div><div class="bar-track"><i style="width:74%"></i></div></div>
+                    <div><div class="flex justify-between text-xs mb-1.5"><span class="text-zinc-300">3. Сравнение понятий <span class="ml-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold text-rose-300 bg-rose-500/10">повторить</span></span><b class="text-rose-300">31%</b></div><div class="bar-track low"><i style="width:31%"></i></div></div>
+                </div>
+                <div class="mt-7 pt-5 border-t border-white/[0.07] flex items-center gap-3">
+                    <span class="w-9 h-11 rounded-md grid place-items-end justify-items-center pb-1.5 text-[9px] font-extrabold text-zinc-200 bg-gradient-to-b from-zinc-600 to-zinc-800">XLS</span>
+                    <div class="text-sm leading-tight"><b class="text-zinc-100 font-semibold">Ведомость 8«Б».xlsx</b><span class="block mt-1 text-xs text-zinc-500">27 строк · баллы и&nbsp;ответы по&nbsp;вопросам</span></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ ФОРМАТЫ ============ -->
+    <section id="formats" class="relative py-20 md:py-28 max-w-7xl mx-auto px-4 md:px-8">
+        <div class="max-w-3xl mx-auto text-center space-y-4 mb-14 md:mb-16" data-reveal>
+            <div class="inline-flex items-center gap-1.5 font-mono text-[10px] sm:text-[11px] tracking-widest text-zinc-400 uppercase select-none mb-3 sm:mb-6">
+                <span class="text-zinc-600">[ 03</span><span class="text-zinc-700">//</span><span>Форматы работы ]</span>
+            </div>
+            <h2 class="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-white leading-tight font-display">
+                Один сервис <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 via-white to-zinc-300">для&nbsp;любого типа проверки</span>
+            </h2>
+            <p class="text-sm md:text-base text-zinc-400 max-w-xl mx-auto leading-relaxed">Любой предмет и&nbsp;любой класс: тест строится по&nbsp;вашему материалу.</p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <article class="card p-6" data-reveal style="--i:0">
+                <h3 class="text-lg font-bold text-white font-display">Проверочная на&nbsp;уроке</h3>
+                <p class="mt-2.5 text-sm text-zinc-400 leading-relaxed">QR-код на&nbsp;доске, 10&nbsp;вопросов по&nbsp;параграфу. Результаты готовы к&nbsp;концу урока.</p>
+            </article>
+            <article class="card p-6" data-reveal style="--i:1">
+                <h3 class="text-lg font-bold text-white font-display">Домашнее задание</h3>
+                <p class="mt-2.5 text-sm text-zinc-400 leading-relaxed">Отправьте ссылку в&nbsp;чат класса. Ученик проходит тест дома, вы видите, кто сдал и&nbsp;как.</p>
+            </article>
+            <article class="card p-6" data-reveal style="--i:2">
+                <h3 class="text-lg font-bold text-white font-display">Контрольная и&nbsp;диагностика</h3>
+                <p class="mt-2.5 text-sm text-zinc-400 leading-relaxed">До&nbsp;30&nbsp;вопросов по&nbsp;теме четверти или входной срез знаний в&nbsp;начале года.</p>
+            </article>
+            <article class="card p-6" data-reveal style="--i:3">
+                <h3 class="text-lg font-bold text-white font-display">Печать на&nbsp;А4</h3>
+                <p class="mt-2.5 text-sm text-zinc-400 leading-relaxed">Два варианта для соседних парт в&nbsp;PDF, ключи ответов отдельным листом для учителя.</p>
+            </article>
+        </div>
+    </section>
+
+    <!-- ============ FAQ ============ -->
+    <section id="faq" class="relative py-20 md:py-28 max-w-4xl mx-auto px-4 md:px-8">
+        <div class="text-center space-y-4 mb-14" data-reveal>
+            <div class="inline-flex items-center gap-1.5 font-mono text-[10px] sm:text-[11px] tracking-widest text-zinc-400 uppercase">
+                <span class="text-zinc-600">[ 04</span><span class="text-zinc-700">//</span><span>FAQ ]</span>
+            </div>
+            <h2 class="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-white font-display">Вопросы учителей</h2>
+        </div>
+
+        <div class="space-y-3">
+            <details data-reveal style="--i:0" class="group rounded-[24px] bg-white/[0.02] border border-white/[0.06] hover:border-white/[0.12] overflow-hidden">
+                <summary class="flex items-center justify-between gap-4 p-6 cursor-pointer select-none">
+                    <h3 class="font-bold text-sm sm:text-base text-zinc-200">Где создать тест для учеников онлайн?</h3>
+                    <span class="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-zinc-400 group-open:rotate-180 transition-transform flex-shrink-0"><svg class="icon text-xs"><use href="#i-chevron"/></svg></span>
+                </summary>
+                <div class="px-6 pb-6 text-sm text-zinc-400 leading-relaxed border-t border-white/[0.04] pt-4">
+                    <strong class="text-zinc-300">Создать тест для учеников онлайн можно в Летучке: загрузите материал урока — сервис составит вопросы и выдаст ссылку и QR-код для класса.</strong> Ученики открывают тест со смартфона или компьютера, вводят имя и фамилию и отвечают. Вы видите ответы каждого сразу после сдачи.
+                </div>
+            </details>
+
+            <details data-reveal style="--i:1" class="group rounded-[24px] bg-white/[0.02] border border-white/[0.06] hover:border-white/[0.12] overflow-hidden">
+                <summary class="flex items-center justify-between gap-4 p-6 cursor-pointer select-none">
+                    <h3 class="font-bold text-sm sm:text-base text-zinc-200">Нужно ли ученикам регистрироваться?</h3>
+                    <span class="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-zinc-400 group-open:rotate-180 transition-transform flex-shrink-0"><svg class="icon text-xs"><use href="#i-chevron"/></svg></span>
+                </summary>
+                <div class="px-6 pb-6 text-sm text-zinc-400 leading-relaxed border-t border-white/[0.04] pt-4">
+                    <strong class="text-zinc-300">Нет, ученикам регистрация не нужна ни в бесплатном, ни в платном тарифе.</strong> Достаточно открыть ссылку или навести камеру на QR-код и ввести имя и фамилию. Аккаунт нужен только учителю.
+                </div>
+            </details>
+
+            <details data-reveal style="--i:2" class="group rounded-[24px] bg-white/[0.02] border border-white/[0.06] hover:border-white/[0.12] overflow-hidden">
+                <summary class="flex items-center justify-between gap-4 p-6 cursor-pointer select-none">
+                    <h3 class="font-bold text-sm sm:text-base text-zinc-200">Как проверить результаты учеников?</h3>
+                    <span class="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-zinc-400 group-open:rotate-180 transition-transform flex-shrink-0"><svg class="icon text-xs"><use href="#i-chevron"/></svg></span>
+                </summary>
+                <div class="px-6 pb-6 text-sm text-zinc-400 leading-relaxed border-t border-white/[0.04] pt-4">
+                    <strong class="text-zinc-300">Проверять вручную не нужно: Летучка сама отмечает верные ответы и считает баллы.</strong> В личном кабинете видны ответы каждого ученика, а сводку по группе можно выгрузить в Excel и перенести оценки в журнал.
+                </div>
+            </details>
+
+            <details data-reveal style="--i:3" class="group rounded-[24px] bg-white/[0.02] border border-white/[0.06] hover:border-white/[0.12] overflow-hidden">
+                <summary class="flex items-center justify-between gap-4 p-6 cursor-pointer select-none">
+                    <h3 class="font-bold text-sm sm:text-base text-zinc-200">Сколько учеников могут пройти один тест?</h3>
+                    <span class="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-zinc-400 group-open:rotate-180 transition-transform flex-shrink-0"><svg class="icon text-xs"><use href="#i-chevron"/></svg></span>
+                </summary>
+                <div class="px-6 pb-6 text-sm text-zinc-400 leading-relaxed border-t border-white/[0.04] pt-4">
+                    <strong class="text-zinc-300">Количество учеников не ограничено: один тест по одной ссылке может пройти весь класс, параллель или несколько классов.</strong> Расходуется только генерация теста, а не число сдавших.
+                </div>
+            </details>
+
+            <details data-reveal style="--i:4" class="group rounded-[24px] bg-white/[0.02] border border-white/[0.06] hover:border-white/[0.12] overflow-hidden">
+                <summary class="flex items-center justify-between gap-4 p-6 cursor-pointer select-none">
+                    <h3 class="font-bold text-sm sm:text-base text-zinc-200">Можно ли создать тест для учеников бесплатно?</h3>
+                    <span class="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-zinc-400 group-open:rotate-180 transition-transform flex-shrink-0"><svg class="icon text-xs"><use href="#i-chevron"/></svg></span>
+                </summary>
+                <div class="px-6 pb-6 text-sm text-zinc-400 leading-relaxed border-t border-white/[0.04] pt-4">
+                    <strong class="text-zinc-300">Да: один демо-тест создаётся без регистрации, а после регистрации на баланс начисляются 5 бесплатных тестов.</strong> В каждом — до 8 вопросов, ссылка для учеников и автопроверка. Дальше можно выбрать подписку или пакет тестов, автосписаний нет. <a href="/#pricing" class="text-indigo-400 hover:underline">Посмотреть тарифы</a>.
+                </div>
+            </details>
+
+            <details data-reveal style="--i:5" class="group rounded-[24px] bg-white/[0.02] border border-white/[0.06] hover:border-white/[0.12] overflow-hidden">
+                <summary class="flex items-center justify-between gap-4 p-6 cursor-pointer select-none">
+                    <h3 class="font-bold text-sm sm:text-base text-zinc-200">Можно ли распечатать тест, если нет смартфонов?</h3>
+                    <span class="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-zinc-400 group-open:rotate-180 transition-transform flex-shrink-0"><svg class="icon text-xs"><use href="#i-chevron"/></svg></span>
+                </summary>
+                <div class="px-6 pb-6 text-sm text-zinc-400 leading-relaxed border-t border-white/[0.04] pt-4">
+                    <strong class="text-zinc-300">Да, тест скачивается в один клик в PDF, готовый к печати на листе А4.</strong> Задания делятся на два варианта для соседних парт, а ключи ответов идут отдельным листом для учителя.
+                </div>
+            </details>
+
+            <details data-reveal style="--i:6" class="group rounded-[24px] bg-white/[0.02] border border-white/[0.06] hover:border-white/[0.12] overflow-hidden">
+                <summary class="flex items-center justify-between gap-4 p-6 cursor-pointer select-none">
+                    <h3 class="font-bold text-sm sm:text-base text-zinc-200">Безопасно ли вводить имена учеников в сервис?</h3>
+                    <span class="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-zinc-400 group-open:rotate-180 transition-transform flex-shrink-0"><svg class="icon text-xs"><use href="#i-chevron"/></svg></span>
+                </summary>
+                <div class="px-6 pb-6 text-sm text-zinc-400 leading-relaxed border-t border-white/[0.04] pt-4">
+                    <strong class="text-zinc-300">Да, Летучка работает в соответствии с Федеральным законом № 152-ФЗ «О персональных данных».</strong> База данных и серверы находятся в защищённых центрах обработки данных на территории России.
+                </div>
+            </details>
+        </div>
+
+        <script type="application/ld+json">
+        {
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          "mainEntity": [
+            {"@type": "Question", "name": "Где создать тест для учеников онлайн?", "acceptedAnswer": {"@type": "Answer", "text": "Создать тест для учеников онлайн можно в Летучке: загрузите материал урока — сервис составит вопросы и выдаст ссылку и QR-код для класса. Ученики открывают тест со смартфона или компьютера, вводят имя и фамилию и отвечают. Вы видите ответы каждого сразу после сдачи."}},
+            {"@type": "Question", "name": "Нужно ли ученикам регистрироваться?", "acceptedAnswer": {"@type": "Answer", "text": "Нет, ученикам регистрация не нужна ни в бесплатном, ни в платном тарифе. Достаточно открыть ссылку или навести камеру на QR-код и ввести имя и фамилию. Аккаунт нужен только учителю."}},
+            {"@type": "Question", "name": "Как проверить результаты учеников?", "acceptedAnswer": {"@type": "Answer", "text": "Проверять вручную не нужно: Летучка сама отмечает верные ответы и считает баллы. В личном кабинете видны ответы каждого ученика, а сводку по группе можно выгрузить в Excel и перенести оценки в журнал."}},
+            {"@type": "Question", "name": "Сколько учеников могут пройти один тест?", "acceptedAnswer": {"@type": "Answer", "text": "Количество учеников не ограничено: один тест по одной ссылке может пройти весь класс, параллель или несколько классов. Расходуется только генерация теста, а не число сдавших."}},
+            {"@type": "Question", "name": "Можно ли создать тест для учеников бесплатно?", "acceptedAnswer": {"@type": "Answer", "text": "Да: один демо-тест создаётся без регистрации, а после регистрации на баланс начисляются 5 бесплатных тестов. В каждом — до 8 вопросов, ссылка для учеников и автопроверка. Дальше можно выбрать подписку или пакет тестов, автосписаний нет."}},
+            {"@type": "Question", "name": "Можно ли распечатать тест, если нет смартфонов?", "acceptedAnswer": {"@type": "Answer", "text": "Да, тест скачивается в один клик в PDF, готовый к печати на листе А4. Задания делятся на два варианта для соседних парт, а ключи ответов идут отдельным листом для учителя."}},
+            {"@type": "Question", "name": "Безопасно ли вводить имена учеников в сервис?", "acceptedAnswer": {"@type": "Answer", "text": "Да, Летучка работает в соответствии с Федеральным законом № 152-ФЗ «О персональных данных». База данных и серверы находятся в защищённых центрах обработки данных на территории России."}}
+          ]
+        }
+        </script>
+    </section>
+
+    <!-- ============ ФИНАЛЬНЫЙ CTA ============ -->
+    <section id="final" class="relative pb-24 md:pb-32 max-w-4xl mx-auto px-4 md:px-8">
+        <div class="card p-8 sm:p-12 text-center" data-reveal>
+            <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-white leading-tight font-display">Следующая проверочная <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 via-white to-zinc-300">уже без тетрадей</span></h2>
+            <p class="mt-4 text-sm sm:text-base text-zinc-400 max-w-lg mx-auto leading-relaxed">Первый тест можно создать без регистрации, а&nbsp;после регистрации на&nbsp;баланс начисляются 5&nbsp;бесплатных тестов.</p>
+            <div class="mt-8 flex justify-center">
+                <div class="cta-wrap">
+                    <span class="cta-glow" aria-hidden="true"></span>
+                    <span class="cta-ring" aria-hidden="true"></span>
+                    <a href="{% url 'create' %}" class="cta-btn">
+                        <span>Создать тест для класса</span>
+                        <span class="cta-arrow"><svg class="icon"><use href="#i-arrow"/></svg></span>
+                    </a>
+                </div>
+            </div>
+            <p class="mt-5 text-xs text-zinc-500">Подробнее о тарифах — <a href="/#pricing" class="text-indigo-400 hover:underline">на главной</a>. Нужен тест не для класса, а по любому тексту? <a href="/" class="text-indigo-400 hover:underline">Генератор тестов по тексту</a>.</p>
+        </div>
+    </section>
+    </main>
+
+    <!-- ============ ФУТЕР ============ -->
+    <footer class="border-t border-white/[0.06] bg-[#0C0B0F]">
+        <div class="max-w-7xl mx-auto px-4 sm:px-8 py-14">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-10">
+                <div class="space-y-4">
+                    <a href="/" class="inline-flex"><img src="{% static 'img/logo-header.webp' %}" alt="Летучка" height="32" class="h-8 w-auto" loading="lazy"></a>
+                    <p class="text-xs text-zinc-500 leading-relaxed">Российский сервис генерации тестов по&nbsp;тексту и&nbsp;файлам с&nbsp;автопроверкой и&nbsp;аналитикой успеваемости.</p>
+                    <div class="pt-2 flex items-center gap-3 text-zinc-400 text-base">
+                        <a href="https://t.me/LetychkaRobot" target="_blank" rel="noopener" class="hover:text-white transition-colors" title="Telegram" aria-label="Telegram"><svg class="icon"><use href="#i-tg"/></svg></a>
+                        <a href="mailto:support@letychka.ru" class="hover:text-white transition-colors" title="Почта" aria-label="Почта"><svg class="icon"><use href="#i-mail"/></svg></a>
+                    </div>
+                </div>
+                <div class="space-y-3 text-xs">
+                    <span class="font-bold text-white uppercase tracking-wider block">Продукт</span>
+                    <div class="flex flex-col space-y-2 text-zinc-400">
+                        <a href="/" class="hover:text-white transition-colors">Генератор тестов по тексту</a>
+                        <a href="/test-dlya-uchenikov/" class="hover:text-white transition-colors">Тест для учеников</a>
+                        <a href="/#pricing" class="hover:text-white transition-colors">Тарифы</a>
+                        <a href="/create" class="hover:text-white transition-colors">Конструктор тестов</a>
+                    </div>
+                </div>
+                <div class="space-y-3 text-xs">
+                    <span class="font-bold text-white uppercase tracking-wider block">Документы</span>
+                    <div class="flex flex-col space-y-2 text-zinc-400">
+                        <a href="/docs/public-offer" class="hover:text-white transition-colors">Публичная оферта</a>
+                        <a href="/docs/privacy-policy" class="hover:text-white transition-colors">Политика конфиденциальности</a>
+                        <span class="text-zinc-600">ИНН 773613171558 / ОГРНИП 3245081071286</span>
+                    </div>
+                </div>
+                <div class="space-y-3 text-xs">
+                    <span class="font-bold text-white uppercase tracking-wider block">Поддержка</span>
+                    <p class="text-zinc-400">Вопросы по работе сервиса и предложения:<br><a href="mailto:support@letychka.ru" class="text-indigo-400 hover:underline">support@letychka.ru</a></p>
+                </div>
+            </div>
+            <div class="mt-12 pt-6 border-t border-white/[0.04] flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-zinc-600">
+                <p>© 2024–2026 Летучка AI. Все права защищены.</p>
+                <p>Design &amp; Development <a href="https://dprofile.ru/kozak_developer" target="_blank" rel="noopener" class="text-zinc-500 hover:text-white transition-colors">by Kozak</a></p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+    (function () {
+        'use strict';
+        var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        var targets = document.querySelectorAll('[data-reveal]');
+        if ('IntersectionObserver' in window && !reduce) {
+            var io = new IntersectionObserver(function (entries) {
+                entries.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+            }, { rootMargin: '0px 0px -12% 0px', threshold: 0.15 });
+            targets.forEach(function (el) { io.observe(el); });
+        } else {
+            targets.forEach(function (el) { el.classList.add('in'); });
+        }
+        var nav = document.getElementById('island-nav');
+        var compact = false;
+        function onScroll() {
+            var y = window.scrollY, next = compact ? y > 32 : y > 80;
+            if (next !== compact) { compact = next; nav.classList.toggle('is-compact', compact); }
+        }
+        window.addEventListener('scroll', onScroll, { passive: true });
+        onScroll();
+    })();
+    </script>
+</body>
+</html>
