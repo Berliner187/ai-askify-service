@@ -1,0 +1,584 @@
+{% comment %}
+  Карточка «Сводка» для страницы «История».
+  Подключение:  {% include 'components/history_summary.html' %}   (внутри <aside>, вместо старого блока .h-stat)
+  Контекст:     summary_premium (bool), summary_initial (dict | None, период «7»), total_surveys
+  URL:          api_history_summary (/api/history/summary/), payment
+  Зависимости:  только переменные темы страницы (--ease-out, --spring-bounce) и класс .glass-panel; Tailwind не нужен.
+{% endcomment %}
+{% url 'api_history_summary' as sm_api %}{% url 'payment' as sm_pay %}
+<style>
+    .sm {
+        --sm-ink: #FAFAFA; --sm-soft: #A1A1AA; --sm-mute: #71717A; --sm-dim: #52525B;
+        --sm-ind: #4F46E5; --sm-ind-hi: #818CF8; --sm-lav: #A5B4FC; --sm-amber: #F5B544;
+        --sm-line: rgba(255, 255, 255, 0.07);
+        --sm-ease: cubic-bezier(0.16, 1, 0.3, 1);
+        --sm-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+        position: relative;
+        padding: 18px 18px 10px;
+        overflow: hidden;
+        font-family: 'Golos Text', -apple-system, BlinkMacSystemFont, sans-serif;
+        letter-spacing: -0.01em;
+    }
+    .sm * { box-sizing: border-box; }
+    .sm button, .sm a { -webkit-tap-highlight-color: transparent; }
+
+    /* ---------- шапка ---------- */
+    .sm-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+    .sm-eyebrow { font: 600 11px/1 'Golos Text', sans-serif; letter-spacing: 0.14em; text-transform: uppercase; color: var(--sm-mute); }
+    .sm-range { font: 500 11.5px/1 'Golos Text', sans-serif; color: var(--sm-dim); white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .sm-pill {
+        display: inline-flex; align-items: center; gap: 5px; height: 20px; padding: 0 8px;
+        border-radius: 999px; font: 600 10.5px/1 'Golos Text', sans-serif; letter-spacing: 0.02em;
+        color: var(--sm-lav); background: rgba(165, 180, 252, 0.1); border: 1px solid rgba(165, 180, 252, 0.2);
+    }
+    .sm-pill svg { width: 9px; height: 9px; }
+
+    /* ---------- переключатель периода ---------- */
+    .sm-tabs {
+        position: relative; display: grid; grid-template-columns: repeat(6, 1fr); gap: 2px;
+        margin-top: 14px; padding: 3px; border-radius: 13px;
+        background: #111119; border: 1px solid var(--sm-line);
+    }
+    .sm-thumb {
+        position: absolute; top: 3px; bottom: 3px; left: 0; width: 0; border-radius: 10px;
+        background: rgba(79, 70, 229, 0.26); border: 1px solid rgba(129, 140, 248, 0.38);
+        transition: transform 0.42s var(--sm-spring), width 0.3s var(--sm-ease);
+        pointer-events: none;
+    }
+    .sm-tab {
+        position: relative; z-index: 1; height: 28px; padding: 0; border: 0; border-radius: 10px;
+        background: none; cursor: pointer; text-align: center; text-decoration: none;
+        display: inline-flex; align-items: center; justify-content: center;
+        font: 600 12px/1 'Golos Text', sans-serif; color: var(--sm-soft);
+        transition: color 0.15s ease, transform 0.2s var(--sm-spring);
+    }
+    .sm-tab:hover { color: #fff; }
+    .sm-tab:active { transform: scale(0.92); }
+    .sm-tab[aria-selected="true"] { color: #E0E7FF; }
+    .sm-tab:focus-visible, .sm-cta:focus-visible { outline: 1.5px solid rgba(165, 180, 252, 0.8); outline-offset: 1px; }
+
+    /* ---------- герой-число ---------- */
+    .sm-hero { margin-top: 20px; }
+    .sm-hl { height: 16px; display: flex; align-items: center; font: 500 12.5px/1 'Golos Text', sans-serif; color: var(--sm-soft); transition: color 0.15s ease; }
+    .sm-numrow { display: flex; align-items: center; gap: 10px; margin-top: 8px; height: 46px; }
+    .sm-num {
+        font: 800 44px/1 'Wix Madefor Display', 'Golos Text', sans-serif; letter-spacing: -0.04em;
+        font-variant-numeric: tabular-nums; color: #fff;
+    }
+    .sm-delta {
+        display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 9px 0 7px; border-radius: 999px;
+        font: 600 12px/1 'Golos Text', sans-serif; font-variant-numeric: tabular-nums; white-space: nowrap;
+        color: var(--sm-lav); background: rgba(165, 180, 252, 0.11); border: 1px solid rgba(165, 180, 252, 0.2);
+        transition: opacity 0.18s ease, transform 0.3s var(--sm-spring);
+    }
+    .sm-delta svg { width: 10px; height: 10px; flex: none; }
+    .sm-delta.is-down { color: var(--sm-amber); background: rgba(245, 181, 68, 0.1); border-color: rgba(245, 181, 68, 0.24); }
+    .sm-delta.is-flat { color: var(--sm-soft); background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.09); padding-left: 9px; }
+    .sm-delta[hidden] { display: none; }
+    .sm.is-scrub .sm-delta { opacity: 0; transform: scale(0.9); }
+    .sm-sub { margin-top: 8px; min-height: 16px; font: 500 12px/1.35 'Golos Text', sans-serif; color: var(--sm-mute); font-variant-numeric: tabular-nums; }
+
+    /* ---------- график ---------- */
+    .sm-chart { position: relative; height: 118px; margin: 14px -4px 0; touch-action: pan-y; transition: opacity 0.2s ease; user-select: none; -webkit-user-select: none; }
+    .sm.is-loading .sm-chart { opacity: 0.45; }
+    .sm-chart svg { display: block; overflow: visible; }
+    .sm-bar { fill: var(--sm-ind); transition: fill 0.15s ease; transform-box: fill-box; transform-origin: 50% 100%; animation: sm-grow 0.6s var(--sm-ease) backwards; animation-delay: calc(var(--i) * 14ms); }
+    .sm-bar.is-zero { fill: rgba(255, 255, 255, 0.07); animation: none; }
+    .sm-bar.on { fill: var(--sm-ind-hi); }
+    .sm-line, .sm-ghost { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .sm-line { stroke: var(--sm-lav); stroke-width: 1.7; opacity: 0.85; stroke-dasharray: 1; stroke-dashoffset: 1; animation: sm-draw 0.9s 0.1s var(--sm-ease) forwards; }
+    .sm-line.is-dense { stroke-width: 1.4; opacity: 0.7; }
+    .sm-ghost { stroke: rgba(255, 255, 255, 0.32); stroke-width: 1.3; stroke-dasharray: 3 4; animation: sm-fade 0.6s 0.2s ease backwards; }
+    .sm-base { stroke: rgba(255, 255, 255, 0.08); stroke-width: 1; }
+    .sm-peak { stroke: rgba(255, 255, 255, 0.06); stroke-width: 1; stroke-dasharray: 2 4; }
+    .sm-peak-t, .sm-xl { font: 500 10px/1 'Golos Text', sans-serif; fill: var(--sm-dim); font-variant-numeric: tabular-nums; }
+    .sm-made { fill: rgba(255, 255, 255, 0.55); animation: sm-fade 0.5s 0.3s ease backwards; }
+    .sm-guide { stroke: rgba(255, 255, 255, 0.16); stroke-width: 1; opacity: 0; transition: opacity 0.12s ease; }
+    .sm-pt { fill: var(--sm-lav); stroke: #15151E; stroke-width: 2; opacity: 0; transition: opacity 0.12s ease; }
+    .sm-chart.is-hover .sm-guide, .sm-chart.is-hover .sm-pt { opacity: 1; }
+    .sm-empty { position: absolute; left: 0; right: 0; top: 30px; text-align: center; font: 500 12px/1 'Golos Text', sans-serif; color: var(--sm-mute); pointer-events: none; }
+    @keyframes sm-grow { from { transform: scaleY(0); } }
+    @keyframes sm-draw { to { stroke-dashoffset: 0; } }
+    @keyframes sm-fade { from { opacity: 0; } }
+
+    .sm-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 10px; font: 500 11px/1 'Golos Text', sans-serif; color: var(--sm-mute); }
+    .sm-legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .sm-legend span[hidden] { display: none; }
+    .sm-legend i { display: block; flex: none; }
+    .sm-sw-bar { width: 8px; height: 8px; border-radius: 3px; background: var(--sm-ind); }
+    .sm-sw-line { width: 12px; height: 0; border-top: 2px solid var(--sm-lav); border-radius: 2px; }
+    .sm-sw-dot { width: 5px; height: 5px; border-radius: 50%; background: rgba(255, 255, 255, 0.55); }
+    .sm-sw-ghost { width: 12px; height: 0; border-top: 1.5px dashed rgba(255, 255, 255, 0.4); }
+
+    /* ---------- строки ---------- */
+    .sm-rows { list-style: none; margin: 14px 0 0; padding: 0; }
+    .sm-row { display: grid; grid-template-columns: 16px 1fr auto 42px; align-items: center; column-gap: 10px; height: 46px; border-top: 1px solid var(--sm-line); }
+    .sm-row > svg { width: 15px; height: 15px; color: var(--sm-dim); }
+    .sm-rl { font: 500 13px/1 'Golos Text', sans-serif; text-align: start; color: var(--sm-soft); }
+    .sm-rv { font: 700 16px/1 'Wix Madefor Display', 'Golos Text', sans-serif; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: #fff; text-align: right; }
+    .sm-rv small { margin-left: 4px; font: 500 12px/1 'Golos Text', sans-serif; letter-spacing: 0; color: var(--sm-mute); }
+    .sm-rd { text-align: right; font: 600 12px/1 'Golos Text', sans-serif; font-variant-numeric: tabular-nums; color: var(--sm-lav); }
+    .sm-rd.is-down { color: var(--sm-amber); }
+    .sm-rd.is-flat { color: var(--sm-dim); }
+
+    /* ---------- заглушка для бесплатных ---------- */
+    .sm--locked .sm-tabs { margin-top: 14px; }
+    .sm--locked .sm-tab { color: var(--sm-dim); }
+    .sm--locked .sm-tab:hover { color: var(--sm-soft); }
+    .sm--locked .sm-chart { height: 112px; margin-top: 16px; pointer-events: none; opacity: 0.55;
+        -webkit-mask-image: linear-gradient(180deg, #000 30%, transparent 96%); mask-image: linear-gradient(180deg, #000 30%, transparent 96%); }
+    .sm--locked .sm-bar { animation: none; }
+    .sm-lock-title { margin: 6px 0 0; font: 700 15px/1.3 'Wix Madefor Display', 'Golos Text', sans-serif; letter-spacing: -0.02em; color: #fff; }
+    .sm-lock-text { margin: 6px 0 0; font: 400 12.5px/1.5 'Golos Text', sans-serif; color: var(--sm-mute); }
+    .sm-cta {
+        display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; height: 42px; margin: 16px 0 12px;
+        border-radius: 14px; background: var(--sm-ind); color: #fff; text-decoration: none;
+        font: 700 13px/1 'Golos Text', sans-serif; box-shadow: 0 6px 18px -8px rgba(79, 70, 229, 0.7);
+        transition: transform 0.2s var(--sm-spring), background-color 0.15s ease;
+    }
+    .sm-cta:hover { background: #5A52EC; transform: translateY(-1px); }
+    .sm-cta:active { transform: scale(0.97) translateY(1px); }
+    .sm-cta svg { width: 13px; height: 13px; }
+
+    @media (prefers-reduced-motion: reduce) {
+        .sm-bar, .sm-line, .sm-ghost, .sm-made { animation: none !important; }
+        .sm-line { stroke-dashoffset: 0; }
+        .sm-thumb, .sm-delta, .sm-cta, .sm-tab { transition: none !important; }
+    }
+</style>
+
+<section id="sm" class="sm glass-panel{% if not summary_premium %} sm--locked{% endif %}" data-rv data-rv-order="3"
+         data-premium="{% if summary_premium %}1{% else %}0{% endif %}"
+         data-api="{% if sm_api %}{{ sm_api }}{% else %}/api/history/summary/{% endif %}"
+         data-pay="{% if sm_pay %}{{ sm_pay }}{% else %}/payment/{% endif %}"
+         aria-label="Сводка по тестам">
+
+    <div class="sm-head">
+        <span class="sm-eyebrow">Сводка</span>
+        {% if summary_premium %}
+            <span class="sm-range" id="sm-range"></span>
+        {% else %}
+            <span class="sm-pill"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="1.6" y="4.4" width="6.8" height="4.4" rx="1.2"/><path d="M3.2 4.4V3.2a1.8 1.8 0 0 1 3.6 0v1.2"/></svg>Платно</span>
+        {% endif %}
+    </div>
+
+    {% if summary_premium %}
+    <div class="sm-tabs" id="sm-tabs" role="tablist" aria-label="Период">
+        <span class="sm-thumb" id="sm-thumb"></span>
+        <button type="button" class="sm-tab" role="tab" data-p="7"   aria-selected="true">7д</button>
+        <button type="button" class="sm-tab" role="tab" data-p="30"  aria-selected="false" tabindex="-1">30д</button>
+        <button type="button" class="sm-tab" role="tab" data-p="90"  aria-selected="false" tabindex="-1">90д</button>
+        <button type="button" class="sm-tab" role="tab" data-p="180" aria-selected="false" tabindex="-1">180д</button>
+        <button type="button" class="sm-tab" role="tab" data-p="365" aria-selected="false" tabindex="-1">Год</button>
+        <button type="button" class="sm-tab" role="tab" data-p="all" aria-selected="false" tabindex="-1">Всё</button>
+    </div>
+
+    <div class="sm-hero">
+        <div class="sm-hl" id="sm-hl">Сдачи за 7 дней</div>
+        <div class="sm-numrow">
+            <span class="sm-num" id="sm-num">0</span>
+            <span class="sm-delta" id="sm-delta" hidden></span>
+        </div>
+        <div class="sm-sub" id="sm-sub">&nbsp;</div>
+    </div>
+
+    <div class="sm-chart" id="sm-chart" role="img" aria-label="График сдач и просмотров"></div>
+    <div class="sm-legend" id="sm-legend">
+        <span><i class="sm-sw-bar"></i>Сдачи</span>
+        <span><i class="sm-sw-line"></i>Просмотры</span>
+        <span><i class="sm-sw-dot"></i>Новые тесты</span>
+        <span id="sm-lg-ghost" hidden title="Сдачи в прошлом периоде"><i class="sm-sw-ghost"></i>Прошлый</span>
+    </div>
+
+    <ul class="sm-rows">
+        <li class="sm-row">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 8S3.8 3.5 8 3.5 14.5 8 14.5 8 12.2 12.5 8 12.5 1.5 8 1.5 8Z"/><circle cx="8" cy="8" r="1.9"/></svg>
+            <span class="sm-rl">Просмотры</span><span class="sm-rv" id="sm-v-views">0</span><span class="sm-rd" id="sm-d-views"></span>
+        </li>
+        <li class="sm-row">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9.2 1.8H4.6A1.6 1.6 0 0 0 3 3.4v9.2a1.6 1.6 0 0 0 1.6 1.6h6.8a1.6 1.6 0 0 0 1.6-1.6V5.6L9.2 1.8Z"/><path d="M8 7.4v3.6M6.2 9.2h3.6"/></svg>
+            <span class="sm-rl">Новые тесты</span><span class="sm-rv" id="sm-v-created">0</span><span class="sm-rd" id="sm-d-created"></span>
+        </li>
+        <li class="sm-row">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 8.5h2.8l1.7-4.6 3 8 1.7-3.4h3.8"/></svg>
+            <span class="sm-rl" title="Тесты, которые сдавали хотя бы раз за период">Живых тестов</span><span class="sm-rv"><span id="sm-v-live">0</span><small id="sm-of">из 0</small></span><span class="sm-rd" id="sm-d-live"></span>
+        </li>
+    </ul>
+
+    {% if summary_initial %}{{ summary_initial|json_script:"sm-initial" }}{% endif %}
+
+    {% else %}
+    <div class="sm-tabs" aria-hidden="true">
+        <a class="sm-tab" href="{% if sm_pay %}{{ sm_pay }}{% else %}/payment/{% endif %}" tabindex="-1">7д</a>
+        <a class="sm-tab" href="{% if sm_pay %}{{ sm_pay }}{% else %}/payment/{% endif %}" tabindex="-1">30д</a>
+        <a class="sm-tab" href="{% if sm_pay %}{{ sm_pay }}{% else %}/payment/{% endif %}" tabindex="-1">90д</a>
+        <a class="sm-tab" href="{% if sm_pay %}{{ sm_pay }}{% else %}/payment/{% endif %}" tabindex="-1">180д</a>
+        <a class="sm-tab" href="{% if sm_pay %}{{ sm_pay }}{% else %}/payment/{% endif %}" tabindex="-1">Год</a>
+        <a class="sm-tab" href="{% if sm_pay %}{{ sm_pay }}{% else %}/payment/{% endif %}" tabindex="-1">Всё</a>
+    </div>
+    <div class="sm-chart" id="sm-chart" aria-hidden="true"></div>
+    <h4 class="sm-lock-title">Динамика по дням, неделям и месяцам</h4>
+    <p class="sm-lock-text">Сдачи, просмотры, новые и «живые» тесты, с сравнением с прошлым периодом.</p>
+    <a class="sm-cta" href="{% if sm_pay %}{{ sm_pay }}{% else %}/payment/{% endif %}">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2.4" y="6.2" width="9.2" height="6" rx="1.6"/><path d="M4.4 6.2V4.6a2.6 2.6 0 0 1 5.2 0v1.6"/></svg>
+        Открыть в тарифе
+    </a>
+    {% endif %}
+</section>
+
+<script>
+(function () {
+    'use strict';
+    var root = document.getElementById('sm');
+    if (!root) return;
+
+    var PREM = root.getAttribute('data-premium') === '1';
+    var API = root.getAttribute('data-api');
+    var host = document.getElementById('sm-chart');
+    var reduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    var H = 118, PT = 16, PB = 88;                       // высота SVG, верх и низ области столбцов
+    var MONTHS = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
+
+    function $(id) { return document.getElementById(id); }
+    function nf(n) { return (Math.round(+n) || 0).toLocaleString('ru-RU'); }
+    function plural(n, one, few, many) {
+        var a = Math.abs(n) % 100, b = a % 10;
+        if (a > 10 && a < 20) return many;
+        if (b === 1) return one;
+        if (b > 1 && b < 5) return few;
+        return many;
+    }
+    function toast(msg) { try { if (typeof Island !== 'undefined' && Island.error) Island.error(msg); } catch (e) {} }
+
+    /* ---------- монотонная кубическая кривая (без «перелётов» ниже нуля) ---------- */
+    function smooth(p) {
+        var n = p.length, i;
+        if (n < 2) return '';
+        var dx = [], s = [], m = [];
+        for (i = 0; i < n - 1; i++) { dx[i] = p[i + 1][0] - p[i][0]; s[i] = (p[i + 1][1] - p[i][1]) / dx[i]; }
+        m[0] = s[0]; m[n - 1] = s[n - 2];
+        for (i = 1; i < n - 1; i++) m[i] = (s[i - 1] * s[i] <= 0) ? 0 : (s[i - 1] + s[i]) / 2;
+        for (i = 0; i < n - 1; i++) {
+            if (s[i] === 0) { m[i] = 0; m[i + 1] = 0; continue; }
+            var a = m[i] / s[i], b = m[i + 1] / s[i], h = a * a + b * b;
+            if (h > 9) { var t = 3 / Math.sqrt(h); m[i] = t * a * s[i]; m[i + 1] = t * b * s[i]; }
+        }
+        var d = 'M' + p[0][0].toFixed(1) + ' ' + p[0][1].toFixed(1);
+        for (i = 0; i < n - 1; i++) {
+            d += 'C' + (p[i][0] + dx[i] / 3).toFixed(1) + ' ' + (p[i][1] + m[i] * dx[i] / 3).toFixed(1) + ' ' +
+                 (p[i + 1][0] - dx[i] / 3).toFixed(1) + ' ' + (p[i + 1][1] - m[i + 1] * dx[i] / 3).toFixed(1) + ' ' +
+                 p[i + 1][0].toFixed(1) + ' ' + p[i + 1][1].toFixed(1);
+        }
+        return d;
+    }
+
+    /* ---------- график ---------- */
+    var geo = null;   // текущая геометрия для hover
+
+    function drawChart(d, opts) {
+        opts = opts || {};
+        var W = Math.round(host.clientWidth + 0);
+        if (!W) return;
+        var n = d.attempts.length;
+        var slot = W / n;
+        var yMax = Math.max(3, Math.max.apply(null, d.attempts.concat(d.views, d.ghost || [])));
+        var plotH = PB - PT;
+        var X = function (i) { return slot * i + slot / 2; };
+        var Y = function (v) { return PB - (v / yMax) * plotH; };
+        var bw = Math.max(3, Math.min(16, slot * 0.56));
+        var rx = Math.min(3.5, bw / 2);
+        var out = '';
+
+        if (!opts.teaser) {
+            out += '<line class="sm-peak" x1="0" x2="' + W + '" y1="' + PT + '" y2="' + PT + '"/>';
+            out += '<text class="sm-peak-t" x="0" y="' + (PT - 5) + '">макс ' + nf(yMax) + '</text>';
+        }
+        out += '<line class="sm-base" x1="0" x2="' + W + '" y1="' + PB + '" y2="' + PB + '"/>';
+
+        var i, v;
+        for (i = 0; i < n; i++) {
+            v = d.attempts[i];
+            if (v > 0) {
+                var h = Math.max(3, PB - Y(v));
+                out += '<rect class="sm-bar" data-i="' + i + '" style="--i:' + i + '" x="' + (X(i) - bw / 2).toFixed(1) + '" y="' + (PB - h).toFixed(1) +
+                       '" width="' + bw.toFixed(1) + '" height="' + h.toFixed(1) + '" rx="' + rx.toFixed(1) + '"/>';
+            } else {
+                out += '<rect class="sm-bar is-zero" data-i="' + i + '" x="' + (X(i) - bw / 2).toFixed(1) + '" y="' + (PB - 2) + '" width="' + bw.toFixed(1) + '" height="2" rx="1"/>';
+            }
+        }
+
+        var dense = n > 14;
+        var showGhost = d.ghost && (!dense || (d.meta && d.meta.kind === 'week'));
+        if (showGhost) {
+            var gp = d.ghost.map(function (g, k) { return [X(k), Y(g)]; });
+            if (gp.length > 1) out += '<path class="sm-ghost" d="' + smooth(gp) + '"/>';
+        }
+        var vp = d.views.map(function (g, k) { return [X(k), Y(g)]; });
+        if (vp.length > 1) out += '<path class="sm-line' + (dense ? ' is-dense' : '') + '" pathLength="1" d="' + smooth(vp) + '"/>';
+        else if (vp.length === 1) out += '<circle class="sm-made" cx="' + vp[0][0] + '" cy="' + vp[0][1] + '" r="3" style="fill:#A5B4FC"/>';
+
+        for (i = 0; i < n; i++) {
+            v = d.created[i] || 0;
+            if (v > 0) out += '<circle class="sm-made" cx="' + X(i).toFixed(1) + '" cy="' + (H - 21) + '" r="' + (dense ? 1.7 : 2 + Math.min(1.5, (v - 1) * 0.5)).toFixed(1) + '"/>';
+        }
+
+        // подписи оси: все при n<=7, иначе 4 равномерно
+        var idx = [];
+        if (n <= 7) { for (i = 0; i < n; i++) idx.push(i); }
+        else { [0, Math.round((n - 1) / 3), Math.round(2 * (n - 1) / 3), n - 1].forEach(function (k) { if (idx.indexOf(k) < 0) idx.push(k); }); }
+        idx.forEach(function (k) {
+            var anchor = 'middle', x = X(k);
+            if (n > 7 && k === 0) { anchor = 'start'; x = 0; }
+            else if (n > 7 && k === n - 1) { anchor = 'end'; x = W; }
+            out += '<text class="sm-xl" text-anchor="' + anchor + '" x="' + x.toFixed(1) + '" y="' + (H - 3) + '">' + d.labels[k] + '</text>';
+        });
+
+        if (opts.interactive) {
+            out += '<line class="sm-guide" id="sm-guide" y1="' + (PT - 2) + '" y2="' + PB + '" x1="0" x2="0"/><circle class="sm-pt" id="sm-pt" r="3.6" cx="0" cy="0"/>';
+        }
+
+        host.innerHTML = '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" aria-hidden="true">' + out + '</svg>';
+        geo = { W: W, n: n, slot: slot, X: X, Y: Y, d: d };
+    }
+
+    /* ---------- заглушка для бесплатных ---------- */
+    function drawTeaser() {
+        var fake = {
+            labels: ['', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+            attempts: [2, 4, 3, 6, 5, 9, 7, 4, 8, 11, 7, 9, 12, 10],
+            views: [5, 7, 6, 10, 9, 14, 12, 9, 13, 17, 13, 15, 19, 16],
+            created: [1, 0, 0, 1, 0, 0, 2, 0, 0, 1, 0, 0, 0, 1], ghost: null
+        };
+        drawChart(fake, { teaser: true });
+    }
+
+    /* ---------- премиум: состояние ---------- */
+    if (!PREM) {
+        drawTeaser();
+        if (window.ResizeObserver) new ResizeObserver(function () { drawTeaser(); }).observe(host);
+        return;
+    }
+
+    var PERIOD_TXT = { '7': ['7 дней', 'Прошлые 7 дней'], '30': ['30 дней', 'Прошлые 30 дней'], '90': ['90 дней', 'Прошлые 90 дней'],
+                       '180': ['180 дней', 'Прошлые 180 дней'], '365': ['год', 'Прошлый год'], 'all': ['всё время', ''] };
+    var cache = {}, current = '7', data = null, ctrl = null, shown = { num: 0, views: 0, created: 0, live: 0 };
+
+    var tabs = $('sm-tabs'), thumb = $('sm-thumb');
+    var elHl = $('sm-hl'), elNum = $('sm-num'), elDelta = $('sm-delta'), elSub = $('sm-sub');
+
+    function placeThumb(animate) {
+        var t = tabs.querySelector('[aria-selected="true"]');
+        if (!t) return;
+        if (!animate) thumb.style.transition = 'none';
+        thumb.style.width = t.offsetWidth + 'px';
+        thumb.style.transform = 'translateX(' + t.offsetLeft + 'px)';
+        if (!animate) { void thumb.offsetWidth; thumb.style.transition = ''; }
+    }
+
+    function fmtDate(iso, withYear) {
+        var p = iso.split('-');
+        return (+p[2]) + ' ' + MONTHS[+p[1] - 1] + (withYear ? ' ’' + p[0].slice(2) : '');
+    }
+
+    function tween(el, key, to, dur) {
+        var from = shown[key];
+        shown[key] = to;
+        if (reduce || from === to) { el.textContent = nf(to); return; }
+        var t0 = performance.now();
+        dur = dur || 520;
+        (function tick(now) {
+            if (shown[key] !== to) return;                          // пришло новое значение
+            var k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+            el.textContent = nf(from + (to - from) * e);
+            if (k < 1) requestAnimationFrame(tick);
+        })(t0);
+    }
+
+    function minus(n) { return n < 0 ? '−' + nf(-n) : (n > 0 ? '+' + nf(n) : '0'); }
+
+    function setDelta(cur, prev, chip) {
+        if (prev == null || (cur === 0 && prev === 0)) { chip.hidden = true; chip.textContent = ''; return; }
+        var d = cur - prev;
+        chip.hidden = false;
+        chip.className = 'sm-delta' + (d < 0 ? ' is-down' : d === 0 ? ' is-flat' : '');
+        if (d === 0) { chip.textContent = 'без изменений'; return; }
+        var arrow = d > 0
+            ? '<svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8.4V1.8M2.2 4.4 5 1.6l2.8 2.8"/></svg>'
+            : '<svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 1.6v6.6M2.2 5.6 5 8.4l2.8-2.8"/></svg>';
+        chip.innerHTML = arrow + minus(d);
+    }
+
+    function setRowDelta(el, cur, prev) {
+        if (prev == null || (cur === 0 && prev === 0)) { el.textContent = ''; el.className = 'sm-rd'; return; }
+        var d = cur - prev;
+        el.className = 'sm-rd' + (d < 0 ? ' is-down' : d === 0 ? ' is-flat' : '');
+        el.textContent = d === 0 ? '—' : minus(d);
+    }
+
+    function heroSub(d) {
+        var p = d.prev, t = d.totals, txt = PERIOD_TXT[d.meta.period] || ['', ''];
+        if (!p) return 'Динамика за всё время';
+        if (p.attempts === 0 && t.attempts === 0) return 'Сдач за этот период не было';
+        if (p.attempts === 0 && t.attempts > 0) return txt[1] + ': сдач не было';
+        var s = txt[1] + ': ' + nf(p.attempts);
+        if (p.attempts >= 10) { var pc = Math.round((t.attempts - p.attempts) / p.attempts * 100); s += ' (' + (pc > 0 ? '+' : pc < 0 ? '−' : '') + Math.abs(pc) + '%)'; }
+        return s;
+    }
+
+    function paintHero(d, instant) {
+        var txt = PERIOD_TXT[d.meta.period] || ['', ''];
+        elHl.textContent = 'Сдачи за ' + txt[0];
+        if (instant) { shown.num = d.totals.attempts; elNum.textContent = nf(d.totals.attempts); }
+        else tween(elNum, 'num', d.totals.attempts);
+        setDelta(d.totals.attempts, d.prev ? d.prev.attempts : null, elDelta);
+        elSub.textContent = heroSub(d);
+    }
+
+    function paintRows(d) {
+        tween($('sm-v-views'), 'views', d.totals.views);
+        tween($('sm-v-created'), 'created', d.totals.created);
+        tween($('sm-v-live'), 'live', d.totals.live);
+        $('sm-of').textContent = 'из ' + nf(d.total_tests);
+        setRowDelta($('sm-d-views'), d.totals.views, d.prev ? d.prev.views : null);
+        setRowDelta($('sm-d-created'), d.totals.created, d.prev ? d.prev.created : null);
+        setRowDelta($('sm-d-live'), d.totals.live, d.prev ? d.prev.live : null);
+    }
+
+    function paintRange(d) {
+        var withYear = d.meta.period === '365' || d.meta.period === 'all';
+        var a = d.meta.from, b = d.meta.to;
+        $('sm-range').textContent = fmtDate(a, withYear) + ' – ' + fmtDate(b, withYear);
+    }
+
+    function render(d) {
+        data = d;
+        paintHero(d); paintRows(d); paintRange(d);
+        $('sm-lg-ghost').hidden = !(d.ghost && (d.attempts.length <= 14 || d.meta.kind === 'week'));
+        var any = d.attempts.some(Boolean) || d.views.some(Boolean) || d.created.some(Boolean);
+        drawChart(d, { interactive: true });
+        var old = host.querySelector('.sm-empty'); if (old) old.remove();
+        if (!any) host.insertAdjacentHTML('beforeend', '<div class="sm-empty">За этот период активности нет</div>');
+        host.setAttribute('aria-label', 'Сдачи за ' + (PERIOD_TXT[d.meta.period] || [''])[0] + ': ' + d.totals.attempts + ', просмотры: ' + d.totals.views);
+    }
+
+    /* ---------- скраб по графику ---------- */
+    function scrub(i) {
+        if (!data) return;
+        var g = $('sm-guide'), pt = $('sm-pt');
+        var bars = host.querySelectorAll('.sm-bar.on');
+        for (var k = 0; k < bars.length; k++) bars[k].classList.remove('on');
+        if (i == null) {
+            host.classList.remove('is-hover'); root.classList.remove('is-scrub');
+            paintHero(data, true);
+            return;
+        }
+        host.classList.add('is-hover'); root.classList.add('is-scrub');
+        var bar = host.querySelector('.sm-bar[data-i="' + i + '"]'); if (bar) bar.classList.add('on');
+        var x = geo.X(i);
+        g.setAttribute('x1', x); g.setAttribute('x2', x);
+        pt.setAttribute('cx', x); pt.setAttribute('cy', geo.Y(data.views[i]));
+        elHl.textContent = data.titles[i];
+        shown.num = data.attempts[i]; elNum.textContent = nf(data.attempts[i]);
+        var parts = [];
+        if (data.views[i]) parts.push(nf(data.views[i]) + ' ' + plural(data.views[i], 'просмотр', 'просмотра', 'просмотров'));
+        if (data.created[i]) parts.push(nf(data.created[i]) + ' ' + plural(data.created[i], 'новый тест', 'новых теста', 'новых тестов'));
+        elSub.textContent = parts.length ? parts.join(' · ') : 'Без активности';
+    }
+
+    function idxAt(ev) {
+        var r = host.getBoundingClientRect();
+        var x = ev.clientX - r.left;
+        return Math.max(0, Math.min(geo.n - 1, Math.floor(x / geo.slot)));
+    }
+    var lastI = null;
+    host.addEventListener('pointermove', function (ev) {
+        if (!geo || !data) return;
+        var i = idxAt(ev);
+        if (i !== lastI) { lastI = i; scrub(i); }
+    });
+    host.addEventListener('pointerleave', function () { lastI = null; scrub(null); });
+    host.addEventListener('pointercancel', function () { lastI = null; scrub(null); });
+    host.addEventListener('pointerup', function (ev) { if (ev.pointerType === 'touch') { lastI = null; setTimeout(function () { scrub(null); }, 900); } });
+
+    /* ---------- загрузка периода ---------- */
+    function select(p) {
+        var btns = tabs.querySelectorAll('.sm-tab');
+        for (var i = 0; i < btns.length; i++) {
+            var on = btns[i].getAttribute('data-p') === p;
+            btns[i].setAttribute('aria-selected', on ? 'true' : 'false');
+            btns[i].tabIndex = on ? 0 : -1;
+        }
+        placeThumb(true);
+    }
+
+    var reqId = 0;
+    function load(p) {
+        if (p === current && data) return;
+        var prevPeriod = current;
+        current = p;
+        select(p);
+        if (cache[p]) { reqId++; if (ctrl) ctrl.abort(); root.classList.remove('is-loading'); render(cache[p]); return; }
+        var my = ++reqId;
+        if (ctrl) ctrl.abort();
+        ctrl = window.AbortController ? new AbortController() : null;
+        root.classList.add('is-loading');
+        fetch(API + '?period=' + encodeURIComponent(p), { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' }, signal: ctrl ? ctrl.signal : undefined })
+            .then(function (r) {
+                if (r.status === 403 || r.status === 401) { toast('Статистика доступна в тарифе'); setTimeout(function () { location.reload(); }, 900); throw new Error('forbidden'); }
+                if (!r.ok) throw new Error('http ' + r.status);
+                return r.json();
+            })
+            .then(function (d) {
+                cache[p] = d;
+                if (p === current) render(d);
+            })
+            .catch(function (e) {
+                if (e && e.name === 'AbortError') return;
+                if (e && e.message === 'forbidden') return;
+                if (p === current) { current = prevPeriod; select(prevPeriod); }
+                toast('Не удалось загрузить статистику');
+            })
+            .then(function () { if (my === reqId) root.classList.remove('is-loading'); });
+    }
+
+    tabs.addEventListener('click', function (e) {
+        var b = e.target.closest('.sm-tab');
+        if (b) load(b.getAttribute('data-p'));
+    });
+    tabs.addEventListener('keydown', function (e) {
+        if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+        var list = Array.prototype.slice.call(tabs.querySelectorAll('.sm-tab'));
+        var i = list.findIndex(function (b) { return b.getAttribute('aria-selected') === 'true'; });
+        var next = list[(i + (e.key === 'ArrowRight' ? 1 : list.length - 1)) % list.length];
+        e.preventDefault(); next.focus(); load(next.getAttribute('data-p'));
+    });
+
+    /* ---------- старт ---------- */
+    var seed = null;
+    var seedEl = $('sm-initial');
+    if (seedEl) { try { seed = JSON.parse(seedEl.textContent); } catch (e) { seed = null; } }
+
+    function boot() {
+        placeThumb(false);
+        if (seed) { cache['7'] = seed; render(seed); }
+        else { current = ''; load('7'); }
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+
+    var rz = null;
+    if (window.ResizeObserver) {
+        new ResizeObserver(function () {
+            cancelAnimationFrame(rz);
+            rz = requestAnimationFrame(function () {
+                placeThumb(false);
+                if (data && geo && host.clientWidth !== geo.W) {
+                    lastI = null;
+                    var empty = host.querySelector('.sm-empty');
+                    drawChart(data, { interactive: true });
+                    if (empty) host.appendChild(empty);
+                }
+            });
+        }).observe(root);
+    }
+})();
+</script>

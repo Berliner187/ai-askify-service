@@ -47,6 +47,8 @@
     <noscript><div><img src="https://mc.yandex.ru/watch/98823704" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
     <!-- /Yandex.Metrika counter -->
 
+    {% include 'components/shell_assets.html' %}
+
     <style>
         :root {
             --bg-main: #111119;
@@ -89,23 +91,6 @@
             border: 1px solid var(--card-border);
             border-radius: 24px;
         }
-
-        /* DYNAMIC ISLAND CAPSULE */
-        .island-capsule {
-            background: var(--bg-main);
-            backdrop-filter: blur(28px);
-            -webkit-backdrop-filter: blur(28px);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.8);
-            border-radius: 9999px;
-            transition: max-width 0.45s var(--spring-bounce), padding 0.35s var(--spring-smooth), transform 0.4s var(--spring-bounce), border-color 0.3s ease;
-            will-change: max-width, transform;
-        }
-        .island-capsule.mode-header { max-width: 52rem; width: 100%; padding: 0.5rem 1.25rem; }
-        .island-capsule.mode-notify { max-width: 24rem; width: auto; padding: 0.5rem 1.25rem; transform: scale(1.02); background: rgba(18, 17, 20, 0.98); }
-        .island-capsule.theme-success { border-color: rgba(16, 185, 129, 0.45); }
-        .island-capsule.theme-error { border-color: rgba(239, 68, 68, 0.45); }
-        .island-layer { transition: opacity 0.22s var(--ease-out), transform 0.3s var(--spring-bounce); }
 
         .spring-btn {
             transition: transform 0.2s var(--spring-bounce), background-color 0.15s, border-color 0.15s, color 0.15s;
@@ -355,27 +340,6 @@
         /* ==========================================================================
            ПРАВАЯ КОЛОНКА
            ========================================================================== */
-        .h-stat {
-            padding: 12px 14px;
-            border-radius: 16px;
-            background: #111119;
-            border: 1px solid rgba(255, 255, 255, 0.06);
-        }
-        .h-stat span {
-            display: block;
-            font: 500 10px/1 'Golos Text';
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-            color: #71717A;
-        }
-        .h-stat b {
-            display: block;
-            margin-top: 9px;
-            font: 700 22px/1 'Golos Text';
-            letter-spacing: -0.04em;
-            color: #FAFAFA;
-        }
-
         .h-top {
             position: relative;
             display: block;
@@ -453,70 +417,12 @@
 </head>
 <body class="min-h-full flex flex-col antialiased selection:bg-indigo-600 selection:text-white">
 
-    <!-- ЛЕВЫЙ ВЕРТИКАЛЬНЫЙ ДОК (DESKTOP) -->
-    <aside data-rv="left" data-rv-order="0" class="hidden lg:flex fixed left-5 top-1/2 -translate-y-1/2 flex-col items-center gap-6 py-6 px-3.5 glass-panel z-40 shadow-2xl">
-        <a href="/" class="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors" title="Главная">
-            <img src="{% static 'img/logo.png' %}" alt="Logo" class="w-5 h-auto">
-        </a>
-        <div class="w-6 h-px bg-white/10"></div>
-        <nav class="flex flex-col gap-4">
-            <a href="{% url 'create' %}" class="w-11 h-11 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 flex items-center justify-center hover:bg-indigo-600 hover:text-white spring-btn group" title="Создать тест">
-                <i class="fas fa-plus text-sm group-hover:rotate-90 transition-transform duration-300"></i>
-            </a>
-            <a href="{% url 'history' %}" class="w-11 h-11 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-600/30 spring-btn" title="История тестов" aria-current="page">
-                <i class="fa-sharp fa-solid fa-clock-rotate-left fa-layer-group text-sm"></i>
-            </a>
-            <a href="{% url 'profile_redirect' %}" class="w-11 h-11 rounded-2xl bg-white/5 border border-white/5 text-gray-400 flex items-center justify-center hover:text-white hover:bg-white/10 spring-btn" title="Профиль">
-                <i class="fas fa-user-astronaut text-sm"></i>
-            </a>
-        </nav>
-        <div class="w-6 h-px bg-white/10 mt-auto"></div>
-        <a href="{% url 'logout' %}" class="w-11 h-11 rounded-2xl text-gray-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors flex items-center justify-center" title="Выйти">
-            <i class="fas fa-arrow-right-from-bracket text-sm"></i>
-        </a>
-    </aside>
-
-    <!-- МОБИЛЬНЫЙ DOCK -->
-    <nav data-rv data-rv-order="5" class="lg:hidden fixed bottom-4 left-1/2 -translate-x-1/2 island-capsule rounded-full px-6 py-3 flex items-center gap-6 z-40 shadow-2xl">
-        <a href="/" class="text-gray-400 hover:text-white"><i class="fas fa-home text-base"></i></a>
-        <a href="{% url 'create' %}" class="text-gray-400 hover:text-white"><i class="fas fa-plus text-base"></i></a>
-        <a href="{% url 'history' %}" class="w-9 h-9 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-600/30" aria-current="page"><i class="fas fa-layer-group text-sm"></i></a>
-        <a href="{% url 'profile_redirect' %}" class="text-gray-400 hover:text-white"><i class="fas fa-user text-base"></i></a>
-    </nav>
+    {% include 'components/shell_nav.html' with nav_active='history' %}
 
     <!-- ОСНОВНОЙ КОНТЕНТНЫЙ БЛОК -->
     <div class="lg:pl-28 flex-grow flex flex-col">
 
-        <!-- DYNAMIC ISLAND HEADER -->
-        <header data-rv="drop" data-rv-order="0" class="sticky top-4 z-40 w-full px-4 flex justify-center pointer-events-none">
-            <div id="dynamic-island" class="island-capsule mode-header pointer-events-auto flex items-center justify-between relative overflow-hidden min-h-[44px]">
-
-                <div id="island-controls" class="island-layer w-full flex items-center justify-between gap-4">
-                    <div class="flex items-center gap-2.5 text-xs font-semibold">
-                        <a href="/" class="flex-shrink-0 transition-opacity hover:opacity-80 mr-1">
-                            <img src="{% static 'img/logo.png' %}" alt="Logo" class="w-5 h-auto">
-                        </a>
-                        <span class="text-gray-600 select-none">/</span>
-                        <span class="text-white font-medium">Мои тесты</span>
-                    </div>
-
-                    <div class="flex items-center gap-2 font-mono-nums">
-                        <span class="text-[10px] uppercase tracking-wider text-gray-500 hidden sm:inline">Всего</span>
-                        <span class="px-2.5 py-0.5 rounded-full bg-white/5 border border-white/10 text-xs font-semibold text-gray-300">
-                            {{ total_surveys }}
-                        </span>
-                    </div>
-                </div>
-
-                <div id="island-notice" class="island-layer hidden w-full items-center justify-center gap-3 select-none">
-                    <span id="island-icon-box" class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] flex-shrink-0">
-                        <i id="island-icon" class="fas fa-check"></i>
-                    </span>
-                    <span id="island-text" class="text-xs font-semibold text-white tracking-wide truncate"></span>
-                </div>
-
-            </div>
-        </header>
+        {% include 'components/shell_island.html' with island_here='Мои тесты' island_meta=username island_meta_icon='user' island_badge=user.is_superuser|yesno:"Root," %}
 
         <!-- РАБОЧАЯ СЕТКА (8 / 4) -->
         <main class="max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 flex-grow space-y-6 mt-10">
@@ -583,7 +489,6 @@
                                     <button type="button" class="h-act is-soft is-danger" data-delete="{{ survey.survey_id }}" data-title="{{ survey.title }}" title="Удалить" aria-label="Удалить тест">
                                         <i class="fas fa-trash-can"></i>
                                     </button>
-                                    <span class="h-chevron" aria-hidden="true"><i class="fas fa-arrow-right"></i></span>
                                 </div>
                             </article>
                         {% empty %}
@@ -642,28 +547,7 @@
                 <!-- ПРАВАЯ КОЛОНКА -->
                 <aside class="lg:col-span-4 space-y-4 lg:sticky lg:top-20 w-full">
 
-                    <div data-rv data-rv-order="3" class="glass-panel p-5 space-y-3.5">
-                        <span class="text-[10px] font-mono-nums uppercase tracking-[0.16em] text-zinc-500 block">Сводка</span>
-
-                        <div class="grid grid-cols-2 gap-2">
-                            <div class="h-stat">
-                                <span>Тестов</span>
-                                <b data-count="{{ total_surveys }}">{{ total_surveys }}</b>
-                            </div>
-                            <div class="h-stat">
-                                <span>Сдач</span>
-                                <b data-count="{{ total_attempts_all }}" class="!text-emerald-300">{{ total_attempts_all }}</b>
-                            </div>
-                            <div class="h-stat">
-                                <span>Просмотров</span>
-                                <b data-count="{{ total_views }}">{{ total_views }}</b>
-                            </div>
-                            <div class="h-stat">
-                                <span>Вопросов</span>
-                                <b data-count="{{ total_questions }}">{{ total_questions }}</b>
-                            </div>
-                        </div>
-                    </div>
+                    {% include 'components/history_summary.html' %}
 
                     {% if top_survey %}
                     <a data-rv data-rv-order="3" href="{% url 'preview_test' top_survey.survey_id %}" class="h-top space-y-3">
@@ -728,6 +612,8 @@
             </div>
         </div>
     </div>
+
+    {% include 'components/shell_assets_js.html' %}
 
     <script>
         const reduceMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -810,55 +696,7 @@
             });
         }
 
-        /* ==========================================================================
-           DYNAMIC ISLAND
-           ========================================================================== */
-        const Island = (() => {
-            const $island = $('#dynamic-island');
-            const $controls = $('#island-controls');
-            const $notice = $('#island-notice');
-            const $text = $('#island-text');
-            const $icon = $('#island-icon');
-            const $iconBox = $('#island-icon-box');
-            let timer = null;
-
-            const THEMES = {
-                success: { themeClass: 'theme-success', icon: 'fa-check', iconBg: 'bg-emerald-500 text-black font-bold' },
-                error: { themeClass: 'theme-error', icon: 'fa-xmark', iconBg: 'bg-rose-500 text-white font-bold' }
-            };
-
-            function notify(message, type = 'success', customIcon = null, duration = 2200) {
-                if (timer) clearTimeout(timer);
-                const config = THEMES[type] || THEMES.success;
-
-                $controls.css({ opacity: 0, transform: 'scale(0.94)' });
-                setTimeout(() => {
-                    $controls.addClass('hidden');
-                    $text.text(message);
-                    $icon.attr('class', `fas ${customIcon || config.icon}`);
-                    $iconBox.attr('class', `w-5 h-5 rounded-full flex items-center justify-center text-[10px] flex-shrink-0 ${config.iconBg}`);
-                    $island.removeClass('mode-header theme-success theme-error').addClass(`mode-notify ${config.themeClass}`);
-                    $notice.removeClass('hidden').addClass('flex').css({ opacity: 0, transform: 'scale(0.85)' });
-                    requestAnimationFrame(() => $notice.css({ opacity: 1, transform: 'scale(1)' }));
-                }, 120);
-
-                timer = setTimeout(() => {
-                    $notice.css({ opacity: 0, transform: 'scale(0.85)' });
-                    setTimeout(() => {
-                        $notice.addClass('hidden').removeClass('flex');
-                        $island.removeClass('mode-notify theme-success theme-error').addClass('mode-header');
-                        $controls.removeClass('hidden');
-                        requestAnimationFrame(() => $controls.css({ opacity: 1, transform: 'scale(1)' }));
-                        timer = null;
-                    }, 160);
-                }, duration);
-            }
-
-            return {
-                success: (msg, icon) => notify(msg, 'success', icon),
-                error: (msg, icon) => notify(msg, 'error', icon)
-            };
-        })();
+        /* Остров — общий, из оболочки (shell.js): Island.success / error / warn / info. Локальной копии здесь быть не должно. */
 
         /* ==========================================================================
            КОПИРОВАНИЕ ССЫЛКИ — кнопка морфится в галочку
@@ -913,7 +751,6 @@
                     <div class="h-actions">
                         <button type="button" class="h-act is-soft" data-copy="${TAKE_URL(id)}" title="Скопировать ссылку для учеников" aria-label="Скопировать ссылку"><i class="fas fa-link"></i></button>
                         <button type="button" class="h-act is-soft is-danger" data-delete="${id}" data-title="${title}" title="Удалить" aria-label="Удалить тест"><i class="fas fa-trash-can"></i></button>
-                        <span class="h-chevron" aria-hidden="true"><i class="fas fa-arrow-right"></i></span>
                     </div>
                 </article>`;
         }

@@ -65,6 +65,9 @@ urlpatterns = [
     path('register-view/<str:survey_id>/', register_survey_view, name='register_survey_view'),
     path('api/surveys/<uuid:survey_id>/toggle-answers/', toggle_answers, name='toggle-answers'),
     path('api/t/<str:survey_id>/submit/', submit_answers, name='submit_answers'),
+    path('api/t/<str:survey_id>/start/', start_attempt, name='start_attempt'),
+    path('api/t/<str:survey_id>/event/', attempt_event, name='attempt_event'),
+    path('api/surveys/<uuid:survey_id>/settings/', api_update_survey_settings, name='api_update_survey_settings'),
     path('api/c/<uuid:survey_id>/result/export/excel/', export_results_to_excel, name='export_results_to_excel'),
 
     path('drop-survey/<str:survey_id>/', drop_survey, name='drop-survey'),
@@ -72,6 +75,7 @@ urlpatterns = [
     path('api/history/search/', api_search_history, name='api_search_history'),
     path('api/get-history/', api_get_history, name='api_history'),
     path('load-more-surveys/', load_more_surveys, name='load-more-surveys'),
+    path('api/history/summary/', api_history_summary, name='api_history_summary'),
 
     path('api/admin/block_ip/', block_ip_api, name='api_block_ip'),
     path('api/admin/promote_user/', promote_user_api, name='api_promote_user'),

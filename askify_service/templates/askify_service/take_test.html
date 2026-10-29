@@ -286,6 +286,7 @@
                     <span id="header-survey-title" class="text-white font-medium truncate max-w-[170px] sm:max-w-[280px]" title="{{ survey.title }}">{{ survey.title|default:"Тест" }}</span>
                 </div>
                 <span id="header-progress-text" class="font-mono-nums text-xs text-gray-400 flex-shrink-0">Старт</span>
+                <span id="header-timer" class="hidden font-mono-nums text-xs font-bold text-white flex-shrink-0"></span>
             </div>
 
             <div id="island-notice" class="hidden w-full items-center justify-center gap-2.5 select-none font-mono-nums text-xs">
@@ -315,10 +316,13 @@
                 <ul data-st style="--i:2" class="meta mt-5">
                     <li><b id="meta-count">{{ survey.questions_count }}</b><span id="meta-count-label">вопросов</span></li>
                     <li><b id="meta-eta">~1</b><span>мин</span></li>
+                    {% if time_limit_minutes %}<li><b>{{ time_limit_minutes }}</b><span>мин на тест</span></li>{% endif %}
+                    {% if available_until %}<li><span>до</span><b>{{ available_until|date:"d.m, H:i" }}</b></li>{% endif %}
                 </ul>
 
                 <div data-st style="--i:3" class="h-px bg-white/[0.07] my-7"></div>
 
+                {% if is_closed %}<p class="hint">Срок сдачи истёк</p>{% else %}
                 <form id="start-test-form" data-st style="--i:4" autocomplete="on" novalidate>
                     <label for="student-name" class="kicker block mb-2.5">Ваше имя</label>
 
@@ -336,11 +340,14 @@
                         <button type="button" id="name-change" class="hidden">Сменить</button>
                     </p>
 
+                    <p class="hint mb-4"><i class="fas fa-eye text-[10px]"></i>Уходы со страницы фиксируются и видны автору</p>
+
                     <button type="submit" id="start-button" disabled class="btn-main">
                         <span>Начать</span>
                         <i class="fas fa-arrow-right"></i>
                     </button>
                 </form>
+                {% endif %}
 
             </div>
         </section>
@@ -488,7 +495,7 @@
     <footer class="w-full pb-24 lg:pb-8 pt-4">
         <div class="max-w-2xl mx-auto px-4 text-center space-y-2">
             <p class="text-xs text-gray-500">
-                <span class="text-gray-300 font-semibold">Летучка AI</span> — моментальное создание интерактивных тестов из любых учебных материалов
+                <span class="text-gray-300 font-semibold">Летучка AI</span> — создание учебных тестов из любых учебных материалов
             </p>
             <div class="flex items-center justify-center gap-3 text-[11px] text-gray-600">
                 <span>© 2024–2026</span>
@@ -516,6 +523,59 @@
         let studentName = '';
         let studentAnswers = {};
         let submitting = false;
+
+        const TIME_LIMIT = {{ time_limit_minutes|default:0 }} * 60;
+        let attemptToken = null, timerId = null, deadlineAt = null, awaySince = null, armed = false;
+        const integrity = { switches: 0, away: 0, copies: 0 };
+
+        function sendEvent(payload) {
+            if (!attemptToken) return;
+            const url = '/api/t/' + surveyId + '/event/';
+            const body = JSON.stringify(Object.assign({ token: attemptToken }, payload));
+            // строка уходит как text/plain — sendBeacon не ругается на тип
+            if (!(navigator.sendBeacon && navigator.sendBeacon(url, body))) {
+                fetch(url, { method: 'POST', body: body, keepalive: true }).catch(function () {});
+            }
+        }
+
+        function armIntegrity() {
+            if (armed) return; armed = true;
+            const leave = function () { if (awaySince === null && !submitting) awaySince = Date.now(); };
+            const back = function () {
+                if (awaySince === null) return;
+                const away = Math.round((Date.now() - awaySince) / 1000);
+                awaySince = null;
+                if (away < 1 || submitting) return;       // микро-blur от системных штук
+                integrity.switches++; integrity.away += away;
+                sendEvent({ kind: 'return', away: away, q: currentIdx + 1 });
+                Island.notify('Уход со страницы зафиксирован', 'fa-eye');
+            };
+            document.addEventListener('visibilitychange', function () { document.hidden ? leave() : back(); });
+            window.addEventListener('blur', leave);   // второе окно, сплит-скрин
+            window.addEventListener('focus', back);
+            document.addEventListener('copy', function () {
+                if (!String(window.getSelection())) return;
+                integrity.copies++; sendEvent({ kind: 'copy', q: currentIdx + 1 });
+            });
+            window.addEventListener('beforeunload', function (e) {
+                if (!submitting && !window.__allowLeave) { e.preventDefault(); e.returnValue = ''; }
+            });
+        }
+
+        function startTimer(seconds) {
+            deadlineAt = Date.now() + seconds * 1000;   // от Date.now, чтобы троттлинг вкладки не сбивал
+            $('#header-timer').removeClass('hidden');
+            const tick = function () {
+                const left = Math.max(0, Math.round((deadlineAt - Date.now()) / 1000));
+                $('#header-timer').text(Math.floor(left / 60) + ':' + String(left % 60).padStart(2, '0'))
+                    .toggleClass('text-rose-400', left <= 60);
+                if (left === 0) {
+                    clearInterval(timerId);
+                    if (!submitting) { Island.notify('Время вышло', 'fa-hourglass-end'); finishAndSubmitTest(); }
+                }
+            };
+            tick(); timerId = setInterval(tick, 1000);
+        }
 
         function getCookie(name) {
             let cookieValue = null;
@@ -664,17 +724,32 @@
             }
         }
 
-        $('#start-test-form').on('submit', function (e) {
+        $('#start-test-form').on('submit', async function (e) {
             e.preventDefault();
             studentName = $('#student-name').val().trim();
             if (!studentName || !totalQuestions) return;
 
-            saveName(studentName);   // продлеваем срок при каждом старте
+            $('#start-button').prop('disabled', true);
+            let remaining = null;
+            try {
+                const r = await fetch('/api/t/' + surveyId + '/start/', { method: 'POST', body: '{}' });
+                const d = await r.json();
+                if (!d.success) { Island.notify(d.error || 'Тест закрыт', 'fa-lock'); return; }
+                attemptToken = d.token;
+                remaining = d.remaining;
+                if (d.resumed) Island.notify('Таймер идёт с прошлого раза', 'fa-clock');
+            } catch (err) {
+                // сеть упала — пускаем, сервер пометит попытку как no_token
+            } finally {
+                $('#start-button').prop('disabled', false);
+            }
 
+            saveName(studentName);
             showView('questions-view');
             $('#total-q-num').text(totalQuestions);
             renderQuestion(currentIdx);
-
+            armIntegrity();
+            if (remaining !== null) startTimer(remaining);
             registerSurveyView();
         });
 
@@ -746,6 +821,7 @@
 
         // ---------- ИТОГ ----------
         async function finishAndSubmitTest() {
+            clearInterval(timerId);
             submitting = true;
             $('#questions-view').addClass('hidden');
             $('#submitting-overlay').removeClass('hidden').addClass('flex');
@@ -758,7 +834,7 @@
                         'Content-Type': 'application/json',
                         'X-CSRFToken': getCookie('csrftoken') || $('meta[name="csrf-token"]').attr('content')
                     },
-                    body: JSON.stringify({ student_name: studentName, answers: studentAnswers })
+                    body: JSON.stringify({ student_name: studentName, answers: studentAnswers, token: attemptToken, client: integrity })
                 });
 
                 const data = await response.json();
@@ -794,6 +870,7 @@
                 setTimeout(function () { $('#score-ring').css('stroke-dashoffset', offset); }, 120);
                 if (percent >= 50) fireConfetti();
             } catch (err) {
+                window.__allowLeave = true;
                 submitting = false;
                 Island.notify('Сбой проверки теста', 'fa-triangle-exclamation');
                 setTimeout(function () { window.location.reload(); }, 2000);

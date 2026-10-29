@@ -13,12 +13,14 @@ import logging
 import socket
 import ctypes
 import struct
+import ipaddress
 from urllib.parse import urlparse
 from asgiref.sync import sync_to_async
 from functools import lru_cache
 
 from django.core.cache import cache
 from django.http import JsonResponse
+from django.conf import settings
 
 from openai import OpenAI, APIStatusError
 import requests
@@ -719,12 +721,30 @@ def get_year_now():
     return datetime.now().strftime("%Y")
 
 
+def _normalize_ip(value):
+    try:
+        return str(ipaddress.ip_address(value.strip()))
+    except (ValueError, AttributeError):
+        return None
+
+
 def get_client_ip(request):
-    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-    if x_forwarded_for:
-        ip = x_forwarded_for.split(',')[0]
-    else:
-        ip = request.META.get('REMOTE_ADDR')
+    cached = getattr(request, '_askify_client_ip', None)
+    if cached is not None:
+        return cached
+
+    remote = request.META.get('REMOTE_ADDR', '')
+    num_proxies = getattr(settings, 'NUM_PROXIES', 1)
+    ip = None
+
+    if num_proxies:
+        xff = request.META.get('HTTP_X_FORWARDED_FOR', '')
+        parts = [p for p in xff.split(',') if p.strip()]
+        if len(parts) >= num_proxies:
+            ip = _normalize_ip(parts[-num_proxies])
+
+    ip = ip or _normalize_ip(remote) or remote
+    request._askify_client_ip = ip
     return ip
 
 

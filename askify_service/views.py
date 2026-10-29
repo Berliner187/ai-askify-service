@@ -63,6 +63,9 @@ from .constants import *
 from .tracer import *
 from .models import AccessService, SurveyManager
 from .traffic import log_traffic
+from .history_summary import window as hs_window, assemble_summary
+from .stats_periods import normalize_period
+
 # from .quant import Quant
 from askify_service.services.guest_auth import get_or_create_guest_user
 
@@ -91,7 +94,7 @@ from openpyxl.utils import get_column_letter
 from urllib.parse import quote
 import docx
 import html
-
+import statistics
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
@@ -127,7 +130,10 @@ from io import BytesIO
 from zoneinfo import ZoneInfo
 import xml.etree.ElementTree as ET
 from tempfile import TemporaryDirectory
-
+from .stats_periods import (
+    normalize_period, build_plan, chart_payload, meta_payload,
+)
+from django.db.models import Min
 
 env = environ.Env()
 environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
@@ -451,221 +457,61 @@ def user_stats_api(request):
 
 
 @login_required
-@login_required
-def personal_charts_data_api(request):
-    """
-    API-эндпоинт для ЛИЧНОЙ статистики создателя тестов.
-    """
-    staff_id = get_staff_id(request)
-    today = timezone.now().date()
-    start_date = today - timedelta(days=6)
-
-    # Расчеты для Графика 1
-    surveys_last_week_qs = Survey.objects.filter(
-        id_staff=staff_id, created_at__date__gte=start_date
-    )
-    daily_counts = (
-        surveys_last_week_qs.values("created_at__date")
-        .annotate(count=Count("id"))
-        .order_by("created_at__date")
-    )
-    activity_map = {item["created_at__date"]: item["count"] for item in daily_counts}
-
-    # Расчеты для Графика 2
-    daily_views = (
-        SurveyUniqueView.objects.filter(
-            survey__id_staff=staff_id, timestamp__date__gte=start_date
-        )
-        .values("timestamp__date")
-        .annotate(count=Count("id"))
-        .order_by("timestamp__date")
-    )
-    views_map = {item["timestamp__date"]: item["count"] for item in daily_views}
-
-    labels = []
-    activity_data = []
-    views_data = []
-    for i in range(7):
-        day = start_date + timedelta(days=i)
-        labels.append(day.strftime("%d.%m"))
-        activity_data.append(activity_map.get(day, 0))
-        views_data.append(views_map.get(day, 0))
-
-    # --- График 3 ---
-    all_user_surveys = Survey.objects.filter(id_staff=staff_id)
-    quality_distribution = {
-        "Короткие (1-4)": 0,
-        "Оптимальные (5-8)": 0,
-        "Длинные (9+)": 0,
-    }
-    for survey in all_user_surveys:
-        try:
-            num_questions = len(survey.get_questions())
-            if 1 <= num_questions <= 4:
-                quality_distribution["Короткие (1-4)"] += 1
-            elif 5 <= num_questions <= 8:
-                quality_distribution["Оптимальные (5-8)"] += 1
-            else:
-                quality_distribution["Длинные (9+)"] += 1
-        except (json.JSONDecodeError, TypeError):
-            continue
-
-    # --- График 4---
-    all_user_surveys = Survey.objects.filter(id_staff=staff_id)
-    question_types = {
-        "Факты (Что, Кто, Где)": 0,
-        "Анализ (Почему, Как)": 0,
-        "Классификация (Какой, Выберите)": 0,
-        "Прочее": 0,
-    }
-    keyword_map = {
-        "Факты (Что, Кто, Где)": ["что", "кто", "где", "когда", "сколько", "назовите"],
-        "Анализ (Почему, Как)": ["почему", "как", "объясните", "сравните"],
-        "Классификация (Какой, Выберите)": [
-            "какой",
-            "какая",
-            "какое",
-            "какие",
-            "выберите",
-            "укажите",
-        ],
-    }
-
-    for survey in all_user_surveys:
-        try:
-            questions = survey.get_questions()
-            for q_data in questions:
-                question_text = q_data.get("question", "").lower()
-                found_type = False
-                for q_type, keywords in keyword_map.items():
-                    if any(keyword in question_text for keyword in keywords):
-                        question_types[q_type] += 1
-                        found_type = True
-                        break
-                if not found_type:
-                    question_types["Прочее"] += 1
-        except (json.JSONDecodeError, TypeError):
-            continue
-
-    filtered_question_types = {k: v for k, v in question_types.items() if v > 0}
-
-    return JsonResponse(
-        {
-            "activity_chart": {"labels": labels, "data": activity_data},
-            "views_chart": {"labels": labels, "data": views_data},
-            "quality_chart": {
-                "labels": list(quality_distribution.keys()),
-                "data": list(quality_distribution.values()),
-            },
-            "question_types_chart": {
-                "labels": list(filtered_question_types.keys()),
-                "data": list(filtered_question_types.values()),
-            },
-        }
-    )
-
-
-@login_required
 def student_charts_data_api(request):
-    """
-    API-эндпоинт для статистики по прохождениям тестов УЧЕНИКАМИ (Europe/Moscow).
-    """
-    # 1. Активируем часовой пояс Москвы для корректного created_at__date в ORM-запросах
+    """Статистика прохождений тестов учениками (Europe/Moscow) за выбранный период."""
     timezone.activate(MOSCOW_TZ)
-    
     staff_id = get_staff_id(request)
-    
-    # 2. Берем текущую дату СТРОГО по Москве
-    now_moscow = timezone.now().astimezone(MOSCOW_TZ)
-    today = now_moscow.date()
-    start_date = today - timedelta(days=6)
+    period, is_premium, plan = _stats_context(request, staff_id)
+    start = plan["start"]
 
     user_surveys = Survey.objects.filter(id_staff=staff_id)
-    all_attempts = TestAttempt.objects.filter(survey__in=user_surveys)
+    attempts = TestAttempt.objects.filter(survey__in=user_surveys, created_at__date__gte=start)
 
-    # --- 1. Распределение оценок ---
-    percentage_expression = ExpressionWrapper(
-        (F("score") * 100.0) / F("total_questions"), output_field=FloatField()
-    )
-
-    attempts_with_percentage = TestAttempt.objects.filter(
-        survey__in=user_surveys, total_questions__gt=0
-    ).annotate(percentage_score=percentage_expression)
-
-    attempts_agg = attempts_with_percentage.aggregate(
-        high_scores=Count("id", filter=Q(percentage_score__gte=80)),
-        medium_scores=Count(
-            "id", filter=Q(percentage_score__gte=50, percentage_score__lt=80)
-        ),
-        low_scores=Count("id", filter=Q(percentage_score__lt=50)),
-    )
-
-    scores_data = [
-        attempts_agg.get("high_scores") or 0,
-        attempts_agg.get("medium_scores") or 0,
-        attempts_agg.get("low_scores") or 0,
-    ]
-
-    # --- 2. Активность по дням (за последние 7 дней) ---
-    attempts_last_week = (
-        TestAttempt.objects.filter(
-            survey__in=user_surveys,
-            created_at__date__gte=start_date,
+    # Оценки за период
+    pct = ExpressionWrapper((F("score") * 100.0) / F("total_questions"), output_field=FloatField())
+    agg = (
+        attempts.filter(total_questions__gt=0).annotate(percentage_score=pct)
+        .aggregate(
+            high=Count("id", filter=Q(percentage_score__gte=80)),
+            medium=Count("id", filter=Q(percentage_score__gte=50, percentage_score__lt=80)),
+            low=Count("id", filter=Q(percentage_score__lt=50)),
         )
-        .values("created_at__date")
-        .annotate(count=Count("id"))
-        .order_by("created_at__date")
     )
+    scores_data = [agg["high"] or 0, agg["medium"] or 0, agg["low"] or 0]
 
-    daily_attempts = {
-        item["created_at__date"]: item["count"] for item in attempts_last_week
-    }
+    # Активность по корзинам
+    per_day = attempts.values("created_at__date").annotate(count=Count("id"))
+    day_map = {r["created_at__date"]: r["count"] for r in per_day}
 
-    activity_labels = []
-    activity_data = []
-    for i in range(7):
-        day = start_date + timedelta(days=i)
-        activity_labels.append(day.strftime("%d.%m"))
-        activity_data.append(daily_attempts.get(day, 0))
-
-    # Передаем tzinfo=MOSCOW_TZ, чтобы база сама сдвинула +3 часа перед группировкой
-    hourly_qs = (
-        all_attempts.filter(created_at__date__gte=start_date)
-        .annotate(hour=ExtractHour("created_at", tzinfo=MOSCOW_TZ))
-        .values("hour")
-        .annotate(count=Count("id"))
+    # По часам (МСК)
+    hourly = (
+        attempts.annotate(hour=ExtractHour("created_at", tzinfo=MOSCOW_TZ))
+        .values("hour").annotate(count=Count("id"))
     )
+    hourly_map = {r["hour"]: r["count"] for r in hourly}
 
-    hourly_data_dict = {item["hour"]: item["count"] for item in hourly_qs}
-    hourly_data = [hourly_data_dict.get(h, 0) for h in range(24)]
-
-    # --- 4. Топ тестов ---
-    survey_engagement = (
-        all_attempts.values("survey__title")
-        .annotate(attempts_count=Count("id"))
+    # Топ тестов за период
+    top = (
+        attempts.values("survey__title").annotate(attempts_count=Count("id"))
         .order_by("-attempts_count")[:7]
     )
 
-    return JsonResponse(
-        {
-            "scores_chart": {
-                "labels": ["Отлично (80-100%)", "Хорошо (50-79%)", "Плохо (<50%)"],
-                "data": scores_data,
-            },
-            "attempts_activity_chart": {
-                "labels": activity_labels,
-                "data": activity_data,
-            },
-            "hourly_activity_chart": {
-                "labels": [f"{h:02d}:00" for h in range(24)],
-                "data": hourly_data,
-            },
-            "survey_engagement_chart": {
-                "labels": [s["survey__title"] for s in survey_engagement],
-                "data": [s["attempts_count"] for s in survey_engagement],
-            },
-        }
-    )
+    return JsonResponse({
+        "meta": meta_payload(plan, period, is_premium),
+        "scores_chart": {
+            "labels": ["Отлично (80-100%)", "Хорошо (50-79%)", "Плохо (<50%)"],
+            "data": scores_data,
+        },
+        "attempts_activity_chart": chart_payload(plan, day_map),
+        "hourly_activity_chart": {
+            "labels": [f"{h:02d}:00" for h in range(24)],
+            "data": [hourly_map.get(h, 0) for h in range(24)],
+        },
+        "survey_engagement_chart": {
+            "labels": [t["survey__title"] for t in top],
+            "data": [t["attempts_count"] for t in top],
+        },
+    })
 
 
 @login_required
@@ -828,6 +674,14 @@ def page_history_surveys(request):
     ).filter(view_count__gt=0).order_by("-view_count").first()
     if top_survey:
         _decorate_history_survey(top_survey)
+    
+    subs_level = get_subscription_level(request)
+    summary_initial = build_history_summary(base_qs, "7") if subs_level >= 1 else None
+    
+    print(subs_level)
+    
+    access_service = AccessService(get_staff_id(request))
+    access_info = access_service.check_access()
 
     context = {
         "page_title": "История тестов | Летучка",
@@ -838,7 +692,9 @@ def page_history_surveys(request):
         "total_questions": total_stats["total_questions"] or 0,
         "total_attempts_all": total_attempts_all,
         "top_survey": top_survey,
-        "subscription_level": get_subscription_level(request),
+        "subscription_level": subs_level,
+        "summary_premium": access_info["can_generate"] and subs_level > 0,
+        "summary_initial": summary_initial,
         "total_available": getattr(request.user, "test_balance", 0),
     }
     log_traffic(request, "История")
@@ -1006,6 +862,61 @@ def load_more_surveys(request):
             return JsonResponse({"error": str(e)}, status=500)
 
     return JsonResponse({"error": "Invalid request"}, status=400)
+
+
+def _day_counts(qs, field):
+    """{date: count} по полю-дате. Группировка по дню в Москве (activate снаружи)."""
+    key = f"{field}__date"
+    return {r[key]: r["c"] for r in qs.values(key).annotate(c=Count("id"))}
+ 
+ 
+def build_history_summary(base_qs, period):
+    """base_qs — тесты пользователя (те же, что на странице истории)."""
+    with timezone.override(MOSCOW_TZ):
+        today = timezone.now().astimezone(MOSCOW_TZ).date()
+ 
+        first = None
+        if period == "all":
+            m = base_qs.aggregate(m=Min("created_at"))["m"]
+            first = m.astimezone(MOSCOW_TZ).date() if m else None
+ 
+        plan, cur, prev, span = hs_window(period, today, first)
+        lo = prev[0] if prev else cur[0]
+        hi = cur[1]
+ 
+        attempts = TestAttempt.objects.filter(survey__in=base_qs)
+        views = SurveyUniqueView.objects.filter(survey__in=base_qs)
+ 
+        att_map = _day_counts(attempts.filter(created_at__date__gte=lo, created_at__date__lte=hi), "created_at")
+        views_map = _day_counts(views.filter(timestamp__date__gte=lo, timestamp__date__lte=hi), "timestamp")
+        created_map = _day_counts(base_qs.filter(created_at__date__gte=lo, created_at__date__lte=hi), "created_at")
+ 
+        def live(a, b):
+            return (attempts.filter(created_at__date__gte=a, created_at__date__lte=b)
+                    .values("survey_id").distinct().count())
+ 
+        live_cur = live(*cur)
+        live_prev = live(*prev) if prev else 0
+        total_tests = base_qs.count()
+ 
+    return assemble_summary(period, plan, span, att_map, views_map, created_map,
+                            live_cur, live_prev, total_tests)
+ 
+ 
+@require_GET
+def api_history_summary(request):
+    """Сводка по периодам. Только платным: бесплатному — 403 и ни байта данных."""
+    if not request.user.is_authenticated:
+        return JsonResponse({"premium": False, "reason": "auth"}, status=401)
+    if get_subscription_level(request) < 1:
+        return JsonResponse({"premium": False, "reason": "subscription"}, status=403)
+    
+    period = normalize_period(request.GET.get("period"), True)
+    base_qs = Survey.objects.filter(id_staff=get_staff_id(request), is_visible=False)
+    resp = JsonResponse(build_history_summary(base_qs, period))
+    
+    return resp
+
 
 
 @login_required
@@ -1228,7 +1139,7 @@ class ManageSurveysView(View):
 
 
 def check_survey_edit_permissions(request, survey):
-    """Проверяет права: автор + (Премиум ИЛИ положительный баланс тестов)."""
+    """ Проверяет права: автор """
     if not request.user.is_authenticated:
         return False, "Требуется авторизация"
     if survey.id_staff != request.user.id_staff:
@@ -1238,7 +1149,7 @@ def check_survey_edit_permissions(request, survey):
     has_balance = getattr(request.user, "test_balance", 0) > 0
 
     if not (is_premium or has_balance):
-        return False, "Редактирование доступно только на тарифе PRO или при наличии пакетов тестов"
+        return False, "Редактирование доступно в платных тарифах"
     
     return True, None
 
@@ -2708,6 +2619,12 @@ def take_test(request, survey_id):
         author_username = AuthUser.objects.get(id_staff=survey.id_staff).username
     except Exception:
         author_username = "Сообщество Летучки"
+    
+    questions_list = [
+        {"question": q["question"], "options": q["options"], "type": q["type"]}
+        for q in survey.get_normalized_questions()
+    ]
+    random.shuffle(questions_list)
 
     context = {
         "survey": survey,
@@ -2715,11 +2632,88 @@ def take_test(request, survey_id):
         "author": author_username if len(author_username) < 40 else "Аноним",
         "page_title": f"{survey.title} ({survey.created_at})",
         "is_creator": get_is_creator(request, survey),
-        "username": get_username(request) if request.user.is_authenticated else ""
+        "username": get_username(request) if request.user.is_authenticated else "",
+        "time_limit_minutes": survey.time_limit_minutes,
+        "available_until": survey.available_until,
+        "is_closed": survey.is_closed,
     }
     log_traffic(request, "Пройти тест")
     
     return render(request, "askify_service/take_test.html", context)
+
+
+ATT_SALT = "letychka.attempt"
+TOKEN_MAX_AGE = 6 * 3600
+
+def _att_key(nonce):
+    return f"att:{nonce}"
+
+def _att_ttl(survey):
+    return survey.time_limit_minutes * 60 + 900 if survey.time_limit_minutes else 6 * 3600
+
+def _att_save(key, state, survey):
+    state["log"] = state["log"][-100:]
+    left = int(state["started"] + _att_ttl(survey) - timezone.now().timestamp())
+    cache.set(key, state, max(60, left))
+
+def _load_attempt(token, survey):
+    try:
+        data = signing.loads(token or "", salt=ATT_SALT, max_age=TOKEN_MAX_AGE)
+    except signing.BadSignature as e:
+        tracer_l.warning(f"ATT bad token: {e}")
+        return None, None
+    if data.get("s") != str(survey.survey_id):
+        return None, None
+    key = _att_key(data["n"])
+    state = cache.get(key)
+    if state is None:
+        tracer_l.info(f"ATT cache miss key={key} backend={cache.__class__.__name__}")
+        if data.get("t"):
+            state = {"started": float(data["t"]), "switches": 0, "away": 0, "copies": 0, "log": []}
+    return key, state
+
+def _clamp(v, hi=10_000):
+    try:
+        return max(0, min(int(v), hi))
+    except (TypeError, ValueError):
+        return 0
+
+
+def _build_integrity(survey, state, client, total_questions):
+    now = timezone.now()
+    sw_c = _clamp(client.get("switches"))
+    aw_c = _clamp(client.get("away"))
+    cp_c = _clamp(client.get("copies"))
+
+    if not state:
+        return {
+            "started_at": now,
+            "tab_switches": sw_c, "away_seconds": aw_c, "copy_events": cp_c,
+            "is_suspicious": True,
+            "integrity_log": [{"k": "no_token", "t": 0}],
+        }
+
+    started = datetime.fromtimestamp(state["started"], tz=ZoneInfo("UTC"))
+    duration = int((now - started).total_seconds())
+    switches = max(state["switches"], sw_c)
+    away = max(state["away"], aw_c)
+    copies = max(state["copies"], cp_c)
+
+    limit = (survey.time_limit_minutes or 0) * 60
+    timed_out = bool(limit) and duration > limit + 30
+    too_fast = duration < total_questions * 3
+
+    return {
+        "started_at": started,
+        "duration_seconds": duration,
+        "tab_switches": switches,
+        "away_seconds": away,
+        "copy_events": copies,
+        "timed_out": timed_out,
+        "is_suspicious": timed_out or too_fast or copies > 0
+                         or switches > survey.max_tab_switches or away >= 60,
+        "integrity_log": state["log"][-100:],
+    }
 
 
 @csrf_exempt
@@ -2730,6 +2724,10 @@ def submit_answers(request, survey_id):
     if request.method == "POST":
         survey = get_object_or_404(Survey, survey_id=survey_id)
         data = json.loads(request.body)
+        
+        key, state = _load_attempt(data.get("token"), survey)
+        if survey.is_closed and not (state and state["started"] <= survey.available_until.timestamp()):
+            return JsonResponse({"success": False, "error": "Срок сдачи истёк"}, status=403)
 
         student_name = data.get("student_name", "Аноним").strip()
         answers = data.get("answers", {})
@@ -2747,19 +2745,114 @@ def submit_answers(request, survey_id):
         
         now_moscow = timezone.now().astimezone(MOSCOW_TZ)
     
+        integrity = _build_integrity(survey, state, data.get("client") or {}, total_questions)
         TestAttempt.objects.create(
             survey=survey,
             student_name=student_name if student_name else "Аноним",
             answers_json=json.dumps(answers, ensure_ascii=False),
             score=score,
             total_questions=total_questions,
-            created_at=now_moscow
+            created_at=now_moscow,
+            **integrity,
         )
+        if key:
+            cache.delete(key)
+        request.session.pop(f"att_{survey.survey_id}", None)
+        
         tracer_l.info(f"STUDENT {student_name} {get_client_ip(request)} TAKE TEST {survey.title}")
 
         return JsonResponse({"success": True, "score": score, "total": total_questions})
 
     return JsonResponse({"error": "Invalid request"}, status=400)
+
+
+@csrf_exempt
+@require_POST
+def start_attempt(request, survey_id):
+    survey = get_object_or_404(Survey, survey_id=survey_id)
+    if survey.is_closed:
+        return JsonResponse({"success": False, "error": "Срок сдачи теста истёк"}, status=403)
+
+    skey = f"att_{survey.survey_id}"
+    old_nonce = request.session.get(skey)
+    state = cache.get(_att_key(old_nonce)) if old_nonce else None
+    now = timezone.now().timestamp()
+
+    if state:
+        state["log"].append({"k": "reload", "t": int(now - state["started"])})
+        nonce = old_nonce
+    else:
+        nonce = uuid.uuid4().hex
+        state = {"started": now, "switches": 0, "away": 0, "copies": 0,
+                 "log": [{"k": "restart", "t": 0}] if old_nonce else []}
+        request.session[skey] = nonce
+    _att_save(_att_key(nonce), state, survey)
+
+    elapsed = int(now - state["started"])
+    remaining = max(0, survey.time_limit_minutes * 60 - elapsed) if survey.time_limit_minutes else None
+    token = signing.dumps(
+        {"n": nonce, "s": str(survey.survey_id), "t": int(state["started"])},
+        salt=ATT_SALT,
+    )
+    return JsonResponse({"success": True, "token": token, "remaining": remaining, "resumed": elapsed > 3})
+
+
+@csrf_exempt
+@require_POST
+def attempt_event(request, survey_id):
+    survey = get_object_or_404(Survey, survey_id=survey_id)
+    try:
+        data = json.loads(request.body or "{}")
+    except json.JSONDecodeError:
+        return HttpResponse(status=400)
+
+    key, state = _load_attempt(data.get("token"), survey)
+    if not state:
+        return HttpResponse(status=204)
+
+    kind, t = data.get("kind"), int(timezone.now().timestamp() - state["started"])
+    q = _clamp(data.get("q"), 500) or None
+    if kind == "return":
+        away = _clamp(data.get("away"), 3600)
+        state["switches"] += 1
+        state["away"] += away
+        state["log"].append({"k": "return", "t": t, "a": away, "q": q})
+    elif kind == "copy":
+        state["copies"] += 1
+        state["log"].append({"k": "copy", "t": t, "q": q})
+    else:
+        return HttpResponse(status=204)
+
+    _att_save(key, state, survey)
+    return HttpResponse(status=204)
+
+
+@login_required
+@require_POST
+def api_update_survey_settings(request, survey_id):
+    survey = Survey.objects.filter(survey_id=survey_id).first()
+    if not survey:
+        return JsonResponse({"error": "Тест не найден"}, status=404)
+    if survey.id_staff != request.user.id_staff:
+        return JsonResponse({"error": "Доступ запрещен"}, status=403)
+
+    data = json.loads(request.body or "{}")
+    limit = _clamp(data.get("time_limit_minutes"), 300)
+    survey.time_limit_minutes = limit or None
+
+    raw = (data.get("available_until") or "").strip()
+    try:
+        survey.available_until = (
+            timezone.make_aware(datetime.strptime(raw, "%Y-%m-%dT%H:%M"), MOSCOW_TZ) if raw else None
+        )
+    except ValueError:
+        return JsonResponse({"error": "Неверный формат даты"}, status=400)
+
+    if "max_tab_switches" in data:
+        survey.max_tab_switches = _clamp(data["max_tab_switches"], 50)
+
+    survey.save(update_fields=["time_limit_minutes", "available_until", "max_tab_switches", "updated_at"])
+    return JsonResponse({"status": "success"})
 
 
 def get_question_insights(questions_stats):
@@ -2966,27 +3059,114 @@ def redirect_to_dashboard(request, survey_id):
         return redirect("login")
 
 
+COUNTED_ATTEMPT = "best"
+ 
+ 
+def _student_key(name):
+    """Ключ ученика: без регистра, лишних пробелов, ё == е."""
+    clean = " ".join((name or "").replace("ё", "е").replace("Ё", "Е").split())
+    return clean.casefold() or "аноним"
+ 
+ 
+def _answer_ok(given, correct):
+    """Сравнение без учёта порядка для мультивыбора."""
+    if isinstance(correct, list):
+        if isinstance(given, list):
+            return set(map(str, given)) == set(map(str, correct))
+        return len(correct) == 1 and given == correct[0]
+    if isinstance(given, list):
+        return len(given) == 1 and given[0] == correct
+    return given == correct
+ 
+ 
+def _fmt_duration(sec):
+    if sec is None:
+        return "—"
+    sec = int(sec)
+    h, rem = divmod(sec, 3600)
+    m, s = divmod(rem, 60)
+    return f"{h}:{m:02d}:{s:02d}" if h else f"{m}:{s:02d}"
+ 
+ 
+def _pct(a):
+    return round(a.score * 100 / a.total_questions) if a.total_questions else 0
+ 
+ 
+def _pick_counted(items):
+    """items отсортированы по created_at по возрастанию."""
+    if COUNTED_ATTEMPT == "first":
+        return items[0]
+    if COUNTED_ATTEMPT == "last":
+        return items[-1]
+    # лучшая; при равенстве — более ранняя
+    return max(items, key=lambda a: (_pct(a), -a.created_at.timestamp()))
+ 
+ 
+def _group_attempts(survey):
+    """-> (groups: {key: [attempts asc]}, counted: [attempt], all_attempts)"""
+    all_attempts = list(survey.attempts.all().order_by("created_at"))
+    groups = {}
+    for a in all_attempts:
+        groups.setdefault(_student_key(a.student_name), []).append(a)
+    counted = [_pick_counted(items) for items in groups.values()]
+    return groups, counted, all_attempts
+ 
+ 
+def _json_for_script(obj):
+    """JSON внутрь <script type=application/json> без риска закрыть тег."""
+    return mark_safe(json.dumps(obj, ensure_ascii=False, default=str).replace("</", "<\\/"))
+ 
+ 
+def _integrity_log(a):
+    log = getattr(a, "integrity_log", None) or []
+    if isinstance(log, str):
+        try:
+            log = json.loads(log)
+        except (json.JSONDecodeError, TypeError):
+            log = []
+    return log if isinstance(log, list) else []
+ 
+ 
 @login_required
 def view_results(request, survey_id):
     survey = get_object_or_404(Survey, survey_id=survey_id)
-
-    # TODO: Доделать заглушку: на фронт реализовать окно модальное с предупреждением
-    # if survey.id_staff != get_staff_id(request):
-    #     return
-
-    attempts_qs = survey.attempts.all().order_by("-created_at")
-    total_attempts = attempts_qs.count()
-
+ 
+    groups, counted, all_attempts = _group_attempts(survey)
+    attempts_total = len(all_attempts)
+    students_total = len(counted)
+ 
     try:
-        survey_questions_list = json.loads(survey.questions)
         questions_map = {
-            q["question"]: q["correct_answer"]
-            for q in survey_questions_list
-            if isinstance(q, dict)
+            q["question"]: (q.get("correct_answer") or q.get("correct_answers"))
+            for q in json.loads(survey.questions)
+            if isinstance(q, dict) and "question" in q
         }
     except (json.JSONDecodeError, TypeError):
         questions_map = {}
-
+ 
+    answers_cache = {}
+ 
+    def answers_of(a):
+        if a.id in answers_cache:
+            return answers_cache[a.id]
+        out = []
+        try:
+            user_answers = json.loads(a.answers_json)
+        except (json.JSONDecodeError, TypeError):
+            user_answers = {}
+        if isinstance(user_answers, dict):
+            for q_text, selected in user_answers.items():
+                correct = questions_map.get(q_text)
+                out.append({
+                    "question": q_text,
+                    "selected_answer": ", ".join(selected) if isinstance(selected, list) else selected,
+                    "correct_answer": ", ".join(correct) if isinstance(correct, list) else correct,
+                    "is_correct": _answer_ok(selected, correct),
+                })
+        answers_cache[a.id] = out
+        return out
+ 
+    # ---------- KPI по зачётным попыткам (1 ученик = 1 результат) ----------
     average_score_percent = 0
     median_score = 0
     perfect_attempts_percent = 0
@@ -2994,164 +3174,105 @@ def view_results(request, survey_id):
     question_insights = {"hardest": None, "easiest": None}
     leaderboard_attempts = []
     questions_breakdown = []
-
-    if total_attempts > 0:
-        base_aggregation = {
-            "avg_percent": Avg(100.0 * F("score") / F("total_questions")),
-            "perfect_count": Count("id", filter=Q(score=F("total_questions"))),
-            "success_count": Count(
-                "id", filter=Q(score__gte=F("total_questions") * 0.5)
-            ),
-        }
-
-        if "postgresql" in connection.vendor:
-            try:
-                from django.contrib.postgres.aggregates import PercentileCont
-
-                base_aggregation["median_score_agg"] = PercentileCont(0.5).within_group(
-                    "score"
-                )
-                stats = attempts_qs.aggregate(**base_aggregation)
-                median_score = stats.get("median_score_agg", 0)
-
-            except ImportError:
-                stats = attempts_qs.aggregate(**base_aggregation)
-                scores = list(
-                    attempts_qs.values_list("score", flat=True).order_by("score")
-                )
-                count = len(scores)
-                if count % 2 == 1:
-                    median_score = scores[count // 2]
-                else:
-                    mid1 = scores[count // 2 - 1]
-                    mid2 = scores[count // 2]
-                    median_score = (mid1 + mid2) / 2
-        else:
-            # TODO: Подготовить к удалению т.к. не актуально
-            stats = attempts_qs.aggregate(**base_aggregation)
-            scores = list(attempts_qs.values_list("score", flat=True).order_by("score"))
-            count = len(scores)
-            if count > 0:
-                if count % 2 == 1:
-                    median_score = scores[count // 2]
-                else:
-                    mid1 = scores[count // 2 - 1]
-                    mid2 = scores[count // 2]
-                    median_score = (mid1 + mid2) / 2
-
-        average_score_percent = stats.get("avg_percent", 0)
+ 
+    if students_total:
+        percents = [_pct(a) for a in counted]
+        average_score_percent = sum(percents) / students_total
+        median_score = statistics.median(a.score for a in counted)
         perfect_attempts_percent = (
-            stats.get("perfect_count", 0) / total_attempts
-        ) * 100
-        success_rate = round((stats.get("success_count", 0) / total_attempts) * 100)
-
+            sum(1 for a in counted if a.total_questions and a.score == a.total_questions)
+            / students_total * 100
+        )
+        success_rate = round(sum(1 for p in percents if p >= 50) / students_total * 100)
+ 
         questions_stats = {}
-        all_answers_json = attempts_qs.values_list("answers_json", flat=True)
-
-        for answers_str in all_answers_json:
-            try:
-                student_answers = json.loads(answers_str)
-                if isinstance(student_answers, dict):
-                    for q_text, student_answer in student_answers.items():
-                        if q_text in questions_map:
-                            q_stats = questions_stats.setdefault(
-                                q_text, {"correct": 0, "total": 0}
-                            )
-                            q_stats["total"] += 1
-                            if student_answer == questions_map[q_text]:
-                                q_stats["correct"] += 1
-            except (json.JSONDecodeError, AttributeError):
-                continue
-
-        question_insights = get_question_insights(questions_stats)
-
-        leaderboard_attempts = attempts_qs.order_by("-score", "created_at")[:5]
-
-        questions_breakdown = []
+        for a in counted:
+            for ans in answers_of(a):
+                if ans["question"] not in questions_map:
+                    continue
+                st = questions_stats.setdefault(ans["question"], {"correct": 0, "total": 0})
+                st["total"] += 1
+                if ans["is_correct"]:
+                    st["correct"] += 1
+ 
         if questions_stats:
-            sorted_stats = sorted(
-                questions_stats.items(),
-                key=lambda item: (item[1].get("correct", 0) / item[1].get("total", 1)),
-            )
-            for q_text, stats in sorted_stats:
-                correct = stats.get("correct", 0)
-                total = stats.get("total", 0)
-                if total > 0:
-                    rate = (correct / total) * 100
-                    if rate < 33:
-                        color = "#EF4444"
-                    elif rate < 66:
-                        color = "#F59E0B"
-                    else:
-                        color = "#10B981"
-                    questions_breakdown.append(
-                        {
-                            "text": q_text,
-                            "rate": rate,
-                            "stats": f"{correct}/{total}",
-                            "color": color,
-                        }
-                    )
-
-    attempts_for_template = []
-    for attempt in attempts_qs:
-        percent = (
-            (attempt.score * 100 / attempt.total_questions)
-            if attempt.total_questions > 0
-            else 0
-        )
-        answers_with_results = []
-        try:
-            user_answers = json.loads(attempt.answers_json)
-            if isinstance(user_answers, dict):
-                for question_text, selected_answer in user_answers.items():
-                    correct_answer = questions_map.get(question_text)
-                    is_correct = selected_answer == correct_answer
-
-                    answers_with_results.append(
-                        {
-                            "question": question_text,
-                            "selected_answer": selected_answer,
-                            "correct_answer": correct_answer,
-                            "is_correct": is_correct,
-                        }
-                    )
-        except (json.JSONDecodeError, TypeError):
-            pass
-
-        answers_json_str = json.dumps(answers_with_results, ensure_ascii=False)
-
-        attempts_for_template.append(
-            {
-                "id": attempt.id,
-                "student_name": attempt.student_name,
-                "created_at": attempt.created_at,
-                "score": attempt.score,
-                "total_questions": attempt.total_questions,
-                "percent": round(percent),
-                "answers_json": mark_safe(answers_json_str),
-            }
-        )
-
-    author_username = AuthUser.objects.get(id_staff=survey.id_staff).username
-    is_short_enough = len(author_username) < 20
-
-    tracer_l.info(f"{request.user.username} --- dashboard {survey.title}")
-
-    conversion_rate = (
-        (total_attempts / survey.view_count) * 100 if survey.view_count > 0 else 0
+            question_insights = get_question_insights(questions_stats)
+            for q_text, st in sorted(questions_stats.items(), key=lambda i: i[1]["correct"] / (i[1]["total"] or 1)):
+                if not st["total"]:
+                    continue
+                rate = st["correct"] / st["total"] * 100
+                questions_breakdown.append({
+                    "text": q_text,
+                    "rate": rate,
+                    "stats": f'{st["correct"]}/{st["total"]}',
+                    "color": "#EF4444" if rate < 33 else "#F59E0B" if rate < 66 else "#10B981",
+                })
+ 
+        leaderboard_attempts = sorted(counted, key=lambda a: (-a.score, a.created_at))[:5]
+ 
+    # ---------- Контроль прохождения ----------
+    tracked = [a.duration_seconds for a in all_attempts if getattr(a, "duration_seconds", None) is not None]
+    avg_duration_display = _fmt_duration(sum(tracked) / len(tracked)) if tracked else "—"
+    suspicious_students = sum(
+        1 for items in groups.values() if any(getattr(a, "is_suspicious", False) for a in items)
     )
-
+ 
+    # ---------- Журнал: одна строка на ученика ----------
+    rows = []
+    for items in sorted(groups.values(), key=lambda it: it[-1].created_at, reverse=True):
+        c = _pick_counted(items)
+        history = []
+        for i, a in enumerate(items, 1):
+            history.append({
+                "n": i,
+                "id": a.id,
+                "date": timezone.localtime(a.created_at, MOSCOW_TZ).strftime("%d.%m.%Y, %H:%M"),
+                "score": a.score,
+                "total": a.total_questions,
+                "percent": _pct(a),
+                "duration": _fmt_duration(getattr(a, "duration_seconds", None)),
+                "tab_switches": getattr(a, "tab_switches", 0) or 0,
+                "away_seconds": getattr(a, "away_seconds", 0) or 0,
+                "copy_events": getattr(a, "copy_events", 0) or 0,
+                "timed_out": bool(getattr(a, "timed_out", False)),
+                "is_suspicious": bool(getattr(a, "is_suspicious", False)),
+                "counted": a.id == c.id,
+                "answers": answers_of(a),
+                "log": _integrity_log(a),
+            })
+        flagged = [h for h in history if h["is_suspicious"]]
+        rows.append({
+            "id": c.id,
+            "student_name": " ".join((items[-1].student_name or "").split()) or "Аноним",
+            "created_at": items[-1].created_at,
+            "score": c.score,
+            "total_questions": c.total_questions,
+            "percent": _pct(c),
+            "attempts_count": len(items),
+            "duration": _fmt_duration(getattr(c, "duration_seconds", None)),
+            "tab_switches": sum(h["tab_switches"] for h in history),
+            "is_suspicious": bool(flagged),
+            "flag_count": len(flagged),
+            "answers_json": _json_for_script(answers_of(c)),
+            "history_json": _json_for_script(history),
+        })
+ 
+    author_username = AuthUser.objects.get(id_staff=survey.id_staff).username
+ 
+    conversion_rate = (students_total / survey.view_count) * 100 if survey.view_count > 0 else 0
+ 
     success_rate_color = "#EF4444"
     if success_rate >= 75:
         success_rate_color = "#10B981"
     elif success_rate >= 40:
         success_rate_color = "#F59E0B"
-
+ 
     context = {
         "survey": survey,
-        "attempts": attempts_for_template,
-        "total_attempts": total_attempts,
+        "attempts": rows,
+        "total_attempts": students_total,          # в KPI — ученики
+        "attempts_total": attempts_total,          # все попытки
+        "counted_mode": COUNTED_ATTEMPT,
         "average_score_percent": average_score_percent,
         "median_score": median_score,
         "perfect_attempts_percent": perfect_attempts_percent,
@@ -3160,227 +3281,39 @@ def view_results(request, survey_id):
         "question_insights": question_insights,
         "leaderboard_attempts": leaderboard_attempts,
         "questions_breakdown": questions_breakdown,
+        "suspicious_count": suspicious_students,
+        "students_total": students_total,
+        "tracked_attempts": len(tracked),
+        "avg_duration_display": avg_duration_display,
         "view_count": survey.view_count,
         "conversion_rate": conversion_rate,
         "username": get_username(request),
         "page_title": survey.title,
         "subscription_level": get_subscription_level(request),
-        "subscription_status": True
-        if Subscription.objects.get(staff_id=get_staff_id(request)).check_sub_status
-        == "active"
-        else False,
+        "subscription_status": Subscription.objects.get(staff_id=get_staff_id(request)).check_sub_status == "active",
         "author": author_username if len(author_username) < 40 else "Аноним",
-        "is_short_enough": is_short_enough,
+        "is_short_enough": len(author_username) < 20,
         "date_create": survey.created_at.strftime("%d.%m.%Y"),
     }
+    tracer_l.info(f"{request.user.username} --- dashboard {survey.title}")
     log_traffic(request, "Дашборд теста")
-    
     return render(request, "askify_service/test_results.html", context)
-
-
-@login_required
-def get_analytics_context(request, survey_id):
-    """
-    Логика аналитики для теста.
-    Возвращает только context (словарь).
-    """
-    survey = get_object_or_404(Survey, survey_id=survey_id)
-
-    attempts_qs = survey.attempts.all().order_by("-created_at")
-    total_attempts = attempts_qs.count()
-
-    try:
-        survey_questions_list = json.loads(survey.questions)
-        questions_map = {
-            q["question"]: q["correct_answer"]
-            for q in survey_questions_list
-            if isinstance(q, dict)
-        }
-    except (json.JSONDecodeError, TypeError):
-        questions_map = {}
-
-    average_score_percent = 0
-    median_score = 0
-    perfect_attempts_percent = 0
-    success_rate = 0
-    question_insights = {"hardest": None, "easiest": None}
-    leaderboard_attempts = []
-    questions_breakdown = []
-
-    if total_attempts > 0:
-        base_aggregation = {
-            "avg_percent": Avg(100.0 * F("score") / F("total_questions")),
-            "perfect_count": Count("id", filter=Q(score=F("total_questions"))),
-            "success_count": Count(
-                "id", filter=Q(score__gte=F("total_questions") * 0.5)
-            ),
-        }
-
-        if "postgresql" in connection.vendor:
-            try:
-                from django.contrib.postgres.aggregates import PercentileCont
-
-                base_aggregation["median_score_agg"] = PercentileCont(0.5).within_group(
-                    "score"
-                )
-                stats = attempts_qs.aggregate(**base_aggregation)
-                median_score = stats.get("median_score_agg", 0)
-
-            except ImportError:
-                stats = attempts_qs.aggregate(**base_aggregation)
-                scores = list(
-                    attempts_qs.values_list("score", flat=True).order_by("score")
-                )
-                count = len(scores)
-                if count % 2 == 1:
-                    median_score = scores[count // 2]
-                else:
-                    mid1 = scores[count // 2 - 1]
-                    mid2 = scores[count // 2]
-                    median_score = (mid1 + mid2) / 2
-        else:
-            stats = attempts_qs.aggregate(**base_aggregation)
-            scores = list(attempts_qs.values_list("score", flat=True).order_by("score"))
-            count = len(scores)
-            if count > 0:
-                if count % 2 == 1:
-                    median_score = scores[count // 2]
-                else:
-                    mid1 = scores[count // 2 - 1]
-                    mid2 = scores[count // 2]
-                    median_score = (mid1 + mid2) / 2
-
-        average_score_percent = stats.get("avg_percent", 0)
-        perfect_attempts_percent = (
-            stats.get("perfect_count", 0) / total_attempts
-        ) * 100
-        success_rate = round((stats.get("success_count", 0) / total_attempts) * 100)
-
-        questions_stats = {}
-        all_answers_json = attempts_qs.values_list("answers_json", flat=True)
-
-        for answers_str in all_answers_json:
-            try:
-                student_answers = json.loads(answers_str)
-                if isinstance(student_answers, dict):
-                    for q_text, student_answer in student_answers.items():
-                        if q_text in questions_map:
-                            q_stats = questions_stats.setdefault(
-                                q_text, {"correct": 0, "total": 0}
-                            )
-                            q_stats["total"] += 1
-                            if student_answer == questions_map[q_text]:
-                                q_stats["correct"] += 1
-            except (json.JSONDecodeError, AttributeError):
-                continue
-
-        question_insights = get_question_insights(questions_stats)
-
-        leaderboard_attempts = attempts_qs.order_by("-score", "created_at")[:5]
-
-        questions_breakdown = []
-        if questions_stats:
-            sorted_stats = sorted(
-                questions_stats.items(),
-                key=lambda item: (item[1].get("correct", 0) / item[1].get("total", 1)),
-            )
-            for q_text, stats in sorted_stats:
-                correct = stats.get("correct", 0)
-                total = stats.get("total", 0)
-                if total > 0:
-                    rate = (correct / total) * 100
-                    if rate < 33:
-                        color = "#EF4444"
-                    elif rate < 66:
-                        color = "#F59E0B"
-                    else:
-                        color = "#10B981"
-                    questions_breakdown.append(
-                        {
-                            "text": q_text,
-                            "rate": rate,
-                            "stats": f"{correct}/{total}",
-                            "color": color,
-                        }
-                    )
-
-    attempts_for_template = []
-    for attempt in attempts_qs:
-        percent = (
-            (attempt.score * 100 / attempt.total_questions)
-            if attempt.total_questions > 0
-            else 0
-        )
-        answers_with_results = []
-        try:
-            user_answers = json.loads(attempt.answers_json)
-            if isinstance(user_answers, dict):
-                for question_text, selected_answer in user_answers.items():
-                    correct_answer = questions_map.get(question_text)
-                    is_correct = selected_answer == correct_answer
-
-                    answers_with_results.append(
-                        {
-                            "question": question_text,
-                            "selected_answer": selected_answer,
-                            "correct_answer": correct_answer,
-                            "is_correct": is_correct,
-                        }
-                    )
-        except (json.JSONDecodeError, TypeError):
-            pass
-
-        answers_json_str = json.dumps(answers_with_results, ensure_ascii=False)
-
-        attempts_for_template.append(
-            {
-                "id": attempt.id,
-                "student_name": attempt.student_name,
-                "created_at": attempt.created_at,
-                "score": attempt.score,
-                "total_questions": attempt.total_questions,
-                "percent": round(percent),
-                "answers_json": mark_safe(answers_json_str),
-            }
-        )
-
-    author_username = AuthUser.objects.get(id_staff=survey.id_staff).username
-    is_short_enough = len(author_username) < 20
-
-    conversion_rate = (
-        (total_attempts / survey.view_count) * 100 if survey.view_count > 0 else 0
-    )
-
-    success_rate_color = "#EF4444"
-    if success_rate >= 75:
-        success_rate_color = "#10B981"
-    elif success_rate >= 40:
-        success_rate_color = "#F59E0B"
-
-    context = {
-        "attempts": attempts_for_template,
-        "total_attempts": total_attempts,
-        "average_score_percent": average_score_percent,
-        "median_score": median_score,
-        "perfect_attempts_percent": perfect_attempts_percent,
-        "success_rate": success_rate,
-        "success_rate_color": success_rate_color,
-        "question_insights": question_insights,
-        "leaderboard_attempts": leaderboard_attempts,
-        "questions_breakdown": questions_breakdown,
-        "view_count": survey.view_count,
-        "conversion_rate": conversion_rate,
-        "analytics_username": get_username(request),
-        "analytics_subscription_level": get_subscription_level(request),
-        "analytics_author": author_username if len(author_username) < 40 else "Аноним",
-        "is_short_enough": is_short_enough,
-        "analytics_date_create": survey.created_at.strftime("%d.%m.%Y"),
-        "chart_activity_json": "{}",
-        "chart_scores_json": "{}",
-    }
-
-    return context
-
+ 
+ 
+# ============================================================================
+#  single_test_charts_api: заменить ТОЛЬКО блок «График 2» (распределение)
+#  — от `percentage_expression = ...` до `distribution_data = [...]` включительно.
+#  Донат должен считать учеников, а не попытки, иначе разъедется с KPI.
+# ============================================================================
+#
+#    _, counted, _ = _group_attempts(survey)
+#    distribution_data = [0, 0, 0, 0]
+#    for a in counted:
+#        if not a.total_questions:
+#            continue
+#        p = a.score * 100 / a.total_questions
+#        distribution_data[0 if p <= 25 else 1 if p <= 50 else 2 if p <= 75 else 3] += 1
+ 
 
 CLEAN_XML_RE = re.compile(
     r"[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x84\x86-\x9F]"
@@ -3443,7 +3376,10 @@ def export_results_to_excel(request, survey_id):
             attempt.created_at.strftime("%Y-%m-%d %H:%M:%S"),
             int(attempt.score),
             int(attempt.total_questions),
-            percent_float,  # Форматируем в самом Excel
+            percent_float,
+            attempt.duration_display, attempt.tab_switches, attempt.away_seconds,
+            attempt.copy_events, "Да" if attempt.timed_out else "",
+            "Да" if attempt.is_suspicious else "",
         ]
 
         for q_raw in [q["question"] for q in questions_list]:
@@ -4070,6 +4006,171 @@ def profile_view(request, username):
     log_traffic(request, "Профиль")
 
     return render(request, "profile.html", user_data)
+
+
+"""
+Периоды статистики профиля: 7 / 30 / 90 / 180 дней, год, всё время.
+
+Чистый Python, без Django — легко тестируется. Вьюхи только достают из БД
+«словарь день -> количество» и отдают сюда: здесь режем на корзины и подписываем.
+
+Корзины подбираются так, чтобы график всегда читался (7–36 столбцов):
+    7, 30 дней        -> по дням
+    90, 180 дней      -> по неделям (7-дневные, последняя = «последние 7 дней»)
+    год               -> по календарным месяцам, 12 месяцев включая текущий
+    всё время         -> день / неделя / месяц / год — по тому, сколько живёт аккаунт
+"""
+import calendar
+from bisect import bisect_right
+from datetime import date, timedelta
+from math import ceil
+
+PERIODS = ("7", "30", "90", "180", "365", "all")
+DEFAULT_PERIOD = "7"
+
+PERIOD_LABELS = {
+    "7": "7 дней",
+    "30": "30 дней",
+    "90": "90 дней",
+    "180": "180 дней",
+    "365": "год",
+    "all": "всё время",
+}
+
+_MONTHS_GEN = ["января", "февраля", "марта", "апреля", "мая", "июня",
+               "июля", "августа", "сентября", "октября", "ноября", "декабря"]
+_MONTHS_SHORT = ["янв", "фев", "мар", "апр", "май", "июн",
+                 "июл", "авг", "сен", "окт", "ноя", "дек"]
+_MONTHS_NOM = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
+               "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"]
+
+
+def normalize_period(raw, is_premium=True):
+    """Из GET-параметра -> валидный период. Без премиума доступна только неделя."""
+    p = str(raw or DEFAULT_PERIOD).strip().lower()
+    if p not in PERIODS:
+        p = DEFAULT_PERIOD
+    return p if is_premium else DEFAULT_PERIOD
+
+
+def _day(d):
+    return f"{d.day} {_MONTHS_SHORT[d.month - 1]}"
+
+
+def _range_title(a, b):
+    if a == b:
+        return f"{a.day} {_MONTHS_GEN[a.month - 1]}"
+    if (a.year, a.month) == (b.year, b.month):
+        return f"{a.day}–{b.day} {_MONTHS_GEN[b.month - 1]}"
+    return f"{a.day} {_MONTHS_GEN[a.month - 1]} – {b.day} {_MONTHS_GEN[b.month - 1]}"
+
+
+def build_plan(period, today, first_activity=None):
+    """
+    today          — сегодняшняя дата (по Москве).
+    first_activity — дата первой активности юзера (нужна только для 'all').
+    Возвращает dict: kind, start, end, days, buckets[{start,end,label,title}].
+    """
+    if period == "all":
+        first = min(first_activity or today, today)
+        span = max((today - first).days + 1, 7)
+    elif period == "365":
+        m, y = today.month - 11, today.year
+        if m <= 0:
+            m, y = m + 12, y - 1
+        span = (today - date(y, m, 1)).days + 1
+    else:
+        span = int(period)
+
+    if period in ("7", "30") or (period == "all" and span <= 45):
+        kind = "day"
+    elif period in ("90", "180") or (period == "all" and span <= 210):
+        kind = "week"
+    elif period == "365" or (period == "all" and span <= 1100):
+        kind = "month"
+    else:
+        kind = "year"
+
+    start = today - timedelta(days=span - 1)
+    buckets = []
+
+    if kind == "day":
+        for i in range(span):
+            d = start + timedelta(days=i)
+            buckets.append({"start": d, "end": d, "label": _day(d),
+                            "title": _range_title(d, d)})
+
+    elif kind == "week":
+        n = ceil(span / 7)
+        start = today - timedelta(days=7 * n - 1)
+        for k in range(n):
+            e = today - timedelta(days=7 * (n - 1 - k))
+            s = e - timedelta(days=6)
+            buckets.append({"start": s, "end": e, "label": _day(s),
+                            "title": _range_title(s, e)})
+
+    elif kind == "month":
+        if period == "365":
+            m, y = today.month - 11, today.year
+            if m <= 0:
+                m, y = m + 12, y - 1
+            start = date(y, m, 1)
+        y, m, i = start.year, start.month, 0
+        while (y, m) <= (today.year, today.month):
+            ms, me = date(y, m, 1), date(y, m, calendar.monthrange(y, m)[1])
+            label = _MONTHS_SHORT[m - 1]
+            if i == 0 or m == 1:
+                label += f" ’{str(y)[2:]}"
+            buckets.append({"start": max(ms, start), "end": min(me, today), "label": label,
+                            "title": f"{_MONTHS_NOM[m - 1]} {y}"})
+            m, i = m + 1, i + 1
+            if m > 12:
+                m, y = 1, y + 1
+
+    else:  # year
+        for y in range(start.year, today.year + 1):
+            buckets.append({"start": max(date(y, 1, 1), start), "end": min(date(y, 12, 31), today),
+                            "label": str(y), "title": f"{y} год"})
+
+    return {"kind": kind, "start": start, "end": today,
+            "days": (today - start).days + 1, "buckets": buckets}
+
+
+def bucketize(day_map, plan):
+    """{date: count} -> [count на корзину]. Даты вне плана игнорируются."""
+    bs = plan["buckets"]
+    starts = [b["start"] for b in bs]
+    out = [0] * len(bs)
+    for d, c in day_map.items():
+        if d is None:
+            continue
+        i = bisect_right(starts, d) - 1
+        if 0 <= i < len(bs) and d <= bs[i]["end"]:
+            out[i] += c or 0
+    return out
+
+
+def chart_payload(plan, day_map):
+    """Готовый кусок JSON для одного графика."""
+    bs = plan["buckets"]
+    return {
+        "labels": [b["label"] for b in bs],
+        "titles": [b["title"] for b in bs],
+        "starts": [b["start"].isoformat() for b in bs],
+        "data": bucketize(day_map, plan),
+    }
+
+
+def meta_payload(plan, period, is_premium):
+    return {
+        "period": period,
+        "label": PERIOD_LABELS[period],
+        "kind": plan["kind"],
+        "days": plan["days"],
+        "from": plan["start"].isoformat(),
+        "to": plan["end"].isoformat(),
+        "premium": bool(is_premium),
+    }
 
 
 @login_required
@@ -10250,3 +10351,156 @@ def api_public_recent_surveys(request):
 
     cache.set(cache_key, response_data, 15)
     return JsonResponse(response_data)
+
+
+def _stats_first_activity_date(staff_id):
+    """Дата самой первой активности юзера (тест / прохождение / просмотр) — для периода «всё время»."""
+    first = [
+        Survey.objects.filter(id_staff=staff_id).aggregate(m=Min("created_at"))["m"],
+        TestAttempt.objects.filter(survey__id_staff=staff_id).aggregate(m=Min("created_at"))["m"],
+        SurveyUniqueView.objects.filter(survey__id_staff=staff_id).aggregate(m=Min("timestamp"))["m"],
+    ]
+    dates = [x.astimezone(MOSCOW_TZ).date() for x in first if x]
+    return min(dates) if dates else None
+
+
+def _stats_context(request, staff_id):
+    """period, is_premium, plan — общая «шапка» для обеих вьюх."""
+    is_premium = get_subscription_level(request) >= 1
+    period = normalize_period(request.GET.get("period"), is_premium)
+    today = timezone.now().astimezone(MOSCOW_TZ).date()
+    first = _stats_first_activity_date(staff_id) if period == "all" else None
+    return period, is_premium, build_plan(period, today, first)
+
+
+@login_required
+def personal_charts_data_api(request):
+    """Личная статистика создателя тестов: сколько собрал, сколько просмотров, из чего состоят тесты."""
+    timezone.activate(MOSCOW_TZ)
+    staff_id = get_staff_id(request)
+    period, is_premium, plan = _stats_context(request, staff_id)
+    start = plan["start"]
+
+    # Новые тесты по дням
+    created = (
+        Survey.objects.filter(id_staff=staff_id, created_at__date__gte=start)
+        .values("created_at__date").annotate(count=Count("id"))
+    )
+    activity_map = {r["created_at__date"]: r["count"] for r in created}
+
+    # Уникальные просмотры по дням
+    views = (
+        SurveyUniqueView.objects.filter(survey__id_staff=staff_id, timestamp__date__gte=start)
+        .values("timestamp__date").annotate(count=Count("id"))
+    )
+    views_map = {r["timestamp__date"]: r["count"] for r in views}
+
+    # Состав тестов — по всем тестам, период не применяется
+    all_user_surveys = Survey.objects.filter(id_staff=staff_id)
+    quality_distribution = {"Короткие (1-4)": 0, "Оптимальные (5-8)": 0, "Длинные (9+)": 0}
+    question_types = {
+        "Факты (Что, Кто, Где)": 0,
+        "Анализ (Почему, Как)": 0,
+        "Классификация (Какой, Выберите)": 0,
+        "Прочее": 0,
+    }
+    keyword_map = {
+        "Факты (Что, Кто, Где)": ["что", "кто", "где", "когда", "сколько", "назовите"],
+        "Анализ (Почему, Как)": ["почему", "как", "объясните", "сравните"],
+        "Классификация (Какой, Выберите)": ["какой", "какая", "какое", "какие", "выберите", "укажите"],
+    }
+    # Один проход по тестам вместо двух
+    for survey in all_user_surveys.only("questions"):
+        try:
+            questions = survey.get_questions()
+        except (json.JSONDecodeError, TypeError):
+            continue
+        n = len(questions)
+        if 1 <= n <= 4:
+            quality_distribution["Короткие (1-4)"] += 1
+        elif 5 <= n <= 8:
+            quality_distribution["Оптимальные (5-8)"] += 1
+        else:
+            quality_distribution["Длинные (9+)"] += 1
+        for q in questions:
+            text = (q.get("question", "") if isinstance(q, dict) else "").lower()
+            for q_type, kws in keyword_map.items():
+                if any(k in text for k in kws):
+                    question_types[q_type] += 1
+                    break
+            else:
+                question_types["Прочее"] += 1
+
+    filtered_question_types = {k: v for k, v in question_types.items() if v > 0}
+
+    return JsonResponse({
+        "meta": meta_payload(plan, period, is_premium),
+        "activity_chart": chart_payload(plan, activity_map),
+        "views_chart": chart_payload(plan, views_map),
+        "quality_chart": {
+            "labels": list(quality_distribution.keys()),
+            "data": list(quality_distribution.values()),
+        },
+        "question_types_chart": {
+            "labels": list(filtered_question_types.keys()),
+            "data": list(filtered_question_types.values()),
+        },
+    })
+
+
+@login_required
+def student_charts_data_api(request):
+    """Статистика прохождений тестов учениками (Europe/Moscow) за выбранный период."""
+    timezone.activate(MOSCOW_TZ)
+    staff_id = get_staff_id(request)
+    period, is_premium, plan = _stats_context(request, staff_id)
+    start = plan["start"]
+
+    user_surveys = Survey.objects.filter(id_staff=staff_id)
+    attempts = TestAttempt.objects.filter(survey__in=user_surveys, created_at__date__gte=start)
+
+    # Оценки за период
+    pct = ExpressionWrapper((F("score") * 100.0) / F("total_questions"), output_field=FloatField())
+    agg = (
+        attempts.filter(total_questions__gt=0).annotate(percentage_score=pct)
+        .aggregate(
+            high=Count("id", filter=Q(percentage_score__gte=80)),
+            medium=Count("id", filter=Q(percentage_score__gte=50, percentage_score__lt=80)),
+            low=Count("id", filter=Q(percentage_score__lt=50)),
+        )
+    )
+    scores_data = [agg["high"] or 0, agg["medium"] or 0, agg["low"] or 0]
+
+    # Активность по корзинам
+    per_day = attempts.values("created_at__date").annotate(count=Count("id"))
+    day_map = {r["created_at__date"]: r["count"] for r in per_day}
+
+    # По часам (МСК)
+    hourly = (
+        attempts.annotate(hour=ExtractHour("created_at", tzinfo=MOSCOW_TZ))
+        .values("hour").annotate(count=Count("id"))
+    )
+    hourly_map = {r["hour"]: r["count"] for r in hourly}
+
+    # Топ тестов за период
+    top = (
+        attempts.values("survey__title").annotate(attempts_count=Count("id"))
+        .order_by("-attempts_count")[:7]
+    )
+
+    return JsonResponse({
+        "meta": meta_payload(plan, period, is_premium),
+        "scores_chart": {
+            "labels": ["Отлично (80-100%)", "Хорошо (50-79%)", "Плохо (<50%)"],
+            "data": scores_data,
+        },
+        "attempts_activity_chart": chart_payload(plan, day_map),
+        "hourly_activity_chart": {
+            "labels": [f"{h:02d}:00" for h in range(24)],
+            "data": [hourly_map.get(h, 0) for h in range(24)],
+        },
+        "survey_engagement_chart": {
+            "labels": [t["survey__title"] for t in top],
+            "data": [t["attempts_count"] for t in top],
+        },
+    })

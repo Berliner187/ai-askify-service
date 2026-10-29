@@ -1,0 +1,54 @@
+{% comment %}
+  Остров-шапка. Ширина = ширина контента (--ls-max), поэтому края острова совпадают с краями карточек.
+  Подключение:
+    {% include 'components/shell_island.html' with island_here='Профиль' island_meta=username island_badge='Root' %}
+  Параметры (все необязательные):
+    island_title / island_title_url   средняя «хлебная крошка» (например название теста)
+    island_here                       последняя крошка (текущая страница)
+    island_meta, island_meta_icon     плашка справа (имя пользователя, просмотры…); icon: id из спрайта без префикса, напр. eye
+    island_badge                      маленький бейдж справа (Root)
+    island_action_url/_label/_icon    кнопка справа (+ дублируется в мобильной подстрочной навигации)
+    island_action_accent              любое значение → кнопка в акцентном цвете
+    island_back_url / island_back_label   ссылка «назад» для мобильной подстрочной навигации
+    island_progress                   любое значение → тонкая полоска прогресса скролла (по умолчанию выключена)
+  Своя разметка: <template data-ls-slot="right">…</template> или data-ls-slot="title" в любом месте страницы.
+{% endcomment %}{% load static %}
+<header class="ls-island-wrap" id="ls-island-wrap" {% if island_progress %}data-progress="1"{% endif %}>
+    <div class="ls-wrap">
+        <div class="ls-island" id="dynamic-island">
+            <div class="ls-isl-row" id="island-controls">
+                <div class="ls-crumbs">
+                    <a href="/" aria-label="Главная"><img src="{% static 'img/logo.png' %}" alt=""></a>
+                    <span style="display:contents" data-ls-slot-host="title">
+                        {% if island_title %}
+                            <span class="ls-sep ls-hide-sm" aria-hidden="true">/</span>
+                            <a href="{{ island_title_url|default:'/' }}" class="ls-crumb ls-crumb-title ls-hide-sm" title="{{ island_title }}">{{ island_title }}</a>
+                        {% endif %}
+                        {% if island_here %}
+                            <span class="ls-sep" aria-hidden="true">/</span>
+                            <span class="ls-crumb-here">{{ island_here }}</span>
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="ls-isl-right" data-ls-slot-host="right">
+                    {% if island_meta %}<span class="ls-isl-meta">{% if island_meta_icon %}<svg class="ls-icon"><use href="#ls-i-{{ island_meta_icon }}"/></svg>{% endif %}<span>{{ island_meta }}</span></span>{% endif %}
+                    {% if island_badge %}<span class="ls-isl-badge">{{ island_badge }}</span>{% endif %}
+                    {% if island_action_url %}
+                        <a href="{{ island_action_url }}" class="ls-isl-btn{% if island_action_accent %} ls-isl-btn--accent{% endif %}">{% if island_action_icon %}<svg class="ls-icon"><use href="#ls-i-{{ island_action_icon }}"/></svg>{% endif %}<span>{{ island_action_label }}</span></a>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="ls-isl-note" id="island-notice" role="status" aria-live="polite">
+                <span class="ls-isl-ico" id="island-icon-box"><svg class="ls-icon"><use href="#ls-i-check"/></svg></span>
+                <span id="island-text"></span>
+            </div>
+            <span class="ls-isl-progress" aria-hidden="true"><i id="ls-isl-progress"></i></span>
+        </div>
+        {% if island_back_url or island_action_url %}
+        <div class="ls-isl-sub">
+            {% if island_back_url %}<a href="{{ island_back_url }}"><svg class="ls-icon"><use href="#ls-i-back"/></svg><span>{{ island_back_label|default:'Назад' }}</span></a>{% endif %}
+            {% if island_action_url %}<a href="{{ island_action_url }}">{% if island_action_icon %}<svg class="ls-icon"><use href="#ls-i-{{ island_action_icon }}"/></svg>{% endif %}<span>{{ island_action_label }}</span></a>{% endif %}
+        </div>
+        {% endif %}
+    </div>
+</header>

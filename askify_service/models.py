@@ -86,6 +86,14 @@ class Survey(models.Model):
         default=dict, blank=True,
         help_text="Параметры генерации (сложность, типы вопросов и т.д.)"
     )
+    
+    time_limit_minutes = models.PositiveSmallIntegerField(null=True, blank=True)
+    available_until = models.DateTimeField(null=True, blank=True, db_index=True)
+    max_tab_switches = models.PositiveSmallIntegerField(default=2)
+
+    @property
+    def is_closed(self):
+        return bool(self.available_until and timezone.now() > self.available_until)
 
     objects = SurveyManager()
 
@@ -928,12 +936,28 @@ class TestAttempt(models.Model):
     total_questions = models.PositiveIntegerField()
 
     created_at = models.DateTimeField(auto_now_add=True)
+    
+    started_at = models.DateTimeField(null=True, blank=True)
+    duration_seconds = models.PositiveIntegerField(null=True, blank=True)
+    tab_switches = models.PositiveSmallIntegerField(default=0)
+    away_seconds = models.PositiveIntegerField(default=0)
+    copy_events = models.PositiveSmallIntegerField(default=0)
+    timed_out = models.BooleanField(default=False)
+    is_suspicious = models.BooleanField(default=False, db_index=True)
+    integrity_log = models.JSONField(default=list, blank=True)
 
     def __str__(self):
         return f"Попытка от {self.student_name} для теста {self.survey.title}"
 
     def get_answers(self):
         return json.loads(self.answers_json)
+
+    @property
+    def duration_display(self):
+        if self.duration_seconds is None:
+            return "—"
+        m, s = divmod(self.duration_seconds, 60)
+        return f"{m}:{s:02d}"
 
 
 class Question(models.Model):

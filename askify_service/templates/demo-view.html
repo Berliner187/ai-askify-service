@@ -14,18 +14,6 @@
     {% load static %}
     <link rel="icon" href="{% static 'img/favicon.ico' %}" type="image/ico">
 
-    <!--
-        MOTION BOOTSTRAP — выполняется ДО первой отрисовки, чтобы не было вспышки контента.
-        Решает: играть ли интро-сборку теста (первый запуск этого теста в этом браузере).
-
-        Ручное управление для QA:
-          ?intro=1   — форсировать интро (игнорирует флаг «уже видел»)
-          ?intro=0   — выключить интро на эту загрузку
-          LetychkaIntro.replay()   — проиграть заново без перезагрузки
-          LetychkaIntro.reset()    — сбросить флаг для этого теста
-          LetychkaIntro.resetAll() — сбросить флаги для всех тестов
-          LetychkaIntro.disable() / .enable() — глобально выкл/вкл в этом браузере
-    -->
     <script>
         (function () {
             var d = document.documentElement;
@@ -34,7 +22,6 @@
                 key: 'letychka:intro:v1:{{ survey_id }}',
                 prefix: 'letychka:intro:v1:',
                 disabledKey: 'letychka:intro:disabled',
-                // Кому показываем интро. Убери роль из списка — и ей интро не будет.
                 roles: ['guest_owner', 'guest', 'owner', 'visitor'],
                 role: '{{ viewer_role|default:"guest" }}',
                 count: {{ questions|length|default:0 }}
@@ -53,7 +40,6 @@
                     d.classList.add('intro-pending');
                 }
             } catch (e) {}
-            // Страховка: если JS упал — показываем всё как есть.
             setTimeout(function () {
                 if (!window.__rvBooted) {
                     d.classList.remove('intro-pending', 'intro-running');
@@ -98,6 +84,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&family=Wix+Madefor+Display:wght@600;700;800&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    {% include 'components/shell_assets.html' %}
 
     <style>
         :root {
@@ -661,6 +649,99 @@
             .m-in .spring-modal-content, .m-out .spring-modal-content { animation: none !important; }
             #intro-stage { display: none !important; }
         }
+
+        /* БЛОК кнопки Пройти гостям */
+        .mb-bar, .mb-bar * { box-sizing: border-box; }
+        .mb-bar {
+            --mb-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+            position: relative;
+            display: block;
+            overflow: hidden;
+            padding: 12px;
+            border-radius: 22px;
+            background: rgba(23, 23, 33, 0.72);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            font-family: 'Golos Text', -apple-system, BlinkMacSystemFont, sans-serif;
+            letter-spacing: -0.01em;
+        }
+        @media (min-width: 1024px) { .mb-bar { display: none; } }
+
+        .mb-head { display: flex; align-items: center; gap: 12px; min-width: 0; }
+        .mb-ico {
+            width: 40px; height: 40px; flex: none;
+            display: grid; place-items: center;
+            border-radius: 14px;
+            background: #111119;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #A5B4FC;
+        }
+        .mb-ico svg { width: 18px; height: 18px; }
+        .mb-text { min-width: 0; }
+        .mb-title {
+            display: block;
+            font: 700 14.5px/1.2 'Wix Madefor Display', 'Golos Text', sans-serif;
+            letter-spacing: -0.02em;
+            color: #fff;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .mb-sub {
+            display: block;
+            margin-top: 4px;
+            font: 500 12px/1.2 'Golos Text', sans-serif;
+            color: #71717A;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+
+        .mb-actions { display: flex; gap: 8px; margin-top: 12px; }
+        .mb-btn {
+            box-sizing: border-box;
+            flex: 1 1 0;
+            min-width: 0;
+            height: 44px;
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            padding: 0 14px;
+            border-radius: 14px;
+            border: 1px solid transparent;
+            font: 600 13.5px/1 'Golos Text', sans-serif;
+            letter-spacing: -0.005em;
+            text-decoration: none;
+            cursor: pointer;
+            user-select: none; -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            transition: transform 0.2s var(--mb-spring), background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+        }
+        .mb-btn svg { width: 15px; height: 15px; flex: none; }
+        .mb-btn:active { transform: scale(0.96); transition-duration: 0.08s; }
+        .mb-btn:focus-visible { outline: 1.5px solid rgba(165, 180, 252, 0.8); outline-offset: 2px; }
+
+        .mb-btn--primary {
+            flex-grow: 1.25;
+            background: #4F46E5;
+            color: #fff;
+            box-shadow: 0 6px 18px -8px rgba(79, 70, 229, 0.7);
+        }
+        .mb-btn--ghost {
+            background: rgba(255, 255, 255, 0.04);
+            border-color: rgba(255, 255, 255, 0.09);
+            color: #E4E4E7;
+        }
+        @media (hover: hover) {
+            .mb-btn--primary:hover { background: #5A52EC; }
+            .mb-btn--ghost:hover { background: rgba(255, 255, 255, 0.07); border-color: rgba(255, 255, 255, 0.16); color: #fff; }
+        }
+
+        /* «Ссылка» → «Скопировано» */
+        .mb-btn .mb-on { display: none; }
+        .mb-btn.is-done { background: rgba(165, 180, 252, 0.1); border-color: rgba(165, 180, 252, 0.35); color: #C7D2FE; }
+        .mb-btn.is-done .mb-off { display: none; }
+        .mb-btn.is-done .mb-on { display: inline; }
+        .mb-btn.is-done svg.mb-on { display: block; animation: mb-pop 0.38s var(--mb-spring); }
+        @keyframes mb-pop { 0% { transform: scale(0.4); } 60% { transform: scale(1.2); } 100% { transform: scale(1); } }
+
+        @media (prefers-reduced-motion: reduce) {
+            .mb-btn { transition: none; }
+            .mb-btn.is-done svg.mb-on { animation: none; }
+        }
     </style>
 </head>
 <body class="min-h-full flex flex-col antialiased selection:bg-indigo-600 selection:text-white">
@@ -698,121 +779,13 @@
         <button type="button" class="is-skip is-chrome c3" id="is-skip">Пропустить<kbd>Esc</kbd></button>
     </div>
 
-    <!-- ЛЕВЫЙ ВЕРТИКАЛЬНЫЙ ДОК (DESKTOP) -->
-    <aside data-rv="left" data-rv-order="0" class="hidden lg:flex fixed left-5 top-1/2 -translate-y-1/2 flex-col items-center gap-6 py-6 px-3.5 glass-panel rounded-[28px] z-40 shadow-2xl">
-        <a href="/" class="w-10 h-10 rounded-2xl bg-white/5 border border-white/5 text-gray-500 flex items-center justify-center hover:text-indigo-400 hover:bg-white/10 spring-btn" title="Главная">
-            <img src="{% static 'img/logo.png' %}" alt="Logo" class="w-5 h-auto">
-        </a>
-        {% if username == 0 %}
-            <a href="{% url 'login' %}" class="w-11 h-11 rounded-2xl bg-white/5 border border-white/5 text-gray-500 flex items-center justify-center hover:text-indigo-400 hover:bg-white/10 spring-btn" title="Профиль">
-                <i class="fa-solid fa-right-to-bracket text-sm"></i>
-            </a>
-        {% endif %}
-        <div class="w-6 h-px bg-white/10"></div>
-        <nav class="flex flex-col gap-4">
-            <a href="{% url 'create' %}" class="w-11 h-11 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 flex items-center justify-center hover:bg-indigo-600 hover:text-white spring-btn group" title="Создать тест">
-                <i class="fas fa-plus text-sm group-hover:rotate-90 transition-transform duration-300"></i>
-            </a>
-            {% if username != 0 %}
-                <a href="{% url 'history' %}" class="w-11 h-11 rounded-2xl bg-white/5 border border-white/5 text-gray-400 flex items-center justify-center hover:text-white hover:bg-white/10 spring-btn" title="История тестов">
-                    <i class="fa-sharp fa-solid fa-clock-rotate-left fa-layer-group text-sm"></i>
-                </a>
-                <a href="{% url 'profile_redirect' %}" class="w-11 h-11 rounded-2xl bg-white/5 border border-white/5 text-gray-400 flex items-center justify-center hover:text-white hover:bg-white/10 spring-btn" title="Профиль">
-                    <i class="fas fa-user-astronaut text-sm"></i>
-                </a>
-            {% else %}
-                <button type="button" onclick="openRegisterModal('history')" class="w-11 h-11 rounded-2xl bg-white/5 border border-white/5 text-gray-500 flex items-center justify-center hover:text-indigo-400 hover:bg-white/10 spring-btn" title="История (требуется регистрация)">
-                    <i class="fa-sharp fa-solid fa-clock-rotate-left text-sm"></i>
-                </button>
-            {% endif %}
-        </nav>
-        {% if username != 0 %}
-            <div class="w-6 h-px bg-white/10 mt-auto"></div>
-            <a href="{% url 'logout' %}" class="w-11 h-11 rounded-2xl text-gray-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors flex items-center justify-center" title="Выйти">
-                <i class="fas fa-arrow-right-from-bracket text-sm"></i>
-            </a>
-        {% endif %}
-    </aside>
-
-    <!-- МОБИЛЬНЫЙ НИЖНИЙ DOCK -->
-    <nav data-rv data-rv-order="5" class="lg:hidden fixed bottom-4 left-1/2 -translate-x-1/2 island-capsule rounded-full px-5 py-2 flex items-center gap-6 z-40 shadow-2xl">
-        <a href="/" class="w-10 h-10 rounded-2xl bg-white/5 border border-white/5 text-gray-500 flex items-center justify-center hover:text-indigo-400 hover:bg-white/10 spring-btn" title="Главная">
-            <img src="{% static 'img/logo.png' %}" alt="Logo" class="w-5 h-auto">
-        </a>
-        <a href="{% url 'create' %}" class="w-9 h-9 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-600/30"><i class="fas fa-plus text-sm"></i></a>
-        {% if username != 0 %}
-            <a href="{% url 'history' %}" class="text-gray-400 hover:text-white"><i class="fa-sharp fa-solid fa-clock-rotate-left text-base"></i></a>
-            <a href="{% url 'profile_redirect' %}" class="text-gray-400 hover:text-white"><i class="fas fa-user text-base"></i></a>
-        {% elif is_guest_owner %}
-            <button type="button" onclick="openRegisterModal('nav')" class="text-xs font-bold text-indigo-400">Сохранить</button>
-        {% else %}
-            <a href="{% url 'login' %}" class="text-gray-400 hover:text-white" title="Войти"><i class="fa-solid fa-right-to-bracket text-base"></i></a>
-        {% endif %}
-    </nav>
+    {% include 'components/shell_nav.html' with nav_active='' %}
 
     <!-- КОНТЕНТНАЯ ЗОНА -->
     <div class="lg:pl-28 flex-grow flex flex-col">
 
-        <!-- DYNAMIC ISLAND HEADER -->
-        <header data-rv="drop" data-rv-order="0" class="sticky top-4 z-40 px-4 flex justify-center pointer-events-none">
-            <div id="dynamic-island" class="island-capsule mode-header pointer-events-auto flex items-center justify-center relative overflow-hidden min-h-[48px]">
-
-                <!-- 1. ДЕФОЛТНЫЙ СЛОЙ: ЭЛЕМЕНТЫ УПРАВЛЕНИЯ ТЕСТОМ -->
-                <div id="island-controls" class="island-content-layer w-full flex items-center justify-between gap-4 opacity-100 scale-100">
-                    <div class="flex items-center gap-3 min-w-0">
-                        <a href="/" class="flex-shrink-0 transition-opacity hover:opacity-80">
-                            <img src="{% static 'img/logo.png' %}" alt="Летучка" class="w-7 h-auto">
-                        </a>
-                        <div class="min-w-0 flex items-center gap-2">
-                            <h1 id="header-survey-title" class="text-xs sm:text-sm font-semibold text-white truncate max-w-[170px] sm:max-w-xs md:max-w-md">
-                                {{ title }}
-                            </h1>
-                            {% if username != 0 and is_creator %}
-                                <button onclick="openEditTitleModal()" class="text-gray-500 hover:text-indigo-400 transition-colors p-1" title="Переименовать тест">
-                                    <i class="fas fa-pen text-[10px]"></i>
-                                </button>
-                            {% endif %}
-                        </div>
-                    </div>
-
-                    <div class="flex items-center gap-2.5 flex-shrink-0">
-                        {% if is_guest_owner %}
-                            <button type="button" onclick="openRegisterModal('header')" class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-md shadow-indigo-600/30 spring-btn">
-                                <i class="fas fa-floppy-disk text-[10px]"></i>
-                                <span>Сохранить</span>
-                            </button>
-                        {% else %}
-                            <div class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/5 text-[11px] text-gray-300 font-mono-nums">
-                                <i class="fas fa-eye text-gray-500"></i>
-                                <span>{{ view_count }}</span>
-                            </div>
-
-                            {% if is_owner %}
-                                <a href="{% url 'preview_test_result' survey_id %}" class="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-indigo-600/10 border border-indigo-500/20 text-indigo-400 hover:bg-indigo-600/20 text-xs font-semibold transition-colors spring-btn">
-                                    <i class="fas fa-chart-pie text-[10px]"></i>
-                                    <span>Аналитика</span>
-                                </a>
-                            {% elif is_anon_visitor %}
-                                <a href="{% url 'create' %}" class="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-white text-zinc-900 hover:bg-zinc-200 text-xs font-bold transition-colors spring-btn">
-                                    <i class="fas fa-plus text-[10px]"></i>
-                                    <span>Создать свой</span>
-                                </a>
-                            {% endif %}
-                        {% endif %}
-                    </div>
-                </div>
-
-                <!-- 2. СЛОЙ УВЕДОМЛЕНИЙ -->
-                <div id="island-notice" class="island-content-layer hidden w-full items-center justify-center gap-3 opacity-0 scale-75 select-none">
-                    <span id="island-icon-box" class="w-6 h-6 rounded-full flex items-center justify-center text-xs flex-shrink-0">
-                        <i id="island-icon" class="fas fa-check"></i>
-                    </span>
-                    <span id="island-text" class="text-xs sm:text-sm font-semibold text-white tracking-wide truncate"></span>
-                </div>
-
-            </div>
-        </header>
-
+        {% include 'components/shell_island.html' with island_here='<a href="/history" class="text-[#A1A1AA] hover:text-white transition">Мои тесты</a><span class="hidden sm:inline text-[#A1A1AA]">&nbsp;/&nbsp;</span><span id="title-island" class="hidden sm:inline truncate font-medium max-w-[250px] md:max-w-[400px]"></span>' island_meta=username|slice:":2"|upper island_meta_icon='user' island_badge=user.is_superuser|yesno:"S," %}
+        
         <!-- BENTO GRID -->
         <main class="max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 mt-4 sm:mt-6 flex-grow">
 
@@ -875,28 +848,54 @@
 
                 <!-- ЛЕВАЯ СЕКЦИЯ: ВОПРОСЫ (col-span-8) -->
                 <section class="lg:col-span-8 space-y-4">
-
-                    <!-- МОБИЛЬНЫЙ БАР ДЕЙСТВИЙ: НАВЕРХУ ТОЛЬКО НА ТЕЛЕФОНАХ -->
-                    <div class="lg:hidden p-3.5 rounded-2xl bg-indigo-950/40 border border-indigo-500/30 flex items-center justify-between gap-3">
-                        <div class="min-w-0">
-                            <span class="text-xs font-bold text-white block truncate">
-                                {% if is_creator or is_guest_owner %}Предпросмотр теста{% else %}Режим сдачи теста{% endif %}
+                    <div data-rv data-rv-order="2" class="mb-bar cta-trace lg:hidden">
+                        <div class="mb-head">
+                            <span class="mb-ico" aria-hidden="true">
+                                {% if is_creator or is_guest_owner %}
+                                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 8S3.8 3.5 8 3.5 14.5 8 14.5 8 12.2 12.5 8 12.5 1.5 8 1.5 8Z"/><circle cx="8" cy="8" r="1.9"/></svg>
+                                {% else %}
+                                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="2.6" width="10" height="11.4" rx="2"/><path d="M6 2.6V2h4v.6M5.8 8.4l1.6 1.6 3-3.2"/></svg>
+                                {% endif %}
                             </span>
-                            <span class="text-[11px] text-zinc-400 block truncate">
-                                {% if is_creator or is_guest_owner %}Вы автор: проверка ключей{% else %}Для отправки ответов автору{% endif %}
-                            </span>
+                            <div class="mb-text">
+                                <span class="mb-title">{% if is_creator or is_guest_owner %}Предпросмотр теста{% else %}Режим сдачи теста{% endif %}</span>
+                                <span class="mb-sub">{% if is_creator or is_guest_owner %}Вы автор: проверка ключей{% else %}Для отправки ответов автору{% endif %}</span>
+                            </div>
                         </div>
-                        <div class="flex items-center gap-2 flex-shrink-0">
-                            <a href="{% url 'take_test' survey_id %}" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-indigo-600/30">
-                                <i class="fas fa-play text-[10px]"></i>
+
+                        <div class="mb-actions">
+                            <a href="{% url 'take_test' survey_id %}" class="mb-btn mb-btn--primary js-take-btn">
+                                <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M5.2 3.1a.9.9 0 0 1 1.4-.76l6.2 4.4a.9.9 0 0 1 0 1.52l-6.2 4.4a.9.9 0 0 1-1.4-.76V3.1Z"/></svg>
                                 <span>Пройти</span>
                             </a>
                             {% if is_creator or is_guest_owner %}
-                            <button type="button" data-action="share" data-share-url="{% url 'take_test' survey_id %}" class="p-2 rounded-xl bg-white/5 border border-white/10 text-zinc-300 text-xs">
-                                <i class="fas fa-link"></i>
+                            <button type="button" class="mb-btn mb-btn--ghost" data-action="share" data-share-url="{% url 'take_test' survey_id %}" onclick="mbCopied(this)" aria-label="Скопировать ссылку на тест">
+                                <svg class="mb-off" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.8 9.2a3 3 0 0 0 4.2 0l2-2a3 3 0 0 0-4.2-4.2l-.6.6"/><path d="M9.2 6.8a3 3 0 0 0-4.2 0l-2 2a3 3 0 0 0 4.2 4.2l.6-.6"/></svg>
+                                <svg class="mb-on" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.2 8.4 6.5 11.6 12.8 4.8"/></svg>
+                                <span class="mb-off">Ссылка</span><span class="mb-on">Скопировано</span>
                             </button>
                             {% endif %}
                         </div>
+                    </div>
+
+                    <script>
+                        /* Визуальный «морф» кнопки. Само копирование и тост в остров делает обработчик [data-action="share"] страницы. */
+                        function mbCopied(btn) {
+                            btn.classList.add('is-done');
+                            clearTimeout(btn._mbT);
+                            btn._mbT = setTimeout(function () { btn.classList.remove('is-done'); }, 1600);
+                        }
+                    </script>
+
+                    <div class="mb-6 px-1 flex flex-row items-baseline gap-2.5">
+                        <h1 id="page-title" class="text-lg sm:text-3xl font-bold text-white tracking-tight leading-snug">
+                            <!-- Сюда JS подставит тайтл -->
+                        </h1>
+                        {% if username != 0 and is_creator %}
+                            <button onclick="openEditTitleModal()" class="text-gray-400 hover:text-indigo-400 hover:bg-white/5 rounded-lg p-1.5 transition-all shrink-0 self-start mt-0.5" title="Переименовать тест">
+                                <i class="fas fa-pen text-xs sm:text-base"></i>
+                            </button>
+                        {% endif %}
                     </div>
 
                     <div data-rv="fade" data-rv-order="2" class="flex items-center justify-between px-2 pb-2">
@@ -1539,7 +1538,7 @@
 
     </div>
 
-    {% if debug or user.is_staff %}
+    {% if debug or user.is_superuser %}
     <!-- DEV: ручное управление интро (видно только в DEBUG и staff) -->
     <div id="intro-dev">
         <button type="button" onclick="LetychkaIntro.replay()" title="Проиграть интро заново">▶ Intro</button>
@@ -2112,6 +2111,10 @@
             console.warn('Не удалось распарсить questions-data', e);
         }
 
+        let testTitle = '{{ title }}';
+
+        applyTitle('{{ title|escapejs }}');
+
         let currentQuestionType = 'single';
         let isEditMode = false;
         const answeredQuestions = new Set();
@@ -2636,6 +2639,17 @@
             Modal.close('title-modal');
         }
 
+        function applyTitle(title) {
+            const t = String(title || '').trim();
+            if (!t) return;
+            $('#page-title').text(t);
+            $('#title-island').text(t).attr('title', t);   // хлебная крошка в острове
+            $('#input-new-title').val(t);                  // поле в модалке при повторном открытии
+            $('#modal-survey-title').text(t);              // модалка удаления
+            document.title = t + ' — Летучка';             // вкладка браузера
+            window.surveyTitle = t;                        // если где-то в JS читается
+        }
+
         async function saveSurveyTitle() {
             const newTitle = $('#input-new-title').val().trim();
             if (!newTitle) {
@@ -2654,7 +2668,7 @@
                 });
                 const data = await res.json();
                 if (res.ok && data.status === 'success') {
-                    $('#header-survey-title').text(data.title);
+                    applyTitle(data.title);
                     closeEditTitleModal();
                     Island.success('Название обновлено', 'fa-pen');
                 } else {

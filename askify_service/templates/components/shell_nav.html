@@ -1,0 +1,74 @@
+{% comment %}
+  Левый док (desktop) + нижний док (mobile) + модалка выхода + спрайт иконок оболочки.
+  Подключение:  {% include 'components/shell_nav.html' with nav_active='profile' %}
+  nav_active:   'create' | 'history' | 'profile' | '' — какой пункт подсветить.
+  Контекст:     username (0 для гостя — тогда вместо истории/профиля кнопка входа).
+  Нужны:        static/css/shell.css, static/js/shell.js (см. components/shell_assets.html).
+{% endcomment %}{% load static %}
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="ls-i-plus" viewBox="0 0 16 16"><path d="M8 3v10M3 8h10" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></symbol>
+    <symbol id="ls-i-history" viewBox="0 0 24 24"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M3.5 3.5v4.4h4.4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 7.5V12l3 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="ls-i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4.5 20.5c1.2-3.6 4-5.5 7.5-5.5s6.3 1.9 7.5 5.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="ls-i-home" viewBox="0 0 24 24"><path d="M4 10.5L12 4l8 6.5V19a1.5 1.5 0 0 1-1.5 1.5H15v-6H9v6H5.5A1.5 1.5 0 0 1 4 19z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+    <symbol id="ls-i-logout" viewBox="0 0 24 24"><path d="M10 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4M15 8l4 4-4 4M19 12H9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="ls-i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M3.5 6l1.2 1.2L7 5M3.5 12l1.2 1.2L7 11M3.5 18l1.2 1.2L7 17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="ls-i-back" viewBox="0 0 16 16"><path d="M10 3.5L5.5 8l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="ls-i-check" viewBox="0 0 16 16"><path d="M3.5 8.5L6.5 11.5L12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="ls-i-x" viewBox="0 0 16 16"><path d="M4.5 4.5l7 7M11.5 4.5l-7 7" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></symbol>
+    <symbol id="ls-i-warn" viewBox="0 0 24 24"><path d="M12 4l9 15.5H3z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 10v4M12 17v.01" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+    <symbol id="ls-i-link" viewBox="0 0 24 24"><path d="M10 14a4.5 4.5 0 0 0 6.4 0l3.2-3.2a4.5 4.5 0 0 0-6.4-6.4l-1.1 1.1M14 10a4.5 4.5 0 0 0-6.4 0l-3.2 3.2a4.5 4.5 0 0 0 6.4 6.4l1.1-1.1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="ls-i-spark" viewBox="0 0 16 16"><path d="M8 1L9.5 5.5L14 7L9.5 8.5L8 13L6.5 8.5L2 7L6.5 5.5L8 1Z" fill="currentColor"/></symbol>
+    <symbol id="ls-i-eye" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.9"/></symbol>
+    <symbol id="ls-i-qr" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="6.5" height="6.5" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.9"/><rect x="14" y="3.5" width="6.5" height="6.5" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.9"/><rect x="3.5" y="14" width="6.5" height="6.5" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M14 14h2.5v2.5H14zM18 18h2.5v2.5H18zM18 14h2.5M14 18v2.5" fill="none" stroke="currentColor" stroke-width="1.9"/></symbol>
+    <symbol id="ls-i-rotate" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.4-5.7M20 4v4.5h-4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="ls-i-copy" viewBox="0 0 24 24"><rect x="8.5" y="8.5" width="12" height="12" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M15.5 8.5V6a2.5 2.5 0 0 0-2.5-2.5H6A2.5 2.5 0 0 0 3.5 6v7A2.5 2.5 0 0 0 6 15.5h2.5" fill="none" stroke="currentColor" stroke-width="1.9"/></symbol>
+    <symbol id="ls-i-pen" viewBox="0 0 24 24"><path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></symbol>
+    <symbol id="ls-i-lock" viewBox="0 0 24 24"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+    <symbol id="ls-i-file" viewBox="0 0 24 24"><path d="M14 3.5H7.5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2V8z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/><path d="M14 3.5V8h4.5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></symbol>
+    <symbol id="ls-i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></symbol>
+    <symbol id="ls-i-shield" viewBox="0 0 24 24"><path d="M12 3.5l7.5 2.7v5.6c0 4.4-3 7.6-7.5 9-4.5-1.4-7.5-4.6-7.5-9V6.2z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></symbol>
+</svg>
+
+<!-- ЛЕВЫЙ ВЕРТИКАЛЬНЫЙ ДОК (DESKTOP) -->
+<aside class="ls-dock" aria-label="Навигация">
+    <a href="/" class="ls-dock-btn ls-dock-btn--home" data-tip="Главная" aria-label="Главная"><img src="{% static 'img/logo.png' %}" alt=""></a>
+    <div class="ls-dock-sep"></div>
+    <nav>
+        <a href="{% url 'create' %}" class="ls-dock-btn ls-dock-btn--primary" data-tip="Создать тест" aria-label="Создать тест" {% if nav_active == 'create' %}aria-current="page"{% endif %}><svg class="ls-icon"><use href="#ls-i-plus"/></svg></a>
+        {% if username != 0 %}
+            <a href="{% url 'history' %}" class="ls-dock-btn" data-tip="История тестов" aria-label="История тестов" {% if nav_active == 'history' %}aria-current="page"{% endif %}><svg class="ls-icon"><use href="#ls-i-history"/></svg></a>
+            <a href="{% url 'profile_redirect' %}" class="ls-dock-btn" data-tip="Профиль" aria-label="Профиль" {% if nav_active == 'profile' %}aria-current="page"{% endif %}><svg class="ls-icon"><use href="#ls-i-user"/></svg></a>
+        {% endif %}
+    </nav>
+    {% if username != 0 %}
+        <div class="ls-dock-sep"></div>
+        <a href="{% url 'logout' %}" class="ls-dock-btn ls-dock-btn--exit" data-ls-logout data-tip="Выйти" aria-label="Выйти"><svg class="ls-icon"><use href="#ls-i-logout"/></svg></a>
+    {% endif %}
+</aside>
+
+<!-- МОБИЛЬНЫЙ НИЖНИЙ ДОК -->
+<nav class="ls-mdock" aria-label="Навигация">
+    <a href="/" aria-label="Главная"><svg class="ls-icon"><use href="#ls-i-home"/></svg></a>
+    <a href="{% url 'create' %}" class="ls-mdock-plus" aria-label="Создать тест"><svg class="ls-icon"><use href="#ls-i-plus"/></svg></a>
+    {% if username != 0 %}
+        <a href="{% url 'history' %}" aria-label="История тестов" {% if nav_active == 'history' %}aria-current="page"{% endif %}><svg class="ls-icon"><use href="#ls-i-history"/></svg></a>
+        <a href="{% url 'profile_redirect' %}" aria-label="Профиль" {% if nav_active == 'profile' %}aria-current="page"{% endif %}><svg class="ls-icon"><use href="#ls-i-user"/></svg></a>
+    {% else %}
+        <a href="/login" class="ls-mdock-login">Войти</a>
+    {% endif %}
+</nav>
+
+{% if username != 0 %}
+<!-- МОДАЛКА ВЫХОДА -->
+<div class="ls-modal" id="ls-logout-modal" aria-hidden="true">
+    <div class="ls-panel" role="dialog" aria-modal="true" aria-labelledby="ls-logout-title">
+        <div class="ls-panel-ico"><svg class="ls-icon"><use href="#ls-i-logout"/></svg></div>
+        <h3 id="ls-logout-title">Выйти из аккаунта?</h3>
+        <p>Потребуется повторная авторизация для доступа к вашим тестам.</p>
+        <div class="ls-panel-actions">
+            <button type="button" data-ls-close data-ls-focus>Отмена</button>
+            <a href="{% url 'logout' %}" id="ls-logout-confirm">Выйти</a>
+        </div>
+    </div>
+</div>
+{% endif %}
