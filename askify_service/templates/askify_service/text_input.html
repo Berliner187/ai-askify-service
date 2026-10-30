@@ -139,8 +139,8 @@
         .quota-num b { color: var(--fg); font-weight: 700; }
         .quota.is-empty .quota-num b { color: var(--amber); }
         .q-segs { display: flex; gap: 3px; margin-top: 12px; }
-        .q-segs i { flex: 1; height: 8px; border-radius: 3px; background: rgba(255,255,255,.06); transform-origin: bottom; transform: scaleY(.4); opacity: 0; transition: transform .5s var(--spring), opacity .35s, background-color .3s; transition-delay: calc(var(--k) * 22ms + 250ms); }
-        .q-segs i.on { background: #7770F0; }
+        .q-segs i { flex: 1; height: 8px; border-radius: 3px; background: rgba(255,255,255,.06); transform-origin: bottom; transform: scaleY(.4); opacity: 0; transition: transform .5s var(--spring), opacity .35s, background-color .3s; transition-delay: calc(var(--k) * 22ms + 150ms); }
+        .q-segs i.on { background: #34D399; }
         .quota.is-low .q-segs i.on { background: var(--amber); }
         .q-segs.in i { transform: none; opacity: 1; }
 
@@ -255,7 +255,7 @@
         .opt-label { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; font-size: 12.5px; font-weight: 500; color: var(--fg-2); min-height: 28px; }
 
         .seg { position: relative; display: grid; grid-template-columns: repeat(3, 1fr); padding: 4px; border-radius: 16px; background: var(--well); border: 1px solid var(--line); }
-        .seg-ind { position: absolute; top: 4px; bottom: 4px; left: 0; width: 0; border-radius: 16px; background: var(--accent); transition: transform .5s var(--spring), width .5s var(--spring); }
+        .seg-ind { position: absolute; top: 4px; bottom: 4px; left: 0; width: 0; border-radius: 16px; background: #6366F180; transition: transform .5s var(--spring), width .5s var(--spring); }
         .seg button { position: relative; z-index: 1; min-height: 38px; border-radius: 12px; font-size: 13px; font-weight: 500; color: var(--fg-2); transition: color .2s, transform .3s var(--spring); }
         .seg button:hover { color: var(--fg); }
         .seg button:active { transform: scale(.95); }
@@ -268,10 +268,10 @@
         .qty.is-locked .lk { display: block; }
         .range-wrap { position: relative; padding: 6px 0; }
         .range { -webkit-appearance: none; appearance: none; display: block; width: 100%; height: 6px; border-radius: 999px; background: #22222D; outline: none; cursor: pointer; }
-        .range::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: #fff; border: 0; box-shadow: 0 0 0 4px rgba(79,70,229,.0), 0 2px 8px rgba(0,0,0,.5); transition: transform .35s var(--spring), box-shadow .25s; }
-        .range:hover::-webkit-slider-thumb { transform: scale(1.12); box-shadow: 0 0 0 6px rgba(79,70,229,.22), 0 2px 8px rgba(0,0,0,.5); }
+        .range::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: #f1f1f1; border: 0; box-shadow: 0 0 0 4px rgba(79,70,229,.0), 0 2px 8px rgba(0,0,0,.5); transition: transform .35s var(--spring), box-shadow .25s; }
+        .range:hover::-webkit-slider-thumb { transform: scale(1.12); box-shadow: 0 0 0 6px rgba(79,70,229,.12), 0 2px 8px rgba(0,0,0,.5); }
         .range:active::-webkit-slider-thumb { transform: scale(.95); }
-        .range::-moz-range-thumb { width: 20px; height: 20px; border-radius: 50%; background: #fff; border: 0; box-shadow: 0 2px 8px rgba(0,0,0,.5); }
+        .range::-moz-range-thumb { width: 20px; height: 20px; border-radius: 50%; background: #fff; border: 0; box-shadow: 0 2px 8px rgba(0,0,0,.2); }
         .ticks { display: flex; justify-content: space-between; margin-top: 8px; padding: 0 2px; font: 500 10.5px/1 var(--f-mono); color: var(--fg-4); }
         .ticks .is-edge { color: var(--fg-3); }
         .free-note { margin-top: 8px; font-size: 11.5px; color: var(--fg-3); }
@@ -334,7 +334,6 @@
         /*   НЕДАВНИЕ ТЕСТЫ — карточки как в истории              */
         /* ====================================================== */
         .sec-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 4px; margin-bottom: 12px; }
-        .kicker { font: 500 10.5px/1 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--fg-3); }
         .more-link { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: var(--fg-2); transition: color .2s; }
         .more-link:hover { color: var(--fg); }
         .more-link .icon { width: 12px; height: 12px; transition: transform .3s var(--spring); }
@@ -736,7 +735,7 @@
             <!-- ============================================================ -->
             <section data-rv aria-label="Недавние тесты">
                 <div class="sec-head">
-                    <span class="kicker">Недавние тесты</span>
+                    <span class="opt-label">Недавние тесты</span>
                     {% if request.user.is_authenticated %}
                         <a href="{% url 'history' %}" class="more-link">Вся история<svg class="icon"><use href="#c-arrow"/></svg></a>
                     {% endif %}
@@ -777,7 +776,7 @@
                 <a href="mailto:support@letychka.ru" class="chip-btn"><svg class="icon" style="width:14px;height:14px"><use href="#c-mail"/></svg>support@letychka.ru</a>
             </div>
             <div class="foot-row">
-                <span>© 2024–2026 Летучка AI · Design &amp; Dev by <a href="https://dprofile.ru/kozak_developer" target="_blank" rel="nofollow noopener">Kozak</a></span>
+                <span>© 2024–2026 Летучка AI · Design &amp; Dev by <a href="https://berliner187.github.io/" target="_blank" rel="nofollow noopener">Kozak</a></span>
                 <nav class="foot-links" aria-label="Документы">
                     <a href="/docs/public-offer">Публичная оферта</a>
                     <a href="/docs/privacy-policy">Политика конфиденциальности</a>
@@ -1311,7 +1310,7 @@
                 }
                 localStorage.removeItem('submit_lockout');
             }
-            if (/(интриж|сплетн|бывший)/i.test(text)) {
+            if (/(интриж|сплетн)/i.test(text)) {
                 localStorage.setItem('submit_lockout', String(Date.now() + 30000));
                 triggerButtonError('Отказ');
                 isl.error('Интрижки обсуждайте в школе');

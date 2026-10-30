@@ -1,545 +1,1942 @@
-{% load static %}
-<!DOCTYPE html>
+{% load static %}<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Центр управления тестами | ЦУП Летучки</title>
-    <meta name="robots" content="noindex, nofollow" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="robots" content="noindex, nofollow">
     <meta name="csrf-token" content="{{ csrf_token }}">
+    <title>{{ page_title|default:"Тесты | Ситуационный центр Летучки" }}</title>
     <link rel="shortcut icon" href="{% static 'img/logo.png' %}" type="image/png">
 
-    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+    <script>
+        tailwind.config = { theme: { extend: { fontFamily: {
+            sans: ['Manrope', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+        } } } };
+    </script>
+
     <style>
-        body { background-color: #080811; color: #ebeff3; font-family: 'Inter', system-ui, sans-serif; }
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        :root {
+            --bg: #0a0a0c; --side: #0d0d10; --card: #131316; --tile: #1a1a1f; --tile-2: #212127;
+            --line: rgba(255,255,255,.06); --line-2: rgba(255,255,255,.1);
+            --text: #ededf0; --muted: #8b8b96; --dim: #5f5f69;
+            --indigo: #5E6CF8; --indigo-2: #7480ff; --yellow: #F5B740; --green: #34D399; --teal: #2DD4BF;
+            --orange: #F97316; --rose: #FB7185; --sky: #38BDF8; --violet: #A78BFA;
+            --ease: cubic-bezier(.16,1,.3,1);
+            --chev: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238b8b96' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+        }
+        *, *::before, *::after { box-sizing: border-box; }
+        html { background: var(--bg); color-scheme: dark; overflow-x: clip; }
+        body { margin: 0; background: var(--bg); color: var(--text); font: 400 13px/1.45 'Manrope', system-ui, sans-serif; font-feature-settings: 'tnum' 1; -webkit-font-smoothing: antialiased; }
+        ::selection { background: rgba(94,108,248,.35); }
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-thumb { background: #26262c; border-radius: 999px; border: 3px solid var(--bg); }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 6px; }
-        ::-webkit-scrollbar-thumb:hover { background: #334155; }
-        
-        .font-mono-nums { font-family: 'JetBrains Mono', monospace; }
+        :focus-visible { outline: 2px solid rgba(94,108,248,.85); outline-offset: 2px; border-radius: 8px; }
+        button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+        a { color: inherit; }
+        .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; }
 
-        .card-spring {
-            background: #101123;
-            border: 1px solid rgba(255, 255, 255, 0.07);
-            border-radius: 1.75rem;
-            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.2s ease, box-shadow 0.2s ease;
-        }
-        .card-spring:hover {
-            border-color: rgba(255, 255, 255, 0.16);
-            box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.7);
-        }
+        /* каркас */
+        .shell { display: grid; grid-template-columns: 248px minmax(0,1fr); min-height: 100vh; }
+        .sidebar { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; padding: 18px 14px; background: var(--side); border-right: 1px solid var(--line); overflow-y: auto; }
+        .brand { display: flex; align-items: center; gap: 11px; padding: 4px 6px 18px; }
+        .brand-name { font-weight: 800; font-size: 15px; letter-spacing: -.02em; line-height: 1.1; }
+        .brand-sub { color: var(--muted); font-size: 12px; font-weight: 500; }
+        .nav-label { font-size: 11px; color: var(--dim); font-weight: 700; padding: 0 10px; margin: 16px 0 6px; }
+        .nav a { position: relative; display: flex; align-items: center; gap: 10px; height: 38px; padding: 0 10px; border-radius: 12px; color: var(--muted); font-weight: 600; font-size: 13px; text-decoration: none; transition: color .15s var(--ease), background-color .15s var(--ease); }
+        .nav a:hover { color: var(--text); background: rgba(255,255,255,.03); }
+        .nav a[aria-current="true"] { color: var(--text); background: var(--tile); }
+        .nav a[aria-current="true"] svg { color: var(--indigo-2); }
+        .nav .count { margin-left: auto; font-size: 11px; color: var(--dim); font-weight: 700; }
+        .side-card { margin-top: auto; background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 14px; }
+        .main { min-width: 0; }
+        .topbar { position: sticky; top: 0; z-index: 40; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 14px 24px; background: rgba(10,10,12,.82); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); border-bottom: 1px solid var(--line); }
+        .content { padding: 20px 24px 96px; display: flex; flex-direction: column; gap: 30px; }
+        .sect { scroll-margin-top: 84px; }
+        .sect-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+        .sect-head h2 { margin: 0; font-size: 18px; font-weight: 800; letter-spacing: -.025em; }
+        .sect-head p { margin: 3px 0 0; color: var(--muted); font-size: 12px; }
 
-        .filter-chip {
-            padding: 4px 10px;
-            font-size: 11px;
-            font-weight: 600;
-            border-radius: 10px;
-            color: #94a3b8;
-            background: transparent;
-            transition: all 0.15s ease;
-            white-space: nowrap;
-        }
-        .filter-chip:hover {
-            color: #f1f5f9;
-            background: rgba(255, 255, 255, 0.05);
-        }
-        .filter-chip.active {
-            color: #ffffff;
-            background: #5E6CF8;
-            box-shadow: 0 2px 8px rgba(94, 108, 248, 0.35);
-        }
+        /* карточки */
+        .card { position: relative; background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 18px; min-width: 0; }
+        .card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+        .card-title { display: flex; align-items: center; gap: 10px; min-width: 0; }
+        .card-title > div { min-width: 0; }
+        .card-title h3 { margin: 0; font-size: 14px; font-weight: 700; letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .card-title small { display: block; color: var(--muted); font-size: 12px; font-weight: 500; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ticon { width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; background: var(--tile); color: var(--muted); flex: none; border: 1px solid var(--line); }
+        .tile { background: var(--tile); border-radius: 14px; padding: 12px 14px; min-width: 0; }
+        .tile.btn-tile { text-align: left; transition: background-color .15s var(--ease); }
+        .tile.btn-tile:hover { background: var(--tile-2); }
+        .big { font-size: 28px; font-weight: 800; letter-spacing: -.035em; line-height: 1; white-space: nowrap; }
+        .mid { font-size: 21px; font-weight: 800; letter-spacing: -.025em; line-height: 1; white-space: nowrap; }
+        .lbl { color: var(--muted); font-size: 12px; font-weight: 500; }
+        .val { color: var(--text); font-weight: 700; }
+        .link { color: var(--indigo-2); font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; text-decoration: none; }
+        .link:hover { color: #fff; }
+        .delta { display: inline-flex; align-items: center; gap: 3px; height: 20px; padding: 0 6px; border-radius: 6px; font-size: 11px; font-weight: 800; white-space: nowrap; }
+        .delta.up { color: #4ade80; background: rgba(52,211,153,.12); }
+        .delta.down { color: #fb7185; background: rgba(251,113,133,.12); }
+        .delta.flat { color: var(--muted); background: rgba(255,255,255,.05); }
+        .chip { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 9px; border-radius: 8px; font-size: 11px; font-weight: 700; background: rgba(255,255,255,.05); color: var(--muted); white-space: nowrap; }
+        .chip.ok { color: #4ade80; background: rgba(52,211,153,.12); }
+        .chip.bad { color: #fb7185; background: rgba(251,113,133,.12); }
+        .chip.warn { color: var(--yellow); background: rgba(245,183,64,.12); }
+        .chip.accent { color: #c7cbff; background: rgba(94,108,248,.16); }
+        .chip.x { padding-right: 4px; }
+        .chip.x button { width: 18px; height: 18px; border-radius: 6px; display: grid; place-items: center; color: inherit; opacity: .7; }
+        .chip.x button:hover { opacity: 1; background: rgba(255,255,255,.08); }
+        .dot { width: 7px; height: 7px; border-radius: 999px; display: inline-block; flex: none; }
+        .sw { width: 9px; height: 9px; border-radius: 3px; flex: none; display: inline-block; }
+        .tone-ok { color: #4ade80; } .tone-bad { color: #fb7185; } .tone-warn { color: var(--yellow); } .tone-muted { color: var(--muted); }
 
-        #toast { transition: opacity .25s ease, transform .25s ease; }
+        /* контролы */
+        .btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: 36px; padding: 0 14px; border-radius: 11px; font-size: 13px; font-weight: 700; white-space: nowrap; text-decoration: none; transition: background-color .15s var(--ease), color .15s var(--ease), border-color .15s var(--ease), opacity .15s; }
+        .btn:disabled { opacity: .45; cursor: not-allowed; }
+        .btn-primary { background: var(--indigo); color: #fff; box-shadow: inset 0 1px 0 rgba(255,255,255,.18); }
+        .btn-primary:not(:disabled):hover { background: var(--indigo-2); }
+        .btn-ghost { color: #c4c4cc; background: var(--tile); border: 1px solid var(--line); }
+        .btn-ghost:not(:disabled):hover { color: #fff; background: var(--tile-2); }
+        .btn-danger { color: #fecdd3; background: rgba(251,113,133,.12); border: 1px solid rgba(251,113,133,.25); }
+        .btn-danger:not(:disabled):hover { background: rgba(251,113,133,.2); }
+        .btn-sm { height: 30px; padding: 0 11px; font-size: 12px; border-radius: 9px; }
+        .btn.on { color: #fff; border-color: rgba(94,108,248,.5); background: rgba(94,108,248,.16); }
+        .icon-btn { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; color: var(--muted); transition: color .15s var(--ease), background-color .15s var(--ease); flex: none; }
+        .icon-btn:hover { color: #fff; background: var(--tile-2); }
+        .seg { display: inline-flex; max-width: 100%; overflow-x: auto; scrollbar-width: none; padding: 3px; gap: 2px; border-radius: 12px; background: var(--tile); border: 1px solid var(--line); }
+        .seg::-webkit-scrollbar { display: none; }
+        .seg > button, .seg > a { flex: none; height: 28px; padding: 0 11px; border-radius: 9px; font-size: 12px; font-weight: 700; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; text-decoration: none; transition: background-color .15s var(--ease), color .15s var(--ease); }
+        .seg > button:hover, .seg > a:hover { color: #fff; }
+        .seg > [aria-pressed="true"], .seg > [aria-current="page"] { background: var(--indigo); color: #fff; }
+        .seg.soft > [aria-pressed="true"] { background: var(--tile-2); color: #fff; box-shadow: 0 1px 0 rgba(255,255,255,.05) inset; }
+        .seg .count { font-size: 10.5px; opacity: .65; font-weight: 700; }
+        .field { height: 36px; border-radius: 11px; background: var(--tile); border: 1px solid var(--line); color: var(--text); font: 500 13px 'Manrope', sans-serif; padding: 0 12px; outline: none; transition: border-color .15s var(--ease); min-width: 0; }
+        .field:hover { border-color: var(--line-2); }
+        .field:focus { border-color: rgba(94,108,248,.7); }
+        .field::placeholder { color: var(--dim); }
+        .field.has-icon { padding-left: 34px; }
+        select.field { appearance: none; padding-right: 32px; background-image: var(--chev); background-repeat: no-repeat; background-position: right 10px center; background-size: 14px; cursor: pointer; }
+        select.field option { background: #1a1a1f; color: var(--text); }
+        input[type="date"].field { color-scheme: dark; font-size: 12px; }
+        .label { display: block; font-size: 12px; font-weight: 700; color: #b4b4bd; margin-bottom: 6px; }
+        .kbd { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 6px; border: 1px solid var(--line-2); color: var(--dim); font: 600 11px 'JetBrains Mono', monospace; }
+        .switch { position: relative; width: 36px; height: 21px; border-radius: 999px; background: #2a2a31; transition: background-color .2s var(--ease); flex: none; }
+        .switch::after { content: ''; position: absolute; top: 2.5px; left: 2.5px; width: 16px; height: 16px; border-radius: 999px; background: #9a9aa5; transition: transform .25s var(--ease), background-color .2s var(--ease); }
+        .switch[aria-checked="true"] { background: var(--indigo); }
+        .switch[aria-checked="true"]::after { transform: translateX(15px); background: #fff; }
+        .switch:disabled { opacity: .5; cursor: wait; }
+
+        /* таблица */
+        .tbl { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; }
+        .tbl th { font-size: 11.5px; font-weight: 600; color: var(--muted); text-align: left; padding: 10px; white-space: nowrap; background: var(--tile); position: sticky; top: 0; z-index: 1; }
+        .tbl th:first-child { border-radius: 11px 0 0 11px; padding-left: 14px; }
+        .tbl th:last-child { border-radius: 0 11px 11px 0; padding-right: 14px; }
+        .tbl th button { display: inline-flex; align-items: center; gap: 4px; color: inherit; font-weight: inherit; }
+        .tbl th button:hover, .tbl th button[data-active] { color: #fff; }
+        .tbl td { padding: 11px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; white-space: nowrap; }
+        .tbl td:first-child { padding-left: 14px; } .tbl td:last-child { padding-right: 14px; }
+        .tbl tbody tr:last-child td { border-bottom: 0; }
+        .tbl tbody tr { cursor: pointer; transition: background-color .15s var(--ease); }
+        .tbl tbody tr:hover { background: rgba(255,255,255,.022); }
+        .tbl tbody tr.is-open { background: rgba(94,108,248,.07); }
+        .tbl .r { text-align: right; }
+        .sub { color: var(--muted); font-size: 11.5px; margin-top: 2px; }
+        .plus { color: #4ade80; font-size: 11px; font-weight: 700; }
+
+        /* индикаторы */
+        .track { height: 6px; border-radius: 999px; background: rgba(255,255,255,.06); overflow: hidden; }
+        .track > i { display: block; height: 100%; border-radius: inherit; transform-origin: left; animation: fillx .8s var(--ease) both; }
+        @keyframes fillx { from { transform: scaleX(0); } }
+        .share { display: flex; gap: 4px; height: 10px; }
+        .share > span { flex-basis: 0; min-width: 6px; border-radius: 999px; transform-origin: left; animation: fillx .8s var(--ease) both; cursor: pointer; }
+        .share.empty { border-radius: 999px; background: rgba(255,255,255,.06); }
+
+        /* графики */
+        .chart { position: relative; width: 100%; user-select: none; touch-action: pan-y; }
+        .chart svg { display: block; overflow: visible; }
+        .chart .gl { stroke: rgba(255,255,255,.055); stroke-dasharray: 2 4; }
+        .chart .ax { fill: var(--dim); font: 600 10.5px 'Manrope', sans-serif; }
+        .chart .hl { fill: rgba(255,255,255,.04); transition: opacity .12s var(--ease); }
+        .chart .col { transition: opacity .18s var(--ease); }
+        .chart.hovering .col:not(.on) { opacity: .38; }
+        .chart .anim .col { transform-box: fill-box; transform-origin: 50% 100%; animation: grow .75s var(--ease) both; }
+        @keyframes grow { from { transform: scaleY(0); } }
+        .chart .ln { fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+        .chart .ln.draw { animation: draw 1.1s var(--ease) .15s forwards; }
+        @keyframes draw { to { stroke-dashoffset: 0; } }
+        .chart .ldot { stroke: var(--card); stroke-width: 2.5; transition: opacity .12s var(--ease); pointer-events: none; }
+        .chart-empty { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; color: var(--muted); font-size: 12.5px; padding: 12px; pointer-events: none; }
+        .donut { position: relative; display: grid; place-items: center; }
+        .donut .seg-c { transition: stroke-width .2s var(--ease), opacity .2s var(--ease); cursor: pointer; }
+        .donut .anim .seg-c { animation: seg 1s var(--ease) both; }
+        @keyframes seg { from { stroke-dasharray: 0 var(--c); } }
+        .donut.hovering .seg-c:not(.on) { opacity: .35; }
+        .donut-center { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; pointer-events: none; }
+        #tip { position: fixed; z-index: 140; left: 0; top: 0; pointer-events: none; min-width: 160px; max-width: 300px; background: rgba(26,26,31,.97); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,.1); border-radius: 13px; padding: 10px 12px; box-shadow: 0 18px 40px -16px rgba(0,0,0,.8); opacity: 0; transition: opacity .12s var(--ease); }
+        #tip.on { opacity: 1; }
+        .tt-t { font-weight: 800; color: #fff; font-size: 12px; margin-bottom: 6px; }
+        .tt-r { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #c4c4cc; line-height: 1.75; white-space: nowrap; }
+        .tt-r b { margin-left: auto; padding-left: 14px; color: #fff; font-weight: 800; }
+        .tt-f { border-top: 1px solid rgba(255,255,255,.08); margin-top: 6px; padding-top: 6px; }
+
+        /* списки */
+        .rank { display: grid; grid-template-columns: 22px minmax(0,1fr) auto; align-items: center; gap: 12px; padding: 10px 8px; border-radius: 12px; text-align: left; width: 100%; transition: background-color .15s var(--ease); }
+        .rank:hover { background: rgba(255,255,255,.03); }
+        .rank .n { color: var(--dim); font: 700 12px 'JetBrains Mono', monospace; text-align: right; }
+        .legend-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; padding: 4px 6px; border-radius: 8px; font-size: 12.5px; text-align: left; transition: background-color .15s var(--ease); }
+        .legend-row:hover { background: rgba(255,255,255,.04); }
+
+        /* каталог: карточки на мобилке */
+        .s-card { display: block; width: 100%; text-align: left; padding: 14px; border-radius: 16px; background: var(--tile); border: 1px solid transparent; transition: border-color .15s var(--ease); }
+        .s-card:active, .s-card.is-open { border-color: rgba(94,108,248,.4); }
+        .metrics { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 6px; margin-top: 10px; }
+        .metrics > div { background: var(--card); border-radius: 10px; padding: 7px 8px; min-width: 0; }
+        .metrics p { margin: 0; }
+
+        /* оверлеи */
+        #progress { position: fixed; top: 0; left: 0; height: 2px; width: 0; background: var(--indigo); z-index: 150; opacity: 0; transition: width .4s var(--ease), opacity .3s var(--ease); }
+        #progress.on { opacity: 1; }
+        .scrim { position: fixed; inset: 0; background: rgba(4,4,6,.66); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); opacity: 0; pointer-events: none; transition: opacity .22s var(--ease); }
+        .scrim.open { opacity: 1; pointer-events: auto; }
+        #drawer-scrim { z-index: 70; } #modal-scrim { z-index: 90; } #filters-scrim { z-index: 65; }
+        .drawer { position: fixed; top: 10px; right: 10px; bottom: 10px; width: min(1040px, calc(100vw - 20px)); background: #0f0f12; border: 1px solid var(--line-2); border-radius: 22px; transform: translateX(calc(100% + 20px)); visibility: hidden; transition: transform .34s var(--ease), visibility 0s linear .34s; z-index: 72; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 40px 120px -40px rgba(0,0,0,.9); }
+        .drawer.open { transform: none; visibility: visible; transition: transform .34s var(--ease), visibility 0s; }
+        .modal { position: fixed; left: 50%; top: 50%; width: min(460px, calc(100vw - 2rem)); z-index: 92; background: #141418; border: 1px solid var(--line-2); border-radius: 20px; visibility: hidden; opacity: 0; pointer-events: none; transform: translate(-50%,-46%) scale(.97); transition: opacity .18s var(--ease), transform .25s var(--ease), visibility 0s linear .25s; }
+        .modal.open { visibility: visible; opacity: 1; pointer-events: auto; transform: translate(-50%,-50%) scale(1); transition: opacity .18s var(--ease), transform .25s var(--ease), visibility 0s; }
+        .toast { display: flex; align-items: flex-start; gap: 10px; max-width: 400px; padding: 12px 14px; border-radius: 14px; background: #1a1a1f; border: 1px solid var(--line-2); font-size: 13px; line-height: 1.45; box-shadow: 0 16px 40px -18px rgba(0,0,0,.8); opacity: 0; transform: translateY(8px); transition: opacity .2s var(--ease), transform .25s var(--ease); }
+        .toast.in { opacity: 1; transform: none; }
+        .toast .dot { margin-top: 6px; }
+        .notice { border-radius: 13px; padding: 12px 14px; font-size: 13px; line-height: 1.45; }
+        .notice.warn { background: rgba(245,183,64,.08); color: #fde68a; }
+        .notice.info { background: rgba(94,108,248,.1); color: #c7cbff; }
+        .notice.bad { background: rgba(251,113,133,.09); color: #fecdd3; }
+        .skeleton { position: relative; display: block; color: transparent !important; background: var(--tile); border-radius: 8px; overflow: hidden; }
+        .skeleton::after { content: ''; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg, transparent, rgba(255,255,255,.05), transparent); animation: shimmer 1.3s infinite; }
+        @keyframes shimmer { to { transform: translateX(100%); } }
+        .reveal { animation: reveal .6s var(--ease) both; }
+        @keyframes reveal { from { opacity: 0; transform: translateY(8px); } }
+        .spin { animation: spin .8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .q-item { border-radius: 14px; background: var(--tile); }
+        .q-item summary { list-style: none; cursor: pointer; padding: 12px 14px; display: grid; grid-template-columns: 34px minmax(0,1fr) 120px; gap: 12px; align-items: center; }
+        .q-item summary::-webkit-details-marker { display: none; }
+        .q-item[open] summary { border-bottom: 1px solid var(--line); }
+        .opt { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 11px; border-radius: 10px; background: var(--card); font-size: 12.5px; }
+        .opt.ok { background: rgba(52,211,153,.1); color: #a7f3d0; }
+        .opt.bad { background: rgba(251,113,133,.08); color: #fecdd3; }
+        .clamp2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; white-space: normal; }
+        .filters-panel { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; }
+
+        @media (max-width: 1023px) {
+            .shell { grid-template-columns: minmax(0,1fr); }
+            .sidebar { position: static; height: auto; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px 16px; border-right: 0; border-bottom: 1px solid var(--line); }
+            .brand { padding: 0 8px 0 0; }
+            .nav { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; max-width: 100%; }
+            .nav::-webkit-scrollbar { display: none; }
+            .nav .nav-label, .side-card, .nav .count { display: none; }
+            .nav a { flex: none; }
+            .topbar { padding: 12px 16px; }
+            .content { padding: 16px 16px 80px; gap: 24px; }
+        }
+        @media (max-width: 767px) {
+            .drawer { inset: 0; width: 100vw; border-radius: 0; border: 0; }
+            .big { font-size: 24px; }
+            .filters-panel { grid-template-columns: 1fr 1fr; }
+            .q-item summary { grid-template-columns: 28px minmax(0,1fr); }
+            .q-item summary .q-meter { grid-column: 2; }
+            #toasts { left: 12px; right: 12px; bottom: 12px !important; align-items: stretch !important; }
+        }
+        @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: 0s !important; animation: none !important; } }
     </style>
 </head>
-<body class="text-slate-100 antialiased min-h-screen">
-<div class="max-w-[1700px] mx-auto px-4 lg:px-6 py-6">
+<body>
+<div id="progress" aria-hidden="true"></div>
 
-    <!-- ХЕДЕР С ТАБЛЕТКОЙ -->
-    <header class="flex flex-wrap items-center justify-between gap-4 mb-6">
-        <div class="flex items-center gap-4">
-            <div class="flex items-center gap-1 rounded-2xl bg-[#111827] border border-[#1E293B] p-0.5">
-                <a href="{% url 'stats2975' %}" class="px-3 py-1.5 text-xs font-medium rounded-xl text-slate-400 hover:text-slate-200 transition">Дашборд</a>
-                <a href="{% url 'user_ops_center' %}" class="px-3 py-1.5 text-xs font-medium rounded-xl text-slate-400 hover:text-slate-200 transition">CRM</a>
-                <a href="{% url 'admin_surveys_ops' %}" class="px-3 py-1.5 text-xs font-medium rounded-xl bg-[#5E6CF8] text-white">Тесты</a>
-                <a href="{% url 'admin_traffic_live' %}" class="px-3 py-1.5 text-xs font-medium rounded-xl text-slate-400 hover:text-slate-200 transition">Пульс</a>
+<div class="shell">
+    <!-- ================= Сайдбар ================= -->
+    <aside class="sidebar" aria-label="Навигация">
+        <div class="brand">
+            <img src="{% static 'img/logo.png' %}" class="h-6" alt="">
+            <div class="min-w-0">
+                <div class="brand-name">Летучка</div>
+                <div class="brand-sub">Каталог тестов</div>
             </div>
-
-            <h1 class="text-2xl font-extrabold tracking-tight text-slate-50">СЦ / Каталог тестов</h1>
         </div>
-
-        <div class="flex items-center gap-3">
-            <span class="text-xs text-slate-400 font-mono-nums" id="total-tests-stat">Всего в базе: ...</span>
-            <a href="{% url 'stats2975' %}" class="text-xs text-slate-500 hover:text-slate-300">← Аналитика</a>
+        <nav class="nav" id="side-nav">
+            <p class="nav-label">Тесты</p>
+            <a href="#sec-overview" data-nav><span data-icon="grid" data-size="16"></span>Обзор</a>
+            <a href="#sec-dynamics" data-nav><span data-icon="trend" data-size="16"></span>Динамика</a>
+            <a href="#sec-slices" data-nav><span data-icon="pie" data-size="16"></span>Срезы</a>
+            <a href="#sec-tops" data-nav><span data-icon="flame" data-size="16"></span>Топы</a>
+            <a href="#sec-catalog" data-nav><span data-icon="list" data-size="16"></span>Каталог<span class="count" id="nav-total"></span></a>
+            <p class="nav-label">Разделы</p>
+            <a href="{% url 'stats2975' %}"><span data-icon="wallet" data-size="16"></span>Дашборд</a>
+            <a href="{% url 'user_ops_center' %}"><span data-icon="users" data-size="16"></span>CRM</a>
+            <a href="{% url 'admin_traffic_live' %}"><span data-icon="activity" data-size="16"></span>Трафик</a>
+        </nav>
+        <div class="side-card mt-6">
+            <p class="m-0 text-[13px] font-bold">Горячие клавиши</p>
+            <ul class="mt-3 space-y-2 text-[12px] text-[color:var(--muted)]">
+                <li class="flex items-center justify-between"><span>Поиск</span><span class="kbd">/</span></li>
+                <li class="flex items-center justify-between"><span>Закрыть досье</span><span class="kbd">Esc</span></li>
+                <li class="flex items-center justify-between"><span>Соседний тест</span><span class="flex gap-1"><span class="kbd">J</span><span class="kbd">K</span></span></li>
+            </ul>
         </div>
-    </header>
+    </aside>
 
-    <!-- ОСНОВНАЯ СЕТКА: 4 / 8 -->
-    <div class="grid grid-cols-12 gap-5">
-        
-        <!-- ЛЕВАЯ КОЛОНКА: ПОИСК, ФИЛЬТРЫ И СПИСОК -->
-        <aside class="col-span-12 xl:col-span-4 space-y-4">
-            
-            <!-- КАРТОЧКА ПОИСКА И ФИЛЬТРОВ -->
-            <div class="card-spring p-4 space-y-3.5">
-                
-                <!-- Строка поиска -->
-                <div class="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-[#0B0F17] border border-[#1E293B] focus-within:border-indigo-500 transition-colors">
-                    <i class="fa-solid fa-magnifying-glass text-slate-500 text-xs"></i>
-                    <input id="survey-search-input" type="text" placeholder="Поиск: Название / UUID / Автор..."
-                           class="w-full bg-transparent outline-none text-xs sm:text-sm text-slate-100 placeholder-slate-500">
-                    <button id="clear-search-btn" class="hidden text-slate-500 hover:text-white text-xs p-1">
-                        <i class="fa-solid fa-xmark"></i>
-                    </button>
-                    <button id="survey-search-btn" class="text-xs font-bold text-indigo-400 hover:text-indigo-300 ml-1">
-                        Найти
-                    </button>
+    <main class="main">
+        <header class="topbar">
+            <div class="flex items-center gap-3 min-w-0 mr-auto">
+                <span class="ticon" data-icon="file" data-size="16"></span>
+                <div class="min-w-0">
+                    <h1 class="m-0 text-[16px] font-extrabold tracking-[-0.02em] leading-tight truncate">Ситуационный центр тестов</h1>
+                    <p id="updated-at" class="m-0 text-[12px] text-[color:var(--muted)] truncate" aria-live="polite">Загружаем данные…</p>
                 </div>
-
-                <!-- Быстрые пресеты периодов (Скролл-бар) -->
-                <div class="space-y-1.5">
-                    <div class="flex items-center justify-between text-[11px] text-slate-400 font-medium px-1">
-                        <span>Период создания</span>
-                        <button onclick="toggleCalendar()" class="text-indigo-400 hover:text-indigo-300 text-[11px] flex items-center gap-1 font-semibold">
-                            <i class="fa-regular fa-calendar"></i>
-                            <span id="calendar-toggle-label">Календарь</span>
-                        </button>
-                    </div>
-
-                    <div class="flex flex-wrap gap-1 bg-[#0B0F17] rounded-xl p-1 border border-white/5" id="presets-container">
-                        <button class="filter-chip active" data-period="all">Все</button>
-                        <button class="filter-chip" data-period="today">24ч <b id="cnt-today" class="font-normal opacity-70"></b></button>
-                        <button class="filter-chip" data-period="yesterday">Вчера <b id="cnt-yesterday" class="font-normal opacity-70"></b></button>
-                        <button class="filter-chip" data-period="7d">7д <b id="cnt-week" class="font-normal opacity-70"></b></button>
-                        <button class="filter-chip" data-period="30d">30д</button>
-                        <button class="filter-chip" data-period="90d">3 мес</button>
-                        <button class="filter-chip" data-period="180d">Полгода</button>
-                        <button class="filter-chip" data-period="365d">Год</button>
-                    </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+                <div class="seg soft" id="range-seg" role="group" aria-label="Период">
+                    <button type="button" data-range="7D">7D</button>
+                    <button type="button" data-range="30D">30D</button>
+                    <button type="button" data-range="90D">90D</button>
+                    <button type="button" data-range="1Y">1Y</button>
+                    <button type="button" data-range="ALL">Всё</button>
+                    <button type="button" data-range="CUSTOM"><span data-icon="calendar" data-size="13"></span>Даты</button>
                 </div>
+                <form id="custom-range" class="hidden items-center gap-2" novalidate>
+                    <label class="sr-only" for="custom-start">Начало периода</label>
+                    <input type="date" id="custom-start" class="field">
+                    <span class="text-[color:var(--dim)]">—</span>
+                    <label class="sr-only" for="custom-end">Конец периода</label>
+                    <input type="date" id="custom-end" class="field">
+                    <button type="submit" class="btn btn-ghost">Применить</button>
+                </form>
+            </div>
+            <div class="flex items-center gap-2">
+                <button id="btn-refresh" type="button" class="btn btn-ghost" title="Перезагрузить"><span data-icon="refresh"></span><span class="hidden sm:inline">Обновить</span></button>
+                <nav class="seg hidden md:inline-flex" aria-label="Разделы">
+                    <a href="{% url 'stats2975' %}">Дашборд</a>
+                    <a href="{% url 'user_ops_center' %}">CRM</a>
+                    <a href="{% url 'admin_surveys_ops' %}" aria-current="page">Тесты</a>
+                </nav>
+            </div>
+        </header>
 
-                <!-- Выдвижной блок календаря -->
-                <div id="calendar-box" class="hidden p-3 bg-[#0B0F17] rounded-xl border border-indigo-500/30 space-y-2">
-                    <span class="text-[10px] font-bold text-indigo-300 uppercase tracking-wider block">Выбор диапазона дат</span>
-                    <div class="grid grid-cols-2 gap-2 text-xs">
-                        <div>
-                            <span class="text-[10px] text-slate-500 block mb-1">От:</span>
-                            <input type="date" id="date-from" class="w-full bg-[#101123] border border-[#1E293B] rounded-lg px-2 py-1.5 text-xs text-white outline-none focus:border-indigo-500">
+        <div class="content">
+            <!-- ============ Обзор ============ -->
+            <section id="sec-overview" class="sect">
+                <div class="sect-head">
+                    <div><h2>Обзор</h2><p id="period-label">Период загружается</p></div>
+                </div>
+                <div id="kpi" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3.5"></div>
+                <div id="kpi2" class="mt-3.5 grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-2.5"></div>
+            </section>
+
+            <!-- ============ Динамика ============ -->
+            <section id="sec-dynamics" class="sect">
+                <div class="sect-head">
+                    <div><h2>Динамика</h2><p>Пунктир — тот же показатель за прошлый период такой же длины.</p></div>
+                </div>
+                <div class="grid grid-cols-1 xl:grid-cols-12 gap-3.5">
+                    <article class="card xl:col-span-8 flex flex-col">
+                        <div class="card-head">
+                            <div class="card-title"><span class="ticon" data-icon="trend" data-size="15"></span><div><h3 id="dyn-title">Создано тестов</h3><small id="dyn-sub"></small></div></div>
+                            <div class="seg soft" id="dyn-mode" role="group" aria-label="Показатель">
+                                <button type="button" data-mode="created" aria-pressed="true">Создано</button>
+                                <button type="button" data-mode="views">Просмотры</button>
+                                <button type="button" data-mode="attempts">Прохождения</button>
+                                <button type="button" data-mode="cumulative">База</button>
+                            </div>
                         </div>
-                        <div>
-                            <span class="text-[10px] text-slate-500 block mb-1">До:</span>
-                            <input type="date" id="date-to" class="w-full bg-[#101123] border border-[#1E293B] rounded-lg px-2 py-1.5 text-xs text-white outline-none focus:border-indigo-500">
+                        <div class="mt-4 flex flex-wrap items-end justify-between gap-3">
+                            <div class="flex items-end gap-3"><span id="dyn-total" class="big">—</span><span id="dyn-delta" class="mb-0.5"></span></div>
+                            <div id="dyn-legend" class="flex flex-wrap gap-x-4 gap-y-1.5"></div>
+                        </div>
+                        <div id="ch-dyn" class="chart mt-4 flex-1 min-h-[280px]"></div>
+                    </article>
+                    <article class="card xl:col-span-4 flex flex-col">
+                        <div class="card-head">
+                            <div class="card-title"><span class="ticon" data-icon="clock" data-size="15"></span><div><h3>Часы активности</h3><small>По Москве, за период</small></div></div>
+                            <div class="seg soft" id="hours-mode" role="group" aria-label="Что считать">
+                                <button type="button" data-mode="attempts" aria-pressed="true">Сдают</button>
+                                <button type="button" data-mode="created">Создают</button>
+                            </div>
+                        </div>
+                        <div id="ch-hours" class="chart mt-4 flex-1 min-h-[220px]"></div>
+                        <p id="hours-foot" class="lbl mt-3 mb-0"></p>
+                    </article>
+                </div>
+            </section>
+
+            <!-- ============ Срезы ============ -->
+            <section id="sec-slices" class="sect">
+                <div class="sect-head">
+                    <div><h2>Срезы</h2><p>Тесты, созданные за период. Клик по строке — отфильтровать каталог.</p></div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-3.5">
+                    <article class="card xl:col-span-4">
+                        <div class="card-title"><span class="ticon" data-icon="cpu" data-size="15"></span><div><h3>Модели</h3><small>Чем генерировали</small></div></div>
+                        <div class="mt-4 grid grid-cols-[130px_minmax(0,1fr)] items-center gap-4">
+                            <div id="models-donut" class="donut h-[130px]"></div>
+                            <div id="models-legend" class="space-y-1 min-w-0"></div>
+                        </div>
+                    </article>
+                    <article class="card xl:col-span-4">
+                        <div class="card-title"><span class="ticon" data-icon="layers" data-size="15"></span><div><h3>Как создают</h3><small>Сложность, источник, авторы</small></div></div>
+                        <div id="mix" class="mt-4 space-y-5"></div>
+                    </article>
+                    <article class="card xl:col-span-4 flex flex-col">
+                        <div class="card-title"><span class="ticon" data-icon="target" data-size="15"></span><div><h3>Результаты учеников</h3><small>Доля верных ответов, %</small></div></div>
+                        <div id="ch-scores" class="chart mt-4 flex-1 min-h-[180px]"></div>
+                        <p id="scores-foot" class="lbl mt-3 mb-0"></p>
+                    </article>
+                    <article class="card md:col-span-2 xl:col-span-12">
+                        <div class="card-head">
+                            <div class="card-title"><span class="ticon" data-icon="ruler" data-size="15"></span><div><h3>Размер тестов</h3><small>Сколько вопросов в тестах за период</small></div></div>
+                        </div>
+                        <div id="ch-qsize" class="chart mt-4 h-[150px]"></div>
+                    </article>
+                </div>
+            </section>
+
+            <!-- ============ Топы ============ -->
+            <section id="sec-tops" class="sect">
+                <div class="sect-head">
+                    <div><h2>Топы</h2><p>Что растёт, что проходят, где валятся.</p></div>
+                </div>
+                <article class="card">
+                    <div class="card-head">
+                        <div class="seg soft" id="top-tabs" role="group" aria-label="Топ">
+                            <button type="button" data-tab="trending" aria-pressed="true">Рост просмотров</button>
+                            <button type="button" data-tab="attempts">Прохождения</button>
+                            <button type="button" data-tab="hardest">Самые сложные</button>
+                            <button type="button" data-tab="fresh">Новые хиты</button>
+                        </div>
+                        <p id="top-hint" class="lbl m-0"></p>
+                    </div>
+                    <div id="tops" class="mt-3 grid grid-cols-1 lg:grid-cols-2 gap-x-6"></div>
+                </article>
+            </section>
+
+            <!-- ============ Каталог ============ -->
+            <section id="sec-catalog" class="sect">
+                <div class="sect-head">
+                    <div><h2>Каталог</h2><p id="cat-sub">Все тесты платформы</p></div>
+                    <div class="flex items-center gap-2">
+                        <a id="btn-export" class="btn btn-ghost btn-sm" href="#" download><span data-icon="download" data-size="13"></span>CSV</a>
+                    </div>
+                </div>
+                <article class="card">
+                    <div class="flex flex-col gap-3">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <form id="cat-search" class="relative flex-1 min-w-[220px]" role="search">
+                                <label class="sr-only" for="cat-q">Поиск теста</label>
+                                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-[color:var(--dim)]" data-icon="search"></span>
+                                <input id="cat-q" type="search" autocomplete="off" class="field has-icon w-full pr-10" placeholder="Название, UUID теста или автора, логин, email">
+                                <span class="kbd absolute right-3 top-1/2 -translate-y-1/2 hidden sm:inline-grid">/</span>
+                            </form>
+                            <div class="seg soft" id="cat-status" role="group" aria-label="Статус"></div>
+                            <button type="button" id="btn-filters" class="btn btn-ghost"><span data-icon="sliders" data-size="14"></span>Фильтры<span id="filters-count" class="chip accent hidden" style="height:20px;padding:0 6px"></span></button>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="lbl">Создан:</span>
+                            <div class="seg soft" id="cat-created" role="group" aria-label="Дата создания">
+                                <button type="button" data-created="all">Всё время</button>
+                                <button type="button" data-created="today">Сегодня</button>
+                                <button type="button" data-created="yesterday">Вчера</button>
+                                <button type="button" data-created="7d">7 дней</button>
+                                <button type="button" data-created="30d">30 дней</button>
+                                <button type="button" data-created="period">За период</button>
+                                <button type="button" data-created="custom">Даты</button>
+                            </div>
+                            <form id="cat-custom" class="hidden items-center gap-2" novalidate>
+                                <input type="date" id="cat-cfrom" class="field" aria-label="Создан с">
+                                <span class="text-[color:var(--dim)]">—</span>
+                                <input type="date" id="cat-cto" class="field" aria-label="Создан по">
+                                <button type="submit" class="btn btn-ghost btn-sm">ОК</button>
+                            </form>
+                        </div>
+                        <div id="filters-panel" class="hidden tile p-4">
+                            <div class="filters-panel">
+                                <label><span class="label">Модель</span><select class="field w-full" data-f="model"></select></label>
+                                <label><span class="label">Авторы</span><select class="field w-full" data-f="author_type">
+                                    <option value="">Все</option><option value="registered">Зарегистрированные</option><option value="guest">Гости</option></select></label>
+                                <label><span class="label">Сложность</span><select class="field w-full" data-f="difficulty">
+                                    <option value="">Любая</option><option value="easy">Лёгкая</option><option value="medium">Средняя</option><option value="hard">Сложная</option><option value="__none__">Нет данных</option></select></label>
+                                <label><span class="label">Источник</span><select class="field w-full" data-f="source">
+                                    <option value="">Любой</option><option value="file">Файл</option><option value="text">Текст</option><option value="unknown">Нет данных</option></select></label>
+                                <label><span class="label">Прохождения</span><select class="field w-full" data-f="attempts">
+                                    <option value="">Неважно</option><option value="yes">Есть</option><option value="no">Ни одного</option></select></label>
+                                <label><span class="label">Просмотры</span><select class="field w-full" data-f="views">
+                                    <option value="">Неважно</option><option value="some">Есть</option><option value="zero">Ноль</option><option value="100">100 и больше</option></select></label>
+                                <label><span class="label">Маркетплейс</span><select class="field w-full" data-f="is_in_marketplace">
+                                    <option value="">Неважно</option><option value="1">Да</option><option value="0">Нет</option></select></label>
+                                <label><span class="label">Проверен редакцией</span><select class="field w-full" data-f="is_verified">
+                                    <option value="">Неважно</option><option value="1">Да</option><option value="0">Нет</option></select></label>
+                                <div><span class="label">Вопросов</span><div class="flex items-center gap-2">
+                                    <input type="number" min="0" class="field w-full" data-f="qmin" placeholder="от" aria-label="Вопросов от">
+                                    <input type="number" min="0" class="field w-full" data-f="qmax" placeholder="до" aria-label="Вопросов до"></div></div>
+                            </div>
+                        </div>
+                        <div id="active-filters" class="hidden flex flex-wrap items-center gap-2"></div>
+                    </div>
+
+                    <div id="cat-summary" class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-2.5"></div>
+
+                    <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
+                        <p id="cat-count" class="lbl m-0">Загрузка…</p>
+                        <div class="flex items-center gap-2">
+                            <label class="sr-only" for="cat-sort">Сортировка</label>
+                            <select id="cat-sort" class="field" style="height:32px;font-size:12px">
+                                <option value="-created">Сначала новые</option>
+                                <option value="created">Сначала старые</option>
+                                <option value="-updated">Недавно изменённые</option>
+                                <option value="-views">Больше просмотров</option>
+                                <option value="views">Меньше просмотров</option>
+                                <option value="-views_period">Рост просмотров за период</option>
+                                <option value="-attempts">Больше прохождений</option>
+                                <option value="-attempts_period">Прохождений за период</option>
+                                <option value="-last_attempt">Недавно проходили</option>
+                                <option value="-conversion">Лучшая конверсия</option>
+                                <option value="score">Самые сложные</option>
+                                <option value="-score">Самые лёгкие</option>
+                                <option value="-questions">Больше вопросов</option>
+                                <option value="title">По алфавиту</option>
+                            </select>
+                            <label class="sr-only" for="cat-per">На странице</label>
+                            <select id="cat-per" class="field" style="height:32px;font-size:12px">
+                                <option value="25">25</option><option value="50" selected>50</option><option value="100">100</option>
+                            </select>
                         </div>
                     </div>
-                    <div class="flex justify-end gap-2 pt-1">
-                        <button onclick="resetCalendar()" class="px-2.5 py-1 text-[11px] text-slate-400 hover:text-white">Сброс</button>
-                        <button onclick="applyCalendar()" class="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold rounded-lg">Применить</button>
+
+                    <div class="mt-3 relative overflow-x-auto hidden md:block">
+                        <table class="tbl min-w-[1080px]">
+                            <thead><tr id="cat-head"></tr></thead>
+                            <tbody id="cat-body"></tbody>
+                        </table>
                     </div>
-                </div>
+                    <div id="cat-cards" class="mt-3 space-y-2 md:hidden"></div>
+                    <div id="cat-pager" class="mt-4 flex flex-wrap items-center justify-between gap-3"></div>
+                </article>
+            </section>
+        </div>
+    </main>
+</div>
 
-                <!-- Строка сортировки и результатов -->
-                <div class="flex items-center justify-between pt-1 border-t border-[#1E293B] text-[11px] text-slate-400">
-                    <span id="found-count-text">Загрузка...</span>
-                    
-                    <div class="flex items-center gap-1.5">
-                        <span class="text-slate-500">Сортировка:</span>
-                        <select id="sort-select" onchange="applySort(this.value)" class="bg-[#0B0F17] text-slate-200 border border-[#1E293B] rounded-lg px-2 py-1 outline-none text-[11px]">
-                            <option value="-created_at">Свежие</option>
-                            <option value="created_at">Старые</option>
-                            <option value="-view_count">Просмотры</option>
-                            <option value="-questions_count">Вопросы</option>
-                        </select>
-                    </div>
-                </div>
+<!-- ================= Досье ================= -->
+<div id="drawer-scrim" class="scrim" aria-hidden="true"></div>
+<aside id="drawer" class="drawer" role="dialog" aria-modal="true" aria-labelledby="dossier-title" aria-hidden="true">
+    <div class="flex items-center justify-between gap-3 px-4 sm:px-6 h-14 border-b border-[color:var(--line)] flex-none">
+        <div class="flex items-center gap-1">
+            <button type="button" class="icon-btn" data-nav-survey="-1" aria-label="Предыдущий тест" data-tip="Предыдущий (K)"><span data-icon="up" data-size="16"></span></button>
+            <button type="button" class="icon-btn" data-nav-survey="1" aria-label="Следующий тест" data-tip="Следующий (J)"><span data-icon="down" data-size="16"></span></button>
+            <span id="dossier-pos" class="lbl ml-1"></span>
+        </div>
+        <div class="flex items-center gap-1">
+            <button type="button" class="icon-btn" id="dossier-link" aria-label="Скопировать ссылку на досье" data-tip="Ссылка на это досье"><span data-icon="link" data-size="15"></span></button>
+            <button type="button" class="icon-btn" data-drawer-close aria-label="Закрыть"><span data-icon="x" data-size="16"></span></button>
+        </div>
+    </div>
+    <div id="dossier" class="flex-1 overflow-y-auto"></div>
+</aside>
 
-            </div>
-
-            <!-- СПИСОК ТЕСТОВ (БРОНЕБОЙНАЯ ВЕРСТКА БЕЗ СМЕЩЕНИЙ) -->
-            <div class="card-spring p-3">
-                <div id="surveys-list" class="max-h-[640px] overflow-y-auto space-y-1.5 pr-1"></div>
-            </div>
-
-        </aside>
-
-        <!-- ПРАВАЯ КОЛОНКА (ДОСЬЕ ТЕСТА) -->
-        <main class="col-span-12 xl:col-span-8">
-            <div id="survey-placeholder" class="card-spring p-20 text-center space-y-3">
-                <i class="fa-solid fa-vial-circle-check text-5xl text-slate-700"></i>
-                <h3 class="text-base font-bold text-slate-400">Выберите тест из списка слева</h3>
-                <p class="text-xs text-slate-600 max-w-sm mx-auto">Здесь появится полная структура вопросов, промпт генерации, автор и статистика прохождений учениками.</p>
-            </div>
-
-            <div id="survey-dossier" class="hidden space-y-4"></div>
-        </main>
-
+<div id="modal-scrim" class="scrim" aria-hidden="true"></div>
+<div id="modal" class="modal" role="alertdialog" aria-modal="true" aria-labelledby="modal-title" aria-describedby="modal-text" aria-hidden="true">
+    <div class="p-6">
+        <h2 id="modal-title" class="m-0 text-[16px] font-extrabold tracking-[-0.02em]"></h2>
+        <p id="modal-text" class="mt-2 mb-0 text-[13px] leading-relaxed text-[color:var(--muted)]"></p>
+        <div id="modal-extra"></div>
+    </div>
+    <div class="px-6 pb-6 flex justify-end gap-2">
+        <button type="button" class="btn btn-ghost" data-modal="cancel">Отмена</button>
+        <button type="button" class="btn btn-primary" data-modal="ok"></button>
     </div>
 </div>
 
-<div id="toast" class="fixed bottom-6 right-6 z-50 hidden rounded-lg bg-slate-800 border border-[#1E293B] px-4 py-3 text-sm text-slate-100 shadow-xl"></div>
+<div id="tip" role="tooltip" aria-hidden="true"></div>
+<div id="toasts" class="fixed bottom-6 right-6 z-[160] flex flex-col items-end gap-2" aria-live="polite"></div>
 
 <script>
-const CSRF = document.querySelector('meta[name="csrf-token"]') ? document.querySelector('meta[name="csrf-token"]').content : '';
-let currentSurvey = null;
-let currentPeriod = 'all';
-let currentDateFrom = '';
-let currentDateTo = '';
-let currentOrder = '-created_at';
-let searchTimer = null;
+(() => {
+    'use strict';
 
-function toast(msg, type = 'ok') {
-    const el = document.getElementById('toast');
-    el.textContent = msg;
-    el.className = 'fixed bottom-6 right-6 z-50 rounded-lg px-4 py-3 text-sm shadow-xl ' +
-        (type === 'ok' ? 'bg-emerald-600/90 text-white border border-emerald-500' : 'bg-red-600/90 text-white border border-red-500');
-    el.style.opacity = '1';
-    el.style.transform = 'translateY(0)';
-    setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translateY(8px)'; }, 3200);
-}
+    /* =================================================================== *
+     *  Конфигурация
+     * =================================================================== */
+    const ZERO = '00000000-0000-0000-0000-000000000000';
+    const CFG = {
+        urls: {
+            overview: "{% url 'api_admin_surveys_overview' %}",
+            catalog: "{% url 'api_admin_surveys_catalog' %}",
+            exportCsv: "{% url 'api_admin_surveys_export' %}",
+            details: "{% url 'api_admin_survey_details' '00000000-0000-0000-0000-000000000000' %}",
+            attempts: "{% url 'api_admin_survey_attempts' '00000000-0000-0000-0000-000000000000' %}",
+            visibility: "{% url 'api_admin_survey_visibility' %}",
+            flags: "{% url 'api_admin_survey_flags' %}",
+            destroy: "{% url 'api_admin_delete_survey' %}",
+            crm: "{% url 'user_ops_center' %}",
+        },
+        csrf: document.querySelector('meta[name="csrf-token"]').content,
+    };
+    const withId = (tpl, id) => tpl.replace(ZERO, encodeURIComponent(id));
 
-function esc(s) {
-    return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
+    const RANGES = ['7D', '30D', '90D', '1Y', 'ALL', 'CUSTOM'];
+    const C = { indigo: '#5E6CF8', yellow: '#F5B740', green: '#34D399', teal: '#2DD4BF', orange: '#F97316', rose: '#FB7185', sky: '#38BDF8', violet: '#A78BFA' };
+    const PALETTE = [C.indigo, C.yellow, C.teal, C.orange, C.sky, C.violet, C.green, C.rose];
+    const DIFF = { easy: 'Лёгкая', medium: 'Средняя', hard: 'Сложная' };
+    const SRC = { file: 'Файл', text: 'Текст', unknown: 'Нет данных' };
+    const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-function toggleCalendar() {
-    const box = document.getElementById('calendar-box');
-    box.classList.toggle('hidden');
-}
+    /* =================================================================== *
+     *  Утилиты
+     * =================================================================== */
+    const $ = (s, r = document) => r.querySelector(s);
+    const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+    const ESC_MAP = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+    const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ESC_MAP[c]);
+    const sum = (a) => (a || []).reduce((x, y) => x + (+y || 0), 0);
+    const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+    const NF0 = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 0 });
+    const NF1 = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 1 });
+    const fmt = {
+        int: (v) => NF0.format(Math.round(+v || 0)),
+        compact: (v) => { const n = +v || 0, a = Math.abs(n); if (a >= 1e6) return `${NF1.format(n / 1e6)}M`; if (a >= 1e4) return `${NF1.format(n / 1e3)}K`; return NF0.format(n); },
+        pct: (v) => (v == null ? '—' : `${NF1.format(v)}%`),
+        date: (iso) => (iso ? iso.split('-').reverse().join('.') : ''),
+    };
+    const plural = (n, one, few, many) => { const a = Math.abs(Math.round(n)), m10 = a % 10, m100 = a % 100; if (m10 === 1 && m100 !== 11) return one; if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return few; return many; };
+    const scoreColor = (v) => (v == null ? '#4b4b55' : v < 40 ? C.rose : v < 70 ? C.yellow : C.green);
+    const debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
 
-function resetCalendar() {
-    document.getElementById('date-from').value = '';
-    document.getElementById('date-to').value = '';
-    currentDateFrom = '';
-    currentDateTo = '';
-    document.getElementById('calendar-box').classList.add('hidden');
-    document.getElementById('calendar-toggle-label').textContent = 'Календарь';
-    SurveysOps.loadList();
-}
+    const ICONS = {
+        refresh: '<path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/>',
+        x: '<path d="M18 6 6 18M6 6l12 12"/>',
+        search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
+        grid: '<rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/>',
+        wallet: '<rect x="2" y="6" width="20" height="14" rx="3"/><path d="M2 10h20"/><path d="M16 15h2"/>',
+        cpu: '<rect x="5" y="5" width="14" height="14" rx="3"/><path d="M9.5 9.5h5v5h-5z"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/>',
+        users: '<circle cx="9" cy="8" r="4"/><path d="M2 21c0-3.9 3.1-7 7-7s7 3.1 7 7"/><path d="M17 4a4 4 0 0 1 0 8M22 21c0-3-1.8-5.5-4.5-6.5"/>',
+        file: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/>',
+        activity: '<path d="M3 12h4l3 8 4-16 3 8h4"/>',
+        trend: '<path d="m3 17 6-6 4 4 8-8"/><path d="M15 7h6v6"/>',
+        eye: '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+        play: '<path d="M7 4v16l13-8z"/>',
+        pie: '<path d="M21 12A9 9 0 1 1 12 3v9z"/><path d="M15 3.5A9 9 0 0 1 20.5 9H15z"/>',
+        target: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',
+        list: '<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
+        clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+        calendar: '<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+        flame: '<path d="M12 22c4.4 0 7-3 7-7 0-4-3-6-4-9-1 2-2 3-3 3 0-2-1-4-3-6 0 4-4 6-4 12 0 4 2.6 7 7 7z"/>',
+        layers: '<path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/>',
+        ruler: '<path d="M3 17 17 3l4 4L7 21z"/><path d="m7 13 2 2M10 10l2 2M13 7l2 2"/>',
+        sliders: '<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>',
+        download: '<path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/>',
+        up: '<path d="m6 15 6-6 6 6"/>', down: '<path d="m6 9 6 6 6-6"/>',
+        left: '<path d="m15 18-6-6 6-6"/>', right: '<path d="m9 18 6-6-6-6"/>',
+        link: '<path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1"/><path d="M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1"/>',
+        copy: '<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/>',
+        ext: '<path d="M14 4h6v6"/><path d="M20 4 10 14"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
+        trash: '<path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="m19 6-1 14H6L5 6"/>',
+        hide: '<path d="M3 3l18 18"/><path d="M10.6 5.1A10 10 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.2 4M6.6 6.6A17 17 0 0 0 2 12s3.5 7 10 7a10 10 0 0 0 5.4-1.6"/>',
+        undo: '<path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-4"/>',
+        sheet: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/>',
+        arrowRight: '<path d="M5 12h14M13 6l6 6-6 6"/>',
+        sort: '<path d="M8 4v16M4 16l4 4 4-4M16 20V4M12 8l4-4 4 4"/>',
+    };
+    const icon = (n, s = 14, cls = '') => `<svg class="${cls}" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[n] || ''}</svg>`;
+    const hydrateIcons = (root = document) => $$('[data-icon]', root).forEach((el) => {
+        if (el.firstElementChild) return;
+        el.innerHTML = icon(el.dataset.icon, +(el.dataset.size || 14));
+        if (!el.classList.contains('ticon') && !el.classList.contains('kbd')) el.classList.add('inline-flex');
+    });
 
-function applyCalendar() {
-    currentDateFrom = document.getElementById('date-from').value;
-    currentDateTo = document.getElementById('date-to').value;
-    if (currentDateFrom || currentDateTo) {
-        document.getElementById('calendar-toggle-label').textContent = 'Диапазон выбран ✓';
-        // Снимаем активность с пресетов
-        document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active'));
-        currentPeriod = '';
+    const delta = (v, { suffix = '%', invert = false } = {}) => {
+        if (v == null || !isFinite(v)) return '<span class="delta flat" data-tip="В прошлом периоде данных нет — сравнить не с чем">—</span>';
+        if (v === 0) return `<span class="delta flat">0${suffix}</span>`;
+        const up = v > 0, good = invert ? !up : up;
+        return `<span class="delta ${good ? 'up' : 'down'}">${up ? '↑' : '↓'} ${NF1.format(Math.abs(v))}${suffix}</span>`;
+    };
+    const legendItem = (color, label, value, shape = 'square') => `<span class="inline-flex items-center gap-2 text-[12px] text-[color:var(--muted)] font-semibold">${shape === 'line'
+        ? `<i class="w-3.5 h-0 border-t-2 border-dashed" style="border-color:${color}"></i>` : `<i class="sw" style="background:${color}"></i>`}${esc(label)}${value != null ? `<span class="text-[color:var(--text)] font-extrabold">${esc(value)}</span>` : ''}</span>`;
+
+    function countUp(el, to, format) {
+        if (!el) return;
+        const from = el.dataset.v != null ? +el.dataset.v : 0;
+        el.dataset.v = to;
+        if (REDUCED || from === to || to == null) { el.textContent = format(to); return; }
+        const t0 = performance.now();
+        const step = (now) => { const p = Math.min(1, (now - t0) / 700); el.textContent = format(from + (to - from) * (1 - Math.pow(1 - p, 4))); if (p < 1) requestAnimationFrame(step); };
+        requestAnimationFrame(step);
     }
-    document.getElementById('calendar-box').classList.add('hidden');
-    SurveysOps.loadList();
-}
 
-function applySort(val) {
-    currentOrder = val;
-    SurveysOps.loadList();
-}
+    /* =================================================================== *
+     *  Подсказка
+     * =================================================================== */
+    const tip = $('#tip');
+    function showTip(html, x, y) {
+        tip.innerHTML = html;
+        tip.classList.add('on');
+        const r = tip.getBoundingClientRect();
+        let left = x + 16, top = y - r.height / 2;
+        if (left + r.width > window.innerWidth - 10) left = x - r.width - 16;
+        left = clamp(left, 8, window.innerWidth - r.width - 8);
+        top = clamp(top, 10, window.innerHeight - r.height - 10);
+        tip.style.transform = `translate(${Math.round(left)}px, ${Math.round(top)}px)`;
+    }
+    const hideTip = () => tip.classList.remove('on');
+    const tipFrom = (e) => { const t = e.target.closest?.('[data-tip]'); if (t && e.pointerType !== 'touch') showTip(`<div class="tt-r" style="white-space:normal">${esc(t.dataset.tip)}</div>`, e.clientX, e.clientY); };
+    document.addEventListener('pointerover', tipFrom);
+    document.addEventListener('pointermove', tipFrom);
+    document.addEventListener('pointerout', (e) => { if (e.target.closest?.('[data-tip]') && !e.relatedTarget?.closest?.('[data-tip]')) hideTip(); });
+    window.addEventListener('scroll', hideTip, { passive: true, capture: true });
 
-let currentPage = 1;
-let isLoadingMore = false;
-let hasMoreSurveys = false;
-
-const SurveysOps = {
-    async loadDetails(surveyId) {
-        document.getElementById('survey-placeholder').classList.add('hidden');
-        const box = document.getElementById('survey-dossier');
-        box.classList.remove('hidden');
-        box.innerHTML = '<div class="card-spring p-12 text-center text-sm text-slate-500">Загрузка структуры теста...</div>';
-
-        try {
-            const res = await fetch('/api/admin/surveys/details/' + surveyId + '/');
-            const data = await res.json();
-            if (!res.ok) { toast(data.error || 'Ошибка загрузки', 'error'); return; }
-            currentSurvey = data;
-            this.renderDossier(data);
-        } catch (e) {
-            toast('Сбой сети при загрузке теста', 'error');
+    /* =================================================================== *
+     *  SVG-графики (тот же движок, что в stats2975)
+     * =================================================================== */
+    let chartSeq = 0;
+    const chartRO = new ResizeObserver((entries) => {
+        for (const en of entries) {
+            const el = en.target, w = Math.round(en.contentRect.width), h = Math.round(en.contentRect.height);
+            if (el.__render && w && h && (Math.abs(w - (el.__w || 0)) > 1 || Math.abs(h - (el.__h || 0)) > 1)) el.__render(false);
         }
-    },
-
-    renderDossier(s) {
-        const questionsHtml = (s.questions || []).map((q, idx) => {
-            const opts = (q.options || []).map((opt, oIdx) => {
-                const isCorrect = Array.isArray(q.correct_answer) ? q.correct_answer.includes(opt) : q.correct_answer === opt;
-                return `
-                    <div class="p-2.5 rounded-xl border text-xs flex items-center justify-between ${isCorrect ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300 font-semibold' : 'bg-[#0B0F17] border-white/5 text-slate-300'}">
-                        <span>${esc(opt)}</span>
-                        ${isCorrect ? '<span class="text-[10px] text-emerald-400 uppercase font-mono">Верно</span>' : ''}
-                    </div>
-                `;
-            }).join('');
-
-            return `
-                <div class="p-4 rounded-2xl bg-[#0B0F17] border border-white/5 space-y-2.5">
-                    <div class="flex items-center justify-between text-xs text-slate-500 font-mono-nums">
-                        <span>Вопрос #${idx + 1}</span>
-                        <span class="text-indigo-400 font-sans">${q.type === 'multiple' ? 'Несколько ответов' : 'Один ответ'}</span>
-                    </div>
-                    <p class="text-sm font-semibold text-slate-100">${esc(q.question)}</p>
-                    <div class="space-y-1.5 pt-1">${opts}</div>
-                </div>
-            `;
-        }).join('') || '<p class="text-xs text-slate-500 text-center py-6">Вопросы не сформированы</p>';
-
-        const attemptsHtml = (s.recent_attempts || []).map(a => `
-            <tr class="border-b border-[#1E293B]/60 text-xs">
-                <td class="py-2.5 pr-2 font-medium text-slate-200">${esc(a.student_name)}</td>
-                <td class="py-2.5 pr-2 font-mono-nums text-emerald-400 font-bold">${a.score} / ${a.total}</td>
-                <td class="py-2.5 text-slate-500 font-mono-nums whitespace-nowrap">${a.date}</td>
-            </tr>
-        `).join('') || '<tr><td colspan="3" class="py-6 text-center text-xs text-slate-500">Пока никто не проходил</td></tr>';
-
-        const html = `
-            <div class="card-spring p-6 space-y-4">
-                <div class="flex flex-wrap items-start justify-between gap-4">
-                    <div class="min-w-0 max-w-xl">
-                        <div class="flex items-center gap-2 mb-1.5">
-                            <span class="px-2 py-0.5 rounded text-[10px] font-mono-nums font-bold ${s.is_visible ? 'bg-red-500/20 text-red-400' : 'bg-emerald-500/20 text-emerald-400'}">
-                                ${s.is_visible ? 'УДАЛЕН АВТОРОМ' : 'АКТИВЕН'}
-                            </span>
-                            <span class="text-xs text-slate-500 font-mono-nums">${s.created_at}</span>
-                        </div>
-                        <h2 class="text-xl font-bold text-white leading-snug">${esc(s.title)}</h2>
-                        <div class="text-xs text-slate-500 mt-1 font-mono-nums">UUID: ${s.survey_id}</div>
-                    </div>
-
-                    <div class="text-right space-y-1">
-                        <div class="text-xs text-slate-400">Автор: <b class="text-slate-200">${esc(s.author.username)}</b></div>
-                        <div class="text-[11px] text-slate-500 font-mono">${esc(s.author.email)}</div>
-                    </div>
-                </div>
-
-                <div class="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-[#1E293B]">
-                    <div class="flex flex-wrap gap-2">
-                        <a href="/c/${s.survey_id}/" target="_blank" class="px-3.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-slate-200 flex items-center gap-1.5">
-                            <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i> Карточка
-                        </a>
-                        <a href="/t/${s.survey_id}/" target="_blank" class="px-3.5 py-1.5 rounded-xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-300 hover:bg-indigo-600 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition">
-                            <i class="fa-solid fa-play text-[10px]"></i> Прохождение
-                        </a>
-                    </div>
-                    
-                    <button onclick="SurveysOps.destroySurvey('${s.survey_id}', '${esc(s.title)}')" class="px-3.5 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-600 border border-rose-500/30 text-rose-300 hover:text-white text-xs font-semibold transition flex items-center gap-1.5">
-                        <i class="fa-solid fa-trash-can text-[10px]"></i> Стереть тест из БД
-                    </button>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div class="card-spring p-4">
-                    <span class="text-[10px] text-slate-500 uppercase font-mono-nums block">Просмотров</span>
-                    <span class="text-lg font-bold text-white font-mono-nums">${s.view_count}</span>
-                </div>
-                <div class="card-spring p-4">
-                    <span class="text-[10px] text-slate-500 uppercase font-mono-nums block">Прохождений</span>
-                    <span class="text-lg font-bold text-indigo-400 font-mono-nums">${s.attempts_count}</span>
-                </div>
-                <div class="card-spring p-4">
-                    <span class="text-[10px] text-slate-500 uppercase font-mono-nums block">Средний балл</span>
-                    <span class="text-lg font-bold text-emerald-400 font-mono-nums">${s.avg_score}</span>
-                </div>
-                <div class="card-spring p-4">
-                    <span class="text-[10px] text-slate-500 uppercase font-mono-nums block">Модель ИИ</span>
-                    <span class="text-xs font-bold text-slate-300 truncate block mt-1">${esc(s.model_name)}</span>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
-                <div class="lg:col-span-8 card-spring p-5 space-y-4">
-                    <div class="flex items-center justify-between">
-                        <h3 class="text-sm font-bold text-white uppercase tracking-wider">Структура заданий (${s.questions_count})</h3>
-                        <span class="text-xs text-slate-500">${s.show_answers ? 'Ответы открыты' : 'Ответы скрыты автором'}</span>
-                    </div>
-                    <div class="space-y-3 max-h-[500px] overflow-y-auto pr-1">${questionsHtml}</div>
-                </div>
-
-                <div class="lg:col-span-4 card-spring p-5 space-y-4">
-                    <h3 class="text-sm font-bold text-white uppercase tracking-wider">Ученики (последние 10)</h3>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left">
-                            <thead><tr class="text-[10px] uppercase text-slate-500 border-b border-[#1E293B]"><th class="pb-2">Имя</th><th class="pb-2">Балл</th><th class="pb-2">Дата</th></tr></thead>
-                            <tbody>${attemptsHtml}</tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            ${s.source_text ? `
-                <div class="card-spring p-5 space-y-2">
-                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Исходный материал пользователя</h3>
-                    <div class="p-3 bg-[#0B0F17] rounded-xl text-xs text-slate-400 font-mono max-h-40 overflow-y-auto leading-relaxed whitespace-pre-wrap">${esc(s.source_text)}</div>
-                </div>
-            ` : ''}
-        `;
-
-        document.getElementById('survey-dossier').innerHTML = html;
-    },
-
-    async destroySurvey(surveyId, title) {
-        if (!confirm(`Безвозвратно удалить тест «${title}» и стереть все попытки прохождения?`)) return;
-
-        try {
-            const res = await fetch('/api/admin/surveys/delete/', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
-                body: JSON.stringify({ survey_id: surveyId })
+    });
+    function niceScale(max, integer = false, count = 4) {
+        if (!(max > 0)) return { max: integer ? 4 : 1, ticks: integer ? [0, 1, 2, 3, 4] : [0, .25, .5, .75, 1] };
+        const raw = max / count, mag = Math.pow(10, Math.floor(Math.log10(raw))), norm = raw / mag;
+        let step = (norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 2.5 ? 2.5 : norm <= 5 ? 5 : 10) * mag;
+        if (integer) step = Math.max(1, Math.ceil(step));
+        const top = Math.ceil(max / step) * step, t = [];
+        for (let v = 0; v <= top + step / 2; v += step) t.push(+v.toFixed(10));
+        return { max: top, ticks: t };
+    }
+    function monotonePath(pts) {
+        const n = pts.length;
+        if (!n) return '';
+        if (n === 1) return `M${pts[0].x},${pts[0].y}`;
+        const dx = [], m = [], t = new Array(n);
+        for (let i = 0; i < n - 1; i++) { dx[i] = pts[i + 1].x - pts[i].x; m[i] = (pts[i + 1].y - pts[i].y) / dx[i]; }
+        t[0] = m[0]; t[n - 1] = m[n - 2];
+        for (let i = 1; i < n - 1; i++) t[i] = m[i - 1] * m[i] <= 0 ? 0 : (m[i - 1] + m[i]) / 2;
+        for (let i = 0; i < n - 1; i++) {
+            if (m[i] === 0) { t[i] = 0; t[i + 1] = 0; continue; }
+            const a = t[i] / m[i], b = t[i + 1] / m[i], s = a * a + b * b;
+            if (s > 9) { const k = 3 / Math.sqrt(s); t[i] = k * a * m[i]; t[i + 1] = k * b * m[i]; }
+        }
+        let d = `M${pts[0].x.toFixed(2)},${pts[0].y.toFixed(2)}`;
+        for (let i = 0; i < n - 1; i++) {
+            const h = dx[i] / 3;
+            d += ` C${(pts[i].x + h).toFixed(2)},${(pts[i].y + t[i] * h).toFixed(2)} ${(pts[i + 1].x - h).toFixed(2)},${(pts[i + 1].y - t[i + 1] * h).toFixed(2)} ${pts[i + 1].x.toFixed(2)},${pts[i + 1].y.toFixed(2)}`;
+        }
+        return d;
+    }
+    function mountChart(el, cfg) {
+        if (!el) return;
+        el.__cfg = cfg;
+        if (!el.__uid) {
+            el.__uid = `ch${++chartSeq}`;
+            el.addEventListener('pointermove', (ev) => chartHover(el, ev));
+            el.addEventListener('pointerleave', () => chartLeave(el));
+            chartRO.observe(el);
+        }
+        el.__render = (animate) => renderBars(el, animate);
+        el.__render(true);
+    }
+    function renderBars(el, animate) {
+        const cfg = el.__cfg, W = Math.round(el.clientWidth), H = Math.round(el.clientHeight);
+        if (!W || !H) return;
+        el.__w = W; el.__h = H; el.__hi = null;
+        el.classList.remove('hovering');
+        const labels = cfg.labels || [], n = labels.length;
+        const series = (cfg.series || []).filter(Boolean), line = cfg.line || null, mini = Boolean(cfg.mini);
+        const totals = labels.map((_, i) => series.reduce((a, s) => a + (+s.values[i] || 0), 0));
+        const lineVals = line ? labels.map((_, i) => +line.values[i] || 0) : [];
+        const hasBars = totals.some((v) => v > 0), hasLine = lineVals.some((v) => v > 0);
+        const rightAxis = Boolean(line && line.axis === 'right');
+        const pad = mini ? { l: 0, r: 0, t: 3, b: 0 } : { l: 46, r: rightAxis ? 54 : 6, t: 10, b: 26 };
+        const pw = Math.max(1, W - pad.l - pad.r), ph = Math.max(1, H - pad.t - pad.b);
+        const sc = niceScale(Math.max(0, ...totals, rightAxis ? 0 : Math.max(0, ...lineVals)), cfg.integer);
+        const lsc = rightAxis ? niceScale(Math.max(0, ...lineVals), line.integer) : sc;
+        const band = n ? pw / n : pw;
+        const bw = Math.max(1.5, Math.min(band * (mini ? .64 : .58), cfg.maxBar || 26));
+        const rad = Math.min(mini ? 2 : 6, bw / 2);
+        const Y = (v, s = sc) => pad.t + ph - (v / s.max) * ph;
+        const CX = (i) => pad.l + band * i + band / 2;
+        const uid = el.__uid;
+        let defs = '', out = '';
+        if (!mini) {
+            const axisFmt = cfg.axisFormat || fmt.compact;
+            sc.ticks.forEach((t) => {
+                const y = Y(t).toFixed(1);
+                out += `<line class="gl" x1="${pad.l}" x2="${W - pad.r}" y1="${y}" y2="${y}"/><text class="ax" x="${pad.l - 10}" y="${y}" text-anchor="end" dy="0.32em">${esc(axisFmt(t))}</text>`;
             });
-            const data = await res.json();
-            if (res.ok && data.ok) {
-                toast(data.message, 'ok');
-                document.getElementById('survey-dossier').classList.add('hidden');
-                document.getElementById('survey-placeholder').classList.remove('hidden');
-                SurveysOps.loadList();
-            } else {
-                toast(data.error || 'Ошибка удаления', 'error');
+            if (rightAxis) {
+                const lf = line.axisFormat || line.format || fmt.compact;
+                lsc.ticks.forEach((t) => { out += `<text class="ax" x="${W - pad.r + 10}" y="${Y(t, lsc).toFixed(1)}" dy="0.32em" style="fill:${line.color};opacity:.75">${esc(lf(t))}</text>`; });
             }
-        } catch (e) {
-            toast('Сбой сети при удалении', 'error');
+            const step = Math.max(1, Math.ceil(n / Math.max(2, Math.floor(pw / 58))));
+            labels.forEach((l, i) => { if (i % step === 0) out += `<text class="ax" x="${CX(i).toFixed(1)}" y="${H - 7}" text-anchor="middle">${esc(l)}</text>`; });
         }
-    },
-
-    async loadList(page = 1, append = false) {
-        if (isLoadingMore) return;
-        isLoadingMore = true;
-
-        const q = document.getElementById('survey-search-input').value.trim();
-        const box = document.getElementById('surveys-list');
-
-        if (!append) {
-            currentPage = 1;
-            box.innerHTML = '<div class="text-xs text-slate-500 text-center py-6">Загрузка каталога...</div>';
+        out += `<rect class="hl" x="${pad.l}" y="${mini ? 0 : pad.t - 4}" width="${Math.max(0, band - (mini ? 1 : 4)).toFixed(2)}" height="${mini ? H : ph + 8}" rx="${mini ? 3 : 9}" opacity="0"/>`;
+        const delayStep = n ? Math.min(16, 420 / n) : 0;
+        totals.forEach((tot, i) => {
+            if (!(tot > 0)) return;
+            const x = CX(i) - bw / 2, top = Y(tot), h = pad.t + ph - top;
+            defs += `<clipPath id="${uid}-k${i}"><rect x="${x.toFixed(2)}" y="${top.toFixed(2)}" width="${bw.toFixed(2)}" height="${(h + rad + 1).toFixed(2)}" rx="${rad}"/></clipPath>`;
+            let acc = 0, segs = '';
+            series.forEach((s) => {
+                const v = +s.values[i] || 0;
+                if (!(v > 0)) return;
+                const y1 = Y(acc + v), y0 = Y(acc);
+                acc += v;
+                const color = typeof s.color === 'function' ? s.color(i) : s.color;
+                const sep = series.length > 1 && acc < tot ? 1.5 : 0;
+                segs += `<rect x="${x.toFixed(2)}" y="${(y1 + sep).toFixed(2)}" width="${bw.toFixed(2)}" height="${Math.max(.8, y0 - y1 - sep).toFixed(2)}" fill="${color}"/>`;
+            });
+            out += `<g class="col" data-i="${i}" clip-path="url(#${uid}-k${i})" style="animation-delay:${Math.round(i * delayStep)}ms">${segs}</g>`;
+        });
+        if (line && hasLine) {
+            const pts = lineVals.map((v, i) => ({ x: CX(i), y: Y(v, lsc) }));
+            out += `<path class="ln" d="${monotonePath(pts)}" stroke="${line.color}"${line.dashed ? ' stroke-dasharray="5 5" opacity=".75"' : ''}/>`;
+            out += `<circle class="ldot" r="4.5" fill="${line.color}" cx="${pts[0].x}" cy="${pts[0].y}" opacity="0"/>`;
         }
+        const empty = !hasBars && !hasLine;
+        el.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" class="${animate && !REDUCED ? 'anim' : ''}" role="img" aria-label="${esc(cfg.ariaLabel || '')}"><defs>${defs}</defs>${out}</svg>`
+            + (empty && cfg.emptyText ? `<div class="chart-empty">${esc(cfg.emptyText)}</div>` : '');
+        el.__geo = { pad, band, n, lsc, Y, CX, totals, lineVals, empty };
+        const ln = el.querySelector('.ln');
+        if (ln && animate && !REDUCED && !line.dashed) { const len = ln.getTotalLength(); ln.style.strokeDasharray = `${len}`; ln.style.strokeDashoffset = `${len}`; ln.classList.add('draw'); }
+    }
+    function chartHover(el, ev) {
+        const g = el.__geo, cfg = el.__cfg;
+        if (!g || !g.n || g.empty) return;
+        const rect = el.getBoundingClientRect();
+        const i = Math.floor((ev.clientX - rect.left - g.pad.l) / g.band);
+        if (i < 0 || i >= g.n) { chartLeave(el); return; }
+        if (el.__hi !== i) {
+            el.__hi = i;
+            el.classList.add('hovering');
+            const hl = el.querySelector('.hl');
+            if (hl) { hl.setAttribute('x', (g.pad.l + g.band * i + (cfg.mini ? .5 : 2)).toFixed(2)); hl.setAttribute('opacity', '1'); }
+            $$('.col', el).forEach((c) => c.classList.toggle('on', +c.dataset.i === i));
+            const dot = el.querySelector('.ldot');
+            if (dot) { dot.setAttribute('cx', g.CX(i).toFixed(2)); dot.setAttribute('cy', g.Y(g.lineVals[i], g.lsc).toFixed(2)); dot.setAttribute('opacity', '1'); }
+        }
+        const title = cfg.titles ? cfg.titles[i] : cfg.labels[i];
+        const f = cfg.format || fmt.int;
+        const series = (cfg.series || []).filter(Boolean);
+        let html = `<div class="tt-t">${esc(title)}</div>`;
+        series.forEach((s) => {
+            const v = +s.values[i] || 0, color = typeof s.color === 'function' ? s.color(i) : s.color;
+            if (series.length > 1 && !v) return;
+            html += `<div class="tt-r"><i class="sw" style="background:${color}"></i>${esc(s.name)}<b>${esc((s.format || f)(v))}</b></div>`;
+        });
+        if (cfg.line) html += `<div class="tt-r"><i class="sw" style="background:${cfg.line.color};height:3px"></i>${esc(cfg.line.name)}<b>${esc((cfg.line.format || f)(g.lineVals[i]))}</b></div>`;
+        if (cfg.extra) html += cfg.extra(i);
+        showTip(html, ev.clientX, ev.clientY);
+    }
+    function chartLeave(el) {
+        el.__hi = null;
+        el.classList.remove('hovering');
+        el.querySelector('.hl')?.setAttribute('opacity', '0');
+        el.querySelector('.ldot')?.setAttribute('opacity', '0');
+        $$('.col.on', el).forEach((c) => c.classList.remove('on'));
+        hideTip();
+    }
+    function mountDonut(el, cfg) {
+        if (!el) return;
+        el.__cfg = cfg;
+        if (!el.__uid) {
+            el.__uid = `dn${++chartSeq}`;
+            el.addEventListener('pointerover', (ev) => {
+                const seg = ev.target.closest('.seg-c');
+                if (!seg) return;
+                const it = el.__cfg.items[+seg.dataset.i], total = sum(el.__cfg.items.map((x) => x.value));
+                el.classList.add('hovering');
+                $$('.seg-c', el).forEach((s) => s.classList.toggle('on', s === seg));
+                setDonutCenter(el, fmt.int(it.value), `${it.label}, ${NF1.format(it.value / total * 100)}%`);
+            });
+            el.addEventListener('pointerleave', () => { el.classList.remove('hovering'); $$('.seg-c.on', el).forEach((s) => s.classList.remove('on')); setDonutCenter(el, el.__cfg.centerValue, el.__cfg.centerLabel); });
+            el.addEventListener('click', (ev) => { const seg = ev.target.closest('.seg-c'); if (seg && el.__cfg.onClick) el.__cfg.onClick(el.__cfg.items[+seg.dataset.i]); });
+            chartRO.observe(el);
+        }
+        el.__render = (animate) => renderDonut(el, animate);
+        el.__render(true);
+    }
+    function setDonutCenter(el, value, label) {
+        const c = el.querySelector('.donut-center');
+        if (c) c.innerHTML = `<span class="text-[16px] font-extrabold tracking-[-0.02em] leading-tight">${esc(value)}</span><span class="lbl text-[11px] mt-0.5 max-w-[96px] mx-auto truncate">${esc(label)}</span>`;
+    }
+    function renderDonut(el, animate) {
+        const cfg = el.__cfg, W = el.clientWidth, H = el.clientHeight;
+        if (!W || !H) return;
+        el.__w = W; el.__h = H;
+        const S = Math.min(W, H), thick = cfg.thickness || 12, r = S / 2 - thick / 2 - 3, Cc = 2 * Math.PI * r;
+        const items = cfg.items || [], total = sum(items.map((i) => i.value)), live = items.filter((i) => i.value > 0).length, gap = live > 1 ? 3 : 0;
+        let acc = 0, segs = '';
+        items.forEach((it, i) => {
+            if (!(it.value > 0)) return;
+            const len = it.value / total * Cc;
+            segs += `<circle class="seg-c" data-i="${i}" cx="${S / 2}" cy="${S / 2}" r="${r.toFixed(2)}" fill="none" stroke="${it.color}" stroke-width="${thick}" stroke-dasharray="${Math.max(.8, len - gap).toFixed(2)} ${Cc.toFixed(2)}" stroke-dashoffset="${(-acc).toFixed(2)}" stroke-linecap="${live > 1 ? 'butt' : 'round'}" transform="rotate(-90 ${S / 2} ${S / 2})" style="--c:${Cc.toFixed(2)}"/>`;
+            acc += len;
+        });
+        el.innerHTML = `<svg width="${S}" height="${S}" class="${animate && !REDUCED ? 'anim' : ''}" role="img" aria-label="${esc(cfg.ariaLabel || '')}"><circle cx="${S / 2}" cy="${S / 2}" r="${r.toFixed(2)}" fill="none" stroke="var(--tile)" stroke-width="${thick}"/>${segs}</svg><div class="donut-center"></div>`;
+        setDonutCenter(el, cfg.centerValue, total ? cfg.centerLabel : 'нет данных');
+    }
 
+    /* =================================================================== *
+     *  Сеть
+     * =================================================================== */
+    let inflight = 0;
+    const progress = $('#progress');
+    const setLoading = (d) => {
+        inflight = Math.max(0, inflight + d);
+        if (inflight > 0) { progress.classList.add('on'); progress.style.width = '70%'; }
+        else { progress.style.width = '100%'; setTimeout(() => { if (!inflight) { progress.classList.remove('on'); progress.style.width = '0'; } }, 300); }
+    };
+    const aborters = {};
+    async function api(url, { method = 'GET', body = null, timeout = 40000, key = null } = {}) {
+        if (key && aborters[key]) aborters[key].abort();
+        const ctrl = new AbortController();
+        if (key) aborters[key] = ctrl;
+        let timedOut = false;
+        const timer = setTimeout(() => { timedOut = true; ctrl.abort(); }, timeout);
+        setLoading(1);
         try {
-            let url = `/api/admin/surveys/search/?q=${encodeURIComponent(q)}&period=${currentPeriod}&order_by=${currentOrder}&page=${page}`;
-            if (currentDateFrom) url += `&date_from=${currentDateFrom}`;
-            if (currentDateTo) url += `&date_to=${currentDateTo}`;
-
-            const res = await fetch(url);
-            const data = await res.json();
-
-            // Обновляем бейджи
-            if (data.counts) {
-                document.getElementById('cnt-today').textContent = data.counts.today;
-                document.getElementById('cnt-yesterday').textContent = data.counts.yesterday;
-                document.getElementById('cnt-week').textContent = data.counts['7d'];
-                document.getElementById('total-tests-stat').textContent = 'Всего в базе: ' + data.counts.total;
-            }
-
-            hasMoreSurveys = data.has_more;
-            currentPage = data.page;
-
-            const total = data.total_found || 0;
-            const shownCount = append ? box.querySelectorAll('.survey-item-btn').length + data.surveys.length : data.surveys.length;
-            document.getElementById('found-count-text').textContent = `Показано ${shownCount} из ${total}`;
-
-            if (!append && (!data.surveys || data.surveys.length === 0)) {
-                box.innerHTML = '<div class="text-xs text-slate-500 text-center py-8">Тесты не найдены</div>';
-                isLoadingMore = false;
-                return;
-            }
-
-            const itemsHtml = data.surveys.map(s => `
-                <button onclick="SurveysOps.loadDetails('${s.survey_id}')" 
-                        class="survey-item-btn w-full text-left p-3 rounded-2xl hover:bg-white/[0.04] border border-transparent hover:border-[#1E293B] transition-all flex items-center justify-between gap-3 group">
-                    
-                    <div class="min-w-0 flex-1">
-                        <h4 class="text-xs sm:text-sm font-bold text-slate-200 group-hover:text-indigo-300 transition-colors truncate">
-                            ${esc(s.title)}
-                        </h4>
-                        <div class="text-[11px] text-slate-500 truncate mt-0.5">
-                            ${esc(s.author)}
-                        </div>
-                    </div>
-
-                    <div class="flex-shrink-0 text-right space-y-0.5">
-                        <div class="text-[11px] text-slate-400 font-mono-nums">
-                            ${s.created_at}
-                        </div>
-                        <div class="flex items-center justify-end gap-1.5 text-[11px] text-slate-500">
-                            <span class="text-indigo-400 font-semibold">${s.questions_count} вопр.</span>
-                            <span>•</span>
-                            <span class="flex items-center gap-1">
-                                <i class="fa-solid fa-eye text-[9px]"></i>
-                                ${s.views}
-                            </span>
-                        </div>
-                    </div>
-
-                </button>
-            `).join('');
-
-            // Убираем старую кнопку "Загрузить еще" перед вставкой
-            const oldMoreBtn = document.getElementById('load-more-btn-container');
-            if (oldMoreBtn) oldMoreBtn.remove();
-
-            if (append) {
-                box.insertAdjacentHTML('beforeend', itemsHtml);
-            } else {
-                box.innerHTML = itemsHtml;
-            }
-
-            // Если в базе есть еще страницы — добавляем кнопку догрузки в конец списка
-            if (hasMoreSurveys) {
-                const moreBtnHtml = `
-                    <div id="load-more-btn-container" class="pt-2 text-center">
-                        <button onclick="SurveysOps.loadList(${currentPage + 1}, true)" 
-                                class="w-full py-2.5 px-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 text-xs font-semibold text-indigo-400 hover:text-white transition">
-                            Загрузить еще 50 тестов ↓
-                        </button>
-                    </div>
-                `;
-                box.insertAdjacentHTML('beforeend', moreBtnHtml);
-            }
-
+            const headers = { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' };
+            if (method !== 'GET') { headers['Content-Type'] = 'application/json'; headers['X-CSRFToken'] = CFG.csrf; }
+            const res = await fetch(url, { method, headers, credentials: 'same-origin', signal: ctrl.signal, body: body ? JSON.stringify(body) : null });
+            const text = await res.text();
+            let data = null;
+            try { data = text ? JSON.parse(text) : null; } catch (_) { data = null; }
+            if (data === null) throw new Error(res.redirected || res.ok ? 'Сервер вернул страницу вместо данных. Сессия могла истечь — обновите страницу.' : `Ошибка сервера (${res.status}).`);
+            if (!res.ok || data.ok === false) { const err = new Error(data.error || `Ошибка сервера (${res.status}).`); err.data = data; throw err; }
+            return data;
         } catch (e) {
-            toast('Сбой загрузки каталога', 'error');
+            if (e.name === 'AbortError') { if (timedOut) throw new Error(`Сервер не ответил за ${Math.round(timeout / 1000)} с.`); e.aborted = true; }
+            throw e;
         } finally {
-            isLoadingMore = false;
+            clearTimeout(timer);
+            if (key && aborters[key] === ctrl) delete aborters[key];
+            setLoading(-1);
         }
     }
-};
 
-window.SurveysOps = SurveysOps;
-
-document.addEventListener('DOMContentLoaded', () => {
-    const searchInput = document.getElementById('survey-search-input');
-    
-    searchInput.addEventListener('input', function() {
-        clearTimeout(searchTimer);
-        searchTimer = setTimeout(() => SurveysOps.loadList(), 250);
-    });
-
-    document.getElementById('clear-search-btn').addEventListener('click', () => {
-        searchInput.value = '';
-        SurveysOps.loadList();
-    });
-
-    document.getElementById('survey-search-btn').addEventListener('click', () => SurveysOps.loadList());
-
-    // Табы пресетов
-    document.querySelectorAll('.filter-chip').forEach(btn => {
-        btn.addEventListener('click', function() {
-            document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active'));
-            this.classList.add('active');
-            currentPeriod = this.dataset.period;
-            
-            // Если выбран пресет, сбрасываем календарь
-            currentDateFrom = '';
-            currentDateTo = '';
-            document.getElementById('date-from').value = '';
-            document.getElementById('date-to').value = '';
-            document.getElementById('calendar-toggle-label').textContent = 'Календарь';
-
-            SurveysOps.loadList();
+    /* =================================================================== *
+     *  Тосты, модалка, дровер
+     * =================================================================== */
+    function toast(message, tone = 'ok') {
+        const el = document.createElement('div');
+        el.className = 'toast';
+        el.setAttribute('role', tone === 'bad' ? 'alert' : 'status');
+        el.innerHTML = `<span class="dot" style="background:${tone === 'bad' ? C.rose : tone === 'warn' ? C.yellow : C.green}"></span><span>${esc(message)}</span>`;
+        $('#toasts').appendChild(el);
+        requestAnimationFrame(() => el.classList.add('in'));
+        setTimeout(() => { el.classList.remove('in'); setTimeout(() => el.remove(), 260); }, tone === 'bad' ? 7000 : 3600);
+    }
+    const modal = { resolve: null, lastFocus: null, check: null };
+    function confirmAction({ title, text, confirm = 'Подтвердить', danger = false, typeToConfirm = null }) {
+        return new Promise((resolve) => {
+            if (modal.resolve) modal.resolve(false);
+            modal.resolve = resolve;
+            modal.lastFocus = document.activeElement;
+            $('#modal-title').textContent = title;
+            $('#modal-text').textContent = text;
+            const ok = $('[data-modal="ok"]');
+            ok.textContent = confirm;
+            ok.className = `btn ${danger ? 'btn-danger' : 'btn-primary'}`;
+            const extra = $('#modal-extra');
+            extra.innerHTML = '';
+            ok.disabled = false;
+            modal.check = null;
+            if (typeToConfirm) {
+                extra.innerHTML = `<label class="block mt-4"><span class="label">Чтобы подтвердить, напишите «${esc(typeToConfirm)}»</span><input id="modal-input" class="field w-full" autocomplete="off"></label>`;
+                const inp = $('#modal-input');
+                ok.disabled = true;
+                modal.check = () => inp.value.trim().toLowerCase() === typeToConfirm.toLowerCase();
+                inp.addEventListener('input', () => { ok.disabled = !modal.check(); });
+                inp.addEventListener('keydown', (e) => { if (e.key === 'Enter' && modal.check()) closeModal(true); });
+            }
+            $('#modal').classList.add('open');
+            $('#modal').setAttribute('aria-hidden', 'false');
+            $('#modal-scrim').classList.add('open');
+            setTimeout(() => ($('#modal-input') || ok).focus(), 40);
         });
+    }
+    function closeModal(result) {
+        if (result && modal.check && !modal.check()) return;
+        $('#modal').classList.remove('open');
+        $('#modal').setAttribute('aria-hidden', 'true');
+        $('#modal-scrim').classList.remove('open');
+        const r = modal.resolve;
+        modal.resolve = null;
+        modal.lastFocus?.focus?.();
+        if (r) r(result);
+    }
+    $('[data-modal="ok"]').addEventListener('click', () => closeModal(true));
+    $('[data-modal="cancel"]').addEventListener('click', () => closeModal(false));
+    $('#modal-scrim').addEventListener('click', () => closeModal(false));
+
+    const drawer = {
+        el: $('#drawer'), lastFocus: null,
+        open() {
+            if (!this.isOpen()) this.lastFocus = document.activeElement;
+            this.el.classList.add('open');
+            this.el.setAttribute('aria-hidden', 'false');
+            $('#drawer-scrim').classList.add('open');
+            document.body.style.overflow = 'hidden';
+        },
+        close() {
+            if (!this.isOpen()) return;
+            this.el.classList.remove('open');
+            this.el.setAttribute('aria-hidden', 'true');
+            $('#drawer-scrim').classList.remove('open');
+            document.body.style.overflow = '';
+            hideTip();
+            state.open = null;
+            markOpenRow();
+            syncUrl();
+            this.lastFocus?.focus?.();
+        },
+        isOpen() { return this.el.classList.contains('open'); },
+    };
+    $('[data-drawer-close]').addEventListener('click', () => drawer.close());
+    $('#drawer-scrim').addEventListener('click', () => drawer.close());
+
+    async function copyText(text, msg = 'Скопировано') {
+        try { await navigator.clipboard.writeText(text); toast(msg); }
+        catch (_) { toast('Браузер не дал доступ к буферу обмена', 'warn'); }
+    }
+
+    /* =================================================================== *
+     *  Состояние + URL (ссылкой можно поделиться — откроется тот же срез)
+     * =================================================================== */
+    const FILTER_KEYS = ['model', 'author_type', 'difficulty', 'source', 'attempts', 'views', 'is_in_marketplace', 'is_verified', 'qmin', 'qmax', 'author'];
+    const FILTER_LABELS = {
+        model: 'Модель', author_type: 'Авторы', difficulty: 'Сложность', source: 'Источник', attempts: 'Прохождения',
+        views: 'Просмотры', is_in_marketplace: 'Маркетплейс', is_verified: 'Проверен', qmin: 'Вопросов от', qmax: 'Вопросов до', author: 'Автор',
+    };
+    const VALUE_LABELS = {
+        author_type: { registered: 'зарегистрированные', guest: 'гости' },
+        difficulty: { easy: 'лёгкая', medium: 'средняя', hard: 'сложная', __none__: 'нет данных' },
+        source: { file: 'файл', text: 'текст', unknown: 'нет данных' },
+        attempts: { yes: 'есть', no: 'ни одного' },
+        views: { some: 'есть', zero: 'ноль', '100': '100+' },
+        is_in_marketplace: { 1: 'да', 0: 'нет' }, is_verified: { 1: 'да', 0: 'нет' },
+        model: { __none__: 'не указана' },
+    };
+    const params = new URLSearchParams(location.search);
+    const state = {
+        range: (params.get('range') || '30D').toUpperCase(),
+        start: params.get('start_date') || '', end: params.get('end_date') || '',
+        ov: null, dynMode: 'created', hoursMode: 'attempts', topTab: 'trending',
+        cat: {
+            q: params.get('q') || '', status: params.get('status') || 'active',
+            created: params.get('created') || 'all', cfrom: params.get('cfrom') || '', cto: params.get('cto') || '',
+            sort: params.get('sort') || '-created', page: +params.get('page') || 1, per: +params.get('per') || 50,
+            f: Object.fromEntries(FILTER_KEYS.map((k) => [k, params.get(k) || ''])),
+            data: null, authorName: params.get('author_name') || '',
+        },
+        open: params.get('s') || null,
+        dossier: null,
+    };
+    if (!RANGES.includes(state.range)) state.range = '30D';
+    if (state.range === 'CUSTOM' && !(state.start && state.end)) state.range = '30D';
+
+    const periodQuery = () => {
+        const q = new URLSearchParams({ range: state.range });
+        if (state.range === 'CUSTOM') { q.set('start_date', state.start); q.set('end_date', state.end); }
+        return q;
+    };
+    const catQuery = () => {
+        const q = periodQuery(), c = state.cat;
+        if (c.q) q.set('q', c.q);
+        if (c.status !== 'active') q.set('status', c.status);
+        if (c.created !== 'all') q.set('created', c.created);
+        if (c.created === 'custom') { if (c.cfrom) q.set('cfrom', c.cfrom); if (c.cto) q.set('cto', c.cto); }
+        FILTER_KEYS.forEach((k) => { if (c.f[k]) q.set(k, c.f[k]); });
+        if (c.sort !== '-created') q.set('sort', c.sort);
+        if (c.per !== 50) q.set('per', c.per);
+        if (c.page > 1) q.set('page', c.page);
+        return q;
+    };
+    function syncUrl() {
+        const q = catQuery();
+        if (state.cat.f.author && state.cat.authorName) q.set('author_name', state.cat.authorName);
+        if (state.open) q.set('s', state.open);
+        history.replaceState(null, '', `${location.pathname}?${q}${location.hash}`);
+        const ex = catQuery(); ex.delete('page'); ex.delete('per');
+        $('#btn-export').href = `${CFG.urls.exportCsv}?${ex}`;
+    }
+
+    /* =================================================================== *
+     *  Период
+     * =================================================================== */
+    function renderRangeControls() {
+        $$('#range-seg button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.range === state.range)));
+        const f = $('#custom-range');
+        f.classList.toggle('hidden', state.range !== 'CUSTOM');
+        f.classList.toggle('flex', state.range === 'CUSTOM');
+    }
+    $('#range-seg').addEventListener('click', (e) => {
+        const b = e.target.closest('button[data-range]');
+        if (!b) return;
+        const r = b.dataset.range;
+        if (r === 'CUSTOM') { state.range = 'CUSTOM'; renderRangeControls(); $('#custom-start').focus(); if (state.start && state.end) reloadForPeriod(); return; }
+        if (r === state.range) return;
+        state.range = r;
+        reloadForPeriod();
+    });
+    $('#custom-range').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const s = $('#custom-start').value, en = $('#custom-end').value;
+        if (!s || !en) { toast('Укажите обе даты', 'warn'); return; }
+        state.start = s <= en ? s : en; state.end = s <= en ? en : s; state.range = 'CUSTOM';
+        reloadForPeriod();
+    });
+    function reloadForPeriod() {
+        renderRangeControls();
+        syncUrl();
+        loadOverview();
+        loadCatalog();
+        if (state.open) loadDossier(state.open, { keepScroll: true });
+    }
+
+    /* =================================================================== *
+     *  Навигация по разделам
+     * =================================================================== */
+    const navLinks = $$('#side-nav a[data-nav]');
+    const secObs = new IntersectionObserver((ens) => ens.forEach((en) => {
+        if (!en.isIntersecting) return;
+        navLinks.forEach((a) => a.setAttribute('aria-current', String(a.getAttribute('href') === `#${en.target.id}`)));
+    }), { rootMargin: '-90px 0px -60% 0px' });
+    ['#sec-overview', '#sec-dynamics', '#sec-slices', '#sec-tops', '#sec-catalog'].forEach((s) => secObs.observe($(s)));
+    navLinks.forEach((a) => a.addEventListener('click', (e) => { e.preventDefault(); $(a.getAttribute('href'))?.scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth', block: 'start' }); }));
+    const goCatalog = () => $('#sec-catalog').scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth', block: 'start' });
+
+    /* =================================================================== *
+     *  Обзор
+     * =================================================================== */
+    function renderSkeletons() {
+        $('#kpi').innerHTML = Array.from({ length: 4 }, () => '<article class="card min-h-[210px] flex flex-col gap-4"><span class="skeleton h-8 w-40"></span><span class="skeleton h-8 w-28"></span><span class="skeleton h-12 w-full mt-auto"></span></article>').join('');
+        $('#kpi2').innerHTML = Array.from({ length: 6 }, () => '<div class="tile h-[96px]"><span class="skeleton h-3 w-20"></span><span class="skeleton h-6 w-16 mt-3"></span></div>').join('');
+    }
+    async function loadOverview({ fresh = false } = {}) {
+        try {
+            const q = periodQuery();
+            if (fresh) q.set('fresh', '1');
+            const data = await api(`${CFG.urls.overview}?${q}`, { key: 'overview' });
+            state.ov = data;
+            const p = data.period;
+            $('#period-label').textContent = `${fmt.date(p.start)} — ${fmt.date(p.end)}, ${p.days} ${plural(p.days, 'день', 'дня', 'дней')}. Сравнение с ${fmt.date(p.prev_start)} — ${fmt.date(p.prev_end)}`;
+            if (!$('#custom-start').value) $('#custom-start').value = p.start;
+            if (!$('#custom-end').value) $('#custom-end').value = p.end;
+            $('#custom-start').max = $('#custom-end').max = new Date().toISOString().slice(0, 10);
+            $('#updated-at').textContent = `Обновлено в ${data.generated_at} по Москве · в базе ${fmt.int(data.totals.all)} ${plural(data.totals.all, 'тест', 'теста', 'тестов')}`;
+            $('#nav-total').textContent = fmt.compact(data.totals.alive);
+            renderKpis();
+            renderDynamics();
+            renderHours();
+            renderSlices();
+            renderTops();
+        } catch (e) {
+            if (e.aborted) return;
+            toast(`Сводка не загрузилась: ${e.message}`, 'bad');
+        }
+    }
+
+    function renderKpis() {
+        const k = state.ov.kpi, p = state.ov.period, t = state.ov.totals;
+        const cards = [
+            { id: 'created', label: 'Создано тестов', icon: 'file', color: C.indigo, value: k.created.value, d: k.created.delta, format: fmt.int,
+                sub: `в прошлом периоде ${fmt.int(k.created.prev)}`, series: k.created.series,
+                foot: [['В день', NF1.format(k.created.value / Math.max(1, p.days))], ['Авторов', fmt.int(k.authors.value)]] },
+            { id: 'views', label: 'Уникальные просмотры', icon: 'eye', color: C.sky, value: k.views.value, d: k.views.delta, format: fmt.int,
+                sub: `в прошлом периоде ${fmt.int(k.views.prev)}`, series: k.views.series,
+                foot: [['В день', fmt.int(k.views.value / Math.max(1, p.days))], ['За всё время', fmt.compact(t.views)]] },
+            { id: 'attempts', label: 'Прохождения', icon: 'play', color: C.yellow, value: k.attempts.value, d: k.attempts.delta, format: fmt.int,
+                sub: `в прошлом периоде ${fmt.int(k.attempts.prev)}`, series: k.attempts.series,
+                foot: [['В день', fmt.int(k.attempts.value / Math.max(1, p.days))], ['За всё время', fmt.compact(t.attempts)]] },
+            { id: 'conv', label: 'Конверсия в прохождение', icon: 'target', color: C.green, value: k.conversion.value, d: k.conversion.delta, suffix: ' п.п.', format: fmt.pct,
+                sub: `прохождений на 100 просмотров, было ${fmt.pct(k.conversion.prev)}`, series: k.attempts.series.map((a, i) => (k.views.series[i] ? a / k.views.series[i] * 100 : 0)), seriesFormat: fmt.pct,
+                foot: [['Средний балл', fmt.pct(k.score.value)], ['Тестов с прохождениями', fmt.pct(k.with_attempts.share)]] },
+        ];
+        if (!$('#kpi [data-kpi]')) {
+            $('#kpi').innerHTML = cards.map((c, i) => `
+                <article class="card flex flex-col reveal" data-kpi="${c.id}" style="animation-delay:${i * 60}ms">
+                    <div class="card-head" style="flex-wrap:nowrap">
+                        <div class="card-title"><span class="ticon" style="color:${c.color}">${icon(c.icon, 15)}</span><h3>${esc(c.label)}</h3></div>
+                        <span data-delta></span>
+                    </div>
+                    <span class="big mt-4" data-value>—</span>
+                    <p class="lbl mt-2 mb-0 truncate" data-sub></p>
+                    <div class="chart h-12 mt-3" data-spark></div>
+                    <div class="grid grid-cols-2 gap-2 mt-3" data-foot></div>
+                </article>`).join('');
+        }
+        cards.forEach((c) => {
+            const el = $(`#kpi [data-kpi="${c.id}"]`);
+            countUp($('[data-value]', el), c.value, c.format);
+            $('[data-delta]', el).innerHTML = delta(c.d, { suffix: c.suffix || '%' });
+            $('[data-sub]', el).textContent = c.sub;
+            $('[data-foot]', el).innerHTML = c.foot.map(([l, v]) => `<div class="tile py-2 px-3"><p class="lbl m-0 truncate">${esc(l)}</p><p class="val m-0 mt-0.5 truncate">${esc(v)}</p></div>`).join('');
+            mountChart($('[data-spark]', el), { mini: true, labels: p.labels, titles: p.titles, series: [{ name: c.label, values: c.series, color: c.color, format: c.seriesFormat }], format: c.seriesFormat || fmt.int });
+        });
+
+        const tiles = [
+            { l: 'Средний балл', v: fmt.pct(k.score.value), d: delta(k.score.delta, { suffix: ' п.п.' }), n: `было ${fmt.pct(k.score.prev)}`, c: scoreColor(k.score.value) },
+            { l: 'Активных авторов', v: fmt.int(k.authors.value), d: delta(k.authors.delta), n: k.per_author ? `${NF1.format(k.per_author)} теста на автора` : 'нет авторов', c: C.violet },
+            { l: 'Вопросов в тесте', v: NF1.format(k.avg_questions), d: '', n: 'в среднем за период', c: C.teal },
+            { l: 'Без просмотров', v: fmt.int(k.dead.value), d: '', n: `${fmt.pct(k.dead.share)} новых тестов никто не открыл`, c: C.orange, filter: { views: 'zero', created: 'period' } },
+            { l: 'Удалены авторами', v: fmt.int(k.deleted.value), d: '', n: `${fmt.pct(k.deleted.share)} от созданных`, c: C.rose, filter: { status: 'deleted', created: 'period' } },
+            { l: 'Живых в базе', v: fmt.int(t.alive), d: '', n: `из ${fmt.int(t.all)} всего`, c: C.indigo },
+        ];
+        $('#kpi2').innerHTML = tiles.map((x, i) => `
+            <${x.filter ? 'button type="button"' : 'div'} class="tile ${x.filter ? 'btn-tile' : ''} flex flex-col" ${x.filter ? `data-kpi-filter="${i}" data-tip="Показать эти тесты в каталоге"` : ''}>
+                <div class="flex items-center justify-between gap-2"><p class="lbl m-0 flex items-center gap-2 truncate"><i class="dot" style="background:${x.c}"></i>${esc(x.l)}</p>${x.d}</div>
+                <p class="mid m-0 mt-3">${esc(x.v)}</p>
+                <p class="lbl m-0 mt-1.5 truncate">${esc(x.n)}</p>
+            </${x.filter ? 'button' : 'div'}>`).join('');
+        $$('[data-kpi-filter]').forEach((b) => b.addEventListener('click', () => {
+            const f = tiles[+b.dataset.kpiFilter].filter;
+            applyCatalogPreset(f);
+        }));
+    }
+
+    function applyCatalogPreset(f) {
+        const c = state.cat;
+        c.q = ''; c.page = 1;
+        c.status = f.status || 'active';
+        c.created = f.created || 'all';
+        FILTER_KEYS.forEach((k) => { c.f[k] = f[k] || ''; });
+        if (f.sort) c.sort = f.sort;
+        syncCatalogControls();
+        loadCatalog();
+        goCatalog();
+    }
+
+    /* ---------- Динамика ---------- */
+    function renderDynamics() {
+        const ov = state.ov, k = ov.kpi, p = ov.period;
+        const map = {
+            created: { title: 'Создано тестов', cur: k.created.series, prev: k.created.prev_series, total: k.created.value, d: k.created.delta, color: C.indigo, name: 'Создано' },
+            views: { title: 'Уникальные просмотры', cur: k.views.series, prev: k.views.prev_series, total: k.views.value, d: k.views.delta, color: C.sky, name: 'Просмотры' },
+            attempts: { title: 'Прохождения', cur: k.attempts.series, prev: k.attempts.prev_series, total: k.attempts.value, d: k.attempts.delta, color: C.yellow, name: 'Прохождения' },
+            cumulative: { title: 'Тестов в базе', cur: ov.totals.cumulative, prev: null, total: ov.totals.all, d: null, color: C.violet, name: 'Всего в базе' },
+        };
+        const m = map[state.dynMode];
+        const bucket = { day: 'по дням', week: 'по неделям', month: 'по месяцам' }[p.bucket];
+        $('#dyn-title').textContent = m.title;
+        $('#dyn-sub').textContent = state.dynMode === 'cumulative' ? `накопительно, ${bucket}` : `${bucket}, ${fmt.date(p.start)} — ${fmt.date(p.end)}`;
+        countUp($('#dyn-total'), m.total, fmt.int);
+        $('#dyn-delta').innerHTML = state.dynMode === 'cumulative'
+            ? `<span class="delta up">+${fmt.int(k.created.value)} за период</span>` : delta(m.d);
+        $('#dyn-legend').innerHTML = legendItem(m.color, m.name, fmt.int(state.dynMode === 'cumulative' ? m.total : sum(m.cur)))
+            + (m.prev ? legendItem('#8b8b96', 'Прошлый период', fmt.int(sum(m.prev)), 'line') : '');
+        const per = (i) => {
+            if (state.dynMode !== 'views' && state.dynMode !== 'attempts') return '';
+            const v = k.views.series[i], a = k.attempts.series[i];
+            return v ? `<div class="tt-r tt-f">Конверсия<b>${fmt.pct(a / v * 100)}</b></div>` : '';
+        };
+        mountChart($('#ch-dyn'), {
+            labels: p.labels, titles: p.titles, integer: true,
+            series: [{ name: m.name, values: m.cur, color: m.color }],
+            line: m.prev ? { name: 'Прошлый период', values: m.prev, color: '#8b8b96', dashed: true } : null,
+            extra: per, emptyText: 'За период данных нет', ariaLabel: m.title,
+        });
+    }
+    $('#dyn-mode').addEventListener('click', (e) => {
+        const b = e.target.closest('[data-mode]');
+        if (!b || !state.ov || b.dataset.mode === state.dynMode) return;
+        state.dynMode = b.dataset.mode;
+        $$('#dyn-mode button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+        renderDynamics();
     });
 
-    SurveysOps.loadList();
-});
+    function renderHours() {
+        const h = state.ov.breakdowns.hours, isAtt = state.hoursMode === 'attempts';
+        const data = isAtt ? h.attempts : h.created, color = isAtt ? C.yellow : C.indigo;
+        mountChart($('#ch-hours'), {
+            labels: h.labels, titles: h.labels.map((l) => `${l}:00 — ${l}:59`), integer: true, maxBar: 14,
+            series: [{ name: isAtt ? 'Прохождения' : 'Создано тестов', values: data, color }],
+            emptyText: 'Нет данных', ariaLabel: 'Активность по часам',
+        });
+        const total = sum(data);
+        if (!total) { $('#hours-foot').textContent = ''; return; }
+        const peak = data.indexOf(Math.max(...data));
+        const school = sum(data.slice(8, 15)) / total * 100;
+        $('#hours-foot').innerHTML = `Пик в <span class="val">${String(peak).padStart(2, '0')}:00</span>, с 8 до 15 часов — <span class="val">${fmt.pct(school)}</span>`;
+    }
+    $('#hours-mode').addEventListener('click', (e) => {
+        const b = e.target.closest('[data-mode]');
+        if (!b || !state.ov || b.dataset.mode === state.hoursMode) return;
+        state.hoursMode = b.dataset.mode;
+        $$('#hours-mode button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+        renderHours();
+    });
+
+    /* ---------- Срезы ---------- */
+    function renderSlices() {
+        const b = state.ov.breakdowns;
+        const models = b.models.map((m, i) => ({ ...m, color: PALETTE[i % PALETTE.length] }));
+        const mTotal = sum(models.map((m) => m.value));
+        mountDonut($('#models-donut'), {
+            items: models, centerValue: fmt.int(mTotal), centerLabel: 'тестов', ariaLabel: 'Модели',
+            onClick: (it) => applyCatalogPreset({ model: it.key || '__none__', created: 'period' }),
+        });
+        $('#models-legend').innerHTML = models.length ? models.map((m) => `
+            <button type="button" class="legend-row" data-slice="model" data-key="${esc(m.key || '__none__')}" data-tip="Показать в каталоге">
+                <span class="flex items-center gap-2 font-semibold truncate"><i class="sw" style="background:${m.color}"></i><span class="truncate">${esc(m.label)}</span></span>
+                <span class="font-extrabold">${mTotal ? NF1.format(m.value / mTotal * 100) : 0}%</span>
+            </button>`).join('') : '<p class="lbl">Нет тестов за период</p>';
+
+        const group = (title, items, key, colors) => {
+            const total = sum(items.map((i) => i.value));
+            const list = items.filter((i) => i.value > 0);
+            return `<div>
+                <div class="flex items-baseline justify-between"><p class="lbl m-0 font-semibold">${esc(title)}</p><p class="lbl m-0">${fmt.int(total)}</p></div>
+                <div class="mt-2">${total ? `<div class="share">${list.map((it, i) => `<span data-slice="${key}" data-key="${esc(it.key || '__none__')}" style="flex-grow:${it.value};background:${colors[items.indexOf(it) % colors.length]};animation-delay:${i * 60}ms" data-tip="${esc(`${it.label}: ${fmt.int(it.value)}, ${NF1.format(it.value / total * 100)}%`)}"></span>`).join('')}</div>` : '<div class="share empty"></div>'}</div>
+                <div class="mt-2 flex flex-wrap gap-x-3 gap-y-1">${items.map((it, i) => `<button type="button" data-slice="${key}" data-key="${esc(it.key || '__none__')}" class="inline-flex items-center gap-1.5 text-[12px] text-[color:var(--muted)] hover:text-white font-semibold"><i class="sw" style="background:${colors[i % colors.length]}"></i>${esc(it.label)} <span class="text-[color:var(--text)] font-extrabold">${total ? NF1.format(it.value / total * 100) : 0}%</span></button>`).join('')}</div>
+            </div>`;
+        };
+        $('#mix').innerHTML = group('Сложность', b.difficulty, 'difficulty', [C.teal, C.yellow, C.rose, '#4b4b55'])
+            + group('Источник материала', b.source, 'source', [C.indigo, C.sky, '#4b4b55'])
+            + group('Кто создаёт', b.author_type, 'author_type', [C.green, C.orange]);
+
+        const colorAt = (i) => (i < 4 ? C.rose : i < 7 ? C.yellow : C.green);
+        mountChart($('#ch-scores'), {
+            labels: b.scores.labels, titles: b.scores.labels.map((l) => `${l}% верных`), integer: true, maxBar: 22,
+            series: [{ name: 'Прохождения', values: b.scores.data, color: colorAt }], emptyText: 'Прохождений за период нет', ariaLabel: 'Распределение баллов',
+        });
+        const total = sum(b.scores.data);
+        const fail = sum(b.scores.data.slice(0, 5));
+        $('#scores-foot').innerHTML = total ? `Средний балл <span class="val">${fmt.pct(state.ov.kpi.score.value)}</span>, ниже 50% — <span class="val">${fmt.pct(fail / total * 100)}</span> прохождений` : '';
+        mountChart($('#ch-qsize'), {
+            labels: b.qsize.labels, titles: b.qsize.labels.map((l) => `${l} вопросов`), integer: true, maxBar: 60,
+            series: [{ name: 'Тестов', values: b.qsize.data, color: C.teal }], emptyText: 'Нет тестов', ariaLabel: 'Размер тестов',
+        });
+    }
+    document.addEventListener('click', (e) => {
+        const s = e.target.closest('[data-slice]');
+        if (!s) return;
+        const key = s.dataset.slice, val = s.dataset.key;
+        if (key === 'difficulty' || key === 'model' || key === 'source' || key === 'author_type') {
+            const v = key === 'source' && val === '__none__' ? 'unknown' : val;
+            applyCatalogPreset({ [key]: v, created: 'period' });
+        }
+    });
+
+    /* ---------- Топы ---------- */
+    const TOP_META = {
+        trending: { hint: 'Уникальные просмотры за период', unit: (v) => `+${fmt.int(v)}`, tone: 'tone-ok' },
+        attempts: { hint: 'Прохождений за период', unit: (v) => fmt.int(v), tone: '' },
+        hardest: { hint: 'Средний балл, от 5 прохождений за период', unit: (v) => fmt.pct(v), tone: 'tone-bad' },
+        fresh: { hint: 'Созданы за период, по просмотрам за всё время', unit: (v) => fmt.int(v), tone: '' },
+    };
+    function renderTops() {
+        const list = state.ov.tops[state.topTab] || [], m = TOP_META[state.topTab];
+        $('#top-hint').textContent = m.hint;
+        $('#tops').innerHTML = list.length ? list.map((t, i) => `
+            <button type="button" class="rank border-b border-[color:var(--line)]" data-open="${esc(t.survey_id)}">
+                <span class="n">${i + 1}</span>
+                <span class="min-w-0">
+                    <span class="block text-[13px] font-bold truncate">${esc(t.title)}</span>
+                    <span class="block lbl truncate">${esc(t.author)} · ${esc(t.created)}${t.deleted ? ' · <span class="tone-bad">удалён</span>' : ''}</span>
+                </span>
+                <span class="text-right"><span class="block font-extrabold ${m.tone}">${esc(m.unit(t.metric))}</span><span class="block lbl text-[11px]">${esc(t.sub)}</span></span>
+            </button>`).join('') : '<p class="lbl py-6">За период пусто</p>';
+    }
+    $('#top-tabs').addEventListener('click', (e) => {
+        const b = e.target.closest('[data-tab]');
+        if (!b || !state.ov) return;
+        state.topTab = b.dataset.tab;
+        $$('#top-tabs button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+        renderTops();
+    });
+
+    /* =================================================================== *
+     *  Каталог
+     * =================================================================== */
+    const COLS = [
+        { key: 'title', label: 'Тест', sort: 'title' },
+        { key: 'created', label: 'Создан', sort: '-created', alt: 'created' },
+        { key: 'questions', label: 'Вопр.', sort: '-questions', cls: 'r' },
+        { key: 'views', label: 'Просмотры', sort: '-views', alt: '-views_period', cls: 'r' },
+        { key: 'attempts', label: 'Прохождения', sort: '-attempts', alt: '-attempts_period', cls: 'r' },
+        { key: 'conversion', label: 'Конверсия', sort: '-conversion', cls: 'r' },
+        { key: 'score', label: 'Ср. балл', sort: 'score', alt: '-score' },
+        { key: 'model', label: 'Модель' },
+        { key: 'status', label: '' },
+    ];
+    function renderCatHead() {
+        $('#cat-head').innerHTML = COLS.map((c) => {
+            if (!c.sort) return `<th class="${c.cls || ''}">${esc(c.label)}</th>`;
+            const active = state.cat.sort === c.sort || state.cat.sort === c.alt;
+            return `<th class="${c.cls || ''}"><button type="button" data-sort="${c.sort}" data-alt="${c.alt || ''}" ${active ? 'data-active' : ''}>${esc(c.label)}${active ? icon('sort', 11) : ''}</button></th>`;
+        }).join('');
+    }
+    $('#cat-head').addEventListener('click', (e) => {
+        const b = e.target.closest('[data-sort]');
+        if (!b) return;
+        const c = state.cat;
+        c.sort = c.sort === b.dataset.sort && b.dataset.alt ? b.dataset.alt : b.dataset.sort;
+        c.page = 1;
+        $('#cat-sort').value = c.sort;
+        loadCatalog();
+    });
+
+    function syncCatalogControls() {
+        const c = state.cat;
+        $('#cat-q').value = c.q;
+        $('#cat-sort').value = c.sort;
+        $('#cat-per').value = String(c.per);
+        $$('#cat-created button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.created === c.created)));
+        const cf = $('#cat-custom');
+        cf.classList.toggle('hidden', c.created !== 'custom');
+        cf.classList.toggle('flex', c.created === 'custom');
+        $('#cat-cfrom').value = c.cfrom; $('#cat-cto').value = c.cto;
+        $$('#filters-panel [data-f]').forEach((el) => { el.value = c.f[el.dataset.f] || ''; });
+        renderStatusSeg();
+        renderActiveFilters();
+        renderCatHead();
+    }
+    function renderStatusSeg() {
+        const st = state.cat.data?.facets?.status || {};
+        const tabs = [['active', 'Активные', st.active], ['deleted', 'Удалённые', st.deleted], ['all', 'Все', st.all]];
+        $('#cat-status').innerHTML = tabs.map(([k, l, n]) => `<button type="button" data-status="${k}" aria-pressed="${state.cat.status === k}">${l}${n != null ? `<span class="count">${fmt.compact(n)}</span>` : ''}</button>`).join('');
+    }
+    function renderModelOptions() {
+        const sel = $('#filters-panel [data-f="model"]');
+        const models = state.cat.data?.facets?.models || [];
+        const cur = state.cat.f.model;
+        sel.innerHTML = `<option value="">Любая</option>${models.map((m) => `<option value="${esc(m.value)}">${esc(m.value)} · ${fmt.compact(m.count)}</option>`).join('')}<option value="__none__">Не указана</option>`
+            + (cur && cur !== '__none__' && !models.some((m) => m.value === cur) ? `<option value="${esc(cur)}">${esc(cur)}</option>` : '');
+        sel.value = cur;
+    }
+    function renderActiveFilters() {
+        const c = state.cat, chips = [];
+        FILTER_KEYS.forEach((k) => {
+            const v = c.f[k];
+            if (!v) return;
+            let shown = VALUE_LABELS[k]?.[v] ?? v;
+            if (k === 'author') shown = c.authorName || `${v.slice(0, 8)}…`;
+            chips.push(`<span class="chip accent x">${esc(FILTER_LABELS[k])}: ${esc(shown)}<button type="button" data-unfilter="${k}" aria-label="Убрать фильтр">${icon('x', 11)}</button></span>`);
+        });
+        const n = chips.length;
+        $('#filters-count').textContent = n;
+        $('#filters-count').classList.toggle('hidden', !n);
+        const box = $('#active-filters');
+        box.classList.toggle('hidden', !n);
+        box.innerHTML = n ? `${chips.join('')}<button type="button" class="link" data-unfilter="__all">Сбросить всё</button>` : '';
+    }
+    $('#active-filters').addEventListener('click', (e) => {
+        const b = e.target.closest('[data-unfilter]');
+        if (!b) return;
+        const k = b.dataset.unfilter;
+        if (k === '__all') FILTER_KEYS.forEach((x) => { state.cat.f[x] = ''; }); else state.cat.f[k] = '';
+        if (k === 'author' || k === '__all') state.cat.authorName = '';
+        state.cat.page = 1;
+        syncCatalogControls();
+        loadCatalog();
+    });
+    $('#btn-filters').addEventListener('click', () => {
+        const p = $('#filters-panel');
+        p.classList.toggle('hidden');
+        $('#btn-filters').classList.toggle('on', !p.classList.contains('hidden'));
+    });
+    $('#filters-panel').addEventListener('change', (e) => {
+        const el = e.target.closest('[data-f]');
+        if (!el) return;
+        state.cat.f[el.dataset.f] = el.value.trim();
+        state.cat.page = 1;
+        renderActiveFilters();
+        loadCatalog();
+    });
+    $('#cat-status').addEventListener('click', (e) => {
+        const b = e.target.closest('[data-status]');
+        if (!b || b.dataset.status === state.cat.status) return;
+        state.cat.status = b.dataset.status; state.cat.page = 1;
+        renderStatusSeg();
+        loadCatalog();
+    });
+    $('#cat-created').addEventListener('click', (e) => {
+        const b = e.target.closest('[data-created]');
+        if (!b) return;
+        state.cat.created = b.dataset.created;
+        syncCatalogControls();
+        if (b.dataset.created === 'custom') { $('#cat-cfrom').focus(); if (!(state.cat.cfrom || state.cat.cto)) return; }
+        state.cat.page = 1;
+        loadCatalog();
+    });
+    $('#cat-custom').addEventListener('submit', (e) => {
+        e.preventDefault();
+        state.cat.cfrom = $('#cat-cfrom').value; state.cat.cto = $('#cat-cto').value; state.cat.page = 1;
+        loadCatalog();
+    });
+    const searchNow = () => { const v = $('#cat-q').value.trim(); if (v === state.cat.q) return; state.cat.q = v; state.cat.page = 1; loadCatalog(); };
+    $('#cat-q').addEventListener('input', debounce(searchNow, 320));
+    $('#cat-search').addEventListener('submit', (e) => { e.preventDefault(); searchNow(); });
+    $('#cat-sort').addEventListener('change', (e) => { state.cat.sort = e.target.value; state.cat.page = 1; loadCatalog(); });
+    $('#cat-per').addEventListener('change', (e) => { state.cat.per = +e.target.value; state.cat.page = 1; loadCatalog(); });
+
+    function renderCatSkeleton() {
+        $('#cat-body').innerHTML = Array.from({ length: 8 }, () => `<tr>${COLS.map(() => '<td><span class="skeleton h-4 w-full"></span></td>').join('')}</tr>`).join('');
+        $('#cat-cards').innerHTML = Array.from({ length: 5 }, () => '<div class="s-card"><span class="skeleton h-4 w-3/4"></span><span class="skeleton h-3 w-1/2 mt-2"></span><span class="skeleton h-10 w-full mt-3"></span></div>').join('');
+    }
+
+    async function loadCatalog() {
+        syncUrl();
+        renderCatHead();
+        if (!state.cat.data) renderCatSkeleton();
+        try {
+            const data = await api(`${CFG.urls.catalog}?${catQuery()}`, { key: 'catalog' });
+            state.cat.data = data;
+            state.cat.page = data.page;
+            renderStatusSeg();
+            renderModelOptions();
+            renderCatalog();
+            syncUrl();
+        } catch (e) {
+            if (e.aborted) return;
+            $('#cat-body').innerHTML = `<tr><td colspan="${COLS.length}" class="py-10 text-center"><span class="tone-bad">Каталог не загрузился: ${esc(e.message)}</span> <button type="button" class="btn btn-ghost btn-sm ml-3" data-cat-retry>Повторить</button></td></tr>`;
+            $('#cat-cards').innerHTML = `<div class="notice bad">Каталог не загрузился: ${esc(e.message)}</div>`;
+        }
+    }
+    document.addEventListener('click', (e) => { if (e.target.closest('[data-cat-retry]')) loadCatalog(); });
+
+    const statusChips = (s) => [
+        s.deleted ? '<span class="chip bad">удалён</span>' : '',
+        s.is_verified ? '<span class="chip ok" data-tip="Проверен редакцией">✓</span>' : '',
+        s.is_in_marketplace ? '<span class="chip accent" data-tip="В маркетплейсе">маркет</span>' : '',
+        s.is_private ? '<span class="chip" data-tip="Приватный">приват</span>' : '',
+    ].join('');
+
+    function renderCatalog() {
+        const d = state.cat.data, items = d.items;
+        const sm = d.summary;
+        $('#cat-sub').textContent = state.cat.q ? `Поиск «${state.cat.q}»` : 'Все тесты платформы';
+        $('#cat-summary').innerHTML = [
+            ['Тестов в выдаче', fmt.int(d.total), C.indigo],
+            ['Просмотров', fmt.compact(sm.views), C.sky],
+            ['Прохождений', sm.attempts == null ? '—' : fmt.compact(sm.attempts), C.yellow],
+            ['Вопросов в среднем', NF1.format(sm.questions || 0), C.teal],
+        ].map(([l, v, c]) => `<div class="tile py-2.5"><p class="lbl m-0 flex items-center gap-2"><i class="dot" style="background:${c}"></i>${l}</p><p class="val m-0 mt-1 text-[17px]">${esc(v)}</p></div>`).join('');
+        const from = d.total ? (d.page - 1) * d.per + 1 : 0, to = Math.min(d.page * d.per, d.total);
+        $('#cat-count').textContent = d.total ? `${fmt.int(from)}–${fmt.int(to)} из ${fmt.int(d.total)}` : 'Ничего не найдено';
+
+        if (!items.length) {
+            const hint = state.cat.q || Object.values(state.cat.f).some(Boolean) || state.cat.created !== 'all' ? 'Под фильтр ничего не подходит. Ослабьте условия или сбросьте фильтры.' : 'Тестов нет';
+            $('#cat-body').innerHTML = `<tr><td colspan="${COLS.length}" class="py-14 text-center lbl" style="cursor:default">${hint}</td></tr>`;
+            $('#cat-cards').innerHTML = `<p class="lbl py-8 text-center">${hint}</p>`;
+            $('#cat-pager').innerHTML = '';
+            return;
+        }
+        $('#cat-body').innerHTML = items.map((s) => `
+            <tr data-open="${esc(s.survey_id)}" tabindex="0">
+                <td style="white-space:normal;min-width:280px;max-width:420px">
+                    <div class="font-bold clamp2">${esc(s.title)}</div>
+                    <div class="sub truncate">${s.author.is_guest ? '<span class="tone-warn">гость</span>' : esc(s.author.name)}${s.author.email ? ` · ${esc(s.author.email)}` : ''}</div>
+                </td>
+                <td><div class="font-semibold">${esc((s.created || '').slice(0, 10))}</div><div class="sub">${esc((s.created || '').slice(11))}</div></td>
+                <td class="r font-semibold">${fmt.int(s.questions)}</td>
+                <td class="r"><div class="font-semibold">${fmt.int(s.views)}</div><div class="sub">${s.views_period ? `<span class="plus">+${fmt.int(s.views_period)}</span> за период` : '—'}</div></td>
+                <td class="r"><div class="font-semibold">${fmt.int(s.attempts)}</div><div class="sub">${s.attempts_period ? `<span class="plus">+${fmt.int(s.attempts_period)}</span> за период` : (s.last_attempt ? esc(s.last_attempt.slice(0, 10)) : '—')}</div></td>
+                <td class="r font-semibold">${fmt.pct(s.conversion)}</td>
+                <td>${s.score == null ? '<span class="lbl">—</span>' : `<div class="flex items-center gap-2"><span class="font-semibold w-11">${fmt.pct(s.score)}</span><div class="track w-16 h-[5px]"><i style="width:${s.score}%;background:${scoreColor(s.score)}"></i></div></div>`}</td>
+                <td><div class="mono text-[11.5px] text-[color:var(--muted)] truncate max-w-[130px]">${esc(s.model || '—')}</div><div class="sub">${esc(DIFF[s.difficulty] || '')}${s.difficulty ? ' · ' : ''}${esc(SRC[s.source])}</div></td>
+                <td><div class="flex gap-1 justify-end">${statusChips(s)}</div></td>
+            </tr>`).join('');
+        $('#cat-cards').innerHTML = items.map((s) => `
+            <button type="button" class="s-card" data-open="${esc(s.survey_id)}">
+                <div class="flex items-start justify-between gap-2"><span class="font-bold text-[13.5px] clamp2">${esc(s.title)}</span><span class="flex gap-1 flex-none">${statusChips(s)}</span></div>
+                <p class="lbl m-0 mt-1 truncate">${s.author.is_guest ? 'гость' : esc(s.author.name)} · ${esc(s.created || '')} · ${fmt.int(s.questions)} ${plural(s.questions, 'вопрос', 'вопроса', 'вопросов')}</p>
+                <div class="metrics">
+                    <div><p class="lbl text-[10.5px]">Просм.</p><p class="val">${fmt.compact(s.views)}</p>${s.views_period ? `<p class="plus">+${fmt.compact(s.views_period)}</p>` : ''}</div>
+                    <div><p class="lbl text-[10.5px]">Прох.</p><p class="val">${fmt.compact(s.attempts)}</p>${s.attempts_period ? `<p class="plus">+${fmt.compact(s.attempts_period)}</p>` : ''}</div>
+                    <div><p class="lbl text-[10.5px]">Конв.</p><p class="val">${fmt.pct(s.conversion)}</p></div>
+                    <div><p class="lbl text-[10.5px]">Балл</p><p class="val" style="color:${s.score == null ? 'inherit' : scoreColor(s.score)}">${fmt.pct(s.score)}</p></div>
+                </div>
+            </button>`).join('');
+        renderPager();
+        markOpenRow();
+    }
+    function renderPager() {
+        const d = state.cat.data, cur = d.page, last = d.pages;
+        const nums = new Set([1, last, cur - 1, cur, cur + 1, cur - 2, cur + 2].filter((n) => n >= 1 && n <= last));
+        const arr = [...nums].sort((a, b) => a - b);
+        let html = '', prev = 0;
+        arr.forEach((n) => {
+            if (n - prev > 1) html += '<span class="lbl px-1">…</span>';
+            html += `<button type="button" class="btn btn-sm ${n === cur ? 'btn-primary' : 'btn-ghost'} min-w-[32px] px-2" data-page="${n}">${n}</button>`;
+            prev = n;
+        });
+        $('#cat-pager').innerHTML = `
+            <p class="lbl m-0 hidden sm:block">Страница ${cur} из ${last}</p>
+            <div class="flex flex-wrap items-center gap-1.5">
+                <button type="button" class="btn btn-ghost btn-sm" data-page="${cur - 1}" ${cur <= 1 ? 'disabled' : ''} aria-label="Назад">${icon('left', 12)}</button>
+                ${html}
+                <button type="button" class="btn btn-ghost btn-sm" data-page="${cur + 1}" ${cur >= last ? 'disabled' : ''} aria-label="Вперёд">${icon('right', 12)}</button>
+            </div>`;
+    }
+    $('#cat-pager').addEventListener('click', (e) => {
+        const b = e.target.closest('[data-page]');
+        if (!b || b.disabled) return;
+        state.cat.page = +b.dataset.page;
+        loadCatalog().then(() => goCatalog());
+    });
+    document.addEventListener('click', (e) => {
+        const row = e.target.closest('[data-open]');
+        if (!row || e.target.closest('a,[data-unfilter]')) return;
+        openSurvey(row.dataset.open);
+    });
+    $('#cat-body').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && e.target.matches('tr[data-open]')) openSurvey(e.target.dataset.open);
+    });
+    function markOpenRow() {
+        $$('#cat-body tr[data-open], #cat-cards [data-open]').forEach((r) => r.classList.toggle('is-open', r.dataset.open === state.open));
+    }
+
+    /* =================================================================== *
+     *  Досье теста
+     * =================================================================== */
+    const catIds = () => (state.cat.data?.items || []).map((s) => s.survey_id);
+    function updateDossierNav() {
+        const ids = catIds(), i = ids.indexOf(state.open);
+        $('#dossier-pos').textContent = i >= 0 ? `${(state.cat.data.page - 1) * state.cat.data.per + i + 1} из ${fmt.int(state.cat.data.total)}` : '';
+        $$('[data-nav-survey]').forEach((b) => { const ni = i + +b.dataset.navSurvey; b.disabled = i < 0 || ni < 0 || ni >= ids.length; b.style.opacity = b.disabled ? .3 : 1; });
+    }
+    $$('[data-nav-survey]').forEach((b) => b.addEventListener('click', () => stepSurvey(+b.dataset.navSurvey)));
+    function stepSurvey(dir) {
+        const ids = catIds(), i = ids.indexOf(state.open);
+        if (i < 0) return;
+        const ni = i + dir;
+        if (ni >= 0 && ni < ids.length) openSurvey(ids[ni]);
+    }
+    $('#dossier-link').addEventListener('click', () => {
+        const u = new URL(location.href);
+        copyText(u.toString(), 'Ссылка на досье скопирована');
+    });
+
+    function openSurvey(id) {
+        state.open = id;
+        markOpenRow();
+        syncUrl();
+        drawer.open();
+        loadDossier(id);
+    }
+
+    async function loadDossier(id, { keepScroll = false } = {}) {
+        const box = $('#dossier');
+        const scroll = box.scrollTop;
+        if (!keepScroll) {
+            Object.assign(att, { page: 1, q: '', sort: '' });
+            box.scrollTop = 0;
+            box.innerHTML = `<div class="p-6 space-y-4"><span class="skeleton h-7 w-2/3"></span><span class="skeleton h-4 w-1/3"></span>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-2.5">${Array.from({ length: 8 }, () => '<div class="tile h-[84px]"></div>').join('')}</div>
+                <span class="skeleton h-56 w-full"></span></div>`;
+        }
+        updateDossierNav();
+        try {
+            const data = await api(`${withId(CFG.urls.details, id)}?${periodQuery()}`, { key: 'dossier' });
+            if (state.open !== id) return;
+            state.dossier = data;
+            renderDossier();
+            if (keepScroll) box.scrollTop = scroll;
+        } catch (e) {
+            if (e.aborted) return;
+            box.innerHTML = `<div class="p-6"><div class="notice bad">Досье не загрузилось: ${esc(e.message)}</div></div>`;
+        }
+    }
+
+    function renderDossier() {
+        const d = state.dossier, s = d.survey, k = d.kpi, a = d.author;
+        const flags = [
+            ['is_verified', 'Проверен редакцией'], ['is_in_marketplace', 'В маркетплейсе'], ['show_answers', 'Ответы открыты ученикам'], ['is_private', 'Приватный'],
+        ];
+        const tiles = [
+            ['Просмотры', fmt.int(k.views), k.views_period ? `+${fmt.int(k.views_period)} за период` : 'за период 0', C.sky],
+            ['Прохождения', fmt.int(k.attempts), k.attempts_period ? `+${fmt.int(k.attempts_period)} за период` : 'за период 0', C.yellow],
+            ['Конверсия', fmt.pct(k.conversion), 'прохождений на просмотр', C.green],
+            ['Учеников', fmt.int(k.students), 'уникальных имён', C.violet],
+            ['Средний балл', fmt.pct(k.avg), `медиана ${fmt.pct(k.median)}`, scoreColor(k.avg)],
+            ['Сдали на 50%+', fmt.pct(k.passed), `на 100%: ${fmt.pct(k.perfect)}`, C.teal],
+            ['Последнее прохождение', k.last_attempt ? k.last_attempt.slice(0, 10) : '—', k.first_attempt ? `первое ${k.first_attempt.slice(0, 10)}` : 'ещё не проходили', C.orange],
+            ['Последний просмотр', k.last_view ? k.last_view.slice(0, 10) : '—', `в журнале ${fmt.int(k.views_logged)}`, C.indigo],
+        ];
+        const qSorted = d.__qsort === 'hard' ? [...d.questions].sort((x, y) => (x.rate ?? 101) - (y.rate ?? 101)) : d.questions;
+        const box = $('#dossier');
+        box.innerHTML = `
+        <div class="p-4 sm:p-6 space-y-4">
+            <header class="space-y-3">
+                <div class="flex flex-wrap items-center gap-1.5">
+                    ${s.deleted ? '<span class="chip bad">Удалён автором</span>' : '<span class="chip ok">Активен</span>'}
+                    ${s.is_verified ? '<span class="chip ok">✓ Проверен</span>' : ''}${s.is_in_marketplace ? '<span class="chip accent">Маркетплейс</span>' : ''}${s.is_private ? '<span class="chip">Приватный</span>' : ''}
+                    <span class="chip">${fmt.int(s.questions_count)} ${plural(s.questions_count, 'вопрос', 'вопроса', 'вопросов')}</span>
+                    ${s.difficulty ? `<span class="chip">${esc(DIFF[s.difficulty] || s.difficulty)}</span>` : ''}
+                    <span class="chip">${esc(SRC[s.source])}${s.source_file ? `: ${esc(s.source_file)}` : ''}</span>
+                </div>
+                <h2 id="dossier-title" class="m-0 text-[20px] sm:text-[22px] font-extrabold tracking-[-0.025em] leading-tight">${esc(s.title)}</h2>
+                ${s.description ? `<p class="lbl m-0">${esc(s.description)}</p>` : ''}
+                <div class="flex flex-wrap items-center gap-x-4 gap-y-1 lbl">
+                    <span>Создан <span class="val">${esc(s.created)}</span> · ${s.age_days} ${plural(s.age_days, 'день', 'дня', 'дней')} назад</span>
+                    <span>Изменён ${esc(s.updated)}</span>
+                    <span class="mono text-[11px]">${esc(s.model || 'модель не указана')}</span>
+                    <button type="button" class="inline-flex items-center gap-1 mono text-[11px] hover:text-white" data-copy="${esc(s.survey_id)}">${esc(s.survey_id)}${icon('copy', 11)}</button>
+                </div>
+                <div class="flex flex-wrap gap-2 pt-1">
+                    <a class="btn btn-ghost btn-sm" href="/c/${encodeURIComponent(s.survey_id)}/" target="_blank" rel="noopener">${icon('ext', 12)}Карточка</a>
+                    <a class="btn btn-ghost btn-sm" href="/t/${encodeURIComponent(s.survey_id)}/" target="_blank" rel="noopener">${icon('play', 12)}Пройти</a>
+                    <a class="btn btn-ghost btn-sm" href="/api/c/${encodeURIComponent(s.survey_id)}/result/export/excel/" ${k.attempts ? '' : 'aria-disabled="true" style="opacity:.45;pointer-events:none"'}>${icon('sheet', 12)}Результаты в Excel</a>
+                    <span class="flex-1"></span>
+                    ${s.deleted
+                        ? `<button type="button" class="btn btn-ghost btn-sm" data-act="restore">${icon('undo', 12)}Вернуть</button>`
+                        : `<button type="button" class="btn btn-ghost btn-sm" data-act="hide">${icon('hide', 12)}Скрыть</button>`}
+                    <button type="button" class="btn btn-danger btn-sm" data-act="destroy">${icon('trash', 12)}Удалить из БД</button>
+                </div>
+            </header>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-2.5">${tiles.map(([l, v, n, c]) => `
+                <div class="tile"><p class="lbl m-0 flex items-center gap-2 truncate"><i class="dot" style="background:${c}"></i>${esc(l)}</p>
+                <p class="mid m-0 mt-2.5 truncate">${esc(v)}</p><p class="lbl m-0 mt-1.5 truncate">${esc(n)}</p></div>`).join('')}</div>
+
+            <article class="card">
+                <div class="card-head">
+                    <div class="card-title"><span class="ticon" data-icon="trend" data-size="15"></span><div><h3>Просмотры и прохождения</h3><small>${esc(fmt.date(d.series.start))} — ${esc(fmt.date(d.series.end))}</small></div></div>
+                    <div class="flex flex-wrap gap-x-4 gap-y-1">${legendItem(C.yellow, 'Прохождения', fmt.int(sum(d.series.attempts)))}${legendItem(C.sky, 'Просмотры', fmt.int(sum(d.series.views)))}</div>
+                </div>
+                <div id="d-chart" class="chart mt-4 h-[230px]"></div>
+            </article>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-3.5">
+                <article class="card flex flex-col">
+                    <div class="card-title"><span class="ticon" data-icon="target" data-size="15"></span><div><h3>Баллы учеников</h3><small>Доля верных ответов, %</small></div></div>
+                    <div id="d-scores" class="chart mt-4 h-[170px]"></div>
+                </article>
+                <article class="card flex flex-col">
+                    <div class="card-title"><span class="ticon" data-icon="clock" data-size="15"></span><div><h3>Когда проходят</h3><small>Часы по Москве, за всё время</small></div></div>
+                    <div id="d-hours" class="chart mt-4 h-[170px]"></div>
+                </article>
+            </div>
+
+            <article class="card">
+                <div class="card-head">
+                    <div class="card-title"><span class="ticon" data-icon="list" data-size="15"></span><div><h3>Вопросы</h3><small>${d.questions_analysed ? `Разобрано ${fmt.int(d.questions_analysed)} ${plural(d.questions_analysed, 'прохождение', 'прохождения', 'прохождений')}` : 'Прохождений пока нет — статистики по вопросам нет'}</small></div></div>
+                    <div class="seg soft" id="q-sort" role="group" aria-label="Порядок вопросов">
+                        <button type="button" data-qs="order" aria-pressed="${d.__qsort !== 'hard'}">По порядку</button>
+                        <button type="button" data-qs="hard" aria-pressed="${d.__qsort === 'hard'}">Сложные первыми</button>
+                    </div>
+                </div>
+                <div class="mt-3 space-y-2">${qSorted.map((q) => `
+                    <details class="q-item">
+                        <summary>
+                            <span class="mono text-[12px] text-[color:var(--dim)]">#${q.index}</span>
+                            <span class="min-w-0"><span class="block text-[13px] font-semibold clamp2">${esc(q.question)}</span>
+                                <span class="block lbl text-[11.5px] mt-0.5">${q.type === 'multiple' ? 'несколько ответов' : 'один ответ'}${q.answered ? ` · ответили ${fmt.int(q.answered)}` : ''}${q.top_wrong ? ` · частая ошибка: «${esc(q.top_wrong.answer)}» ×${fmt.int(q.top_wrong.count)}` : ''}</span></span>
+                            <span class="q-meter">${q.rate == null ? '<span class="lbl">нет данных</span>' : `<span class="flex items-center gap-2"><span class="font-extrabold w-12 text-right" style="color:${scoreColor(q.rate)}">${fmt.pct(q.rate)}</span><span class="track flex-1 h-[6px]"><i style="width:${q.rate}%;background:${scoreColor(q.rate)}"></i></span></span>`}</span>
+                        </summary>
+                        <div class="p-3 space-y-1.5">${(q.options || []).map((o) => {
+                            const ok = (q.correct || []).includes(o), wrong = q.top_wrong && q.top_wrong.answer === o;
+                            return `<div class="opt ${ok ? 'ok' : wrong ? 'bad' : ''}"><span>${esc(o)}</span>${ok ? '<span class="text-[10.5px] font-extrabold uppercase">верно</span>' : wrong ? '<span class="text-[10.5px] font-extrabold uppercase">частая ошибка</span>' : ''}</div>`;
+                        }).join('')}</div>
+                    </details>`).join('') || '<p class="lbl">Вопросов нет</p>'}</div>
+            </article>
+
+            <div class="grid grid-cols-1 lg:grid-cols-5 gap-3.5">
+                <article class="card lg:col-span-3">
+                    <div class="card-head">
+                        <div class="card-title"><span class="ticon" data-icon="users" data-size="15"></span><div><h3>Прохождения</h3><small id="att-sub">${fmt.int(d.attempts.total)} всего</small></div></div>
+                        <div class="flex items-center gap-2">
+                            <input id="att-q" type="search" class="field w-40" style="height:32px;font-size:12px" placeholder="Имя ученика">
+                            <select id="att-sort" class="field" style="height:32px;font-size:12px" aria-label="Сортировка прохождений">
+                                <option value="">Новые</option><option value="score">Лучшие</option><option value="-score">Худшие</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mt-3 overflow-x-auto"><table class="tbl" style="min-width:420px"><thead><tr><th>Ученик</th><th class="r">Балл</th><th>Результат</th><th>Дата</th></tr></thead><tbody id="att-body"></tbody></table></div>
+                    <div id="att-more" class="mt-3"></div>
+                </article>
+                <article class="card lg:col-span-2 space-y-4">
+                    <div class="card-title"><span class="ticon" data-icon="users" data-size="15"></span><div><h3>Автор</h3><small>${a.is_guest ? 'Гость без регистрации' : 'Зарегистрирован'}</small></div></div>
+                    <div class="flex items-center gap-3">
+                        <span class="grid place-items-center w-11 h-11 rounded-[14px] font-extrabold text-[16px] flex-none" style="background:${a.is_guest ? 'var(--tile-2)' : 'var(--indigo)'}">${esc((a.name || '?').slice(0, 1).toUpperCase())}</span>
+                        <div class="min-w-0"><p class="m-0 text-[15px] font-extrabold truncate">${esc(a.name)}</p><p class="lbl m-0 truncate">${esc(a.email || 'без email')}</p></div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">${[['Тестов', a.tests], ['Живых', a.alive], ['Просмотров', a.views], ['Прохождений', a.attempts]]
+                        .map(([l, v]) => `<div class="tile py-2"><p class="lbl m-0">${l}</p><p class="val m-0 mt-0.5">${fmt.int(v)}</p></div>`).join('')}</div>
+                    <div class="flex flex-wrap gap-2">
+                        <button type="button" class="btn btn-ghost btn-sm" data-act="author-tests">${icon('list', 12)}Все тесты автора</button>
+                        ${a.email ? `<a class="btn btn-ghost btn-sm" href="${CFG.urls.crm}?q=${encodeURIComponent(a.email)}">${icon('ext', 12)}Открыть в CRM</a>` : ''}
+                    </div>
+                    <div class="space-y-2.5 pt-1">${flags.map(([f, l]) => `
+                        <div class="flex items-center justify-between gap-3"><span class="text-[13px] font-semibold">${l}</span>
+                        <button type="button" class="switch" role="switch" aria-checked="${!!s[f]}" data-flag="${f}" aria-label="${l}"></button></div>`).join('')}</div>
+                </article>
+            </div>
+
+            ${s.source_text ? `<details class="card"><summary class="cursor-pointer flex items-center justify-between gap-3"><span class="text-[14px] font-bold">Исходный материал</span><span class="lbl">${fmt.int(s.source_len)} символов</span></summary>
+                <pre class="tile mt-3 mono text-[11.5px] leading-relaxed text-[color:var(--muted)] whitespace-pre-wrap break-words max-h-[50vh] overflow-auto">${esc(s.source_text)}</pre></details>` : ''}
+            <details class="card"><summary class="cursor-pointer text-[14px] font-bold">Параметры генерации</summary>
+                <pre class="tile mt-3 mono text-[11.5px] text-[color:var(--muted)] whitespace-pre-wrap break-all">${esc(JSON.stringify(s.generation_params || {}, null, 2))}</pre>
+                <p class="lbl mt-2 mb-0">Обратная связь AI по тесту: ${fmt.int(s.feedbacks)}</p></details>
+        </div>`;
+        hydrateIcons(box);
+        mountChart($('#d-chart', box), {
+            labels: d.series.labels, titles: d.series.titles, integer: true,
+            series: [{ name: 'Прохождения', values: d.series.attempts, color: C.yellow }],
+            line: { name: 'Просмотры', values: d.series.views, color: C.sky, axis: 'right', integer: true, format: fmt.int, axisFormat: fmt.compact },
+            emptyText: 'За период ни просмотров, ни прохождений', ariaLabel: 'Просмотры и прохождения',
+        });
+        mountChart($('#d-scores', box), { labels: d.scores.labels, titles: d.scores.labels.map((l) => `${l}% верных`), integer: true, maxBar: 22,
+            series: [{ name: 'Прохождения', values: d.scores.data, color: (i) => (i < 4 ? C.rose : i < 7 ? C.yellow : C.green) }], emptyText: 'Прохождений нет' });
+        mountChart($('#d-hours', box), { labels: d.hours.labels, titles: d.hours.labels.map((l) => `${l}:00`), integer: true, maxBar: 12,
+            series: [{ name: 'Прохождения', values: d.hours.data, color: C.yellow }], emptyText: 'Прохождений нет' });
+        renderAttempts(d.attempts, false);
+        updateDossierNav();
+    }
+
+    const att = { page: 1, q: '', sort: '' };
+    function renderAttempts(res, append) {
+        const body = $('#att-body');
+        if (!body) return;
+        const rows = res.items.map((r) => `<tr style="cursor:default"><td class="font-semibold" style="white-space:normal">${esc(r.name)}</td><td class="r mono">${r.score}/${r.total}</td>
+            <td><div class="flex items-center gap-2"><span class="font-bold w-10" style="color:${scoreColor(r.pct)}">${r.pct}%</span><div class="track w-16 h-[5px]"><i style="width:${r.pct}%;background:${scoreColor(r.pct)}"></i></div></div></td>
+            <td class="lbl">${esc(r.date)}</td></tr>`).join('');
+        if (append) body.insertAdjacentHTML('beforeend', rows);
+        else body.innerHTML = rows || '<tr><td colspan="4" class="py-8 text-center lbl" style="cursor:default">Прохождений нет</td></tr>';
+        att.page = res.page;
+        const shown = Math.min(res.page * res.per, res.total);
+        $('#att-sub').textContent = `${fmt.int(res.total)} ${plural(res.total, 'прохождение', 'прохождения', 'прохождений')}${att.q ? ` по «${att.q}»` : ''}`;
+        $('#att-more').innerHTML = shown < res.total ? `<button type="button" class="btn btn-ghost btn-sm w-full" data-att-more>Ещё ${fmt.int(Math.min(res.per, res.total - shown))} из ${fmt.int(res.total - shown)}</button>` : '';
+    }
+    async function loadAttempts(page, append) {
+        const q = new URLSearchParams({ page: String(page) });
+        if (att.q) q.set('q', att.q);
+        if (att.sort) q.set('sort', att.sort);
+        try {
+            const res = await api(`${withId(CFG.urls.attempts, state.open)}?${q}`, { key: 'attempts' });
+            renderAttempts(res, append);
+        } catch (e) { if (!e.aborted) toast(e.message, 'bad'); }
+    }
+
+    $('#dossier').addEventListener('click', async (e) => {
+        const c = e.target.closest('[data-copy]');
+        if (c) return copyText(c.dataset.copy);
+        if (e.target.closest('[data-att-more]')) return loadAttempts(att.page + 1, true);
+        const qs = e.target.closest('[data-qs]');
+        if (qs && state.dossier) { state.dossier.__qsort = qs.dataset.qs; const sc = $('#dossier').scrollTop; renderDossier(); $('#dossier').scrollTop = sc; return; }
+        const fl = e.target.closest('[data-flag]');
+        if (fl) return toggleFlag(fl);
+        const act = e.target.closest('[data-act]');
+        if (!act || !state.dossier) return;
+        const s = state.dossier.survey;
+        if (act.dataset.act === 'author-tests') {
+            state.cat.authorName = state.dossier.author.name;
+            drawer.close();
+            return applyCatalogPreset({ author: state.dossier.author.id_staff, status: 'all', created: 'all' });
+        }
+        if (act.dataset.act === 'hide' || act.dataset.act === 'restore') {
+            const hide = act.dataset.act === 'hide';
+            const ok = await confirmAction(hide
+                ? { title: 'Скрыть тест', text: `«${s.title}» пропадёт у автора из истории, как будто он удалил его сам. Прохождения и ссылки сохранятся, вернуть можно в любой момент.`, confirm: 'Скрыть' }
+                : { title: 'Вернуть тест', text: `«${s.title}» снова появится у автора в истории.`, confirm: 'Вернуть' });
+            if (!ok) return;
+            act.disabled = true;
+            try {
+                await api(CFG.urls.visibility, { method: 'POST', body: { survey_id: s.survey_id, deleted: hide } });
+                toast(hide ? 'Тест скрыт' : 'Тест возвращён', hide ? 'warn' : 'ok');
+                afterMutation();
+            } catch (err) { act.disabled = false; toast(err.message, 'bad'); }
+        }
+        if (act.dataset.act === 'destroy') {
+            const ok = await confirmAction({
+                title: 'Удалить тест из базы', danger: true, confirm: 'Удалить навсегда', typeToConfirm: 'удалить',
+                text: `«${s.title}» и все ${fmt.int(state.dossier.kpi.attempts)} ${plural(state.dossier.kpi.attempts, 'прохождение', 'прохождения', 'прохождений')} будут стёрты без возможности восстановления. Ссылки у учеников перестанут работать. Если нужно просто убрать тест — используйте «Скрыть».`,
+            });
+            if (!ok) return;
+            act.disabled = true;
+            try {
+                const res = await api(CFG.urls.destroy, { method: 'POST', body: { survey_id: s.survey_id, confirm: s.survey_id } });
+                toast(res.message || 'Тест удалён', 'warn');
+                drawer.close();
+                afterMutation();
+            } catch (err) { act.disabled = false; toast(err.message, 'bad'); }
+        }
+    });
+    $('#dossier').addEventListener('input', debounce((e) => {
+        if (e.target.id !== 'att-q') return;
+        att.q = e.target.value.trim();
+        loadAttempts(1, false);
+    }, 300));
+    $('#dossier').addEventListener('change', (e) => {
+        if (e.target.id !== 'att-sort') return;
+        att.sort = e.target.value;
+        loadAttempts(1, false);
+    });
+
+    async function toggleFlag(btn) {
+        const field = btn.dataset.flag, value = btn.getAttribute('aria-checked') !== 'true';
+        btn.disabled = true;
+        try {
+            await api(CFG.urls.flags, { method: 'POST', body: { survey_id: state.dossier.survey.survey_id, field, value } });
+            btn.setAttribute('aria-checked', String(value));
+            state.dossier.survey[field] = value;
+            const row = (state.cat.data?.items || []).find((x) => x.survey_id === state.dossier.survey.survey_id);
+            if (row) { row[field] = value; renderCatalog(); }
+        } catch (err) { toast(err.message, 'bad'); }
+        finally { btn.disabled = false; }
+    }
+
+    function afterMutation() {
+        loadCatalog();
+        loadOverview({ fresh: true });
+        if (state.open && drawer.isOpen()) loadDossier(state.open, { keepScroll: true });
+    }
+
+    /* =================================================================== *
+     *  Клавиатура
+     * =================================================================== */
+    document.addEventListener('keydown', (e) => {
+        const typing = e.target.closest('input, textarea, select, [contenteditable]');
+        if (e.key === 'Escape') {
+            if (modal.resolve) return closeModal(false);
+            if (drawer.isOpen()) return drawer.close();
+            if (typing && e.target.id === 'cat-q') e.target.blur();
+            return;
+        }
+        if (typing || modal.resolve) return;
+        if (e.key === '/') { e.preventDefault(); if (drawer.isOpen()) drawer.close(); goCatalog(); setTimeout(() => $('#cat-q').focus(), REDUCED ? 0 : 350); }
+        if (drawer.isOpen() && (e.key === 'j' || e.key === 'о')) stepSurvey(1);
+        if (drawer.isOpen() && (e.key === 'k' || e.key === 'л')) stepSurvey(-1);
+    });
+
+    /* =================================================================== *
+     *  Старт и автообновление
+     * =================================================================== */
+    let refreshing = false;
+    async function loadAll(fresh = false) {
+        if (refreshing) return;
+        refreshing = true;
+        const btn = $('#btn-refresh');
+        btn.disabled = true;
+        btn.querySelector('svg')?.classList.add('spin');
+        try { await Promise.allSettled([loadOverview({ fresh }), loadCatalog()]); }
+        finally { btn.disabled = false; btn.querySelector('svg')?.classList.remove('spin'); refreshing = false; }
+    }
+    $('#btn-refresh').addEventListener('click', () => loadAll(true));
+    let timer = setInterval(() => { if (!document.hidden && !drawer.isOpen()) loadOverview(); }, 5 * 60 * 1000);
+    document.addEventListener('visibilitychange', () => { if (document.hidden) { clearInterval(timer); } else { timer = setInterval(() => { if (!document.hidden && !drawer.isOpen()) loadOverview(); }, 5 * 60 * 1000); } });
+
+    hydrateIcons();
+    renderRangeControls();
+    syncCatalogControls();
+    renderSkeletons();
+    loadAll();
+    if (state.open) openSurvey(state.open);
+})();
 </script>
 </body>
 </html>

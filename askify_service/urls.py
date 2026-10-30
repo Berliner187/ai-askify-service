@@ -9,6 +9,19 @@ from .admin_dashboard import (
     admin_dashboard_ai_api,
     admin_dashboard_payments_api,
 )
+
+from .admin_surveys_views import (
+    admin_surveys_ops_view,
+    api_admin_surveys_overview,
+    api_admin_surveys_catalog,
+    api_admin_surveys_export,
+    api_admin_survey_details,
+    api_admin_survey_attempts,
+    api_admin_survey_visibility,
+    api_admin_survey_flags,
+    api_admin_delete_survey,
+)
+
 from . import crm_views
 from askify_app.settings import DEBUG
 
@@ -91,10 +104,14 @@ urlpatterns = [
 
     path('api/admin/delete-user/', api_admin_delete_user, name='api_admin_delete_user'),
     path('ops/surveys/', admin_surveys_ops_view, name='admin_surveys_ops'),
-    path('api/admin/surveys/search/', api_admin_search_surveys, name='api_admin_search_surveys'),
+    path('api/admin/surveys/overview/', api_admin_surveys_overview, name='api_admin_surveys_overview'),
+    path('api/admin/surveys/catalog/', api_admin_surveys_catalog, name='api_admin_surveys_catalog'),
+    path('api/admin/surveys/export.csv', api_admin_surveys_export, name='api_admin_surveys_export'),
     path('api/admin/surveys/details/<str:survey_id>/', api_admin_survey_details, name='api_admin_survey_details'),
+    path('api/admin/surveys/details/<str:survey_id>/attempts/', api_admin_survey_attempts, name='api_admin_survey_attempts'),
+    path('api/admin/surveys/visibility/', api_admin_survey_visibility, name='api_admin_survey_visibility'),
+    path('api/admin/surveys/flags/', api_admin_survey_flags, name='api_admin_survey_flags'),
     path('api/admin/surveys/delete/', api_admin_delete_survey, name='api_admin_delete_survey'),
-
 
     path('profile/<str:username>/', profile_view, name='profile'),
     path('profile/', redirect_to_profile, name='profile_redirect'),

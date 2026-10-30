@@ -423,7 +423,7 @@
                         <p class="mt-1 text-sm text-[var(--color-text-secondary)]">Для регулярной работы</p>
                         <div class="my-6">
                             <p class="text-2xl text-gray-400 line-through">2070 ₽</p>
-                            <p class="text-6xl font-extrabold text-white">1440<span class="text-2xl font-medium text-gray-400"> ₽</span></p>
+                            <p class="text-6xl font-extrabold text-white">1650<span class="text-2xl font-medium text-gray-400"> ₽</span></p>
                             <p class="text-white/80 m-2">~120 ₽ / неделя</p>
                             <p class="text-sm text-gray-400">абонемент, не подписка</p>
                             <p class="mt-2 text-lg font-bold text-[var(--color-accent-secondary)]">Экономия 61%</p>
@@ -729,10 +729,9 @@
                     <label class="flex items-start gap-3 cursor-pointer">
                         <input type="checkbox" id="terms-checkbox" class="mt-1 h-4 w-4 rounded border-gray-500 bg-gray-700 text-[var(--color-accent-primary)] focus:ring-[var(--color-accent-primary)]">
                         <span class="text-xs text-gray-400">
-                            Нажимая кнопку, я принимаю условия
-                            <a href="/docs/public-offer" target="_blank" class="text-[var(--color-accent-primary)] hover:underline">Публичной оферты</a>
-                            и даю согласие на обработку персональных данных в соответствии с
-                            <a href="/docs/privacy-policy" target="_blank" class="text-[var(--color-accent-primary)] hover:underline">Политикой конфиденциальности</a>.
+                            Я принимаю условия <a href="{% url 'document_view' 'public-offer' %}" target="_blank" class="text-indigo-400 underline">Лицензионного договора</a>, 
+                            ознакомлен(-а) с <a href="{% url 'document_view' 'privacy-policy' %}" target="_blank" class="text-indigo-400 underline">Политикой конфиденциальности</a> 
+                            и даю <a href="{% url 'document_view' 'consent' %}" target="_blank" class="text-indigo-400 underline">Согласие на обработку данных</a>.
                         </span>
                     </label>
                 </div>

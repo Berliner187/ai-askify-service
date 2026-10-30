@@ -30,3 +30,9 @@ app.log.3
 /askify_service/static/vendor
 /askify_app/__pycache__
 *.csv
+askify_service/templates/.DS_Store
+*.mp4
+askify_app/forbidden_words.txt
+askify_service/.DS_Store
+askify_service/static/.DS_Store
+askify_service/templates/.DS_Store

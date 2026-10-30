@@ -12,13 +12,18 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.db import transaction
 from django.contrib.auth.signals import user_logged_in
-import secrets
+from django.core.exceptions import ValidationError
+from django.core.validators import RegexValidator
+from django.utils.text import slugify
+from django.contrib.postgres.indexes import GinIndex, OpClass
+from django.db.models.functions import Upper
 
 from datetime import timedelta, datetime
 import json
 import uuid
 import hashlib
 import random
+import secrets
 
 from .converter_pdf import *
 
@@ -173,6 +178,15 @@ class Survey(models.Model):
                 "type": q_type,
             })
         return normalized
+    
+    class Meta:
+        indexes = [
+            models.Index(fields=["id_staff", "created_at"], name="survey_staff_created"),
+            models.Index(fields=["created_at"], name="survey_created"),
+            models.Index(fields=["is_visible", "created_at"], name="survey_alive_created"),
+            models.Index(fields=["view_count"], name="survey_views"),
+        ]
+
 
 
 class PromoCode(models.Model):
@@ -191,7 +205,11 @@ class SurveyUniqueView(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('survey', 'view_hash')
+        unique_together = ("survey", "view_hash")
+        indexes = [
+            models.Index(fields=["timestamp"], name="suview_ts"),
+            models.Index(fields=["survey", "timestamp"], name="suview_survey_ts"),
+        ]
 
 
 class UserAnswers(models.Model):
@@ -958,6 +976,12 @@ class TestAttempt(models.Model):
             return "—"
         m, s = divmod(self.duration_seconds, 60)
         return f"{m}:{s:02d}"
+    
+    class Meta:
+        indexes = [
+            models.Index(fields=["created_at"], name="attempt_created"),
+            models.Index(fields=["survey", "created_at"], name="attempt_survey_created"),
+        ]
 
 
 class Question(models.Model):
