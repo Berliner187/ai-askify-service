@@ -32,6 +32,8 @@
     <link rel="stylesheet" href="{% static 'css/tactile.css' %}">
     <script src="{% static 'js/tactile.js' %}" defer></script>
 
+    {% include 'components/shell_assets.html' %}
+
     <style>
         /*
           Каркас: слева док навигации, затем две колонки.
@@ -266,11 +268,11 @@
         .pay-legal a { color: var(--fg-2); }
 
         .secure { display: grid; gap: 12px; margin-top: 6px; padding: 16px; border-radius: var(--r-md); background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); }
-        .secure-row { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; color: var(--fg-2); }
+        .secure-row { display: flex; gap: 10px; align-items: center; font-size: 13px; color: var(--fg-2); justify-content: center; }
         .secure-row .icon { font-size: 16px; color: var(--fg); margin-top: 1px; }
         .secure-row b { color: var(--fg); font-weight: 600; }
 
-        .methods { display: flex; flex-wrap: wrap; gap: 6px; }
+        .methods { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
         .pm {
             height: 30px; padding: 0 11px; display: inline-flex; align-items: center; gap: 6px; border-radius: 9px;
             font: 700 12px/1 var(--f-body); letter-spacing: -0.01em; color: #E4E4E7;
@@ -409,6 +411,8 @@
 </head>
 
 <body>
+    {% include 'components/shell_nav.html' with nav_active='' %}
+
     <svg width="0" height="0" style="position:absolute" aria-hidden="true">
         <symbol id="i-plus" viewBox="0 0 16 16"><path d="M8 3v10M3 8h10" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></symbol>
         <symbol id="i-history" viewBox="0 0 24 24"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M3.5 3.5v4.4h4.4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 7.5V12l3 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
@@ -425,39 +429,7 @@
         <symbol id="i-inf" viewBox="0 0 24 24"><path d="M7 8.5c-2 0-3.5 1.6-3.5 3.5S5 15.5 7 15.5c3.5 0 6.5-7 10-7 2 0 3.5 1.6 3.5 3.5S19 15.5 17 15.5c-3.5 0-6.5-7-10-7z" fill="none" stroke="currentColor" stroke-width="1.9"/></symbol>
     </svg>
 
-    <!-- ЛЕВЫЙ ВЕРТИКАЛЬНЫЙ ДОК (DESKTOP) -->
-    <aside class="dock-desktop" aria-label="Навигация">
-        <a href="/" class="dock-btn dock-btn--home" title="Главная">
-            <img src="{% static 'img/logo.png' %}" alt="Летучка">
-        </a>
-        {% if username == 0 %}
-            <a href="{% url 'login' %}" class="dock-btn" title="Войти"><svg class="icon"><use href="#i-login"/></svg></a>
-        {% endif %}
-        <div class="dock-sep"></div>
-        <nav>
-            <a href="{% url 'create' %}" class="dock-btn dock-btn--primary" title="Создать тест"><svg class="icon"><use href="#i-plus"/></svg></a>
-            {% if request.user.is_authenticated %}
-                <a href="{% url 'history' %}" class="dock-btn" title="Мои тесты"><svg class="icon"><use href="#i-history"/></svg></a>
-                <a href="{% url 'profile_redirect' %}" class="dock-btn" title="Профиль"><svg class="icon"><use href="#i-user"/></svg></a>
-            {% endif %}
-        </nav>
-        {% if request.user.is_authenticated %}
-            <div class="dock-sep"></div>
-            <a href="{% url 'logout' %}" class="dock-btn dock-btn--exit" title="Выйти"><svg class="icon"><use href="#i-logout"/></svg></a>
-        {% endif %}
-    </aside>
-
-    <!-- МОБИЛЬНЫЙ НИЖНИЙ DOCK -->
-    <nav class="dock-mobile" aria-label="Навигация">
-        <a href="/" title="Главная"><svg class="icon"><use href="#i-home"/></svg></a>
-        <a href="{% url 'create' %}" class="dock-plus" title="Создать тест"><svg class="icon"><use href="#i-plus"/></svg></a>
-        {% if request.user.is_authenticated %}
-            <a href="{% url 'history' %}" title="Мои тесты"><svg class="icon"><use href="#i-history"/></svg></a>
-            <a href="{% url 'profile_redirect' %}" title="Профиль"><svg class="icon"><use href="#i-user"/></svg></a>
-        {% else %}
-            <a href="/login" class="dock-login">Войти</a>
-        {% endif %}
-    </nav>
+    {% include 'components/shell_island.html' with island_here='Выбор тарифа<span class="hidden sm:inline text-[#A1A1AA]"></span>' island_meta=username %}
 
     <div class="page">
     <main class="co">
