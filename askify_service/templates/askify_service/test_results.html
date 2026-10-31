@@ -705,13 +705,17 @@
 
     <div class="shell">
 
-        {% include 'components/shell_island.html' with island_here='<a href="/history" class="text-[#A1A1AA] hover:text-white/90 transition">Мои тесты</a><span class="hidden sm:inline text-[#A1A1AA]">&nbsp;/&nbsp;</span><a id="title-island" class="hidden sm:inline truncate font-medium max-w-[250px] md:max-w-[400px] text-[#A1A1AA] hover:text-white/90 transition"></a><span class="text-[#A1A1AA]">&nbsp;/&nbsp;</span><span class="font-medium">Аналитика</span>' island_meta=username|slice:":2"|upper island_meta_icon='user' island_badge=user.is_superuser|yesno:"S," %}
+        {% include 'components/shell_island.html' with island_here='<a href="/history" class="text-[#A1A1AA] hover:text-white/90 transition">Мои тесты</a><span class="hidden sm:inline text-[#A1A1AA]">&nbsp;/&nbsp;</span><a id="title-island" class="hidden sm:inline truncate font-medium max-w-[250px] md:max-w-[400px] text-[#A1A1AA] hover:text-white/90 transition"></a><span class="text-[#A1A1AA]">&nbsp;/&nbsp;</span><span class="font-medium">Аналитика</span>' %}
         <script>
-        (function () {
-            var t = document.getElementById('title-island');
-            t.textContent = "{{ survey.title|escapejs }}";
-            t.href = "{% url 'preview_test' survey.survey_id %}";
-        })();
+            (function () {
+                var t = document.getElementById('title-island');
+                t.textContent = "{{ survey.title|escapejs }}";
+                t.href = "{% url 'preview_test' survey.survey_id %}";
+
+                document.querySelector('#dynamic-island .ls-isl-right')
+                    .insertAdjacentHTML('afterbegin',
+                    '<a href="{% url "preview_test" survey.survey_id %}" class="ls-isl-btn"><svg class="ls-icon"><use href="#ls-i-list"/></svg><span>К вопросам</span></a>');
+            })();
         </script>
 
         <div class="wrap">
