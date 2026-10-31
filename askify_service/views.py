@@ -7057,7 +7057,7 @@ def admin_stats(request):
         "page_count": page_obj.paginator.num_pages,
     }
 
-    return render(request, "admin.html", context)
+    return render(request, "admin/admin_dashboard.html", context)
 
 
 @login_required
@@ -8405,7 +8405,7 @@ def document_view(request, slug):
         return render(request, "404.html", status=404)
  
     file_path = os.path.join(DOCS_DIR, f"{slug}.md")
-    tracer_l.debug(f"file_path: {file_path}")
+    tracer_l.debug(f"{get_client_ip(request)} file_path: {file_path}")
  
     if not os.path.isfile(file_path):
         return render(request, "404.html", status=404)
