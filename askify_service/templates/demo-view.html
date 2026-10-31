@@ -786,7 +786,12 @@
     <!-- КОНТЕНТНАЯ ЗОНА -->
     <div class="lg:pl-28 flex-grow flex flex-col">
 
-        {% include 'components/shell_island.html' with island_here='<a href="/history" class="text-[#A1A1AA] hover:text-white transition">Мои тесты</a><span class="hidden sm:inline text-[#A1A1AA]">&nbsp;/&nbsp;</span><span id="title-island" class="hidden sm:inline truncate font-medium max-w-[250px] md:max-w-[400px]"></span>' island_meta=username|slice:":2"|upper island_meta_icon='user' island_badge=user.is_superuser|yesno:"S," %}
+        {% include 'components/shell_island.html' with island_here='<a href="/history" class="text-[#A1A1AA] hover:text-white transition">Мои тесты</a><span class="hidden sm:inline text-[#A1A1AA]">&nbsp;/&nbsp;</span><span id="title-island" class="hidden sm:inline truncate font-medium max-w-[250px] md:max-w-[400px]"></span>' %}
+        <script>
+        document.querySelector('#dynamic-island .ls-isl-right')
+            .insertAdjacentHTML('afterbegin',
+            '<a href="{% url "preview_test_result" survey_id %}" class="ls-isl-btn"><svg class="ls-icon"><use href="#ls-i-list"/></svg><span>Аналитика</span></a>');
+        </script>
         
         <!-- BENTO GRID -->
         <main class="max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 mt-4 sm:mt-6 flex-grow">
@@ -1376,8 +1381,8 @@
                 </aside>
             </div>
 
-            {% include 'components/footer.html' %}
         </main>
+        {% include 'components/footer.html' %}
 
         <!-- ============================================================== -->
         <!--   КОНВЕРСИОННАЯ МОДАЛКА БЫСТРОЙ РЕГИСТРАЦИИ (152-ФЗ)           -->

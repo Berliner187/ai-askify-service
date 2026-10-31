@@ -16,6 +16,17 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=Wix+Madefor+Display:wght@600;700;800&display=swap" rel="stylesheet">
 
+    {% if debug %}
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    {% else %}
+        <script src="{% static 'vendor/tailwind.full.min.js' %}"></script>
+        <script src="{% static 'vendor/jquery.min.js' %}"></script>
+    {% endif %}
+
+    {% include 'components/shell_assets.html' %}
+    {% include 'components/shell_assets_js.html' %}
+
     <style>
         /* ====================================================== */
         /*   ТОКЕНЫ                                                */
@@ -87,49 +98,6 @@
         @media (min-width: 640px) { .wrap { padding: 0 24px; } }
         @media (min-width: 1024px) { .shell { padding-left: 104px; padding-bottom: 0; } }
         main.wrap { flex: 1; padding-top: 8px; padding-bottom: 8px; display: flex; flex-direction: column; gap: 20px; }
-
-        /* ---------- Левый док ---------- */
-        .dock {
-            display: none;
-            position: fixed; left: 20px; top: 50%; transform: translateY(-50%);
-            z-index: 40;
-            flex-direction: column; align-items: center; gap: 14px;
-            padding: 14px 10px;
-            background: var(--card); border: 1px solid var(--line); border-radius: 26px;
-        }
-        @media (min-width: 1024px) { .dock { display: flex; } }
-        .dock nav { display: flex; flex-direction: column; gap: 10px; }
-        .dock-sep { width: 22px; height: 1px; background: var(--line); }
-        .dock-btn {
-            width: 44px; height: 44px; border-radius: 16px;
-            display: flex; align-items: center; justify-content: center;
-            color: var(--fg-2); background: rgba(255,255,255,.03); border: 1px solid transparent;
-            transition: color .2s, background-color .2s, border-color .2s;
-        }
-        .dock-btn .icon { width: 20px; height: 20px; }
-        .dock-btn:hover { color: var(--fg); background: rgba(255,255,255,.07); }
-        .dock-btn--home img { width: 22px; height: auto; }
-        .dock-btn--primary { color: #f1f1f1; background: var(--accent); }
-        .dock-btn--primary:hover { background: var(--accent-hi); color: #f1f1f1; }
-        .dock-btn--exit:hover { color: var(--amber); background: var(--amber-bg); }
-
-        /* ---------- Нижний док (мобайл) ---------- */
-        .mdock {
-            position: fixed; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom)); transform: translateX(-50%);
-            z-index: 40;
-            display: flex; align-items: center; gap: 6px;
-            padding: 6px;
-            background: rgba(20,19,25,.96); border: 1px solid var(--line-2); border-radius: 999px;
-        }
-        @media (min-width: 1024px) { .mdock { display: none; } }
-        .mdock a {
-            min-width: 44px; height: 44px; padding: 0 10px; border-radius: 999px;
-            display: flex; align-items: center; justify-content: center; color: var(--fg-2);
-        }
-        .mdock a:hover { color: var(--fg); }
-        .mdock .icon { width: 20px; height: 20px; }
-        .mdock-plus { background: var(--accent); color: #fff !important; }
-        .mdock-login { font-size: 13px; font-weight: 600; color: var(--accent-soft) !important; }
 
         /* ====================================================== */
         /*   ОСТРОВ-ШАПКА                                          */
@@ -733,65 +701,18 @@
         <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8.5" y="8.5" width="12" height="12" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M15.5 8.5V6a2.5 2.5 0 0 0-2.5-2.5H6A2.5 2.5 0 0 0 3.5 6v7A2.5 2.5 0 0 0 6 15.5h2.5" fill="none" stroke="currentColor" stroke-width="1.9"/></symbol>
     </svg>
 
-    <!-- ЛЕВЫЙ ВЕРТИКАЛЬНЫЙ ДОК (DESKTOP) -->
-    <aside class="dock" aria-label="Навигация">
-        <a href="/" class="dock-btn dock-btn--home" title="Главная">
-            <img src="{% static 'img/logo.png' %}" alt="Летучка">
-        </a>
-        <div class="dock-sep"></div>
-        <nav>
-            <a href="{% url 'create' %}" class="dock-btn dock-btn--primary" title="Создать тест" aria-label="Создать тест"><svg class="icon"><use href="#i-plus"/></svg></a>
-            {% if username != 0 %}
-                <a href="{% url 'history' %}" class="dock-btn" title="История тестов" aria-label="История тестов"><svg class="icon"><use href="#i-history"/></svg></a>
-                <a href="{% url 'profile_redirect' %}" class="dock-btn" title="Профиль" aria-label="Профиль"><svg class="icon"><use href="#i-user"/></svg></a>
-            {% endif %}
-        </nav>
-        {% if username != 0 %}
-            <div class="dock-sep"></div>
-            <a href="{% url 'logout' %}" class="dock-btn dock-btn--exit" title="Выйти" aria-label="Выйти"><svg class="icon"><use href="#i-logout"/></svg></a>
-        {% endif %}
-    </aside>
-
-    <!-- МОБИЛЬНЫЙ НИЖНИЙ ДОК -->
-    <nav class="mdock" aria-label="Навигация">
-        <a href="/" aria-label="Главная"><svg class="icon"><use href="#i-home"/></svg></a>
-        <a href="{% url 'create' %}" class="mdock-plus" aria-label="Создать тест"><svg class="icon"><use href="#i-plus"/></svg></a>
-        {% if username != 0 %}
-            <a href="{% url 'history' %}" aria-label="История тестов"><svg class="icon"><use href="#i-history"/></svg></a>
-            <a href="{% url 'profile_redirect' %}" aria-label="Профиль"><svg class="icon"><use href="#i-user"/></svg></a>
-        {% else %}
-            <a href="/login" class="mdock-login">Войти</a>
-        {% endif %}
-    </nav>
+    {% include 'components/shell_nav.html' with nav_active='create' %}
 
     <div class="shell">
 
-        <!-- ОСТРОВ-ШАПКА -->
-        <header class="isl-wrap" id="isl-wrap">
-            <div class="isl" id="dynamic-island">
-                <div class="isl-row" id="island-controls">
-                    <div class="crumbs">
-                        <a href="/" aria-label="Главная"><img src="{% static 'img/logo.png' %}" alt=""></a>
-                        <span class="sep" aria-hidden="true">/</span>
-                        <a href="{% url 'history' %}" class="cur cur--title" title="{{ survey.title }}">{{ survey.title }}</a>
-                        <span class="sep" aria-hidden="true">/</span>
-                        <span class="cur">Аналитика</span>
-                    </div>
-                    <a href="{% url 'preview_test' survey.survey_id %}" class="isl-btn isl-hide-sm">
-                        <svg class="icon"><use href="#i-list"/></svg><span>К вопросам</span>
-                    </a>
-                </div>
-                <div class="isl-note" id="island-notice" role="status" aria-live="polite">
-                    <span class="isl-note-ico" id="island-icon-box"><svg class="icon"><use href="#i-check"/></svg></span>
-                    <span id="island-text"></span>
-                </div>
-                <span class="isl-progress" aria-hidden="true"><i id="isl-progress"></i></span>
-            </div>
-            <div class="isl-sub">
-                <a href="{% url 'history' %}"><svg class="icon"><use href="#i-back"/></svg><span>К истории</span></a>
-                <a href="{% url 'preview_test' survey.survey_id %}"><svg class="icon"><use href="#i-list"/></svg><span>К вопросам</span></a>
-            </div>
-        </header>
+        {% include 'components/shell_island.html' with island_here='<a href="/history" class="text-[#A1A1AA] hover:text-white/90 transition">Мои тесты</a><span class="hidden sm:inline text-[#A1A1AA]">&nbsp;/&nbsp;</span><a id="title-island" class="hidden sm:inline truncate font-medium max-w-[250px] md:max-w-[400px] text-[#A1A1AA] hover:text-white/90 transition"></a><span class="text-[#A1A1AA]">&nbsp;/&nbsp;</span><span class="font-medium">Аналитика</span>' island_meta=username|slice:":2"|upper island_meta_icon='user' island_badge=user.is_superuser|yesno:"S," %}
+        <script>
+        (function () {
+            var t = document.getElementById('title-island');
+            t.textContent = "{{ survey.title|escapejs }}";
+            t.href = "{% url 'preview_test' survey.survey_id %}";
+        })();
+        </script>
 
         <div class="wrap">
             <!-- 1. НАЗВАНИЕ И ДЕЙСТВИЯ -->
@@ -1143,10 +1064,8 @@
                     {% endif %}
                 </div>
             </section>
+            {% include 'components/footer.html' %}
         </main>
-
-        <!-- 5. ФУТЕР -->
-        {% include 'components/footer.html' %}
     </div>
 
     <!-- Тултип матрицы -->
@@ -1267,38 +1186,9 @@
             }
         })();
 
-        /* ---------- Остров: уведомления ---------- */
-        var island = $('dynamic-island'), islTimer;
-        var Island = window.Island = {
-            notify: function (text, kind) {
-                $('island-text').textContent = text;
-                var box = $('island-icon-box');
-                box.classList.toggle('is-warn', kind === 'warn');
-                box.innerHTML = '<svg class="icon"><use href="#' + (kind === 'warn' ? 'i-warn' : kind === 'link' ? 'i-link' : 'i-check') + '"/></svg>';
-                island.classList.add('is-notify');
-                clearTimeout(islTimer);
-                islTimer = setTimeout(function () { island.classList.remove('is-notify'); }, 2200);
-            }
-        };
-
-        /* ---------- Остров: компакт и прогресс ---------- */
-        var islWrap = $('isl-wrap'), prog = $('isl-progress'), compact = false, ticking = false;
-        function onScroll() {
-            if (ticking) return; ticking = true;
-            requestAnimationFrame(function () {
-                var y = window.scrollY, next = compact ? y > 24 : y > 64;
-                if (next !== compact) { compact = next; islWrap.classList.toggle('is-compact', compact); }
-                var max = document.documentElement.scrollHeight - innerHeight;
-                prog.style.transform = 'scaleX(' + (max > 0 ? Math.min(1, y / max) : 0).toFixed(4) + ')';
-                ticking = false;
-            });
-        }
-        addEventListener('scroll', onScroll, { passive: true });
-        onScroll();
-
         /* ---------- Копирование ссылки ---------- */
         function copyLink() {
-            function done() { Island.notify('Ссылка на тест скопирована', 'link'); }
+            function done() { if (window.Island && Island.success) Island.success('Ссылка на тест скопирована', 'link'); }
             if (navigator.clipboard && window.isSecureContext) {
                 navigator.clipboard.writeText(shareLink).then(done).catch(function () { fallbackCopy(shareLink); done(); });
             } else { fallbackCopy(shareLink); done(); }

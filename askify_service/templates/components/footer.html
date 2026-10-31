@@ -95,3 +95,37 @@
 
     <div class="ls-foot-mark" aria-hidden="true"><span>Летучка</span></div>
 </footer>
+
+<script>
+    document.addEventListener('click', function (e) {
+        var btn = e.target.closest('[data-ls-copy]');
+        if (!btn) return;
+        var text = btn.dataset.lsCopy;
+        var use = btn.querySelector('use');
+
+        function done() {
+            use.setAttribute('href', '#ls-i-check');
+            btn.classList.add('is-copied');
+            clearTimeout(btn._t);
+            btn._t = setTimeout(function () {
+                use.setAttribute('href', '#ls-i-copy');
+                btn.classList.remove('is-copied');
+            }, 1600);
+            if (window.Island) Island.success('Адрес скопирован', 'copy');
+        }
+
+        function fallback() {
+            var ta = document.createElement('textarea');
+            ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+            document.body.appendChild(ta); ta.select();
+            try { document.execCommand('copy'); done(); } catch (err) {}
+            ta.remove();
+        }
+
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(text).then(done, fallback);
+        } else {
+            fallback();
+        }
+    });
+</script>
