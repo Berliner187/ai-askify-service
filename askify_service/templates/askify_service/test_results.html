@@ -1146,20 +1146,7 @@
         </main>
 
         <!-- 5. ФУТЕР -->
-        <footer class="wrap foot-in">
-            <div class="foot-row">
-                <div class="foot-logo">
-                    <a href="/" aria-label="Летучка"><img src="{% static 'img/logo-header.webp' %}" alt="Летучка" height="24" loading="lazy"></a>
-                    <span>© 2024–2026</span>
-                </div>
-                <nav class="foot-links" aria-label="Документы">
-                    <a href="/docs/public-offer">Оферта</a>
-                    <a href="/docs/privacy-policy">Конфиденциальность</a>
-                    <a href="mailto:support@letychka.ru">support@letychka.ru</a>
-                    <a href="https://berliner187.github.io/" target="_blank" rel="noopener nofollow">Design &amp; Dev by Kozak</a>
-                </nav>
-            </div>
-        </footer>
+        {% include 'components/footer.html' %}
     </div>
 
     <!-- Тултип матрицы -->

@@ -355,10 +355,6 @@
         .faq details p { padding: 0 20px 18px; font-size: 14px; color: var(--fg-2); max-width: 64ch; }
         .faq a { color: var(--accent-soft); }
 
-        .legal-foot { padding-top: 24px; border-top: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 12px; color: var(--fg-3); }
-        .legal-foot a { color: var(--fg-2); text-decoration: none; }
-        .legal-foot a:hover { color: #fff; }
-
         /* ====================================================== */
         /*   ПЕРЕХОД В Т-БАНК (показывается, пока идёт инициализация) */
         /* ====================================================== */
@@ -712,15 +708,10 @@
                 </div>
             </section>
 
-            <footer class="legal-foot">
-                <a href="/docs/public-offer" target="_blank">Публичная оферта</a>
-                <a href="/docs/privacy-policy" target="_blank">Политика конфиденциальности</a>
-                <span>ИНН 773613171558, ОГРНИП 3245081071286</span>
-                <span>© 2024–2026 Летучка AI</span>
-            </footer>
         </div>
     </main>
     </div>
+    {% include 'components/footer.html' %}
 
     <!-- Плашка «К оплате» (телефон) -->
     <button type="button" class="to-pay" id="to-pay" aria-hidden="true" tabindex="-1">К оплате <b id="to-pay-price">450 ₽</b></button>

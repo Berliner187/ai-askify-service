@@ -1,0 +1,97 @@
+{% load static %}
+<style>
+    /* ---------- Футер ---------- */
+    .ls-foot {
+        --mx: 50%;
+        position: relative; overflow: hidden; margin-top: auto;
+        padding-top: 64px;
+        margin-top: 200px;
+        border-top: 1px solid var(--ls-line);
+    }
+    .ls-foot-grid { display: grid; gap: 36px; grid-template-columns: 1fr; }
+    @media (min-width: 640px)  { .ls-foot-grid { grid-template-columns: 1fr 1fr; } .ls-foot-brand { grid-column: 1 / -1; } }
+    @media (min-width: 1024px) { .ls-foot-grid { grid-template-columns: 2fr 1fr 1fr; } .ls-foot-brand { grid-column: auto; } }
+
+    .ls-foot-logo { display: inline-flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+    .ls-foot-logo img { width: 90px; height: auto; display: block; }
+    .ls-foot-brand p { margin: 0; max-width: 34ch; font-size: 14px; line-height: 1.55; color: var(--ls-fg-3); }
+
+    .ls-foot-col { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
+    .ls-foot-col h4 { margin: 0 0 2px; font-size: 13px; font-weight: 600; color: var(--ls-fg-1); }
+    .ls-foot-col > a { font-size: 14px; color: var(--ls-fg-3); transition: color .2s; text-decoration: none;}
+    .ls-foot-col > span { font-size: 12px; color: var(--ls-fg-3); }
+    .ls-foot-col > a:hover { color: var(--ls-fg); }
+
+    .ls-foot-mail {
+        display: inline-flex; align-items: center; gap: 10px; height: 38px; padding: 0 12px; border-radius: 12px;
+        font: inherit; font-size: 13.5px; font-weight: 500; color: var(--ls-fg-1); cursor: pointer;
+        background: rgba(255,255,255,.04); border: 1px solid var(--ls-line);
+        transition: background-color .2s, border-color .2s;
+    }
+    .ls-foot-mail:hover { background: rgba(255,255,255,.08); border-color: var(--ls-line-2); }
+    .ls-foot-mail .ls-icon { width: 14px; height: 14px; color: var(--ls-fg-3); transition: color .2s; }
+    .ls-foot-mail.is-copied .ls-icon { color: var(--ls-accent-soft); }
+
+    .ls-foot-bar {
+        display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px;
+        margin-top: 48px; padding: 20px 0; border-top: 1px solid var(--ls-line);
+        font-size: 12.5px; color: var(--ls-fg-4);
+    }
+    .ls-foot-bar a { text-decoration: none; }
+    .ls-foot-credit { color: var(--ls-fg-3); transition: color .2s; }
+    .ls-foot-credit b { font-weight: 600; color: var(--ls-fg-2); transition: color .2s; }
+    .ls-foot-credit:hover, .ls-foot-credit:hover b { color: var(--ls-fg); }
+
+    .ls-foot-mark {
+        pointer-events: none; user-select: none;
+        height: clamp(56px, 11vw, 150px); overflow: hidden;
+        display: flex; justify-content: center;
+    }
+    .ls-foot-mark span {
+        font-family: 'Wix Madefor Display', 'Golos Text', system-ui, sans-serif;
+        font-size: clamp(80px, 16vw, 220px); font-weight: 800; line-height: .9; letter-spacing: -0.05em; white-space: nowrap;
+        color: transparent;
+        background: radial-gradient(380px circle at var(--mx) 35%, rgba(165,180,252,.28), rgba(255,255,255,.035) 65%);
+        -webkit-background-clip: text; background-clip: text;
+    }
+</style>
+
+<footer class="ls-foot" data-ls-foot>
+    <div class="ls-wrap">
+        <div class="ls-foot-grid">
+
+            <div class="ls-foot-brand">
+                <a href="/" class="ls-foot-logo">
+                    <img src="{% static 'img/logo-header.png' %}" alt="">
+                </a>
+                <p>Сервис для составления тестов по любым материалам и онлайн тестирования</p>
+            </div>
+
+            <nav class="ls-foot-col" aria-label="Документы">
+                <h4>Документы</h4>
+                <a href="/docs/public-offer">Публичная оферта</a>
+                <a href="/docs/privacy-policy">Политика конфиденциальности</a>
+                <a href="/docs/consent">Согласие на обработку ПД</a>
+                <span>ИНН 773613171558, ОГРНИП 3245081071286</span>
+            </nav>
+
+            <div class="ls-foot-col">
+                <h4>Поддержка</h4>
+                <button type="button" class="ls-foot-mail" data-ls-copy="support@letychka.ru" aria-label="Скопировать адрес поддержки">
+                    <span>support@letychka.ru</span>
+                    <svg class="ls-icon"><use href="#ls-i-copy"/></svg>
+                </button>
+                <a href="mailto:support@letychka.ru" class="ls-foot-sub">Написать письмо</a>
+            </div>
+        </div>
+
+        <div class="ls-foot-bar">
+            <span>• 2024–{% now "Y" %} Летучка AI</span>
+            <a href="https://berliner187.github.io/" target="_blank" rel="noopener nofollow" class="ls-foot-credit">
+                Design &amp; Dev by <b>Kozak</b>
+            </a>
+        </div>
+    </div>
+
+    <div class="ls-foot-mark" aria-hidden="true"><span>Летучка</span></div>
+</footer>

@@ -214,19 +214,6 @@ def medicine_promo(request):
     return render(request, 'landings/medicine.html')
 
 
-@check_legal_process
-def available_plans(request):
-    latest_posts = BlogPost.objects.all().order_by("-created_at")[:4]
-
-    context = {
-        "page_title": "Тарифы и пакеты | Летучка Ру — создать тест онлайн из PDF и Word",
-        "latest_posts": latest_posts,
-        "username": get_username(request) if request.user.is_authenticated else 0,
-        "debug": DEBUG,
-    }
-    return render(request, "askify_service/avaible-plans.html", context)
-
-
 # Начало внутреннего Сервиса
 @check_legal_process
 def page_create_survey(request):
@@ -3478,68 +3465,7 @@ def register_survey_view(request, survey_id):
     return JsonResponse({"success": False, "error": "Invalid request"}, status=400)
 
 
-def get_next_question(request):
-    user = request.user
 
-    seen_question_ids = request.GET.getlist("seen[]", [])
-    next_question = None
-
-    if user.is_authenticated:
-        try:
-            profile = user.arena_profile
-            if profile.interests:
-                top_tags = sorted(
-                    profile.interests.items(), key=lambda item: item[1], reverse=True
-                )[:3]
-                top_tag_names = [tag[0] for tag in top_tags]
-
-                if top_tag_names:
-                    next_question = (
-                        Question.objects.select_related("survey")
-                        .filter(survey__tags__name__in=top_tag_names)
-                        .exclude(id__in=seen_question_ids)
-                        .order_by("?")
-                        .first()
-                    )
-        except ArenaProfile.DoesNotExist:
-            pass
-
-    if not next_question:
-        next_question = (
-            Question.objects.select_related("survey")
-            .exclude(id__in=seen_question_ids)
-            .order_by("?")
-            .first()
-        )
-
-    if not next_question:
-        next_question = Question.objects.select_related("survey").order_by("?").first()
-        if not next_question:
-            return JsonResponse({"error": "All questions answered"}, status=404)
-
-    is_displaying_correct = random.choice([True, False])
-    if is_displaying_correct:
-        displayed_answer = next_question.correct_answer
-    else:
-        incorrect_options = [
-            opt for opt in next_question.options if opt != next_question.correct_answer
-        ]
-        if not incorrect_options:
-            displayed_answer = next_question.correct_answer
-            is_displaying_correct = True
-        else:
-            displayed_answer = random.choice(incorrect_options)
-
-    return JsonResponse(
-        {
-            "question_id": next_question.id,
-            "question_text": next_question.text,
-            "displayed_answer": displayed_answer,
-            "is_correct_answer_displayed": is_displaying_correct,
-            "survey_title": next_question.survey.title,
-            "survey_id": next_question.survey.survey_id,
-        }
-    )
 
 
 def _resolve_temporary_user(request):
@@ -9495,82 +9421,6 @@ def exchange_view(request):
         "marketplace_surveys": marketplace_surveys,
     }
     return render(request, "exchange.html", context)
-
-
-# ----- Arena
-def arena_view(request):
-    profile, _ = ArenaProfile.objects.get_or_create(user=request.user)
-
-    accuracy = (
-        (profile.questions_correct * 100 / profile.questions_answered)
-        if profile.questions_answered > 0
-        else 0
-    )
-
-    initial_stats = {
-        "score": profile.total_score,
-        "streak": profile.current_streak,
-        "accuracy": f"{accuracy:.0f}%",
-        "max_streak": profile.max_streak,
-        "answered": profile.questions_answered,
-        "percentile": "-%",
-    }
-
-    context = {"initial_stats_json": json.dumps(initial_stats)}
-
-    return render(request, "askify_service/arena.html", context)
-
-
-@csrf_exempt
-def submit_arena_answer(request):
-    if not request.user.is_authenticated:
-        data = json.loads(request.body)
-        question = Question.objects.get(id=data.get("question_id"))
-        is_correct = data.get("user_answer") == question.correct_answer
-        return JsonResponse(
-            {"is_correct": is_correct, "correct_answer": question.correct_answer}
-        )
-
-    profile, _ = ArenaProfile.objects.get_or_create(user=request.user)
-    data = json.loads(request.body)
-    question = Question.objects.get(id=data.get("question_id"))
-    is_correct = data.get("user_answer") == question.correct_answer
-
-    profile.questions_answered += 1
-    if is_correct:
-        profile.total_score += 2
-        profile.current_streak += 1
-        profile.questions_correct += 1
-        if profile.current_streak > profile.max_streak:
-            profile.max_streak = profile.current_streak
-
-        for tag in question.survey.tags.all():
-            profile.interests[tag.name] = profile.interests.get(tag.name, 0) + 1
-    else:
-        profile.current_streak = 0
-        profile.total_score -= 1
-
-    profile.save()
-
-    accuracy = (
-        (profile.questions_correct * 100 / profile.questions_answered)
-        if profile.questions_answered > 0
-        else 0
-    )
-
-    return JsonResponse(
-        {
-            "is_correct": is_correct,
-            "correct_answer": question.correct_answer,
-            "updated_stats": {
-                "score": profile.total_score,
-                "streak": profile.current_streak,
-                "accuracy": f"{accuracy:.0f}%",
-                "max_streak": profile.max_streak,
-                "answered": profile.questions_answered,
-            },
-        }
-    )
 
 
 def impersonate_user_view(request, email):

@@ -32,7 +32,6 @@
 
     <div id="page-container" class="fade" style="display: none;">
 
-        {% include 'header.html' %}
         <div class="container payment-container payment-status-{% if payment_status == 'Успешно' %}success{% else %}failed{% endif %}">
             <img class="icon-status" src="{% if payment_status == 'Успешно' %}{% static 'img/icon-done.png' %}{% else %}{% static 'img/icon-fail.png' %}{% endif %}" alt="">
             <h2>{{ payment_status }}</h2>

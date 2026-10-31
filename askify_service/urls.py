@@ -36,7 +36,6 @@ urlpatterns = [
     path('test-dlya-uchenikov/', dlya_uchenikov, name='dlya_uchenikov'),
     path('neyroset-dlya-testov/', neyroset_dlya_testov, name='neyroset_dlya_testov'),
     path('testy-dlya-medikov/', medicine_promo, name='medicine_promo'),
-    path('available-plans/', available_plans, name='available_plans'),
 
     path('api/quick-register/', quick_register_api, name='api_quick_register'),
     path('register/', register_view, name='register'),
@@ -70,10 +69,6 @@ urlpatterns = [
 
     path('exchange/', exchange_view, name='exchange_main'),
     path('api/survey-details/<uuid:survey_id>/', get_survey_details_api, name='api_get_survey_details'),
-
-    path('arena/', arena_view, name='arena'),
-    path('api/arena/next-question/', get_next_question, name='api_get_next_question'),
-    path('api/arena/submit-answer/', submit_arena_answer, name='api_submit_arena_answer'),
 
     path('register-view/<str:survey_id>/', register_survey_view, name='register_survey_view'),
     path('api/surveys/<uuid:survey_id>/toggle-answers/', toggle_answers, name='toggle-answers'),
