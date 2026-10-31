@@ -1,6 +1,6 @@
 /* ==========================================================================
-   Letychka · shell.js — остров, модалка выхода, слоты. Без зависимостей.
-   API (совместим с прежним Island из demo-view):
+   Letychka · shell.js — остров, модалки, слоты. Без зависимостей.
+   API (без изменений):
      Island.notify(msg, type = 'success', icon = null, duration = 2600)
      Island.success / error / warn / info (msg, icon, duration)
      Island.dismiss()
@@ -13,7 +13,7 @@
    type: success | error | warning (warn) | info. Красного нет: error рисуется янтарём.
    icon: имя из спрайта ('link', 'check', 'eye'…) или FA-имя 'fa-link' — оно будет сопоставлено.
 
-   Что нового внутри:
+   Что нового внутри (снаружи ничего не меняется):
      · остров морфится через ширину фонового слоя .ls-isl-bg, а не через раскладку шапки;
      · ширина уведомления = ширине текста, смена уведомления без закрытия острова;
      · кольцо-таймер вокруг иконки; на наведении мыши показ ставится на паузу;
@@ -43,8 +43,8 @@
         return DEFAULT_ICON[type] || 'check';
     }
 
-    var SIZE = { sm: 380, md: 460, lg: 560 };
-    var NOTE_MIN = 200, NOTE_MAX = 440;
+    var SIZE = { sm: 380, md: 460, lg: 560 };      // ширина слоя, px
+    var NOTE_MIN = 200, NOTE_MAX = 440;            // ширина уведомления, px
     var reduce = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
     var canHover = !!(window.matchMedia && matchMedia('(hover: hover)').matches);
 
@@ -52,6 +52,11 @@
     var timer = null, deadline = 0, remaining = 0, hovering = false, noteSeq = 0, shakeT = null, clickFn = null;
     var layers = {}, pendingLayers = [], activeName = null, activeOpts = null, layerTimer = null;
 
+    var lit;
+    function glint() {
+        if (!lit || reduce) return;
+        lit.classList.remove('is-glint'); void lit.offsetWidth; lit.classList.add('is-glint');
+    }
     function setWidth(px) {
         if (!island) return;
         if (px == null) island.style.removeProperty('--bw'); else island.style.setProperty('--bw', px + 'px');
@@ -59,7 +64,7 @@
     function avail() { return island.clientWidth || 360; }
     function noteWidth(text) {
         measure.textContent = text;
-        var w = Math.ceil(measure.getBoundingClientRect().width) + 24 + 10 + 36 + 6;
+        var w = Math.ceil(measure.getBoundingClientRect().width) + 26 + 10 + 40 + 8;   // иконка + зазор + поля
         return Math.round(Math.min(Math.max(w, NOTE_MIN), NOTE_MAX, avail()));
     }
     function layerWidth(size) { return Math.round(Math.min(SIZE[size] || SIZE.md, avail())); }
@@ -69,12 +74,16 @@
         if (!island) return;
         var wrap = $('ls-island-wrap');
 
+        // фон острова: если страница ещё на старой разметке — создаём сами
         bg = island.querySelector('.ls-isl-bg');
         if (!bg) { bg = document.createElement('span'); bg.className = 'ls-isl-bg'; bg.setAttribute('aria-hidden', 'true'); island.insertBefore(bg, island.firstChild); }
+        lit = bg.querySelector('.ls-isl-lit');
+        if (!lit) { lit = document.createElement('span'); lit.className = 'ls-isl-lit'; bg.appendChild(lit); }
         note = $('island-notice'); textEl = $('island-text'); iconBox = $('island-icon-box');
         measure = document.createElement('span'); measure.className = 'ls-isl-measure'; measure.setAttribute('aria-hidden', 'true');
         island.appendChild(measure);
 
+        // прогресс скролла (включается атрибутом data-progress="1")
         var prog = $('ls-isl-progress'), ticking = false;
         function onScroll() {
             if (ticking) return; ticking = true;
@@ -90,6 +99,7 @@
         }
         addEventListener('scroll', onScroll, { passive: true }); onScroll();
 
+        // при смене размера окна цель морфинга пересчитывается
         var rt = null;
         addEventListener('resize', function () {
             clearTimeout(rt);
@@ -99,6 +109,7 @@
             }, 80);
         }, { passive: true });
 
+        // слоты: <template data-ls-slot="right|title"> — перенос произвольной разметки в остров
         document.querySelectorAll('template[data-ls-slot]').forEach(function (t) {
             var slot = t.dataset.lsSlot, host = island.querySelector('[data-ls-slot-host="' + slot + '"]');
             if (!host) return;
@@ -108,6 +119,7 @@
 
         island.addEventListener('click', function () { if (clickFn && island.classList.contains('is-notify')) clickFn(); });
 
+        // мышь над уведомлением — пауза таймера (кольцо встаёт само, через :hover в CSS)
         if (canHover) {
             island.addEventListener('mouseenter', function () {
                 hovering = true;
@@ -147,6 +159,7 @@
         island.setAttribute('data-size', opts.size || 'md');
         island.setAttribute('data-type', opts.tone || 'info');
         island.classList.add('is-layer');
+        glint();
         el.classList.add('on');
         if (opts.duration) layerTimer = setTimeout(function () { hide(name); }, opts.duration);
     }
@@ -191,8 +204,8 @@
             if (seq !== noteSeq) return;
             textEl.textContent = message;
             iconBox.innerHTML = '<svg class="ls-icon"><use href="#ls-i-' + ico + '"/></svg>' +
-                '<svg class="ls-isl-ring" viewBox="0 0 34 34" style="--dur:' + dur + 'ms" aria-hidden="true">' +
-                '<circle class="trk" cx="17" cy="17" r="15.25"/><circle class="run" cx="17" cy="17" r="15.25" pathLength="100"/></svg>';
+                '<svg class="ls-isl-ring" viewBox="0 0 36 36" style="--dur:' + dur + 'ms" aria-hidden="true">' +
+                '<circle class="trk" cx="18" cy="18" r="16.25"/><circle class="run" cx="18" cy="18" r="16.25" pathLength="100"/></svg>';
             note.classList.remove('is-swap');
             startTimer(dur);
         }
@@ -200,6 +213,7 @@
         island.setAttribute('data-type', type);
         setWidth(noteWidth(message));
         island.classList.add('is-notify');
+        if (!live) glint();
         if (live && !reduce) { note.classList.add('is-swap'); setTimeout(apply, 110); } else apply();
         if (type === 'error') shake();
     }

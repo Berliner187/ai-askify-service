@@ -6,7 +6,7 @@
      --ls-max      ширина контента (по умолчанию 1120px). Остров ровно такой же ширины.
      --ls-accent   акцент (индиго)
 
-   Остров (v2): морфинг делает только фоновый слой .ls-isl-bg (меняется его width).
+   Остров (v3): морфинг делает только фоновый слой .ls-isl-bg (меняются его width и top/bottom).
    Содержимое острова не пересчитывается и переключается через opacity + scale.
    Три пружины считаются из физики (response / damping), а не подбираются на глаз:
      smooth  — без отскока: возврат в шапку, скролл
@@ -35,7 +35,7 @@
 
     /* Пружины острова */
     --ls-spring-smooth: linear(0, 0.019, 0.067, 0.131, 0.205, 0.282, 0.358, 0.431, 0.499, 0.562, 0.619, 0.67, 0.715, 0.755, 0.79, 0.821, 0.848, 0.87, 0.89, 0.907, 0.921, 0.934, 0.944, 0.953, 0.96, 0.967, 0.972, 0.977, 0.981, 0.984, 0.986, 0.989, 0.991, 0.992, 0.993, 0.995, 0.995, 0.996, 0.997, 0.997, 0.998, 0.998, 1);
-    --ls-spring-snappy: linear(0, 0.027, 0.097, 0.191, 0.299, 0.409, 0.516, 0.615, 0.703, 0.78, 0.844, 0.896, 0.938, 0.97, 0.994, 1.01, 1.021, 1.028, 1.031, 1.031, 1.03, 1.028, 1.025, 1.021, 1.018, 1.014, 1.011, 1.009, 1.006, 1.004, 1.003, 1.002, 1.001, 1);
+    --ls-spring-snappy: linear(0, 0.025, 0.09, 0.179, 0.281, 0.388, 0.494, 0.592, 0.682, 0.761, 0.828, 0.884, 0.929, 0.965, 0.992, 1.011, 1.025, 1.033, 1.037, 1.038, 1.037, 1.035, 1.032, 1.028, 1.024, 1.02, 1.016, 1.012, 1.009, 1.007, 1.004, 1.003, 1.001, 1);
     --ls-spring-bouncy: linear(0, 0.031, 0.113, 0.228, 0.361, 0.501, 0.638, 0.763, 0.873, 0.964, 1.035, 1.088, 1.123, 1.142, 1.148, 1.144, 1.132, 1.115, 1.095, 1.075, 1.054, 1.036, 1.02, 1.006, 0.995, 0.987, 0.982, 0.979, 0.978, 0.979, 0.98, 0.983, 0.986, 0.989, 0.992, 0.995, 0.997, 0.999, 1.001, 1.002, 1.003, 1.003, 1.003, 1.003, 1.003, 1.003, 1.002, 1.002, 1);
     --ls-d-smooth: 0.7s;
     --ls-d-snappy: 0.55s;
@@ -118,14 +118,19 @@
 .ls-mdock .ls-mdock-login { font-size: 13px; font-weight: 600; color: var(--ls-accent-soft); }
 
 /* ==========================================================================
-   ОСТРОВ
-   Слои (снизу вверх):  .ls-isl-bg  стекло + рамка (меняет только width)
-                        .ls-isl-row шапка · .ls-isl-note уведомление · .ls-isl-layer кастомные слои
+   ОСТРОВ (v3)
+   Слои (снизу вверх):
+     .ls-isl-bg    стекло + рамка. Меняет width и top/bottom (растёт по двум осям)
+       .ls-isl-lit   свет: верхний мягкий отсвет, тонкая кромка, блик при появлении
+     .ls-isl-row   шапка · .ls-isl-note уведомление · .ls-isl-layer кастомные слои
+   Появление контента — как у Dynamic Island: сначала растёт форма, затем из размытия
+   и уменьшения проявляется содержимое. Уход обратный: контент гаснет раньше формы.
    ========================================================================== */
 .ls-island-wrap { position: sticky; top: 12px; z-index: 45; pointer-events: none; }
 .ls-island-wrap > .ls-wrap { display: flex; flex-direction: column; align-items: center; gap: 8px; }
 
 .ls-island {
+    --glow: rgba(255,255,255,.10);
     position: relative; pointer-events: none;
     width: 100%; max-width: var(--ls-max); min-height: 52px;
     display: flex; align-items: center;
@@ -134,6 +139,8 @@
     contain: layout style;
     animation: ls-isl-in .9s var(--ls-spring-smooth) backwards;
 }
+.ls-island[data-type="info"] { --glow: rgba(165,180,252,.24); }
+.ls-island[data-type="warning"], .ls-island[data-type="error"] { --glow: rgba(245,181,68,.22); }
 @keyframes ls-isl-in { from { opacity: 0; translate: 0 -18px; scale: .96; } }
 
 /* Стекло. Ширина = var(--bw): JS кладёт туда пиксели цели, нет переменной — на всю ширину шапки. */
@@ -141,49 +148,84 @@
     position: absolute; z-index: 0; top: 0; bottom: 0; left: 50%;
     width: var(--bw, 100%); translate: -50% 0;
     border-radius: 999px; pointer-events: auto;
-    background: rgba(21,21,30,.74);
-    -webkit-backdrop-filter: saturate(150%) blur(18px); backdrop-filter: saturate(150%) blur(18px);
-    border: 1px solid var(--ls-line-2);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
-    transition: width var(--ls-d-smooth) var(--ls-spring-smooth), border-color .3s;
+    background: rgba(28,28,40,.80);
+    -webkit-backdrop-filter: saturate(160%) blur(18px); backdrop-filter: saturate(160%) blur(18px);
+    border: 1px solid rgba(255,255,255,.14);
+    transition:
+        width var(--ls-d-smooth) var(--ls-spring-smooth),
+        top var(--ls-d-smooth) var(--ls-spring-smooth),
+        bottom var(--ls-d-smooth) var(--ls-spring-smooth),
+        border-color .35s;
 }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-    .ls-isl-bg { background: rgba(19,19,27,.97); }
+    .ls-isl-bg { background: rgba(26,26,37,.97); }
 }
-/* Затемнение и тень — отдельные слои, анимируется только opacity */
+/* Раскрытие: пружина с лёгким отскоком, форма вырастает на 4px вверх и вниз */
+.ls-island.is-notify .ls-isl-bg, .ls-island.is-layer .ls-isl-bg {
+    top: -4px; bottom: -4px; border-color: rgba(255,255,255,.28);
+    transition:
+        width var(--ls-d-snappy) var(--ls-spring-snappy),
+        top var(--ls-d-snappy) var(--ls-spring-snappy),
+        bottom var(--ls-d-snappy) var(--ls-spring-snappy),
+        border-color .35s;
+}
+.ls-island.is-notify[data-type="info"] .ls-isl-bg, .ls-island.is-layer[data-type="info"] .ls-isl-bg { border-color: rgba(199,210,254,.45); }
+.ls-island.is-notify[data-type="warning"] .ls-isl-bg, .ls-island.is-notify[data-type="error"] .ls-isl-bg,
+.ls-island.is-layer[data-type="warning"] .ls-isl-bg { border-color: rgba(245,181,68,.5); }
+.ls-island.is-notify.is-clickable .ls-isl-bg { cursor: pointer; border-color: rgba(255,255,255,.55); }
+
+/* Плотная подложка и тень — отдельные слои, анимируется только opacity */
 .ls-isl-bg::before {
-    content: ''; position: absolute; inset: -1px; border-radius: inherit;
-    background: rgba(14,14,21,.92); opacity: 0; transition: opacity .3s;
+    content: ''; position: absolute; inset: 0; border-radius: inherit;
+    background: rgba(28,28,40,.96); opacity: 0; transition: opacity .35s;
 }
 .ls-isl-bg::after {
     content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
-    box-shadow: 0 14px 32px -14px rgba(0,0,0,.65); opacity: 0; transition: opacity .3s;
+    box-shadow: 0 14px 32px -14px rgba(0,0,0,.7); opacity: 0; transition: opacity .35s;
 }
 .ls-island-wrap.is-scrolled .ls-isl-bg::before, .ls-island-wrap.is-scrolled .ls-isl-bg::after,
 .ls-island.is-notify .ls-isl-bg::before, .ls-island.is-notify .ls-isl-bg::after,
 .ls-island.is-layer .ls-isl-bg::before, .ls-island.is-layer .ls-isl-bg::after { opacity: 1; }
-
-/* Раскрытие — пружина с лёгким отскоком; возврат (правило выше) — без отскока */
-.ls-island.is-notify .ls-isl-bg, .ls-island.is-layer .ls-isl-bg {
-    transition: width var(--ls-d-snappy) var(--ls-spring-snappy), border-color .3s;
+/* Свечение под островом — только у уведомлений и слоёв, цвет по типу */
+.ls-island.is-notify .ls-isl-bg::after, .ls-island.is-layer .ls-isl-bg::after {
+    box-shadow: 0 16px 36px -14px rgba(0,0,0,.8), 0 0 34px -8px var(--glow);
 }
 
-/* Цвет рамки по типу */
-.ls-island.is-notify[data-type="warning"] .ls-isl-bg, .ls-island.is-notify[data-type="error"] .ls-isl-bg,
-.ls-island.is-layer[data-type="warning"] .ls-isl-bg { border-color: rgba(245,181,68,.4); }
-.ls-island.is-notify[data-type="info"] .ls-isl-bg, .ls-island.is-layer[data-type="info"] .ls-isl-bg { border-color: rgba(165,180,252,.35); }
-.ls-island.is-notify.is-clickable .ls-isl-bg { cursor: pointer; border-color: rgba(165,180,252,.45); }
+/* Свет: мягкий отсвет сверху (не градиентная заливка) + кромка + блик */
+.ls-isl-lit {
+    position: absolute; inset: 0; border-radius: inherit; overflow: hidden; pointer-events: none;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.14), inset 0 0 0 1px rgba(255,255,255,.025);
+}
+.ls-isl-lit::before {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(75% 130% at 50% -35%, rgba(255,255,255,.10), rgba(255,255,255,0) 62%);
+    transition: opacity .4s;
+}
+.ls-island.is-notify .ls-isl-lit::before, .ls-island.is-layer .ls-isl-lit::before {
+    background: radial-gradient(75% 140% at 50% -40%, rgba(255,255,255,.17), rgba(255,255,255,0) 64%);
+}
+.ls-isl-lit::after {
+    content: ''; position: absolute; top: 0; left: 0; width: 38%; height: 1px; opacity: 0;
+    background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.95), rgba(255,255,255,0));
+}
+.ls-isl-lit.is-glint::after { animation: ls-glint .95s var(--ls-ease) .08s both; }
+@keyframes ls-glint {
+    0%   { opacity: 0; translate: -110% 0; }
+    20%  { opacity: 1; }
+    75%  { opacity: 1; }
+    100% { opacity: 0; translate: 290% 0; }
+}
 
 /* Шапка */
 .ls-isl-row {
     position: relative; z-index: 1; width: 100%;
     display: flex; align-items: center; justify-content: space-between; gap: 14px;
     pointer-events: auto;
-    transition: opacity .3s .12s, scale var(--ls-d-smooth) var(--ls-spring-smooth) .08s;
+    transition: opacity .34s .16s, scale var(--ls-d-smooth) var(--ls-spring-smooth) .1s, filter .34s .16s;
 }
 .ls-island.is-notify .ls-isl-row, .ls-island.is-layer .ls-isl-row {
-    opacity: 0; scale: .96; pointer-events: none;
-    transition: opacity .14s, scale .2s ease;
+    opacity: 0; scale: .94; filter: blur(6px); pointer-events: none;
+    transition: opacity .14s, scale .2s ease, filter .14s;
 }
 
 .ls-crumbs { display: flex; align-items: center; gap: 10px; min-width: 0; font-size: 13px; color: var(--ls-fg-2); }
@@ -199,16 +241,16 @@
 @media (min-width: 640px) { .ls-crumbs .ls-hide-sm { display: inline; } .ls-crumbs a.ls-hide-sm, .ls-crumbs span.ls-crumb-title.ls-hide-sm { display: block; } }
 
 .ls-isl-right { display: flex; align-items: center; gap: 8px; flex: none; min-width: 0; }
-.ls-isl-meta { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; border-radius: 999px; font-size: 12.5px; font-weight: 500; color: var(--ls-fg-2); background: rgba(255,255,255,.04); border: 1px solid var(--ls-line); max-width: 220px; font-variant-numeric: tabular-nums; }
+.ls-isl-meta { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; border-radius: 999px; font-size: 12.5px; font-weight: 500; color: var(--ls-fg-2); background: rgba(255,255,255,.05); border: 1px solid var(--ls-line); max-width: 220px; font-variant-numeric: tabular-nums; }
 .ls-isl-meta span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ls-isl-meta .ls-icon { width: 14px; height: 14px; color: var(--ls-fg-3); }
 .ls-isl-badge { display: inline-flex; align-items: center; height: 22px; padding: 0 9px; border-radius: 999px; font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ls-accent-soft); background: rgba(99,102,241,.14); border: 1px solid rgba(129,140,248,.3); }
 .ls-isl-btn {
     display: none; align-items: center; gap: 8px; height: 36px; padding: 0 16px; border-radius: 999px;
-    font-size: 13px; font-weight: 600; color: var(--ls-fg-1); background: rgba(255,255,255,.05); border: 1px solid var(--ls-line);
+    font-size: 13px; font-weight: 600; color: var(--ls-fg-1); background: rgba(255,255,255,.06); border: 1px solid var(--ls-line-2);
     transition: background-color .2s, color .2s, scale var(--ls-d-snappy) var(--ls-spring-snappy); white-space: nowrap; cursor: pointer;
 }
-.ls-isl-btn:hover { background: rgba(255,255,255,.1); color: var(--ls-fg); }
+.ls-isl-btn:hover { background: rgba(255,255,255,.12); color: var(--ls-fg); }
 .ls-isl-btn:active { scale: .96; transition-duration: .2s, .2s, .12s; }
 .ls-isl-btn .ls-icon { width: 15px; height: 15px; }
 @media (min-width: 640px) { .ls-isl-btn { display: inline-flex; } }
@@ -220,31 +262,32 @@
     position: absolute; z-index: 1; top: 0; bottom: 0; left: 50%;
     width: var(--bw, 100%); translate: -50% 0;
     display: flex; align-items: center; justify-content: center; gap: 10px;
-    padding: 0 18px; font-size: 13px; font-weight: 600; color: var(--ls-fg);
-    opacity: 0; scale: .92; pointer-events: none;
-    transition: opacity .16s, scale .2s ease;
+    padding: 0 20px; font-size: 13.5px; font-weight: 600; letter-spacing: -0.01em; color: #fff;
+    opacity: 0; scale: .86; filter: blur(10px); pointer-events: none;
+    transition: opacity .14s, scale .18s ease, filter .14s;
 }
 .ls-island.is-notify .ls-isl-note {
-    opacity: 1; scale: 1;
-    transition: opacity .22s .08s, scale var(--ls-d-snappy) var(--ls-spring-snappy) .04s;
+    opacity: 1; scale: 1; filter: none;
+    transition: opacity .3s .1s, scale var(--ls-d-snappy) var(--ls-spring-snappy) .06s, filter .34s .1s;
 }
-/* Смена одного уведомления другим: короткое «выдыхание» без закрытия острова */
-.ls-island .ls-isl-note.is-swap { opacity: 0; scale: .96; transition: opacity .11s, scale .11s; }
+/* Смена одного уведомления другим: контент «выдыхает», остров остаётся */
+.ls-island .ls-isl-note.is-swap { opacity: 0; scale: .94; filter: blur(6px); transition: opacity .11s, scale .11s, filter .11s; }
 .ls-isl-note > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ls-isl-measure { position: absolute; left: 0; top: 0; visibility: hidden; pointer-events: none; white-space: nowrap; font-size: 13px; font-weight: 600; }
+.ls-isl-measure { position: absolute; left: 0; top: 0; visibility: hidden; pointer-events: none; white-space: nowrap; font-size: 13.5px; font-weight: 600; letter-spacing: -0.01em; }
 
-.ls-isl-ico { position: relative; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: rgba(255,255,255,.14); color: var(--ls-fg); flex: none; }
-.ls-isl-ico > .ls-icon { width: 13px; height: 13px; animation: ls-ico-pop var(--ls-d-bouncy) var(--ls-spring-bouncy) both; }
+/* Иконка. Успех — белая с тёмным знаком (белый акцент), инфо — светлый индиго, ошибка — янтарь */
+.ls-isl-ico { position: relative; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: #fff; color: #111119; flex: none; box-shadow: 0 0 14px -2px rgba(255,255,255,.35); }
+.ls-isl-ico > .ls-icon { width: 14px; height: 14px; animation: ls-ico-pop var(--ls-d-bouncy) var(--ls-spring-bouncy) both; }
 @keyframes ls-ico-pop { from { scale: .35; opacity: 0; } to { scale: 1; opacity: 1; } }
-.ls-island[data-type="warning"] .ls-isl-ico, .ls-island[data-type="error"] .ls-isl-ico { background: var(--ls-amber); color: #1A1305; }
-.ls-island[data-type="info"] .ls-isl-ico { background: var(--ls-accent); color: #fff; }
+.ls-island[data-type="info"] .ls-isl-ico { background: #E0E7FF; color: #312E81; box-shadow: 0 0 14px -2px rgba(165,180,252,.5); }
+.ls-island[data-type="warning"] .ls-isl-ico, .ls-island[data-type="error"] .ls-isl-ico { background: var(--ls-amber); color: #1A1305; box-shadow: 0 0 14px -2px rgba(245,181,68,.5); }
 
-/* Кольцо таймера вокруг иконки: тает за время показа, на наведении мыши ставится на паузу */
-.ls-isl-ring { position: absolute; inset: -5px; width: 34px; height: 34px; rotate: -90deg; pointer-events: none; overflow: visible; color: rgba(255,255,255,.75); }
-.ls-island[data-type="warning"] .ls-isl-ring, .ls-island[data-type="error"] .ls-isl-ring { color: var(--ls-amber); }
+/* Кольцо таймера вокруг иконки: тает за время показа, на наведении мыши встаёт на паузу */
+.ls-isl-ring { position: absolute; inset: -5px; width: 36px; height: 36px; rotate: -90deg; pointer-events: none; overflow: visible; color: rgba(255,255,255,.9); }
 .ls-island[data-type="info"] .ls-isl-ring { color: var(--ls-accent-soft); }
+.ls-island[data-type="warning"] .ls-isl-ring, .ls-island[data-type="error"] .ls-isl-ring { color: var(--ls-amber); }
 .ls-isl-ring circle { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; }
-.ls-isl-ring .trk { opacity: .14; }
+.ls-isl-ring .trk { opacity: .16; }
 .ls-isl-ring .run { stroke-dasharray: 100; stroke-dashoffset: 0; animation: ls-ring var(--dur, 2600ms) linear forwards; }
 @keyframes ls-ring { to { stroke-dashoffset: 100; } }
 @media (hover: hover) { .ls-island:hover .ls-isl-ring .run { animation-play-state: paused; } }
@@ -260,14 +303,14 @@
     width: var(--lw, 460px); max-width: 100%; translate: -50% 0;
     display: flex; align-items: center; gap: 12px;
     padding: 0 8px 0 18px; font-size: 13px; font-weight: 600; color: var(--ls-fg);
-    opacity: 0; scale: .94; pointer-events: none;
-    transition: opacity .16s, scale .2s ease;
+    opacity: 0; scale: .9; filter: blur(8px); pointer-events: none;
+    transition: opacity .14s, scale .18s ease, filter .14s;
 }
 .ls-isl-layer.on {
-    opacity: 1; scale: 1; pointer-events: auto;
-    transition: opacity .22s .08s, scale var(--ls-d-snappy) var(--ls-spring-snappy) .04s;
+    opacity: 1; scale: 1; filter: none; pointer-events: auto;
+    transition: opacity .3s .1s, scale var(--ls-d-snappy) var(--ls-spring-snappy) .06s, filter .34s .1s;
 }
-.ls-island.is-notify .ls-isl-layer.on { opacity: 0; scale: .94; pointer-events: none; }
+.ls-island.is-notify .ls-isl-layer.on { opacity: 0; scale: .94; filter: blur(6px); pointer-events: none; }
 
 /* Полоска прогресса скролла — опциональна: data-progress="1" на острове */
 .ls-isl-progress { display: none; position: absolute; z-index: 1; left: 24px; right: 24px; bottom: 0; height: 1.5px; overflow: hidden; transition: opacity .2s; }
@@ -318,9 +361,10 @@ body.ls-lock { overflow: hidden; }
 .ls-island-wrap :focus-visible, .ls-dock :focus-visible, .ls-mdock :focus-visible, .ls-modal :focus-visible { outline: 2px solid var(--ls-accent-soft); outline-offset: 2px; }
 
 @media (prefers-reduced-motion: reduce) {
-    .ls-island, .ls-isl-bg, .ls-isl-bg::before, .ls-isl-bg::after, .ls-isl-row, .ls-isl-note, .ls-isl-layer, .ls-isl-btn,
+    .ls-island, .ls-isl-bg, .ls-isl-bg::before, .ls-isl-bg::after, .ls-isl-lit::before, .ls-isl-row, .ls-isl-note, .ls-isl-layer, .ls-isl-btn,
     .ls-dock-btn, .ls-panel, .ls-modal, .ls-dock-slot, .ls-ring rect { transition-duration: .001ms !important; transition-delay: 0s !important; animation-duration: .001ms !important; animation-delay: 0s !important; }
-    .ls-isl-ico > .ls-icon, .ls-isl-ring .run, .ls-island.is-shake { animation: none !important; }
+    .ls-isl-ico > .ls-icon, .ls-isl-ring .run, .ls-isl-lit::after, .ls-island.is-shake { animation: none !important; }
+    .ls-isl-row, .ls-isl-note, .ls-isl-layer { filter: none !important; }
 }
 
 

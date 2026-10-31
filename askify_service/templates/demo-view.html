@@ -125,58 +125,192 @@
             border: 1px solid var(--card-border);
         }
 
-        /* DYNAMIC ISLAND */
-        .island-capsule {
-            background: rgba(24, 24, 36, 0.75);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.25);
-            border-radius: 9999px;
+        /* ==========================================================================
+        DV — оформление страницы теста (карточки, кнопки, строки, вопросы)
+        Вставить в <style> demo-view.html, например сразу после блока .glass-panel.
+        Всё с префиксом dv-, со старыми стилями не пересекается.
+        ========================================================================== */
+        .dv-card {
+            background: rgba(24, 24, 36, .72);
+            border: 1px solid rgba(255, 255, 255, .08);
+            border-radius: 20px;
+            -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px);
+        }
+        .dv-ico { width: 15px; height: 15px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+        .dv-ico--fill { fill: currentColor; stroke: none; }
+
+        /* ---------- Кнопки ---------- */
+        .dv-btn {
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            width: 100%; height: 42px; padding: 0 14px; border-radius: 12px;
+            border: 1px solid transparent; cursor: pointer; white-space: nowrap;
+            font: 600 13.5px/1 'Golos Text', -apple-system, sans-serif; letter-spacing: -.005em;
+            text-decoration: none; user-select: none; -webkit-user-select: none;
+            transition: background-color .18s, border-color .18s, color .18s, scale .3s var(--spring-bounce);
+        }
+        .dv-btn:active { scale: .97; transition-duration: .18s, .18s, .18s, .1s; }
+        .dv-btn:focus-visible { outline: 1.5px solid rgba(199, 210, 254, .85); outline-offset: 2px; }
+        .dv-btn--auto { width: auto; }
+        .dv-btn--primary { height: 48px; font-size: 14px; background: #fff; color: #111119; box-shadow: 0 8px 24px -10px rgba(255, 255, 255, .35); }
+        .dv-btn--primary:hover { background: #ececf2; }
+        .dv-btn--accent { background: #4F46E5; color: #fff; }
+        .dv-btn--accent:hover { background: #5A52EC; }
+        .dv-btn--ghost { height: 40px; font-weight: 500; font-size: 13px; color: #d4d4d8; background: rgba(255, 255, 255, .04); border-color: rgba(255, 255, 255, .09); }
+        .dv-btn--ghost:hover { background: rgba(255, 255, 255, .08); color: #fff; border-color: rgba(255, 255, 255, .16); }
+        .dv-btn .dv-lock { margin-left: 2px; color: #fbbf24; }
+        .dv-btn--primary .dv-ico--fill { width: 12px; height: 12px; }
+
+        /* ---------- Строки «Управление» ---------- */
+        .dv-rows { padding: 2px 16px; }
+        .dv-row {
+            display: flex; align-items: center; justify-content: space-between; gap: 12px;
+            min-height: 54px; font-size: 13.5px; font-weight: 500; color: #e4e4e7;
+            border-bottom: 1px solid rgba(255, 255, 255, .06);
+        }
+        .dv-row-t { display: inline-flex; align-items: center; gap: 7px; min-width: 0; }
+        .dv-row .dv-lock { color: #fbbf24; opacity: .85; }
+        .dv-chip {
+            display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 14px; border-radius: 999px;
+            font: 600 12.5px/1 'Golos Text', sans-serif; color: #e4e4e7; cursor: pointer; white-space: nowrap;
+            background: rgba(255, 255, 255, .06); border: 1px solid rgba(255, 255, 255, .1);
+            transition: background-color .18s, color .18s, border-color .18s, scale .3s var(--spring-bounce);
+        }
+        .dv-chip:hover { background: rgba(255, 255, 255, .12); color: #fff; }
+        .dv-chip:active { scale: .96; transition-duration: .18s, .18s, .18s, .1s; }
+        .dv-chip.is-on { background: #fff; color: #111119; border-color: transparent; }
+        .dv-chip--accent { color: #c7d2fe; }
+        .dv-chip .dv-lock { color: #fbbf24; }
+        .dv-danger {
+            display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; height: 46px;
+            font: 500 13px/1 'Golos Text', sans-serif; color: #71717a; cursor: pointer; background: none; border: 0;
+            transition: color .18s;
+        }
+        .dv-danger:hover { color: #fb7185; }
+
+        /* Тумблер */
+        .dv-switch { position: relative; display: inline-block; width: 46px; height: 28px; flex: none; cursor: pointer; }
+        .dv-switch input { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+        .dv-switch i { position: absolute; inset: 0; border-radius: 999px; background: rgba(255, 255, 255, .12); transition: background-color .25s; pointer-events: none; }
+        .dv-switch i::after {
+            content: ''; position: absolute; top: 2px; left: 2px; width: 24px; height: 24px; border-radius: 50%;
+            background: #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, .35); transition: translate .35s var(--spring-bounce);
+        }
+        .dv-switch input:checked + i { background: #30D158; }
+        .dv-switch input:checked + i::after { translate: 18px 0; }
+        .dv-switch input:focus-visible + i { outline: 1.5px solid rgba(199, 210, 254, .85); outline-offset: 2px; }
+
+        /* ---------- Мини-статистика ---------- */
+        .dv-stats { display: flex; align-items: center; gap: 22px; padding: 14px 16px; text-decoration: none; transition: border-color .2s, background-color .2s; }
+        .dv-stats:hover { border-color: rgba(255, 255, 255, .16); background: rgba(30, 30, 44, .8); }
+        .dv-stat-k { display: block; font-size: 11.5px; color: #71717a; }
+        .dv-stat-v { display: block; margin-top: 3px; font: 700 20px/1 'Wix Madefor Display', 'Golos Text', sans-serif; letter-spacing: -.02em; color: #fff; font-variant-numeric: tabular-nums; }
+        .dv-stat-go { margin-left: auto; color: #71717a; transition: translate .25s var(--spring-smooth), color .2s; }
+        .dv-stats:hover .dv-stat-go { translate: 3px 0; color: #fff; }
+
+        /* ---------- Заголовок страницы ---------- */
+        .dv-head { margin-bottom: 20px; }
+        .dv-title { display: flex; align-items: flex-start; gap: 6px; }
+        .dv-title h1 { font-size: 28px; line-height: 1.15; font-weight: 700; color: #fff; letter-spacing: -.025em; min-width: 0; overflow-wrap: anywhere; }
+        @media (min-width: 640px) { .dv-title h1 { font-size: 34px; } }
+        .dv-iconbtn {
+            display: inline-grid; place-items: center; width: 32px; height: 32px; flex: none; border-radius: 10px; cursor: pointer;
+            color: #8b8b95; background: transparent; border: 0; transition: background-color .18s, color .18s;
+        }
+        .dv-iconbtn:hover { background: rgba(255, 255, 255, .08); color: #fff; }
+        .dv-iconbtn--title { margin-top: 3px; }
+        .dv-iconbtn .dv-ico { width: 14px; height: 14px; }
+        .dv-iconbtn--del:hover { background: rgba(244, 63, 94, .12); color: #fb7185; }
+        .dv-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin-top: 20px; font-size: 13px; color: #8b8b95; }
+        .dv-meta b { color: #e4e4e7; font-weight: 600; font-variant-numeric: tabular-nums; }
+        .dv-meta .dv-dot { width: 3px; height: 3px; border-radius: 50%; background: #52525b; }
+        .dv-hint { margin-left: auto; display: none; align-items: center; gap: 6px; font-size: 12.5px; color: #71717a; }
+        @media (min-width: 768px) { .dv-hint { display: inline-flex; } }
+
+        /* ---------- Карточка вопроса ---------- */
+        .dv-q { position: relative; padding: 20px 22px 22px; border-radius: 22px; }
+        .dv-q-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; min-height: 32px; }
+        .dv-qn { display: inline-flex; overflow: hidden; font: 600 12px/1 'JetBrains Mono', monospace; color: #71717a; letter-spacing: .02em; }
+        .dv-qtype { font-size: 12.5px; color: #8b8b95; }
+        .dv-qtype--multi { color: #a5b4fc; }
+        .dv-q-actions { margin-left: auto; display: flex; align-items: center; gap: 2px; }
+        .dv-q-title { font: 600 18px/1.35 'Wix Madefor Display', 'Golos Text', sans-serif; letter-spacing: -.02em; color: #f4f4f5; margin-bottom: 16px; }
+        @media (min-width: 640px) { .dv-q-title { font-size: 19px; } }
+        .dv-opts { display: grid; gap: 8px; }
+
+        /* Вариант ответа. Состояния: (пусто) · is-ok · is-bad · is-hint */
+        .option-row {
+            display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px;
+            font-size: 15px; color: #d4d4d8;
+            background: rgba(255, 255, 255, .035); border: 1px solid rgba(255, 255, 255, .04);
+        }
+        .option-row:hover:not(.is-locked) { border-color: rgba(255, 255, 255, .14); background-color: rgba(255, 255, 255, .06); }
+        .dv-ob {
+            width: 20px; height: 20px; flex: none; display: grid; place-items: center; border-radius: 50%;
+            border: 1.5px solid rgba(255, 255, 255, .22); color: #fff; transition: background-color .2s, border-color .2s;
+        }
+        .dv-ob--multi { border-radius: 6px; }
+        .dv-ob svg { width: 11px; height: 11px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; opacity: 0; scale: .4; transition: opacity .15s, scale .35s var(--spring-bounce); }
+        .option-row > .dv-ot { flex: 1; min-width: 0; }
+        .dv-ol { font-size: 12px; font-weight: 600; letter-spacing: .02em; display: none; }
+
+        .option-row.is-ok   { background: rgba(48, 209, 88, .1);  border-color: rgba(48, 209, 88, .35);  color: #bbf7d0; }
+        .option-row.is-hint { background: rgba(48, 209, 88, .06); border-color: rgba(48, 209, 88, .22);  color: #a7e8bd; }
+        .option-row.is-bad  { background: rgba(244, 63, 94, .1);  border-color: rgba(244, 63, 94, .35);  color: #fecdd3; }
+        .option-row.is-ok .dv-ob, .option-row.is-hint .dv-ob { background: #30D158; border-color: #30D158; color: #06240f; }
+        .option-row.is-bad .dv-ob { background: #f43f5e; border-color: #f43f5e; color: #fff; }
+        .option-row.is-ok .dv-ob .i-ok, .option-row.is-hint .dv-ob .i-ok, .option-row.is-bad .dv-ob .i-bad { opacity: 1; scale: 1; }
+        .option-row .dv-ob .i-bad { position: absolute; }
+        .dv-ob { position: relative; }
+        .option-row.is-ok .dv-ol, .option-row.is-hint .dv-ol { display: inline; color: #4ade80; }
+        .option-row.is-bad .dv-ol { display: inline; color: #fb7185; }
+
+        /* ---------- Баннер (гость) ---------- */
+        .dv-banner {
+            display: flex; flex-direction: column; gap: 14px; margin-bottom: 20px; padding: 14px 16px; border-radius: 20px;
+            background: rgba(24, 24, 36, .72); border: 1px solid rgba(129, 140, 248, .28); position: relative;
+        }
+        .dv-banner--plain { border-color: rgba(255, 255, 255, .1); }
+        @media (min-width: 640px) { .dv-banner { flex-direction: row; align-items: center; justify-content: space-between; } }
+        .dv-banner h4 { font-size: 14px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px; letter-spacing: -.01em; }
+        .dv-banner p { margin-top: 4px; font-size: 12.5px; line-height: 1.5; color: #9a9aa6; max-width: 56ch; }
+        .dv-tag { padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; color: #fcd34d; background: rgba(245, 158, 11, .12); border: 1px solid rgba(245, 158, 11, .3); }
+        .dv-tag--muted { color: #a1a1aa; background: rgba(255, 255, 255, .05); border-color: rgba(255, 255, 255, .1); }
+        .dv-banner .dv-btn { height: 40px; padding: 0 20px; }
+
+        @media (prefers-reduced-motion: reduce) {
+            .dv-btn, .dv-chip, .dv-switch i::after, .dv-ob svg { transition: none; }
+        }
+
+        /* ==========================================================================
+        DV: тактильные кнопки. Вставить в конец dv.css (после блока «Кнопки»),
+        они переопределяют .dv-btn / .dv-chip. Hover: кнопка чуть приподнимается и светлеет.
+        Нажатие: проседает и сжимается, потом пружинит назад.
+        ========================================================================== */
+        .dv-btn, .dv-chip {
             transition:
-                max-width 0.45s var(--spring-bounce),
-                padding 0.35s var(--spring-smooth),
-                background-color 0.3s ease,
-                border-color 0.3s ease,
-                box-shadow 0.3s ease,
-                transform 0.4s var(--spring-bounce);
-            will-change: max-width, transform, border-color, box-shadow;
+                background-color .18s, border-color .18s, color .18s, box-shadow .25s var(--spring-smooth),
+                translate .35s var(--spring-bounce), scale .35s var(--spring-bounce);
+        }
+        @media (hover: hover) {
+            .dv-btn:hover { translate: 0 -2px; }
+            .dv-btn--primary:hover { background: #fff; box-shadow: 0 14px 30px -10px rgba(255, 255, 255, .1), 0 0 0 4px rgba(255, 255, 255, .08); }
+            .dv-btn--accent:hover  { box-shadow: 0 14px 30px -10px rgba(99, 102, 241, .1), 0 0 0 4px rgba(99, 102, 241, .12); }
+            .dv-btn--ghost:hover   { box-shadow: 0 10px 24px -12px rgba(0, 0, 0, .7), 0 0 0 4px rgba(255, 255, 255, .04); }
+            .dv-chip:hover { translate: 0 -1px; box-shadow: 0 8px 18px -10px rgba(0, 0, 0, .7); }
+        }
+        .dv-btn:active, .dv-chip:active {
+            translate: 0 1px; scale: .955; box-shadow: none;
+            transition-duration: .12s, .12s, .12s, .12s, .1s, .1s;
         }
 
-        .island-capsule.mode-header {
-            max-width: 56rem;
-            width: 100%;
-            padding: 0.625rem 1.25rem;
-        }
-
-        .island-capsule.mode-notify {
-            max-width: 26rem;
-            width: auto;
-            padding: 0.5rem 1.25rem;
-            transform: scale(1.02);
-            background: rgba(18, 17, 24, 0.98);
-        }
-
-        .island-capsule.theme-success {
-            border-color: rgba(16, 185, 129, 0.45);
-            box-shadow: 0 15px 35px -8px rgba(16, 185, 129, 0.3), 0 0 0 1px rgba(16, 185, 129, 0.15);
-        }
-        .island-capsule.theme-error {
-            border-color: rgba(239, 68, 68, 0.45);
-            box-shadow: 0 15px 35px -8px rgba(239, 68, 68, 0.3), 0 0 0 1px rgba(239, 68, 68, 0.15);
-        }
-        .island-capsule.theme-warning {
-            border-color: rgba(245, 158, 11, 0.45);
-            box-shadow: 0 15px 35px -8px rgba(245, 158, 11, 0.3), 0 0 0 1px rgba(245, 158, 11, 0.15);
-        }
-        .island-capsule.theme-info {
-            border-color: rgba(99, 102, 241, 0.45);
-            box-shadow: 0 15px 35px -8px rgba(99, 102, 241, 0.3), 0 0 0 1px rgba(99, 102, 241, 0.15);
-        }
-
-        .island-content-layer {
-            transition: opacity 0.25s var(--spring-smooth), transform 0.3s var(--spring-bounce), filter 0.25s;
-        }
+        /* ---------- Окно QR-кода ---------- */
+        .dv-qr { position: relative; width: 100%; max-width: 340px; padding: 28px 24px 22px; text-align: center; border-radius: 26px; box-shadow: 0 30px 70px -20px rgba(0, 0, 0, .8); }
+        .dv-qr .dv-x { position: absolute; top: 12px; right: 12px; width: 34px; height: 34px; }
+        .dv-qr-box { display: inline-grid; place-items: center; padding: 14px; border-radius: 18px; background: #fff; }
+        .dv-qr-box img, .dv-qr-box canvas { display: block; }
+        .dv-qr-t { margin-top: 18px; font: 700 16px/1.3 'Wix Madefor Display', 'Golos Text', sans-serif; letter-spacing: -.02em; color: #fff; overflow-wrap: anywhere; }
+        .dv-qr-h { margin-top: 6px; font-size: 12.5px; color: #8b8b95; }
+        .dv-qr .dv-btn { margin-top: 18px; }
 
         .spring-btn {
             transition: transform 0.2s var(--spring-bounce), background-color 0.15s, border-color 0.15s, box-shadow 0.15s;
@@ -187,20 +321,6 @@
         .spring-modal-content {
             transition: transform 0.35s var(--spring-bounce), opacity 0.25s var(--spring-smooth);
         }
-
-        .master-pill-btn {
-            background: linear-gradient(180deg, #4F46E5 0%, #4338CA 100%);
-            border: 1px solid rgba(255, 255, 255, 0.16);
-            box-shadow: 0 10px 24px -6px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.2);
-            transition: all 0.2s var(--spring-bounce);
-        }
-        .master-pill-btn:hover {
-            background: linear-gradient(180deg, #554BF0 0%, #4639D4 100%);
-            border-color: rgba(255, 255, 255, 0.24);
-            box-shadow: 0 14px 28px -6px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.3);
-            transform: translateY(-1px);
-        }
-        .master-pill-btn:active { transform: scale(0.98) translateY(1px); }
 
         /* ИНТЕРАКТИВНЫЕ СТРОКИ ОТВЕТОВ */
         .option-row {
@@ -797,57 +917,28 @@
         <main class="max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 mt-4 sm:mt-6 flex-grow">
 
             {% if is_guest_owner %}
-            <!-- ХУК-БАННЕР: ГОСТЬ СМОТРИТ СВОЙ ТОЛЬКО ЧТО СОЗДАННЫЙ ТЕСТ -->
-            <div data-rv data-rv-order="1" class="cta-trace mb-6 rounded-[24px] sm:rounded-[28px] bg-gradient-to-r from-indigo-950/40 via-[#181724] to-indigo-950/20 border border-indigo-500/30 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xl relative overflow-hidden">
-                <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
-
-                <div class="flex items-start sm:items-center gap-3.5 relative z-10">
-                    <div class="w-10 h-10 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 flex items-center justify-center flex-shrink-0">
-                        <i class="fa-regular fa-user"></i>
-                    </div>
-                    <div>
-                        <div class="flex items-center gap-2">
-                            <span class="text-xs sm:text-sm font-bold text-white tracking-tight">Тест готов к проверке</span>
-                            <span class="px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[12px] font-bold">Черновик</span>
-                        </div>
-                        <p class="text-xs text-gray-400 mt-1 max-w-xl leading-relaxed">
-                            Нажмите на любой вариант, чтобы проверить ключи. Чтобы отправить ссылку ученикам или распечатать бланки — сохраните тест в свой кабинет.
-                        </p>
-                    </div>
+            <!-- БАННЕР: ГОСТЬ СМОТРИТ СВОЙ ТОЛЬКО ЧТО СОЗДАННЫЙ ТЕСТ -->
+            <div data-rv data-rv-order="1" class="cta-trace dv-banner">
+                <div class="min-w-0">
+                    <h4>Тест готов к проверке <span class="dv-tag">Черновик</span></h4>
+                    <p>Нажмите на вариант, чтобы проверить ключи. Чтобы раздать тест ученикам или распечатать бланки — сохраните его в кабинет.</p>
                 </div>
-
-                <div class="flex items-center gap-2 sm:flex-shrink-0 relative z-10 w-full sm:w-auto">
-                    <button type="button" onclick="openRegisterModal('banner')" class="w-full sm:w-auto px-5 py-3 rounded-xl sm:rounded-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-lg shadow-indigo-600/30 spring-btn text-center flex items-center justify-center gap-2">
-                        <span>Сохранить тест в кабинет</span>
-                        <i class="fas fa-arrow-right text-[10px]"></i>
-                    </button>
-                </div>
+                <button type="button" onclick="openRegisterModal('banner')" class="dv-btn dv-btn--accent dv-btn--auto">
+                    <span>Сохранить тест</span>
+                    <svg class="dv-ico" viewBox="0 0 16 16"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+                </button>
             </div>
             {% elif is_anon_visitor %}
-            <!-- БАННЕР: АНОНИМ СМОТРИТ ЧУЖОЙ ТЕСТ → «СОБЕРИ СВОЙ» -->
-            <div data-rv data-rv-order="1" class="cta-trace mb-6 rounded-[24px] sm:rounded-[28px] bg-[#15151E] border border-white/10 p-4 sm:p-5 hidden sm:flex sm:flex-row sm:items-center justify-between gap-4 relative overflow-hidden">
-                <div class="flex items-start sm:items-center gap-3.5 relative z-10">
-                    <div class="w-10 h-10 rounded-2xl bg-white/[0.04] border border-white/10 text-zinc-200 flex items-center justify-center flex-shrink-0">
-                        <i class="fa-solid fa-wand-magic-sparkles text-sm"></i>
-                    </div>
-                    <div>
-                        <div class="flex items-center gap-2">
-                            <span class="text-xs sm:text-sm font-bold text-white tracking-tight">Этот тест собран в Летучке</span>
-                            <span class="px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-zinc-400 text-[11px] font-mono-nums">~30 сек</span>
-                        </div>
-                        <p class="text-xs text-gray-400 mt-1 max-w-xl leading-relaxed">
-                            Загрузите конспект, PDF или просто напишите тему — нейросеть соберёт тест с ключами, ссылкой для учеников и PDF-бланком.
-                            {% if can_generate %}Первый тест — без регистрации.{% else %}После регистрации — 5 тестов бесплатно.{% endif %}
-                        </p>
-                    </div>
+            <!-- БАННЕР: АНОНИМ СМОТРИТ ЧУЖОЙ ТЕСТ -->
+            <div data-rv data-rv-order="1" class="cta-trace dv-banner dv-banner--plain">
+                <div class="min-w-0">
+                    <h4>Этот тест собран в Летучке <span class="dv-tag dv-tag--muted">~30 сек</span></h4>
+                    <p>Загрузите конспект, PDF или тему — нейросеть соберёт тест с ключами, ссылкой и PDF-бланком. {% if can_generate %}Первый тест — без регистрации.{% else %}После регистрации — 5 тестов бесплатно.{% endif %}</p>
                 </div>
-
-                <div class="flex items-center gap-2 sm:flex-shrink-0 relative z-10 w-full sm:w-auto">
-                    <a href="{% url 'create' %}" class="w-full sm:w-auto px-5 py-3 rounded-xl sm:rounded-full bg-white hover:bg-zinc-200 text-zinc-900 text-xs font-bold transition-colors spring-btn text-center flex items-center justify-center gap-2">
-                        <span>Создать свой тест</span>
-                        <i class="fas fa-arrow-right text-[10px]"></i>
-                    </a>
-                </div>
+                <a href="{% url 'create' %}" class="dv-btn dv-btn--primary dv-btn--auto" style="height:40px;padding:0 20px">
+                    <span>Создать свой тест</span>
+                    <svg class="dv-ico" viewBox="0 0 16 16"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+                </a>
             </div>
             {% endif %}
 
@@ -894,113 +985,67 @@
                         }
                     </script>
 
-                    <div class="mb-6 px-1 flex flex-row items-baseline gap-2.5">
-                        <h1 id="page-title" class="text-lg sm:text-3xl font-bold text-white tracking-tight leading-snug">
-                            <!-- Сюда JS подставит тайтл -->
-                        </h1>
-                        {% if username != 0 and is_creator %}
-                            <button onclick="openEditTitleModal()" class="text-gray-400 hover:text-indigo-400 hover:bg-white/5 rounded-lg p-1.5 transition-all shrink-0 self-start mt-0.5" title="Переименовать тест">
-                                <i class="fas fa-pen text-xs sm:text-base"></i>
+                    <div class="dv-head">
+                        <div class="dv-title">
+                            <h1 id="page-title"><!-- Сюда JS подставит тайтл --></h1>
+                            {% if username != 0 and is_creator %}
+                            <button type="button" onclick="openEditTitleModal()" class="dv-iconbtn dv-iconbtn--title" title="Переименовать тест" aria-label="Переименовать тест">
+                                <svg class="dv-ico" viewBox="0 0 16 16"><path d="M10.5 2.8l2.7 2.7M2.5 13.5l.6-3L11 2.6a1.2 1.2 0 0 1 1.7 0l.7.7a1.2 1.2 0 0 1 0 1.7L5.5 12.9l-3 .6Z"/></svg>
                             </button>
-                        {% endif %}
-                    </div>
-
-                    <div data-rv="fade" data-rv-order="2" class="flex items-center justify-between px-2 pb-2">
-                        <div class="flex items-center gap-2.5">
-                            <span class="text-xs font-bold uppercase tracking-wider text-gray-400">Вопросы</span>
-                            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold font-mono-nums bg-white/5 border border-white/10 text-gray-300" id="total-questions-badge">{{ questions|length }}</span>
-                            <span class="text-[11px] text-zinc-500 font-mono-nums hidden sm:inline">• Кликайте по вариантам для проверки</span>
+                            {% endif %}
                         </div>
-                        <span class="text-xs text-gray-500 font-medium font-mono-nums">{{ model_name }}</span>
+                        <div data-rv="fade" data-rv-order="2" class="dv-meta">
+                            <span>Вопросов <b id="total-questions-badge">{{ questions|length }}</b></span>
+                            <span class="dv-dot"></span>
+                            <span>{{ model_name }}</span>
+                            {% if is_creator or is_guest_owner %}<span class="dv-hint">Нажмите на вариант, чтобы проверить ключ</span>{% endif %}
+                        </div>
                     </div>
 
-                    <div id="questions-stream" class="space-y-4">
+                    <div id="questions-stream" class="space-y-3.5">
                         {% for question in questions %}
-                        <article data-rv data-rv-order="3" class="question-card glass-panel rounded-[28px] p-6 transition-all relative border border-white/[0.08]"
+                        <article data-rv data-rv-order="3" class="question-card dv-card dv-q"
                                  data-question-index="{{ forloop.counter0 }}"
-                                 data-question-type="{{ question.type|default:'single' }}">
+                                 data-question-type="{{ question.type }}">
 
-                            <!-- ШАПКА КАРТОЧКИ: ТИП + ВСЕГДА ДОСТУПНЫЙ КАРАНДАШ -->
-                            <div class="flex items-start justify-between gap-4 mb-4">
-                                <div class="flex items-center gap-2.5">
-                                    <span class="w-8 h-8 rounded-xl bg-[#18171C] border border-white/10 font-mono-nums text-xs font-bold text-gray-300 flex items-center justify-center overflow-hidden">
-                                        <span class="q-num-inner">{{ forloop.counter }}</span>
-                                    </span>
-                                    {% if question.type == 'multiple' %}
-                                        <span class="px-2.5 py-1 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[11px] font-semibold flex items-center gap-1.5">
-                                            <i class="fas fa-list-check text-[10px]"></i> Несколько вариантов
-                                        </span>
-                                    {% else %}
-                                        <span class="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-gray-400 text-[11px] font-medium">
-                                            Один вариант
-                                        </span>
-                                    {% endif %}
-                                </div>
+                            <div class="dv-q-head">
+                                <span class="dv-qn"><span class="q-num-inner">{{ forloop.counter }}</span></span>
+                                {% if question.type == 'multiple' %}
+                                    <span class="dv-qtype dv-qtype--multi">Несколько вариантов</span>
+                                {% else %}
+                                    <span class="dv-qtype">Один вариант</span>
+                                {% endif %}
 
-                                <!-- ЭКШЕНЫ ВОПРОСА: ПОСТОЯННЫЙ КАРАНДАШ + КНОПКИ САЙДБАР-РЕЖИМА -->
-                                <div class="flex items-center gap-1">
-                                    {% if username != 0 and is_creator %}
-                                        <button type="button"
-                                                class="always-pencil-btn text-zinc-400 hover:text-white p-2 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] border border-white/5 transition-all spring-btn flex items-center gap-1.5"
-                                                onclick="editExistingQuestion({{ forloop.counter0 }})"
-                                                title="Редактировать этот вопрос">
-                                            <i class="fas fa-pen text-[11px] text-indigo-400"></i>
-                                            <span class="text-[11px] font-medium hidden sm:inline text-zinc-300">Изменить</span>
+                                {% if username != 0 and is_creator %}
+                                <div class="dv-q-actions">
+                                    <button type="button" class="dv-iconbtn always-pencil-btn" onclick="editExistingQuestion({{ forloop.counter0 }})" title="Редактировать вопрос" aria-label="Редактировать вопрос">
+                                        <svg class="dv-ico" viewBox="0 0 16 16"><path d="M10.5 2.8l2.7 2.7M2.5 13.5l.6-3L11 2.6a1.2 1.2 0 0 1 1.7 0l.7.7a1.2 1.2 0 0 1 0 1.7L5.5 12.9l-3 .6Z"/></svg>
+                                    </button>
+                                    <span class="edit-actions hidden items-center">
+                                        <button type="button" class="dv-iconbtn dv-iconbtn--del" onclick="deleteQuestion({{ forloop.counter0 }})" title="Удалить вопрос" aria-label="Удалить вопрос">
+                                            <svg class="dv-ico" viewBox="0 0 16 16"><path d="M2.5 4.2h11M6 4.2V2.8h4v1.4M4 4.2l.6 8.4a1 1 0 0 0 1 .9h4.8a1 1 0 0 0 1-.9l.6-8.4M6.6 7v4M9.4 7v4"/></svg>
                                         </button>
-
-                                        <div class="edit-actions hidden items-center gap-1">
-                                            <button type="button"
-                                                    class="text-gray-400 hover:text-rose-400 p-2 rounded-xl hover:bg-rose-500/10 transition-colors spring-btn"
-                                                    onclick="deleteQuestion({{ forloop.counter0 }})"
-                                                    title="Удалить вопрос">
-                                                <i class="fas fa-trash-can text-xs"></i>
-                                            </button>
-                                        </div>
-                                    {% endif %}
+                                    </span>
                                 </div>
+                                {% endif %}
                             </div>
 
-                            <!-- ТЕКСТ ВОПРОСА -->
-                            <h3 class="q-title text-base sm:text-lg font-semibold text-zinc-100 mb-5 leading-snug">
-                                {{ question.question }}
-                            </h3>
+                            <h3 class="q-title dv-q-title">{{ question.question }}</h3>
 
-                            <!-- СПИСОК ВАРИАНТОВ (ИНТЕРАКТИВНЫЙ КЛИК) -->
-                            <div class="options-container space-y-2.5">
+                            <div class="options-container dv-opts">
                                 {% for option in question.options %}
-                                <div class="option-row flex items-center gap-3 p-3.5 rounded-2xl border text-sm transition-all
-                                    {% if show_answers and option in question.correct_answers %}
-                                        is-correct bg-emerald-500/10 border-emerald-500/30 text-emerald-300 font-medium
-                                    {% else %}
-                                        {% if option in question.correct_answers %}is-correct{% endif %} bg-[#111119]/70 border-indigo-300/10 bg-white/[0.04] text-gray-300
-                                    {% endif %}"
-                                    data-is-correct="{% if option in question.correct_answers %}true{% else %}false{% endif %}"
-                                    data-option-text="{{ option|escapejs }}">
-
-                                    <span class="opt-badge w-6 h-6 rounded-lg flex items-center justify-center text-xs flex-shrink-0
-                                        {% if show_answers and option in question.correct_answers %}
-                                            bg-emerald-500 text-black font-bold
-                                        {% else %}
-                                            bg-white/5 border border-white/10 text-gray-400
-                                        {% endif %}">
-                                        {% if question.type == 'multiple' %}
-                                            <i class="opt-icon fas {% if show_answers and option in question.correct_answers %}fa-check{% else %}fa-square text-[9px] opacity-40{% endif %}"></i>
-                                        {% else %}
-                                            <i class="opt-icon fas {% if show_answers and option in question.correct_answers %}fa-check{% else %}fa-circle text-[7px] opacity-40{% endif %}"></i>
-                                        {% endif %}
+                                <div class="option-row{% if show_answers and option in question.correct_answers %} is-hint{% endif %}"
+                                     data-is-correct="{% if option in question.correct_answers %}true{% else %}false{% endif %}"
+                                     data-option-text="{{ option|escapejs }}">
+                                    <span class="opt-badge dv-ob{% if question.type == 'multiple' %} dv-ob--multi{% endif %}">
+                                        <svg class="i-ok" viewBox="0 0 16 16"><path d="M3.2 8.4 6.5 11.6 12.8 4.8"/></svg>
+                                        <svg class="i-bad" viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8"/></svg>
                                     </span>
-
-                                    <span class="flex-grow select-none">{{ option }}</span>
-
-                                    <!-- ИНЛАЙН СТАТУС ВЕРДИКТА -->
-                                    <span class="opt-label text-[11px] font-mono-nums uppercase tracking-wider text-emerald-400 font-bold
-                                        {% if not show_answers or option not in question.correct_answers %}hidden{% endif %}">
-                                        Верно
-                                    </span>
+                                    <span class="dv-ot select-none">{{ option }}</span>
+                                    <span class="opt-label dv-ol">Верно</span>
                                 </div>
                                 {% endfor %}
                             </div>
-
                         </article>
 
                         {% if forloop.counter == 2 or forloop.last and forloop.counter == 1 %}
@@ -1112,270 +1157,117 @@
                 </section>
 
                 <!-- ПРАВАЯ СЕКЦИЯ: ПАНЕЛЬ ДЕЙСТВИЙ -->
-                <aside class="lg:col-span-4 space-y-5 lg:sticky lg:top-24">
+                <aside class="lg:col-span-4 space-y-4 lg:sticky lg:top-24">
 
-                    <div data-rv data-rv-order="4" class="glass-panel rounded-[28px] p-5 sm:p-6 shadow-2xl space-y-4 border border-white/[0.08] align-center">
+                    <!-- ДЕЙСТВИЯ -->
+                    <div data-rv data-rv-order="4" class="dv-card" style="padding:16px; display:grid; gap:12px">
+                        <a href="{% url 'take_test' survey_id %}" class="dv-btn dv-btn--primary">
+                            <svg class="dv-ico dv-ico--fill" viewBox="0 0 16 16"><path d="M5.2 3.1a.9.9 0 0 1 1.4-.76l6.2 4.4a.9.9 0 0 1 0 1.52l-6.2 4.4a.9.9 0 0 1-1.4-.76V3.1Z"/></svg>
+                            <span>Пройти тестирование</span>
+                        </a>
+
                         {% if username != 0 %}
-                            <!-- АВТОРИЗОВАННЫЙ ПОЛЬЗОВАТЕЛЬ -->
-                            <div class="space-y-2">
-                                <button type="button"
-                                        data-action="share"
-                                        data-share-url="{% url 'take_test' survey_id %}"
-                                        class="w-full mb-4 flex items-center justify-center gap-2.5 py-3.5 px-4 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-semibold shadow-lg shadow-indigo-600/25 transition-all spring-btn">
-                                    <i class="fas fa-link text-xs"></i>
-                                    <span>Скопировать ссылку на тест</span>
-                                </button>
-
-                                <div class="grid grid-cols-2 gap-2">
-                                    <button type="button"
-                                            onclick="showClassroomQR()"
-                                            class="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-xs font-medium text-zinc-200 transition-all spring-btn">
-                                        <i class="fas fa-qrcode text-zinc-400"></i>
-                                        <span>QR-код</span>
-                                    </button>
-                                    <a href="{% url 'download-survey_pdf' survey_id %}"
-                                    class="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-xs font-medium text-zinc-200 transition-all spring-btn">
-                                        <i class="fas fa-file-pdf text-zinc-400"></i>
-                                        <span>Бланк PDF</span>
-                                    </a>
-                                </div>
-                            </div>
-
-                            <div class="h-px bg-white/5 my-1"></div>
-
-                            <a href="{% url 'take_test' survey_id %}"
-                            class="w-full flex items-center justify-center gap-2 py-2 text-indigo-400 hover:text-white transition-colors border border-white/10 rounded-xl hover:border-white/10 text-xs font-medium">
-                                <i class="fas fa-play text-[10px] text-indigo-500"></i>
-                                <span>Пройти тестирование</span>
+                        <button type="button" data-action="share" data-share-url="{% url 'take_test' survey_id %}" class="dv-btn dv-btn--accent">
+                            <svg class="dv-ico" viewBox="0 0 16 16"><path d="M6.8 9.2a3 3 0 0 0 4.2 0l2-2a3 3 0 0 0-4.2-4.2l-.6.6"/><path d="M9.2 6.8a3 3 0 0 0-4.2 0l-2 2a3 3 0 0 0 4.2 4.2l.6-.6"/></svg>
+                            <span>Скопировать ссылку</span>
+                        </button>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
+                            <button type="button" onclick="showClassroomQR()" class="dv-btn dv-btn--ghost">
+                                <svg class="dv-ico" viewBox="0 0 16 16"><rect x="2" y="2" width="4.5" height="4.5" rx="1"/><rect x="9.5" y="2" width="4.5" height="4.5" rx="1"/><rect x="2" y="9.5" width="4.5" height="4.5" rx="1"/><path d="M9.5 9.5h2v2h-2zM12.5 12.5H14V14h-1.5z"/></svg>
+                                <span>QR-код</span>
+                            </button>
+                            <a href="{% url 'download-survey_pdf' survey_id %}" class="dv-btn dv-btn--ghost">
+                                <svg class="dv-ico" viewBox="0 0 16 16"><path d="M4 1.8h5l3.2 3.2v8.2a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2.8a1 1 0 0 1 1-1Z"/><path d="M9 1.8V5h3.2M5.5 8.5h5M5.5 11h3.5"/></svg>
+                                <span>Бланк PDF</span>
                             </a>
-
+                        </div>
                         {% else %}
-                            <div class="space-y-3">
-                                <div class="space-y-1">
-                                    <span class="text-xs font-bold uppercase tracking-wider text-gray-400 block">Действия с тестом</span>
-                                </div>
-
-                                <!-- Поделиться -->
-                                <button type="button"
-                                        onclick="openRegisterModal('share')"
-                                        class="w-full flex items-center justify-between p-3 rounded-2xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 text-white transition-all spring-btn text-left group">
-                                    <div class="flex items-center gap-3">
-                                        <span class="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center text-xs group-hover:bg-indigo-500/20 transition-colors">
-                                            <i class="fas fa-link"></i>
-                                        </span>
-                                        <div>
-                                            <span class="text-xs font-semibold block text-zinc-200 group-hover:text-white">Поделиться тестом</span>
-                                            <span class="text-[10px] text-zinc-500">Ссылка и QR-код для прохождения</span>
-                                        </div>
-                                    </div>
-                                    <i class="fas fa-lock text-[10px] text-zinc-600 pr-1 group-hover:text-zinc-400 transition-colors"></i>
-                                </button>
-
-                                <!-- Скачать PDF -->
-                                <button type="button"
-                                        onclick="openRegisterModal('pdf')"
-                                        class="w-full flex items-center justify-between p-3 rounded-2xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 text-white transition-all spring-btn text-left group">
-                                    <div class="flex items-center gap-3">
-                                        <span class="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center text-xs group-hover:bg-indigo-500/20 transition-colors">
-                                            <i class="fas fa-file-pdf"></i>
-                                        </span>
-                                        <div>
-                                            <span class="text-xs font-semibold block text-zinc-200 group-hover:text-white">Скачать для печати</span>
-                                            <span class="text-[10px] text-zinc-500">Готовый тест в PDF</span>
-                                        </div>
-                                    </div>
-                                    <i class="fas fa-lock text-[10px] text-zinc-600 pr-1 group-hover:text-zinc-400 transition-colors"></i>
-                                </button>
-
-                                <div class="pt-2 border-t border-white/5">
-                                    <a href="{% url 'take_test' survey_id %}"
-                                        class="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-indigo-600/10 hover:bg-indigo-600 border border-indigo-500/20 hover:border-indigo-500 text-xs font-semibold text-indigo-400 hover:text-white transition-all spring-btn group">
-                                        <i class="fas fa-arrow-right text-[10px] transition-transform group-hover:translate-x-0.5"></i>
-                                        <span>Пройти тестирование</span>
-                                    </a>
-                                </div>
-                            </div>
-                        {% endif %}
-                    </div>
-
-                    <!-- ПАНЕЛЬ УПРАВЛЕНИЯ ТЕСТОМ -->
-                    <div data-rv data-rv-order="4" class="glass-panel rounded-[32px] p-6 space-y-5">
-                        <span class="text-xs font-bold uppercase tracking-wider text-gray-400 block">Управление тестом</span>
-
-                        <!-- 1. Тумблер ответов -->
-                        <div class="flex items-center justify-between gap-4 py-2 border-b border-white/5">
-                            <div>
-                                <div class="flex items-center gap-1.5">
-                                    <span class="text-xs font-semibold text-white block">Показ ответов</span>
-                                    {% if username == 0 or not is_creator %}
-                                        <i class="fas fa-lock text-[9px] text-amber-400/80" title="Только для автора"></i>
-                                    {% endif %}
-                                </div>
-                                <span class="text-[11px] text-gray-500">
-                                    {% if username == 0 %}
-                                        Показать правильные ответы
-                                    {% else %}
-                                        Открыть все правильные ответы
-                                    {% endif %}
-                                </span>
-                            </div>
-
-                            {% if username != 0 and is_creator %}
-                                <label class="relative inline-block w-11 h-6 cursor-pointer">
-                                    <input type="checkbox" id="answersToggle" class="sr-only peer" {% if show_answers %}checked{% endif %}>
-                                    <div class="w-11 h-6 bg-[#18171A] border border-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-400 peer-checked:after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
-                                </label>
-                            {% else %}
-                                <button type="button"
-                                        onclick="{% if username == 0 %}openRegisterModal('answers'){% else %}Island.warn('Переключать ответы может только автор теста', 'fa-eye-slash'){% endif %}"
-                                        class="relative inline-block w-11 h-6 cursor-pointer focus:outline-none group">
-                                    <div class="w-11 h-6 bg-[#18171A] border border-white/10 rounded-full relative transition-colors group-hover:border-amber-400/40">
-                                        <span class="absolute top-[2px] left-[2px] bg-zinc-700 rounded-full h-5 w-5 flex items-center justify-center text-[9px] text-amber-300">
-                                            <i class="fas fa-lock text-[8px]"></i>
-                                        </span>
-                                    </div>
-                                </button>
-                            {% endif %}
-                        </div>
-
-                        <!-- 2. Режим правки (массовый) -->
-                        <div class="flex items-center justify-between py-2 border-b border-white/5">
-                            <div>
-                                <div class="flex items-center gap-1.5">
-                                    <span class="text-xs font-semibold text-white block">Режим правки</span>
-                                    {% if username == 0 or not is_creator %}
-                                        <i class="fas fa-lock text-[9px] text-amber-400/80" title="Только для автора"></i>
-                                    {% endif %}
-                                </div>
-                                <span class="text-[11px] text-gray-500">Удаление и добавление вопросов</span>
-                            </div>
-
-                            {% if username != 0 and is_creator %}
-                                <button type="button" id="toggle-edit-mode-btn" class="px-3.5 py-1.5 rounded-xl bg-[#18171A] border border-white/10 text-xs font-semibold text-gray-300 hover:text-white spring-btn">
-                                    Править
-                                </button>
-                            {% else %}
-                                <button type="button"
-                                        onclick="{% if username == 0 %}openRegisterModal('edit'){% else %}Island.warn('Это чужой тест. Создайте свой в конструкторе, чтобы редактировать!', 'fa-pen-slash'){% endif %}"
-                                        class="px-3 py-1.5 rounded-xl bg-[#18171A] border border-white/10 text-xs font-semibold text-gray-400 hover:text-white hover:border-amber-400/40 spring-btn inline-flex items-center gap-1.5">
-                                    <i class="fas fa-lock text-[9px] text-amber-400"></i>
-                                    <span>Править</span>
-                                </button>
-                            {% endif %}
-                        </div>
-
-                        <!-- 3. Перегенерация -->
-                        <div class="flex items-center justify-between py-2 border-b border-white/5">
-                            <div>
-                                <div class="flex items-center gap-1.5">
-                                    <span class="text-xs font-semibold text-white block">Пересобрать тест</span>
-                                    {% if username == 0 or not is_creator %}
-                                        <i class="fas fa-lock text-[9px] text-amber-400/80" title="Только для автора"></i>
-                                    {% endif %}
-                                </div>
-                                <span class="text-[11px] text-gray-500">Сгенерировать другой вариант</span>
-                            </div>
-
-                            {% if username != 0 and is_creator %}
-                                <button type="button" id="btn-regenerate-survey" onclick="triggerRegenerateSurvey()" class="px-3.5 py-1.5 rounded-xl bg-white/5 border border-white/10 text-xs font-semibold text-indigo-400 hover:bg-indigo-600 hover:text-white spring-btn">
-                                    Пересобрать
-                                </button>
-                            {% else %}
-                                <button type="button"
-                                        onclick="{% if username == 0 %}openRegisterModal('regenerate'){% else %}Island.warn('Пересобрать тест может только его автор. Создайте свой!', 'fa-rotate'){% endif %}"
-                                        class="px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-xs font-semibold text-gray-400 hover:text-white hover:border-amber-400/40 spring-btn inline-flex items-center gap-1.5">
-                                    <i class="fas fa-lock text-[9px] text-amber-400"></i>
-                                    <span>Пересобрать</span>
-                                </button>
-                            {% endif %}
-                        </div>
-
-                        {% if username != 0 and username == author %}
-                        <div class="w-full flex items-center justify-center gap-2 py-2 text-indigo-400 hover:text-white transition-colors text-xs font-medium">
-                            <button onclick="openDeleteModal('{{ survey_id }}', '{{ title|escapejs }}')" class="w-full py-2.5 rounded-xl text-xs font-semibold text-gray-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors text-center block">
-                                <i class="fas fa-trash-can text-[10px] text-red-400 pr-2"></i>
-                                Удалить этот тест
+                        <button type="button" onclick="openRegisterModal('share')" class="dv-btn dv-btn--accent">
+                            <svg class="dv-ico" viewBox="0 0 16 16"><path d="M6.8 9.2a3 3 0 0 0 4.2 0l2-2a3 3 0 0 0-4.2-4.2l-.6.6"/><path d="M9.2 6.8a3 3 0 0 0-4.2 0l-2 2a3 3 0 0 0 4.2 4.2l.6-.6"/></svg>
+                            <span>Поделиться тестом</span>
+                        </button>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
+                            <button type="button" onclick="openRegisterModal('qr')" class="dv-btn dv-btn--ghost">
+                                <svg class="dv-ico" viewBox="0 0 16 16"><rect x="2" y="2" width="4.5" height="4.5" rx="1"/><rect x="9.5" y="2" width="4.5" height="4.5" rx="1"/><rect x="2" y="9.5" width="4.5" height="4.5" rx="1"/><path d="M9.5 9.5h2v2h-2zM12.5 12.5H14V14h-1.5z"/></svg>
+                                <span>QR-код</span>
+                                <svg class="dv-ico dv-lock" style="width:11px;height:11px" viewBox="0 0 16 16"><rect x="3.2" y="7" width="9.6" height="6.8" rx="1.6"/><path d="M5.3 7V5.2a2.7 2.7 0 0 1 5.4 0V7"/></svg>
+                            </button>
+                            <button type="button" onclick="openRegisterModal('pdf')" class="dv-btn dv-btn--ghost">
+                                <svg class="dv-ico" viewBox="0 0 16 16"><path d="M4 1.8h5l3.2 3.2v8.2a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2.8a1 1 0 0 1 1-1Z"/><path d="M9 1.8V5h3.2M5.5 8.5h5M5.5 11h3.5"/></svg>
+                                <span>Бланк PDF</span>
+                                <svg class="dv-ico dv-lock" style="width:11px;height:11px" viewBox="0 0 16 16"><rect x="3.2" y="7" width="9.6" height="6.8" rx="1.6"/><path d="M5.3 7V5.2a2.7 2.7 0 0 1 5.4 0V7"/></svg>
                             </button>
                         </div>
                         {% endif %}
                     </div>
 
-                    <!-- ЭКСПРЕСС-АНАЛИТИКА ТЕСТА -->
-                    {% if is_creator and username != 0 %}
-                    <div data-rv data-rv-order="4" class="glass-panel rounded-[32px] p-6 space-y-4 relative overflow-hidden border border-white/[0.08]">
+                    <!-- УПРАВЛЕНИЕ -->
+                    <div data-rv data-rv-order="4" class="dv-card dv-rows">
 
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-2.5">
-                                <span class="w-7 h-7 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center text-xs">
-                                    <i class="fas fa-chart-pie"></i>
-                                </span>
-                                <div>
-                                    <span class="text-xs font-bold text-white block tracking-tight">Аналитика</span>
-                                    <span class="text-[10px] text-gray-500 font-mono-nums">Активность прохождений</span>
-                                </div>
-                            </div>
+                        <div class="dv-row">
+                            <span class="dv-row-t" title="Показать правильные ответы всем, кто откроет тест">Показ ответов
+                                {% if username == 0 or not is_creator %}<svg class="dv-ico dv-lock" style="width:11px;height:11px" viewBox="0 0 16 16"><rect x="3.2" y="7" width="9.6" height="6.8" rx="1.6"/><path d="M5.3 7V5.2a2.7 2.7 0 0 1 5.4 0V7"/></svg>{% endif %}
+                            </span>
+                            {% if username != 0 and is_creator %}
+                                <label class="dv-switch" aria-label="Показ ответов">
+                                    <input type="checkbox" id="answersToggle" {% if show_answers %}checked{% endif %}>
+                                    <i></i>
+                                </label>
+                            {% else %}
+                                <button type="button" class="dv-chip"
+                                        onclick="{% if username == 0 %}openRegisterModal('answers'){% else %}Island.warn('Переключать ответы может только автор теста', 'fa-eye-slash'){% endif %}">Открыть</button>
+                            {% endif %}
                         </div>
 
-                        <div class="space-y-3.5 relative {% if subscription_level == 0 %}filter blur-sm opacity-40 pointer-events-none select-none{% endif %}">
-                            <div class="grid grid-cols-2 gap-2 pt-1">
-                                <div class="p-3 rounded-2xl bg-[#16151A] border border-white/5 space-y-1">
-                                    <span class="text-[10px] text-gray-500 uppercase tracking-wider block font-semibold">Сдано тестов</span>
-                                    <div class="flex items-baseline gap-1.5">
-                                        <span id="qa-total-attempts" class="text-xl font-extrabold text-white font-mono-nums">—</span>
-                                        <span id="qa-conversion-rate" class="text-[10px] text-gray-500 font-mono-nums"></span>
-                                    </div>
-                                </div>
-
-                                <div class="p-3 rounded-2xl bg-[#16151A] border border-white/5 space-y-1">
-                                    <span class="text-[10px] text-gray-500 uppercase tracking-wider block font-semibold">Успеваемость</span>
-                                    <div class="flex items-baseline gap-1.5">
-                                        <span id="qa-success-rate" class="text-xl font-extrabold text-emerald-400 font-mono-nums">—%</span>
-                                        <span class="text-[10px] text-gray-500">сдали</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="space-y-1.5 pt-1">
-                                <div class="flex justify-between items-center text-[10px] text-gray-500 font-mono-nums px-1">
-                                    <span>Тренд за 7 дней</span>
-                                    <span id="qa-last-activity" class="text-gray-400 font-sans">Загрузка...</span>
-                                </div>
-
-                                <div class="relative w-full h-[68px] rounded-2xl bg-[#16151A] border border-white/5 p-2 overflow-hidden flex items-center justify-center">
-                                    <canvas id="qa-sparkline-canvas" class="w-full h-full"></canvas>
-                                    <div id="qa-empty-sparkline" class="hidden text-[10px] text-gray-500 font-mono-nums">
-                                        Ожидание первых сдач
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="pt-1">
-                                <a href="{% url 'preview_test_result' survey_id %}"
-                                   class="master-pill-btn group w-full h-[46px] rounded-2xl text-white text-xs font-bold flex items-center justify-center gap-2 select-none spring-btn">
-                                    <span>Открыть полную аналитику</span>
-                                    <i class="fas fa-arrow-right text-[10px] text-indigo-200 group-hover:translate-x-1 transition-transform"></i>
-                                </a>
-                            </div>
+                        <div class="dv-row">
+                            <span class="dv-row-t" title="Удаление и добавление вопросов">Режим правки
+                                {% if username == 0 or not is_creator %}<svg class="dv-ico dv-lock" style="width:11px;height:11px" viewBox="0 0 16 16"><rect x="3.2" y="7" width="9.6" height="6.8" rx="1.6"/><path d="M5.3 7V5.2a2.7 2.7 0 0 1 5.4 0V7"/></svg>{% endif %}
+                            </span>
+                            {% if username != 0 and is_creator %}
+                                <button type="button" id="toggle-edit-mode-btn" class="dv-chip">Править</button>
+                            {% else %}
+                                <button type="button" class="dv-chip"
+                                        onclick="{% if username == 0 %}openRegisterModal('edit'){% else %}Island.warn('Это чужой тест. Создайте свой в конструкторе, чтобы редактировать!', 'fa-pen-slash'){% endif %}">Править</button>
+                            {% endif %}
                         </div>
 
-                        {% if subscription_level == 0 %}
-                        <div class="absolute inset-0 z-10 flex flex-col items-center justify-center p-6 text-center bg-[#18171C]/80 backdrop-blur-md rounded-[32px] space-y-3">
-                            <div class="w-10 h-10 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center text-sm shadow-md">
-                                <i class="fas fa-lock"></i>
-                            </div>
-                            <div>
-                                <h4 class="text-xs font-bold text-white tracking-tight">Аналитика ответов</h4>
-                                <p class="text-[11px] text-gray-400 mt-1 max-w-[200px] leading-relaxed">
-                                    Смотрите графики сдач, рейтинг учеников и сложные вопросы.
-                                </p>
-                            </div>
-                            <a href="{% url 'payment' %}" class="px-4 py-2 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all spring-btn shadow-lg shadow-indigo-600/30">
-                                Подключить Премиум
-                            </a>
+                        <div class="dv-row">
+                            <span class="dv-row-t" title="Сгенерировать другой вариант вопросов">Пересобрать тест
+                                {% if username == 0 or not is_creator %}<svg class="dv-ico dv-lock" style="width:11px;height:11px" viewBox="0 0 16 16"><rect x="3.2" y="7" width="9.6" height="6.8" rx="1.6"/><path d="M5.3 7V5.2a2.7 2.7 0 0 1 5.4 0V7"/></svg>{% endif %}
+                            </span>
+                            {% if username != 0 and is_creator %}
+                                <button type="button" id="btn-regenerate-survey" onclick="triggerRegenerateSurvey()" class="dv-chip dv-chip--accent">Пересобрать</button>
+                            {% else %}
+                                <button type="button" class="dv-chip"
+                                        onclick="{% if username == 0 %}openRegisterModal('regenerate'){% else %}Island.warn('Пересобрать тест может только его автор. Создайте свой!', 'fa-rotate'){% endif %}">Пересобрать</button>
+                            {% endif %}
                         </div>
+
+                        {% if username != 0 and username == author %}
+                        <button type="button" onclick="openDeleteModal('{{ survey_id }}', '{{ title|escapejs }}')" class="dv-danger">
+                            <svg class="dv-ico" viewBox="0 0 16 16"><path d="M2.5 4.2h11M6 4.2V2.8h4v1.4M4 4.2l.6 8.4a1 1 0 0 0 1 .9h4.8a1 1 0 0 0 1-.9l.6-8.4M6.6 7v4M9.4 7v4"/></svg>
+                            <span>Удалить тест</span>
+                        </button>
                         {% endif %}
-
                     </div>
+
+                    <!-- ИТОГИ: две цифры и вход в полную аналитику (кнопка «Аналитика» в острове остаётся) -->
+                    {% if is_creator and username != 0 %}
+                        {% if subscription_level == 0 %}
+                        <a data-rv data-rv-order="4" href="{% url 'payment' %}" class="dv-card dv-stats">
+                            <div>
+                                <span class="dv-stat-k">Аналитика ответов</span>
+                                <span class="dv-stat-v" style="font-size:14px;font-weight:600">Доступна в Премиуме</span>
+                            </div>
+                            <svg class="dv-ico dv-stat-go" viewBox="0 0 16 16"><rect x="3.2" y="7" width="9.6" height="6.8" rx="1.6"/><path d="M5.3 7V5.2a2.7 2.7 0 0 1 5.4 0V7"/></svg>
+                        </a>
+                        {% else %}
+                        <a data-rv data-rv-order="4" href="{% url 'preview_test_result' survey_id %}" class="dv-card dv-stats" aria-label="Открыть полную аналитику">
+                            <div><span class="dv-stat-k">Сдано</span><span class="dv-stat-v" id="qa-total-attempts">—</span></div>
+                            <div><span class="dv-stat-k">Успеваемость</span><span class="dv-stat-v" id="qa-success-rate">—</span></div>
+                            <svg class="dv-ico dv-stat-go" viewBox="0 0 16 16"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+                        </a>
+                        {% endif %}
                     {% endif %}
 
                 </aside>
@@ -1525,11 +1417,17 @@
         </div>
 
         <!-- QR МОДАЛКА -->
-        <div id="qrModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex-col items-center justify-center p-4" onclick="this.classList.add('hidden'); this.classList.remove('flex');">
-            <div class="bg-white p-6 rounded-[28px] shadow-2xl mb-4" onclick="event.stopPropagation()">
-                <div id="qrcode"></div>
+        <div id="qrModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="qrLinkText">
+            <div class="fixed inset-0 bg-black/80 backdrop-blur-md" onclick="closeQR()"></div>
+            <div class="dv-card dv-qr spring-modal-content">
+                <button type="button" class="dv-iconbtn dv-x" onclick="closeQR()" aria-label="Закрыть">
+                    <svg class="dv-ico" viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+                </button>
+                <div class="dv-qr-box"><div id="qrcode"></div></div>
+                <p class="dv-qr-t" id="qrLinkText"></p>
+                <p class="dv-qr-h">Наведите камеру телефона, чтобы открыть тест</p>
+                <button type="button" class="dv-btn dv-btn--ghost" onclick="closeQR()">Закрыть</button>
             </div>
-            <p class="text-sm font-semibold text-white" id="qrLinkText"></p>
         </div>
 
     </div>
@@ -2277,107 +2175,61 @@
 
         /* ==========================================================================
         ИНТЕРАКТИВНЫЙ КЛИК ПО ВАРИАНТАМ (ТЕСТ-ДРАЙВ В ПРЕВЬЮ)
+        Состояние строки — один класс: is-ok / is-bad / is-hint. Цвета и иконки рисует CSS.
         ========================================================================== */
-        const ROW_IDLE = 'bg-[#111119]/70 border-white/[0.04] text-gray-300';
-        const BADGE_IDLE = 'bg-white/5 border border-white/10 text-gray-400';
+        const ROW_STATES = ['is-ok', 'is-bad', 'is-hint'];
+
+        function setRow(row, state, label) {
+            row.classList.remove.apply(row.classList, ROW_STATES);
+            if (state) row.classList.add(state);
+            const l = row.querySelector('.opt-label');
+            if (l) l.textContent = label || (state === 'is-bad' ? 'Неверно' : 'Верно');
+        }
 
         function initInteractiveQuizPreview() {
             const isOwner = {% if is_creator or is_guest_owner %}true{% else %}false{% endif %};
 
-            $('.options-container').on('click', '.option-row', function(e) {
-                if (isEditMode) return;
-                if (answersRevealed) return;
+            document.addEventListener('click', function (e) {
+                const row = e.target.closest('.option-row');
+                if (!row) return;
+                if (isEditMode || answersRevealed) return;
 
-                // Если кликает НЕ автор (ученик, перешедший по ссылке /c/) — не даем тыкать вхолостую:
+                // Ученик по ссылке /c/ не тыкает вхолостую
                 if (!isOwner) {
                     Island.notify('Чтобы сдать тест, нажмите «Пройти»', 'info', 'fa-play', 3500);
-                    // Мягко подсвечиваем кнопку прохождения
-                    $('a[href*="take_test"]').first().addClass('ring-2 ring-indigo-400');
-                    setTimeout(() => $('a[href*="take_test"]').first().removeClass('ring-2 ring-indigo-400'), 1500);
                     return;
                 }
 
-                const $row = $(this);
-                const $article = $row.closest('article');
-                const qType = $article.attr('data-question-type') || 'single';
-                const isCorrect = ($row.attr('data-is-correct') === 'true');
+                const article = row.closest('article');
+                const multiple = (article.getAttribute('data-question-type') === 'multiple');
+                const isCorrect = row.getAttribute('data-is-correct') === 'true';
+                const badge = row.querySelector('.opt-badge');
 
-                if (qType === 'single') {
-                    $article.find('.option-row').each(function() {
-                        const $r = $(this);
-                        $r.removeClass('bg-emerald-500/15 border-emerald-500/40 text-emerald-200 bg-emerald-500/10 border-emerald-500/30 text-emerald-300 bg-rose-500/15 border-rose-500/40 text-rose-200')
-                          .addClass(ROW_IDLE);
-
-                        const $b = $r.find('.opt-badge');
-                        $b.removeClass('bg-emerald-500 bg-emerald-500/30 text-emerald-300 bg-rose-500 text-black text-white font-bold')
-                          .addClass(BADGE_IDLE);
-                        $b.find('.opt-icon').attr('class', 'opt-icon fas fa-circle text-[7px] opacity-40');
-                        $r.find('.opt-label').addClass('hidden').hide();
-                    });
-
-                    const $badge = $row.find('.opt-badge');
-                    const $icon = $badge.find('.opt-icon');
-                    const $label = $row.find('.opt-label');
-
-                    if (isCorrect) {
-                        $row.removeClass(ROW_IDLE).addClass('bg-emerald-500/15 border-emerald-500/40 text-emerald-200');
-                        $badge.removeClass(BADGE_IDLE).addClass('bg-emerald-500 text-black font-bold');
-                        $icon.attr('class', 'opt-icon fas fa-check');
-                        $label.text('').removeClass('hidden text-rose-400').addClass('text-emerald-400').show();
-                        Motion.fx($row, 'fx-ok');
-                    } else {
-                        $row.removeClass(ROW_IDLE).addClass('bg-rose-500/15 border-rose-500/40 text-rose-200');
-                        $badge.removeClass(BADGE_IDLE).addClass('bg-rose-500 text-white font-bold');
-                        $icon.attr('class', 'opt-icon fas fa-xmark text-[9px]');
-                        $label.text('Неверно').removeClass('hidden text-emerald-400').addClass('text-rose-400 font-bold').show();
-                        Motion.fx($row, 'fx-bad');
-
-                        // Показываем, где был правильный ответ
-                        const $correctRow = $article.find('.option-row[data-is-correct="true"]');
-                        if ($correctRow.length) {
-                            $correctRow.removeClass(ROW_IDLE).addClass('bg-emerald-500/10 border-emerald-500/30 text-emerald-300');
-                            $correctRow.find('.opt-badge').removeClass(BADGE_IDLE).addClass('bg-emerald-500/30 text-emerald-300 font-bold');
-                            $correctRow.find('.opt-icon').attr('class', 'opt-icon fas fa-check text-[9px]');
-                            $correctRow.find('.opt-label').text('').removeClass('hidden').addClass('text-emerald-400').show();
-                            $correctRow.each(function(i) { Motion.fx(this, 'fx-hint', 160 + i * 60); });
-                        }
+                if (!multiple) {
+                    article.querySelectorAll('.option-row').forEach(function (r) { setRow(r, null); });
+                    setRow(row, isCorrect ? 'is-ok' : 'is-bad');
+                    Motion.fx(isCorrect ? row : row, isCorrect ? 'fx-ok' : 'fx-bad');
+                    if (!isCorrect) {
+                        // показываем, где был правильный ответ
+                        article.querySelectorAll('.option-row[data-is-correct="true"]').forEach(function (r, i) {
+                            setRow(r, 'is-hint');
+                            Motion.fx(r, 'fx-hint', 160 + i * 60);
+                        });
                     }
-                    Motion.fx($badge, 'fx-pop');
-
+                    Motion.fx(badge, 'fx-pop');
+                } else if (row.classList.contains('is-checked-preview')) {
+                    row.classList.remove('is-checked-preview');
+                    setRow(row, null);
                 } else {
-                    // НЕСКОЛЬКО ВАРИАНТОВ (MULTIPLE)
-                    const $badge = $row.find('.opt-badge');
-                    const $icon = $badge.find('.opt-icon');
-                    const $label = $row.find('.opt-label');
-
-                    if ($row.hasClass('is-checked-preview')) {
-                        $row.removeClass('is-checked-preview bg-emerald-500/15 border-emerald-500/40 text-emerald-200 bg-rose-500/15 border-rose-500/40 text-rose-200')
-                            .addClass(ROW_IDLE);
-                        $badge.removeClass('bg-emerald-500 bg-rose-500 text-black text-white font-bold').addClass(BADGE_IDLE);
-                        $icon.attr('class', 'opt-icon fas fa-square text-[9px] opacity-40');
-                        $label.addClass('hidden').hide();
-                    } else {
-                        $row.addClass('is-checked-preview');
-                        if (isCorrect) {
-                            $row.removeClass(ROW_IDLE).addClass('bg-emerald-500/15 border-emerald-500/40 text-emerald-200');
-                            $badge.removeClass(BADGE_IDLE).addClass('bg-emerald-500 text-black font-bold');
-                            $icon.attr('class', 'opt-icon fas fa-check');
-                            $label.text('').removeClass('hidden text-rose-400').addClass('text-emerald-400').show();
-                            Motion.fx($row, 'fx-ok');
-                        } else {
-                            $row.removeClass(ROW_IDLE).addClass('bg-rose-500/15 border-rose-500/40 text-rose-200');
-                            $badge.removeClass(BADGE_IDLE).addClass('bg-rose-500 text-white font-bold');
-                            $icon.attr('class', 'opt-icon fas fa-xmark text-[9px]');
-                            $label.text('Неверно').removeClass('hidden text-emerald-400').addClass('text-rose-400 font-bold').show();
-                            Motion.fx($row, 'fx-bad');
-                        }
-                        Motion.fx($badge, 'fx-pop');
-                    }
+                    row.classList.add('is-checked-preview');
+                    setRow(row, isCorrect ? 'is-ok' : 'is-bad');
+                    Motion.fx(row, isCorrect ? 'fx-ok' : 'fx-bad');
+                    Motion.fx(badge, 'fx-pop');
                 }
 
                 // Крючок в Dynamic Island — только для гостей
                 if (!isUserAuthenticated) {
-                    const qIndex = parseInt($article.attr('data-question-index'), 10);
+                    const qIndex = parseInt(article.getAttribute('data-question-index'), 10);
                     const firstAnswer = answeredQuestions.size === 0;
                     answeredQuestions.add(qIndex);
 
@@ -2385,13 +2237,13 @@
                         Island.info('Ответы сверяются на лету', 'fa-bolt', 3000);
                     } else if (!guestFinalShown && answeredQuestions.size >= QUESTION_COUNT) {
                         guestFinalShown = true;
-                        setTimeout(() => {
+                        setTimeout(function () {
                             if (VIEWER_ROLE === 'guest_owner') {
                                 Island.notify('Тест проверен. Нажмите, чтобы сохранить', 'info', 'fa-floppy-disk', 6000);
-                                Island.onClick(() => { Island.dismiss(); openRegisterModal('island'); });
+                                Island.onClick(function () { Island.dismiss(); openRegisterModal('island'); });
                             } else {
                                 Island.notify('Тест пройден. Соберите свой — нажмите', 'info', 'fa-wand-magic-sparkles', 6000);
-                                Island.onClick(() => { window.location.href = CREATE_URL; });
+                                Island.onClick(function () { window.location.href = CREATE_URL; });
                             }
                         }, 400);
                     }
@@ -2404,33 +2256,14 @@
         ========================================================================== */
         function toggleAnswersInDOM(show) {
             answersRevealed = !!show;
-            let revealIdx = 0;
-
-            $('.option-row').each(function() {
-                const $row = $(this);
-                const isCorrect = $row.attr('data-is-correct') === 'true';
-                const isMultiple = ($row.closest('article').attr('data-question-type') === 'multiple');
-                const $badge = $row.find('.opt-badge');
-                const $icon = $row.find('.opt-icon');
-                const $label = $row.find('.opt-label');
-                const idleIcon = isMultiple ? 'opt-icon fas fa-square text-[9px] opacity-40' : 'opt-icon fas fa-circle text-[7px] opacity-40';
-
-                // Сбрасываем всё, что натыкали в тест-драйве
-                $row.removeClass('is-checked-preview bg-rose-500/15 border-rose-500/40 text-rose-200 bg-emerald-500/15 border-emerald-500/40 text-emerald-200');
-                $badge.removeClass('bg-rose-500 bg-emerald-500/30 text-emerald-300 text-white');
-
-                if (isCorrect && show) {
-                    $row.removeClass(ROW_IDLE).addClass('bg-emerald-500/10 border-emerald-500/30 text-emerald-300 font-medium');
-                    $badge.removeClass(BADGE_IDLE).addClass('bg-emerald-500 text-black font-bold');
-                    $icon.attr('class', 'opt-icon fas fa-check');
-                    $label.text('Верно').removeClass('hidden text-rose-400').addClass('text-emerald-400').show();
-                    Motion.fx($row, 'fx-hint', Math.min(revealIdx * 45, 600));
-                    revealIdx++;
+            let i = 0;
+            document.querySelectorAll('.option-row').forEach(function (row) {
+                row.classList.remove('is-checked-preview');      // сбрасываем всё, что натыкали в тест-драйве
+                if (show && row.getAttribute('data-is-correct') === 'true') {
+                    setRow(row, 'is-hint');
+                    Motion.fx(row, 'fx-hint', Math.min(i++ * 45, 600));
                 } else {
-                    $row.addClass(ROW_IDLE).removeClass('bg-emerald-500/10 border-emerald-500/30 text-emerald-300 font-medium');
-                    $badge.addClass(BADGE_IDLE).removeClass('bg-emerald-500 text-black font-bold');
-                    $icon.attr('class', idleIcon);
-                    $label.addClass('hidden').hide();
+                    setRow(row, null);
                 }
             });
         }
@@ -2646,15 +2479,19 @@
             container.innerHTML = "";
             new QRCode(container, {
                 text: link,
-                width: 240,
-                height: 240,
+                width: 220,
+                height: 220,
                 colorDark : "#18171A",
                 colorLight : "#ffffff",
                 correctLevel : QRCode.CorrectLevel.H
             });
             document.getElementById('qrLinkText').innerText = "{{ title|escapejs }}";
-            $('#qrModal').removeClass('hidden').css('display', 'flex');
+            Modal.open('qrModal');
             Island.info('QR-код сформирован', 'fa-qrcode');
+        }
+
+        function closeQR() {
+            Modal.close('qrModal');
         }
 
         function openDeleteModal(id, title) {
@@ -2918,127 +2755,32 @@
 
     <!-- СПАРКЛАЙН ГРАФИК (CHART.JS) -->
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const sparklineCanvas = document.getElementById('qa-sparkline-canvas');
-            if (!sparklineCanvas) return;
-
-            function ensureChartJs(callback) {
-                if (typeof Chart !== 'undefined') {
-                    callback();
-                } else {
-                    const script = document.createElement('script');
-                    script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
-                    script.onload = callback;
-                    script.onerror = () => {
-                        $('#qa-last-activity').text('Ошибка скрипта');
-                        $('#qa-sparkline-canvas').addClass('hidden');
-                        $('#qa-empty-sparkline').removeClass('hidden');
-                    };
-                    document.head.appendChild(script);
-                }
-            }
-
+        document.addEventListener('DOMContentLoaded', function () {
+            const totalEl = document.getElementById('qa-total-attempts');
+            const rateEl = document.getElementById('qa-success-rate');
+            if (!totalEl || !rateEl) return;
+ 
             fetch(`/api/test-charts/${surveyId}/`)
                 .then(res => res.json())
                 .then(data => {
                     if (data.error) throw new Error(data.error);
-
-                    const activityData = (data.attempts_activity_chart?.data || []).map(v => parseInt(v, 10) || 0);
-                    const activityLabels = data.attempts_activity_chart?.labels || [];
-                    const totalAttempts = activityData.reduce((acc, v) => acc + v, 0);
-
-                    $('#qa-total-attempts').text(totalAttempts);
-
-                    const views = parseInt('{{ view_count|default:0 }}', 10);
-                    if (views > 0 && totalAttempts > 0) {
-                        const rawCr = Math.round((totalAttempts / views) * 100);
-                        const cleanCr = Math.min(rawCr, 100);
-                        $('#qa-conversion-rate').text(`(${cleanCr}% CR)`);
-                    } else if (totalAttempts > 0) {
-                        $('#qa-conversion-rate').text(`(100% CR)`);
-                    }
-
-                    const scoreCounts = (data.scores_distribution_chart?.data || []).map(v => parseInt(v, 10) || 0);
-                    const totalScoreRecords = scoreCounts.reduce((acc, v) => acc + v, 0);
-
-                    if (totalScoreRecords > 0 && scoreCounts.length >= 4) {
-                        const passed = (scoreCounts[2] || 0) + (scoreCounts[3] || 0);
-                        const successPct = Math.round((passed / totalScoreRecords) * 100);
-                        $('#qa-success-rate').text(`${successPct}%`);
-                    } else if (totalAttempts > 0) {
-                        $('#qa-success-rate').text('100%');
+                    const sum = (arr) => (arr || []).map(v => parseInt(v, 10) || 0).reduce((a, v) => a + v, 0);
+ 
+                    const total = sum(data.attempts_activity_chart && data.attempts_activity_chart.data);
+                    totalEl.textContent = total;
+ 
+                    const scores = ((data.scores_distribution_chart && data.scores_distribution_chart.data) || []).map(v => parseInt(v, 10) || 0);
+                    const records = scores.reduce((a, v) => a + v, 0);
+                    if (records > 0 && scores.length >= 4) {
+                        rateEl.textContent = Math.round(((scores[2] || 0) + (scores[3] || 0)) / records * 100) + '%';
                     } else {
-                        $('#qa-success-rate').text('—%');
+                        rateEl.textContent = total > 0 ? '100%' : '—';
                     }
-
-                    if (totalAttempts > 0) {
-                        $('#qa-last-activity').text('Активно');
-                    } else {
-                        $('#qa-last-activity').text('Нет сдач');
-                        $('#qa-sparkline-canvas').addClass('hidden');
-                        $('#qa-empty-sparkline').removeClass('hidden');
-                        return;
-                    }
-
-                    ensureChartJs(() => {
-                        const ctx = sparklineCanvas.getContext('2d');
-                        const gradient = ctx.createLinearGradient(0, 0, 0, 60);
-                        gradient.addColorStop(0, 'rgba(99, 102, 241, 0.45)');
-                        gradient.addColorStop(1, 'rgba(99, 102, 241, 0.0)');
-
-                        new Chart(ctx, {
-                            type: 'line',
-                            data: {
-                                labels: activityLabels.length ? activityLabels : activityData.map((_, i) => `${i + 1}`),
-                                datasets: [{
-                                    data: activityData,
-                                    borderColor: '#818CF8',
-                                    borderWidth: 2,
-                                    fill: true,
-                                    backgroundColor: gradient,
-                                    tension: 0.4,
-                                    pointRadius: 0,
-                                    pointHoverRadius: 4,
-                                    pointHoverBackgroundColor: '#FFFFFF',
-                                    pointHoverBorderColor: '#4F46E5',
-                                    pointHoverBorderWidth: 2
-                                }]
-                            },
-                            options: {
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                plugins: {
-                                    legend: { display: false },
-                                    tooltip: {
-                                        enabled: true,
-                                        backgroundColor: 'rgba(20, 19, 24, 0.95)',
-                                        borderColor: 'rgba(255, 255, 255, 0.1)',
-                                        borderWidth: 1,
-                                        titleColor: '#FFFFFF',
-                                        bodyColor: '#A5B4FC',
-                                        titleFont: { family: 'Golos Text', size: 10 },
-                                        bodyFont: { family: 'JetBrains Mono', size: 10, weight: 'bold' },
-                                        padding: 6,
-                                        cornerRadius: 8,
-                                        displayColors: false,
-                                        callbacks: {
-                                            label: (c) => `${c.parsed.y} прохожд.`
-                                        }
-                                    }
-                                },
-                                scales: {
-                                    x: { display: false },
-                                    y: { display: false, beginAtZero: true }
-                                }
-                            }
-                        });
-                    });
                 })
-                .catch((err) => {
-                    console.error("Quick Analytics Fetch Error:", err);
-                    $('#qa-last-activity').text('Нет данных');
-                    $('#qa-sparkline-canvas').addClass('hidden');
-                    $('#qa-empty-sparkline').removeClass('hidden');
+                .catch(err => {
+                    console.error('Quick stats error:', err);
+                    totalEl.textContent = '—';
+                    rateEl.textContent = '—';
                 });
         });
     </script>
