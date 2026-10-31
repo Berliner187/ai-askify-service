@@ -48,7 +48,6 @@ urlpatterns = [
     path('api-create-survey/', ManageSurveysView.as_view(), name='api-create-survey'),
     path('api-non-auth/create-survey/', GenerationSurveysView.as_view(), name='api-create-survey'),
 
-    path('survey/<str:survey_id>/', TakeSurvey.as_view(), name='survey'),
     path('survey/<str:survey_id>/download/', download_survey_pdf, name='download-survey_pdf'),
     path('result/<str:survey_id>/', result_view, name='result'),
     path('result/<uuid:survey_id>/download/', download_results_pdf, name='download-results_pdf'),

@@ -194,14 +194,6 @@ def for_prepods(request):
     return redirect("neyroset_dlya_testov")
 
 
-def solving_tests_promo(request):
-    return render(request, 'landings/solving-tests.html')
-
-
-def teachers_promo(request):
-    return render(request, 'landings/teachers.html')
-
-
 def dlya_uchenikov(request):
     return render(request, 'landings/dlya-uchenikov.html')
 
@@ -2006,99 +1998,6 @@ class FileUploadView(View):
         return ""
 
 
-@method_decorator(login_required, name="dispatch")
-@method_decorator(subscription_required, name="dispatch")
-# @method_decorator(sync_to_async, name='dispatch')
-class TakeSurvey(View):
-    def post(self, request, survey_id):
-        survey_id = uuid.UUID(survey_id)
-        survey = get_object_or_404(Survey, survey_id=survey_id)
-        questions = json.loads(survey.questions)
-
-        user_answers = [
-            request.POST.get(f"answers_{i + 1}") for i in range(len(questions))
-        ]
-
-        if None in user_answers:
-            context = {
-                "survey": survey,
-                "questions": questions,
-                "error": "Пожалуйста, ответьте на все вопросы.",
-                "username": get_username(request),
-            }
-            return render(request, "survey.html", context)
-
-        survey_obj_user_answer = UserAnswers.objects.filter(survey_id=survey_id)
-
-        if survey_obj_user_answer.exists():
-            survey_obj_user_answer.delete()
-
-        user_answers_dict = {
-            f"question_{i + 1}": user_answers[i] for i in range(len(user_answers))
-        }
-        user_answers_list = []
-        correct_count = 0
-
-        for index_q, question in enumerate(questions):
-            selected_answer = user_answers[index_q]
-            is_correct = selected_answer == question["correct_answer"]
-            correct_count += 1 if is_correct else 0
-
-            user_answers_json = json.dumps(user_answers_dict)
-
-            UserAnswers.objects.update_or_create(
-                survey_id=survey_id,
-                selected_answer=selected_answer,
-                defaults={
-                    "scored_points": 1 if is_correct else 0,
-                    "total_points": len(questions),
-                    "user_answers": user_answers_json,
-                    "id_staff": get_staff_id(request),
-                },
-            )
-
-            user_answers_list.append(
-                f"\n\nВопрос: {question['question']}\n"
-                f"Правильный ответ: {question['correct_answer']}\n"
-                f"Ответ пользователя: {selected_answer}"
-            )
-
-        subscription = Subscription.objects.get(staff_id=get_staff_id(request))
-
-        status = subscription.check_sub_status()
-        tests_count_limit = get_daily_test_limit(subscription.plan_name) if status == 'active' else 0
-
-        context = {
-            "score": correct_count,
-            "total": user_answers,
-            "survey_id": survey_id,
-            "subscription_level": get_subscription_level(request),
-            "username": get_username(request),
-            "debug": DEBUG,
-        }
-
-        return render(request, "result.html", context)
-
-    def get(self, request, survey_id):
-        survey_id = uuid.UUID(survey_id)
-        survey = get_object_or_404(Survey, survey_id=survey_id)
-        questions = json.loads(survey.questions)
-
-        subscription = Subscription.objects.get(staff_id=get_staff_id(request))
-
-        context = {
-            "page_title": f"Прохождение теста – {survey.title}",
-            "survey": survey,
-            "questions": questions,
-            "survey_title": survey.title,
-            "username": request.user.username
-            if request.user.is_authenticated
-            else None,
-        }
-        return render(request, "survey.html", context)
-
-
-# @subscription_required
 @login_required
 def result_view(request, survey_id):
     return redirect(f"/c/{survey_id}/")
@@ -3257,8 +3156,8 @@ def view_results(request, survey_id):
     context = {
         "survey": survey,
         "attempts": rows,
-        "total_attempts": students_total,          # в KPI — ученики
-        "attempts_total": attempts_total,          # все попытки
+        "total_attempts": students_total,
+        "attempts_total": attempts_total,
         "counted_mode": COUNTED_ATTEMPT,
         "average_score_percent": average_score_percent,
         "median_score": median_score,
@@ -3285,22 +3184,7 @@ def view_results(request, survey_id):
     tracer_l.info(f"{request.user.username} --- dashboard {survey.title}")
     log_traffic(request, "Дашборд теста")
     return render(request, "askify_service/test_results.html", context)
- 
- 
-# ============================================================================
-#  single_test_charts_api: заменить ТОЛЬКО блок «График 2» (распределение)
-#  — от `percentage_expression = ...` до `distribution_data = [...]` включительно.
-#  Донат должен считать учеников, а не попытки, иначе разъедется с KPI.
-# ============================================================================
-#
-#    _, counted, _ = _group_attempts(survey)
-#    distribution_data = [0, 0, 0, 0]
-#    for a in counted:
-#        if not a.total_questions:
-#            continue
-#        p = a.score * 100 / a.total_questions
-#        distribution_data[0 if p <= 25 else 1 if p <= 50 else 2 if p <= 75 else 3] += 1
- 
+
 
 CLEAN_XML_RE = re.compile(
     r"[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x84\x86-\x9F]"
