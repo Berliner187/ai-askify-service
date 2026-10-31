@@ -221,5 +221,38 @@ body.ls-lock { overflow: hidden; }
 .ls-island-wrap :focus-visible, .ls-dock :focus-visible, .ls-mdock :focus-visible, .ls-modal :focus-visible { outline: 2px solid var(--ls-accent-soft); outline-offset: 2px; }
 
 @media (prefers-reduced-motion: reduce) {
-    .ls-island, .ls-isl-row, .ls-isl-note, .ls-isl-layer, .ls-dock-btn, .ls-panel, .ls-modal { transition-duration: .001ms !important; animation-duration: .001ms !important; }
+    .ls-island, .ls-isl-row, .ls-isl-note, .ls-isl-layer, .ls-dock-btn, .ls-panel, .ls-modal,
+    .ls-dock-slot, .ls-ring rect { transition-duration: .001ms !important; animation-duration: .001ms !important; animation-delay: 0s !important; }
 }
+
+
+/* ---------- Слот текущего теста в доке ---------- */
+.ls-dock-slot {
+    height: 0; margin-top: -10px;
+    display: flex; justify-content: center;
+    animation: ls-slot-open .35s var(--ls-ease) forwards;
+}
+@keyframes ls-slot-open { to { height: 44px; margin-top: 0; } }
+
+.ls-dock-btn--survey {
+    flex: none;
+    opacity: 0; transform: scale(.4);
+    animation: ls-dock-pop .45s var(--ls-spring) .12s forwards;
+}
+@keyframes ls-dock-pop { to { opacity: 1; transform: none; } }
+
+.ls-ring { position: absolute; inset: -1px; width: 44px; height: 44px; pointer-events: none; }
+.ls-ring rect {
+    fill: none; stroke: var(--ls-accent-soft); stroke-width: 1.5;
+    stroke-dasharray: 100; stroke-dashoffset: 100;
+    animation: ls-ring-draw .7s var(--ls-ease) .4s forwards, ls-ring-settle .6s ease 1.2s forwards;
+}
+@keyframes ls-ring-draw   { to { stroke-dashoffset: 0; } }
+@keyframes ls-ring-settle { to { stroke: var(--ls-line-2); } }
+
+.ls-dock-btn--survey::after { max-width: 260px; overflow: hidden; text-overflow: ellipsis; }
+
+/* Повторный заход: сразу финальное состояние */
+.ls-dock-slot.is-seen { animation: none; height: 44px; margin-top: 0; }
+.ls-dock-slot.is-seen .ls-dock-btn--survey { animation: none; opacity: 1; transform: none; }
+.ls-dock-slot.is-seen .ls-ring rect { animation: none; stroke-dashoffset: 0; stroke: var(--ls-line-2); }

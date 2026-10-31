@@ -37,6 +37,24 @@
         <a href="{% url 'create' %}" class="ls-dock-btn ls-dock-btn--primary" data-tip="Создать тест" aria-label="Создать тест" {% if nav_active == 'create' %}aria-current="page"{% endif %}><svg class="ls-icon"><use href="#ls-i-plus"/></svg></a>
         {% if username != 0 %}
             <a href="{% url 'history' %}" class="ls-dock-btn" data-tip="История тестов" aria-label="История тестов" {% if nav_active == 'history' %}aria-current="page"{% endif %}><svg class="ls-icon"><use href="#ls-i-history"/></svg></a>
+            {% if nav_survey_title %}
+            <div class="ls-dock-slot" id="ls-survey-slot"">
+                <a href="{{ nav_survey_url|default:request.path }}"
+                class="ls-dock-btn ls-dock-btn--survey"
+                data-tip="{{ nav_survey_title }}"
+                aria-label="Текущий тест: {{ nav_survey_title }}"
+                {% if nav_active == 'survey' %}aria-current="page"{% endif %}>
+                    <svg class="ls-icon"><use href="#ls-i-file"/></svg>
+                    <svg class="ls-ring" viewBox="0 0 44 44" aria-hidden="true">
+                        <rect x=".75" y=".75" width="42.5" height="42.5" rx="15.25" pathLength="100"/>
+                    </svg>
+                </a>
+            </div>
+            <script>
+                (function(){var s=document.getElementById('ls-survey-slot'),k='ls-seen-survey-'+s.dataset.surveyId;
+                try{if(sessionStorage.getItem(k))s.classList.add('is-seen');else sessionStorage.setItem(k,'1');}catch(e){}})();
+            </script>
+            {% endif %}
             <a href="{% url 'profile_redirect' %}" class="ls-dock-btn" data-tip="Профиль" aria-label="Профиль" {% if nav_active == 'profile' %}aria-current="page"{% endif %}><svg class="ls-icon"><use href="#ls-i-user"/></svg></a>
         {% endif %}
     </nav>
@@ -60,14 +78,14 @@
 
 {% if username != 0 %}
 <!-- МОДАЛКА ВЫХОДА -->
-<div class="ls-modal" id="ls-logout-modal" aria-hidden="true">
-    <div class="ls-panel" role="dialog" aria-modal="true" aria-labelledby="ls-logout-title">
-        <div class="ls-panel-ico"><svg class="ls-icon"><use href="#ls-i-logout"/></svg></div>
-        <h3 id="ls-logout-title">Выйти из аккаунта?</h3>
-        <p>Потребуется повторная авторизация для доступа к вашим тестам.</p>
+<div class="ls-modal" id="ls-confirm" aria-hidden="true">
+    <div class="ls-panel" role="dialog" aria-modal="true" aria-labelledby="ls-confirm-title">
+        <div class="ls-panel-ico"><svg class="ls-icon"><use id="ls-confirm-ico" href="#ls-i-warn"/></svg></div>
+        <h3 id="ls-confirm-title"></h3>
+        <p id="ls-confirm-text"></p>
         <div class="ls-panel-actions">
             <button type="button" data-ls-close data-ls-focus>Отмена</button>
-            <a href="{% url 'logout' %}" id="ls-logout-confirm">Выйти</a>
+            <a href="#" role="button" id="ls-confirm-ok">Продолжить</a>
         </div>
     </div>
 </div>

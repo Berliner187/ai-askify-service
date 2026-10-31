@@ -742,6 +742,8 @@
             .mb-btn { transition: none; }
             .mb-btn.is-done svg.mb-on { animation: none; }
         }
+
+        .ls-dock-btn[data-tip]::after { max-width: 260px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     </style>
 </head>
 <body class="min-h-full flex flex-col antialiased selection:bg-indigo-600 selection:text-white">
@@ -779,7 +781,7 @@
         <button type="button" class="is-skip is-chrome c3" id="is-skip">Пропустить<kbd>Esc</kbd></button>
     </div>
 
-    {% include 'components/shell_nav.html' with nav_active='' %}
+    {% include 'components/shell_nav.html' with nav_active='survey' nav_survey_title=title %}
 
     <!-- КОНТЕНТНАЯ ЗОНА -->
     <div class="lg:pl-28 flex-grow flex flex-col">
