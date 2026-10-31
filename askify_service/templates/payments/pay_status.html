@@ -1,10 +1,8 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    {% include 'components/meta_tags.html' %}
     {% load static %}
-    {% include 'components/linker.html' %}
-    <link rel="stylesheet" href="{% static 'css/payment.css' %}">
+    {% include 'components/shell_assets.html' %}
 
     <!-- Yandex.Metrika counter -->
     <script type="text/javascript" >
@@ -25,58 +23,101 @@
     </script>
     <noscript><div><img src="https://mc.yandex.ru/watch/98823704" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
     <!-- /Yandex.Metrika counter -->
+
+    <style>
+        body { margin: 0; background: var(--ls-bg); color: var(--ls-fg); font-family: 'Golos Text', system-ui, sans-serif; }
+        .pay { flex: 1; display: grid; place-items: center; padding: 40px 0 64px; }
+        .pay-card {
+            width: 100%; max-width: 420px; margin: 0 auto; padding: 32px 28px 28px;
+            background: var(--ls-card); border: 1px solid var(--ls-line-2); border-radius: 26px; text-align: center;
+        }
+        .pay-ico {
+            width: 56px; height: 56px; margin: 0 auto 18px; border-radius: 18px;
+            display: grid; place-items: center;
+        }
+        .pay-ico .ls-icon { width: 24px; height: 24px; }
+        .pay--success .pay-ico { background: rgba(79,70,229,.14); border: 1px solid rgba(165,180,252,.35); color: var(--ls-accent-soft); }
+        .pay--failed  .pay-ico { background: rgba(245,181,68,.10); border: 1px solid rgba(245,181,68,.35); color: var(--ls-amber); }
+
+        .pay h1 {
+            margin: 0 0 8px; font-family: 'Wix Madefor Display', 'Golos Text', system-ui, sans-serif;
+            font-size: 24px; font-weight: 700; letter-spacing: -0.02em;
+        }
+        .pay-text { margin: 0 auto; max-width: 320px; font-size: 14px; line-height: 1.55; color: var(--ls-fg-2); }
+
+        .pay-plan {
+            margin: 28px 0 0; padding: 0 0 12px; text-align: left;
+            font-size: 15px; font-weight: 600; color: var(--ls-fg);
+            border-bottom: 1px solid var(--ls-line);
+        }
+        .pay-rows { margin: 0; text-align: left; }
+        .pay-row {
+            display: flex; justify-content: space-between; align-items: baseline; gap: 16px;
+            padding: 11px 0; border-bottom: 1px solid var(--ls-line);
+        }
+        .pay-row dt { font-size: 13px; color: var(--ls-fg-3); flex: none; }
+        .pay-row dd { margin: 0; font-size: 13.5px; font-weight: 500; color: var(--ls-fg-1); text-align: right; word-break: break-word; }
+
+        .pay-btn {
+            margin-top: 24px; width: 100%; min-height: 48px;
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            border-radius: 14px; font-size: 14.5px; font-weight: 600; text-decoration: none;
+            color: #fff; background: var(--ls-accent);
+            transition: background-color .2s, transform .2s var(--ls-ease);
+        }
+        .pay-btn:hover { background: var(--ls-accent-hi); color: #fff; }
+        .pay-btn:active { transform: scale(.98); }
+        .pay-btn .ls-icon { width: 16px; height: 16px; }
+        @media (max-width: 400px) { .pay-card { padding: 28px 20px 22px; } }
+    </style>
 </head>
 <body>
-    <script src="{% static 'js/second-loader.js' %}"></script>
-    {% include 'components/loader.html' %}
+<div class="ls-page">
+    {% if user.is_authenticated %}
+        {% include 'components/shell_nav.html' with nav_active='' username=1 %}
+    {% else %}
+        {% include 'components/shell_nav.html' with nav_active='' username=0 %}
+    {% endif %}
+    {% include 'components/shell_island.html' with island_here='<span class="ls-crumb-here">Оплата</span>' %}
 
-    <div id="page-container" class="fade" style="display: none;">
-
-        <div class="container payment-container payment-status-{% if payment_status == 'Успешно' %}success{% else %}failed{% endif %}">
-            <img class="icon-status" src="{% if payment_status == 'Успешно' %}{% static 'img/icon-done.png' %}{% else %}{% static 'img/icon-fail.png' %}{% endif %}" alt="">
-            <h2>{{ payment_status }}</h2>
-            <p>{{ text_status }}</p>
-
-            <br>
-
-            <h3>{{ plan_name }}</h3>
-            
-            {% for detail in payment_details %}
-            <div class="payment-data">
-                <p>{{ detail.label }}</p>
-                <p>{{ detail.value }}</p>
-            </div>
-            {% endfor %}
-
-            <br>
-
-            <div class="container-buttons">
+    <main class="pay ls-wrap">
+        <div class="pay-card pay--{% if payment_status == 'Успешно' %}success{% else %}failed{% endif %}">
+            <div class="pay-ico" aria-hidden="true">
                 {% if payment_status == 'Успешно' %}
-                <div class="button-medium button-accent">
-                    <a href="{% url 'create' %}">
-                        <div>
-                            <p>Начать использовать</p>
-                            <img src="{% static 'img/icon-forward.png' %}" alt="">
-                        </div>
-                    </a>
-                </div>
-            {% else %}
-                <div class="button-medium button-accent">
-                    <a href="{% url 'payment' %}">
-                        <div>
-                            <p>Повторить попытку</p>
-                            <img src="{% static 'img/icon-retry.png' %}" alt="">
-                        </div>
-                    </a>
-                </div>
-            {% endif %}
+                    <svg class="ls-icon"><use href="#ls-i-check"/></svg>
+                {% else %}
+                    <svg class="ls-icon"><use href="#ls-i-warn"/></svg>
+                {% endif %}
             </div>
-            
-            
+
+            <h1>{{ payment_status }}</h1>
+            <p class="pay-text">{{ text_status }}</p>
+
+            <h2 class="pay-plan">{{ plan_name }}</h2>
+            <dl class="pay-rows">
+                {% for detail in payment_details %}
+                <div class="pay-row">
+                    <dt>{{ detail.label }}</dt>
+                    <dd>{{ detail.value }}</dd>
+                </div>
+                {% endfor %}
+            </dl>
+
+            {% if payment_status == 'Успешно' %}
+                <a href="{% url 'create' %}" class="pay-btn">
+                    Начать использовать
+                    <svg class="ls-icon" style="transform:rotate(180deg)"><use href="#ls-i-back"/></svg>
+                </a>
+            {% else %}
+                <a href="{% url 'payment' %}" class="pay-btn">
+                    <svg class="ls-icon"><use href="#ls-i-rotate"/></svg>
+                    Повторить попытку
+                </a>
+            {% endif %}
         </div>
+    </main>
 
-        {% include 'footer.html' %}
-
-    </div>
+    {% include 'components/shell_footer.html' %}
+</div>
 </body>
 </html>
