@@ -1534,6 +1534,8 @@
 
     </div>
 
+    {% include 'components/shell_assets_js.html' %}
+
     {% if debug or user.is_superuser %}
     <!-- DEV: ручное управление интро (видно только в DEBUG и staff) -->
     <div id="intro-dev">
@@ -1542,6 +1544,7 @@
     </div>
     {% endif %}
 
+    
     {{ questions|json_script:"questions-data" }}
 
     <!-- ============================================================== -->
@@ -2273,90 +2276,6 @@
         }
 
         /* ==========================================================================
-        DYNAMIC ISLAND ENGINE
-        ========================================================================== */
-        const Island = (() => {
-            let timer = null;
-
-            const THEMES = {
-                success: { themeClass: 'theme-success', icon: 'fa-check', iconBg: 'bg-emerald-500 text-black font-bold' },
-                error: { themeClass: 'theme-error', icon: 'fa-xmark', iconBg: 'bg-rose-500 text-white font-bold' },
-                warning: { themeClass: 'theme-warning', icon: 'fa-exclamation', iconBg: 'bg-amber-500 text-black font-bold' },
-                info: { themeClass: 'theme-info', icon: 'fa-bolt', iconBg: 'bg-indigo-500 text-white' }
-            };
-
-            function notify(message, type = 'success', customIcon = null, duration = 2600) {
-                if (timer) clearTimeout(timer);
-
-                const $island = $('#dynamic-island');
-                const $controls = $('#island-controls');
-                const $notice = $('#island-notice');
-                const $text = $('#island-text');
-                const $icon = $('#island-icon');
-                const $iconBox = $('#island-icon-box');
-
-                const config = THEMES[type] || THEMES.info;
-                const chosenIcon = customIcon || config.icon;
-
-                $island.removeClass('theme-success theme-error theme-warning theme-info');
-                $controls.css({ opacity: 0, pointerEvents: 'none', transform: 'scale(0.92)' });
-
-                setTimeout(() => {
-                    $controls.hide();
-
-                    $text.text(message);
-                    $icon.attr('class', `fas ${chosenIcon}`);
-                    $iconBox.attr('class', `w-6 h-6 rounded-full flex items-center justify-center text-[11px] flex-shrink-0 ${config.iconBg}`);
-
-                    $island.removeClass('mode-header').addClass(`mode-notify ${config.themeClass}`);
-
-                    $notice.removeClass('hidden').css({ display: 'flex', opacity: 0, transform: 'scale(0.8)' });
-
-                    setTimeout(() => {
-                        $notice.css({ opacity: 1, transform: 'scale(1)', transition: 'all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)' });
-                    }, 20);
-
-                }, 150);
-
-                timer = setTimeout(() => {
-                    dismiss();
-                }, duration);
-            }
-
-            function dismiss() {
-                const $island = $('#dynamic-island');
-                const $controls = $('#island-controls');
-                const $notice = $('#island-notice');
-
-                $notice.css({ opacity: 0, transform: 'scale(0.8)', transition: 'all 0.2s ease' });
-
-                setTimeout(() => {
-                    $notice.hide().addClass('hidden');
-
-                    $island
-                        .removeClass('mode-notify theme-success theme-error theme-warning theme-info')
-                        .addClass('mode-header');
-
-                    $controls.show().css({ display: 'flex' });
-                    setTimeout(() => {
-                        $controls.css({ opacity: 1, pointerEvents: 'auto', transform: 'scale(1)', transition: 'all 0.25s ease' });
-                    }, 20);
-
-                    timer = null;
-                }, 180);
-            }
-
-            return {
-                notify,
-                dismiss,
-                success: (msg, icon, dur) => notify(msg, 'success', icon, dur),
-                error: (msg, icon, dur) => notify(msg, 'error', icon, dur),
-                warn: (msg, icon, dur) => notify(msg, 'warning', icon, dur),
-                info: (msg, icon, dur) => notify(msg, 'info', icon, dur)
-            };
-        })();
-
-        /* ==========================================================================
         ИНТЕРАКТИВНЫЙ КЛИК ПО ВАРИАНТАМ (ТЕСТ-ДРАЙВ В ПРЕВЬЮ)
         ========================================================================== */
         const ROW_IDLE = 'bg-[#111119]/70 border-white/[0.04] text-gray-300';
@@ -2467,20 +2386,13 @@
                     } else if (!guestFinalShown && answeredQuestions.size >= QUESTION_COUNT) {
                         guestFinalShown = true;
                         setTimeout(() => {
-                            const $island = $('#dynamic-island');
                             if (VIEWER_ROLE === 'guest_owner') {
                                 Island.notify('Тест проверен. Нажмите, чтобы сохранить', 'info', 'fa-floppy-disk', 6000);
-                                $island.addClass('cursor-pointer ring-2 ring-indigo-500/50').off('click.guestSave').one('click.guestSave', function() {
-                                    openRegisterModal('island');
-                                    $island.removeClass('cursor-pointer ring-2 ring-indigo-500/50');
-                                });
+                                Island.onClick(() => { Island.dismiss(); openRegisterModal('island'); });
                             } else {
                                 Island.notify('Тест пройден. Соберите свой — нажмите', 'info', 'fa-wand-magic-sparkles', 6000);
-                                $island.addClass('cursor-pointer ring-2 ring-white/30').off('click.guestSave').one('click.guestSave', function() {
-                                    window.location.href = CREATE_URL;
-                                });
+                                Island.onClick(() => { window.location.href = CREATE_URL; });
                             }
-                            setTimeout(() => $island.removeClass('cursor-pointer ring-2 ring-indigo-500/50 ring-white/30').off('click.guestSave'), 6200);
                         }, 400);
                     }
                 }
