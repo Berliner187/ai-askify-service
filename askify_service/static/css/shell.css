@@ -1,10 +1,17 @@
 /* ==========================================================================
    Letychka · shell.css
-   Общий каркас страниц: левый док, мобильный док, остров-шапка, модалка выхода.
+   Общий каркас страниц: левый док, мобильный док, остров-шапка, модалки.
    Всё под префиксом ls- — не конфликтует ни с Tailwind, ни с локальным CSS страниц.
    Настройка — CSS-переменными на :root или body:
      --ls-max      ширина контента (по умолчанию 1120px). Остров ровно такой же ширины.
      --ls-accent   акцент (индиго)
+
+   Остров (v2): морфинг делает только фоновый слой .ls-isl-bg (меняется его width).
+   Содержимое острова не пересчитывается и переключается через opacity + scale.
+   Три пружины считаются из физики (response / damping), а не подбираются на глаз:
+     smooth  — без отскока: возврат в шапку, скролл
+     snappy  — лёгкий отскок: раскрытие уведомления / слоя
+     bouncy  — заметный отскок: иконка статуса
    ========================================================================== */
 :root {
     --ls-bg: #111119;
@@ -25,6 +32,22 @@
     --ls-gutter: 16px;
     --ls-ease: cubic-bezier(0.16, 1, 0.3, 1);
     --ls-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+
+    /* Пружины острова */
+    --ls-spring-smooth: linear(0, 0.019, 0.067, 0.131, 0.205, 0.282, 0.358, 0.431, 0.499, 0.562, 0.619, 0.67, 0.715, 0.755, 0.79, 0.821, 0.848, 0.87, 0.89, 0.907, 0.921, 0.934, 0.944, 0.953, 0.96, 0.967, 0.972, 0.977, 0.981, 0.984, 0.986, 0.989, 0.991, 0.992, 0.993, 0.995, 0.995, 0.996, 0.997, 0.997, 0.998, 0.998, 1);
+    --ls-spring-snappy: linear(0, 0.027, 0.097, 0.191, 0.299, 0.409, 0.516, 0.615, 0.703, 0.78, 0.844, 0.896, 0.938, 0.97, 0.994, 1.01, 1.021, 1.028, 1.031, 1.031, 1.03, 1.028, 1.025, 1.021, 1.018, 1.014, 1.011, 1.009, 1.006, 1.004, 1.003, 1.002, 1.001, 1);
+    --ls-spring-bouncy: linear(0, 0.031, 0.113, 0.228, 0.361, 0.501, 0.638, 0.763, 0.873, 0.964, 1.035, 1.088, 1.123, 1.142, 1.148, 1.144, 1.132, 1.115, 1.095, 1.075, 1.054, 1.036, 1.02, 1.006, 0.995, 0.987, 0.982, 0.979, 0.978, 0.979, 0.98, 0.983, 0.986, 0.989, 0.992, 0.995, 0.997, 0.999, 1.001, 1.002, 1.003, 1.003, 1.003, 1.003, 1.003, 1.003, 1.002, 1.002, 1);
+    --ls-d-smooth: 0.7s;
+    --ls-d-snappy: 0.55s;
+    --ls-d-bouncy: 1s;
+}
+/* Браузеры без linear() (старые Safari / Firefox) — обычные кривые той же длительности */
+@supports not (transition-timing-function: linear(0, 1)) {
+    :root {
+        --ls-spring-smooth: cubic-bezier(0.16, 1, 0.3, 1);
+        --ls-spring-snappy: cubic-bezier(0.3, 1.25, 0.5, 1);
+        --ls-spring-bouncy: cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
 }
 @media (min-width: 640px) { :root { --ls-gutter: 24px; } }
 
@@ -94,42 +117,74 @@
 .ls-mdock .ls-mdock-plus { background: var(--ls-accent); color: #fff; margin: 0 4px; }
 .ls-mdock .ls-mdock-login { font-size: 13px; font-weight: 600; color: var(--ls-accent-soft); }
 
-/* ---------- Остров ---------- */
+/* ==========================================================================
+   ОСТРОВ
+   Слои (снизу вверх):  .ls-isl-bg  стекло + рамка (меняет только width)
+                        .ls-isl-row шапка · .ls-isl-note уведомление · .ls-isl-layer кастомные слои
+   ========================================================================== */
 .ls-island-wrap { position: sticky; top: 12px; z-index: 45; pointer-events: none; }
 .ls-island-wrap > .ls-wrap { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+
 .ls-island {
-    position: relative; overflow: hidden; pointer-events: auto;
+    position: relative; pointer-events: none;
     width: 100%; max-width: var(--ls-max); min-height: 52px;
     display: flex; align-items: center;
     padding: 6px 8px 6px 18px;
-    background: rgba(21,21,30,.82);
-    -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
-    border: 1px solid var(--ls-line-2); border-radius: 999px;
-    transition: max-width .5s var(--ls-spring), background-color .3s, border-color .3s, box-shadow .3s;
+    border-radius: 26px;
+    contain: layout style;
+    animation: ls-isl-in .9s var(--ls-spring-smooth) backwards;
 }
-.ls-island-wrap.is-scrolled .ls-island { background: rgba(19,19,27,.94); box-shadow: 0 12px 32px -16px rgba(0,0,0,.6); }
-.ls-island.is-notify { max-width: 440px; background: rgba(19,19,27,.98); }
-/* Кастомные слои страницы (запись голоса, распознавание и т.п.): Island.layer() / show() / hide() */
-.ls-island.is-layer { max-width: 460px; background: rgba(19,19,27,.98); }
-.ls-island.is-layer[data-size="sm"] { max-width: 380px; }
-.ls-island.is-layer[data-size="lg"] { max-width: 560px; }
-.ls-island.is-layer[data-type="info"] { border-color: rgba(165,180,252,.35); }
-.ls-island.is-layer[data-type="warning"] { border-color: rgba(245,181,68,.4); }
-.ls-island.is-layer .ls-isl-row { opacity: 0; transform: scale(.96); pointer-events: none; }
-.ls-isl-layer {
-    position: absolute; inset: 0; display: flex; align-items: center; gap: 12px;
-    padding: 0 8px 0 18px; font-size: 13px; font-weight: 600; color: var(--ls-fg);
-    opacity: 0; transform: scale(.94); pointer-events: none;
-    transition: opacity .25s, transform .4s var(--ls-spring);
-}
-.ls-isl-layer.on { opacity: 1; transform: none; pointer-events: auto; }
-.ls-island.is-notify .ls-isl-layer.on { opacity: 0; transform: scale(.94); pointer-events: none; }
-.ls-island.is-notify[data-type="warning"], .ls-island.is-notify[data-type="error"] { border-color: rgba(245,181,68,.4); }
-.ls-island.is-notify[data-type="info"] { border-color: rgba(165,180,252,.35); }
-.ls-island.is-clickable { cursor: pointer; border-color: rgba(165,180,252,.45); }
+@keyframes ls-isl-in { from { opacity: 0; translate: 0 -18px; scale: .96; } }
 
-.ls-isl-row { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 14px; transition: opacity .25s, transform .35s var(--ls-ease); }
-.ls-island.is-notify .ls-isl-row { opacity: 0; transform: scale(.96); pointer-events: none; }
+/* Стекло. Ширина = var(--bw): JS кладёт туда пиксели цели, нет переменной — на всю ширину шапки. */
+.ls-isl-bg {
+    position: absolute; z-index: 0; top: 0; bottom: 0; left: 50%;
+    width: var(--bw, 100%); translate: -50% 0;
+    border-radius: 999px; pointer-events: auto;
+    background: rgba(21,21,30,.74);
+    -webkit-backdrop-filter: saturate(150%) blur(18px); backdrop-filter: saturate(150%) blur(18px);
+    border: 1px solid var(--ls-line-2);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+    transition: width var(--ls-d-smooth) var(--ls-spring-smooth), border-color .3s;
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .ls-isl-bg { background: rgba(19,19,27,.97); }
+}
+/* Затемнение и тень — отдельные слои, анимируется только opacity */
+.ls-isl-bg::before {
+    content: ''; position: absolute; inset: -1px; border-radius: inherit;
+    background: rgba(14,14,21,.92); opacity: 0; transition: opacity .3s;
+}
+.ls-isl-bg::after {
+    content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
+    box-shadow: 0 14px 32px -14px rgba(0,0,0,.65); opacity: 0; transition: opacity .3s;
+}
+.ls-island-wrap.is-scrolled .ls-isl-bg::before, .ls-island-wrap.is-scrolled .ls-isl-bg::after,
+.ls-island.is-notify .ls-isl-bg::before, .ls-island.is-notify .ls-isl-bg::after,
+.ls-island.is-layer .ls-isl-bg::before, .ls-island.is-layer .ls-isl-bg::after { opacity: 1; }
+
+/* Раскрытие — пружина с лёгким отскоком; возврат (правило выше) — без отскока */
+.ls-island.is-notify .ls-isl-bg, .ls-island.is-layer .ls-isl-bg {
+    transition: width var(--ls-d-snappy) var(--ls-spring-snappy), border-color .3s;
+}
+
+/* Цвет рамки по типу */
+.ls-island.is-notify[data-type="warning"] .ls-isl-bg, .ls-island.is-notify[data-type="error"] .ls-isl-bg,
+.ls-island.is-layer[data-type="warning"] .ls-isl-bg { border-color: rgba(245,181,68,.4); }
+.ls-island.is-notify[data-type="info"] .ls-isl-bg, .ls-island.is-layer[data-type="info"] .ls-isl-bg { border-color: rgba(165,180,252,.35); }
+.ls-island.is-notify.is-clickable .ls-isl-bg { cursor: pointer; border-color: rgba(165,180,252,.45); }
+
+/* Шапка */
+.ls-isl-row {
+    position: relative; z-index: 1; width: 100%;
+    display: flex; align-items: center; justify-content: space-between; gap: 14px;
+    pointer-events: auto;
+    transition: opacity .3s .12s, scale var(--ls-d-smooth) var(--ls-spring-smooth) .08s;
+}
+.ls-island.is-notify .ls-isl-row, .ls-island.is-layer .ls-isl-row {
+    opacity: 0; scale: .96; pointer-events: none;
+    transition: opacity .14s, scale .2s ease;
+}
 
 .ls-crumbs { display: flex; align-items: center; gap: 10px; min-width: 0; font-size: 13px; color: var(--ls-fg-2); }
 .ls-crumbs > a:first-child { flex: none; display: block; transition: opacity .2s; }
@@ -144,38 +199,80 @@
 @media (min-width: 640px) { .ls-crumbs .ls-hide-sm { display: inline; } .ls-crumbs a.ls-hide-sm, .ls-crumbs span.ls-crumb-title.ls-hide-sm { display: block; } }
 
 .ls-isl-right { display: flex; align-items: center; gap: 8px; flex: none; min-width: 0; }
-.ls-isl-meta { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; border-radius: 999px; font-size: 12.5px; font-weight: 500; color: var(--ls-fg-2); background: rgba(255,255,255,.04); border: 1px solid var(--ls-line); max-width: 220px; }
-.ls-isl-meta span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px }
+.ls-isl-meta { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; border-radius: 999px; font-size: 12.5px; font-weight: 500; color: var(--ls-fg-2); background: rgba(255,255,255,.04); border: 1px solid var(--ls-line); max-width: 220px; font-variant-numeric: tabular-nums; }
+.ls-isl-meta span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ls-isl-meta .ls-icon { width: 14px; height: 14px; color: var(--ls-fg-3); }
 .ls-isl-badge { display: inline-flex; align-items: center; height: 22px; padding: 0 9px; border-radius: 999px; font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ls-accent-soft); background: rgba(99,102,241,.14); border: 1px solid rgba(129,140,248,.3); }
 .ls-isl-btn {
     display: none; align-items: center; gap: 8px; height: 36px; padding: 0 16px; border-radius: 999px;
     font-size: 13px; font-weight: 600; color: var(--ls-fg-1); background: rgba(255,255,255,.05); border: 1px solid var(--ls-line);
-    transition: background-color .2s, color .2s, transform .2s var(--ls-ease); white-space: nowrap;
+    transition: background-color .2s, color .2s, scale var(--ls-d-snappy) var(--ls-spring-snappy); white-space: nowrap; cursor: pointer;
 }
 .ls-isl-btn:hover { background: rgba(255,255,255,.1); color: var(--ls-fg); }
-.ls-isl-btn:active { transform: scale(.97); }
+.ls-isl-btn:active { scale: .96; transition-duration: .2s, .2s, .12s; }
 .ls-isl-btn .ls-icon { width: 15px; height: 15px; }
 @media (min-width: 640px) { .ls-isl-btn { display: inline-flex; } }
 .ls-isl-btn--accent { background: var(--ls-accent); border-color: transparent; color: #fff; }
 .ls-isl-btn--accent:hover { background: var(--ls-accent-hi); color: #fff; }
 
+/* Уведомление: ширина = ширине текста (JS меряет), иконка с кольцом-таймером */
 .ls-isl-note {
-    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 10px;
+    position: absolute; z-index: 1; top: 0; bottom: 0; left: 50%;
+    width: var(--bw, 100%); translate: -50% 0;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
     padding: 0 18px; font-size: 13px; font-weight: 600; color: var(--ls-fg);
-    opacity: 0; transform: scale(.94); pointer-events: none;
-    transition: opacity .25s, transform .4s var(--ls-spring);
+    opacity: 0; scale: .92; pointer-events: none;
+    transition: opacity .16s, scale .2s ease;
 }
-.ls-island.is-notify .ls-isl-note { opacity: 1; transform: none; }
-.ls-isl-note span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ls-isl-ico { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: rgba(255,255,255,.14); color: var(--ls-fg); flex: none; }
-.ls-isl-ico .ls-icon { width: 13px; height: 13px; }
+.ls-island.is-notify .ls-isl-note {
+    opacity: 1; scale: 1;
+    transition: opacity .22s .08s, scale var(--ls-d-snappy) var(--ls-spring-snappy) .04s;
+}
+/* Смена одного уведомления другим: короткое «выдыхание» без закрытия острова */
+.ls-island .ls-isl-note.is-swap { opacity: 0; scale: .96; transition: opacity .11s, scale .11s; }
+.ls-isl-note > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ls-isl-measure { position: absolute; left: 0; top: 0; visibility: hidden; pointer-events: none; white-space: nowrap; font-size: 13px; font-weight: 600; }
+
+.ls-isl-ico { position: relative; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: rgba(255,255,255,.14); color: var(--ls-fg); flex: none; }
+.ls-isl-ico > .ls-icon { width: 13px; height: 13px; animation: ls-ico-pop var(--ls-d-bouncy) var(--ls-spring-bouncy) both; }
+@keyframes ls-ico-pop { from { scale: .35; opacity: 0; } to { scale: 1; opacity: 1; } }
 .ls-island[data-type="warning"] .ls-isl-ico, .ls-island[data-type="error"] .ls-isl-ico { background: var(--ls-amber); color: #1A1305; }
 .ls-island[data-type="info"] .ls-isl-ico { background: var(--ls-accent); color: #fff; }
 
+/* Кольцо таймера вокруг иконки: тает за время показа, на наведении мыши ставится на паузу */
+.ls-isl-ring { position: absolute; inset: -5px; width: 34px; height: 34px; rotate: -90deg; pointer-events: none; overflow: visible; color: rgba(255,255,255,.75); }
+.ls-island[data-type="warning"] .ls-isl-ring, .ls-island[data-type="error"] .ls-isl-ring { color: var(--ls-amber); }
+.ls-island[data-type="info"] .ls-isl-ring { color: var(--ls-accent-soft); }
+.ls-isl-ring circle { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; }
+.ls-isl-ring .trk { opacity: .14; }
+.ls-isl-ring .run { stroke-dasharray: 100; stroke-dashoffset: 0; animation: ls-ring var(--dur, 2600ms) linear forwards; }
+@keyframes ls-ring { to { stroke-dashoffset: 100; } }
+@media (hover: hover) { .ls-island:hover .ls-isl-ring .run { animation-play-state: paused; } }
+
+/* Ошибка: короткое покачивание, как у неверного пароля в iOS */
+.ls-island.is-shake { animation: ls-shake .46s cubic-bezier(.36,.07,.19,.97) both; }
+@keyframes ls-shake { 0%, 100% { translate: 0 0; } 20% { translate: -5px 0; } 40% { translate: 4px 0; } 60% { translate: -3px 0; } 80% { translate: 1.5px 0; } }
+
+/* Кастомные слои страницы (запись голоса, распознавание…): Island.layer() / show() / hide().
+   Ширину слоя JS кладёт в --lw (sm 380 · md 460 · lg 560, не шире острова). */
+.ls-isl-layer {
+    position: absolute; z-index: 1; top: 0; bottom: 0; left: 50%;
+    width: var(--lw, 460px); max-width: 100%; translate: -50% 0;
+    display: flex; align-items: center; gap: 12px;
+    padding: 0 8px 0 18px; font-size: 13px; font-weight: 600; color: var(--ls-fg);
+    opacity: 0; scale: .94; pointer-events: none;
+    transition: opacity .16s, scale .2s ease;
+}
+.ls-isl-layer.on {
+    opacity: 1; scale: 1; pointer-events: auto;
+    transition: opacity .22s .08s, scale var(--ls-d-snappy) var(--ls-spring-snappy) .04s;
+}
+.ls-island.is-notify .ls-isl-layer.on { opacity: 0; scale: .94; pointer-events: none; }
+
 /* Полоска прогресса скролла — опциональна: data-progress="1" на острове */
-.ls-isl-progress { display: none; position: absolute; left: 24px; right: 24px; bottom: 0; height: 1.5px; overflow: hidden; }
+.ls-isl-progress { display: none; position: absolute; z-index: 1; left: 24px; right: 24px; bottom: 0; height: 1.5px; overflow: hidden; transition: opacity .2s; }
 .ls-island-wrap[data-progress="1"] .ls-isl-progress { display: block; }
+.ls-island.is-notify .ls-isl-progress, .ls-island.is-layer .ls-isl-progress { opacity: 0; }
 .ls-isl-progress i { display: block; height: 100%; background: var(--ls-fg-3); opacity: .7; transform-origin: left; transform: scaleX(0); }
 
 .ls-isl-sub { display: flex; gap: 8px; pointer-events: auto; }
@@ -221,8 +318,9 @@ body.ls-lock { overflow: hidden; }
 .ls-island-wrap :focus-visible, .ls-dock :focus-visible, .ls-mdock :focus-visible, .ls-modal :focus-visible { outline: 2px solid var(--ls-accent-soft); outline-offset: 2px; }
 
 @media (prefers-reduced-motion: reduce) {
-    .ls-island, .ls-isl-row, .ls-isl-note, .ls-isl-layer, .ls-dock-btn, .ls-panel, .ls-modal,
-    .ls-dock-slot, .ls-ring rect { transition-duration: .001ms !important; animation-duration: .001ms !important; animation-delay: 0s !important; }
+    .ls-island, .ls-isl-bg, .ls-isl-bg::before, .ls-isl-bg::after, .ls-isl-row, .ls-isl-note, .ls-isl-layer, .ls-isl-btn,
+    .ls-dock-btn, .ls-panel, .ls-modal, .ls-dock-slot, .ls-ring rect { transition-duration: .001ms !important; transition-delay: 0s !important; animation-duration: .001ms !important; animation-delay: 0s !important; }
+    .ls-isl-ico > .ls-icon, .ls-isl-ring .run, .ls-island.is-shake { animation: none !important; }
 }
 
 

@@ -12,6 +12,12 @@
      Island.hide(name?)                     — вернуть шапку; Island.active() — имя открытого слоя или null
    type: success | error | warning (warn) | info. Красного нет: error рисуется янтарём.
    icon: имя из спрайта ('link', 'check', 'eye'…) или FA-имя 'fa-link' — оно будет сопоставлено.
+
+   Что нового внутри:
+     · остров морфится через ширину фонового слоя .ls-isl-bg, а не через раскладку шапки;
+     · ширина уведомления = ширине текста, смена уведомления без закрытия острова;
+     · кольцо-таймер вокруг иконки; на наведении мыши показ ставится на паузу;
+     · error — короткое покачивание.
    ========================================================================== */
 (function () {
     'use strict';
@@ -37,14 +43,38 @@
         return DEFAULT_ICON[type] || 'check';
     }
 
-    var island, timer, clickFn = null;
+    var SIZE = { sm: 380, md: 460, lg: 560 };
+    var NOTE_MIN = 200, NOTE_MAX = 440;
+    var reduce = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+    var canHover = !!(window.matchMedia && matchMedia('(hover: hover)').matches);
+
+    var island, bg, note, textEl, iconBox, measure;
+    var timer = null, deadline = 0, remaining = 0, hovering = false, noteSeq = 0, shakeT = null, clickFn = null;
     var layers = {}, pendingLayers = [], activeName = null, activeOpts = null, layerTimer = null;
+
+    function setWidth(px) {
+        if (!island) return;
+        if (px == null) island.style.removeProperty('--bw'); else island.style.setProperty('--bw', px + 'px');
+    }
+    function avail() { return island.clientWidth || 360; }
+    function noteWidth(text) {
+        measure.textContent = text;
+        var w = Math.ceil(measure.getBoundingClientRect().width) + 24 + 10 + 36 + 6;
+        return Math.round(Math.min(Math.max(w, NOTE_MIN), NOTE_MAX, avail()));
+    }
+    function layerWidth(size) { return Math.round(Math.min(SIZE[size] || SIZE.md, avail())); }
+
     function init() {
         island = $('dynamic-island');
         if (!island) return;
         var wrap = $('ls-island-wrap');
 
-        // прогресс скролла (включается атрибутом data-progress="1")
+        bg = island.querySelector('.ls-isl-bg');
+        if (!bg) { bg = document.createElement('span'); bg.className = 'ls-isl-bg'; bg.setAttribute('aria-hidden', 'true'); island.insertBefore(bg, island.firstChild); }
+        note = $('island-notice'); textEl = $('island-text'); iconBox = $('island-icon-box');
+        measure = document.createElement('span'); measure.className = 'ls-isl-measure'; measure.setAttribute('aria-hidden', 'true');
+        island.appendChild(measure);
+
         var prog = $('ls-isl-progress'), ticking = false;
         function onScroll() {
             if (ticking) return; ticking = true;
@@ -60,7 +90,15 @@
         }
         addEventListener('scroll', onScroll, { passive: true }); onScroll();
 
-        // слоты: <template data-ls-slot="right|title"> — перенос произвольной разметки в остров
+        var rt = null;
+        addEventListener('resize', function () {
+            clearTimeout(rt);
+            rt = setTimeout(function () {
+                if (activeName) { var px = layerWidth(activeOpts && activeOpts.size); layers[activeName].style.setProperty('--lw', px + 'px'); setWidth(px); }
+                else if (island.classList.contains('is-notify')) setWidth(noteWidth(textEl.textContent));
+            }, 80);
+        }, { passive: true });
+
         document.querySelectorAll('template[data-ls-slot]').forEach(function (t) {
             var slot = t.dataset.lsSlot, host = island.querySelector('[data-ls-slot-host="' + slot + '"]');
             if (!host) return;
@@ -69,6 +107,17 @@
         });
 
         island.addEventListener('click', function () { if (clickFn && island.classList.contains('is-notify')) clickFn(); });
+
+        if (canHover) {
+            island.addEventListener('mouseenter', function () {
+                hovering = true;
+                if (island.classList.contains('is-notify') && timer) { clearTimeout(timer); timer = null; remaining = Math.max(0, deadline - Date.now()); }
+            });
+            island.addEventListener('mouseleave', function () {
+                hovering = false;
+                if (island.classList.contains('is-notify') && !timer) { remaining = Math.max(remaining, 700); deadline = Date.now() + remaining; timer = setTimeout(dismiss, remaining); }
+            });
+        }
         pendingLayers.splice(0).forEach(function (a) { layer(a[0], a[1]); });
     }
 
@@ -87,43 +136,80 @@
         var el = layers[name];
         if (!island || !el) return;
         opts = opts || {};
-        clearTimeout(timer); clearTimeout(layerTimer);
+        clearTimeout(timer); timer = null; clearTimeout(layerTimer); noteSeq++;
+        note.classList.remove('is-swap');
         island.classList.remove('is-notify', 'is-clickable'); clickFn = null;
         if (activeName && layers[activeName] && activeName !== name) layers[activeName].classList.remove('on');
         activeName = name; activeOpts = opts;
+        var px = layerWidth(opts.size || 'md');
+        el.style.setProperty('--lw', px + 'px');
+        setWidth(px);
         island.setAttribute('data-size', opts.size || 'md');
         island.setAttribute('data-type', opts.tone || 'info');
         island.classList.add('is-layer');
         el.classList.add('on');
         if (opts.duration) layerTimer = setTimeout(function () { hide(name); }, opts.duration);
     }
-    function hide(name) {
-        if (!island || !activeName) return;
-        if (name && name !== activeName) return;
+    function closeLayer(keepWidth) {
+        if (!activeName) return;
         clearTimeout(layerTimer);
         layers[activeName].classList.remove('on');
         activeName = null; activeOpts = null;
         island.classList.remove('is-layer');
         island.removeAttribute('data-size');
+        if (!keepWidth) setWidth(null);
+    }
+    function hide(name) {
+        if (!island || !activeName) return;
+        if (name && name !== activeName) return;
+        closeLayer(false);
     }
 
+    /* ---------- Уведомления ---------- */
+    function startTimer(ms) {
+        clearTimeout(timer); timer = null;
+        remaining = ms; deadline = Date.now() + ms;
+        if (!hovering) timer = setTimeout(dismiss, ms);
+    }
+    function shake() {
+        if (reduce) return;
+        clearTimeout(shakeT);
+        island.classList.remove('is-shake'); void island.offsetWidth; island.classList.add('is-shake');
+        shakeT = setTimeout(function () { island.classList.remove('is-shake'); }, 480);
+    }
     function notify(message, type, icon, duration) {
         if (!island || !message) return;
         type = type === 'warn' ? 'warning' : (type || 'success');
         if (activeOpts && activeOpts.lock) { if (window.console) console.warn('[Island]', message); return; }
-        if (activeName) hide();
-        clearTimeout(timer);
-        $('island-text').textContent = message;
-        $('island-icon-box').innerHTML = '<svg class="ls-icon"><use href="#ls-i-' + iconId(icon, type) + '"/></svg>';
+        if (activeName) closeLayer(true);
+
+        var dur = duration || 2600, ico = iconId(icon, type), seq = ++noteSeq;
+        var live = island.classList.contains('is-notify');
+        clearTimeout(timer); timer = null; clickFn = null; island.classList.remove('is-clickable');
+
+        function apply() {
+            if (seq !== noteSeq) return;
+            textEl.textContent = message;
+            iconBox.innerHTML = '<svg class="ls-icon"><use href="#ls-i-' + ico + '"/></svg>' +
+                '<svg class="ls-isl-ring" viewBox="0 0 34 34" style="--dur:' + dur + 'ms" aria-hidden="true">' +
+                '<circle class="trk" cx="17" cy="17" r="15.25"/><circle class="run" cx="17" cy="17" r="15.25" pathLength="100"/></svg>';
+            note.classList.remove('is-swap');
+            startTimer(dur);
+        }
+
         island.setAttribute('data-type', type);
+        setWidth(noteWidth(message));
         island.classList.add('is-notify');
-        timer = setTimeout(dismiss, duration || 2600);
+        if (live && !reduce) { note.classList.add('is-swap'); setTimeout(apply, 110); } else apply();
+        if (type === 'error') shake();
     }
     function dismiss() {
         if (!island) return;
-        clearTimeout(timer);
+        clearTimeout(timer); timer = null; noteSeq++;
+        note.classList.remove('is-swap');
         island.classList.remove('is-notify', 'is-clickable');
         clickFn = null;
+        if (!activeName) setWidth(null);
     }
 
     window.Island = {

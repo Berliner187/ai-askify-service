@@ -12,10 +12,12 @@
     island_back_url / island_back_label   ссылка «назад» для мобильной подстрочной навигации
     island_progress                   любое значение → тонкая полоска прогресса скролла (по умолчанию выключена)
   Своя разметка: <template data-ls-slot="right">…</template> или data-ls-slot="title" в любом месте страницы.
+  v2: добавлен фоновый слой .ls-isl-bg (стекло и рамка)
 {% endcomment %}{% load static %}
 <header class="ls-island-wrap" id="ls-island-wrap" {% if island_progress %}data-progress="1"{% endif %}>
     <div class="ls-wrap">
         <div class="ls-island" id="dynamic-island">
+            <span class="ls-isl-bg" aria-hidden="true"></span>
             <div class="ls-isl-row" id="island-controls">
                 <div class="ls-crumbs">
                     <a href="/" aria-label="Главная"><img src="{% static 'img/logo.png' %}" alt=""></a>
