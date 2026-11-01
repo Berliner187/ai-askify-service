@@ -66,6 +66,10 @@
     flex-direction: column; align-items: center; gap: 14px;
     padding: 14px 10px;
     background: var(--ls-card); border: 1px solid var(--ls-line); border-radius: 26px;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    will-change: transform;
+    transform: translateY(-50%) translateZ(0);
 }
 @media (min-width: 1024px) { .ls-dock { display: flex; } }
 .ls-dock nav { display: flex; flex-direction: column; gap: 10px; }
@@ -149,7 +153,7 @@
     width: var(--bw, 100%); translate: -50% 0;
     border-radius: 999px; pointer-events: auto;
     background: rgba(28,28,40,.80);
-    -webkit-backdrop-filter: saturate(160%) blur(18px); backdrop-filter: saturate(160%) blur(18px);
+    -webkit-backdrop-filter: saturate(160%) blur(8px); backdrop-filter: saturate(160%) blur(8px);
     border: 1px solid rgba(255,255,255,.14);
     transition:
         width var(--ls-d-smooth) var(--ls-spring-smooth),

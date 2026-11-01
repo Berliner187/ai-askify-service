@@ -1586,12 +1586,20 @@ class FileUploadView(View):
             question_count = int(form.cleaned_data['question_count'])
             difficulty = form.cleaned_data.get('difficulty') or "medium"
             shuffle_questions = form.cleaned_data.get('shuffle_questions', False)
+            question_types = forms.CharField(required=False)
 
-            raw_types = form.cleaned_data.get('question_types')
+            ALLOWED_TYPES = {"single", "multiple"}
+
+            raw_types = form.cleaned_data.get('question_types') or request.POST.get('question_types')
             try:
-                question_types = json.loads(raw_types) if raw_types else ["single"]
-            except Exception:
+                parsed = json.loads(raw_types) if raw_types else []
+                if isinstance(parsed, str):
+                    parsed = [parsed]
+                question_types = [t for t in parsed if t in ALLOWED_TYPES] or ["single"]
+            except (TypeError, ValueError) as fail:
+                tracer_l.warning(f"[UPLOAD] Не удалось распарсить question_types={raw_types!r}: {fail}")
                 question_types = ["single"]
+                print(question_types, 'Exception', fail)
 
             # 4. ПРОВЕРКА ЛИМИТОВ ВОПРОСОВ И ГОСТЕВОГО ДОСТУПА
             if is_guest:

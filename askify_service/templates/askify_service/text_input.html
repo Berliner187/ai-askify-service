@@ -1242,8 +1242,9 @@
         }
 
         const csrftoken = getCookie('csrftoken');
-        const questionTypes = ['single'];
+        let questionTypes = ['single'];
         if ($('#type-multiple').is(':checked')) questionTypes.push('multiple');
+        console.log(questionTypes);
         const shuffle = $('#opt-shuffle').is(':checked');
         const diffLabels = { easy: 'Лёгкая сложность', medium: 'Средняя сложность', hard: 'Сложный уровень' };
         const currentDiffLabel = diffLabels[currentDifficulty] || 'Средняя сложность';

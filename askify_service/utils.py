@@ -259,7 +259,7 @@ class ManageGenerationSurveys:
                 username = getattr(self.request.user, 'username', 'anon')
                 tracer_l.info(
                     f"START GEN: user={username}, model={model_name}, "
-                    f"diff={self.difficulty}, q_count={self.count_questions}, "
+                    f"diff={self.difficulty}, q_count={self.count_questions}, question_types={self.question_types}, "
                     f"proxy={'YES' if use_proxy else 'NO'}, key_id={getattr(db_key, 'id', 'ENV')}"
                 )
 
