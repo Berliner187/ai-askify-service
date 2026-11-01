@@ -1,0 +1,55 @@
+{% comment %}
+  Остров-навигация публичных страниц (журнал, документы).
+  {% include 'components/site_island.html' with active='media' %}
+  active: 'media' | 'docs' | ''.  Контекст: username (0 для гостя), documents (необязательно).
+  Спрайт иконок: {% include 'components/site_icons.html' %} один раз на страницу.
+{% endcomment %}{% load static %}
+<div id="island-scrim" class="isl-scrim" aria-hidden="true"></div>
+<header id="island-nav" class="isl-wrap">
+    <div class="isl">
+        <div class="isl-bar">
+            <a href="/" class="isl-logo" title="Летучка — генератор тестов">
+                <img src="{% static 'img/logo-header.webp' %}" alt="Летучка" height="32">
+            </a>
+
+            <nav class="isl-links" aria-label="Сайт">
+                <a href="/#features">Возможности</a>
+                <a href="/#pricing">Тарифы</a>
+                <a href="/media/"{% if active == 'media' %} aria-current="page"{% endif %}>Журнал</a>
+                <a href="/#faq">FAQ</a>
+            </nav>
+
+            <div class="isl-actions">
+                {% if username and username != 0 and username != "0" %}
+                    <a href="/create" class="isl-btn isl-btn--ghost">{{ username }}</a>
+                {% else %}
+                    <a href="/login" class="isl-btn isl-btn--ghost isl-login">Войти</a>
+                    <a href="/create" class="isl-btn isl-btn--primary">
+                        <span>Создать тест</span>
+                        <svg class="icon isl-arrow" aria-hidden="true"><use href="#i-arrow"/></svg>
+                    </a>
+                {% endif %}
+                <button id="burger-btn" type="button" class="isl-btn isl-btn--ghost isl-burger"
+                        aria-label="Открыть меню" aria-expanded="false" aria-controls="island-menu"><i></i><i></i></button>
+            </div>
+        </div>
+
+        <div id="island-menu" class="isl-menu" inert>
+            <div>
+                <div class="isl-menu-inner">
+                    <nav aria-label="Меню">
+                        <a href="/#features" style="--i:0">Возможности</a>
+                        <a href="/#pricing" style="--i:1">Тарифы</a>
+                        <a href="/media/" style="--i:2"{% if active == 'media' %} aria-current="page"{% endif %}>Журнал</a>
+                        <a href="/#faq" style="--i:3">FAQ</a>
+                        {% for d in documents %}
+                        <a href="/docs/{{ d.slug }}" style="--i:{{ forloop.counter|add:3 }}">{{ d.title }}</a>
+                        {% endfor %}
+                    </nav>
+                </div>
+            </div>
+        </div>
+
+        <span class="isl-progress" aria-hidden="true"><i id="island-progress"></i></span>
+    </div>
+</header>

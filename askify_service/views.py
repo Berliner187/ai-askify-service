@@ -179,17 +179,6 @@ def index(request):
     return render(request, 'askify_service/index.html', context)
 
 
-@check_legal_process
-def pro_landing(request):
-    context = {
-        'username': request.user.username if request.user.is_authenticated else 0,
-        'debug': DEBUG
-    }
-    log_traffic(request, "Преподам")
-    
-    return render(request, 'pro_landing.html', context)
-
-
 def for_prepods(request):
     return redirect("neyroset_dlya_testov")
 

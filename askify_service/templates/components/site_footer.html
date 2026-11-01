@@ -1,0 +1,39 @@
+{% load static %}
+<a href="#top" id="to-top" class="to-top" aria-label="Наверх"><svg class="icon" aria-hidden="true"><use href="#i-up"/></svg></a>
+
+<footer class="ft">
+    <div class="ft-in">
+        <div class="ft-grid">
+            <div class="ft-brand">
+                <a href="/"><img src="{% static 'img/logo-header.webp' %}" alt="Летучка" height="32" loading="lazy"></a>
+                <p>Российский сервис создания тестов по&nbsp;тексту и&nbsp;файлам с&nbsp;автопроверкой и&nbsp;аналитикой результатов.</p>
+                <div class="ft-social">
+                    <a href="https://t.me/LetychkaRobot" target="_blank" rel="noopener" aria-label="Telegram"><svg class="icon"><use href="#i-tg"/></svg></a>
+                    <a href="mailto:support@letychka.ru" aria-label="Почта"><svg class="icon"><use href="#i-mail"/></svg></a>
+                </div>
+            </div>
+            <div class="ft-col">
+                <span class="ft-h">Продукт</span>
+                <a href="/#features">Возможности</a>
+                <a href="/#pricing">Тарифы</a>
+                <a href="/#faq">Вопросы и ответы</a>
+                <a href="/create">Конструктор тестов</a>
+            </div>
+            <div class="ft-col">
+                <span class="ft-h">Читать</span>
+                <a href="/media/">Журнал</a>
+                <a href="/docs/public-offer">Публичная оферта</a>
+                <a href="/docs/privacy-policy">Политика конфиденциальности</a>
+                <span class="ft-dim">ИНН 773613171558 / ОГРНИП 3245081071286</span>
+            </div>
+            <div class="ft-col">
+                <span class="ft-h">Поддержка</span>
+                <p>Вопросы по работе сервиса и предложения:<br><a class="ft-link" href="mailto:support@letychka.ru">support@letychka.ru</a></p>
+            </div>
+        </div>
+        <div class="ft-bottom">
+            <p>© 2024–{{ year }} Летучка AI. Все права защищены.</p>
+            <p>Design &amp; Development <a href="https://berliner187.github.io/" target="_blank" rel="noopener">by Kozak</a></p>
+        </div>
+    </div>
+</footer>

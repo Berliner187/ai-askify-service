@@ -26,13 +26,13 @@ from . import crm_views
 from askify_app.settings import DEBUG
 
 from askify_service.views import telegram_magic_auth, telegram_code_auth, bot_generate_code, bot_generate_link
+from askify_service.media_views import media_index, blog_view, blog_view_beacon, media_rss
 
 
 urlpatterns = [
     path('', index, name='home'),
 
     path('dlya-prepodavateley/', for_prepods, name='for_prepods'),
-    path('testirovanie-online/', pro_landing, name='pro_landing'),
     path('test-dlya-uchenikov/', dlya_uchenikov, name='dlya_uchenikov'),
     path('neyroset-dlya-testov/', neyroset_dlya_testov, name='neyroset_dlya_testov'),
     path('testy-dlya-medikov/', medicine_promo, name='medicine_promo'),
@@ -111,6 +111,9 @@ urlpatterns = [
     path('profile/', redirect_to_profile, name='profile_redirect'),
 
     path('docs/<slug:slug>/', document_view, name='document_view'),
+    path('media/', media_index, name='media_index'),
+    path('media/rss.xml', media_rss, name='media_rss'),
+    path('media/<slug:slug>/view/', blog_view_beacon, name='media_view_beacon'),
     path('media/<slug:slug>/', blog_view, name='media_view'),
 
     path('get_ip/', get_ip, name='get_ip'),

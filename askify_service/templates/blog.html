@@ -1,175 +1,172 @@
 <!DOCTYPE html>
-<html lang="ru" class="scroll-smooth">
+<html lang="ru">
 <head>
     {% load static %}
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ title }} — Как создать тест онлайн | Летучка Медиа</title>
-    
-    <meta name="description" content="Онлайн сервис на русском языке на основе искусственного интеллекта для создания квизов и тестов. Узнайте, как быстро создать тест для урока за 5 минут. Пошаговая инструкция, лучшие сервисы и готовые шаблоны для учителей и преподавателей.">
-    <meta name="keywords" content="генератор тестов с ИИ, создать тест, создать тест из статьи автоматически, подготовка к экзаменам, онлайн тесты, ии для создания тестов, летучка, создать тест нейросетью">
-    
-    <meta property="og:title" content="Сервис для генерации тестов и квизов: {{ title }}">
-    <meta property="og:description" content="Узнайте, как Летучка помогает создавать персонализированные тесты за считанные секунды с помощью ИИ. Быстро, удобно и эффективно!">
-    <meta property="og:url" content="https://letychka.ru/{{ article_url }}">
+    <title>{{ post.title }} | Журнал Летучки</title>
+    <meta name="description" content="{{ post.description }}">
+    <meta name="theme-color" content="#0F0E13">
+    <link rel="canonical" href="{{ canonical_url }}">
+
     <meta property="og:type" content="article">
-    <meta property="og:image" content="https://letychka.ru/static/blog_img/blog-01-002.png">
-    <meta name="twitter:card" content="https://letychka.ru/static/letychka-banner-1703.webp"/>
-    <meta name="twitter:image" content="https://letychka.ru/static/blog_img/blog-01-002.png"/>
-    <meta property="og:site_name" content="letychka.ru">
-    
-    {% load static %}
-    <link rel="shortcut icon" href="{% static 'img/favicon.ico' %}" type="image/ico">
-    <link rel="stylesheet" href="{% static 'css/footer.css' %}">
+    <meta property="og:url" content="{{ canonical_url }}">
+    <meta property="og:title" content="{{ post.title }}">
+    <meta property="og:description" content="{{ post.description }}">
+    <meta property="og:image" content="{{ og_image }}">
+    <meta property="og:site_name" content="Летучка — ИИ-генератор тестов по тексту">
+    <meta property="article:published_time" content="{{ post.date_iso }}">
+    <meta property="article:modified_time" content="{{ post.updated_iso }}">
+    <meta property="article:section" content="{{ post.rubric }}">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="{{ og_image }}">
+
+    <link rel="icon" href="{% static 'img/favicon.ico' %}" type="image/x-icon">
+    <link rel="apple-touch-icon" sizes="180x180" href="{% static 'img/apple-touch-icon.png' %}">
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@200..900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=Wix+Madefor+Display:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/site-chrome.css' %}">
+    <link rel="stylesheet" href="{% static 'css/blog.css' %}">
 
-    <!-- Yandex.Metrika counter -->
-    <script type="text/javascript" >
-        setTimeout(function() {
-            (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
-            m[i].l=1*new Date();
-            for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
-            k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
-            (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
-        
-            ym(98823704, "init", {
-                clickmap:true,
-                trackLinks:true,
-                accurateTrackBounce:true,
-                webvisor:true
-            });
-        }, 1000);
+    <script type="application/ld+json">{{ jsonld }}</script>
+
+    <script>
+        window.addEventListener('load', function () {
+            setTimeout(function () {
+                (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+                m[i].l=1*new Date();
+                for (var j = 0; j < document.scripts.length; j++) { if (document.scripts[j].src === r) { return; } }
+                k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+                (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+                ym(98823704, "init", { clickmap: true, trackLinks: true, accurateTrackBounce: true, webvisor: true });
+            }, 1500);
+        });
     </script>
-    <noscript><div><img src="https://mc.yandex.ru/watch/98823704" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
-    <!-- /Yandex.Metrika counter -->
-     
-    {% if debug %}
-        <script src="https://cdn.tailwindcss.com"></script>
-        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-    {% else %}
-        <script src="{% static 'vendor/tailwind.full.min.js' %}"></script>
-        <script src="{% static 'vendor/jquery.min.js' %}"></script>
-    {% endif %}
-
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Unbounded:wght@500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <style>
-        :root {
-            --color-bg: #0F0818;
-            --color-surface: rgba(30, 24, 48, 0.5);
-            --color-border: rgba(97, 109, 240, 0.2);
-            --color-text-primary: #f0f0f0;
-            --color-text-secondary: #a0a0b0;
-            --color-accent-primary: #616DF0;
-            --color-accent-secondary: #79EF66;
-        }
-        @font-face {
-            font-family: 'Unbounded Medium';
-            src: url("{% static 'fonts/Unbounded-Medium.ttf' %}") format('truetype');
-        }
-        body { background-color: var(--color-bg); color: var(--color-text-primary); font-family: 'Inter', sans-serif; }
-        
-        .prose {
-            color: var(--color-text-secondary);
-            line-height: 1.7;
-        }
-        .prose h1, .prose h2, .prose h3 {
-            font-family: 'Unbounded Medium', sans-serif;
-            color: var(--color-text-primary);
-            margin-top: 2em;
-            margin-bottom: 1em;
-        }
-        .prose h1 { font-size: 2.25rem; }
-        .prose h2 { font-size: 1.875rem; }
-        .prose h3 { font-size: 1.5rem; }
-        .prose p { margin-bottom: 1.25em; }
-        .prose a { color: var(--color-accent-primary); text-decoration: underline; font-weight: 600; }
-        .prose a:hover { color: var(--color-accent-secondary); }
-        .prose strong { color: var(--color-text-primary); font-weight: 700; }
-        .prose ul, .prose ol { margin-left: 1.5em; margin-bottom: 1.25em; }
-        .prose li { margin-bottom: 0.5em; }
-        .prose img {
-            border-radius: 1.5rem;
-            border: 1px solid var(--color-border);
-            margin-top: 2em;
-            margin-bottom: 2em;
-        }
-        .prose blockquote {
-            border-left: 4px solid var(--color-accent-primary);
-            padding-left: 1em;
-            margin-left: 0;
-            font-style: italic;
-            color: var(--color-text-primary);
-        }
-    </style>
+    <noscript><div><img src="https://mc.yandex.ru/watch/98823704" style="position:absolute; left:-9999px;" alt=""></div></noscript>
 </head>
-<body class="bg-[var(--color-bg)]">
+<body id="top" data-slug="{{ post.slug }}" data-beacon="{% url 'media_view_beacon' post.slug %}">
+    {% include 'components/site_icons.html' %}
+    {% include 'components/site_island.html' with active='media' %}
 
-    <main class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
-        
-        <!-- Заголовок и мета-информация -->
-        <header class="text-center mb-12">
-            <h1 class="text-3xl md:text-5xl font-black tracking-tighter text-white">
-                {{ title }}
-            </h1>
-            <p class="mt-4 text-sm font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">
-                {{ view_count }}
-            </p>
-        </header>
+    <main class="bl">
+        <div class="bp-layout">
+            <aside class="bp-aside">
+                <a href="/media/" class="bp-back"><svg class="icon" aria-hidden="true"><use href="#i-back"/></svg>Все материалы</a>
 
-        <!-- Контент статьи -->
-        <article class="prose max-w-none">
-            {{ content|safe }}
-        </article>
+                {% if post.toc %}
+                <nav class="bp-toc" aria-label="Содержание">
+                    <details id="bp-toc">
+                        <summary class="bp-aside-h">
+                            Содержание
+                            <svg class="icon bp-chev" aria-hidden="true"><use href="#i-chevron"/></svg>
+                        </summary>
+                        <ol>
+                            {% for s in post.toc %}
+                            <li><a href="#{{ s.id }}">{{ s.name }}</a></li>
+                            {% endfor %}
+                        </ol>
+                    </details>
+                </nav>
+                {% endif %}
 
-        <!-- CTA-блок после статьи -->
-        <div class="mt-16 pt-12 border-t border-[var(--color-border)] text-center">
-            <h2 class="text-2xl md:text-3xl font-bold text-white">
-                Готовы вернуть себе <span class="gradient-text">часы времени?</span>
-            </h2>
-            <p class="mt-4 text-lg text-[var(--color-text-secondary)] max-w-xl mx-auto">
-                Прекратите тратить вечера на рутину. Начните создавать тесты за 30 секунд.
-            </p>
-            <a href="/register" class="mt-8 inline-block bg-[var(--color-accent-primary)] text-white px-10 py-4 font-bold rounded-full transition-transform hover:scale-105">
-                Попробовать Летучку бесплатно
-            </a>
-        </div>
+                <div class="bp-card">
+                    <strong>Тест из вашего текста</strong>
+                    <p>Вставьте материал урока, и Летучка соберёт вопросы с автопроверкой.</p>
+                    <a href="/create" class="btn">Создать тест</a>
+                </div>
+            </aside>
 
-        <div class="mt-16 pt-12 border-t border-[var(--color-border)]">
-            <h2 class="text-2xl md:text-3xl font-bold text-white text-center mb-8">
-                Что еще почитать
-            </h2>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                {% for other_post in other_posts %}
-                    <a href="{% url 'media_view' other_post.slug %}" 
-                       class="group block p-6 bg-[var(--color-surface)] rounded-2xl border border-[var(--color-border)]
-                              transition-all duration-300 hover:border-[var(--color-accent-primary)] hover:-translate-y-1">
-                        
-                        <h3 class="font-bold text-white text-lg group-hover:text-[var(--color-accent-primary)] transition-colors">
-                            {{ other_post.title }}
-                        </h3>
-                        <p class="mt-2 text-sm text-gray-400">
-                            <!-- Здесь может быть ваша реклама -->
-                        </p>
-                        <div class="mt-4 flex justify-between items-center text-xs text-gray-500">
-                            <span>{{ other_post.view_count }} • {{ other_post.created_at|date:"d M, Y" }}</span>
-                            <span class="font-semibold text-[var(--color-accent-primary)] opacity-0 group-hover:opacity-100 transition-opacity">
-                                Читать &rarr;
-                            </span>
-                        </div>
+            <article class="bp-paper" data-progress-target>
+                <header class="bp-head">
+                    <nav class="bp-crumbs" aria-label="Путь">
+                        <a href="/">Летучка</a><span aria-hidden="true">/</span><a href="/media/">Журнал</a><span aria-hidden="true">/</span><span>{{ post.rubric }}</span>
+                    </nav>
+                    <div class="bp-kicker">
+                        <p class="bl-no" aria-label="Выпуск {{ post.number }}"><small>№</small>{{ post.number_str }}</p>
+                        <span class="tag">{{ post.rubric }}</span>
+                    </div>
+                    <h1 class="bp-title">{{ post.title }}</h1>
+                    {% if post.lead %}<p class="bp-lead">{{ post.lead }}</p>{% endif %}
+                    <div class="bp-meta">
+                        <span><time datetime="{{ post.date_iso }}">{{ post.date_ru }}</time></span>
+                        <span>{{ post.minutes }} мин чтения</span>
+                        {% if views_text %}<span>{{ views_text }}</span>{% endif %}
+                    </div>
+                </header>
+
+                <div class="md">
+                    {{ post.html|safe }}
+                </div>
+
+                {% if post.quiz %}
+                <section class="qz" id="qz" hidden aria-labelledby="qz-h">
+                    <h2 class="qz-h" id="qz-h">Летучка по статье</h2>
+                    <p class="qz-sub">{{ post.quiz|length }} {{ quiz_word }}: проверьте, что осталось в голове.</p>
+                    <div id="qz-body"></div>
+                </section>
+                <script type="application/json" id="qz-data">{{ quiz_json }}</script>
+                {% endif %}
+
+                <div class="bp-end">
+                    <p>Понравилось? Отправьте коллеге.</p>
+                    <div class="bp-share">
+                        <a href="https://t.me/share/url?url={{ share_url }}&amp;text={{ share_text }}" target="_blank" rel="noopener"><svg class="icon" aria-hidden="true"><use href="#i-tg"/></svg>Telegram</a>
+                        <button type="button" id="copy-link" data-url="{{ canonical_url }}"><svg class="icon" aria-hidden="true"><use href="#i-link"/></svg><span>Копировать ссылку</span></button>
+                    </div>
+                </div>
+
+                <nav class="bp-pn" aria-label="Соседние материалы">
+                    {% if older %}
+                    <a class="pn pn--prev" href="{% url 'media_view' older.slug %}" rel="prev">
+                        <small><svg class="icon" aria-hidden="true"><use href="#i-back"/></svg>Предыдущий, № {{ older.number_str }}</small>
+                        <b>{{ older.title }}</b>
                     </a>
-                {% endfor %}
-            </div>
+                    {% else %}<span class="pn pn--prev" aria-hidden="true"></span>{% endif %}
+                    {% if newer %}
+                    <a class="pn pn--next" href="{% url 'media_view' newer.slug %}" rel="next">
+                        <small>Следующий, № {{ newer.number_str }}<svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></small>
+                        <b>{{ newer.title }}</b>
+                    </a>
+                    {% else %}<span class="pn pn--next" aria-hidden="true"></span>{% endif %}
+                </nav>
+            </article>
         </div>
 
+        {% if related %}
+        <section class="bp-more" aria-labelledby="more-h">
+            <h2 class="bp-more-h" id="more-h">Что ещё почитать</h2>
+            <ol class="bl-list">
+                {% for p in related %}
+                <li>
+                    <div class="row">
+                        <span class="row-no" aria-hidden="true">{{ p.number_str }}</span>
+                        <span class="row-tag tag">{{ p.rubric }}</span>
+                        <h3 class="row-title"><a href="{% url 'media_view' p.slug %}">{{ p.title }}</a></h3>
+                        <p class="row-lead">{{ p.lead }}</p>
+                        <span class="row-read">{{ p.minutes }} мин</span>
+                        <time class="row-date" datetime="{{ p.date_iso }}">{{ p.date_short }}</time>
+                        <div class="row-meta"><span>{{ p.date_short }}</span><span>{{ p.minutes }} мин чтения</span></div>
+                    </div>
+                </li>
+                {% endfor %}
+            </ol>
+        </section>
+        {% endif %}
+
+        <section class="cta" aria-labelledby="cta-h">
+            <div>
+                <h2 id="cta-h">Сделайте такой тест сами</h2>
+                <p>Вставьте свой текст, и через полминуты у вас будет тест с автопроверкой и ссылкой для класса.</p>
+            </div>
+            <a href="/create" class="btn">Создать тест<svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+        </section>
     </main>
 
-    {% include 'footer.html' %}
-    
+    {% include 'components/site_footer.html' %}
+
+    <script src="{% static 'js/site-chrome.js' %}" defer></script>
+    <script src="{% static 'js/blog.js' %}" defer></script>
 </body>
 </html>

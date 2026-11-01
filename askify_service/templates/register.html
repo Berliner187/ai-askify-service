@@ -6,554 +6,650 @@
     <title>Регистрация — Летучка</title>
     <meta name="description" content="Создайте аккаунт в сервисе Летучка: генерация тестов по текстам и файлам за 15 секунд, автопроверка ответов, экспорт в PDF и Excel. 5 тестов бесплатно." />
     <link rel="canonical" href="https://letychka.ru/register/" />
-    
+
     {% load static %}
     <link rel="icon" href="{% static 'img/favicon.ico' %}" type="image/ico">
     <link rel="apple-touch-icon" sizes="180x180" href="{% static 'img/apple-touch-icon.png' %}">
 
-    {% if debug %}
-        <script src="https://cdn.tailwindcss.com"></script>
-    {% else %}
-        <script src="{% static 'vendor/tailwind.full.min.js' %}"></script>
-    {% endif %}
-
-    <!-- Шрифты и иконки грузятся без блокировки отрисовки -->
+    <!-- Шрифты грузятся без блокировки отрисовки. Neucha — рукописные акценты (кириллица нативная) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&family=Wix+Madefor+Display:wght@700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" media="print" onload="this.media='all'">
+    <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=Wix+Madefor+Display:wght@700;800&family=Neucha&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
     <noscript>
-        <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&family=Wix+Madefor+Display:wght@700;800&display=swap" rel="stylesheet">
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=Wix+Madefor+Display:wght@700;800&family=Neucha&display=swap" rel="stylesheet">
     </noscript>
 
-    <!-- Yandex.Metrika: после полной загрузки страницы, Вебвизор выключен на форме регистрации -->
-    <script type="text/javascript">
-        window.addEventListener('load', function () {
-            setTimeout(function () {
-                (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
-                m[i].l=1*new Date();
-                for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
-                k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
-                (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
-
-                ym(98823704, "init", { clickmap:true, trackLinks:true, accurateTrackBounce:true, webvisor:false });
-            }, 3000);
-        });
+    <!-- Yandex.Metrika counter -->
+    <script>
+        setTimeout(function () {
+            (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+            m[i].l=1*new Date();
+            for (var j = 0; j < document.scripts.length; j++) { if (document.scripts[j].src === r) { return; } }
+            k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+            (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+            ym(98823704, "init", { clickmap: true, trackLinks: true, accurateTrackBounce: true, webvisor: true });
+        }, 1000);
     </script>
-    <noscript><div><img src="https://mc.yandex.ru/watch/98823704" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+    <noscript><div><img src="https://mc.yandex.ru/watch/98823704" style="position:absolute; left:-9999px;" alt=""></div></noscript>
+    <!-- /Yandex.Metrika counter -->
 
     <style>
         :root {
-            --bg-canvas: #0e0e14;
-            --border-subtle: rgba(255, 255, 255, 0.08);
-            --border-highlight: rgba(255, 255, 255, 0.14);
-            --spring-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+            --bg: #111119;           /* фон страницы; им же «вырезаны» вырезы билета */
+            --card: #15151E;
+            --card-2: #1B1B26;
+            --line: rgba(255, 255, 255, .08);
+            --line-hi: rgba(255, 255, 255, .15);
+            --text: #F4F4F5;
+            --muted: #A1A1AA;
+            --faint: #71717A;
+            --dim: #52525B;
+            --accent: #4F46E5;
+            --accent-soft: #A5B4FC;
+            --err: #FDA4AF;
+            --amber: #F5B544;
+            --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
         }
 
+        *, *::before, *::after { box-sizing: border-box; }
         html { -webkit-text-size-adjust: 100%; }
-
         body {
-            background-color: var(--bg-canvas);
+            margin: 0;
+            min-height: 100vh; min-height: 100dvh;
+            display: flex; flex-direction: column;
+            background: var(--bg);
+            color: var(--text);
             font-family: 'Golos Text', -apple-system, BlinkMacSystemFont, sans-serif;
-            color: #F3F4F6;
-            letter-spacing: -0.01em;
+            letter-spacing: -.01em;
             overflow-x: hidden;
-            min-height: 100vh;
-            min-height: 100dvh;
+            -webkit-font-smoothing: antialiased;
             -webkit-tap-highlight-color: transparent;
         }
+        ::selection { background: var(--accent); color: #fff; }
+        a { color: var(--accent-soft); }
+        a:hover { color: #C7D2FE; }
 
-        h1, h2, h3, .font-display {
-            font-family: 'Wix Madefor Display', sans-serif;
-            letter-spacing: -0.025em;
+        /* ===== Остров-шапка ===== */
+        .isl-wrap { position: sticky; top: 0; z-index: 40; padding: 12px 16px 0; pointer-events: none; }
+        .isl {
+            pointer-events: auto;
+            max-width: 1024px; min-height: 52px; margin: 0 auto;
+            display: flex; align-items: center; justify-content: space-between; gap: 12px;
+            padding: 6px 8px 6px 16px;
+            background: var(--card);
+            border: 1px solid var(--line-hi);
+            border-radius: 999px;
         }
+        .crumbs { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); min-width: 0; }
+        .crumbs img { height: 26px; width: auto; display: block; }
+        .crumbs .sep { color: var(--dim); }
+        .crumbs b { font-weight: 600; color: var(--text); white-space: nowrap; }
+        .isl-r { display: flex; align-items: center; gap: 8px; }
+        .ib {
+            display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 16px;
+            border-radius: 999px; font-size: 13px; font-weight: 600; color: #D4D4D8; text-decoration: none;
+            background: rgba(255, 255, 255, .05); border: 1px solid var(--line);
+            transition: background-color .15s, color .15s;
+        }
+        .ib:hover { background: rgba(255, 255, 255, .1); color: #fff; }
+        .bal {
+            display: none; align-items: center; gap: 8px; height: 36px; padding: 0 14px;
+            border-radius: 999px; font-size: 13px; font-weight: 600; color: #fff; background: var(--accent);
+            white-space: nowrap;
+        }
+        .bal.on { display: inline-flex; animation: bal .6s var(--spring) .55s both; }
+        @keyframes bal { from { opacity: 0; transform: scale(.4); } to { opacity: 1; transform: none; } }
 
-        .font-mono-nums {
-            font-family: 'JetBrains Mono', monospace;
-            letter-spacing: -0.02em;
+        /* ===== Основная зона ===== */
+        .main {
+            flex: 1; width: 100%; max-width: 900px; margin: 0 auto;
+            padding: 36px 16px 48px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 28px;
         }
+        .hd { text-align: center; }
+        .k { font: 700 12px/1 'Golos Text', sans-serif; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); }
+        .h { margin: 16px 0 0; font: 800 clamp(34px, 6vw, 52px)/1.04 'Wix Madefor Display', sans-serif; letter-spacing: -.045em; }
+        .sub { margin: 12px auto 0; max-width: 480px; font-size: 16px; line-height: 1.5; color: var(--muted); }
 
-        /* Свечение фона: градиенты вместо блюра на больших блоках (блюр сильно тормозит iOS) */
-        .ambient {
-            position: fixed;
-            inset: 0;
-            pointer-events: none;
-            z-index: 0;
-            background:
-                radial-gradient(640px circle at 25% -2%, rgba(79, 70, 229, 0.14), transparent 70%),
-                radial-gradient(560px circle at 75% 105%, rgba(91, 33, 182, 0.12), transparent 70%);
+        .banner {
+            width: 100%; max-width: 820px; padding: 12px 16px; border-radius: 16px;
+            display: flex; align-items: center; gap: 10px; font-size: 13px; line-height: 1.4;
         }
+        .banner.info { background: rgba(79, 70, 229, .1); border: 1px solid rgba(79, 70, 229, .3); color: #C7D2FE; }
+        .banner.bad { background: rgba(244, 63, 94, .08); border: 1px solid rgba(244, 63, 94, .28); color: var(--err); }
+        .banner svg { flex-shrink: 0; }
 
-        /* Остров-шапка: на телефоне без backdrop-filter */
-        .island {
-            background: rgba(22, 21, 32, 0.94);
-            box-shadow: 0 10px 28px -8px rgba(0, 0, 0, 0.6);
-        }
-
-        /* Карточка: на телефоне плотный фон без blur */
-        .glass-card {
-            background: linear-gradient(180deg, rgba(27, 26, 37, 0.97), rgba(20, 19, 28, 0.97));
-            border: 1px solid var(--border-subtle);
-            box-shadow:
-                0 24px 48px -16px rgba(0, 0, 0, 0.7),
-                inset 0 1px 0 0 var(--border-highlight);
-        }
-
-        .sub-panel {
-            background: rgba(24, 24, 36, 0.85);
-            border: 1px solid rgba(255, 255, 255, 0.06);
-        }
-
-        /* Стекло только на десктопе с мышью */
-        @media (min-width: 1024px) and (hover: hover) {
-            .island {
-                background: rgba(22, 21, 32, 0.8);
-                -webkit-backdrop-filter: blur(16px);
-                backdrop-filter: blur(16px);
-            }
-            .glass-card {
-                background: rgba(22, 21, 30, 0.75);
-                -webkit-backdrop-filter: blur(24px) saturate(160%);
-                backdrop-filter: blur(24px) saturate(160%);
-            }
-            .sub-panel {
-                background: rgba(24, 24, 36, 0.7);
-                -webkit-backdrop-filter: blur(12px);
-                backdrop-filter: blur(12px);
-            }
-        }
-
-        .glass-input {
-            background: rgba(14, 13, 19, 0.85);
-            border: 1px solid rgba(255, 255, 255, 0.09);
-            box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.3);
-            transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
-        }
-        .glass-input:focus {
-            border-color: rgba(99, 102, 241, 0.7);
-            background: rgba(17, 16, 24, 0.95);
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18), inset 0 2px 4px 0 rgba(0, 0, 0, 0.2);
-        }
-
-        /* iOS зумит страницу при фокусе на поле с шрифтом меньше 16px — отсюда рывки и «зависания» */
-        @media (hover: none) {
-            .glass-input { font-size: 16px !important; }
-        }
-        @media (hover: hover) {
-            .glass-input:hover { border-color: rgba(255, 255, 255, 0.18); }
-            .spring-btn:not(:disabled):hover { transform: translateY(-1px); }
-        }
-
-        .spring-btn {
-            transition: transform 0.2s var(--spring-bounce), background-color 0.15s, border-color 0.15s, box-shadow 0.15s;
-        }
-        .spring-btn:not(:disabled):active {
-            transform: scale(0.98) translateY(1px);
-        }
-
+        /* ===== Билет ===== */
+        .ticket { display: flex; width: 820px; max-width: 100%;  }
+        @keyframes land { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
         @keyframes cardShake {
-            0%, 100% { transform: translateX(0); }
-            20% { transform: translateX(-7px); }
-            40% { transform: translateX(7px); }
-            60% { transform: translateX(-4px); }
-            80% { transform: translateX(4px); }
+            0%, 100% { transform: translateX(0); } 20% { transform: translateX(-7px); } 40% { transform: translateX(7px); }
+            60% { transform: translateX(-4px); } 80% { transform: translateX(4px); }
         }
-        .shake-active {
-            animation: cardShake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+        .ticket.shake-active { animation: cardShake .45s cubic-bezier(.36, .07, .19, .97); }
+
+        .form {
+            flex: 1 1 auto; min-width: 0; margin: 0;
+            padding: 30px 32px;
+            background: var(--card);
+            border: 1px solid var(--line-hi); border-right: 0;
+            border-radius: 26px 0 0 26px;
         }
+        .f-k { font: 700 12px/1 'Golos Text', sans-serif; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); }
+        .f-t { margin: 12px 0 0; font: 800 28px/1.1 'Wix Madefor Display', sans-serif; letter-spacing: -.035em; }
+        .fl { display: flex; flex-direction: column; gap: 16px; margin-top: 22px; }
+        .lb { display: block; margin-bottom: 8px; font: 600 13px/1.2 'Golos Text', sans-serif; color: #D4D4D8; }
+        .lb i { font-style: normal; font-weight: 500; color: var(--faint); }
+        .fw { position: relative; }
+        .in {
+            display: block; width: 100%; height: 52px; margin: 0; padding: 0 48px 0 16px;
+            border: 1px solid var(--line); border-radius: 14px; background: var(--card-2);
+            font: 500 17px/1 'Golos Text', sans-serif; color: #fff; outline: none;
+            transition: border-color .2s, background-color .2s;
+        }
+        .in::placeholder { color: var(--dim); }
+        .in:hover { border-color: rgba(255, 255, 255, .18); }
+        .in:focus { border-color: var(--accent-soft); background: #1E1E2A; }
+        .in.bad { border-color: rgba(253, 164, 175, .55); }
+        .tick {
+            position: absolute; right: 14px; top: 50%; margin-top: -11px; width: 22px; height: 22px;
+            border-radius: 99px; background: var(--accent); color: #fff; display: none; place-items: center;
+        }
+        .tick.on { display: grid; animation: tk .45s var(--spring); }
+        @keyframes tk { from { transform: scale(0); } to { transform: none; } }
+        .eye {
+            position: absolute; right: 4px; top: 4px; width: 44px; height: 44px; border: 0; background: none;
+            color: var(--faint); display: grid; place-items: center; cursor: pointer; border-radius: 12px;
+        }
+        .eye:hover { color: #fff; }
+        .eye .off { display: none; }
+        .eye.shown .on { display: none; }
+        .eye.shown .off { display: block; }
+        .err { margin: 8px 0 0 2px; font-size: 13px; font-weight: 500; line-height: 1.35; color: var(--err); }
+        .err[hidden] { display: none; }
+
+        /* Кастомная галочка согласия */
+        .agree { display: flex; align-items: flex-start; gap: 12px; margin-top: 20px; min-height: 44px; font-size: 13px; line-height: 1.45; color: var(--muted); cursor: pointer; }
+        .agree a { text-decoration: none; }
+        .agree a:hover { text-decoration: underline; }
+        .cb {
+            -webkit-appearance: none; appearance: none; width: 22px; height: 22px; margin: 0; flex-shrink: 0;
+            border-radius: 7px; box-shadow: inset 0 0 0 1.5px var(--dim);
+            display: grid; place-items: center; cursor: pointer;
+            transition: background-color .2s, box-shadow .2s, transform .2s var(--spring);
+        }
+        .cb:hover { box-shadow: inset 0 0 0 1.5px var(--faint); }
+        .cb:checked { background: var(--accent); box-shadow: none; transform: scale(1.06); }
+        .cb:checked::after {
+            content: ''; width: 10px; height: 5px;
+            border-left: 2.2px solid #fff; border-bottom: 2.2px solid #fff;
+            transform: translateY(-1px) rotate(-45deg);
+        }
+
+        .go {
+            margin-top: 12px; width: 100%; height: 54px; border: 0; border-radius: 14px;
+            background: #F4F4F5; color: var(--bg);
+            font: 600 17px/1 'Golos Text', sans-serif;
+            display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer;
+            transition: background-color .2s, color .2s, transform .2s var(--spring);
+        }
+        .go .gift { padding: 5px 9px; border-radius: 99px; background: var(--accent); color: #fff; font-size: 12px; font-weight: 700; letter-spacing: 0; }
+        .go:not(:disabled):hover { background: #fff; transform: translateY(-1px); }
+        .go:not(:disabled):active { transform: scale(.98); }
+        .go:disabled { background: #23232E; color: var(--faint); cursor: not-allowed; }
+        .go:disabled .gift { background: #2C2C38; color: var(--faint); }
+        .spin { width: 18px; height: 18px; animation: sp .8s linear infinite; }
+        @keyframes sp { to { transform: rotate(360deg); } }
+
+        /* ===== Купон (корешок) ===== */
+        .slot { flex: 0 0 300px; position: relative; }
+        .slot-empty {
+            position: absolute; inset: 0; padding: 24px; display: grid; place-items: center; text-align: center;
+            border: 1.5px dashed rgba(255, 255, 255, .14); border-left: 0; border-radius: 0 26px 26px 0;
+            font: 400 24px/1.15 'Neucha', cursive; color: var(--faint);
+        }
+        .coupon {
+            position: relative; height: 100%; padding: 28px 28px 24px;
+            background: var(--accent); color: #fff;
+            border-radius: 0 26px 26px 0; border-left: 2px dashed rgba(255, 255, 255, .45);
+            display: flex; flex-direction: column; transform-origin: 0 0;
+        }
+        .coupon::before, .coupon::after { content: ''; position: absolute; left: -12px; width: 22px; height: 22px; border-radius: 99px; background: var(--bg); }
+        .coupon::before { top: -11px; }
+        .coupon::after { bottom: -11px; }
+        .coupon.tear { animation: tear 1.2s cubic-bezier(.6, 0, .35, 1) forwards; }
+        @keyframes tear {
+            0% { transform: none; } 22% { transform: rotate(5deg); }
+            36% { transform: rotate(3deg) translate(6px, -4px); }
+            100% { transform: translate(360px, -620px) rotate(24deg) scale(.35); opacity: 0; }
+        }
+        .c-k { display: flex; justify-content: space-between; font: 700 12px/1 'Golos Text', sans-serif; letter-spacing: .08em; text-transform: uppercase; color: rgba(255, 255, 255, .75); }
+        .c-n { margin-top: 18px; font: 800 150px/.82 'Wix Madefor Display', sans-serif; letter-spacing: -.06em; }
+        .c-t { margin-top: 10px; font: 700 22px/1.1 'Wix Madefor Display', sans-serif; letter-spacing: -.03em; }
+        .c-l { margin: 20px 0 0; padding: 16px 0 0; border-top: 1px solid rgba(255, 255, 255, .2); list-style: none; display: grid; gap: 9px; font-size: 14px; color: rgba(255, 255, 255, .9); }
+        .c-l li { display: flex; align-items: center; gap: 8px; }
+        .c-l svg { flex-shrink: 0; }
+        .c-bar { margin-top: auto; padding-top: 20px; color: rgba(255, 255, 255, .8); }
+        .c-bar svg { display: block; width: 100%; height: 30px; }
+        .cut { margin-top: 12px; display: flex; align-items: center; gap: 8px; font: 400 21px/1 'Neucha', cursive; color: rgba(255, 255, 255, .88); }
+
+        .facts { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 22px; font: 500 13px/1.3 'Golos Text', sans-serif; color: var(--faint); }
+        .facts span { display: flex; align-items: center; gap: 6px; }
+        .facts svg { color: var(--accent-soft); }
+        .alt { margin: 0; font-size: 14px; color: var(--faint); text-align: center; }
+        .alt a { color: var(--text); font-weight: 600; text-decoration: none; }
+        .alt a:hover { color: #fff; text-decoration: underline; }
+
+        a:focus-visible, button:focus-visible, .cb:focus-visible, .in:focus-visible { outline: 2px solid var(--accent-soft); outline-offset: 2px; }
+        .in:focus-visible { outline: 0; }
+
+        /* ===== Телефон: билет складывается вертикально, корешок снизу ===== */
+        @media (max-width: 760px) {
+            .main { padding-top: 28px; gap: 22px; }
+            .ticket { flex-direction: column; }
+            .form { padding: 24px 20px; border-right: 1px solid var(--line-hi); border-bottom: 0; border-radius: 26px 26px 0 0; }
+            .slot { flex: none; }
+            .slot-empty { display: none; }
+            .coupon {
+                padding: 24px 20px 20px; border-left: 0; border-top: 2px dashed rgba(255, 255, 255, .45);
+                border-radius: 0 0 26px 26px; display: grid; grid-template-columns: auto 1fr; column-gap: 18px; align-items: end;
+            }
+            .coupon::before, .coupon::after { top: -11px; bottom: auto; }
+            .coupon::before { left: -11px; }
+            .coupon::after { left: auto; right: -11px; }
+            .c-k { display: flex; justify-content: space-between; font: 700 12px/1 'Golos Text', sans-serif; letter-spacing: .08em; text-transform: uppercase; color: rgba(255, 255, 255, .75); }
+            .c-n { margin-top: 14px; font-size: 96px; }
+            .c-t { margin: 0 0 8px; }
+            .c-l, .c-bar, .cut { grid-column: 1 / -1; }
+            .c-bar { padding-top: 16px; }
+            .coupon.tear { animation-name: tearM; }
+            @keyframes tearM {
+                0% { transform: none; } 22% { transform: rotate(-3deg); }
+                100% { transform: translate(120px, 420px) rotate(14deg) scale(.35); opacity: 0; }
+            }
+            .bal { padding: 0 12px; font-size: 12px; }
+            .crumbs .sep, .crumbs b { display: none; }
+        }
+
+        @media (hover: none) { .in { font-size: 16px; } }
 
         @media (prefers-reduced-motion: reduce) {
-            .shake-active { animation: none; }
-            .spring-btn { transition: none; }
+            .ticket, .ticket.shake-active, .coupon.tear, .bal.on, .tick.on, .cb { animation: none; transition: none; }
+            .coupon.tear { opacity: 0; }
+            .go { transition: none; }
         }
 
-        .perk-pill {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.3125rem 0.75rem 0.3125rem 0.375rem;
-            border-radius: 9999px;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow:
-                0 4px 12px -2px rgba(0, 0, 0, 0.45),
-                inset 0 1px 0 rgba(255, 255, 255, 0.06);
-        }
 
-        .perk-chip {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.25rem;
-            padding: 0.2rem 0.55rem;
-            border-radius: 9999px;
-            background: #4F46E5;
-            color: #FFFFFF;
-            font-family: 'Golos Text', sans-serif;
-            font-size: 0.6875rem;
-            font-weight: 700;
-            letter-spacing: -0.02em;
-            line-height: 1;
-            box-shadow:
-                0 0 10px rgba(79, 70, 229, 0.4),
-                inset 0 1px 0 rgba(255, 255, 255, 0.25);
+        /* ===== v2: воздух, сетка на весь экран, билет под наклоном ===== */
+        .stage { position: relative; flex: 1; display: flex; flex-direction: column; }
+        .stage::before {
+            content: ''; position: absolute; inset: 0; pointer-events: none;
+            background-image: linear-gradient(to right, rgba(216, 216, 230, .05) 1px, transparent 1px), linear-gradient(to bottom, rgba(230, 230, 238, .05) 1px, transparent 1px);
+            background-size: 64px 64px;
+            -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 180px, #000 calc(100% - 220px), transparent 100%);
+            mask-image: linear-gradient(to bottom, transparent 0, #000 180px, #000 calc(100% - 220px), transparent 100%);
         }
+        .isl-wrap, .main { position: relative; z-index: 1; }
+        .isl-wrap { position: sticky; z-index: 40; }
+        .side { display: contents; }
+        .stack { display: contents; }
+        .ticket { --tilt: 0deg; transform: rotate(var(--tilt)); transition: transform .6s var(--spring); animation: land .9s cubic-bezier(.16, 1, .3, 1) backwards; }
+        
+        @keyframes land { from { opacity: 0; transform: translateY(28px) rotate(calc(var(--tilt) * 2.5)); } to { opacity: 1; transform: rotate(var(--tilt)); } }
+        @keyframes cardShake {
+            0%, 100% { transform: translateX(0) rotate(var(--tilt)); } 20% { transform: translateX(-7px) rotate(var(--tilt)); } 40% { transform: translateX(7px) rotate(var(--tilt)); }
+            60% { transform: translateX(-4px) rotate(var(--tilt)); } 80% { transform: translateX(4px) rotate(var(--tilt)); }
+        }
+        .flight { display: none; }
+
+        @media (min-width: 961px) {
+            .isl { max-width: 1216px; }
+            .main {
+                max-width: 1280px; min-height: calc(100vh - 150px); padding: 88px 32px 120px;
+                display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 80px; align-items: center; justify-content: normal;
+            }
+            .lay-flip { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); }
+            .lay-flip .stack { order: -1; }
+            .side { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; }
+            .stack { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+            .hd { text-align: left; }
+            .h { margin-top: 24px; font-size: clamp(44px, 5.4vw, 80px); line-height: 1; letter-spacing: -.05em; }
+            .sub { margin: 28px 0 0; max-width: 400px; font-size: 18px; line-height: 1.55; }
+            .facts { margin-top: 56px; justify-content: flex-start; flex-direction: column; align-items: flex-start; gap: 12px; }
+            .alt { margin-top: 28px; text-align: left; }
+            .ticket { width: 100%; --tilt: -1deg; }
+            .lay-flip .ticket { --tilt: 1deg; }
+            .form { padding: 40px 40px 36px; }
+            .slot { flex-basis: 272px; }
+            .coupon, .stub { padding: 36px 28px 28px; }
+            .lay-flip .side { padding-left: 32px; }
+            .lay-link .side { align-self: start; padding-top: 24px; }
+            .lay-link .stack { align-self: end; }
+            .flight { display: block; position: absolute; right: 2%; top: 110px; width: 52%; height: 58%; pointer-events: none; color: var(--dim); }
+        }
+        @media (max-width: 960px) {
+            .main { gap: 28px; }
+            .side, .stack { display: contents; }
+            .hd { order: 1; } .banner { order: 2; } .ticket { order: 3; } .facts { order: 4; } .alt { order: 5; }
+        }
+        @media (max-width: 760px) { .main { padding: 36px 16px 56px; } .c-k { grid-column: 1 / -1; } }
+        @media (prefers-reduced-motion: reduce) { .ticket { transition: none; } }
+
+        /* ===== Футер (как на главной) ===== */
+        .ft { margin-top: auto; border-top: 1px solid rgba(255, 255, 255, .06); background: #0C0B0F; }
+        .ft-in { max-width: 1024px; margin: 0 auto; padding: 48px 16px 28px; }
+        .ft-grid { display: grid; grid-template-columns: 1fr; gap: 32px; }
+        @media (min-width: 768px) { .ft-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+        .ft-brand img { height: 32px; width: auto; }
+        .ft-brand p { margin: 16px 0 0; font-size: 12px; line-height: 1.6; color: var(--faint); }
+        .ft-social { display: flex; gap: 12px; margin-top: 20px; color: var(--muted); }
+        .ft-social a { color: inherit; display: inline-flex; }
+        .ft-social a:hover { color: #fff; }
+        .ft-col { display: flex; flex-direction: column; gap: 8px; font-size: 12px; color: var(--muted); }
+        .ft-col p { margin: 0; line-height: 1.6; }
+        .ft-col a { color: var(--muted); text-decoration: none; }
+        .ft-col a:hover { color: #fff; }
+        .ft-h { margin-bottom: 4px; font-weight: 700; color: #fff; text-transform: uppercase; letter-spacing: .06em; }
+        .ft-dim { color: var(--dim); }
+        .ft-col a.ft-link { color: var(--accent-soft); }
+        .ft-bottom { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; margin-top: 40px; padding-top: 24px; border-top: 1px solid rgba(255, 255, 255, .04); font-size: 12px; color: var(--dim); }
+        .ft-bottom p { margin: 0; }
+        .ft-bottom a { color: var(--faint); text-decoration: none; }
+        .ft-bottom a:hover { color: #fff; }
     </style>
 </head>
-<body class="min-h-full flex flex-col antialiased selection:bg-indigo-600 selection:text-white relative bg-[#0e0e14]">
+<body>
 
-    <!-- АМБИЕНТНЫЙ СВЕТ -->
-    <div class="ambient"></div>
-
-    <!-- ДИНАМИЧЕСКИЙ ОСТРОВОК (STICKY ISLAND HEADER) -->
-    <header class="sticky top-4 z-40 w-full px-4 flex justify-center pointer-events-none">
-        <nav class="island pointer-events-auto flex items-center justify-between gap-3 px-4 py-2 sm:px-5 sm:py-2.5 rounded-full border border-white/10 max-w-5xl w-full">
-            
-            <div class="flex items-center gap-2.5 text-xs">
-                <a href="/" class="flex items-center gap-2 group transition-opacity hover:opacity-85">
-                    <img src="{% static 'img/logo-header.webp' %}" alt="Летучка" width="120" height="28" class="h-6 sm:h-7 w-auto object-contain">
-                </a>
-                <span class="text-zinc-600 select-none">/</span>
-                <span class="text-white font-medium">Регистрация</span>
+    <!-- ШАПКА-ОСТРОВ -->
+    <div class="stage">
+        <header class="isl-wrap">
+        <nav class="isl" aria-label="Навигация">
+            <div class="crumbs">
+                <a href="/" aria-label="Летучка — на главную"><img src="{% static 'img/logo-header.webp' %}" alt="Летучка" width="120" height="28"></a>
+                <span class="sep" aria-hidden="true">/</span>
+                <b>Регистрация</b>
             </div>
-
-            <div class="flex items-center gap-2 font-mono-nums">
-                <a href="{% url 'login' %}{% if next %}?next={{ next|urlencode }}{% elif next_url %}?next={{ next_url|urlencode }}{% endif %}" class="px-3.5 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-zinc-200 hover:text-white transition-colors spring-btn flex items-center gap-1.5">
-                    <span>Войти</span>
-                    <i class="fas fa-arrow-right text-[10px] text-zinc-400"></i>
-                </a>
+            <div class="isl-r">
+                <span class="bal" id="balance-badge" role="status">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg>
+                    5 тестов на балансе
+                </span>
+                <a class="ib" href="{% url 'login' %}{% if next %}?next={{ next|urlencode }}{% elif next_url %}?next={{ next_url|urlencode }}{% endif %}">Войти</a>
             </div>
-
         </nav>
     </header>
 
-    <!-- ОСНОВНАЯ ЗОНА -->
-    <main class="relative z-10 flex-grow flex items-center justify-center max-w-5xl w-full mx-auto px-4 sm:px-6 py-8 sm:py-12">
-        <div class="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
-            
-            <!-- ЛЕВАЯ КОЛОНКА: СТАТИЧНЫЙ VALUE STACK -->
-            <div class="hidden lg:flex lg:col-span-6 flex-col justify-between space-y-6 pr-2">
-                
-                <div class="space-y-3">
-                    <h2 class="text-3xl sm:text-4xl font-extrabold text-white leading-tight font-display tracking-tight">
-                        Автоматизируйте <br>
-                        <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 via-indigo-100 to-zinc-400">
-                            контроль знаний с&nbsp;Летучкой
-                        </span>
-                    </h2>
+    <main class="main lay-reg">
+        <div class="side">
 
-                    <p class="text-xs sm:text-sm text-zinc-400 leading-relaxed">
-                        Создавайте проверочные работы на основе Ваших учебных материалов в один клик
-                    </p>
-                </div>
 
-                <!-- СПИСОК ТВЁРДЫХ ФИЧ И ВЫГОД -->
-                <div class="sub-panel rounded-[28px] p-5 space-y-3.5 shadow-lg">
-                    
-                    <div class="flex items-start gap-3 text-xs">
-                        <div class="w-6 h-6 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 flex-shrink-0 mt-0.5">
-                            <i class="fas fa-check text-[10px]"></i>
+        <div class="hd">
+            <div class="k">Регистрация</div>
+            <h1 class="h">Ваш билет в&nbsp;Летучку</h1>
+            <p class="sub">Заполните две строки&nbsp;– и&nbsp;оторвите купон: пять тестов сразу упадут на&nbsp;баланс</p>
+        </div>
+
+        
+<div class="facts">
+            <span><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"/></svg>Без карты</span>
+            <span><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"/></svg>Без скрытых подписок</span>
+            <span><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"/></svg>4&nbsp;500+ авторов тестов</span>
+        </div>
+
+        <p class="alt">Уже есть аккаунт?
+            <a href="{% url 'login' %}{% if next %}?next={{ next|urlencode }}{% elif next_url %}?next={{ next_url|urlencode }}{% endif %}">Войти</a>
+        </p>
+    
+        </div>
+        <div class="stack">
+<!-- ЕСЛИ ПРИШЁЛ СО СГЕНЕРИРОВАННОГО ТЕСТА -->
+        {% if next and '/c/' in next or next_url and '/c/' in next_url %}
+        <div class="banner info">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z"/></svg>
+            <span>Зарегистрируйтесь, чтобы сохранить созданный тест в&nbsp;ваш личный кабинет.</span>
+        </div>
+        {% endif %}
+
+        <!-- ОБЩИЕ ОШИБКИ ФОРМЫ DJANGO -->
+        {% if form.non_field_errors %}
+        <div class="banner bad" role="alert">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5M12 16.5v.01"/></svg>
+            <span>{{ form.non_field_errors.as_text | cut:"* " }}</span>
+        </div>
+        {% endif %}
+
+        <!-- БИЛЕТ -->
+        <div class="ticket" id="register-card">
+
+            <form class="form" id="classic-register-form" method="post" aria-labelledby="reg-title" novalidate>
+                {% csrf_token %}
+                {% if next %}
+                    <input type="hidden" name="next" value="{{ next }}">
+                {% elif next_url %}
+                    <input type="hidden" name="next" value="{{ next_url }}">
+                {% endif %}
+
+                <div class="f-k">Билет автора тестов</div>
+                <h2 class="f-t" id="reg-title">Создайте аккаунт</h2>
+
+                <div class="fl">
+                    <!-- EMAIL (автофокус — только на десктопе, см. скрипт) -->
+                    <div>
+                        <label class="lb" for="{{ form.email.id_for_label }}">{{ form.email.label|default:"Почта" }}</label>
+                        <div class="fw">
+                            <input class="in{% if form.email.errors %} bad{% endif %}" type="email"
+                                   name="{{ form.email.name }}" id="{{ form.email.id_for_label }}"
+                                   required autocomplete="email" inputmode="email" autocapitalize="none" autocorrect="off" spellcheck="false"
+                                   value="{{ form.email.value|default:'' }}" placeholder="email@yandex.ru">
+                            <span class="tick" id="email-tick" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8.5l3 3 6-7"/></svg></span>
                         </div>
-                        <div>
-                            <span class="font-bold text-white block">Импорт любых документов</span>
-                            <span class="text-zinc-400 text-[11px] leading-snug">Загружайте PDF, Word документы или вставляйте текст лекций, конспектов и прочих записей</span>
-                        </div>
-                    </div>
-
-                    <div class="flex items-start gap-3 text-xs">
-                        <div class="w-6 h-6 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 flex-shrink-0 mt-0.5">
-                            <i class="fas fa-list-check text-[10px]"></i>
-                        </div>
-                        <div>
-                            <span class="font-bold text-white block">Одиночный и множественный выбор</span>
-                            <span class="text-zinc-400 text-[11px] leading-snug">Умные дистракторы, перемешивание вариантов и защита от списывания</span>
-                        </div>
-                    </div>
-
-                    <div class="flex items-start gap-3 text-xs">
-                        <div class="w-6 h-6 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 flex-shrink-0 mt-0.5">
-                            <i class="fas fa-file-arrow-down text-[10px]"></i>
-                        </div>
-                        <div>
-                            <span class="font-bold text-white block">Бланки на А4 и сводка в Excel</span>
-                            <span class="text-zinc-400 text-[11px] leading-snug">Печать двух вариантов с отдельными ключами или запуск по ссылке без регистрации учеников</span>
-                        </div>
-                    </div>
-
-                    <div class="flex items-start gap-3 text-xs">
-                        <div class="w-6 h-6 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 flex-shrink-0 mt-0.5">
-                            <i class="fas fa-shield-halved text-[10px]"></i>
-                        </div>
-                        <div>
-                            <span class="font-bold text-white block">Несгораемые пакеты без скрытых подписок</span>
-                            <span class="text-zinc-400 text-[11px] leading-snug">Покупайте пакеты тестов, которые не сгорают или абонементы с увеличенными лимитами</span>
-                        </div>
-                    </div>
-
-                </div>
-
-                <!-- СОЦИАЛЬНОЕ ДОКАЗАТЕЛЬСТВО -->
-                <div class="flex items-center gap-2.5 text-xs text-zinc-400 pt-1">
-                    <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-                    <span>3 000+ авторов тестов уже тут</span>
-                </div>
-
-            </div>
-
-            <!-- ПРАВАЯ КОЛОНКА: ФОРМА РЕГИСТРАЦИИ -->
-            <div class="lg:col-span-6 w-full max-w-[420px] mx-auto">
-                <div id="register-card" class="glass-card rounded-[32px] p-7 sm:p-9 space-y-5">
-                    
-                    <div class="space-y-1 text-center">
-                        <h1 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight font-display mb-6">
-                            Создать аккаунт
-                        </h1>
-                        <div class="flex justify-center pt-1 pb-2">
-                            <div class="perk-pill select-none">
-                                <span class="perk-chip">
-                                    <svg class="w-2.5 h-2.5 opacity-90" viewBox="0 0 16 16" fill="currentColor">
-                                        <path d="M8 1a.75.75 0 0 1 .75.75v5.5h5.5a.75.75 0 0 1 0 1.5h-5.5v5.5a.75.75 0 0 1-1.5 0v-5.5h-5.5a.75.75 0 0 1 0-1.5h5.5v-5.5A.75.75 0 0 1 8 1Z"/>
-                                    </svg>
-                                    <span>5 ТЕСТОВ</span>
-                                </span>
-                                <span class="text-[12px] font-medium text-zinc-300 pr-1 tracking-tight">
-                                    в подарок
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- КОНТЕКСТНАЯ ПЛАШКА: ЕСЛИ ПРИШЁЛ СО СГЕНЕРИРОВАННОГО ТЕСТА -->
-                    {% if next and '/c/' in next or next_url and '/c/' in next_url %}
-                    <div class="p-3 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs flex items-center gap-2.5">
-                        <i class="fas fa-bookmark text-xs text-indigo-400 flex-shrink-0"></i>
-                        <span class="leading-snug">Зарегистрируйтесь, чтобы сохранить созданный тест в ваш личный кабинет.</span>
-                    </div>
-                    {% endif %}
-
-                    <!-- ОБЩИЕ ОШИБКИ ФОРМЫ DJANGO -->
-                    {% if form.non_field_errors %}
-                    <div class="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/25 text-rose-300 text-xs flex items-center gap-3">
-                        <div class="w-6 h-6 rounded-xl bg-rose-500/20 flex items-center justify-center flex-shrink-0 text-rose-400">
-                            <i class="fas fa-circle-exclamation text-xs"></i>
-                        </div>
-                        <span class="leading-relaxed">{{ form.non_field_errors.as_text | cut:"* " }}</span>
-                    </div>
-                    {% endif %}
-
-                    <!-- ОСНОВНАЯ ФОРМА -->
-                    <form id="classic-register-form" method="post" class="space-y-4">
-                        {% csrf_token %}
-                        {% if next %}
-                            <input type="hidden" name="next" value="{{ next }}">
-                        {% elif next_url %}
-                            <input type="hidden" name="next" value="{{ next_url }}">
+                        <p class="err" id="email-hint" hidden>Нужна почта целиком, с&nbsp;«@»</p>
+                        {% if form.email.errors %}
+                            <p class="err" role="alert">{{ form.email.errors.as_text | cut:"* " }}</p>
                         {% endif %}
+                    </div>
 
-                        <!-- ПОЛЕ EMAIL (автофокус включается скриптом только на десктопе) -->
-                        <div class="space-y-1.5 text-left">
-                            <label for="{{ form.email.id_for_label }}" class="block text-xs font-semibold text-zinc-300">
-                                {{ form.email.label|default:"Email" }}
-                            </label>
-                            <div class="relative">
-                                <input type="email" name="{{ form.email.name }}" id="{{ form.email.id_for_label }}" required autocomplete="email"
-                                       inputmode="email" autocapitalize="none" autocorrect="off" spellcheck="false"
-                                       value="{{ form.email.value|default:'' }}"
-                                       placeholder="you@example.ru"
-                                       class="w-full glass-input rounded-2xl pl-4 pr-11 py-3 text-sm text-white placeholder-zinc-600 focus:outline-none">
-                                <span class="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 text-xs pointer-events-none">
-                                    <i class="fas fa-envelope"></i>
-                                </span>
-                            </div>
-                            {% if form.email.errors %}
-                                <div class="text-rose-400 text-xs pt-0.5 pl-1 font-medium">{{ form.email.errors.as_text | cut:"* " }}</div>
-                            {% endif %}
-                        </div>
-
-                        <!-- ПОЛЕ ПАРОЛЬ 1 -->
-                        <div class="space-y-1.5 text-left">
-                            <label for="{{ form.password1.id_for_label }}" class="block text-xs font-semibold text-zinc-300">
-                                {{ form.password1.label|default:"Придумайте пароль" }}
-                            </label>
-                            <div class="relative">
-                                <input type="password" name="{{ form.password1.name }}" id="{{ form.password1.id_for_label }}" required autocomplete="new-password"
-                                       placeholder="••••••••"
-                                       class="w-full glass-input rounded-2xl pl-4 pr-11 py-3 text-sm text-white placeholder-zinc-600 focus:outline-none">
-                                <button type="button" class="toggle-pwd-btn absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 text-xs transition-colors p-1" data-target="{{ form.password1.id_for_label }}" title="Показать пароль" aria-label="Показать пароль">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                            </div>
-                            {% if form.password1.errors %}
-                                <div class="text-rose-400 text-xs pt-0.5 pl-1 font-medium">{{ form.password1.errors.as_text | cut:"* " }}</div>
-                            {% endif %}
-                        </div>
-
-                        <!-- ПОЛЕ ПАРОЛЬ 2 (ПОВТОРЕНИЕ) -->
-                        <div class="space-y-1.5 text-left">
-                            <label for="{{ form.password2.id_for_label }}" class="block text-xs font-semibold text-zinc-300">
-                                {{ form.password2.label|default:"Повторите пароль" }}
-                            </label>
-                            <div class="relative">
-                                <input type="password" name="{{ form.password2.name }}" id="{{ form.password2.id_for_label }}" required autocomplete="new-password"
-                                       placeholder="••••••••"
-                                       class="w-full glass-input rounded-2xl pl-4 pr-11 py-3 text-sm text-white placeholder-zinc-600 focus:outline-none">
-                                <button type="button" class="toggle-pwd-btn absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 text-xs transition-colors p-1" data-target="{{ form.password2.id_for_label }}" title="Показать пароль" aria-label="Показать пароль">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                            </div>
-                            {% if form.password2.errors %}
-                                <div class="text-rose-400 text-xs pt-0.5 pl-1 font-medium">{{ form.password2.errors.as_text | cut:"* " }}</div>
-                            {% endif %}
-                        </div>
-
-                        <!-- СОГЛАСИЕ С ОФЕРТОЙ И ПОЛИТИКОЙ (152-ФЗ) -->
-                        <div class="pt-1 text-left">
-                            <label class="flex items-start gap-2.5 cursor-pointer text-[11px] text-zinc-400 leading-snug select-none group">
-                                <input type="checkbox" id="terms-checkbox" required 
-                                       class="mt-0.5 rounded border-white/20 bg-[#111116] text-indigo-600 focus:ring-0 focus:ring-offset-0 w-4 h-4 flex-shrink-0 cursor-pointer">
-                                <span>
-                                    Принимаю условия 
-                                    <a href="/docs/public-offer" target="_blank" class="text-indigo-400 hover:text-indigo-300 underline">Публичной оферты</a> 
-                                    и даю согласие на обработку данных согласно 
-                                    <a href="/docs/privacy-policy" target="_blank" class="text-indigo-400 hover:text-indigo-300 underline">Политике конфиденциальности</a>.
-                                </span>
-                            </label>
-                        </div>
-
-                        <!-- САБМИТ КНОПКА -->
-                        <div class="pt-2">
-                            <button type="submit" id="submit-register-btn" disabled
-                                    class="group relative w-full h-[50px] rounded-2xl flex items-center justify-center select-none overflow-hidden cursor-pointer bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 disabled:from-zinc-800 disabled:to-zinc-800 disabled:text-zinc-500 disabled:cursor-not-allowed disabled:border-white/5 disabled:shadow-none text-white font-bold text-xs sm:text-sm tracking-tight shadow-lg shadow-indigo-600/25 border border-white/20 spring-btn">
-                                
-                                <div class="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/40 to-transparent pointer-events-none"></div>
-
-                                <span id="btn-content" class="flex items-center gap-2">
-                                    <span>Зарегистрироваться</span>
-                                    <i class="fas fa-arrow-right text-[10px] opacity-80"></i>
-                                </span>
+                    <!-- ПАРОЛЬ (одно поле; password2 дублируется скриптом) -->
+                    <div>
+                        <label class="lb" for="{{ form.password1.id_for_label }}">{{ form.password1.label|default:"Пароль" }} <i>· от 8 символов</i></label>
+                        <div class="fw">
+                            <input class="in{% if form.password1.errors or form.password2.errors %} bad{% endif %}" type="password"
+                                   name="{{ form.password1.name }}" id="{{ form.password1.id_for_label }}"
+                                   required autocomplete="new-password" placeholder="••••••••">
+                            <button class="eye" type="button" id="toggle-pwd-btn" aria-label="Показать пароль" aria-pressed="false">
+                                <svg class="on" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+                                <svg class="off" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18M10.6 5.1A10.4 10.4 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.2 4M6.5 6.6A16.7 16.7 0 0 0 2 12s3.6 7 10 7c1.7 0 3.2-.4 4.5-1M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>
                             </button>
                         </div>
-                    </form>
-
-                    <!-- ПЕРЕХОД КО ВХОДУ -->
-                    <div class="pt-2 text-center text-xs text-zinc-400 border-t border-white/[0.05]">
-                        <span>Уже есть аккаунт?</span>
-                        <a href="{% url 'login' %}{% if next %}?next={{ next|urlencode }}{% elif next_url %}?next={{ next_url|urlencode }}{% endif %}" 
-                           class="text-indigo-400 hover:text-indigo-300 font-bold transition-colors ml-1.5">
-                            Войти
-                        </a>
+                        <p class="err" id="pwd-hint" hidden>Коротковато&nbsp;— нужно минимум 8&nbsp;символов</p>
+                        {% if form.password1.errors %}
+                            <p class="err" role="alert">{{ form.password1.errors.as_text | cut:"* " }}</p>
+                        {% endif %}
+                        {% if form.password2.errors %}
+                            <p class="err" role="alert">{{ form.password2.errors.as_text | cut:"* " }}</p>
+                        {% endif %}
                     </div>
-
+                    <input type="hidden" name="{{ form.password2.name }}" id="hidden-password2" value="">
                 </div>
-            </div>
 
+                <!-- СОГЛАСИЕ С ОФЕРТОЙ И ПОЛИТИКОЙ -->
+                <label class="agree">
+                    <input class="cb" type="checkbox" id="terms-checkbox" required>
+                    <span>Принимаю <a href="/docs/public-offer" target="_blank" rel="noopener">оферту</a> и&nbsp;даю согласие на&nbsp;обработку данных по&nbsp;<a href="/docs/privacy-policy" target="_blank" rel="noopener">политике конфиденциальности</a></span>
+                </label>
+
+                <button class="go" type="submit" id="submit-register-btn" disabled>
+                    <span id="btn-content" style="display:inline-flex;align-items:center;gap:10px">
+                        <span>Зарегистрироваться</span>
+                        <span class="gift">+5 тестов</span>
+                    </span>
+                </button>
+            </form>
+
+            <!-- КУПОН-КОРЕШОК -->
+            <div class="slot">
+                <div class="slot-empty" aria-hidden="true">купон уже<br>на&nbsp;балансе&nbsp;↗</div>
+                <aside class="coupon" id="coupon" aria-label="Купон: 5 тестов в подарок">
+                    <div class="c-k"><span>Купон</span><span>Летучка</span></div>
+                    <div class="c-n">5</div>
+                    <div class="c-t">тестов в&nbsp;подарок</div>
+                    <ul class="c-l">
+                        <li><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"/></svg>тест из&nbsp;PDF, Word или текста</li>
+                        <li><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"/></svg>автопроверка ответов</li>
+                        <li><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"/></svg>бланки А4</li>
+                    </ul>
+                    <div class="c-bar" aria-hidden="true">
+                        <svg viewBox="0 0 244 30" preserveAspectRatio="none" fill="currentColor"><rect x="0" width="3" height="30"/><rect x="6" width="1.5" height="30"/><rect x="10" width="4" height="30"/><rect x="17" width="1.5" height="30"/><rect x="21" width="2.5" height="30"/><rect x="27" width="5" height="30"/><rect x="35" width="1.5" height="30"/><rect x="39" width="3" height="30"/><rect x="45" width="1.5" height="30"/><rect x="49" width="4" height="30"/><rect x="56" width="2" height="30"/><rect x="61" width="1.5" height="30"/><rect x="65" width="5" height="30"/><rect x="73" width="2.5" height="30"/><rect x="78" width="1.5" height="30"/><rect x="82" width="4" height="30"/><rect x="89" width="1.5" height="30"/><rect x="93" width="3" height="30"/><rect x="99" width="5" height="30"/><rect x="107" width="1.5" height="30"/><rect x="111" width="2.5" height="30"/><rect x="117" width="4" height="30"/><rect x="124" width="1.5" height="30"/><rect x="128" width="3" height="30"/><rect x="134" width="1.5" height="30"/><rect x="138" width="5" height="30"/><rect x="146" width="2" height="30"/><rect x="151" width="4" height="30"/><rect x="158" width="1.5" height="30"/><rect x="162" width="3" height="30"/><rect x="168" width="1.5" height="30"/><rect x="172" width="5" height="30"/><rect x="180" width="2.5" height="30"/><rect x="186" width="1.5" height="30"/><rect x="190" width="4" height="30"/><rect x="197" width="3" height="30"/><rect x="203" width="1.5" height="30"/><rect x="207" width="5" height="30"/><rect x="215" width="2" height="30"/><rect x="220" width="1.5" height="30"/><rect x="224" width="4" height="30"/><rect x="231" width="2.5" height="30"/><rect x="237" width="1.5" height="30"/><rect x="241" width="3" height="30"/></svg>
+                    </div>
+                    <div class="cut">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.1 15.9M14.5 14.5 20 20M8.1 8.1 12 12"/></svg>
+                        отрывается при регистрации
+                    </div>
+                </aside>
+            </div>
+        </div>
+
+        
         </div>
     </main>
+    </div>
 
-    <!-- СТРОГИЙ ЧИСТЫЙ ФУТЕР -->
-    <footer class="relative z-10 border-t border-white/[0.06] bg-[#0C0B0F] mt-auto">
-        <div class="max-w-5xl mx-auto px-4 sm:px-6 py-6">
-            <div class="flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-zinc-500 text-center sm:text-left">
-                <div>
-                    <p>Est. 2024 – 2026 // Летучка AI</p>
-                    <p class="text-[11px] text-zinc-600 mt-0.5">ИНН 773613171558 / ОГРНИП 3245081071286</p>
+    <!-- ФУТЕР (как на главной) -->
+    <footer class="ft">
+        <div class="ft-in">
+            <div class="ft-grid">
+                <div class="ft-brand">
+                    <a href="/"><img src="{% static 'img/logo-header.webp' %}" alt="Летучка" height="32" loading="lazy"></a>
+                    <p>Российский сервис создания тестов по&nbsp;тексту и&nbsp;файлам с&nbsp;автопроверкой и&nbsp;аналитикой результатов.</p>
+                    <div class="ft-social">
+                        <a href="https://t.me/LetychkaRobot" target="_blank" rel="noopener" aria-label="Telegram"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 3 3 10.5l7 2.6 2.6 7.4L21 3z"/><path d="M10 13.1 14.5 8.6"/></svg></a>
+                        <a href="mailto:support@letychka.ru" aria-label="Почта"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="m4 7 8 6 8-6"/></svg></a>
+                    </div>
                 </div>
-
-                <div class="flex flex-wrap justify-center sm:justify-end items-center gap-5 text-zinc-400">
-                    <a href="/docs/public-offer" class="hover:text-white transition-colors">Публичная оферта</a>
-                    <a href="/docs/privacy-policy" class="hover:text-white transition-colors">Политика конфиденциальности</a>
-                    <a href="mailto:support@letychka.ru" class="text-indigo-400 hover:text-indigo-300 transition-colors">support@letychka.ru</a>
+                <div class="ft-col">
+                    <span class="ft-h">Продукт</span>
+                    <a href="/#features">Возможности</a>
+                    <a href="/#pricing">Тарифы</a>
+                    <a href="/#faq">Вопросы и ответы</a>
+                    <a href="/create">Конструктор тестов</a>
                 </div>
+                <div class="ft-col">
+                    <span class="ft-h">Документы</span>
+                    <a href="/docs/public-offer">Публичная оферта</a>
+                    <a href="/docs/privacy-policy">Политика конфиденциальности</a>
+                    <span class="ft-dim">ИНН 773613171558 / ОГРНИП 3245081071286</span>
+                </div>
+                <div class="ft-col">
+                    <span class="ft-h">Поддержка</span>
+                    <p>Вопросы по работе сервиса и предложения:<br><a class="ft-link" href="mailto:support@letychka.ru">support@letychka.ru</a></p>
+                </div>
+            </div>
+            <div class="ft-bottom">
+                <p>© 2024–{% now "Y" %} Летучка AI. Все права защищены.</p>
+                <p>Design &amp; Development <a href="https://berliner187.github.io/" target="_blank" rel="noopener">by Kozak</a></p>
             </div>
         </div>
     </footer>
 
-    <!-- JS: ВАЛИДАЦИЯ ЧЕКБОКСА, ENTER, ЛОАДЕР, ПАРОЛИ -->
+    <!-- JS: пароль, галочка, подсказки, отрыв купона, лоадер -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const form = document.getElementById('classic-register-form');
+            const card = document.getElementById('register-card');
+            const coupon = document.getElementById('coupon');
+            const badge = document.getElementById('balance-badge');
             const termsCheckbox = document.getElementById('terms-checkbox');
             const submitBtn = document.getElementById('submit-register-btn');
-            const registerCard = document.getElementById('register-card');
-            const emailInput = form ? form.querySelector('input[type="email"]') : null;
-            const submitBtnHtml = submitBtn ? submitBtn.innerHTML : '';
+            const emailInput = form.querySelector('input[type="email"]');
+            const pwdInput = form.querySelector('input[type="password"]');
+            const pwd2 = document.getElementById('hidden-password2');
+            const emailTick = document.getElementById('email-tick');
+            const emailHint = document.getElementById('email-hint');
+            const pwdHint = document.getElementById('pwd-hint');
+            const eyeBtn = document.getElementById('toggle-pwd-btn');
+            const submitHtml = submitBtn.innerHTML;
+            const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            const emailRe = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+            let sending = false;
 
-            // 0. Автофокус только на устройствах с мышью: на iPhone он открывает клавиатуру при загрузке и дёргает страницу
+            // 0. Автофокус только с мышью: на iPhone он открывает клавиатуру и дёргает страницу
             if (emailInput && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
                 emailInput.focus({ preventScroll: true });
             }
 
-            // 1. Активация кнопки по чекбоксу
-            if (termsCheckbox && submitBtn) {
-                const updateBtnState = () => {
-                    submitBtn.disabled = !termsCheckbox.checked;
-                };
-                termsCheckbox.addEventListener('change', updateBtnState);
-                updateBtnState();
-            }
+            // 1. Кнопка активна только с галочкой
+            const syncBtn = () => { submitBtn.disabled = sending || !termsCheckbox.checked; };
+            termsCheckbox.addEventListener('change', syncBtn);
+            syncBtn();
 
-            // 2. Показ/скрытие паролей
-            document.querySelectorAll('.toggle-pwd-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const targetId = btn.getAttribute('data-target');
-                    const input = document.getElementById(targetId);
-                    if (input) {
-                        const isPwd = input.type === 'password';
-                        input.type = isPwd ? 'text' : 'password';
-                        btn.innerHTML = isPwd ? '<i class="fas fa-eye-slash"></i>' : '<i class="fas fa-eye"></i>';
-                    }
-                });
+            // 2. Один пароль: поле «повтор» заполняется автоматически (форма Django ждёт password2)
+            const syncPwd2 = () => { pwd2.value = pwdInput.value; };
+            pwdInput.addEventListener('input', () => { syncPwd2(); if (pwdInput.value.length >= 8) pwdHint.hidden = true; });
+            syncPwd2();
+
+            // 3. Показать / скрыть пароль
+            eyeBtn.addEventListener('click', () => {
+                const show = pwdInput.type === 'password';
+                pwdInput.type = show ? 'text' : 'password';
+                eyeBtn.classList.toggle('shown', show);
+                eyeBtn.setAttribute('aria-pressed', show ? 'true' : 'false');
+                eyeBtn.setAttribute('aria-label', show ? 'Скрыть пароль' : 'Показать пароль');
             });
 
-            // 3. Отправка формы и лоадер
-            if (form && submitBtn) {
-                form.addEventListener('submit', () => {
-                    if (!submitBtn.disabled) {
-                        submitBtn.disabled = true;
-                        submitBtn.innerHTML = `
-                            <span class="flex items-center justify-center gap-2">
-                                <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                    <path style="opacity: 0.75;" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                <span>Создаем аккаунт...</span>
-                            </span>
-                        `;
-                    }
-                });
+            // 4. Галочка у верной почты и мягкие подсказки
+            const checkEmail = () => emailTick.classList.toggle('on', emailRe.test(emailInput.value.trim()));
+            emailInput.addEventListener('input', () => { checkEmail(); if (emailRe.test(emailInput.value.trim())) emailHint.hidden = true; });
+            emailInput.addEventListener('blur', () => { emailHint.hidden = !emailInput.value || emailRe.test(emailInput.value.trim()); });
+            pwdInput.addEventListener('blur', () => { pwdHint.hidden = !pwdInput.value || pwdInput.value.length >= 8; });
+            checkEmail();
 
-                // Переход на следующий инпут по клавише Enter
-                form.addEventListener('keydown', (e) => {
-                    if (e.target.tagName === 'INPUT' && e.key === 'Enter' && e.target.type !== 'checkbox') {
-                        e.preventDefault();
-                        const inputs = Array.from(form.querySelectorAll('input:not([type="hidden"]):not([type="checkbox"])'));
-                        const currentIndex = inputs.indexOf(e.target);
-                        const nextInput = inputs[currentIndex + 1];
-
-                        if (nextInput) {
-                            nextInput.focus();
-                        } else {
-                            if (submitBtn && !submitBtn.disabled) {
-                                submitBtn.click();
-                            }
-                        }
-                    }
-                });
-            }
-
-            // 4. Тряска карточки при серверных ошибках Django
-            {% if form.errors %}
-                if (registerCard) {
-                    registerCard.classList.add('shake-active');
-                    setTimeout(() => registerCard.classList.remove('shake-active'), 500);
+            // 5. Enter: email → пароль → отправка
+            form.addEventListener('keydown', (e) => {
+                if (e.target.tagName === 'INPUT' && e.key === 'Enter' && e.target.type !== 'checkbox') {
+                    e.preventDefault();
+                    if (e.target === emailInput) pwdInput.focus();
+                    else if (!submitBtn.disabled) form.requestSubmit();
                 }
+            });
+
+            // 6. Отправка: купон отрывается, лоадер, затем реальный submit
+            form.addEventListener('submit', (e) => {
+                if (sending) return;
+                syncPwd2();
+                let ok = true;
+                if (!emailRe.test(emailInput.value.trim())) { emailHint.hidden = false; ok = false; }
+                if (pwdInput.value.length < 8) { pwdHint.hidden = false; ok = false; }
+                if (!ok) {
+                    e.preventDefault();
+                    card.classList.remove('shake-active'); void card.offsetWidth; card.classList.add('shake-active');
+                    (emailRe.test(emailInput.value.trim()) ? pwdInput : emailInput).focus();
+                    return;
+                }
+                sending = true;
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<svg class="spin" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" opacity=".25"/><path d="M22 12a10 10 0 0 0-10-10" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg><span>Создаём аккаунт…</span>';
+                coupon.classList.add('tear');
+                badge.classList.add('on');
+                if (!reduceMotion) {
+                    e.preventDefault();
+                    setTimeout(() => form.submit(), 750);
+                }
+            });
+
+            // 7. Тряска билета при серверных ошибках Django
+            {% if form.errors %}
+                card.classList.add('shake-active');
+                setTimeout(() => card.classList.remove('shake-active'), 500);
             {% endif %}
 
-            // 5. Кнопка «Назад» в Safari возвращает страницу из кэша вместе с лоадером — сбрасываем
+            // 8. Кнопка «Назад» в Safari возвращает страницу из кэша вместе с лоадером — сбрасываем
             window.addEventListener('pageshow', (e) => {
-                if (e.persisted && submitBtn) {
-                    submitBtn.innerHTML = submitBtnHtml;
-                    submitBtn.disabled = !(termsCheckbox && termsCheckbox.checked);
+                if (e.persisted) {
+                    sending = false;
+                    submitBtn.innerHTML = submitHtml;
+                    coupon.classList.remove('tear');
+                    badge.classList.remove('on');
+                    syncBtn();
                 }
             });
         });

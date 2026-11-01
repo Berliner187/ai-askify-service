@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Журнал Летучки: как делать тесты и проверять знания</title>
+    <meta name="description" content="Разборы, методички и приёмы для учителей и преподавателей: как быстро сделать тест по тексту, проверить знания и сэкономить вечера на рутине.">
+    <meta name="theme-color" content="#0F0E13">
+    <link rel="canonical" href="{{ canonical_url }}">
+    <link rel="alternate" type="application/rss+xml" title="Журнал Летучки" href="/media/rss.xml">
+
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ canonical_url }}">
+    <meta property="og:title" content="Журнал Летучки">
+    <meta property="og:description" content="Разборы, методички и приёмы для тех, кто готовит тесты и проверяет знания.">
+    <meta property="og:image" content="https://letychka.ru/static/letychka-banner-1703.webp">
+    <meta property="og:site_name" content="Летучка — ИИ-генератор тестов по тексту">
+    <meta name="twitter:card" content="summary_large_image">
+
+    <link rel="icon" href="{% static 'img/favicon.ico' %}" type="image/x-icon">
+    <link rel="apple-touch-icon" sizes="180x180" href="{% static 'img/apple-touch-icon.png' %}">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=Wix+Madefor+Display:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/site-chrome.css' %}">
+    <link rel="stylesheet" href="{% static 'css/blog.css' %}">
+
+    <script type="application/ld+json">{{ jsonld }}</script>
+
+    <script>
+        window.addEventListener('load', function () {
+            setTimeout(function () {
+                (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+                m[i].l=1*new Date();
+                for (var j = 0; j < document.scripts.length; j++) { if (document.scripts[j].src === r) { return; } }
+                k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+                (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+                ym(98823704, "init", { clickmap: true, trackLinks: true, accurateTrackBounce: true, webvisor: true });
+            }, 1500);
+        });
+    </script>
+    <noscript><div><img src="https://mc.yandex.ru/watch/98823704" style="position:absolute; left:-9999px;" alt=""></div></noscript>
+</head>
+<body id="top">
+    {% include 'components/site_icons.html' %}
+    {% include 'components/site_island.html' with active='media' %}
+
+    <main class="bl">
+        <header class="bl-hero">
+            <h1 class="bl-title">Журнал Летучки</h1>
+            <p class="bl-sub">Как быстро сделать тест, честно проверить знания и не потерять на этом вечер. Разборы и приёмы от тех, кто каждый день готовит уроки.</p>
+            <p class="bl-count"><b>{{ total }}</b> {{ total_word }}, последний от {{ updated_ru }}</p>
+        </header>
+
+        {% if lead %}
+        <article class="bl-lead" data-item data-rubric="{{ lead.rubric }}" data-search="{{ lead.search }}">
+            <p class="bl-no" aria-label="Выпуск {{ lead.number }}"><small>№</small>{{ lead.number_str }}</p>
+            <div>
+                <span class="tag">{{ lead.rubric }}</span>
+                <h2 class="bl-lead-title"><a href="{% url 'media_view' lead.slug %}">{{ lead.title }}</a></h2>
+                <p class="bl-lead-text">{{ lead.lead }}</p>
+                <div class="bl-lead-foot">
+                    <span>{{ lead.date_ru }}</span>
+                    <span>{{ lead.minutes }} мин чтения</span>
+                    <span class="bl-lead-go">Читать<svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></span>
+                </div>
+            </div>
+        </article>
+        {% endif %}
+
+        {% if total > 3 %}
+        <div class="bl-bar" id="bl-bar">
+            <div class="bl-chips" role="group" aria-label="Рубрики">
+                <button type="button" class="chip" data-rubric="" aria-pressed="true">Все<i>{{ total }}</i></button>
+                {% for r in rubrics %}
+                <button type="button" class="chip" data-rubric="{{ r.name }}" aria-pressed="false">{{ r.name }}<i>{{ r.count }}</i></button>
+                {% endfor %}
+            </div>
+            <label class="bl-search">
+                <svg class="icon" aria-hidden="true"><use href="#i-search"/></svg>
+                <input id="bl-q" type="search" placeholder="Найти по названию или теме" autocomplete="off" aria-label="Поиск по журналу">
+                <kbd aria-hidden="true">/</kbd>
+            </label>
+        </div>
+        {% endif %}
+
+        <ol class="bl-list" id="bl-list">
+            {% for p in posts %}
+            <li data-item data-rubric="{{ p.rubric }}" data-search="{{ p.search }}"{% if forloop.first %} data-lead hidden{% endif %}>
+                <div class="row">
+                    <span class="row-no" aria-hidden="true">{{ p.number_str }}</span>
+                    <span class="row-tag tag">{{ p.rubric }}</span>
+                    <h3 class="row-title"><a href="{% url 'media_view' p.slug %}">{{ p.title }}</a></h3>
+                    <p class="row-lead">{{ p.lead }}</p>
+                    <span class="row-read">{{ p.minutes }} мин</span>
+                    <time class="row-date" datetime="{{ p.date_iso }}">{{ p.date_short }}</time>
+                    <div class="row-meta"><span>{{ p.date_short }}</span><span>{{ p.minutes }} мин чтения</span></div>
+                </div>
+            </li>
+            {% endfor %}
+        </ol>
+
+        <div class="bl-empty" id="bl-empty" hidden>
+            <strong>Ничего не нашли</strong>
+            Попробуйте другое слово или сбросьте рубрику.
+            <br><button type="button" id="bl-reset">Показать все материалы</button>
+        </div>
+
+        <section class="cta" aria-labelledby="cta-h">
+            <div>
+                <h2 id="cta-h">Тест из вашего текста за 30 секунд</h2>
+                <p>Вставьте абзац или загрузите файл. Летучка составит вопросы, проверит ответы и покажет, где класс ошибается.</p>
+            </div>
+            <a href="/create" class="btn">Создать тест<svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+        </section>
+    </main>
+
+    {% include 'components/site_footer.html' %}
+
+    <script src="{% static 'js/site-chrome.js' %}" defer></script>
+    <script src="{% static 'js/blog.js' %}" defer></script>
+</body>
+</html>
