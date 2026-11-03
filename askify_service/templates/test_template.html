@@ -1,97 +1,174 @@
 <!DOCTYPE html>
 <html>
 <head>
+<meta charset="utf-8">
 <style>
-    @font-face { font-family: 'Manrope'; src: url("{{ font_path_medium }}"); font-weight: normal; }
-    @font-face { font-family: 'Manrope-Bold'; src: url("{{ font_path_bold }}"); font-weight: bold; }
-    @font-face { font-family: 'Unbounded'; src: url("{{ font_path_signature }}"); }
+    @font-face { font-family: 'Manrope'; src: url("{{ font_path_medium }}"); }
+    @font-face { font-family: 'Manrope-Bold'; src: url("{{ font_path_bold }}"); }
 
+    /* =========================================================
+       СТРАНИЦЫ
+       ========================================================= */
     @page {
         size: a4;
-        margin-top: 1.5cm;
-        margin-bottom: 2cm;
-        margin-left: 1.5cm;
-        margin-right: 1.5cm;
+        margin: 1.8cm 2cm 2.2cm 2cm;
 
         @frame watermark_frame {
             -pdf-frame-content: watermarkContent;
             top: 0cm; left: 0cm; height: 29.7cm; width: 21cm;
         }
-
-        @frame footer_frame_rest {
-            -pdf-frame-content: footerRestContent;
-            bottom: 0.5cm; margin-left: 1.5cm; margin-right: 1.5cm; height: 1.0cm;
+        @frame footer_frame {
+            -pdf-frame-content: footerContent;
+            bottom: 0.9cm; margin-left: 2cm; margin-right: 2cm; height: 0.8cm;
         }
     }
 
-    @page first {
-        size: a4;
-        margin-top: 1cm;
-        margin-bottom: 2cm;
-        margin-left: 1.5cm;
-        margin-right: 1.5cm;
-
-        @frame watermark_frame {
-            -pdf-frame-content: watermarkContent;
-            top: 0cm; left: 0cm; height: 29.7cm; width: 21cm;
-        }
-
-        @frame footer_frame_first {
-            -pdf-frame-content: footerFirstContent;
-            bottom: 0.5cm; margin-left: 1.5cm; margin-right: 1.5cm; height: 1.0cm;
-        }
-    }
-
+    /* =========================================================
+       БАЗА — только чёрный и оттенки серого
+       ========================================================= */
     body {
-        font-family: 'Manrope', sans-serif;
+        font-family: 'Manrope';
         font-size: 10pt;
-        line-height: 1.4;
-        color: #1F1F1F;
+        line-height: 14pt;
+        color: #000000;
         margin: 0; padding: 0;
     }
+    table { border-collapse: collapse; }
+    td    { padding: 0; vertical-align: top; }
+    div   { margin: 0; padding: 0; }
 
-    h1 { font-family: 'Unbounded'; font-size: 20pt; color: #0F0818; margin: 0 0 6pt 0; line-height: 1.1; }
-    .meta-data { font-family: 'Manrope'; font-size: 8pt; color: #666; margin-bottom: 12pt; text-transform: uppercase; letter-spacing: 1px; font-weight: bold; }
-    .divider { border-bottom: 2px solid #000; margin-bottom: 20pt; width: 100%; }
-    
-    .q-table { width: 100%; margin-bottom: 14pt; }
-    .q-num-col { width: 25px; vertical-align: top; }
-    .q-num { font-family: 'Unbounded'; font-size: 13pt; color: #616DF0; font-weight: bold; }
-    .q-text-col { vertical-align: top; }
-    .q-text { font-family: 'Manrope-Bold'; font-size: 11pt; margin-bottom: 6pt; color: #000; }
-    
-    ol { margin: 0; padding-left: 18px; list-style-type: lower-alpha; }
-    li { font-family: 'Manrope'; font-size: 10pt; color: #333; margin-bottom: 4pt; padding-left: 5px; }
-    li::marker { color: #616DF0; font-weight: bold; }
+    /* =========================================================
+       ШАПКА
+       ========================================================= */
+    .rule-thick { border-top: 2pt solid #000; }
+    .rule-thin  { border-top: 0.5pt solid #000; }
 
-    .footer-block { width: 100%; border-top: 1px solid #000; padding-top: 6pt; font-size: 7pt; color: #000; text-transform: uppercase; }
-    .footer-first-style { border-top: 1px solid #ccc; color: #666; }
-    .tbl-footer { width: 100%; }
-    .td-left { text-align: left; width: 50%; }
-    .td-center { text-align: center; width: 20%; }
-    .td-right { text-align: right; width: 30%; }
-    .brand { color: #616DF0; font-weight: bold; text-decoration: none; }
+    .kicker {
+        font-family: 'Manrope-Bold';
+        font-size: 7.5pt;
+        line-height: 10pt;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        padding-top: 6pt;
+    }
+    .title {
+        font-family: 'Manrope-Bold';
+        font-size: 16pt;
+        line-height: 20pt;
+        padding: 4pt 0 8pt 0;
+    }
+    .meta-table { width: 100%; }
+    .meta-table td {
+        font-size: 8pt;
+        line-height: 11pt;
+        padding: 4pt 0 4pt 0;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .meta-label { font-family: 'Manrope'; color: #555; }
+    .meta-value { font-family: 'Manrope-Bold'; }
 
-    #watermark {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        z-index: -1000;
-        opacity: 0.08;
-        
-        -pdf-transform: rotate(35deg); 
-        -pdf-transform-origin: 50% 50%;
+    /* Бланк учащегося — сетка с рамкой, как на экзаменационных листах */
+    .form-table { width: 100%; margin-top: 10pt; }
+    .form-table td {
+        border: 0.75pt solid #000;
+        padding: 3pt 6pt 12pt 6pt;
+    }
+    .form-label {
+        font-family: 'Manrope-Bold';
+        font-size: 6.5pt;
+        line-height: 8pt;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+    }
+    .form-score {
+        font-family: 'Manrope';
+        font-size: 9pt;
+        line-height: 12pt;
+        text-align: right;
+        padding-top: 2pt;
     }
 
+    /* Инструкция */
+    .instr-table { width: 100%; margin: 10pt 0 18pt 0; }
+    .instr-table td {
+        background-color: #F2F2F2;
+        padding: 6pt 8pt 6pt 8pt;
+        font-size: 8.5pt;
+        line-height: 12pt;
+    }
+    .instr-head { font-family: 'Manrope-Bold'; text-transform: uppercase; letter-spacing: 1px; }
+
+    /* =========================================================
+       ВОПРОС
+       Одна строка таблицы = один вопрос, поэтому он не
+       разрывается между страницами.
+       ========================================================= */
+    .q-table   { width: 100%; margin-bottom: 14pt; }
+    .q-num-col { width: 24pt; }
+
+    .q-num, .q-text {
+        font-family: 'Manrope-Bold';
+        font-size: 10.5pt;
+        line-height: 14pt;
+    }
+    .q-note {
+        font-family: 'Manrope';
+        font-size: 8pt;
+        line-height: 14pt;
+        color: #555;
+    }
+
+    /* =========================================================
+       ВАРИАНТЫ: квадрат-бокс с буквой внутри (бланк ответов)
+       ========================================================= */
+    .opt-table { margin-top: 6pt; }
+    .opt-row td { padding-bottom: 5pt; }
+    .opt-box-col { width: 13pt; }
+    .opt-box {
+        border: 0.75pt solid #000;
+        width: 11pt;
+        height: 11pt;
+        text-align: center;
+        font-family: 'Manrope-Bold';
+        font-size: 7pt;
+        line-height: 11pt;
+    }
+    .opt-gap  { width: 7pt; }
+    .opt-text {
+        font-family: 'Manrope';
+        font-size: 10pt;
+        line-height: 13pt;
+    }
+
+    /* =========================================================
+       ФУТЕР
+       ========================================================= */
+    .footer-table { width: 100%; border-top: 0.5pt solid #000; }
+    .footer-table td {
+        padding-top: 4pt;
+        font-size: 7pt;
+        line-height: 9pt;
+        color: #333;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    /* =========================================================
+       ВОДЯНОЙ ЗНАК (серый, для бесплатного тарифа)
+       ========================================================= */
+    #watermark {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        z-index: -1000; opacity: 0.06;
+        -pdf-transform: rotate(35deg);
+        -pdf-transform-origin: 50% 50%;
+    }
     .wm-text {
         text-align: center;
-        font-family: 'Unbounded', sans-serif;
-        font-weight: bold;
+        font-family: 'Manrope-Bold';
         font-size: 26pt;
-        color: #616DF0;
         line-height: 2.5;
+        color: #000;
         text-transform: uppercase;
         white-space: nowrap;
     }
@@ -103,67 +180,72 @@
         {% if watermark %}
         <div id="watermark">
             <div class="wm-text">
-                Letychka.ru • Free Version • Letychka.ru <br>
-                <span style="font-size: 36pt;">Demo Mode</span><br>
+                Letychka.ru • Free Version • Letychka.ru<br>
+                Demo Mode<br>
                 Не для коммерческого использования<br>
-                Letychka.ru • Protected • Letychka.ru
+                Letychka.ru • Free Version • Letychka.ru
             </div>
         </div>
         {% endif %}
     </div>
 
-    <div id="footerFirstContent">
-        <div class="footer-block footer-first-style">
-            <table class="tbl-footer">
-                <tr>
-                    <td class="td-left">
-                        {% if watermark %}Generated by <span class="brand">letychka.ru</span>{% else %}Authorized Assessment Doc.{% endif %}
-                    </td>
-                    <td class="td-center">2025</td>
-                    <td class="td-right">{% if survey_id %}REF: {{ survey_id|slice:":8"|upper }}{% endif %}</td>
-                </tr>
-            </table>
-        </div>
+    <div id="footerContent">
+        <table class="footer-table"><tr>
+            <td style="width: 70%;">{{ title|truncatechars:70 }}</td>
+            <td style="width: 30%; text-align: right;">Стр. <pdf:pagenumber /> из <pdf:pagecount /></td>
+        </tr></table>
     </div>
 
-    <div id="footerRestContent">
-        <div class="footer-block">
-            <table class="tbl-footer">
-                <tr>
-                    <td class="td-left" style="border-bottom: 0; white-space: nowrap;">Name: ______________________ &nbsp; Date: _________</td>
-                    <td class="td-center">SCORE: ______ / ______</td>
-                    <td class="td-right">Page <pdf:pagenumber /></td>
-                </tr>
-            </table>
-        </div>
-    </div>
+    <!-- ===================== ШАПКА ===================== -->
+    <div class="rule-thick"></div>
+    <div class="kicker">Летучка{% if watermark %} &nbsp;·&nbsp; letychka.ru{% endif %}</div>
+    <div class="title">{{ title }}</div>
 
-    
-    <h1>{{ title }}</h1>
-    
-    <div class="meta-data">
-        {{ creation_date }} &nbsp;|&nbsp; 
-        {% if survey_id %} {{ survey_id|slice:":8"|upper }}{% else %}Draft{% endif %}
-    </div>
-    
-    <div class="divider"></div>
+    <div class="rule-thin"></div>
+    <table class="meta-table"><tr>
+        <td style="width: 34%;"><span class="meta-label">Дата:</span> <span class="meta-value">{{ creation_date }}</span></td>
+        <td style="width: 33%;"><span class="meta-label">Вопросов:</span> <span class="meta-value">{{ questions|length }}</span></td>
+        <td style="width: 33%; text-align: right;"><span class="meta-label">Макс. балл:</span> <span class="meta-value">{{ questions|length }}</span></td>
+    </tr></table>
+    <div class="rule-thin"></div>
 
+    <!-- Бланк учащегося -->
+    <table class="form-table"><tr>
+        <td style="width: 50%;"><div class="form-label">Фамилия, имя</div></td>
+        <td style="width: 18%;"><div class="form-label">Класс / группа</div></td>
+        <td style="width: 16%;"><div class="form-label">Дата</div></td>
+        <td style="width: 16%;"><div class="form-label">Баллы</div><div class="form-score">/ {{ questions|length }}</div></td>
+    </tr></table>
+
+    <!-- Инструкция -->
+    <table class="instr-table"><tr><td>
+        <span class="instr-head">Инструкция.</span>
+        Отметьте верный ответ, заштриховав или перечеркнув квадрат рядом с ним.
+        Если у вопроса несколько верных ответов, это указано под вопросом — отметьте все.
+    </td></tr></table>
+
+    <!-- ===================== ВОПРОСЫ ===================== -->
     {% for question in questions %}
-    <table class="q-table" cellspacing="0" cellpadding="0">
-        <tr>
-            <td class="q-num-col">
-                <div class="q-num">{{ forloop.counter }}.</div>
-            </td>
-            <td class="q-text-col">
-                <div class="q-text">{{ question.question }}</div>
-                <ol>
-                    {% for option in question.options %}
-                        <li>{{ option }}</li>
-                    {% endfor %}
-                </ol>
-            </td>
-        </tr>
-    </table>
+    <table class="q-table"><tr>
+        <td class="q-num-col"><div class="q-num">{{ forloop.counter }}.</div></td>
+        <td>
+            <div class="q-text">{{ question.question }}</div>
+            {% if question.type == 'multiple' %}
+            <div class="q-note">Выберите все верные варианты</div>
+            {% endif %}
+
+            <table class="opt-table">
+                {% for option in question.options %}
+                <tr class="opt-row">
+                    <td class="opt-box-col"><div class="opt-box">{% cycle 'А' 'Б' 'В' 'Г' 'Д' 'Е' 'Ж' 'З' %}</div></td>
+                    <td class="opt-gap"></td>
+                    <td><div class="opt-text">{{ option }}</div></td>
+                </tr>
+                {% endfor %}
+            </table>
+        </td>
+    </tr></table>
+    {% resetcycle %}
     {% endfor %}
 
 </body>

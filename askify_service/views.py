@@ -2104,11 +2104,11 @@ def download_results_pdf(request, survey_id):
 
         font_path_medium = finders.find("fonts/Merriweather-Medium.ttf")
         font_path_bold = finders.find("fonts/OpenSans-Bold.ttf")
-        font_signature = finders.find("fonts/Unbounded-Medium.ttf")
+        # font_signature = finders.find("fonts/Unbounded-Medium.ttf")
 
         pdfmetrics.registerFont(TTFont("Manrope Medium", font_path_medium))
         pdfmetrics.registerFont(TTFont("Manrope Bold", font_path_bold))
-        pdfmetrics.registerFont(TTFont("Unbounded Medium", font_signature))
+        # pdfmetrics.registerFont(TTFont("Unbounded Medium", font_signature))
         logging.info("Шрифты ReportLab успешно зарегистрированы.")
     except Exception as e:
         logging.error(
@@ -2369,8 +2369,8 @@ def download_results_pdf(request, survey_id):
         footer_style = ParagraphStyle(
             "FooterStyle",
             parent=styles["Normal"],
-            fontName="Unbounded Medium",
-            fontSize=9,
+            fontName="Manrope Medium",
+            fontSize=8,
             alignment=TA_LEFT,
         )
 

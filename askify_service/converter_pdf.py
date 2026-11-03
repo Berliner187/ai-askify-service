@@ -55,14 +55,14 @@ class PDFGenerator:
         p.setFillColor(colors.Color(150 / 255, 150 / 255, 170 / 255, alpha=0.1))
         p.translate(width / 2, height / 2)
         p.rotate(45)
-        p.drawCentredString(0, 0, "СГЕНЕРИРОВАНО НА LETYCHKA.RU")
+        p.drawCentredString(0, 0, "")
         p.restoreState()
 
         p.saveState()
         p.setFont('Unbounded-Brutal', 10)
         p.setFillColor(colors.Color(0, 0, 0, alpha=0.5))
 
-        cta_text = "[ создайте свой тест или шпору с помощью ИИ – letychka.ru ]"
+        cta_text = "Летучка Ру"
 
         p.drawCentredString(width / 2, 70, cta_text)
         p.restoreState()
