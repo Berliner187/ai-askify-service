@@ -325,6 +325,30 @@ class AuthAdditionalUser(models.Model):
     id_yandex = models.IntegerField(null=True, blank=True)
 
 
+class SocialAccount(models.Model):
+    """Привязка внешнего аккаунта (Яндекс ID, позже VK ID и др.) к пользователю."""
+
+    PROVIDER_YANDEX = "yandex"
+    PROVIDER_CHOICES = [(PROVIDER_YANDEX, "Яндекс ID")]
+
+    user = models.ForeignKey(AuthUser, on_delete=models.CASCADE, related_name="social_accounts")
+    provider = models.CharField(max_length=20, choices=PROVIDER_CHOICES)
+    uid = models.CharField(max_length=64)
+    email = models.EmailField(blank=True, default="")
+    extra_data = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_login_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["provider", "uid"], name="uniq_social_provider_uid"),
+            models.UniqueConstraint(fields=["user", "provider"], name="uniq_social_user_provider"),
+        ]
+
+    def __str__(self):
+        return f"{self.provider}:{self.uid} -> {self.user_id}"
+
+
 class Subscription(models.Model):
     staff_id = models.UUIDField(blank=False, null=False, unique=True)
     plan_name = models.CharField(max_length=100)

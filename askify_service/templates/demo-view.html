@@ -1300,6 +1300,7 @@
 
                 <form id="page-quick-register-form" class="space-y-4">
                     {% csrf_token %}
+                    {% include "partials/yandex_button.html" %}
                     <div>
                         <label for="reg-email" class="block text-xs font-semibold text-gray-300 mb-1.5">Ваш Email</label>
                         <input type="email" name="email" id="reg-email" required placeholder="email@yandex.ru"

@@ -1,0 +1,71 @@
+{% load static %}
+{% comment %}
+  Кнопка «Войти с Яндекс ID»: белая кнопка + официальный логотип-PNG «Яндекс ID».
+    {% include "partials/yandex_button.html" %}
+  Логотип: static/img/yandex-id.png (чёрный вордмарк на прозрачном фоне).
+{% endcomment %}
+<style>
+    .ya-auth { display: block; margin: 18px 0 20px; text-align: center; }
+    .ya-auth__btn {
+        display: flex; align-items: center; justify-content: center;
+        width: 100%; height: 56px; box-sizing: border-box; padding: 0 24px;
+        background: #fff; border: 0; border-radius: 16px;
+        text-decoration: none !important; cursor: pointer;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, .25), 0 8px 20px -12px rgba(0, 0, 0, .6);
+        -webkit-tap-highlight-color: transparent;
+        transition: background-color .15s ease, transform .15s ease, box-shadow .15s ease;
+    }
+    .ya-auth__btn:hover { background: #f7f7f8; transform: translateY(-1px); }
+    .ya-auth__btn:active { background: #ececee; transform: scale(.985); }
+    .ya-auth__btn:focus-visible { outline: 2px solid #a5b4fc; outline-offset: 3px; }
+
+    .ya-auth__logo { height: 26px; width: auto; display: block; }
+
+    .ya-auth__spin {
+        display: none; width: 20px; height: 20px; border-radius: 50%;
+        border: 2px solid rgba(0, 0, 0, .12); border-top-color: #000;
+        animation: ya-spin .7s linear infinite;
+    }
+    .ya-auth__btn.is-loading { pointer-events: none; }
+    .ya-auth__btn.is-loading .ya-auth__logo { display: none; }
+    .ya-auth__btn.is-loading .ya-auth__spin { display: block; }
+    @keyframes ya-spin { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) {
+        .ya-auth__btn { transition: none; } .ya-auth__spin { animation-duration: 1.6s; }
+    }
+
+    .ya-auth__legal { margin: 12px 6px 0; font-size: 11px; line-height: 1.45; color: #71717a; }
+    .ya-auth__legal a { color: #a1a1aa; text-decoration: underline; }
+    .ya-auth__legal a:hover { color: #c7d2fe; }
+    .ya-auth__or {
+        display: flex; align-items: center; gap: 12px; margin: 20px 0 0;
+        font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: #71717a;
+    }
+    .ya-auth__or::before, .ya-auth__or::after { content: ""; flex: 1; height: 1px; background: rgba(255, 255, 255, .09); }
+</style>
+
+<div class="ya-auth">
+    <a class="ya-auth__btn" id="ya-auth-btn" rel="nofollow" aria-label="Войти с Яндекс ID"
+       href="{% url 'yandex_login' %}{% if next %}?next={{ next|urlencode }}{% elif next_url %}?next={{ next_url|urlencode }}{% endif %}">
+        <img class="ya-auth__logo" src="{% static 'img/yandex-id.png' %}" alt="" decoding="async">
+        <span class="ya-auth__spin" aria-hidden="true"></span>
+    </a>
+    <p class="ya-auth__legal">
+        Продолжая, вы принимаете
+        <a href="/docs/public-offer" target="_blank">оферту</a> и
+        <a href="/docs/privacy-policy" target="_blank">политику конфиденциальности</a>.
+    </p>
+    <div class="ya-auth__or"><span>или по email</span></div>
+</div>
+
+<script>
+    (function () {
+        var btn = document.getElementById('ya-auth-btn');
+        if (!btn) return;
+        btn.addEventListener('click', function () { btn.classList.add('is-loading'); });
+        // «Назад» в браузере возвращает страницу из кэша вместе с крутилкой
+        window.addEventListener('pageshow', function (e) {
+            if (e.persisted) btn.classList.remove('is-loading');
+        });
+    })();
+</script>

@@ -22,6 +22,10 @@ from .admin_surveys_views import (
     api_admin_delete_survey,
 )
 
+from .views_oauth import (
+    yandex_start, yandex_callback
+)
+
 from . import crm_views
 from askify_app.settings import DEBUG
 
@@ -134,7 +138,6 @@ urlpatterns = [
 
     path('api/ghost_disconnect/', terminate_session, name='ghost_disconnect'),
 
-    path("api/user-stats/", user_stats_api, name="user_stats_api"),
     path('api/user-profile/', user_profile_api, name='user_profile_api'),
     path('api/personal_charts/', personal_charts_data_api, name='personal_charts_api'),
     path('api/student_charts/', student_charts_data_api, name='student_charts_api'),
@@ -162,6 +165,9 @@ urlpatterns = [
 
     path('auth/', passwordless_auth_view, name='passwordless_auth'),
     path('auth/magic-link/<str:token>/', magic_link_login_view, name='magic_link_login'),
+    
+    path("auth/yandex/", yandex_start, name="yandex_login"),
+    path("auth/yandex/callback/", yandex_callback, name="yandex_callback"),
 
     path('stats2975/', admin_stats, name='stats2975'),
     path('stats2975/crm/', user_ops_center_view, name='user_ops_center'),

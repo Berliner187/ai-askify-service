@@ -322,109 +322,6 @@ def get_user_dashboard_context(user):
 
 
 @login_required
-def user_stats_api(request):
-    """
-    API-ручка для статистики пользователя в Пульсе.
-    """
-    staff_id = get_staff_id(request)
-    today = date.today()
-
-    try:
-        subs = Subscription.objects.get(staff_id=staff_id)
-        subs.status = subs.check_sub_status()
-        tests_limit = (
-            get_daily_test_limit(subs.plan_name) if subs.status == "active" else 0
-        )
-    except Subscription.DoesNotExist:
-        tests_limit = 0
-
-    used_today = ManageTokensLimits(staff_id).get_tests_used_today()
-    remaining_tests = max(0, tests_limit - used_today)
-
-    surveys = Survey.objects.filter(id_staff=staff_id)
-    answers = UserAnswers.objects.filter(id_staff=staff_id)
-    feedbacks = FeedbackFromAI.objects.filter(id_staff=staff_id)
-
-    # ЗАПРОС 1: Вся статистика по тестам (Survey) за один раз
-    survey_stats = surveys.aggregate(
-        total_tests=Count("id"),
-        today_created=Count("id", filter=Q(updated_at__date=today)),
-        this_month_count=Count("id", filter=Q(updated_at__gte=today.replace(day=1))),
-    )
-    total_tests = survey_stats["total_tests"]
-
-    # ЗАПРОС 2: Вся статистика по ответам (UserAnswers) за один раз
-    answers_stats = answers.aggregate(
-        total_answers=Count("id"), avg_correct=Coalesce(Avg("scored_points"), 0.0)
-    )
-
-    # ЗАПРОС 3: Вся статистика по фидбеку (FeedbackFromAI) за один раз
-    feedback_stats = feedbacks.aggregate(
-        feedback_count=Count("id"),
-        unique_models_count=Count("model_name", distinct=True),
-        last_week_feedback=Count(
-            "id", filter=Q(created_at__gte=today - timedelta(days=7))
-        ),
-        distinct_surveys_with_feedback=Count("survey_id", distinct=True),
-    )
-
-    # ЗАПРОС 4: Самая используемая модель. Это эффективно.
-    model_most_used_obj = (
-        feedbacks.values("model_name")
-        .annotate(c=Count("model_name"))
-        .order_by("-c")
-        .first()
-    )
-    model_most_used = (
-        format_model_name(model_most_used_obj["model_name"])
-        if model_most_used_obj
-        else "–"
-    )
-
-    # ЗАПРОС 5 (ОПТИМИЗИРОВАННЫЙ): Вытаскиваем все JSON-поля за один запрос
-    questions_lists = surveys.values_list("questions", flat=True)
-    total_questions = sum(len(json.loads(q)) for q in questions_lists if q)
-
-    # ЗАПРОС 6 (ОПТИМИЗИРОВАННЫЙ): Считаем тесты, на которые есть ответы.
-    created_and_passed = answers.values("survey_id").distinct().count()
-
-    # ЗАПРОС 7: Внешний вызов, который мы не трогали.
-    user_calc_stats = UserAnswers.calculate_user_statistics(staff_id)
-    passed_tests = user_calc_stats["passed_tests"]
-    best_result = user_calc_stats["best_result"]
-
-    # --- ЭТАП 5: Финальные расчеты в Python (без запросов к БД) ---
-    avg_questions = round(total_questions / total_tests, 1) if total_tests > 0 else 0
-    feedback_coverage = (
-        (feedback_stats["distinct_surveys_with_feedback"] / total_tests * 100)
-        if total_tests > 0
-        else 0
-    )
-
-    return JsonResponse(
-        {
-            "tests_remaining_today": remaining_tests,
-            "total_tests": total_tests,
-            "passed_tests": passed_tests,
-            "best_result": best_result,
-            "feedback_count": feedback_stats["feedback_count"],
-            "today_created": survey_stats["today_created"],
-            "model_most_used": model_most_used,
-            "total_questions": total_questions,
-            "avg_questions": avg_questions,
-            "total_answers": answers_stats["total_answers"],
-            "avg_correct_answers": round(answers_stats["avg_correct"], 1),
-            "unique_models_count": feedback_stats["unique_models_count"],
-            "tests_this_month": survey_stats["this_month_count"],
-            "feedback_last_week": feedback_stats["last_week_feedback"],
-            "percent_with_feedback": round(feedback_coverage, 1),
-            "avg_tokens_used": 0,
-            "tests_created_and_passed": created_and_passed,
-        }
-    )
-
-
-@login_required
 def student_charts_data_api(request):
     """Статистика прохождений тестов учениками (Europe/Moscow) за выбранный период."""
     timezone.activate(MOSCOW_TZ)
@@ -1355,32 +1252,6 @@ def get_survey_ad(request, survey_id):
     return JsonResponse({"html": ad_html if ad_html else None})
 
 
-async def notify_admin_by_limit():
-    active_api_key = APIKey.objects.filter(is_active=True).first()
-    if active_api_key:
-        start_of_today = timezone.now().replace(
-            hour=0, minute=0, second=0, microsecond=0
-        )
-        usage_count_for_active_key = APIKeyUsage.objects.filter(
-            api_key=active_api_key, timestamp__gte=start_of_today
-        ).aggregate(count=Count("id"))
-        count_today = usage_count_for_active_key.get("count", 0)
-
-        LIMIT = 100
-        if count_today > LIMIT:
-            tracer_l.info(f"--- [ RESET counter active key ] ---")
-            tracer_l.warning(f"API [ FULL UP ] count_today: {count_today}")
-            tracer_l.info(
-                f"Key: {active_api_key.name} ({active_api_key.provider}), "
-                f"Limit: {LIMIT} responses."
-            )
-        elif count_today > 0:
-            tracer_l.info(
-                f"Active key [ STATUS ]: {active_api_key.name}, "
-                f"Responses/day: {count_today} < {LIMIT}"
-            )
-
-
 @method_decorator(csrf_exempt, name="dispatch")
 class GenerationSurveysView(View):
     async def post(self, request):
@@ -1758,8 +1629,6 @@ class FileUploadView(View):
                     request.session["demo_survey_id"] = str(new_survey_id)
                     request.session.modified = True
                 await sync_to_async(mark_guest_session)()
-
-            await notify_admin_by_limit()
 
             return JsonResponse({
                 'success': True,
@@ -3013,6 +2882,10 @@ def _integrity_log(a):
 @login_required
 def view_results(request, survey_id):
     survey = get_object_or_404(Survey, survey_id=survey_id)
+    
+    cur_staff_id = get_staff_id(request)
+    if survey.id_staff != get_staff_id(request) and not request.user.is_superuser:
+        return render(request, "404.html", status=404)
  
     groups, counted, all_attempts = _group_attempts(survey)
     attempts_total = len(all_attempts)

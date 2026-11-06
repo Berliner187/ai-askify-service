@@ -169,6 +169,13 @@ EMAIL_HOST_USER = env('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD')
 
 
+YANDEX_OAUTH = {
+    "CLIENT_ID": env("YANDEX_CLIENT_ID", default=""),
+    "CLIENT_SECRET": env("YANDEX_CLIENT_SECRET", default=""),
+    "REDIRECT_URI": env("YANDEX_REDIRECT_URI", default="https://letychka.ru/auth/yandex/callback/"),
+}
+
+
 LANGUAGE_CODE = 'ru'
 
 TIME_ZONE = 'Europe/Moscow'
