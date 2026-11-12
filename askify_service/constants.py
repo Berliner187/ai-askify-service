@@ -139,4 +139,5 @@ ALLOWED_DOMAINS = [
     'yandex.kz',
     'mail.by',
     'yandex.by',
+    'reaviz.online'
 ]

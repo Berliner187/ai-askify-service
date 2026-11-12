@@ -236,7 +236,7 @@
         .facts { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 22px; font: 500 13px/1.3 'Golos Text', sans-serif; color: var(--faint); }
         .facts span { display: flex; align-items: center; gap: 6px; }
         .facts svg { color: var(--accent-soft); }
-        .alt { margin: 0; font-size: 14px; color: var(--faint); text-align: center; }
+        .alt { margin: 0; font-size: 14px; color: var(--faint); text-align: center; margin-top: 14px; }
         .alt a { color: var(--text); font-weight: 600; text-decoration: none; }
         .alt a:hover { color: #fff; text-decoration: underline; }
 
@@ -390,19 +390,16 @@
         </div>
 
         
-<div class="facts">
+        <div class="facts">
             <span><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"/></svg>Без карты</span>
             <span><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"/></svg>Без скрытых подписок</span>
             <span><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"/></svg>4&nbsp;500+ авторов тестов</span>
         </div>
-
-        <p class="alt">Уже есть аккаунт?
-            <a href="{% url 'login' %}{% if next %}?next={{ next|urlencode }}{% elif next_url %}?next={{ next_url|urlencode }}{% endif %}">Войти</a>
-        </p>
     
         </div>
         <div class="stack">
-<!-- ЕСЛИ ПРИШЁЛ СО СГЕНЕРИРОВАННОГО ТЕСТА -->
+        
+            <!-- ЕСЛИ ПРИШЁЛ СО СГЕНЕРИРОВАННОГО ТЕСТА -->
         {% if next and '/c/' in next or next_url and '/c/' in next_url %}
         <div class="banner info">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z"/></svg>
@@ -485,6 +482,10 @@
                         <span class="gift">+5 тестов</span>
                     </span>
                 </button>
+
+                <p class="alt">Уже есть аккаунт?
+                    <a href="{% url 'login' %}{% if next %}?next={{ next|urlencode }}{% elif next_url %}?next={{ next_url|urlencode }}{% endif %}">Войти</a>
+                </p>
             </form>
 
             <!-- КУПОН-КОРЕШОК -->

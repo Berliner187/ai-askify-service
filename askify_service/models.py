@@ -1176,3 +1176,34 @@ class TrafficLog(models.Model):
 
     def __str__(self):
         return f"[{'BOT' if self.is_bot else 'USER'}] {self.ip} -> {self.path} ({self.created_at})"
+
+
+class DbSnapshot(models.Model):
+    """
+    Снимок состояния PostgreSQL для админки «Трафик-контрол → База данных».
+    data   — полный снимок (таблицы, колонки, индексы, связи, тяжёлые запросы);
+    brief  — {table: [total_bytes, rows]} для графиков роста без загрузки data.
+    """
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    db_size = models.BigIntegerField(default=0)
+    collect_ms = models.FloatField(default=0)
+    brief = models.JSONField(default=dict)
+    data = models.JSONField(default=dict)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    @classmethod
+    def take(cls, keep=90):
+        from .db_insights import collect_snapshot
+        snap = collect_snapshot()
+        obj = cls.objects.create(
+            db_size=snap["overview"]["db_size"],
+            collect_ms=snap["collect_ms"],
+            brief={t["name"]: [t["total_bytes"], t["rows"]] for t in snap["tables"]},
+            data=snap,
+        )
+        old_ids = list(cls.objects.order_by("-created_at").values_list("id", flat=True)[keep:])
+        if old_ids:
+            cls.objects.filter(id__in=old_ids).delete()
+        return obj

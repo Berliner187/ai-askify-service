@@ -11,591 +11,1991 @@
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-    
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-treemap@2.3.1/dist/chartjs-chart-treemap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+
     <style>
-        body { background-color: #111119; color: #ebeff3; font-family: 'Inter', system-ui, sans-serif; }
-        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        :root {
+            --bg: #0a0a0c; --side: #0d0d10; --card: #131316; --card2: #18181c; --line: #212126; --line2: #2a2a31;
+            --tx: #ececef; --tx2: #a1a1aa; --tx3: #6b6b75;
+            --indigo: #6366f1; --blue: #4f9cf9; --amber: #f2b84b; --green: #4ade80; --rose: #f43f5e; --violet: #a78bfa; --cyan: #22d3ee;
+        }
+        html, body { background: var(--bg); color: var(--tx); font-family: 'Inter', system-ui, sans-serif; font-feature-settings: 'tnum' 1, 'cv11' 1; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #1a1a2e; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #2e2e4f; }
-        
-        .font-mono-nums { font-family: 'JetBrains Mono', monospace; }
+        ::-webkit-scrollbar-thumb { background: #26262c; border-radius: 6px; }
+        ::-webkit-scrollbar-thumb:hover { background: #34343c; }
+        .font-mono-nums, .mono { font-family: 'JetBrains Mono', monospace; }
+        .num { font-variant-numeric: tabular-nums; }
 
-        /* CYBER-OPS BENTO CARD */
-        .ops-card {
-            background: #11111E;
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            border-radius: 1.5rem;
-            position: relative;
-            overflow: hidden;
-            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.8);
-        }
-        .ops-card:hover {
-            border-color: rgba(255, 255, 255, 0.12);
-        }
+        /* ---------- каркас ---------- */
+        .app { display: grid; grid-template-columns: 232px minmax(0, 1fr); min-height: 100vh; }
+        .side { position: sticky; top: 0; height: 100vh; background: var(--side); border-right: 1px solid var(--line); display: flex; flex-direction: column; padding: 18px 12px; overflow-y: auto; }
+        .brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px 18px; }
+        .brand-logo { width: 30px; height: 30px; border-radius: 9px; background: linear-gradient(135deg, #6366f1, #22d3ee); display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 14px; box-shadow: 0 6px 20px -6px rgba(99,102,241,.7); }
+        .side-group { font-size: 11px; color: var(--tx3); padding: 14px 10px 6px; }
+        .side-item { width: 100%; display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; font-size: 13px; color: var(--tx2); transition: background .15s, color .15s; text-align: left; }
+        .side-item i { width: 16px; text-align: center; font-size: 12px; color: var(--tx3); transition: color .15s; }
+        .side-item:hover { background: rgba(255,255,255,.035); color: var(--tx); }
+        .side-item.active { background: #1c1c22; color: #fff; box-shadow: inset 0 0 0 1px var(--line2); }
+        .side-item.active i { color: var(--indigo); }
+        .side-item .cnt { margin-left: auto; font-size: 11px; color: var(--tx3); font-family: 'JetBrains Mono', monospace; }
+        .side-item .cnt.hot { color: #fda4af; background: rgba(244,63,94,.12); padding: 0 6px; border-radius: 6px; }
+        .keys { margin-top: auto; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
+        .key { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 6px; border: 1px solid var(--line2); background: #101013; font-size: 10px; color: var(--tx2); font-family: 'JetBrains Mono', monospace; }
 
-        /* ТИКОВЫЙ ДИСКРЕТНЫЙ БАР (КАК НА СКРИНШОТЕ) */
-        .tick-segment {
-            width: 4px;
-            height: 12px;
-            border-radius: 1.5px;
-            background: #1c1c30;
-            transition: background-color 0.2s ease;
-        }
-        .tick-segment.active-emerald { background: #d4b425; box-shadow: 0 0 6px rgba(16, 185, 129, 0.4); }
-        .tick-segment.active-rose { background: #F43F5E; box-shadow: 0 0 6px rgba(244, 63, 94, 0.4); }
-        .tick-segment.active-indigo { background: #6366F1; box-shadow: 0 0 6px rgba(99, 102, 241, 0.4); }
+        .main { min-width: 0; }
+        .topbar { position: sticky; top: 0; z-index: 30; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 28px; background: rgba(10,10,12,.82); backdrop-filter: blur(14px); border-bottom: 1px solid var(--line); }
+        .content { padding: 26px clamp(16px, 2.2vw, 40px) 64px; max-width: 2080px; margin: 0 auto; width: 100%; }
+        .brand-logo-img { width: 32px; height: 32px; border-radius: 9px; object-fit: contain; background: #16161a; border: 1px solid var(--line2); padding: 3px; }
 
-        @keyframes pulseDot {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.7); }
-            50% { box-shadow: 0 0 0 6px rgba(6, 182, 212, 0); }
+        .seg { display: inline-flex; align-items: center; gap: 2px; padding: 3px; border-radius: 12px; background: var(--card); border: 1px solid var(--line); }
+        .seg > * { padding: 6px 11px; font-size: 12px; border-radius: 9px; color: var(--tx2); transition: .15s; white-space: nowrap; }
+        .seg > *:hover { color: #fff; }
+        .seg > .on { background: var(--indigo); color: #fff; box-shadow: 0 6px 18px -6px rgba(99,102,241,.8); }
+        .seg.soft > .on { background: #24242b; box-shadow: none; }
+
+        .live-dot { width: 7px; height: 7px; border-radius: 99px; background: var(--green); box-shadow: 0 0 0 0 rgba(74,222,128,.6); animation: livePulse 2s infinite; }
+        .live-dot.paused { background: var(--amber); animation: none; }
+        @keyframes livePulse { 0% { box-shadow: 0 0 0 0 rgba(74,222,128,.55); } 70% { box-shadow: 0 0 0 7px rgba(74,222,128,0); } 100% { box-shadow: 0 0 0 0 rgba(74,222,128,0); } }
+
+        /* ---------- секции и карточки ---------- */
+        .sec-head { margin: 4px 0 14px; }
+        .sec-head h2 { font-size: 18px; font-weight: 700; letter-spacing: -.01em; color: #fff; }
+        .sec-head p { font-size: 12.5px; color: var(--tx3); margin-top: 3px; }
+
+        .ops-card { background: var(--card); border: 1px solid var(--line); border-radius: 18px; position: relative; overflow: hidden; transition: border-color .2s; }
+        .ops-card:hover { border-color: var(--line2); }
+        .card-title { font-size: 14px; font-weight: 600; color: #fff; letter-spacing: -.005em; }
+        .card-sub { font-size: 12px; color: var(--tx3); margin-top: 1px; }
+        .ic { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; background: #1b1b20; border: 1px solid var(--line2); color: var(--tx2); font-size: 12px; flex-shrink: 0; }
+
+        .big { font-size: 30px; font-weight: 700; letter-spacing: -.02em; color: #fff; line-height: 1.1; font-variant-numeric: tabular-nums; }
+        .badge { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 7px; font-family: 'JetBrains Mono', monospace; white-space: nowrap; }
+        .badge.up { color: #86efac; background: rgba(74,222,128,.1); }
+        .badge.down { color: #fda4af; background: rgba(244,63,94,.12); }
+        .badge.flat { color: var(--tx2); background: #1f1f25; }
+
+        .spark { display: flex; align-items: flex-end; gap: 3px; height: 44px; }
+        .spark > i { flex: 1; min-width: 3px; border-radius: 3px 3px 1px 1px; min-height: 2px; transition: height .4s ease; }
+        .tile { background: #1a1a1f; border: 1px solid #1f1f25; border-radius: 12px; padding: 9px 12px; }
+        .tile .l { font-size: 11.5px; color: var(--tx3); }
+        .tile .v { font-size: 14px; font-weight: 600; color: #fff; margin-top: 2px; font-variant-numeric: tabular-nums; }
+
+        /* ---------- виджеты ---------- */
+        :root { --display: 'Space Grotesk', 'Inter', system-ui, sans-serif; }
+        .w { --g: #6366f1; background: radial-gradient(110% 70% at 0% 0%, color-mix(in srgb, var(--g) 11%, transparent), transparent 62%), var(--card); border: 1px solid var(--line); border-radius: 22px; padding: 20px; position: relative; container-type: inline-size; display: flex; flex-direction: column; gap: 16px; transition: border-color .2s; min-width: 0; }
+        .w:hover { border-color: var(--line2); }
+        .w.sm { padding: 16px; gap: 12px; border-radius: 20px; }
+        .w-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+        .w-label { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; color: var(--tx2); min-width: 0; }
+        .w-label .ic { width: 28px; height: 28px; border-radius: 9px; background: color-mix(in srgb, var(--g) 14%, #17171b); border-color: color-mix(in srgb, var(--g) 25%, var(--line2)); color: var(--g); }
+        .mlabel { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--tx3); }
+        .display { font-family: var(--display); font-weight: 500; letter-spacing: -.045em; line-height: .92; color: #fff; font-size: clamp(44px, 24cqw, 84px); font-variant-numeric: tabular-nums; }
+        .display small { font-size: .38em; color: var(--tx3); font-weight: 400; letter-spacing: -.01em; margin-left: 5px; }
+        .display.md { font-size: clamp(30px, 17cqw, 48px); }
+        .display.txt { font-size: clamp(18px, 10cqw, 28px); letter-spacing: -.025em; line-height: 1.1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .wsub { font-size: 12.5px; color: var(--tx3); margin-top: 8px; }
+        .wmid { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; gap: 12px; }
+        .ticks { display: flex; gap: 3px; height: 40px; }
+        .ticks > i { flex: 1; border-radius: 2.5px; background: #25252c; transition: background .5s; }
+        .ticks.sm { height: 22px; gap: 2px; }
+        .ticks.lg { height: 52px; }
+        .mleg { display: flex; flex-wrap: wrap; gap: 4px 16px; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(--tx3); }
+        .mleg b { color: var(--tx2); font-weight: 500; margin-left: 4px; }
+        .mleg .d { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; }
+        .hatch { background: repeating-linear-gradient(135deg, rgba(255,255,255,.05) 0 5px, transparent 5px 10px), #19191d; }
+        .hb { display: flex; gap: 4px; height: 96px; }
+        .hb.sm { height: 46px; gap: 3px; }
+        .hb > div { flex: 1; min-width: 3px; border-radius: 7px; position: relative; overflow: hidden; }
+        .hb.sm > div { border-radius: 4px; }
+        .hb > div > i { position: absolute; left: 0; right: 0; bottom: 0; border-radius: inherit; transition: height .5s ease; }
+        .cb { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 8px; height: 132px; }
+        .cb > div { border-radius: 16px; position: relative; overflow: hidden; }
+        .cb > div > i { position: absolute; left: 0; right: 0; bottom: 0; border-radius: 16px; transition: height .6s ease; }
+        .cb > div > span { position: absolute; left: 0; right: 0; bottom: 9px; text-align: center; font-size: 10.5px; line-height: 1.25; color: rgba(255,255,255,.62); }
+        .cb > div > span b { display: block; font-family: var(--display); font-size: 16px; font-weight: 500; color: #fff; letter-spacing: -.02em; }
+        .rg { position: relative; flex-shrink: 0; }
+        .rg svg { display: block; width: 100%; height: 100%; transform: rotate(-90deg); }
+        .rg circle { fill: none; transition: stroke-dasharray .6s ease, stroke-dashoffset .6s ease; }
+        .rg .rc { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+        .rg .rc b { font-family: var(--display); font-weight: 500; font-size: 26px; letter-spacing: -.04em; color: #fff; line-height: 1; }
+        .rg .rc span { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--tx3); margin-top: 4px; }
+        .tile { background: rgba(255,255,255,.025); }
+        .sig { --t: var(--blue); background: radial-gradient(120% 90% at 0 0, color-mix(in srgb, var(--t) 9%, transparent), transparent 60%), var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 16px 16px 18px; display: flex; flex-direction: column; gap: 12px; position: relative; }
+        .sig::before { content: ''; position: absolute; left: 16px; top: -1px; width: 34px; height: 2px; border-radius: 0 0 3px 3px; background: var(--t); }
+        .sig-top { display: flex; align-items: center; justify-content: space-between; }
+        .sig .si { width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; background: color-mix(in srgb, var(--t) 14%, transparent); color: var(--t); font-size: 14px; }
+        .sig .tag { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .09em; text-transform: uppercase; color: var(--t); }
+        .sig .t { font-family: var(--display); font-weight: 500; font-size: 16px; letter-spacing: -.015em; color: #fff; line-height: 1.25; }
+        .sig .d { font-size: 12.5px; color: var(--tx2); line-height: 1.55; margin-top: -4px; }
+        .status-word { font-family: var(--display); font-weight: 500; font-size: clamp(30px, 17cqw, 52px); letter-spacing: -.04em; line-height: 1; }
+        @media (prefers-reduced-motion: reduce) { .ticks > i, .hb > div > i, .cb > div > i, .rg circle { transition: none; } }
+
+        .stat { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px; }
+        .stat .l { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--tx2); }
+        .stat .l .d { width: 7px; height: 7px; border-radius: 99px; }
+        .stat .v { font-size: 22px; font-weight: 700; color: #fff; margin-top: 8px; letter-spacing: -.01em; font-variant-numeric: tabular-nums; }
+        .stat .s { font-size: 11.5px; color: var(--tx3); margin-top: 3px; }
+
+        .kpi { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px; }
+        .kpi .v { font-weight: 700; font-size: 21px; color: #fff; line-height: 1.25; margin-top: 6px; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+        .kpi .l { font-size: 12px; color: var(--tx2); }
+        .kpi .s { font-size: 11.5px; color: var(--tx3); margin-top: 3px; }
+
+        .stack { display: flex; gap: 4px; height: 10px; }
+        .stack > i { border-radius: 99px; min-width: 4px; transition: flex-grow .5s ease; }
+        .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--tx2); margin-top: 9px; }
+        .legend b { color: #fff; font-weight: 600; margin-left: 4px; font-variant-numeric: tabular-nums; }
+        .legend .d { display: inline-block; width: 8px; height: 8px; border-radius: 3px; margin-right: 6px; }
+
+        .rank { display: grid; grid-template-columns: 22px minmax(0,1fr) auto; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #1b1b20; }
+        .rank:last-child { border-bottom: 0; }
+        .rank .n { font-size: 11px; color: var(--tx3); font-family: 'JetBrains Mono', monospace; }
+        .rank .track { height: 5px; background: #1c1c22; border-radius: 99px; overflow: hidden; margin-top: 6px; }
+        .rank .track i { display: block; height: 100%; border-radius: 99px; transition: width .5s ease; }
+
+        .chip { display: inline-flex; align-items: center; gap: 4px; font-size: 10.5px; font-weight: 600; padding: 1px 7px; border-radius: 7px; white-space: nowrap; }
+        .chip-rose { color: #fda4af; background: rgba(244,63,94,.12); }
+        .chip-amber { color: #fcd34d; background: rgba(242,184,75,.12); }
+        .chip-cyan { color: #a5b4fc; background: rgba(99,102,241,.14); }
+        .chip-slate { color: var(--tx2); background: #1f1f25; }
+        .chip-violet { color: #c4b5fd; background: rgba(167,139,250,.12); }
+
+        table.dt { width: 100%; font-size: 12.5px; text-align: left; }
+        table.dt thead th { font-size: 11px; color: var(--tx3); font-weight: 500; padding: 0 10px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; cursor: pointer; user-select: none; position: sticky; top: 0; background: var(--card); z-index: 1; }
+        table.dt thead th:hover { color: var(--tx); }
+        table.dt thead th.sorted { color: #a5b4fc; }
+        table.dt tbody td { padding: 9px 10px; border-bottom: 1px solid #1b1b20; white-space: nowrap; font-variant-numeric: tabular-nums; color: var(--tx2); }
+        table.dt tbody tr { transition: background .12s; }
+        table.dt tbody tr:hover { background: rgba(255,255,255,.022); }
+        table.dt td.num, table.dt th.num { text-align: right; }
+        .clickable { cursor: pointer; }
+
+        .bar-bg { height: 5px; background: #1c1c22; border-radius: 99px; overflow: hidden; min-width: 60px; margin-top: 4px; }
+        .bar-fg { height: 100%; border-radius: 99px; }
+
+        .inp { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 7px 11px; font-size: 12.5px; color: var(--tx); outline: none; transition: border-color .15s; }
+        .inp:focus { border-color: var(--indigo); }
+        .btn { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; padding: 7px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--tx); transition: .15s; white-space: nowrap; }
+        .btn:hover { border-color: var(--line2); background: #19191d; }
+        .btn-primary { background: var(--indigo); border-color: var(--indigo); color: #fff; box-shadow: 0 6px 18px -6px rgba(99,102,241,.8); }
+        .btn-primary:hover { background: #5458e8; border-color: #5458e8; }
+        .btn:disabled { opacity: .5; cursor: wait; }
+
+        .tab-pane { display: none; }
+        .tab-pane.active { display: block; animation: paneIn .25s ease; }
+        @keyframes paneIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+        #drawer { position: fixed; top: 0; right: 0; height: 100vh; width: min(1000px, 100vw); background: #0e0e11; border-left: 1px solid var(--line); transform: translateX(100%); transition: transform .28s cubic-bezier(.2,.8,.2,1); z-index: 50; overflow-y: auto; }
+        #drawer.open { transform: translateX(0); }
+        #drawer-bg { position: fixed; inset: 0; background: rgba(0,0,0,.6); backdrop-filter: blur(2px); z-index: 40; display: none; }
+        #drawer-bg.open { display: block; }
+
+        .scroll-y { max-height: 580px; overflow-y: auto; }
+        #er-box svg { max-width: none !important; }
+        #er-box { overflow: auto; max-height: 760px; background: #0c0c0f; border-radius: 14px; border: 1px solid var(--line); padding: 1rem; background-image: radial-gradient(#1d1d23 1px, transparent 1px); background-size: 18px 18px; }
+        .sql { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--tx2); white-space: normal; word-break: break-all; line-height: 1.5; }
+
+        .feed-row.new { animation: rowIn .6s ease; }
+        @keyframes rowIn { from { background: rgba(99,102,241,.12); } to { background: transparent; } }
+
+        /* tailwind-цвета старых вкладок под новую палитру */
+        .text-cyan-400, .text-cyan-300 { color: #a5b4fc !important; }
+        .text-slate-500 { color: var(--tx3) !important; }
+        .text-slate-400 { color: var(--tx2) !important; }
+
+        /* подсказки «как читать» */
+        .hint { position: relative; display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 99px; color: var(--tx3); font-size: 10px; cursor: help; }
+        .hint:hover, .hint:focus-visible { color: var(--tx); }
+        .hint > span { display: none; position: absolute; top: calc(100% + 8px); left: 50%; transform: translateX(-50%); width: 280px; z-index: 20; background: #1c1c22; border: 1px solid var(--line2); border-radius: 12px; padding: 11px 13px; font-size: 12px; line-height: 1.5; color: var(--tx2); font-weight: 400; text-align: left; box-shadow: 0 20px 40px -12px rgba(0,0,0,.8); white-space: normal; }
+        .hint:hover > span, .hint:focus-visible > span { display: block; }
+        .hint > span b { color: #fff; font-weight: 600; }
+
+        .signal { display: grid; grid-template-columns: 28px minmax(0,1fr); gap: 12px; padding: 12px 0; border-bottom: 1px solid #1b1b20; }
+        .signal:last-child { border-bottom: 0; }
+        .signal .si { width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; font-size: 11px; }
+        .signal .t { font-size: 13px; color: #fff; font-weight: 600; }
+        .signal .d { font-size: 12.5px; color: var(--tx2); margin-top: 2px; line-height: 1.5; }
+        .guide-item { padding: 12px 14px; background: #16161a; border: 1px solid #1f1f25; border-radius: 12px; }
+        .guide-item h4 { font-size: 13px; color: #fff; font-weight: 600; margin-bottom: 4px; }
+        .guide-item p { font-size: 12.5px; line-height: 1.55; color: var(--tx2); }
+        details.fold > summary { list-style: none; cursor: pointer; }
+        details.fold > summary::-webkit-details-marker { display: none; }
+        details.fold[open] .fold-chevron { transform: rotate(180deg); }
+        .fold-chevron { transition: transform .2s; }
+
+        /* доступность */
+        button, a, select, summary, [onclick], .clickable { cursor: pointer; }
+        :focus-visible { outline: 2px solid var(--indigo); outline-offset: 2px; border-radius: 8px; }
+        @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+        /* ноутбук: узкая панель с иконками */
+        @media (max-width: 1280px) and (min-width: 768px) {
+            .app { grid-template-columns: 68px minmax(0, 1fr); }
+            .side { padding: 14px 10px; align-items: center; }
+            .brand { padding: 0 0 12px; }
+            .brand > div, .side-group, .keys, .side-item .cnt { display: none; }
+            .side-group { display: block; height: 1px; padding: 0; margin: 10px 6px; background: var(--line); font-size: 0; width: 32px; }
+            .side-item { width: 44px; height: 40px; justify-content: center; padding: 0; font-size: 0; gap: 0; }
+            .side-item i { font-size: 14px; width: auto; }
+            .side-item[data-tip]:hover::after { content: attr(data-tip); position: absolute; left: 60px; background: #1c1c22; border: 1px solid var(--line2); color: #fff; font-size: 12px; padding: 5px 9px; border-radius: 8px; white-space: nowrap; z-index: 60; }
+            .side-item { position: relative; }
         }
-        .pulse-ops { animation: pulseDot 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        /* телефон: панель становится полосой сверху */
+        @media (max-width: 767px) {
+            .app { grid-template-columns: 1fr; }
+            .side { position: sticky; top: 0; z-index: 35; height: auto; flex-direction: row; align-items: center; gap: 4px; padding: 8px 10px; overflow-x: auto; overflow-y: hidden; border-right: 0; border-bottom: 1px solid var(--line); -webkit-overflow-scrolling: touch; }
+            .side-group, .keys, .brand > div, .side-item .cnt { display: none; }
+            .brand { padding: 0 6px 0 0; }
+            .side-item { width: auto; flex-shrink: 0; padding: 9px 11px; font-size: 12.5px; min-height: 40px; }
+            .topbar { position: static; padding: 12px 14px; }
+            .topbar .seg { display: none; }
+            .big { font-size: 26px; }
+            .hint > span { width: 230px; left: auto; right: -10px; transform: none; }
+        }
     </style>
 </head>
-<body class="text-slate-100 antialiased min-h-screen">
-<div class="max-w-[1740px] mx-auto px-4 lg:px-6 py-5 space-y-5">
+<body class="antialiased min-h-screen">
+<div class="app">
 
-    <!-- ХЕДЕР С ТАБЛЕТКОЙ -->
-    <header class="flex flex-wrap items-center justify-between gap-4">
-        <div class="flex items-center gap-4">
-            <div class="flex items-center gap-2.5">
-                <div class="w-8 h-8 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 text-sm">
-                    <i class="fa-solid fa-shield-halved"></i>
-                </div>
-                <h1 class="text-xl font-extrabold tracking-tight text-white">Трафик-контрол</h1>
-            </div>
-            
-            <div class="flex items-center gap-1 rounded-2xl bg-[#0F0F1A] border border-[#1E1E30] p-0.5">
-                <a href="{% url 'stats2975' %}" class="px-3 py-1.5 text-xs font-medium rounded-xl text-slate-400 hover:text-slate-200 transition">Дашборд</a>
-                <a href="{% url 'user_ops_center' %}" class="px-3 py-1.5 text-xs font-medium rounded-xl text-slate-400 hover:text-slate-200 transition">CRM</a>
-                <a href="{% url 'admin_surveys_ops' %}" class="px-3 py-1.5 text-xs font-medium rounded-xl text-slate-400 hover:text-slate-200 transition">Тесты</a>
-                <a href="{% url 'admin_traffic_live' %}" class="px-3 py-1.5 text-xs font-medium rounded-xl bg-cyan-600 text-white shadow-lg shadow-cyan-600/30">Трафик-контрол</a>
-            </div>
-        </div>
-
-        <div class="flex items-center gap-3">
-            <span class="inline-flex items-center gap-2 rounded-full bg-cyan-500/10 border border-cyan-500/30 px-3.5 py-1.5 text-xs font-semibold text-cyan-400 font-mono-nums">
-                <span class="w-2 h-2 rounded-full bg-cyan-400 pulse-ops"></span>
-                <span>RPS: <b id="ticker-rps" class="text-white font-bold">0.0</b></span>
-            </span>
-            <button id="toggle-stream-btn" onclick="toggleAutoStream()" class="text-xs text-slate-400 hover:text-white transition px-2 py-1">
-                <i class="fa-solid fa-pause mr-1"></i> Пауза
-            </button>
-        </div>
-    </header>
-
-    <!-- ЯРУС 1: ТЕЛЕМЕТРИЧЕСКИЙ КОКПИТ (3 КАРТОЧКИ ТОЧНО КАК НА СКРИНЕ 1) -->
-    <div class="grid grid-cols-12 gap-5">
-        
-        <!-- Карточка 1: Профиль трафика (Люди vs Сканеры) -->
-        <div class="col-span-12 lg:col-span-4 ops-card p-5 space-y-4">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 font-mono-nums">Access profile</h3>
-                    <p class="text-[11px] text-slate-500">Живой онлайн за 5 минут</p>
-                </div>
-                <span class="text-xs font-mono-nums text-slate-400">Total: <b id="total-online-val" class="text-white">0</b></span>
-            </div>
-
-            <div class="space-y-3 pt-1">
-                <!-- Люди -->
-                <div class="space-y-1.5">
-                    <div class="flex justify-between text-xs font-mono-nums">
-                        <span class="text-slate-300 flex items-center gap-2">
-                            <span class="w-2 h-2 rounded-full bg-cyan-400"></span> Реальные люди
-                        </span>
-                        <span class="text-cyan-400 font-bold"><span id="metric-online-real">0</span> IP</span>
-                    </div>
-                    <div id="ticks-real-users" class="flex gap-1 overflow-hidden py-1"></div>
-                </div>
-
-                <!-- Боты -->
-                <div class="space-y-1.5">
-                    <div class="flex justify-between text-xs font-mono-nums">
-                        <span class="text-slate-300 flex items-center gap-2">
-                            <span class="w-2 h-2 rounded-full bg-rose-500"></span> Сканеры и парсеры
-                        </span>
-                        <span class="text-rose-400 font-bold"><span id="metric-online-bots">0</span> IP</span>
-                    </div>
-                    <div id="ticks-bots-users" class="flex gap-1 overflow-hidden py-1"></div>
-                </div>
-            </div>
-
-            <div class="flex items-center justify-between text-[11px] font-mono-nums pt-3 border-t border-white/5 text-slate-400">
-                <span>Платформы:</span>
-                <span class="text-slate-200">iOS/Android: <b id="mobile-pct-val" class="text-cyan-400">0%</b> • ПК: <b id="desktop-pct-val">0%</b></span>
-            </div>
-        </div>
-
-        <!-- Карточка 2: Роутинг и Datastores (Сегментированная матрица нагрузки) -->
-        <div class="col-span-12 lg:col-span-4 ops-card p-5 space-y-4">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 font-mono-nums">Route datastores</h3>
-                    <p class="text-[11px] text-slate-500">Нагрузка по узлам платформы</p>
-                </div>
-                <i class="fa-solid fa-server text-xs text-slate-600"></i>
-            </div>
-
-            <div id="routes-tick-matrix" class="space-y-3 pt-1">
-                <div class="text-xs text-slate-500 py-6 text-center">Инициализация узлов...</div>
-            </div>
-
-            <div class="flex items-center justify-between text-[11px] font-mono-nums pt-3 border-t border-white/5 text-slate-500">
-                <span>Шлюз балансировки:</span>
-                <span class="text-emerald-400">Gunicorn / Nginx OK</span>
-            </div>
-        </div>
-
-        <!-- Карточка 3: Индекс чистоты трафика (Cyber Donut HUD) -->
-        <div class="col-span-12 lg:col-span-4 ops-card p-5 flex flex-col justify-between">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 font-mono-nums">Traffic integrity</h3>
-                    <p class="text-[11px] text-slate-500">Индекс легитимности запросов</p>
-                </div>
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono-nums">SECURE</span>
-            </div>
-
-            <div class="flex items-center justify-center gap-6 py-3">
-                <div class="w-32 h-32 relative flex-shrink-0">
-                    <canvas id="integrity-donut-chart"></canvas>
-                    <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                        <span id="donut-center-pct" class="text-2xl font-black text-white font-mono-nums">100%</span>
-                        <span class="text-[9px] uppercase tracking-widest text-slate-500 font-mono-nums">Clean</span>
-                    </div>
-                </div>
-
-                <div class="space-y-2 text-xs font-mono-nums min-w-[120px]">
-                    <div class="flex items-center justify-between gap-2">
-                        <span class="text-slate-400 flex items-center gap-1.5">
-                            <span class="w-2 h-2 rounded-full bg-cyan-400"></span> Люди
-                        </span>
-                        <span id="donut-legend-clean" class="text-white font-bold">0</span>
-                    </div>
-                    <div class="flex items-center justify-between gap-2">
-                        <span class="text-slate-400 flex items-center gap-1.5">
-                            <span class="w-2 h-2 rounded-full bg-rose-500"></span> Боты
-                        </span>
-                        <span id="donut-legend-bots" class="text-rose-400 font-bold">0</span>
-                    </div>
-                    <div class="flex items-center justify-between gap-2 pt-1 border-t border-white/5 text-[11px]">
-                        <span class="text-slate-500">Уникальных:</span>
-                        <span id="donut-legend-uniques" class="text-cyan-400 font-bold">0</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="text-[10px] text-slate-500 font-mono-nums text-center">
-                Фильтрация атак в реальном времени активна
-            </div>
-        </div>
-
-    </div>
-
-    <!-- ЯРУС 2: ТАЙМЛАЙН СПЛАЙН + МАТРИЦА УГРОЗ (КАК НА СКРИНЕ 2 И 3) -->
-    <div class="grid grid-cols-12 gap-5">
-        
-        <!-- Неоновый сплайн за 30 минут (8 колонок) -->
-        <div class="col-span-12 lg:col-span-8 ops-card p-5 space-y-3">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 font-mono-nums">Traffic flow timeline</h3>
-                    <p class="text-[11px] text-slate-500">Непрерывный поток событий (окно 30 минут, шаг 2м)</p>
-                </div>
-                <div class="flex items-center gap-4 text-xs font-mono-nums">
-                    <span class="flex items-center gap-1.5 text-cyan-400">
-                        <span class="w-2 h-2 rounded-full bg-cyan-400"></span> Real Users
-                    </span>
-                    <span class="flex items-center gap-1.5 text-rose-400">
-                        <span class="w-2 h-2 rounded-full bg-rose-500"></span> Threat/Bot hits
-                    </span>
-                </div>
-            </div>
-
-            <div class="h-60 relative w-full pt-1">
-                <canvas id="live-timeline-chart"></canvas>
-            </div>
-        </div>
-
-        <!-- Матричная тепловая карта активности (4 колонки - Threats Tactics) -->
-        <div class="col-span-12 lg:col-span-4 ops-card p-5 space-y-3 flex flex-col justify-between">
+    <!-- ================= БОКОВАЯ ПАНЕЛЬ ================= -->
+    <aside class="side">
+        <div class="brand">
+            <img src="{% static 'img/logo.png' %}" alt="Летучка" class="brand-logo-img">
             <div>
-                <div class="flex items-center justify-between mb-1">
-                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 font-mono-nums">Threat & load matrix</h3>
-                    <span class="text-[10px] text-slate-500 font-mono-nums">36 buckets</span>
-                </div>
-                <p class="text-[11px] text-slate-500 mb-3">Плотность входящих запросов по кластерам</p>
-
-                <!-- Сетка ячеек матрицы -->
-                <div id="tactics-grid" class="grid grid-cols-6 gap-1.5 p-2 rounded-xl bg-[#0B0F17] border border-white/5">
-                    <!-- Заполняется через JS -->
-                </div>
-            </div>
-
-            <div class="flex items-center justify-between text-[10px] font-mono-nums text-slate-500 pt-2 border-t border-white/5">
-                <span>Низкая нагрузка</span>
-                <div class="flex gap-1 items-center">
-                    <span class="w-2 h-2 rounded-xs bg-[#16162a]"></span>
-                    <span class="w-2 h-2 rounded-xs bg-cyan-900"></span>
-                    <span class="w-2 h-2 rounded-xs bg-cyan-500"></span>
-                    <span class="w-2 h-2 rounded-xs bg-rose-500"></span>
-                </div>
-                <span>Пик / Атака</span>
+                <div class="text-[14px] font-bold text-white leading-tight">Летучка</div>
+                <div class="text-[11.5px]" style="color:var(--tx3)">Трафик-контрол</div>
             </div>
         </div>
 
-    </div>
+        <div class="side-group">Пульс</div>
+        <button class="side-item tab-btn active" data-tab="traffic" data-tip="Трафик"><i class="fa-solid fa-wave-square"></i>Трафик <span class="cnt" id="side-online">—</span></button>
 
-    <!-- ЯРУС 3: ТАБЛИЦА СРАВНЕНИЯ ПЕРИОДОВ (DoD & АППН) -->
-    <div class="ops-card p-5 space-y-3">
-        <div class="flex items-center justify-between">
-            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 font-mono-nums">
-                Period comparison telemetry (To-minute sync)
-            </h3>
-            <span class="text-xs text-slate-500 font-mono-nums">DoD (Вчера к этому часу) • АППН (7 дней назад к этому часу)</span>
+        <div class="side-group">База данных</div>
+        <button class="side-item tab-btn" data-tab="db" data-tip="Обзор базы"><i class="fa-solid fa-database"></i>Обзор базы <span class="cnt" id="side-dbsize"></span></button>
+        <button class="side-item tab-btn" data-tab="cleanup" data-tip="Чистка"><i class="fa-solid fa-broom"></i>Чистка <span class="cnt hot hidden" id="cleanup-badge"></span></button>
+        <button class="side-item tab-btn" data-tab="schema" data-tip="Схема"><i class="fa-solid fa-diagram-project"></i>Схема</button>
+
+        <div class="side-group">Скорость</div>
+        <button class="side-item tab-btn" data-tab="perf" data-tip="Django"><i class="fa-solid fa-gauge-high"></i>Django</button>
+        <button class="side-item tab-btn" data-tab="sql" data-tip="SQL-запросы"><i class="fa-solid fa-code"></i>SQL-запросы</button>
+        <button class="side-item tab-btn" data-tab="live" data-tip="Postgres live"><i class="fa-solid fa-heart-pulse"></i>Postgres live <span class="cnt" id="side-tps"></span></button>
+
+        <div class="side-group">Разделы</div>
+        <a class="side-item" href="{% url 'stats2975' %}" data-tip="Дашборд"><i class="fa-solid fa-table-columns"></i>Дашборд</a>
+        <a class="side-item" href="{% url 'user_ops_center' %}" data-tip="CRM"><i class="fa-solid fa-user-group"></i>CRM</a>
+        <a class="side-item" href="{% url 'admin_surveys_ops' %}" data-tip="Тесты"><i class="fa-solid fa-list-check"></i>Тесты</a>
+
+        <div class="keys mt-6">
+            <div class="text-[12.5px] font-semibold text-white mb-2.5">Горячие клавиши</div>
+            <div class="space-y-2 text-[12px]" style="color:var(--tx2)">
+                <div class="flex justify-between items-center">Разделы <span class="flex gap-1"><span class="key">1</span><span class="key">…</span><span class="key">7</span></span></div>
+                <div class="flex justify-between items-center">Пауза потока <span class="key">P</span></div>
+                <div class="flex justify-between items-center">Новый снимок <span class="key">S</span></div>
+                <div class="flex justify-between items-center">Закрыть карточку <span class="key">Esc</span></div>
+            </div>
+        </div>
+    </aside>
+
+    <main class="main">
+        <!-- ================= ВЕРХНЯЯ ПАНЕЛЬ ================= -->
+        <header class="topbar">
+            <div class="flex items-center gap-3 min-w-0">
+                <div class="ic" style="width:34px;height:34px"><i id="top-icon" class="fa-solid fa-wave-square"></i></div>
+                <div class="min-w-0">
+                    <h1 id="top-title" class="text-[15px] font-semibold text-white leading-tight">Пульс трафика</h1>
+                    <div class="text-[12px] truncate" style="color:var(--tx3)">
+                        Обновлено в <span id="top-updated" class="mono" style="color:var(--tx2)">—</span> по Москве
+                        · RPS <b id="ticker-rps" class="mono text-white font-semibold">0</b>
+                        · TPS <b id="ticker-tps" class="mono text-white font-semibold">—</b>
+                        · соединений <b id="ticker-conn" class="mono text-white font-semibold">—</b>
+                    </div>
+                </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+                <button id="toggle-stream-btn" onclick="toggleAutoStream()" class="btn"><span id="live-dot" class="live-dot"></span><span id="live-label">Live · 3 с</span></button>
+                <button class="btn" onclick="refreshCurrent()"><i class="fa-solid fa-rotate-right text-[11px]"></i>Обновить</button>
+                <div class="seg soft">
+                    <a href="{% url 'stats2975' %}">Дашборд</a>
+                    <a href="{% url 'user_ops_center' %}">CRM</a>
+                    <a href="{% url 'admin_surveys_ops' %}">Тесты</a>
+                    <a href="{% url 'admin_traffic_live' %}" class="on" style="background:var(--indigo);color:#fff">Трафик</a>
+                </div>
+            </div>
+        </header>
+
+        <div class="content space-y-6">
+
+    <!-- ==================================================================== -->
+    <!-- ПУЛЬС ТРАФИКА                                                        -->
+    <!-- ==================================================================== -->
+    <section id="tab-traffic" class="tab-pane active space-y-7">
+
+        <!-- СВОДКА: статус + сигналы-карточки -->
+        <div>
+            <div class="sec-head flex flex-wrap items-end justify-between gap-3">
+                <div><h2>Что сейчас происходит</h2><p>Выводы по цифрам, пересчитываются каждые 3 секунды</p></div>
+                <button class="seg soft" type="button" id="guide-btn" aria-expanded="false" aria-controls="guide"><span><i class="fa-solid fa-book-open mr-1.5"></i>Как читать пульс</span></button>
+            </div>
+            <div class="grid grid-cols-12 gap-4 items-stretch">
+                <div class="w col-span-12 md:col-span-5 xl:col-span-3" style="--g:var(--amber)">
+                    <div class="w-head"><span class="w-label"><span class="ic"><i class="fa-solid fa-gauge-high"></i></span>Статус</span><span class="badge flat" id="signals-count">—</span></div>
+                    <div class="wmid">
+                        <div class="status-word" id="st-word">…</div>
+                        <div class="wsub !mt-0" id="st-sub">считаю</div>
+                        <div class="ticks lg" id="st-seg"></div>
+                        <div class="mleg" id="st-leg"></div>
+                    </div>
+                </div>
+                <div class="col-span-12 md:col-span-7 xl:col-span-9 grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-4" id="signals"></div>
+            </div>
+            <div class="ops-card p-5 mt-4 hidden" id="guide">
+                <div class="flex items-center gap-2.5 mb-4"><div class="ic" style="color:var(--blue)"><i class="fa-solid fa-book-open"></i></div><div><div class="card-title">Как читать пульс</div><div class="card-sub">Шесть правил, чтобы цифры превращались в решения</div></div></div>
+                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2.5">
+                    <div class="guide-item"><h4>Сравнивай, а не смотри</h4><p>Само число «52 просмотра» ничего не значит. Смотри на плашку рядом: это изменение к вчера <b>на ту же минуту</b>. Зелёная — растём, красная — проседаем.</p></div>
+                    <div class="guide-item"><h4>Вчера — шум, неделя — тренд</h4><p>Вчера мог быть выходной или праздник. Сравнение с тем же днём неделю назад честнее: тот же день недели, тот же час.</p></div>
+                    <div class="guide-item"><h4>Малые числа обманывают</h4><p>При 7 посетителях вчера и 12 сегодня рост «+71%» — это 5 человек. Пока посетителей меньше сотни, проценты не важны, смотри на абсолютные числа.</p></div>
+                    <div class="guide-item"><h4>Боты — это не беда</h4><p>Поисковики и мониторинги — нормальный фон. Тревожно, если один адрес делает сотни хитов по разным страницам: это парсер. Найди его в «Самых активных адресах» и заблокируй в CRM.</p></div>
+                    <div class="guide-item"><h4>Глубина = интерес</h4><p>«На посетителя» — сколько страниц открывает человек. Около 1 — зашёл и ушёл. 3 и больше — пользуется сервисом.</p></div>
+                    <div class="guide-item"><h4>Ночью ноль — это норма</h4><p>Онлайн считает только последние 5 минут. В 3 часа ночи 0 людей — не авария. Авария — это ноль днём при живых ботах: значит, сломался сайт или трекинг.</p></div>
+                </div>
+            </div>
         </div>
 
-        <div class="overflow-x-auto">
-            <table class="w-full text-left text-xs">
-                <thead>
-                    <tr class="text-[10px] uppercase font-mono-nums text-slate-500 border-b border-[#1E1E30]">
-                        <th class="pb-2.5 font-medium">Метрика</th>
-                        <th class="pb-2.5 font-medium">Сегодня (Fact)</th>
-                        <th class="pb-2.5 font-medium">Вчера (To-Minute)</th>
-                        <th class="pb-2.5 font-medium">Динамика DoD (ВН)</th>
-                        <th class="pb-2.5 font-medium">АППН (7д назад)</th>
-                        <th class="pb-2.5 font-medium">Динамика WoW (АППН)</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-[#1E1E30]/60 font-mono-nums">
-                    <tr>
-                        <td class="py-2.5 font-sans font-medium text-slate-200">Уникальные посетители (Люди)</td>
-                        <td id="tele-uniques-current" class="py-2.5 font-bold text-cyan-400 text-sm">0</td>
-                        <td id="tele-uniques-yest" class="py-2.5 text-slate-400">0</td>
-                        <td id="tele-uniques-dod" class="py-2.5 font-bold">0%</td>
-                        <td id="tele-uniques-appn" class="py-2.5 text-slate-400">0</td>
-                        <td id="tele-uniques-wow" class="py-2.5 font-bold">0%</td>
-                    </tr>
-                    <tr>
-                        <td class="py-2.5 font-sans font-medium text-slate-200">Просмотры / Хиты (Люди)</td>
-                        <td id="tele-hits-current" class="py-2.5 font-bold text-white text-sm">0</td>
-                        <td id="tele-hits-yest" class="py-2.5 text-slate-400">0</td>
-                        <td id="tele-hits-dod" class="py-2.5 font-bold">0%</td>
-                        <td id="tele-hits-appn" class="py-2.5 text-slate-400">0</td>
-                        <td id="tele-hits-wow" class="py-2.5 font-bold">0%</td>
-                    </tr>
-                    <tr>
-                        <td class="py-2.5 font-sans font-medium text-slate-200">Запросы ботов и сканеров</td>
-                        <td id="tele-bots-current" class="py-2.5 font-bold text-rose-400 text-sm">0</td>
-                        <td id="tele-bots-yest" class="py-2.5 text-slate-400">0</td>
-                        <td id="tele-bots-dod" class="py-2.5 font-bold">0%</td>
-                        <td id="tele-bots-appn" class="py-2.5 text-slate-400">0</td>
-                        <td id="tele-bots-wow" class="py-2.5 font-bold">0%</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
+        <div>
+            <div class="sec-head"><h2>Обзор</h2><p id="traffic-period">Сегодня с 00:00 по Москве. Сравнение со вчера и с тем же днём неделю назад к этой же минуте</p></div>
 
-    <!-- ЯРУС 4: ЖИВАЯ ТАБЛИЦА ПОТОКА (CYBER TELEMETRY FEED) -->
-    <div class="ops-card p-5 space-y-3">
-        <div class="flex items-center justify-between">
+            <!-- 4 главных виджета -->
+            <div class="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-4 gap-4">
+                <div class="w" style="--g:var(--green)">
+                    <div class="w-head">
+                        <span class="w-label"><span class="ic"><i class="fa-solid fa-signal"></i></span>Онлайн сейчас<span class="hint" tabindex="0"><i class="fa-regular fa-circle-question"></i><span>Сколько <b>разных адресов людей</b> открывали страницы за последние 5 минут. Это не «сколько вкладок открыто»: человек, который читает тест 10 минут без кликов, сюда не попадёт. Столбики — хиты людей по 2 минуты за последний час.</span></span></span>
+                        <span class="badge flat" id="k-online-badge">5 мин</span>
+                    </div>
+                    <div><div class="display" id="k-online">0</div><div class="wsub" id="k-online-sub">людей на сайте</div></div>
+                    <div class="wmid">
+                        <div class="mlabel">хиты людей · последний час</div>
+                        <div class="hb" id="sp-online"></div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="tile"><div class="l">RPS</div><div class="v" id="k-rps">0</div></div>
+                        <div class="tile"><div class="l">Ботов онлайн</div><div class="v" id="k-online-bots">0</div></div>
+                    </div>
+                </div>
+
+                <div class="w" style="--g:var(--indigo)">
+                    <div class="w-head">
+                        <span class="w-label"><span class="ic"><i class="fa-solid fa-user"></i></span>Уникальные посетители<span class="hint" tabindex="0"><i class="fa-regular fa-circle-question"></i><span>Разные IP-адреса людей с 00:00 по Москве. Одна семья за одним роутером считается одним посетителем, а телефон, сменивший Wi-Fi на мобильную сеть, — двумя. Плашка — изменение к вчера на эту же минуту.</span></span></span>
+                        <span class="badge flat" id="k-uniq-badge">—</span>
+                    </div>
+                    <div><div class="display" id="k-uniq">0</div><div class="wsub" id="k-uniq-sub">вчера к этой минуте —</div></div>
+                    <div class="wmid"><div class="cb" id="sp-uniq"></div></div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="tile"><div class="l">Неделю назад</div><div class="v" id="k-uniq-appn">0</div></div>
+                        <div class="tile"><div class="l">К неделе</div><div class="v" id="k-uniq-wow">—</div></div>
+                    </div>
+                </div>
+
+                <div class="w" style="--g:var(--blue)">
+                    <div class="w-head">
+                        <span class="w-label"><span class="ic"><i class="fa-solid fa-eye"></i></span>Просмотры людей<span class="hint" tabindex="0"><i class="fa-regular fa-circle-question"></i><span>Сколько раз люди открыли отслеживаемые страницы с 00:00. Кольцо — с каких устройств смотрят, в центре — средняя глубина: страниц на одного посетителя.</span></span></span>
+                        <span class="badge flat" id="k-hits-badge">—</span>
+                    </div>
+                    <div><div class="display" id="k-hits">0</div><div class="wsub" id="k-hits-sub">вчера к этой минуте —</div></div>
+                    <div class="wmid">
+                        <div class="flex items-center gap-5">
+                            <div class="rg" id="rg-depth" style="width:132px;height:132px"></div>
+                            <div class="mleg flex-col !gap-2.5" id="rg-depth-leg"></div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="tile"><div class="l">На посетителя</div><div class="v" id="k-depth">—</div></div>
+                        <div class="tile"><div class="l">К неделе</div><div class="v" id="k-hits-wow">—</div></div>
+                    </div>
+                </div>
+
+                <div class="w" style="--g:var(--rose)">
+                    <div class="w-head">
+                        <span class="w-label"><span class="ic"><i class="fa-solid fa-robot"></i></span>Боты и сканеры<span class="hint" tabindex="0"><i class="fa-regular fa-circle-question"></i><span>Хиты, которые трекер распознал как ботов по User-Agent: поисковики, мониторинги, парсеры, сканеры уязвимостей. Здесь <b>рост — плохо</b>, поэтому плашка красная при росте. Шкала — доля ботов среди всех хитов за сегодня.</span></span></span>
+                        <span class="badge flat" id="k-bots-badge">—</span>
+                    </div>
+                    <div><div class="display" id="k-bots">0</div><div class="wsub" id="k-bots-sub">вчера к этой минуте —</div></div>
+                    <div class="wmid">
+                        <div class="flex items-baseline justify-between"><span class="mlabel">доля ботов</span><span class="mono text-[13px] text-white" id="k-bots-share">—</span></div>
+                        <div class="ticks lg" id="tk-bots"></div>
+                        <div class="mleg" id="tk-bots-leg"></div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="tile"><div class="l">Чистый трафик</div><div class="v" id="k-clean">—</div></div>
+                        <div class="tile"><div class="l">К неделе</div><div class="v" id="k-bots-wow">—</div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- малые виджеты -->
+            <div id="mini-stats" class="grid grid-cols-2 md:grid-cols-3 2xl:grid-cols-6 gap-4 mt-4"></div>
+        </div>
+
+        <!-- динамика -->
+        <div>
+            <div class="sec-head"><h2>Динамика</h2><p>Последний час, шаг 2 минуты. Пунктир — среднее за час</p></div>
+            <div class="grid grid-cols-12 gap-4">
+                <div class="col-span-12 2xl:col-span-8 ops-card p-5">
+                    <div class="flex flex-wrap items-start justify-between gap-3">
+                        <div class="flex items-center gap-2.5">
+                            <div class="ic"><i class="fa-solid fa-chart-line"></i></div>
+                            <div><div class="card-title flex items-center gap-1.5"><span id="tl-title">Хиты людей</span><span class="hint" tabindex="0"><i class="fa-regular fa-circle-question"></i><span>Каждый столбик — хиты за 2 минуты. Пунктир — среднее за час: столбики выше пунктира — всплеск. Плашка у большого числа сравнивает последние 30 минут с предыдущими 30.</span></span></div><div class="card-sub">за час, по 2 минуты</div></div>
+                        </div>
+                        <div class="seg soft" id="tl-mode">
+                            <button data-m="real" class="on">Люди</button>
+                            <button data-m="bots">Боты</button>
+                            <button data-m="both">Вместе</button>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap items-end justify-between gap-3 mt-4">
+                        <div class="flex items-baseline gap-2.5"><span class="big" id="tl-total">0</span><span class="badge flat" id="tl-badge">—</span></div>
+                        <div class="legend !mt-0" id="tl-legend"></div>
+                    </div>
+                    <div class="h-[300px] relative mt-3"><canvas id="live-timeline-chart"></canvas></div>
+                </div>
+
+                <div class="col-span-12 2xl:col-span-4 ops-card p-5 flex flex-col">
+                    <div class="flex items-center gap-2.5">
+                        <div class="ic"><i class="fa-solid fa-layer-group"></i></div>
+                        <div><div class="card-title flex items-center gap-1.5">Состав трафика<span class="hint" tabindex="0"><i class="fa-regular fa-circle-question"></i><span>Полоски — пропорции. Если «Онлайн сейчас» целиком красный, на сайте прямо сейчас только боты.</span></span></div><div class="card-sub">Кто и с чего заходит сегодня</div></div>
+                    </div>
+                    <div class="space-y-6 mt-5 flex-1" id="composition"></div>
+                    <div class="flex items-center gap-5 pt-4 mt-4" style="border-top:1px solid var(--line)">
+                        <div class="w-24 h-24 relative flex-shrink-0">
+                            <canvas id="integrity-donut-chart"></canvas>
+                            <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                <span id="donut-center-pct" class="text-[17px] font-bold text-white num">100%</span>
+                                <span class="text-[10px]" style="color:var(--tx3)">люди</span>
+                            </div>
+                        </div>
+                        <div class="text-[12.5px] leading-relaxed" style="color:var(--tx2)" id="integrity-text">—</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- срезы -->
+        <div>
+            <div class="sec-head"><h2>Срезы</h2><p>За сегодня. Клик по адресу — фильтр ленты</p></div>
+            <div class="grid grid-cols-12 gap-4">
+                <div class="col-span-12 xl:col-span-6 ops-card p-5">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2.5"><div class="ic"><i class="fa-solid fa-route"></i></div><div><div class="card-title">Страницы</div><div class="card-sub">Куда ходят люди</div></div></div>
+                        <span class="text-[12px] mono" style="color:var(--tx3)" id="pages-total"></span>
+                    </div>
+                    <div id="routes-tick-matrix" class="mt-3"><div class="text-[12px] py-6 text-center" style="color:var(--tx3)">Загрузка…</div></div>
+                </div>
+                <div class="col-span-12 xl:col-span-6 ops-card p-5">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2.5"><div class="ic"><i class="fa-solid fa-network-wired"></i></div><div><div class="card-title flex items-center gap-1.5">Самые активные адреса<span class="hint" tabindex="0"><i class="fa-regular fa-circle-question"></i><span>Человек обычно делает десятки хитов по 3–8 страницам. Сотни хитов с одного адреса — парсер или бот, даже если помечен как «человек». Клик по адресу — посмотреть его хиты в ленте.</span></span></div><div class="card-sub">Хиты и число разных страниц</div></div></div>
+                        <div class="seg soft" id="ip-mode"><button data-m="all" class="on">Все</button><button data-m="human">Люди</button><button data-m="bot">Боты</button></div>
+                    </div>
+                    <div id="top-ips" class="mt-3"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- сравнение и лента -->
+        <div class="grid grid-cols-12 gap-4">
+            <div class="col-span-12 2xl:col-span-5 ops-card p-5">
+                <div class="flex items-center gap-2.5 mb-4"><div class="ic"><i class="fa-solid fa-scale-balanced"></i></div><div><div class="card-title flex items-center gap-1.5">Сравнение периодов<span class="hint" tabindex="0"><i class="fa-regular fa-circle-question"></i><span>Все три столбца — с полуночи до текущей минуты своего дня. Поэтому утром сравнение честное, а не «полдня против целого дня».</span></span></div><div class="card-sub">Минута в минуту: вчера и тот же день неделю назад</div></div></div>
+                <table class="dt">
+                    <thead><tr><th>Показатель</th><th class="num">Сегодня</th><th class="num">Вчера</th><th class="num">Δ</th><th class="num">Неделю назад</th><th class="num">Δ</th></tr></thead>
+                    <tbody id="compare-body"></tbody>
+                </table>
+                <div class="mt-5"><div class="h-44 relative"><canvas id="compare-chart"></canvas></div></div>
+            </div>
+            <div class="col-span-12 2xl:col-span-7 ops-card p-5">
+                <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+                    <div class="flex items-center gap-2.5"><div class="ic"><span class="live-dot" id="feed-dot"></span></div><div><div class="card-title">Живая лента</div><div class="card-sub" id="feed-sub">30 последних хитов</div></div></div>
+                    <div class="flex items-center gap-2">
+                        <span id="feed-filter-ip" class="hidden chip chip-cyan clickable" onclick="setFeedIp(null)"></span>
+                        <div class="seg soft" id="feed-mode"><button data-m="all" class="on">Все</button><button data-m="human">Люди</button><button data-m="bot">Боты</button></div>
+                    </div>
+                </div>
+                <div class="overflow-x-auto scroll-y" style="max-height:470px">
+                    <table class="dt min-w-[640px]">
+                        <thead><tr><th>Время</th><th>Адрес</th><th>Страница</th><th>Платформа</th><th class="num">Тип</th></tr></thead>
+                        <tbody id="live-feed-tbody"><tr><td colspan="5" class="py-8 text-center">Подключение…</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- ==================================================================== -->
+    <!-- БАЗА ДАННЫХ                                                          -->
+    <!-- ==================================================================== -->
+    <section id="tab-db" class="tab-pane space-y-5">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+            <div class="text-xs text-slate-400 font-mono-nums">
+                Снимок <b id="snap-id" class="text-white">—</b> от <b id="snap-time" class="text-white">—</b>
+                <span class="text-slate-600">·</span> собран за <b id="snap-ms" class="text-white">—</b>
+                <span class="text-slate-600">·</span> <span id="snap-db" class="text-slate-300"></span>
+            </div>
             <div class="flex items-center gap-2">
-                <i class="fa-solid fa-terminal text-cyan-400 text-xs"></i>
-                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300 font-mono-nums">Live telemetry stream</h3>
+                <select id="snap-select" class="inp"></select>
+                <button id="snap-btn" class="btn btn-primary" onclick="takeSnapshot()"><i class="fa-solid fa-camera mr-1"></i> Снять снимок</button>
             </div>
-            <span class="text-xs text-slate-500 font-mono-nums">15 последних транзакций</span>
         </div>
 
-        <div class="overflow-x-auto">
-            <table class="w-full text-left text-xs min-w-[720px]">
-                <thead>
-                    <tr class="text-[10px] uppercase font-mono-nums text-slate-500 border-b border-[#1E1E30]">
-                        <th class="pb-2.5">Timestamp</th>
-                        <th class="pb-2.5">Source IP</th>
-                        <th class="pb-2.5">Target route</th>
-                        <th class="pb-2.5">Platform</th>
-                        <th class="pb-2.5">Signature</th>
-                        <th class="pb-2.5 text-right">Risk meter</th>
-                    </tr>
-                </thead>
-                <tbody id="live-feed-tbody" class="divide-y divide-[#1E1E30]/60">
-                    <tr><td colspan="6" class="py-8 text-center text-slate-500 font-mono-nums">Подключение к шине телеметрии...</td></tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
+        <div id="db-kpis" class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-3"></div>
 
+        <div class="grid grid-cols-12 gap-5">
+            <div class="col-span-12 xl:col-span-8 ops-card p-5 space-y-3">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <div><h3 class="card-title">Карта места на диске</h3><p class="card-sub">Площадь — полный размер таблицы (данные + индексы + TOAST). Клик — подробности</p></div>
+                    <div class="flex items-center gap-2 text-[11px]">
+                        <select id="treemap-color" class="inp">
+                            <option value="kind">Цвет: тип проблемы</option>
+                            <option value="dead">Цвет: мёртвые строки</option>
+                            <option value="idx">Цвет: доля индексов</option>
+                            <option value="activity">Цвет: активность</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="h-[440px] relative"><canvas id="treemap"></canvas></div>
+                <div id="treemap-legend" class="flex flex-wrap gap-3 text-[11px] text-slate-400 font-mono-nums"></div>
+            </div>
+            <div class="col-span-12 xl:col-span-4 ops-card p-5 space-y-3">
+                <div><h3 class="card-title">Из чего состоит вес</h3><p class="card-sub">Топ-15 таблиц: данные / индексы / TOAST</p></div>
+                <div class="h-[470px] relative"><canvas id="composition-chart"></canvas></div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-12 gap-5">
+            <div class="col-span-12 lg:col-span-7 ops-card p-5 space-y-3">
+                <div class="flex items-center justify-between">
+                    <div><h3 class="card-title">Рост базы по снимкам</h3><p class="card-sub">Общий размер и топ-6 таблиц. Снимки — по кнопке или cron</p></div>
+                    <select id="growth-metric" class="inp"><option value="bytes">Размер</option><option value="rows">Строки</option></select>
+                </div>
+                <div class="h-72 relative"><canvas id="growth-chart"></canvas></div>
+                <div id="growth-note" class="text-[11px] text-slate-500"></div>
+            </div>
+            <div class="col-span-12 lg:col-span-5 ops-card p-5 space-y-3">
+                <div><h3 class="card-title">Чтение vs запись</h3><p class="card-sub">По каждой таблице с момента сброса статистики. Размер точки — вес таблицы</p></div>
+                <div class="h-72 relative"><canvas id="rw-chart"></canvas></div>
+            </div>
+        </div>
+
+        <div class="ops-card p-5 space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <div><h3 class="card-title">Все таблицы</h3><p class="card-sub">Клик по заголовку — сортировка, по строке — карточка таблицы</p></div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <input id="tbl-search" class="inp w-56" placeholder="Поиск по таблице или модели">
+                    <select id="tbl-flag" class="inp">
+                        <option value="">Все</option>
+                        <option value="orphan">Нет модели Django</option>
+                        <option value="empty">Пустые</option>
+                        <option value="never_read">Ни разу не читались</option>
+                        <option value="bloated">Раздуты (мёртвые строки)</option>
+                        <option value="seq_heavy">Много seq scan</option>
+                        <option value="index_heavy">Индексы тяжелее данных</option>
+                    </select>
+                </div>
+            </div>
+            <div class="overflow-x-auto scroll-y"><table class="dt" id="tables-table"></table></div>
+        </div>
+
+        <div class="grid grid-cols-12 gap-5">
+            <div class="col-span-12 xl:col-span-7 ops-card p-5 space-y-3">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div><h3 class="card-title">Самые тяжёлые поля</h3><p class="card-sub">Оценка: средняя ширина × строки × (1 − доля NULL), по pg_stats</p></div>
+                    <input id="col-search" class="inp w-56" placeholder="Поиск по полю или таблице">
+                </div>
+                <div class="overflow-x-auto scroll-y"><table class="dt" id="columns-table"></table></div>
+            </div>
+            <div class="col-span-12 xl:col-span-5 ops-card p-5 space-y-3">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div><h3 class="card-title">Индексы</h3><p class="card-sub">Размер, число использований, проблемы</p></div>
+                    <select id="idx-flag" class="inp"><option value="">Все</option><option value="unused">Не используются</option><option value="duplicate">Дубли</option><option value="covered_by_prefix">Покрыты другим</option></select>
+                </div>
+                <div class="overflow-x-auto scroll-y"><table class="dt" id="indexes-table"></table></div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-12 gap-5">
+            <div class="col-span-12 lg:col-span-6 ops-card p-5 space-y-3">
+                <div><h3 class="card-title">Типы данных</h3><p class="card-sub">Сколько полей каждого типа во всей базе</p></div>
+                <div class="h-64 relative"><canvas id="types-chart"></canvas></div>
+            </div>
+            <div class="col-span-12 lg:col-span-6 ops-card p-5 space-y-3">
+                <div><h3 class="card-title">Настройки сервера</h3><p class="card-sub">Ключевые параметры PostgreSQL и счётчики с последнего сброса</p></div>
+                <div id="server-settings" class="grid grid-cols-2 gap-x-6 gap-y-1.5 text-xs font-mono-nums"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================================================================== -->
+    <!-- ЧИСТКА                                                               -->
+    <!-- ==================================================================== -->
+    <section id="tab-cleanup" class="tab-pane space-y-5">
+        <div class="ops-card p-5">
+            <p class="text-sm text-slate-300 leading-relaxed max-w-4xl">
+                Кандидаты на удаление и доработку, найденные по статистике. Счётчики чтения и использования индексов идут
+                с момента последнего сброса статистики (<b id="stats-reset" class="text-white font-mono-nums">—</b>):
+                если сброс был вчера, «ни разу не использовался» значит «не использовался со вчера». Перед удалением
+                проверь код и миграции.
+            </p>
+        </div>
+        <details class="fold ops-card p-5">
+            <summary class="flex items-center justify-between gap-3">
+                <div class="flex items-center gap-2.5"><div class="ic" style="color:var(--blue)"><i class="fa-solid fa-graduation-cap"></i></div><div><div class="card-title">Что такое индексы и как проверить, что индекс не нужен</div><div class="card-sub">Короткая памятка перед удалением</div></div></div>
+                <i class="fa-solid fa-chevron-down fold-chevron text-[12px]" style="color:var(--tx3)"></i>
+            </summary>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-2.5 mt-4">
+                <div class="guide-item"><h4>Индекс — это оглавление</h4><p>Без индекса Postgres ищет строку перебором всей таблицы (seq scan). Индекс — отсортированная копия одной-двух колонок со ссылками на строки, как алфавитный указатель в книге. Чтение быстрее, но <b>каждая вставка обновляет все индексы таблицы</b> и они занимают место.</p></div>
+                <div class="guide-item"><h4>Откуда странные имена</h4><p><b>idx_16536_…</b> и <b>sqlite_autoindex</b> — база когда-то переехала из SQLite через pgloader, он так называет перенесённые индексы. <b>…_b59c7136</b> — Django генерирует хеш в имени для <code>db_index=True</code>. <b>survey_created</b> и подобные — заданы руками в <code>Meta.indexes</code>.</p></div>
+                <div class="guide-item"><h4>Как проверить «не используется»</h4><p>1) Посмотри дату сброса статистики вверху: счётчик <b>0 раз</b> считается с неё. 2) Подожди 2–4 недели обычной работы, включая редкие страницы. 3) Найди в коде запросы по этой колонке и прогони <code>EXPLAIN</code>: если в плане нет имени индекса — он не помогает. 4) Сначала убери его из модели и сделай миграцию, а не <code>DROP</code> руками.</p></div>
+            </div>
+            <pre class="mt-3 p-4 rounded-xl text-[11.5px] mono overflow-x-auto" style="background:#0c0c0f;border:1px solid var(--line);color:#a5b4fc">-- в psql или DBeaver: использует ли поиск по названию теста индекс survey_title_trgm
+EXPLAIN ANALYZE
+SELECT id FROM askify_service_survey WHERE UPPER(title::text) LIKE UPPER('%физика%');
+
+-- сколько раз индекс использовался и с какого момента считается
+SELECT indexrelname, idx_scan, (SELECT stats_reset FROM pg_stat_database WHERE datname = current_database())
+FROM pg_stat_user_indexes WHERE relname = 'askify_service_survey';</pre>
+        </details>
+        <div id="cleanup-grid" class="grid grid-cols-12 gap-5"></div>
+    </section>
+
+    <!-- ==================================================================== -->
+    <!-- СХЕМА                                                                -->
+    <!-- ==================================================================== -->
+    <section id="tab-schema" class="tab-pane space-y-5">
+        <div class="ops-card p-5 space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <div><h3 class="card-title">ER-схема</h3><p class="card-sub">Сплошная линия — внешний ключ, пунктир — неявная связь по одноимённому уникальному полю (id_staff, survey_id…)</p></div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <select id="er-focus" class="inp"><option value="">Вся база</option></select>
+                    <label class="text-xs text-slate-400 flex items-center gap-1.5"><input type="checkbox" id="er-soft" checked> неявные связи</label>
+                    <label class="text-xs text-slate-400 flex items-center gap-1.5"><input type="checkbox" id="er-cols"> поля</label>
+                    <label class="text-xs text-slate-400 flex items-center gap-1.5"><input type="checkbox" id="er-django"> служебные Django</label>
+                    <button class="btn" onclick="renderER()"><i class="fa-solid fa-rotate mr-1"></i>Перерисовать</button>
+                </div>
+            </div>
+            <div id="er-box"><div class="text-xs text-slate-500">Открой вкладку после загрузки снимка</div></div>
+        </div>
+        <div class="ops-card p-5 space-y-3">
+            <div><h3 class="card-title">Внешние ключи</h3><p class="card-sub">FK без индекса на стороне ссылки тормозят удаление родителя и JOIN</p></div>
+            <div class="overflow-x-auto scroll-y"><table class="dt" id="fk-table"></table></div>
+        </div>
+    </section>
+
+    <!-- ==================================================================== -->
+    <!-- СКОРОСТЬ DJANGO                                                      -->
+    <!-- ==================================================================== -->
+    <section id="tab-perf" class="tab-pane space-y-5">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+            <div id="perf-note" class="text-xs text-slate-400"></div>
+            <div class="flex items-center gap-2">
+                <select id="perf-hours" class="inp"><option value="1">1 час</option><option value="6">6 часов</option><option value="24" selected>24 часа</option><option value="48">48 часов</option></select>
+                <button class="btn" onclick="loadPerf()"><i class="fa-solid fa-rotate mr-1"></i>Обновить</button>
+                <button class="btn" onclick="resetPerf()"><i class="fa-solid fa-eraser mr-1"></i>Сбросить</button>
+            </div>
+        </div>
+        <div id="perf-kpis" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3"></div>
+        <div class="ops-card p-5 space-y-3">
+            <div><h3 class="card-title">Нагрузка по часам</h3><p class="card-sub">Запросов в час, среднее время ответа и среднее число SQL на запрос</p></div>
+            <div class="h-64 relative"><canvas id="perf-chart"></canvas></div>
+        </div>
+        <div class="ops-card p-5 space-y-3">
+            <div><h3 class="card-title">Маршруты</h3><p class="card-sub">Сортировка по суммарному времени: сверху то, что дороже всего обходится серверу. «Дубли SQL» > 0 почти всегда означает N+1</p></div>
+            <div class="overflow-x-auto scroll-y"><table class="dt" id="perf-table"></table></div>
+        </div>
+        <div class="ops-card p-5 space-y-3">
+            <div><h3 class="card-title">Журнал медленных запросов</h3><p class="card-sub">Последние 50: дольше порога, 50+ SQL или 10+ дублей</p></div>
+            <div class="overflow-x-auto scroll-y"><table class="dt" id="slow-table"></table></div>
+        </div>
+    </section>
+
+    <!-- ==================================================================== -->
+    <!-- SQL-ЗАПРОСЫ                                                          -->
+    <!-- ==================================================================== -->
+    <section id="tab-sql" class="tab-pane space-y-5">
+        <div id="sql-off" class="ops-card p-5 hidden">
+            <h3 class="card-title mb-2">pg_stat_statements не включён</h3>
+            <p class="text-sm text-slate-300 leading-relaxed">Без этого расширения Postgres не помнит, какие запросы сколько времени заняли. Включается один раз:</p>
+            <pre class="mt-3 p-4 rounded-xl bg-[#0B0F17] border border-white/5 text-xs text-cyan-300 font-mono-nums overflow-x-auto"># postgresql.conf
+shared_preload_libraries = 'pg_stat_statements'
+pg_stat_statements.track = top
+
+# перезапустить Postgres, затем в нужной базе:
+CREATE EXTENSION pg_stat_statements;</pre>
+        </div>
+        <div id="sql-on" class="space-y-5 hidden">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <div class="text-xs text-slate-400">Топ-60 запросов по суммарному времени с последнего сброса. Параметры заменены на $1, $2…</div>
+                <div class="flex items-center gap-2">
+                    <button class="btn" onclick="loadStatements()"><i class="fa-solid fa-rotate mr-1"></i>Обновить</button>
+                    <button class="btn" onclick="resetStatements()"><i class="fa-solid fa-eraser mr-1"></i>Сбросить статистику</button>
+                </div>
+            </div>
+            <div class="ops-card p-5 space-y-3">
+                <div><h3 class="card-title">Куда уходит время базы</h3><p class="card-sub">Доля в суммарном времени топ-запросов</p></div>
+                <div class="h-56 relative"><canvas id="sql-chart"></canvas></div>
+            </div>
+            <div class="ops-card p-5"><div class="overflow-x-auto scroll-y"><table class="dt" id="sql-table"></table></div></div>
+        </div>
+    </section>
+
+    <!-- ==================================================================== -->
+    <!-- POSTGRES LIVE                                                        -->
+    <!-- ==================================================================== -->
+    <section id="tab-live" class="tab-pane space-y-5">
+        <div id="live-kpis" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3"></div>
+        <div class="grid grid-cols-12 gap-5">
+            <div class="col-span-12 lg:col-span-8 ops-card p-5 space-y-3">
+                <div><h3 class="card-title">Транзакции и строки в секунду</h3><p class="card-sub">Опрос каждые 5 секунд, пока открыта вкладка</p></div>
+                <div class="h-64 relative"><canvas id="live-db-chart"></canvas></div>
+            </div>
+            <div class="col-span-12 lg:col-span-4 ops-card p-5 space-y-3">
+                <div><h3 class="card-title">Соединения</h3><p class="card-sub">По состояниям</p></div>
+                <div class="h-64 relative"><canvas id="conn-chart"></canvas></div>
+            </div>
+        </div>
+        <div class="ops-card p-5 space-y-3">
+            <div><h3 class="card-title">Что выполняется сейчас</h3><p class="card-sub">Активные запросы, от самого долгого</p></div>
+            <div class="overflow-x-auto"><table class="dt" id="activity-table"></table></div>
+        </div>
+    </section>
+        </div>
+    </main>
 </div>
 
+<!-- КАРТОЧКА ТАБЛИЦЫ -->
+<div id="drawer-bg" onclick="closeDrawer()"></div>
+<aside id="drawer"><div id="drawer-body" class="p-6 space-y-5"></div></aside>
+
 <script>
-let streamInterval = null;
+/* ========================================================================
+   Общее
+   ======================================================================== */
+const CSRF = document.querySelector('meta[name="csrf-token"]').content;
+const STATEMENTS_ON = {{ statements_on|yesno:"true,false" }};
+Chart.defaults.color = '#6b6b75';
+Chart.defaults.font.family = 'Inter';
+Chart.defaults.font.size = 11;
+Chart.defaults.borderColor = 'rgba(255,255,255,.05)';
+Chart.defaults.plugins.tooltip.backgroundColor = '#1c1c22';
+Chart.defaults.plugins.tooltip.borderColor = '#2a2a31';
+Chart.defaults.plugins.tooltip.borderWidth = 1;
+Chart.defaults.plugins.tooltip.cornerRadius = 10;
+Chart.defaults.plugins.tooltip.padding = 10;
+Chart.defaults.plugins.tooltip.titleColor = '#fff';
+Chart.defaults.plugins.tooltip.bodyColor = '#a1a1aa';
+Chart.defaults.plugins.legend.labels.usePointStyle = true;
+Chart.defaults.plugins.legend.labels.pointStyle = 'rectRounded';
+Chart.defaults.elements.bar.borderRadius = 4;
+
+const C = { indigo: '#6366f1', blue: '#4f9cf9', cyan: '#22d3ee', green: '#4ade80', emerald: '#34d399', amber: '#f2b84b', rose: '#f43f5e', violet: '#a78bfa', pink: '#f472b6', sky: '#38bdf8', lime: '#a3e635', slate: '#3a3a44' };
+const PALETTE = [C.indigo, C.blue, C.amber, C.green, C.violet, C.pink, C.cyan, C.lime, C.rose, '#fb923c'];
+
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fmtBytes(b) {
+    if (b == null) return '—';
+    const u = ['B','KB','MB','GB','TB']; let i = 0; b = Number(b);
+    while (Math.abs(b) >= 1024 && i < u.length - 1) { b /= 1024; i++; }
+    return (i === 0 ? b : b.toFixed(b < 10 ? 2 : 1)) + ' ' + u[i];
+}
+function fmtNum(n) {
+    if (n == null) return '—';
+    n = Number(n);
+    if (Math.abs(n) >= 1e9) return (n / 1e9).toFixed(1) + 'B';
+    if (Math.abs(n) >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+    if (Math.abs(n) >= 1e4) return (n / 1e3).toFixed(1) + 'k';
+    return n.toLocaleString('ru-RU');
+}
+function fmtAgo(iso) {
+    if (!iso) return '<span class="text-rose-400">никогда</span>';
+    const s = (Date.now() - new Date(iso).getTime()) / 1000;
+    if (s < 3600) return Math.round(s / 60) + ' мин';
+    if (s < 86400) return Math.round(s / 3600) + ' ч';
+    return Math.round(s / 86400) + ' дн';
+}
+function fmtDur(sec) {
+    if (sec == null) return '—';
+    const d = Math.floor(sec / 86400), h = Math.floor(sec % 86400 / 3600), m = Math.floor(sec % 3600 / 60);
+    return d ? `${d}д ${h}ч` : h ? `${h}ч ${m}м` : `${m}м`;
+}
+function fmtDate(iso) { return iso ? new Date(iso).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'; }
+function pct(v) { return v == null ? '—' : v + '%'; }
+function bar(v, max, color) {
+    const w = max ? Math.max(1, Math.min(100, v / max * 100)) : 0;
+    return `<div class="bar-bg"><div class="bar-fg" style="width:${w}%;background:${color}"></div></div>`;
+}
+function kpi(label, value, sub, color) {
+    return `<div class="kpi"><div class="l flex items-center gap-1.5"><span class="inline-block w-[7px] h-[7px] rounded-full" style="background:${color || '#3a3a44'}"></span>${label}</div><div class="v">${value}</div>${sub ? `<div class="s">${sub}</div>` : ''}</div>`;
+}
+async function api(url, opts = {}) {
+    const res = await fetch(url, { headers: { 'X-CSRFToken': CSRF, 'Content-Type': 'application/json' }, credentials: 'same-origin', ...opts });
+    if (!res.ok) throw new Error((await res.text()).slice(0, 200));
+    return res.json();
+}
+function chart(id, cfg) {
+    const el = document.getElementById(id);
+    if (el._chart) el._chart.destroy();
+    el._chart = new Chart(el.getContext('2d'), cfg);
+    return el._chart;
+}
+
+const FLAG_INFO = {
+    orphan:            ['нет модели', 'chip-rose',   'Таблица есть в базе, но ни одна модель Django на неё не ссылается'],
+    empty:             ['пустая', 'chip-slate',      'Строк нет'],
+    never_read:        ['не читалась', 'chip-amber', 'Ни одного seq/index scan с момента сброса статистики'],
+    bloated:           ['раздута', 'chip-amber',     'Мёртвых строк больше 20% — нужен VACUUM'],
+    seq_heavy:         ['seq scan', 'chip-violet',   'Большая таблица чаще читается полным перебором, чем по индексу'],
+    index_heavy:       ['индексы > данных', 'chip-violet', 'Индексы весят больше чем вдвое против самих данных'],
+    unused:            ['не используется', 'chip-rose', 'Индекс ни разу не использовался'],
+    duplicate:         ['дубль', 'chip-rose',        'Есть другой индекс на тех же колонках'],
+    covered_by_prefix: ['покрыт', 'chip-amber',      'Есть индекс, начинающийся с тех же колонок'],
+    invalid:           ['invalid', 'chip-rose',      'Индекс недостроен (упавший CREATE INDEX CONCURRENTLY)'],
+    always_null:       ['всегда NULL', 'chip-rose',  '99%+ значений — NULL'],
+    constant:          ['константа', 'chip-amber',   'Во всех строках одно значение'],
+    wide:              ['широкое', 'chip-violet',    'Среднее значение больше 1 KB'],
+    no_stats:          ['нет статистики', 'chip-slate', 'ANALYZE ещё не собирал статистику по полю'],
+};
+function chips(flags) { return (flags || []).map(f => { const i = FLAG_INFO[f] || [f, 'chip-slate', '']; return `<span class="chip ${i[1]}" title="${esc(i[2])}">${i[0]}</span>`; }).join(' '); }
+
+/* Сортируемая таблица */
+function dataTable(id, columns, rows, opts = {}) {
+    const el = document.getElementById(id);
+    const state = el._state || { key: opts.sortKey, dir: opts.sortDir || -1 };
+    el._state = state;
+    const sorted = [...rows];
+    if (state.key) {
+        sorted.sort((a, b) => {
+            const va = a[state.key], vb = b[state.key];
+            if (va == null && vb == null) return 0;
+            if (va == null) return 1;
+            if (vb == null) return -1;
+            return (typeof va === 'string' ? va.localeCompare(vb) : va - vb) * state.dir;
+        });
+    }
+    const limit = opts.limit || 500;
+    el.innerHTML = `<thead><tr>${columns.map(c => `<th class="${c.num ? 'num' : ''} ${state.key === c.key ? 'sorted' : ''}" data-k="${c.key || ''}" title="${esc(c.hint || '')}">${c.label}${state.key === c.key ? (state.dir > 0 ? ' ↑' : ' ↓') : ''}</th>`).join('')}</tr></thead>
+        <tbody>${sorted.slice(0, limit).map((r, i) => `<tr class="${opts.onRow ? 'clickable' : ''}" data-i="${rows.indexOf(r)}">${columns.map(c => `<td class="${c.num ? 'num' : ''} ${c.cls || ''}">${c.render ? c.render(r) : esc(r[c.key])}</td>`).join('')}</tr>`).join('')}
+        ${sorted.length === 0 ? `<tr><td colspan="${columns.length}" class="text-center text-slate-500 py-6">Пусто</td></tr>` : ''}
+        ${sorted.length > limit ? `<tr><td colspan="${columns.length}" class="text-center text-slate-500 py-3">Показано ${limit} из ${sorted.length}</td></tr>` : ''}</tbody>`;
+    el.querySelectorAll('th[data-k]').forEach(th => th.onclick = () => {
+        const k = th.dataset.k; if (!k) return;
+        state.dir = state.key === k ? -state.dir : -1; state.key = k;
+        dataTable(id, columns, rows, opts);
+    });
+    if (opts.onRow) el.querySelectorAll('tbody tr[data-i]').forEach(tr => tr.onclick = () => opts.onRow(rows[+tr.dataset.i]));
+}
+
+/* ========================================================================
+   Вкладки и опрос
+   ======================================================================== */
+let activeTab = 'traffic';
 let isStreamPaused = false;
-let liveChart = null;
-let donutChart = null;
+const loaded = {};
 
-function esc(s) {
-    return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
-
-function renderDeltaCell(elId, deltaObj, invert = false) {
-    const el = document.getElementById(elId);
-    if (!el || !deltaObj) return;
-    let isGood = deltaObj.is_positive;
-    if (invert) isGood = !isGood;
-    el.textContent = deltaObj.str;
-    el.className = 'py-2.5 font-bold ' + (isGood ? 'text-emerald-400' : 'text-rose-400');
-}
-
-// Генерация тиковой полосы из сегментов (как на скриншоте)
-function generateTickBar(activeCount, totalCount = 18, activeClass = 'active-indigo') {
-    let html = '';
-    for (let i = 0; i < totalCount; i++) {
-        const cls = i < activeCount ? activeClass : '';
-        html += `<div class="tick-segment ${cls}"></div>`;
-    }
-    return html;
-}
-
-// Генерация риск-метра (5 делений)
-function generateRiskMeter(isBot) {
-    if (isBot) {
-        return `
-            <div class="flex items-center justify-end gap-1">
-                <div class="w-1.5 h-3 rounded-xs bg-rose-500"></div>
-                <div class="w-1.5 h-3 rounded-xs bg-rose-500"></div>
-                <div class="w-1.5 h-3 rounded-xs bg-rose-500"></div>
-                <div class="w-1.5 h-3 rounded-xs bg-rose-500"></div>
-                <div class="w-1.5 h-3 rounded-xs bg-rose-500 shadow-[0_0_8px_#F43F5E]"></div>
-            </div>
-        `;
-    }
-    return `
-        <div class="flex items-center justify-end gap-1">
-            <div class="w-1.5 h-3 rounded-xs bg-emerald-400"></div>
-            <div class="w-1.5 h-3 rounded-xs bg-[#1a1a2e]"></div>
-            <div class="w-1.5 h-3 rounded-xs bg-[#1a1a2e]"></div>
-            <div class="w-1.5 h-3 rounded-xs bg-[#1a1a2e]"></div>
-            <div class="w-1.5 h-3 rounded-xs bg-[#1a1a2e]"></div>
-        </div>
-    `;
-}
-
-function initCharts() {
-    // 1. Донат HUD
-    const donutCtx = document.getElementById('integrity-donut-chart').getContext('2d');
-    donutChart = new Chart(donutCtx, {
-        type: 'doughnut',
-        data: {
-            labels: ['Люди', 'Боты'],
-            datasets: [{
-                data: [100, 0],
-                backgroundColor: ['#6366F1', '#F43F5E'],
-                borderWidth: 0,
-                hoverOffset: 2
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            cutout: '80%',
-            plugins: { legend: { display: false }, tooltip: { enabled: false } }
-        }
-    });
-
-    // 2. Неоновый таймлайн
-    const ctx = document.getElementById('live-timeline-chart').getContext('2d');
-    liveChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: [],
-            datasets: [
-                {
-                    label: 'Real',
-                    data: [],
-                    borderColor: '#6366F1',
-                    backgroundColor: 'rgba(6, 182, 212, 0.08)',
-                    borderWidth: 2,
-                    fill: true,
-                    tension: 0.4,
-                    pointRadius: 0
-                },
-                {
-                    label: 'Bots',
-                    data: [],
-                    borderColor: '#F43F5E',
-                    backgroundColor: 'rgba(244, 63, 94, 0.04)',
-                    borderWidth: 1.5,
-                    borderDash: [3, 3],
-                    fill: true,
-                    tension: 0.4,
-                    pointRadius: 0
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            animation: false,
-            plugins: { legend: { display: false } },
-            scales: {
-                x: { grid: { color: 'rgba(30, 30, 48, 0.4)' }, ticks: { color: '#64748b', font: { family: 'JetBrains Mono', size: 9 } } },
-                y: { grid: { color: 'rgba(30, 30, 48, 0.4)' }, ticks: { color: '#64748b', font: { family: 'JetBrains Mono', size: 9 }, precision: 0 }, beginAtZero: true }
-            }
-        }
-    });
-}
-
-async function fetchLiveMetrics() {
-    if (isStreamPaused) return;
-
-    try {
-        const res = await fetch('/api/admin/traffic/live/');
-        const data = await res.json();
-
-        // RPS & Online
-        document.getElementById('ticker-rps').textContent = data.rps;
-        document.getElementById('metric-online-real').textContent = data.online_real;
-        document.getElementById('metric-online-bots').textContent = data.online_bots;
-        document.getElementById('total-online-val').textContent = (data.online_real + data.online_bots);
-
-        // Тиковые шкалы людей и ботов
-        const maxExpectedOnline = 20;
-        const realTicks = Math.min(18, Math.round((data.online_real / maxExpectedOnline) * 18));
-        const botTicks = Math.min(18, Math.round((data.online_bots / maxExpectedOnline) * 18));
-        document.getElementById('ticks-real-users').innerHTML = generateTickBar(Math.max(1, realTicks), 18, 'active-indigo');
-        document.getElementById('ticks-bots-users').innerHTML = generateTickBar(botTicks, 18, 'active-rose');
-
-        // Устройства
-        document.getElementById('mobile-pct-val').textContent = data.device_stats.mobile_pct + '%';
-        document.getElementById('desktop-pct-val').textContent = data.device_stats.desktop_pct + '%';
-
-        // Донат HUD
-        document.getElementById('donut-center-pct').textContent = data.clean_ratio + '%';
-        document.getElementById('donut-legend-clean').textContent = data.telemetry.real_hits.current;
-        document.getElementById('donut-legend-bots').textContent = data.telemetry.bot_hits.current;
-        document.getElementById('donut-legend-uniques').textContent = data.telemetry.uniques.current;
-        if (donutChart) {
-            donutChart.data.datasets[0].data = [Math.max(1, data.telemetry.real_hits.current), data.telemetry.bot_hits.current];
-            donutChart.update('none');
-        }
-
-        // Роутинг Datastores (Матрица узлов)
-        const matrixBox = document.getElementById('routes-tick-matrix');
-        if (data.top_pages && data.top_pages.length > 0) {
-            const maxHits = Math.max(...data.top_pages.map(p => p.hits), 1);
-            matrixBox.innerHTML = data.top_pages.map(p => {
-                const activeTicks = Math.min(18, Math.round((p.hits / maxHits) * 18));
-                return `
-                    <div class="space-y-1">
-                        <div class="flex items-center justify-between text-[11px] font-mono-nums">
-                            <span class="text-slate-300 truncate max-w-[140px]">${esc(p.path)}</span>
-                            <span class="text-cyan-400 font-bold">${p.hits} hits</span>
-                        </div>
-                        <div class="flex gap-1 overflow-hidden">
-                            ${generateTickBar(Math.max(1, activeTicks), 18, 'active-indigo')}
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        // Таймлайн
-        if (liveChart && data.timeline) {
-            liveChart.data.labels = data.timeline.labels;
-            liveChart.data.datasets[0].data = data.timeline.real;
-            liveChart.data.datasets[1].data = data.timeline.bots;
-            liveChart.update('none');
-        }
-
-        // Телеметрия периодов
-        const t = data.telemetry;
-        document.getElementById('tele-uniques-current').textContent = t.uniques.current;
-        document.getElementById('tele-uniques-yest').textContent = t.uniques.yesterday;
-        renderDeltaCell('tele-uniques-dod', t.uniques.dod);
-        document.getElementById('tele-uniques-appn').textContent = t.uniques.appn;
-        renderDeltaCell('tele-uniques-wow', t.uniques.wow);
-
-        document.getElementById('tele-hits-current').textContent = t.real_hits.current;
-        document.getElementById('tele-hits-yest').textContent = t.real_hits.yesterday;
-        renderDeltaCell('tele-hits-dod', t.real_hits.dod);
-        document.getElementById('tele-hits-appn').textContent = t.real_hits.appn;
-        renderDeltaCell('tele-hits-wow', t.real_hits.wow);
-
-        document.getElementById('tele-bots-current').textContent = t.bot_hits.current;
-        document.getElementById('tele-bots-yest').textContent = t.bot_hits.yesterday;
-        renderDeltaCell('tele-bots-dod', t.bot_hits.dod, true);
-        document.getElementById('tele-bots-appn').textContent = t.bot_hits.appn;
-        renderDeltaCell('tele-bots-wow', t.bot_hits.wow, true);
-
-        // Матрица угроз (36 корзин Heatmap)
-        const gridBox = document.getElementById('tactics-grid');
-        let gridHtml = '';
-        const botCount = t.bot_hits.current;
-        for (let i = 0; i < 36; i++) {
-            // Динамическая подсветка ячеек в зависимости от активности ботов
-            let colorCls = 'bg-[#16162a]';
-            if (botCount > 0 && i % (Math.max(2, Math.floor(36 / Math.min(botCount, 18)))) === 0) {
-                colorCls = 'bg-rose-500/80 shadow-[0_0_6px_#F43F5E]';
-            } else if (i % 3 === 0) {
-                colorCls = 'bg-cyan-900/60';
-            }
-            gridHtml += `<div class="h-6 rounded-md ${colorCls} transition-all"></div>`;
-        }
-        gridBox.innerHTML = gridHtml;
-
-        // Поток запросов (Live Feed)
-        const feedTbody = document.getElementById('live-feed-tbody');
-        if (data.feed && data.feed.length > 0) {
-            feedTbody.innerHTML = data.feed.map(f => `
-                <tr class="hover:bg-white/[0.02] transition font-mono-nums">
-                    <td class="py-2.5 text-slate-400">${f.time}</td>
-                    <td class="py-2.5 text-slate-300 font-semibold">${f.ip}</td>
-                    <td class="py-2.5 text-slate-200 max-w-[200px] truncate font-sans">${esc(f.path)}</td>
-                    <td class="py-2.5">
-                        <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-[#16162a] text-slate-300 border border-white/5">
-                            ${esc(f.ua)}
-                        </span>
-                    </td>
-                    <td class="py-2.5">
-                        <span class="text-[10px] uppercase font-bold ${f.is_bot ? 'text-rose-400' : 'text-cyan-400'}">
-                            ${f.is_bot ? 'Malicious / Bot' : 'Valid Traffic'}
-                        </span>
-                    </td>
-                    <td class="py-2.5 text-right">
-                        ${generateRiskMeter(f.is_bot)}
-                    </td>
-                </tr>
-            `).join('');
-        }
-
-    } catch (e) {
-        console.warn('Live stream warning', e);
-    }
+document.querySelectorAll('.tab-btn').forEach(b => b.onclick = () => switchTab(b.dataset.tab));
+const TAB_META = {
+    traffic: ['Пульс трафика', 'fa-wave-square'], db: ['База данных', 'fa-database'], cleanup: ['Чистка базы', 'fa-broom'],
+    schema: ['Схема базы', 'fa-diagram-project'], perf: ['Скорость Django', 'fa-gauge-high'], sql: ['SQL-запросы', 'fa-code'], live: ['Postgres live', 'fa-heart-pulse'],
+};
+function switchTab(tab) {
+    activeTab = tab;
+    document.getElementById('top-title').textContent = TAB_META[tab][0];
+    document.getElementById('top-icon').className = 'fa-solid ' + TAB_META[tab][1];
+    window.scrollTo({ top: 0 });
+    if (tab === 'traffic') fetchLiveMetrics(true);
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.toggle('active', p.id === 'tab-' + tab));
+    history.replaceState(null, '', '#' + tab);
+    if (['db', 'cleanup', 'schema'].includes(tab) && !SNAP) loadSnapshot();
+    if (tab === 'schema' && SNAP && !loaded.er) { loaded.er = true; renderER(); }
+    if (tab === 'perf' && !loaded.perf) { loaded.perf = true; loadPerf(); }
+    if (tab === 'sql' && !loaded.sql) { loaded.sql = true; loadStatements(); }
+    if (tab === 'live') fetchActivity();
+    // перерисовать графики, созданные в скрытой вкладке
+    setTimeout(() => document.querySelectorAll('#tab-' + tab + ' canvas').forEach(c => c._chart && c._chart.resize()), 30);
 }
 
 function toggleAutoStream() {
     isStreamPaused = !isStreamPaused;
-    const btn = document.getElementById('toggle-stream-btn');
-    if (isStreamPaused) {
-        btn.innerHTML = '<i class="fa-solid fa-play mr-1"></i> Возобновить';
-        btn.classList.add('text-cyan-400');
+    document.getElementById('live-dot').classList.toggle('paused', isStreamPaused);
+    document.getElementById('feed-dot').classList.toggle('paused', isStreamPaused);
+    document.getElementById('live-label').textContent = isStreamPaused ? 'Пауза' : 'Live · 3 с';
+    if (!isStreamPaused) { fetchLiveMetrics(); fetchActivity(); }
+}
+function refreshCurrent() {
+    if (activeTab === 'traffic') fetchLiveMetrics(true);
+    else if (['db', 'cleanup', 'schema'].includes(activeTab)) { loaded.er = false; loadSnapshot(SNAP_META && SNAP_META.id); }
+    else if (activeTab === 'perf') loadPerf();
+    else if (activeTab === 'sql') loadStatements();
+    else if (activeTab === 'live') fetchActivity();
+}
+document.addEventListener('keydown', e => {
+    if (e.target.closest('input, select, textarea') || e.metaKey || e.ctrlKey || e.altKey) return;
+    const tabs = Object.keys(TAB_META);
+    if (/^[1-7]$/.test(e.key)) switchTab(tabs[+e.key - 1]);
+    else if (e.key === 'p' || e.key === 'з') toggleAutoStream();
+    else if ((e.key === 's' || e.key === 'ы') && ['db', 'cleanup', 'schema'].includes(activeTab)) takeSnapshot();
+});
+
+/* ========================================================================
+   ПУЛЬС ТРАФИКА
+   ======================================================================== */
+let liveChart, donutChart, compareChart, TR = null;
+let tlMode = 'real', ipMode = 'all', feedMode = 'all', feedIp = null, lastFeedTop = null;
+
+function deltaBadge(el, d, invert = false) {
+    if (!el || !d) return;
+    const v = d.val, good = invert ? v <= 0 : v >= 0;
+    el.className = 'badge ' + (v === 0 ? 'flat' : good ? 'up' : 'down');
+    el.textContent = (v > 0 ? '↑ ' : v < 0 ? '↓ ' : '') + Math.abs(v).toLocaleString('ru-RU') + '%';
+}
+function deltaText(d, invert = false) {
+    const v = d.val, good = invert ? v <= 0 : v >= 0;
+    return `<span class="badge ${v === 0 ? 'flat' : good ? 'up' : 'down'}">${v > 0 ? '↑' : v < 0 ? '↓' : ''} ${Math.abs(v).toLocaleString('ru-RU')}%</span>`;
+}
+/* ---------- виджет-примитивы: обновляются на месте, без перерисовки DOM ---------- */
+function distribute(parts, n) {           // метод наибольшего остатка: сколько делений достаётся каждой части
+    const sum = parts.reduce((a, p) => a + p.v, 0);
+    if (!sum) return parts.map(() => 0);
+    const raw = parts.map(p => p.v / sum * n), base = raw.map(Math.floor);
+    let left = n - base.reduce((a, b) => a + b, 0);
+    raw.map((r, i) => [r - base[i], i]).sort((a, b) => b[0] - a[0]).forEach(([, i]) => { if (left-- > 0) base[i]++; });
+    parts.forEach((p, i) => { if (p.v > 0 && base[i] === 0) { const j = base.indexOf(Math.max(...base)); base[j]--; base[i] = 1; } });
+    return base;
+}
+function ticks(id, parts, n = 40) {
+    const el = document.getElementById(id); if (!el) return;
+    if (el.children.length !== n) el.innerHTML = '<i></i>'.repeat(n);
+    const cnt = distribute(parts, n); let k = 0;
+    parts.forEach((p, pi) => { for (let j = 0; j < cnt[pi]; j++) el.children[k++].style.background = p.c; });
+    for (; k < n; k++) el.children[k].style.background = '';
+}
+function legendM(parts, total) {
+    const sum = total || parts.reduce((a, p) => a + p.v, 0) || 1;
+    return parts.map(p => `<span><span class="d" style="background:${p.c}"></span>${p.l}<b>${(p.v / sum * 100).toLocaleString('ru-RU', { maximumFractionDigits: 1 })}%</b></span>`).join('');
+}
+function hbars(id, values, color) {       // штрихованные «пустые» колонки, заливка снизу
+    const el = document.getElementById(id); if (!el) return;
+    const mx = Math.max(1, ...values);
+    if (el.children.length !== values.length) el.innerHTML = values.map(() => '<div class="hatch"><i></i></div>').join('');
+    [...el.children].forEach((b, i) => {
+        const v = values[i], f = b.firstChild;
+        f.style.height = (v ? Math.max(8, v / mx * 100) : 0) + '%';
+        f.style.background = `linear-gradient(180deg, ${color}, color-mix(in srgb, ${color} 45%, transparent))`;
+        f.style.opacity = (.55 + .45 * (i / values.length)).toFixed(2);
+        b.title = v;
+    });
+}
+function colbars(id, items) {             // крупные подписанные колонки: подпись и число внутри
+    const el = document.getElementById(id); if (!el) return;
+    const mx = Math.max(1, ...items.map(x => x[1]));
+    if (el.children.length !== items.length) el.innerHTML = items.map(() => '<div class="hatch"><i></i><span><b></b></span></div>').join('');
+    items.forEach(([l, v, c], i) => {
+        const col = el.children[i], f = col.querySelector('i'), sp = col.querySelector('span');
+        f.style.height = (v ? Math.max(14, v / mx * 100) : 0) + '%';
+        f.style.background = `linear-gradient(180deg, ${c}, color-mix(in srgb, ${c} 40%, transparent))`;
+        sp.innerHTML = `<b>${Number(v).toLocaleString('ru-RU')}</b>${l}`;
+    });
+}
+function ring(id, parts, cHtml, size = 132, w = 11) {   // кольцо с разрывами между сегментами
+    const el = document.getElementById(id); if (!el) return;
+    const r = (size - w) / 2 - 2, L = 2 * Math.PI * r, cx = size / 2, gap = w + 7;
+    if (!el.dataset.n || +el.dataset.n !== parts.length) {
+        el.dataset.n = parts.length;
+        el.innerHTML = `<svg viewBox="0 0 ${size} ${size}"><circle cx="${cx}" cy="${cx}" r="${r}" stroke="#1d1d22" stroke-width="${w}"/>` +
+            parts.map(() => `<circle cx="${cx}" cy="${cx}" r="${r}" stroke-width="${w}" stroke-linecap="round"/>`).join('') + `</svg><div class="rc"></div>`;
+    }
+    const sum = parts.reduce((a, p) => a + p.v, 0), cs = el.querySelectorAll('svg circle');
+    let off = 0; const live = parts.filter(p => p.v > 0).length;
+    parts.forEach((p, i) => {
+        const c = cs[i + 1], seg = sum ? p.v / sum * L : 0;
+        const len = !p.v ? 0 : live === 1 ? L : Math.max(.1, seg - gap);
+        c.setAttribute('stroke', p.c);
+        c.style.strokeLinecap = live === 1 ? 'butt' : 'round';
+        c.style.strokeDasharray = `${len} ${L}`;
+        c.style.strokeDashoffset = -(off + (live === 1 ? 0 : gap / 2));
+        off += seg;
+    });
+    el.querySelector('.rc').innerHTML = cHtml;
+}
+function stat(label, value, sub, dot, extra = '', cls = '') {
+    return `<div class="w sm" style="--g:${dot}"><div class="w-head"><span class="w-label"><span class="d" style="width:7px;height:7px;border-radius:9px;background:${dot}"></span>${label}</span></div><div><div class="display md ${cls}">${value}</div><div class="wsub">${sub}</div></div>${extra ? `<div class="wmid">${extra}</div>` : ''}</div>`;
+}
+function stackRow(title, total, parts) {
+    const sum = parts.reduce((a, p) => a + p.v, 0) || 1;
+    const cnt = distribute(parts, 48);
+    const ticksHtml = parts.map((p, i) => `<i style="background:${p.c}"></i>`.repeat(cnt[i])).join('') + '<i></i>'.repeat(48 - cnt.reduce((a, b) => a + b, 0));
+    return `<div>
+        <div class="flex justify-between text-[12.5px] mb-2.5"><span style="color:var(--tx2)">${title}</span><span class="mono" style="color:var(--tx3)">${total}</span></div>
+        <div class="ticks sm">${ticksHtml}</div>
+        <div class="mleg mt-2.5">${legendM(parts, sum)}</div>
+    </div>`;
+}
+
+function initTrafficCharts() {
+    donutChart = chart('integrity-donut-chart', {
+        type: 'doughnut',
+        data: { labels: ['Люди', 'Боты'], datasets: [{ data: [1, 0], backgroundColor: [C.indigo, C.rose], borderWidth: 0, borderRadius: 4, spacing: 2 }] },
+        options: { responsive: true, maintainAspectRatio: false, cutout: '78%', plugins: { legend: { display: false }, tooltip: { enabled: false } } }
+    });
+    const ctx = document.getElementById('live-timeline-chart').getContext('2d');
+    const grad = (c1) => { const g = ctx.createLinearGradient(0, 0, 0, 300); g.addColorStop(0, c1); g.addColorStop(1, 'rgba(0,0,0,0)'); return g; };
+    liveChart = chart('live-timeline-chart', {
+        type: 'bar',
+        data: { labels: [], datasets: [
+            { label: 'Люди', data: [], backgroundColor: C.indigo, borderRadius: 5, borderSkipped: false, maxBarThickness: 22, stack: 's' },
+            { label: 'Боты', data: [], backgroundColor: 'rgba(244,63,94,.85)', borderRadius: 5, borderSkipped: false, maxBarThickness: 22, stack: 's' },
+            { type: 'line', label: 'Среднее', data: [], borderColor: 'rgba(161,161,170,.55)', borderDash: [5, 5], borderWidth: 1.5, pointRadius: 0, fill: false },
+            { type: 'line', label: 'Тренд', data: [], borderColor: 'rgba(99,102,241,.0)', backgroundColor: grad('rgba(99,102,241,.16)'), borderWidth: 0, pointRadius: 0, fill: true, tension: .45 },
+        ] },
+        options: {
+            responsive: true, maintainAspectRatio: false, animation: { duration: 350 },
+            interaction: { mode: 'index', intersect: false },
+            plugins: { legend: { display: false }, tooltip: { filter: i => i.datasetIndex < 3, backgroundColor: '#1c1c22', borderColor: '#2a2a31', borderWidth: 1, padding: 10, titleColor: '#fff', bodyColor: '#a1a1aa', cornerRadius: 10 } },
+            scales: { x: { stacked: true, grid: { display: false }, ticks: { maxRotation: 0, autoSkipPadding: 18 } },
+                      y: { stacked: true, beginAtZero: true, ticks: { precision: 0 }, grid: { color: 'rgba(255,255,255,.04)' }, border: { display: false } } }
+        }
+    });
+    compareChart = chart('compare-chart', {
+        type: 'bar',
+        data: { labels: ['Уникальные', 'Хиты людей', 'Хиты ботов'], datasets: [
+            { label: 'Неделю назад', data: [], backgroundColor: '#2a2a31', borderRadius: 5, maxBarThickness: 26 },
+            { label: 'Вчера', data: [], backgroundColor: 'rgba(99,102,241,.45)', borderRadius: 5, maxBarThickness: 26 },
+            { label: 'Сегодня', data: [], backgroundColor: C.indigo, borderRadius: 5, maxBarThickness: 26 },
+        ] },
+        options: { responsive: true, maintainAspectRatio: false, animation: { duration: 300 },
+            plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, boxHeight: 8, usePointStyle: true, pointStyle: 'rectRounded', padding: 14 } } },
+            scales: { x: { grid: { display: false } }, y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: 'rgba(255,255,255,.04)' }, border: { display: false } } } }
+    });
+}
+
+function renderTimeline() {
+    if (!TR) return;
+    const tl = TR.timeline;
+    const real = tl.real, bots = tl.bots;
+    const showR = tlMode !== 'bots', showB = tlMode !== 'real';
+    const series = real.map((r, i) => (showR ? r : 0) + (showB ? bots[i] : 0));
+    const total = series.reduce((a, b) => a + b, 0);
+    const avg = series.length ? total / series.length : 0;
+    const half = Math.floor(series.length / 2);
+    const prev = series.slice(0, half).reduce((a, b) => a + b, 0), cur = series.slice(half).reduce((a, b) => a + b, 0);
+    const peak = Math.max(...series), peakAt = tl.labels[series.indexOf(peak)];
+
+    document.getElementById('tl-title').textContent = { real: 'Хиты людей', bots: 'Хиты ботов', both: 'Все хиты' }[tlMode];
+    document.getElementById('tl-total').textContent = total.toLocaleString('ru-RU');
+    const pctChange = prev ? Math.round((cur - prev) / prev * 1000) / 10 : (cur ? 100 : 0);
+    deltaBadge(document.getElementById('tl-badge'), { val: pctChange }, tlMode === 'bots');
+    document.getElementById('tl-badge').title = 'Последние 30 минут к предыдущим 30';
+    document.getElementById('tl-legend').innerHTML =
+        (showR ? `<span><span class="d" style="background:${C.indigo}"></span>Люди<b>${real.reduce((a, b) => a + b, 0)}</b></span>` : '') +
+        (showB ? `<span><span class="d" style="background:${C.rose}"></span>Боты<b>${bots.reduce((a, b) => a + b, 0)}</b></span>` : '') +
+        `<span>Пик<b>${peak}</b>${peak ? ` <span style="color:var(--tx3)">в ${peakAt}</span>` : ''}</span>`;
+
+    liveChart.data.labels = tl.labels;
+    liveChart.data.datasets[0].data = showR ? real : real.map(() => 0);
+    liveChart.data.datasets[1].data = showB ? bots : bots.map(() => 0);
+    liveChart.data.datasets[2].data = series.map(() => +avg.toFixed(2));
+    liveChart.data.datasets[3].data = series;
+    liveChart.update();
+}
+document.querySelectorAll('#tl-mode button').forEach(b => b.onclick = () => {
+    tlMode = b.dataset.m; document.querySelectorAll('#tl-mode button').forEach(x => x.classList.toggle('on', x === b)); renderTimeline();
+});
+
+function renderTopIps() {
+    if (!TR) return;
+    const list = TR.top_ips.filter(p => ipMode === 'all' || (ipMode === 'bot') === p.is_bot);
+    const mx = Math.max(1, ...list.map(p => p.hits));
+    document.getElementById('top-ips').innerHTML = list.length ? list.slice(0, 10).map((p, i) => `
+        <div class="rank clickable" onclick="setFeedIp('${esc(p.ip)}')">
+            <span class="n">${String(i + 1).padStart(2, '0')}</span>
+            <div class="min-w-0">
+                <div class="flex items-center gap-2 text-[12.5px]"><span class="mono text-white truncate">${esc(p.ip)}</span><span class="chip ${p.is_bot ? 'chip-rose' : 'chip-cyan'}">${p.is_bot ? 'бот' : 'человек'}</span></div>
+                <div class="track"><i style="width:${p.hits / mx * 100}%;background:${p.is_bot ? C.rose : C.indigo}"></i></div>
+            </div>
+            <div class="text-right"><div class="text-[13px] font-semibold text-white num">${p.hits.toLocaleString('ru-RU')}</div><div class="text-[11px]" style="color:var(--tx3)">${p.pages} стр.</div></div>
+        </div>`).join('') : `<div class="text-[12px] py-6 text-center" style="color:var(--tx3)">Пусто</div>`;
+}
+document.querySelectorAll('#ip-mode button').forEach(b => b.onclick = () => {
+    ipMode = b.dataset.m; document.querySelectorAll('#ip-mode button').forEach(x => x.classList.toggle('on', x === b)); renderTopIps();
+});
+
+function setFeedIp(ip) {
+    feedIp = ip;
+    const chipEl = document.getElementById('feed-filter-ip');
+    chipEl.classList.toggle('hidden', !ip);
+    chipEl.innerHTML = ip ? `${esc(ip)} <i class="fa-solid fa-xmark"></i>` : '';
+    renderFeed();
+    if (ip) document.getElementById('live-feed-tbody').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+function renderFeed() {
+    if (!TR) return;
+    const rows = TR.feed.filter(f => (feedMode === 'all' || (feedMode === 'bot') === f.is_bot) && (!feedIp || f.ip === feedIp));
+    const topKey = TR.feed[0] ? TR.feed[0].time + TR.feed[0].ip + TR.feed[0].path : null;
+    const fresh = lastFeedTop && topKey !== lastFeedTop ? TR.feed.findIndex(f => f.time + f.ip + f.path === lastFeedTop) : 0;
+    lastFeedTop = topKey;
+    document.getElementById('feed-sub').textContent = feedIp ? `Только ${feedIp} среди 30 последних хитов` : '30 последних хитов';
+    const icon = ua => ({ 'iOS Safari': 'fa-apple', 'Android Web': 'fa-android', 'Chrome': 'fa-chrome', 'Yandex': 'fa-yandex' }[ua]);
+    document.getElementById('live-feed-tbody').innerHTML = rows.length ? rows.map(f => {
+        const isNew = fresh > 0 && TR.feed.indexOf(f) < fresh;
+        const ic = icon(f.ua);
+        return `<tr class="feed-row ${isNew ? 'new' : ''}">
+            <td class="mono" style="color:var(--tx3)">${f.time}</td>
+            <td class="mono text-white clickable" onclick="setFeedIp('${esc(f.ip)}')">${esc(f.ip)}</td>
+            <td class="max-w-[300px] truncate" style="color:var(--tx)" title="${esc(f.path)}">${esc(f.path)}</td>
+            <td><span class="inline-flex items-center gap-1.5"><i class="${ic ? 'fa-brands ' + ic : f.is_bot ? 'fa-solid fa-robot' : 'fa-solid fa-desktop'} text-[11px]" style="color:var(--tx3)"></i>${esc(f.ua)}</span></td>
+            <td class="num"><span class="chip ${f.is_bot ? 'chip-rose' : 'chip-cyan'}">${f.is_bot ? 'бот' : 'человек'}</span></td>
+        </tr>`;
+    }).join('') : `<tr><td colspan="5" class="py-8 text-center">Пусто</td></tr>`;
+}
+document.querySelectorAll('#feed-mode button').forEach(b => b.onclick = () => {
+    feedMode = b.dataset.m; document.querySelectorAll('#feed-mode button').forEach(x => x.classList.toggle('on', x === b)); renderFeed();
+});
+
+function renderSignals(data) {
+    const t = data.telemetry, tl = data.timeline, out = [];
+    const nf = n => Number(n).toLocaleString('ru-RU');
+    const add = (lvl, icon, title, text) => out.push({ lvl, icon, title, text });
+    const hour = +new Date().toLocaleString('en-GB', { timeZone: 'Europe/Moscow', hour: '2-digit', hour12: false });
+
+    // 1. посетители к вчера и к неделе
+    const u = t.uniques, diff = u.current - u.yesterday, wdiff = u.current - u.appn;
+    if (u.yesterday < 30 && u.current < 30) {
+        add('info', 'fa-users', `Посетителей пока ${nf(u.current)}, вчера к этой минуте ${nf(u.yesterday)}`,
+            `Выборка маленькая: разница в ${Math.abs(diff)} ${Math.abs(diff) === 1 ? 'человека' : 'человек'} — это ещё не тренд. Проценты станут осмысленными, когда посетителей будет хотя бы несколько десятков.`);
     } else {
-        btn.innerHTML = '<i class="fa-solid fa-pause mr-1"></i> Пауза';
-        btn.classList.remove('text-cyan-400');
-        fetchLiveMetrics();
+        const up = diff >= 0;
+        add(up ? 'good' : 'warn', up ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down',
+            `Посетителей ${up ? 'больше' : 'меньше'}, чем вчера: ${nf(u.current)} против ${nf(u.yesterday)}`,
+            `К тому же дню недели ${wdiff >= 0 ? 'плюс' : 'минус'} ${nf(Math.abs(wdiff))} (${u.wow.str}). ${Math.sign(diff) === Math.sign(wdiff) ? 'Оба сравнения в одну сторону — это похоже на реальную динамику.' : 'Сравнения расходятся: скорее всего, вчера был необычный день.'}`);
+    }
+
+    // 2. онлайн
+    if (data.online_real === 0) {
+        if (hour >= 1 && hour < 8) add('info', 'fa-moon', 'Людей онлайн нет — ночь', 'Онлайн считает последние 5 минут. Ночью ноль — нормально.');
+        else if (data.online_bots > 0) add('bad', 'fa-triangle-exclamation', 'Людей онлайн нет, а боты ходят', 'Днём так быть не должно. Открой сайт сам: если он работает, проверь, пишется ли трафик людей (log_traffic).');
+        else add('warn', 'fa-signal', 'За 5 минут не было ни одного хита', 'Тихая минута или трекер не пишет. Если держится дольше 15–20 минут днём — проверь сайт.');
+    }
+
+    // 3. боты
+    if (data.bot_ratio >= 50) add('bad', 'fa-robot', `Боты дают ${nf(data.bot_ratio)}% всех хитов`, `${nf(t.bot_hits.current)} из ${nf(t.bot_hits.current + t.real_hits.current)}. Посмотри «Самые активные адреса», отфильтруй «Боты» и реши, кого блокировать в CRM.`);
+    else if (data.bot_ratio >= 20) add('warn', 'fa-robot', `Боты — ${nf(data.bot_ratio)}% хитов`, 'Заметно, но для небольшого сайта это обычный фон из поисковиков и сканеров.');
+    else add('good', 'fa-shield-halved', `Трафик чистый: ботов ${nf(data.bot_ratio)}%`, 'Ничего делать не нужно.');
+
+    // 4. подозрительные «люди»
+    const sus = data.top_ips.filter(p => !p.is_bot && p.hits >= Math.max(80, (t.real_hits.current / Math.max(1, u.current)) * 10));
+    if (sus.length) add('warn', 'fa-user-secret', `Адрес ${sus[0].ip} похож на парсер`, `Помечен как человек, но сделал ${nf(sus[0].hits)} хитов по ${sus[0].pages} страницам — в разы больше среднего посетителя. Кликни по нему в «Самых активных адресах», чтобы увидеть его хиты.`);
+
+    // 5. глубина
+    if (u.current >= 5) {
+        const depth = t.real_hits.current / u.current;
+        add(depth >= 3 ? 'good' : depth < 1.5 ? 'warn' : 'info', 'fa-layer-group', `В среднем ${depth.toLocaleString('ru-RU', { maximumFractionDigits: 1 })} страницы на посетителя`,
+            depth >= 3 ? 'Люди не просто заходят, а пользуются сервисом.' : depth < 1.5 ? 'Большинство открывает одну страницу и уходит. Посмотри, какая страница главная точка входа и что на ней мешает идти дальше.' : 'Средняя глубина: человек открывает пару страниц.');
+    }
+
+    // 6. всплеск
+    const series = tl.real.map((r, i) => r + tl.bots[i]);
+    const avg = series.reduce((a, b) => a + b, 0) / series.length;
+    const last = series.slice(-3).reduce((a, b) => a + b, 0) / 3;
+    if (avg >= 1 && last >= avg * 3) add('warn', 'fa-bolt', 'Всплеск прямо сейчас', `Последние 6 минут хитов в ${(last / avg).toFixed(1)} раза больше среднего за час. Если это боты — смотри ленту; если люди — откуда пришли (рассылка, пост).`);
+
+    // 7. платформы
+    if (t.real_hits.current >= 30 && data.device_stats.mobile_pct < 15)
+        add('info', 'fa-mobile-screen', `С телефонов только ${nf(data.device_stats.mobile_pct)}% просмотров`, 'Аудитория сидит за компьютерами — для сервиса, где учителя создают тесты, это ожидаемо. Ученики, проходящие тесты, чаще приходят с телефонов.');
+
+    const tone = { good: ['var(--green)', 'Норма', '#4ade80'], warn: ['var(--amber)', 'Внимание', '#f2b84b'], bad: ['var(--rose)', 'Инцедент', '#f43f5e'], info: ['var(--blue)', 'К сведению', '#4f9cf9'] };
+    const order = { bad: 0, warn: 1, good: 2, info: 3 };
+    out.sort((a, b) => order[a.lvl] - order[b.lvl]);
+    document.getElementById('signals').innerHTML = out.map(x => `<div class="sig" style="--t:${tone[x.lvl][0]}"><div class="sig-top"><div class="si"><i class="fa-solid ${x.icon}"></i></div><span class="tag">${tone[x.lvl][1]}</span></div><div class="t">${esc(x.title)}</div><div class="d">${esc(x.text)}</div></div>`).join('');
+
+    // статус: одно слово + по сегменту на каждый сигнал
+    const cnt = l => out.filter(x => x.lvl === l).length;
+    const bad = cnt('bad'), warn = cnt('warn');
+    const word = bad ? ['Инцедент', 'var(--rose)'] : warn ? ['Есть на что глянуть', 'var(--amber)'] : ['Всё спокойно', 'var(--green)'];
+    const w = document.getElementById('st-word'); w.textContent = word[0]; w.style.color = word[1];
+    document.getElementById('st-sub').textContent = `${out.length} ${out.length === 1 ? 'сигнал' : out.length < 5 ? 'сигнала' : 'сигналов'}: ${bad} тревог, ${warn} внимание, ${cnt('good')} норма`;
+    const parts = out.map(x => ({ v: 1, c: tone[x.lvl][2] }));
+    ticks('st-seg', parts, 24);
+    document.getElementById('st-leg').innerHTML = ['bad', 'warn', 'good', 'info'].filter(l => cnt(l)).map(l => `<span><span class="d" style="background:${tone[l][2]}"></span>${tone[l][1]}<b>${cnt(l)}</b></span>`).join('');
+    const b = document.getElementById('signals-count');
+    const n = bad + warn;
+    b.className = 'badge ' + (n ? 'down' : 'up');
+    b.textContent = n ? `${n} на заметку` : 'ок';
+}
+
+(function () {
+    const btn = document.getElementById('guide-btn'), g = document.getElementById('guide');
+    btn.onclick = () => { const open = g.classList.toggle('hidden') === false; btn.setAttribute('aria-expanded', open); btn.firstElementChild.classList.toggle('on', open); };
+})();
+
+async function fetchLiveMetrics(force) {
+    if (!force && (isStreamPaused || document.hidden)) return;
+    try {
+        const data = await api('/api/admin/traffic/live/');
+        TR = data;
+        const $ = id => document.getElementById(id);
+        const t = data.telemetry, tl = data.timeline;
+        const nf = n => Number(n).toLocaleString('ru-RU');
+        $('ticker-rps').textContent = data.rps;
+        $('side-online').textContent = data.online_real;
+        $('top-updated').textContent = new Date().toLocaleTimeString('ru-RU');
+        if (activeTab !== 'traffic') return;
+
+        // --- главные карточки
+        $('k-online').textContent = nf(data.online_real);
+        $('k-online-sub').textContent = `${data.online_real === 1 ? 'человек' : 'людей'} за последние 5 минут`;
+        $('k-online-bots').textContent = nf(data.online_bots);
+        $('k-rps').textContent = data.rps;
+        hbars('sp-online', tl.real, C.green);
+
+        $('k-uniq').textContent = nf(t.uniques.current);
+        $('k-uniq-sub').textContent = `вчера к этой минуте ${nf(t.uniques.yesterday)}`;
+        deltaBadge($('k-uniq-badge'), t.uniques.dod);
+        $('k-uniq-appn').textContent = nf(t.uniques.appn);
+        $('k-uniq-wow').innerHTML = deltaText(t.uniques.wow);
+        colbars('sp-uniq', [['неделю назад', t.uniques.appn, '#52525e'], ['вчера', t.uniques.yesterday, '#7c7ff5'], ['сегодня', t.uniques.current, C.indigo]]);
+
+        $('k-hits').textContent = nf(t.real_hits.current);
+        $('k-hits-sub').textContent = `вчера к этой минуте ${nf(t.real_hits.yesterday)}`;
+        deltaBadge($('k-hits-badge'), t.real_hits.dod);
+        $('k-depth').textContent = t.uniques.current ? (t.real_hits.current / t.uniques.current).toLocaleString('ru-RU', { maximumFractionDigits: 1 }) : '—';
+        $('k-hits-wow').innerHTML = deltaText(t.real_hits.wow);
+        const mob = data.device_stats.mobile_pct, desk = data.device_stats.desktop_pct;
+        const dp = [{ v: mob, c: C.cyan, l: 'Мобильные' }, { v: desk, c: C.blue, l: 'Компьютеры' }];
+        ring('rg-depth', dp, `<b>${$('k-depth').textContent}</b><span>стр / чел</span>`);
+        $('rg-depth-leg').innerHTML = legendM(dp, (mob + desk) || 1);
+
+        $('k-bots').textContent = nf(t.bot_hits.current);
+        $('k-bots-sub').textContent = `вчера к этой минуте ${nf(t.bot_hits.yesterday)}`;
+        deltaBadge($('k-bots-badge'), t.bot_hits.dod, true);
+        $('k-clean').textContent = data.clean_ratio.toLocaleString('ru-RU') + '%';
+        $('k-bots-wow').innerHTML = deltaText(t.bot_hits.wow, true);
+        const bp = [{ v: t.bot_hits.current, c: C.rose, l: 'Боты' }, { v: t.real_hits.current, c: '#3b3b46', l: 'Люди' }];
+        ticks('tk-bots', bp, 40);
+        $('tk-bots-leg').innerHTML = legendM(bp);
+        $('k-bots-share').textContent = data.bot_ratio.toLocaleString('ru-RU') + '%';
+
+        // --- малые показатели
+        const all = tl.real.map((r, i) => r + tl.bots[i]);
+        const total60 = all.reduce((a, b) => a + b, 0);
+        const peak = Math.max(0, ...all), peakAt = peak ? tl.labels[all.indexOf(peak)] : '—';
+        const topPage = data.top_pages[0];
+        const pagesSum = data.top_pages.reduce((a, p) => a + p.hits, 0);
+        const topShare = topPage ? Math.round(topPage.hits / Math.max(1, t.real_hits.current) * 100) : 0;
+        const mk = (parts, n, cls) => `<div class="ticks ${cls || 'sm'}">${parts.map((p, i) => `<i style="background:${p.c}"></i>`.repeat(distribute(parts, n)[i])).join('')}${'<i></i>'.repeat(n - distribute(parts, n).reduce((a, b) => a + b, 0))}</div>`;
+        const shareParts = [{ v: topShare, c: C.amber }, { v: 100 - topShare, c: '' }];
+        $('mini-stats').innerHTML = [
+            stat('Хитов за час', nf(total60), `пик ${nf(peak)} за 2 минуты`, C.indigo, '<div class="hb sm" id="sp-hour"></div>'),
+            stat('Запросов в секунду', data.rps, `≈ ${nf(Math.round(data.rps * 60))} в минуту`, C.green, `<div class="mlabel flex items-center gap-2"><span class="live-dot"></span>обновляется каждые 3 с</div>`),
+            stat('Устройства людей', `${Math.round(mob)}<small>% моб.</small>`, `компьютеры ${desk.toLocaleString('ru-RU')}%`, C.cyan, mk([{ v: mob, c: C.cyan }, { v: desk, c: C.blue }], 28)),
+            stat('Главная точка входа', topPage ? esc(topPage.path) : '—', topPage ? `${nf(topPage.hits)} хитов · ${topShare}% просмотров` : 'сегодня пусто', C.amber, mk(shareParts, 28), 'txt'),
+            stat('Пик часа', `${nf(peak)}<small>хитов</small>`, peak ? `в ${peakAt} по Москве` : 'за час пусто', C.violet, `<div class="mlabel">за 2 минуты</div>`),
+            stat('Доля ботов', `${data.bot_ratio.toLocaleString('ru-RU')}<small>%</small>`, `${nf(t.bot_hits.current)} из ${nf(t.bot_hits.current + t.real_hits.current)} хитов`, C.rose, mk([{ v: t.bot_hits.current, c: C.rose }, { v: t.real_hits.current, c: '' }], 28)),
+        ].join('');
+        hbars('sp-hour', all, C.indigo);
+
+        // --- динамика
+        renderTimeline();
+
+        // --- состав
+        const allHits = t.real_hits.current + t.bot_hits.current;
+        $('composition').innerHTML = [
+            stackRow('Хиты: люди и боты', nf(allHits), [{ l: 'Люди', v: t.real_hits.current, c: C.indigo }, { l: 'Боты', v: t.bot_hits.current, c: C.rose }]),
+            stackRow('Платформа людей', nf(t.real_hits.current), [{ l: 'Мобильные', v: data.device_stats.mobile_pct, c: C.blue }, { l: 'Компьютеры', v: data.device_stats.desktop_pct, c: C.violet }]),
+            stackRow('Онлайн сейчас', nf(data.online_real + data.online_bots) + ' IP', [{ l: 'Люди', v: data.online_real, c: C.green }, { l: 'Боты', v: data.online_bots, c: C.rose }]),
+            stackRow('Посетители: сегодня, вчера, неделю назад', '', [{ l: 'Сегодня', v: t.uniques.current, c: C.indigo }, { l: 'Вчера', v: t.uniques.yesterday, c: 'rgba(99,102,241,.45)' }, { l: 'Неделю назад', v: t.uniques.appn, c: '#3a3a44' }]),
+        ].join('');
+        $('donut-center-pct').textContent = Math.round(data.clean_ratio) + '%';
+        donutChart.data.datasets[0].data = [Math.max(1, t.real_hits.current), t.bot_hits.current];
+        donutChart.update('none');
+        $('integrity-text').innerHTML = data.bot_ratio > 50
+            ? `<b class="text-white">Боты обгоняют людей.</b> ${nf(t.bot_hits.current)} бот-хитов против ${nf(t.real_hits.current)}. Загляни в адреса справа и подумай о блокировке в CRM.`
+            : data.bot_ratio > 20
+            ? `<b class="text-white">Заметная доля ботов.</b> Каждый ${Math.max(2, Math.round(100 / Math.max(1, data.bot_ratio)))}-й хит — сканер или парсер.`
+            : `<b class="text-white">Трафик чистый.</b> Ботов ${data.bot_ratio.toLocaleString('ru-RU')}% от всех хитов за сегодня.`;
+
+        // --- страницы
+        const maxHits = Math.max(1, ...data.top_pages.map(p => p.hits));
+        $('pages-total').textContent = pagesSum ? `${nf(pagesSum)} хитов` : '';
+        const pageColors = [C.indigo, C.blue, C.cyan, C.green, C.amber, C.violet, C.pink, C.rose];
+        $('routes-tick-matrix').innerHTML = data.top_pages.length ? data.top_pages.map((p, i) => `
+            <div class="rank">
+                <span class="n">${String(i + 1).padStart(2, '0')}</span>
+                <div class="min-w-0">
+                    <div class="text-[12.5px] text-white truncate">${esc(p.path)}</div>
+                    <div class="track"><i style="width:${p.hits / maxHits * 100}%;background:${pageColors[i % pageColors.length]}"></i></div>
+                </div>
+                <div class="text-right"><div class="text-[13px] font-semibold text-white num">${nf(p.hits)}</div><div class="text-[11px]" style="color:var(--tx3)">${Math.round(p.hits / Math.max(1, pagesSum) * 100)}%</div></div>
+            </div>`).join('') : `<div class="text-[12px] py-6 text-center" style="color:var(--tx3)">Сегодня ещё пусто</div>`;
+
+        renderTopIps();
+
+        // --- сравнение
+        const rows = [['Уникальные посетители', t.uniques, false], ['Просмотры людей', t.real_hits, false], ['Хиты ботов', t.bot_hits, true]];
+        $('compare-body').innerHTML = rows.map(([l, m, inv]) => `<tr>
+            <td style="color:var(--tx)">${l}</td>
+            <td class="num text-white font-semibold">${nf(m.current)}</td>
+            <td class="num">${nf(m.yesterday)}</td>
+            <td class="num">${deltaText(m.dod, inv)}</td>
+            <td class="num">${nf(m.appn)}</td>
+            <td class="num">${deltaText(m.wow, inv)}</td></tr>`).join('');
+        compareChart.data.datasets[0].data = rows.map(r => r[1].appn);
+        compareChart.data.datasets[1].data = rows.map(r => r[1].yesterday);
+        compareChart.data.datasets[2].data = rows.map(r => r[1].current);
+        compareChart.update();
+
+        renderFeed();
+        renderSignals(data);
+    } catch (e) { console.warn('traffic', e); }
+}
+/* ========================================================================
+   БАЗА ДАННЫХ: снимок
+   ======================================================================== */
+let SNAP = null, SNAP_META = null, HISTORY = null;
+
+async function loadSnapshot(id) {
+    try {
+        const r = await api('/api/admin/db/snapshot/' + (id ? '?id=' + id : ''));
+        SNAP = r.data; SNAP_META = r;
+        renderDB();
+        loadHistory();
+    } catch (e) { alert('Не удалось загрузить снимок: ' + e.message); }
+}
+async function takeSnapshot() {
+    const btn = document.getElementById('snap-btn');
+    btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Снимаю...';
+    try {
+        const r = await api('/api/admin/db/snapshot/', { method: 'POST' });
+        SNAP = r.data; SNAP_META = r; loaded.er = false;
+        renderDB(); loadHistory();
+        if (activeTab === 'schema') { loaded.er = true; renderER(); }
+    } catch (e) { alert(e.message); }
+    btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-camera mr-1"></i> Снять снимок';
+}
+async function loadHistory() {
+    HISTORY = (await api('/api/admin/db/history/')).items;
+    const sel = document.getElementById('snap-select');
+    sel.innerHTML = [...HISTORY].reverse().map(h => `<option value="${h.id}" ${h.id === SNAP_META.id ? 'selected' : ''}>#${h.id} · ${fmtDate(h.ts)} · ${fmtBytes(h.db_size)}</option>`).join('');
+    sel.onchange = () => { loaded.er = false; loadSnapshot(sel.value); };
+    renderGrowth();
+}
+
+function renderDB() {
+    const s = SNAP, o = s.overview, sm = s.summary;
+    document.getElementById('snap-id').textContent = '#' + SNAP_META.id;
+    document.getElementById('snap-time').textContent = fmtDate(SNAP_META.created_at);
+    document.getElementById('snap-ms').textContent = s.collect_ms + ' мс';
+    document.getElementById('snap-db').textContent = `${o.db_name} · ${o.version}`;
+    document.getElementById('side-dbsize').textContent = fmtBytes(o.db_size);
+    document.getElementById('stats-reset').textContent = o.stats.stats_reset ? fmtDate(o.stats.stats_reset) : 'с запуска сервера (' + fmtDate(o.started_at) + ')';
+
+    document.getElementById('db-kpis').innerHTML = [
+        kpi('Размер базы', fmtBytes(o.db_size), `данные ${fmtBytes(sm.data_bytes)}`, C.cyan),
+        kpi('Индексы', fmtBytes(sm.index_bytes), `${sm.indexes} шт · ${Math.round(sm.index_bytes / Math.max(1, sm.data_bytes + sm.index_bytes) * 100)}% веса`),
+        kpi('Таблиц', sm.tables, `${sm.columns} полей · ${sm.relations} FK`),
+        kpi('Строк (оценка)', fmtNum(sm.rows), `мёртвых ${fmtNum(sm.dead_rows)}`),
+        kpi('Cache hit', pct(o.cache_hit_ratio), o.cache_hit_ratio >= 99 ? 'отлично' : o.cache_hit_ratio >= 95 ? 'нормально' : 'мало памяти под кэш', o.cache_hit_ratio >= 99 ? C.emerald : o.cache_hit_ratio >= 95 ? C.amber : C.rose),
+        kpi('Лишние индексы', fmtBytes(sm.unused_index_bytes), `${sm.unused_indexes} не используются`, sm.unused_indexes ? C.amber : null),
+        kpi('Без модели', sm.orphan_tables, `пустых таблиц: ${sm.empty_tables}`, sm.orphan_tables ? C.rose : null),
+        kpi('Аптайм', fmtDur(o.uptime_sec), `откатов ${o.rollback_ratio}% · deadlocks ${o.stats.deadlocks}`),
+    ].join('');
+
+    renderTreemap();
+    renderComposition();
+    renderRW();
+    renderTablesTable();
+    renderColumnsTable();
+    renderIndexesTable();
+    renderTypes();
+    renderSettings();
+    renderCleanup();
+    renderFK();
+    fillERFocus();
+}
+
+/* Treemap */
+function treemapColor(t, mode) {
+    const a = .85;
+    if (mode === 'dead') { const p = Math.min(1, t.dead_pct / 30); return `rgba(${Math.round(16 + 228 * p)},${Math.round(185 - 122 * p)},${Math.round(129 - 35 * p)},${a})`; }
+    if (mode === 'idx') { const p = t.total_bytes ? t.index_bytes / t.total_bytes : 0; return `rgba(${Math.round(34 + 105 * p)},${Math.round(211 - 119 * p)},${Math.round(238 + 8 * p)},${a})`; }
+    if (mode === 'activity') { const act = t.reads + t.writes; const p = act ? Math.min(1, Math.log10(act + 1) / 9) : 0; return act ? `rgba(34,211,238,${.15 + .75 * p})` : 'rgba(71,85,105,.5)'; }
+    if (t.flags.includes('orphan')) return 'rgba(244,63,94,.75)';
+    if (t.flags.includes('never_read') || t.flags.includes('empty')) return 'rgba(71,85,105,.65)';
+    if (t.flags.includes('bloated')) return 'rgba(245,158,11,.75)';
+    if (t.flags.includes('seq_heavy') || t.flags.includes('index_heavy')) return 'rgba(139,92,246,.75)';
+    return 'rgba(99,102,241,.78)';
+}
+function renderTreemap() {
+    const mode = document.getElementById('treemap-color').value;
+    const tables = SNAP.tables.filter(t => t.total_bytes > 0);
+    chart('treemap', {
+        type: 'treemap',
+        data: { datasets: [{
+            tree: tables, key: 'total_bytes', borderWidth: 0, borderRadius: 6, spacing: 2,
+            backgroundColor: ctx => ctx.type === 'data' ? treemapColor(ctx.raw._data, mode) : 'transparent',
+            labels: { display: true, align: 'left', position: 'top', color: '#fff', padding: 8, font: [{ size: 12, weight: '600', family: 'Inter' }, { size: 10.5, family: 'Inter' }],
+                formatter: ctx => { const t = ctx.raw._data; return [t.name, fmtBytes(t.total_bytes) + ' · ' + fmtNum(t.rows) + ' стр.']; } },
+        }] },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            onClick: (e, els, ch) => { if (els.length) { const d = ch.data.datasets[0].data[els[0].index]; if (d && d._data) openTable(d._data.name); } },
+            plugins: { legend: { display: false }, tooltip: { callbacks: {
+                title: items => items[0].raw._data.name,
+                label: item => { const t = item.raw._data; return [
+                    `модель: ${t.model || '—'}`, `всего: ${fmtBytes(t.total_bytes)} (${t.share_pct}% базы)`,
+                    `данные ${fmtBytes(t.heap_bytes)} · индексы ${fmtBytes(t.index_bytes)} · TOAST ${fmtBytes(t.toast_bytes)}`,
+                    `строк ~${fmtNum(t.rows)} · мёртвых ${t.dead_pct}%`, `чтений ${fmtNum(t.reads)} · записей ${fmtNum(t.writes)}`]; }
+            } } }
+        }
+    });
+    const legends = {
+        kind: [['rgba(99,102,241,.78)', 'норма'], ['rgba(244,63,94,.75)', 'нет модели'], ['rgba(71,85,105,.65)', 'пустая / не читается'], ['rgba(245,158,11,.75)', 'раздута'], ['rgba(139,92,246,.75)', 'seq scan / тяжёлые индексы']],
+        dead: [['rgba(16,185,129,.85)', '0% мёртвых'], ['rgba(244,63,94,.85)', '30%+']],
+        idx: [['rgba(34,211,238,.85)', 'в основном данные'], ['rgba(139,92,246,.85)', 'в основном индексы']],
+        activity: [['rgba(71,85,105,.5)', 'не используется'], ['rgba(34,211,238,.3)', 'мало'], ['rgba(34,211,238,.9)', 'много']],
+    };
+    document.getElementById('treemap-legend').innerHTML = legends[mode].map(([c, l]) => `<span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded" style="background:${c}"></span>${l}</span>`).join('');
+}
+document.getElementById('treemap-color').onchange = () => SNAP && renderTreemap();
+
+function renderComposition() {
+    const top = SNAP.tables.slice(0, 15);
+    chart('composition-chart', {
+        type: 'bar',
+        data: { labels: top.map(t => t.name), datasets: [
+            { label: 'Данные', data: top.map(t => t.heap_bytes), backgroundColor: C.cyan },
+            { label: 'Индексы', data: top.map(t => t.index_bytes), backgroundColor: C.violet },
+            { label: 'TOAST', data: top.map(t => t.toast_bytes), backgroundColor: C.amber },
+        ] },
+        options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+            onClick: (e, els) => els.length && openTable(top[els[0].index].name),
+            plugins: { legend: { position: 'bottom', labels: { boxWidth: 10 } }, tooltip: { callbacks: { label: i => `${i.dataset.label}: ${fmtBytes(i.raw)}` } } },
+            scales: { x: { stacked: true, ticks: { callback: v => fmtBytes(v) } }, y: { stacked: true, ticks: { font: { size: 9 } } } } }
+    });
+}
+
+function renderRW() {
+    const ts = SNAP.tables;
+    const maxB = Math.max(1, ...ts.map(t => t.total_bytes));
+    chart('rw-chart', {
+        type: 'bubble',
+        data: { datasets: [{ data: ts.map(t => ({ x: t.reads + 1, y: t.writes + 1, r: 3 + 18 * Math.sqrt(t.total_bytes / maxB), t })),
+            backgroundColor: ts.map(t => treemapColor(t, 'kind')), borderColor: 'rgba(255,255,255,.15)' }] },
+        options: { responsive: true, maintainAspectRatio: false,
+            onClick: (e, els) => els.length && openTable(ts[els[0].index].name),
+            plugins: { legend: { display: false }, tooltip: { callbacks: { label: i => `${i.raw.t.name}: чтений ${fmtNum(i.raw.t.reads)}, записей ${fmtNum(i.raw.t.writes)}, ${fmtBytes(i.raw.t.total_bytes)}` } } },
+            scales: { x: { type: 'logarithmic', title: { display: true, text: 'прочитано строк (log)' }, ticks: { callback: v => fmtNum(v) } },
+                      y: { type: 'logarithmic', title: { display: true, text: 'записано строк (log)' }, ticks: { callback: v => fmtNum(v) } } } }
+    });
+}
+
+function renderGrowth() {
+    if (!HISTORY) return;
+    const metric = document.getElementById('growth-metric').value;
+    const idx = metric === 'bytes' ? 0 : 1;
+    const note = document.getElementById('growth-note');
+    if (HISTORY.length < 2) note.textContent = 'Пока один снимок. Чтобы увидеть рост, снимай снимки регулярно: python manage.py db_snapshot в cron.';
+    else {
+        const first = HISTORY[0], last = HISTORY[HISTORY.length - 1];
+        const days = Math.max(1, (new Date(last.ts) - new Date(first.ts)) / 864e5);
+        note.textContent = `За ${days.toFixed(0)} дн. база выросла на ${fmtBytes(last.db_size - first.db_size)} (≈ ${fmtBytes((last.db_size - first.db_size) / days)} в день).`;
+    }
+    const last = HISTORY[HISTORY.length - 1].tables;
+    const top = Object.keys(last).sort((a, b) => last[b][idx] - last[a][idx]).slice(0, 6);
+    const datasets = top.map((name, i) => ({ label: name, data: HISTORY.map(h => (h.tables[name] || [0, 0])[idx]), borderColor: PALETTE[i], backgroundColor: PALETTE[i], borderWidth: 1.5, pointRadius: 2, tension: .3, yAxisID: 'y' }));
+    if (metric === 'bytes') datasets.unshift({ label: 'вся база', data: HISTORY.map(h => h.db_size), borderColor: '#fff', borderWidth: 2, borderDash: [4, 3], pointRadius: 2, tension: .3, yAxisID: 'y' });
+    chart('growth-chart', {
+        type: 'line', data: { labels: HISTORY.map(h => fmtDate(h.ts)), datasets },
+        options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+            plugins: { legend: { position: 'bottom', labels: { boxWidth: 10 } }, tooltip: { callbacks: { label: i => `${i.dataset.label}: ${metric === 'bytes' ? fmtBytes(i.raw) : fmtNum(i.raw)}` } } },
+            scales: { y: { ticks: { callback: v => metric === 'bytes' ? fmtBytes(v) : fmtNum(v) } } } }
+    });
+}
+document.getElementById('growth-metric').onchange = renderGrowth;
+
+function growthOf(name) {
+    if (!HISTORY || HISTORY.length < 2) return null;
+    const pts = HISTORY.filter(h => h.tables[name]);
+    if (pts.length < 2) return null;
+    const a = pts[0], b = pts[pts.length - 1];
+    const days = Math.max(1 / 24, (new Date(b.ts) - new Date(a.ts)) / 864e5);
+    return { bytes: b.tables[name][0] - a.tables[name][0], rows: b.tables[name][1] - a.tables[name][1], days, perDay: (b.tables[name][0] - a.tables[name][0]) / days };
+}
+
+/* Таблица таблиц */
+function renderTablesTable() {
+    const q = document.getElementById('tbl-search').value.toLowerCase();
+    const f = document.getElementById('tbl-flag').value;
+    const rows = SNAP.tables.filter(t => (!q || t.name.includes(q) || (t.model || '').toLowerCase().includes(q)) && (!f || t.flags.includes(f)));
+    const maxB = Math.max(1, ...SNAP.tables.map(t => t.total_bytes));
+    dataTable('tables-table', [
+        { key: 'name', label: 'Таблица', render: t => `<div class="text-white font-semibold">${esc(t.name)}</div><div class="text-[10px] text-slate-500">${esc(t.model || '—')}</div>` },
+        { key: 'total_bytes', label: 'Всего', num: true, render: t => `<div>${fmtBytes(t.total_bytes)}</div>${bar(t.total_bytes, maxB, C.cyan)}` },
+        { key: 'share_pct', label: '% базы', num: true, render: t => t.share_pct + '%' },
+        { key: 'heap_bytes', label: 'Данные', num: true, render: t => fmtBytes(t.heap_bytes) },
+        { key: 'index_bytes', label: 'Индексы', num: true, render: t => fmtBytes(t.index_bytes) },
+        { key: 'toast_bytes', label: 'TOAST', num: true, render: t => fmtBytes(t.toast_bytes), hint: 'Вынесенные длинные значения (text, json)' },
+        { key: 'rows', label: 'Строк', num: true, render: t => fmtNum(t.rows) },
+        { key: 'bytes_per_row', label: 'Байт/стр', num: true, render: t => fmtNum(t.bytes_per_row) },
+        { key: 'columns', label: 'Полей', num: true },
+        { key: 'seq_scan', label: 'Seq', num: true, render: t => fmtNum(t.seq_scan), hint: 'Полных проходов по таблице' },
+        { key: 'idx_scan', label: 'Idx', num: true, render: t => fmtNum(t.idx_scan), hint: 'Чтений через индекс' },
+        { key: 'idx_usage_pct', label: '% idx', num: true, render: t => t.idx_usage_pct == null ? '—' : `<span class="${t.idx_usage_pct < 50 && t.rows > 10000 ? 'text-amber-400' : ''}">${t.idx_usage_pct}%</span>` },
+        { key: 'ins', label: 'Ins', num: true, render: t => fmtNum(t.ins) },
+        { key: 'upd', label: 'Upd', num: true, render: t => fmtNum(t.upd) },
+        { key: 'del', label: 'Del', num: true, render: t => fmtNum(t.del) },
+        { key: 'dead_pct', label: 'Мёртвых', num: true, render: t => `<span class="${t.dead_pct > 20 ? 'text-amber-400' : ''}">${t.dead_pct}%</span>` },
+        { key: 'cache_hit_pct', label: 'Cache', num: true, render: t => pct(t.cache_hit_pct) },
+        { key: 'last_vacuum', label: 'Vacuum', render: t => fmtAgo(t.last_vacuum) },
+        { key: 'flags', label: 'Флаги', render: t => chips(t.flags) },
+    ], rows, { sortKey: 'total_bytes', onRow: t => openTable(t.name) });
+}
+['tbl-search', 'tbl-flag'].forEach(id => document.getElementById(id).addEventListener('input', () => SNAP && renderTablesTable()));
+
+function renderColumnsTable() {
+    const q = document.getElementById('col-search').value.toLowerCase();
+    const rows = SNAP.columns.filter(c => !q || c.column.includes(q) || c.table.includes(q));
+    const maxB = Math.max(1, ...SNAP.columns.map(c => c.approx_bytes || 0));
+    dataTable('columns-table', [
+        { key: 'table', label: 'Таблица', render: c => `<span class="text-slate-400 clickable" onclick="openTable('${esc(c.table)}')">${esc(c.table)}</span>` },
+        { key: 'column', label: 'Поле', render: c => `<span class="text-white">${esc(c.column)}</span>` },
+        { key: 'type', label: 'Тип', render: c => `<span class="text-slate-400">${esc(c.type)}</span>` },
+        { key: 'approx_bytes', label: '≈ Вес', num: true, render: c => `<div>${fmtBytes(c.approx_bytes)}</div>${bar(c.approx_bytes || 0, maxB, C.violet)}` },
+        { key: 'avg_width', label: 'Ср. байт', num: true },
+        { key: 'null_pct', label: 'NULL', num: true, render: c => pct(c.null_pct) },
+        { key: 'distinct', label: 'Уник.', num: true, render: c => fmtNum(c.distinct) },
+        { key: 'flags', label: '', render: c => chips(c.flags) },
+    ], rows, { sortKey: 'approx_bytes', limit: 300 });
+}
+document.getElementById('col-search').addEventListener('input', () => SNAP && renderColumnsTable());
+
+function renderIndexesTable() {
+    const f = document.getElementById('idx-flag').value;
+    const rows = SNAP.indexes.filter(i => !f || i.flags.includes(f));
+    dataTable('indexes-table', [
+        { key: 'name', label: 'Индекс', render: i => `<div class="text-white" title="${esc(i.definition)}">${esc(i.name)}</div><div class="text-[10px] text-slate-500">${esc(i.table)} · ${i.method}${i.primary ? ' · PK' : i.unique ? ' · unique' : ''}</div>` },
+        { key: 'bytes', label: 'Размер', num: true, render: i => fmtBytes(i.bytes) },
+        { key: 'scans', label: 'Исп.', num: true, render: i => `<span class="${i.scans === 0 ? 'text-rose-400' : ''}">${fmtNum(i.scans)}</span>` },
+        { key: 'flags', label: '', render: i => chips(i.flags) },
+    ], rows, { sortKey: 'bytes', limit: 300 });
+}
+document.getElementById('idx-flag').addEventListener('input', () => SNAP && renderIndexesTable());
+
+function renderTypes() {
+    const cnt = {};
+    SNAP.columns.forEach(c => { const t = c.type.replace(/\(.*\)/, '').replace('timestamp with time zone', 'timestamptz').replace('character varying', 'varchar'); cnt[t] = (cnt[t] || 0) + 1; });
+    const arr = Object.entries(cnt).sort((a, b) => b[1] - a[1]).slice(0, 14);
+    chart('types-chart', {
+        type: 'bar', data: { labels: arr.map(a => a[0]), datasets: [{ data: arr.map(a => a[1]), backgroundColor: arr.map((_, i) => PALETTE[i % PALETTE.length]), borderRadius: 4 }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { precision: 0 } } } }
+    });
+}
+
+function renderSettings() {
+    const o = SNAP.overview, st = o.stats;
+    const rows = [
+        ['max_connections', o.settings.max_connections], ['shared_buffers', o.settings.shared_buffers],
+        ['work_mem', o.settings.work_mem], ['effective_cache_size', o.settings.effective_cache_size],
+        ['maintenance_work_mem', o.settings.maintenance_work_mem], ['random_page_cost', o.settings.random_page_cost],
+        ['autovacuum', o.settings.autovacuum], ['запущен', fmtDate(o.started_at)],
+        ['commit / rollback', `${fmtNum(st.xact_commit)} / ${fmtNum(st.xact_rollback)}`],
+        ['строк прочитано', fmtNum(st.tup_returned)], ['строк вставлено', fmtNum(st.tup_inserted)],
+        ['строк обновлено', fmtNum(st.tup_updated)], ['строк удалено', fmtNum(st.tup_deleted)],
+        ['temp-файлы', `${fmtNum(st.temp_files)} · ${fmtBytes(st.temp_bytes)}`], ['deadlocks', st.deadlocks],
+        ['другие базы', o.databases.filter(d => d.datname !== o.db_name).map(d => `${d.datname} ${fmtBytes(d.size)}`).join(', ') || '—'],
+    ];
+    document.getElementById('server-settings').innerHTML = rows.map(([k, v]) => `<div class="flex justify-between gap-3 border-b border-white/5 py-1"><span class="text-slate-500">${k}</span><span class="text-slate-200 text-right">${esc(v)}</span></div>`).join('') +
+        (st.temp_files > 0 ? `<div class="col-span-2 text-[11px] text-amber-400 pt-2">Есть temp-файлы: сортировки и хэши не влезают в work_mem и уходят на диск.</div>` : '');
+}
+
+/* ========================================================================
+   ЧИСТКА
+   ======================================================================== */
+function renderCleanup() {
+    const s = SNAP, T = s.tables, I = s.indexes, Cl = s.columns;
+    const djangoSys = n => /^(django_|auth_|celery|silk_)/.test(n);
+    const groups = [
+        { title: 'Таблицы без модели Django', icon: 'fa-ghost', color: 'rose', hint: 'Остались от удалённых моделей или сторонних пакетов. Первые кандидаты на DROP.',
+          items: T.filter(t => t.flags.includes('orphan')), render: t => [t.name, `${fmtBytes(t.total_bytes)} · ${fmtNum(t.rows)} стр.`], click: t => t.name, weight: t => t.total_bytes },
+        { title: 'Пустые таблицы', icon: 'fa-box-open', color: 'slate', hint: 'Строк нет. Если модель давно не используется — можно убирать вместе с моделью.',
+          items: T.filter(t => t.flags.includes('empty') && !djangoSys(t.name)), render: t => [t.name, t.model || 'без модели'], click: t => t.name },
+        { title: 'Таблицы, которые никто не читает', icon: 'fa-eye-slash', color: 'amber', hint: 'Есть данные, но ни одного чтения с момента сброса статистики. Возможно, только пишем «в никуда».',
+          items: T.filter(t => t.flags.includes('never_read') && !t.flags.includes('empty')), render: t => [t.name, `${fmtBytes(t.total_bytes)} · записей ${fmtNum(t.writes)}`], click: t => t.name, weight: t => t.total_bytes },
+        { title: 'Неиспользуемые индексы', icon: 'fa-list-ol', color: 'amber', hint: 'Занимают место и замедляют каждую вставку. Перед удалением проверь, что статистика копилась хотя бы пару недель.',
+          items: I.filter(i => i.flags.includes('unused')), render: i => [i.name, `${i.table} · ${fmtBytes(i.bytes)}`], click: i => i.table, weight: i => i.bytes },
+        { title: 'Дубли и покрытые индексы', icon: 'fa-clone', color: 'violet', hint: 'Индекс на (a) не нужен, если есть индекс на (a, b). Дубли — просто лишние.',
+          items: I.filter(i => i.flags.includes('duplicate') || i.flags.includes('covered_by_prefix')), render: i => [i.name, `${i.table} · ${fmtBytes(i.bytes)} · ${i.flags.join(', ')}`], click: i => i.table, weight: i => i.bytes },
+        { title: 'Раздутые таблицы', icon: 'fa-wind', color: 'amber', hint: 'Много мёртвых строк. Поможет VACUUM (ANALYZE), при сильном раздувании — VACUUM FULL или pg_repack.',
+          items: T.filter(t => t.flags.includes('bloated')), render: t => [t.name, `${t.dead_pct}% мёртвых · ${fmtNum(t.dead)} строк`], click: t => t.name },
+        { title: 'Поля, где всегда NULL', icon: 'fa-circle-xmark', color: 'rose', hint: 'Поле есть, но им не пользуются. Кандидаты на удаление из модели.',
+          items: Cl.filter(c => c.flags.includes('always_null')), render: c => [`${c.table}.${c.column}`, c.type], click: c => c.table },
+        { title: 'Поля с одним значением', icon: 'fa-equals', color: 'amber', hint: 'Во всех строках одно и то же. Либо флаг, который никогда не меняется, либо мёртвое поле.',
+          items: Cl.filter(c => c.flags.includes('constant')), render: c => [`${c.table}.${c.column}`, c.type], click: c => c.table },
+        { title: 'Таблицы с частым полным сканом', icon: 'fa-magnifying-glass', color: 'violet', hint: 'Большие таблицы, которые чаще читаются перебором, чем по индексу. Ищи запросы в «SQL-запросах» и добавляй индекс.',
+          items: T.filter(t => t.flags.includes('seq_heavy')), render: t => [t.name, `seq ${fmtNum(t.seq_scan)} / idx ${fmtNum(t.idx_scan)}`], click: t => t.name },
+        { title: 'FK без индекса', icon: 'fa-link-slash', color: 'violet', hint: 'Удаление родителя и JOIN по такой связи идут перебором.',
+          items: s.relations.filter(r => !r.has_index), render: r => [`${r.source}.${r.source_cols.join(',')}`, `→ ${r.target}`], click: r => r.source },
+        { title: 'Широкие поля', icon: 'fa-text-width', color: 'slate', hint: 'Среднее значение больше 1 KB. Проверь, нужно ли хранить это в основной таблице и не тянется ли оно в списки (используй .only()/.defer()).',
+          items: Cl.filter(c => c.flags.includes('wide')), render: c => [`${c.table}.${c.column}`, `≈ ${fmtBytes(c.avg_width)} на строку · ${fmtBytes(c.approx_bytes)}`], click: c => c.table, weight: c => c.approx_bytes },
+        { title: 'Модели без таблицы', icon: 'fa-triangle-exclamation', color: 'rose', hint: 'Модель есть в коде, а таблицы нет: не применены миграции или managed=False.',
+          items: s.models_without_table.map(m => ({ m })), render: x => [x.m, ''], click: null },
+    ];
+    let total = 0;
+    document.getElementById('cleanup-grid').innerHTML = groups.map(g => {
+        total += g.items.length;
+        const sum = g.weight ? g.items.reduce((a, x) => a + (g.weight(x) || 0), 0) : null;
+        const items = g.weight ? [...g.items].sort((a, b) => g.weight(b) - g.weight(a)) : g.items;
+        return `<div class="col-span-12 md:col-span-6 xl:col-span-4 ops-card p-5 space-y-3">
+            <div class="flex items-start justify-between gap-3">
+                <div class="flex items-center gap-2"><i class="fa-solid ${g.icon} text-${g.color}-400 text-xs"></i><h3 class="card-title">${g.title}</h3></div>
+                <span class="chip chip-${g.color === 'slate' ? 'slate' : g.color}">${g.items.length}${sum ? ' · ' + fmtBytes(sum) : ''}</span>
+            </div>
+            <p class="card-sub leading-relaxed">${g.hint}</p>
+            <div class="space-y-1 max-h-56 overflow-y-auto pr-1 text-xs font-mono-nums">
+                ${items.length ? items.map(x => { const [a, b] = g.render(x); const c = g.click ? g.click(x) : null;
+                    return `<div class="flex justify-between gap-3 py-1 border-b border-white/5 ${c ? 'clickable hover:text-cyan-300' : ''}" ${c ? `onclick="openTable('${esc(c)}')"` : ''}><span class="text-slate-200 truncate">${esc(a)}</span><span class="text-slate-500 text-right shrink-0">${esc(b)}</span></div>`; }).join('')
+                : '<div class="text-emerald-400/80">Чисто</div>'}
+            </div>
+        </div>`;
+    }).join('');
+    const badge = document.getElementById('cleanup-badge');
+    badge.textContent = total; badge.classList.toggle('hidden', !total);
+}
+
+/* ========================================================================
+   СХЕМА (Mermaid ER)
+   ======================================================================== */
+mermaid.initialize({ startOnLoad: false, theme: 'dark', securityLevel: 'strict', er: { useMaxWidth: false, layoutDirection: 'LR' },
+    themeVariables: { primaryColor: '#16161a', primaryBorderColor: '#6366f1', secondaryColor: '#1c1c22', tertiaryColor: '#131316', lineColor: '#4b4b55', primaryTextColor: '#ececef', attributeBackgroundColorOdd: '#131316', attributeBackgroundColorEven: '#18181c', fontFamily: 'Inter', fontSize: '12px' } });
+
+function fillERFocus() {
+    const sel = document.getElementById('er-focus'), cur = sel.value;
+    sel.innerHTML = '<option value="">Вся база</option>' + SNAP.tables.map(t => `<option ${t.name === cur ? 'selected' : ''}>${esc(t.name)}</option>`).join('');
+}
+function mid(n) { return n.replace(/[^A-Za-z0-9_]/g, '_'); }
+async function renderER() {
+    if (!SNAP) return;
+    const focus = document.getElementById('er-focus').value;
+    const soft = document.getElementById('er-soft').checked;
+    const withCols = document.getElementById('er-cols').checked;
+    const withDjango = document.getElementById('er-django').checked;
+    const sys = n => !withDjango && /^(django_|auth_permission|auth_group|celery)/.test(n);
+
+    let edges = SNAP.relations.map(r => ({ a: r.source, b: r.target, label: r.source_cols.join(','), soft: false }));
+    if (soft) edges = edges.concat(SNAP.soft_links.map(l => ({ a: l.source, b: l.target, label: l.column, soft: true })));
+    edges = edges.filter(e => !sys(e.a) && !sys(e.b));
+    let names = new Set(SNAP.tables.map(t => t.name).filter(n => !sys(n)));
+    if (focus) {
+        const keep = new Set([focus]);
+        edges.forEach(e => { if (e.a === focus) keep.add(e.b); if (e.b === focus) keep.add(e.a); });
+        names = keep;
+        edges = edges.filter(e => keep.has(e.a) && keep.has(e.b));
+    }
+    const colsBy = {};
+    SNAP.columns.forEach(c => (colsBy[c.table] = colsBy[c.table] || []).push(c));
+    const fkCols = new Set(SNAP.relations.map(r => r.source + '.' + r.source_cols[0]));
+    const tmap = Object.fromEntries(SNAP.tables.map(t => [t.name, t]));
+
+    let src = 'erDiagram\n';
+    for (const n of names) {
+        const t = tmap[n]; if (!t) continue;
+        src += `  ${mid(n)}["${n} · ${fmtBytes(t.total_bytes).replace(' ', '')} · ${fmtNum(t.rows)}r"] {\n`;
+        const cols = withCols || focus ? (colsBy[n] || []) : (colsBy[n] || []).filter(c => c.column === 'id' || fkCols.has(n + '.' + c.column)).slice(0, 4);
+        if (!cols.length) src += `    _ _\n`;
+        cols.forEach(c => {
+            const ty = c.type.replace(/\(.*\)/, '').replace(/[^A-Za-z0-9_]/g, '_') || 'x';
+            const key = c.column === 'id' ? ' PK' : fkCols.has(n + '.' + c.column) ? ' FK' : '';
+            src += `    ${ty} ${mid(c.column)}${key}\n`;
+        });
+        src += '  }\n';
+    }
+    edges.forEach(e => { src += `  ${mid(e.b)} ||${e.soft ? '..' : '--'}o{ ${mid(e.a)} : "${e.label.replace(/"/g, '')}"\n`; });
+
+    const box = document.getElementById('er-box');
+    box.innerHTML = '<div class="text-xs text-slate-500">Рисую...</div>';
+    try {
+        const { svg } = await mermaid.render('er-svg-' + Date.now(), src);
+        box.innerHTML = svg;
+        box.querySelectorAll('g[id^="entity-"]').forEach(g => {
+            const raw = g.id.replace(/^entity-/, '').replace(/-\d+$/, '');
+            const t = SNAP.tables.find(x => mid(x.name) === raw);
+            if (t) { g.style.cursor = 'pointer'; g.addEventListener('click', () => openTable(t.name)); }
+        });
+    } catch (e) {
+        box.innerHTML = `<div class="text-xs text-rose-400">Mermaid не смог нарисовать схему: ${esc(e.message || e)}. Попробуй фокус на одной таблице.</div>`;
     }
 }
 
+function renderFK() {
+    dataTable('fk-table', [
+        { key: 'source', label: 'Откуда', render: r => `<span class="text-white clickable" onclick="openTable('${esc(r.source)}')">${esc(r.source)}</span>.${esc(r.source_cols.join(', '))}` },
+        { key: 'target', label: 'Куда', render: r => `<span class="clickable" onclick="openTable('${esc(r.target)}')">${esc(r.target)}</span>.${esc(r.target_cols.join(', '))}` },
+        { key: 'on_delete', label: 'ON DELETE' },
+        { key: 'has_index', label: 'Индекс', render: r => r.has_index ? '<span class="text-emerald-400">есть</span>' : '<span class="chip chip-rose">нет</span>' },
+    ], SNAP.relations, { sortKey: 'source', sortDir: 1 });
+}
+
+/* ========================================================================
+   КАРТОЧКА ТАБЛИЦЫ
+   ======================================================================== */
+function openTable(name) {
+    if (!SNAP) return;
+    const t = SNAP.tables.find(x => x.name === name); if (!t) return;
+    const cols = SNAP.columns.filter(c => c.table === name).sort((a, b) => a.position - b.position);
+    const idx = SNAP.indexes.filter(i => i.table === name);
+    const out = SNAP.relations.filter(r => r.source === name);
+    const inc = SNAP.relations.filter(r => r.target === name);
+    const softOut = SNAP.soft_links.filter(l => l.source === name);
+    const softIn = SNAP.soft_links.filter(l => l.target === name);
+    const g = growthOf(name);
+    const maxCol = Math.max(1, ...cols.map(c => c.approx_bytes || 0));
+    const relItem = (tbl, txt) => `<div class="flex justify-between gap-3 py-1 border-b border-white/5 clickable hover:text-cyan-300" onclick="openTable('${esc(tbl)}')"><span>${esc(tbl)}</span><span class="text-slate-500">${esc(txt)}</span></div>`;
+
+    document.getElementById('drawer-body').innerHTML = `
+        <div class="flex items-start justify-between gap-4">
+            <div>
+                <div class="text-[10px] uppercase tracking-wider text-slate-500 font-mono-nums">${esc(t.schema)} · ${esc(t.model || 'нет модели Django')}</div>
+                <h2 class="text-2xl font-extrabold text-white font-mono-nums">${esc(t.name)}</h2>
+                <div class="mt-2 flex flex-wrap gap-1">${chips(t.flags)}</div>
+            </div>
+            <button class="btn" onclick="closeDrawer()"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            ${kpi('Всего', fmtBytes(t.total_bytes), `${t.share_pct}% базы`, C.cyan)}
+            ${kpi('Строк', fmtNum(t.rows), `<span id="exact-count"><a class="text-cyan-400 clickable" onclick="exactCount('${esc(t.name)}')">точный COUNT</a></span>`)}
+            ${kpi('Байт на строку', fmtNum(t.bytes_per_row), `${t.columns} полей`)}
+            ${kpi('Рост', g ? fmtBytes(g.bytes) : '—', g ? `≈ ${fmtBytes(g.perDay)}/день за ${g.days.toFixed(0)} дн.` : 'нужно 2+ снимка')}
+            ${kpi('Данные / индексы', `${fmtBytes(t.heap_bytes)}`, `индексы ${fmtBytes(t.index_bytes)} · TOAST ${fmtBytes(t.toast_bytes)}`)}
+            ${kpi('Чтения', fmtNum(t.reads), `seq ${fmtNum(t.seq_scan)} · idx ${fmtNum(t.idx_scan)} (${pct(t.idx_usage_pct)})`)}
+            ${kpi('Записи', fmtNum(t.writes), `ins ${fmtNum(t.ins)} · upd ${fmtNum(t.upd)} · del ${fmtNum(t.del)}`)}
+            ${kpi('Обслуживание', `${t.dead_pct}%`, `мёртвых · vacuum ${fmtAgo(t.last_vacuum)} назад · analyze ${fmtAgo(t.last_analyze)}`, t.dead_pct > 20 ? C.amber : null)}
+        </div>
+        <div class="text-[11px] text-slate-500 font-mono-nums">cache hit ${pct(t.cache_hit_pct)} · HOT-обновлений ${pct(t.hot_upd_pct)} · изменений с последнего ANALYZE ${fmtNum(t.mod_since_analyze)}</div>
+
+        <div class="ops-card p-4 space-y-2">
+            <h3 class="card-title">Поля</h3>
+            <div class="overflow-x-auto"><table class="dt"><thead><tr>
+                <th>#</th><th>Поле</th><th>Тип</th><th>NULL?</th><th class="num">≈ Вес</th><th class="num">Ср. байт</th><th class="num">% NULL</th><th class="num">Уник.</th><th class="num" title="Корреляция физического порядка с порядком значений: ±1 — BRIN-индекс сработает отлично">Корр.</th><th>По умолчанию</th><th></th>
+            </tr></thead><tbody>${cols.map(c => `<tr>
+                <td class="text-slate-500">${c.position}</td>
+                <td class="text-white">${esc(c.column)}${c.comment ? ` <i class="fa-regular fa-comment text-slate-500" title="${esc(c.comment)}"></i>` : ''}</td>
+                <td class="text-slate-400">${esc(c.type)}</td>
+                <td>${c.nullable ? '<span class="text-slate-400">да</span>' : '<span class="text-slate-600">нет</span>'}</td>
+                <td class="num"><div>${fmtBytes(c.approx_bytes)}</div>${bar(c.approx_bytes || 0, maxCol, C.violet)}</td>
+                <td class="num">${c.avg_width ?? '—'}</td>
+                <td class="num">${pct(c.null_pct)}</td>
+                <td class="num">${fmtNum(c.distinct)}</td>
+                <td class="num">${c.correlation ?? '—'}</td>
+                <td class="text-slate-500 max-w-[180px] truncate" title="${esc(c.default)}">${esc(c.default || '')}</td>
+                <td>${chips(c.flags)}</td>
+            </tr>`).join('')}</tbody></table></div>
+        </div>
+
+        <div class="ops-card p-4 space-y-2">
+            <h3 class="card-title">Индексы (${idx.length})</h3>
+            <div class="space-y-2">${idx.map(i => `<div class="border-b border-white/5 pb-2">
+                <div class="flex flex-wrap items-center justify-between gap-2 text-xs font-mono-nums">
+                    <span class="text-white">${esc(i.name)} ${i.primary ? '<span class="chip chip-cyan">PK</span>' : i.unique ? '<span class="chip chip-cyan">unique</span>' : ''} ${chips(i.flags)}</span>
+                    <span class="text-slate-400">${fmtBytes(i.bytes)} · использован ${fmtNum(i.scans)} раз</span>
+                </div>
+                <div class="sql text-slate-500 mt-1">${esc(i.definition)}</div>
+            </div>`).join('') || '<div class="text-xs text-slate-500">Индексов нет</div>'}</div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="ops-card p-4 space-y-2 text-xs font-mono-nums"><h3 class="card-title">Ссылается на</h3>
+                ${out.map(r => relItem(r.target, r.source_cols.join(',') + (r.has_index ? '' : ' · без индекса'))).join('')}
+                ${softOut.map(l => relItem(l.target, l.column + ' · неявно')).join('')}
+                ${!out.length && !softOut.length ? '<div class="text-slate-500">—</div>' : ''}</div>
+            <div class="ops-card p-4 space-y-2 text-xs font-mono-nums"><h3 class="card-title">На неё ссылаются</h3>
+                ${inc.map(r => relItem(r.source, r.source_cols.join(',') + ' · ' + r.on_delete)).join('')}
+                ${softIn.map(l => relItem(l.source, l.column + ' · неявно')).join('')}
+                ${!inc.length && !softIn.length ? '<div class="text-slate-500">—</div>' : ''}</div>
+        </div>`;
+    document.getElementById('drawer').classList.add('open');
+    document.getElementById('drawer-bg').classList.add('open');
+    document.getElementById('drawer').scrollTop = 0;
+}
+function closeDrawer() { document.getElementById('drawer').classList.remove('open'); document.getElementById('drawer-bg').classList.remove('open'); }
+document.addEventListener('keydown', e => e.key === 'Escape' && closeDrawer());
+async function exactCount(name) {
+    const el = document.getElementById('exact-count');
+    el.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> считаю...';
+    try {
+        const r = await api('/api/admin/db/count/', { method: 'POST', body: JSON.stringify({ table: name }) });
+        el.innerHTML = r.error ? `<span class="text-rose-400">${esc(r.error)}</span>` : `<span class="text-emerald-400">ровно ${r.count.toLocaleString('ru-RU')}</span> · ${r.ms} мс`;
+    } catch (e) { el.innerHTML = `<span class="text-rose-400">${esc(e.message)}</span>`; }
+}
+
+/* ========================================================================
+   СКОРОСТЬ DJANGO
+   ======================================================================== */
+async function loadPerf() {
+    const hours = document.getElementById('perf-hours').value;
+    const d = await api('/api/admin/perf/?hours=' + hours);
+    const R = d.routes;
+    const total = R.reduce((a, r) => a + r.requests, 0);
+    const wavg = k => total ? (R.reduce((a, r) => a + r[k] * r.requests, 0) / total).toFixed(1) : '—';
+    const n5 = R.reduce((a, r) => a + r.errors_5xx, 0), slow = R.reduce((a, r) => a + r.slow, 0);
+    const worstQ = [...R].sort((a, b) => b.avg_queries - a.avg_queries)[0];
+    document.getElementById('perf-note').innerHTML = d.cache_backend.includes('LocMem')
+        ? '<span class="text-amber-400"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Кэш — LocMemCache: каждый воркер gunicorn копит свою статистику, здесь видна только часть. Переключи CACHES на Redis.</span>'
+        : `Кэш: ${esc(d.cache_backend.split('.').pop())}. Опросы самой админки не учитываются.`;
+    document.getElementById('perf-kpis').innerHTML = [
+        kpi('Запросов', fmtNum(total), `за ${hours} ч`, C.cyan),
+        kpi('Среднее время', wavg('avg_ms') + ' мс', 'взвешено по запросам'),
+        kpi('SQL на запрос', wavg('avg_queries'), worstQ ? `максимум: ${esc(worstQ.route.slice(0, 28))}` : ''),
+        kpi('Время в БД', wavg('avg_db_ms') + ' мс', 'в среднем на запрос'),
+        kpi('Медленных', fmtNum(slow), 'выше порога', slow ? C.amber : null),
+        kpi('Ошибок 5xx', fmtNum(n5), '', n5 ? C.rose : null),
+    ].join('');
+    chart('perf-chart', {
+        type: 'bar',
+        data: { labels: d.series.map(s => new Date(s.ts * 1000).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })), datasets: [
+            { type: 'bar', label: 'запросов', data: d.series.map(s => s.requests), backgroundColor: 'rgba(34,211,238,.35)', yAxisID: 'y' },
+            { type: 'line', label: 'ср. мс', data: d.series.map(s => s.avg_ms), borderColor: C.amber, pointRadius: 0, tension: .3, yAxisID: 'y1' },
+            { type: 'line', label: 'SQL/запрос', data: d.series.map(s => s.avg_queries), borderColor: C.violet, pointRadius: 0, tension: .3, yAxisID: 'y1', borderDash: [3, 3] },
+        ] },
+        options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10 } } },
+            scales: { y: { beginAtZero: true, position: 'left' }, y1: { beginAtZero: true, position: 'right', grid: { display: false } } } }
+    });
+    const maxT = Math.max(1, ...R.map(r => r.total_time_s));
+    dataTable('perf-table', [
+        { key: 'route', label: 'Маршрут', render: r => `<span class="text-white">${esc(r.route)}</span>` },
+        { key: 'total_time_s', label: 'Σ время', num: true, render: r => `<div>${r.total_time_s} с</div>${bar(r.total_time_s, maxT, C.cyan)}`, hint: 'Суммарное время всех запросов маршрута' },
+        { key: 'requests', label: 'Запросов', num: true, render: r => fmtNum(r.requests) },
+        { key: 'avg_ms', label: 'Ср. мс', num: true, render: r => `<span class="${r.avg_ms > 500 ? 'text-rose-400' : r.avg_ms > 200 ? 'text-amber-400' : ''}">${r.avg_ms}</span>` },
+        { key: 'p50_ms', label: 'p50', num: true, render: r => '≤' + r.p50_ms, hint: 'Верхняя граница корзины гистограммы' },
+        { key: 'p95_ms', label: 'p95', num: true, render: r => r.p95_ms >= 99999 ? '>3.2с' : '≤' + r.p95_ms },
+        { key: 'max_ms', label: 'Макс', num: true },
+        { key: 'avg_queries', label: 'SQL ср.', num: true, render: r => `<span class="${r.avg_queries > 30 ? 'text-rose-400' : r.avg_queries > 15 ? 'text-amber-400' : ''}">${r.avg_queries}</span>` },
+        { key: 'max_queries', label: 'SQL макс', num: true },
+        { key: 'dup_per_req', label: 'Дубли SQL', num: true, render: r => `<span class="${r.dup_per_req >= 5 ? 'chip chip-rose' : ''}">${r.dup_per_req}</span>`, hint: 'Повторы одинакового SQL в одном запросе (N+1)' },
+        { key: 'avg_db_ms', label: 'БД мс', num: true },
+        { key: 'db_share_pct', label: '% в БД', num: true, render: r => r.db_share_pct + '%' },
+        { key: 'slow', label: 'Медл.', num: true },
+        { key: 'errors_5xx', label: '5xx', num: true, render: r => r.errors_5xx ? `<span class="text-rose-400">${r.errors_5xx}</span>` : '0' },
+        { key: 'errors_4xx', label: '4xx', num: true },
+    ], R, { sortKey: 'total_time_s' });
+    dataTable('slow-table', [
+        { key: 'ts', label: 'Когда', render: s => new Date(s.ts * 1000).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }) },
+        { key: 'path', label: 'Путь', render: s => `<span class="text-white">${esc(s.path)}</span>` },
+        { key: 'ms', label: 'мс', num: true },
+        { key: 'db_ms', label: 'БД мс', num: true },
+        { key: 'queries', label: 'SQL', num: true },
+        { key: 'dup', label: 'Дубли', num: true },
+        { key: 'status', label: 'Код', num: true },
+        { key: 'top_sql', label: 'Самый повторяемый SQL', render: s => s.top_sql ? `<div class="sql max-w-[520px]" title="${esc(s.top_sql)}">×${s.top_sql_n} ${esc(s.top_sql.slice(0, 160))}</div>` : '' },
+    ], d.slowlog, { sortKey: 'ts' });
+}
+document.getElementById('perf-hours').onchange = loadPerf;
+async function resetPerf() { if (confirm('Сбросить статистику маршрутов?')) { await api('/api/admin/perf/', { method: 'POST' }); loadPerf(); } }
+
+/* ========================================================================
+   SQL-ЗАПРОСЫ
+   ======================================================================== */
+async function loadStatements() {
+    document.getElementById('sql-off').classList.toggle('hidden', STATEMENTS_ON);
+    document.getElementById('sql-on').classList.toggle('hidden', !STATEMENTS_ON);
+    if (!STATEMENTS_ON) return;
+    const d = await api('/api/admin/db/statements/');
+    if (d.error) { document.getElementById('sql-table').innerHTML = `<tr><td class="text-rose-400">${esc(d.error)}</td></tr>`; return; }
+    const top = d.items.slice(0, 12);
+    chart('sql-chart', {
+        type: 'bar', data: { labels: top.map((q, i) => '#' + (i + 1) + ' ' + q.query.slice(0, 40)), datasets: [{ data: top.map(q => q.share_pct), backgroundColor: top.map((_, i) => PALETTE[i % PALETTE.length]), borderRadius: 4 }] },
+        options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: i => i.raw + '% времени' } } }, scales: { y: { ticks: { font: { size: 9 } } } } }
+    });
+    const maxT = Math.max(1, ...d.items.map(q => q.total_ms));
+    dataTable('sql-table', [
+        { key: 'query', label: 'Запрос', render: q => `<div class="sql max-w-[720px]">${esc(q.query)}</div>` },
+        { key: 'total_ms', label: 'Σ мс', num: true, render: q => `<div>${fmtNum(Math.round(q.total_ms))}</div>${bar(q.total_ms, maxT, C.cyan)}` },
+        { key: 'share_pct', label: '%', num: true, render: q => q.share_pct + '%' },
+        { key: 'calls', label: 'Вызовов', num: true, render: q => fmtNum(q.calls) },
+        { key: 'mean_ms', label: 'Ср. мс', num: true, render: q => `<span class="${q.mean_ms > 100 ? 'text-rose-400' : q.mean_ms > 20 ? 'text-amber-400' : ''}">${q.mean_ms}</span>` },
+        { key: 'rows', label: 'Строк', num: true, render: q => fmtNum(q.rows) },
+        { key: 'cache_hit_pct', label: 'Cache', num: true, render: q => pct(q.cache_hit_pct) },
+        { key: 'temp_blks_written', label: 'Temp', num: true, render: q => q.temp_blks_written ? `<span class="text-amber-400">${fmtNum(q.temp_blks_written)}</span>` : '0', hint: 'Блоков записано во временные файлы: не хватило work_mem' },
+    ], d.items, { sortKey: 'total_ms' });
+}
+async function resetStatements() { if (confirm('Обнулить pg_stat_statements?')) { await api('/api/admin/db/statements/reset/', { method: 'POST' }); loadStatements(); } }
+
+/* ========================================================================
+   POSTGRES LIVE
+   ======================================================================== */
+let prevAct = null;
+const liveSeries = { labels: [], tps: [], rb: [], rows: [], hit: [] };
+async function fetchActivity() {
+    if (isStreamPaused || document.hidden) return;
+    try {
+        const a = await api('/api/admin/db/activity/');
+        document.getElementById('ticker-conn').textContent = a.total_connections;
+        if (prevAct) {
+            const dt = Math.max(.5, a.ts - prevAct.ts), c = a.counters, p = prevAct.counters;
+            const tps = (c.xact_commit - p.xact_commit) / dt;
+            const rb = (c.xact_rollback - p.xact_rollback) / dt;
+            const rows = (c.tup_inserted + c.tup_updated + c.tup_deleted - p.tup_inserted - p.tup_updated - p.tup_deleted) / dt;
+            const dh = c.blks_hit - p.blks_hit, dr = c.blks_read - p.blks_read;
+            document.getElementById('ticker-tps').textContent = tps.toFixed(1);
+            document.getElementById('side-tps').textContent = tps.toFixed(1);
+            liveSeries.labels.push(new Date().toLocaleTimeString('ru-RU'));
+            liveSeries.tps.push(+tps.toFixed(1)); liveSeries.rb.push(+rb.toFixed(2)); liveSeries.rows.push(+rows.toFixed(1));
+            liveSeries.hit.push(dh + dr ? +(dh / (dh + dr) * 100).toFixed(1) : 100);
+            for (const k in liveSeries) if (liveSeries[k].length > 60) liveSeries[k].shift();
+        }
+        prevAct = a;
+        if (activeTab !== 'live') return;
+        const lastHit = liveSeries.hit[liveSeries.hit.length - 1];
+        document.getElementById('live-kpis').innerHTML = [
+            kpi('Соединений', a.total_connections, a.states.map(s => `${s.state}: ${s.n}`).join(' · ').slice(0, 60), C.cyan),
+            kpi('TPS', liveSeries.tps.length ? liveSeries.tps[liveSeries.tps.length - 1] : '—', 'коммитов в секунду'),
+            kpi('Строк/с', liveSeries.rows.length ? liveSeries.rows[liveSeries.rows.length - 1] : '—', 'вставки + обновления + удаления'),
+            kpi('Cache hit сейчас', lastHit != null ? lastHit + '%' : '—', 'за последние 5 с', lastHit != null && lastHit < 95 ? C.amber : null),
+            kpi('Idle in transaction', a.idle_in_tx.n, a.idle_in_tx.n ? `самая долгая ${a.idle_in_tx.max_sec} с` : 'норма', a.idle_in_tx.n ? C.amber : null),
+            kpi('Ждут блокировку', a.blocked, '', a.blocked ? C.rose : null),
+        ].join('');
+        const lc = document.getElementById('live-db-chart')._chart;
+        if (!lc) {
+            chart('live-db-chart', { type: 'line', data: { labels: liveSeries.labels, datasets: [
+                { label: 'TPS', data: liveSeries.tps, borderColor: C.cyan, pointRadius: 0, tension: .3, yAxisID: 'y' },
+                { label: 'строк/с', data: liveSeries.rows, borderColor: C.violet, pointRadius: 0, tension: .3, yAxisID: 'y1' },
+                { label: 'rollback/с', data: liveSeries.rb, borderColor: C.rose, pointRadius: 0, tension: .3, yAxisID: 'y', borderDash: [3, 3] },
+            ] }, options: { responsive: true, maintainAspectRatio: false, animation: false, interaction: { mode: 'index', intersect: false }, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10 } } },
+                scales: { y: { beginAtZero: true }, y1: { beginAtZero: true, position: 'right', grid: { display: false } } } } });
+        } else lc.update('none');
+        chart('conn-chart', { type: 'doughnut', data: { labels: a.states.map(s => s.state), datasets: [{ data: a.states.map(s => s.n), backgroundColor: a.states.map((_, i) => PALETTE[i % PALETTE.length]), borderWidth: 0 }] },
+            options: { responsive: true, maintainAspectRatio: false, animation: false, cutout: '65%', plugins: { legend: { position: 'right', labels: { boxWidth: 10 } } } } });
+        dataTable('activity-table', [
+            { key: 'seconds', label: 'Сек', num: true, render: r => `<span class="${r.seconds > 5 ? 'text-rose-400' : r.seconds > 1 ? 'text-amber-400' : ''}">${r.seconds}</span>` },
+            { key: 'pid', label: 'PID', num: true },
+            { key: 'state', label: 'Состояние' },
+            { key: 'wait_event', label: 'Ожидание', render: r => r.wait_event ? `${esc(r.wait_event_type)}: ${esc(r.wait_event)}` : '' },
+            { key: 'application_name', label: 'Приложение' },
+            { key: 'query', label: 'Запрос', render: r => `<div class="sql max-w-[720px]">${esc(r.query)}</div>` },
+        ], a.long_running, { sortKey: 'seconds' });
+    } catch (e) { console.warn('activity', e); }
+}
+
+/* ========================================================================
+   Старт
+   ======================================================================== */
 document.addEventListener('DOMContentLoaded', () => {
-    initCharts();
+    initTrafficCharts();
     fetchLiveMetrics();
-    streamInterval = setInterval(fetchLiveMetrics, 3000);
+    fetchActivity();
+    setInterval(fetchLiveMetrics, 3000);
+    setInterval(() => (activeTab === 'live' ? fetchActivity() : null), 5000);
+    setInterval(() => (activeTab !== 'live' ? fetchActivity() : null), 30000);  // TPS в шапке
+    setTimeout(() => { if (!SNAP) loadSnapshot(); }, 1500);
+    const hash = location.hash.replace('#', '');
+    if (hash && document.getElementById('tab-' + hash)) switchTab(hash);
 });
 </script>
 </body>

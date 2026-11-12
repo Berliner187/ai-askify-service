@@ -10,7 +10,7 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com/3.4.17"></script>
     <script>
         tailwind.config = {
@@ -24,8 +24,100 @@
             },
         };
     </script>
-    
+
     <link rel="stylesheet" href="{% static 'css/admin.css' %}">
+    <style>
+        /* ===== Виджеты: надстройка над admin.css, сетка и ID не меняются ===== */
+        :root { --display: 'Space Grotesk', 'Manrope', system-ui, sans-serif; }
+        .mid, .big { font-family: var(--display); font-weight: 500; letter-spacing: -.035em; font-variant-numeric: tabular-nums; }
+        .card[data-kpi] { --g: #5E6CF8; container-type: inline-size; background: radial-gradient(110% 70% at 0% 0%, color-mix(in srgb, var(--g) 11%, transparent), transparent 62%), var(--card); }
+        .card[data-kpi] .big { font-size: clamp(38px, 17cqw, 66px); line-height: .94; letter-spacing: -.045em; }
+        [data-kpi] [data-spark], [data-ptile] { background: repeating-linear-gradient(135deg, rgba(255,255,255,.05) 0 5px, transparent 5px 10px); border-radius: 10px; }
+        #product-tiles .tile, #health-tiles .tile, #ai-tiles .tile { background: radial-gradient(120% 90% at 0 0, color-mix(in srgb, var(--g, #5E6CF8) 9%, transparent), transparent 60%), var(--tile); container-type: inline-size; }
+        #product-tiles .mid, #health-tiles .mid, #ai-tiles .mid { font-size: clamp(24px, 14cqw, 40px); line-height: 1; letter-spacing: -.04em; }
+        .qm { display: inline-grid; place-items: center; width: 15px; height: 15px; border-radius: 99px; border: 1px solid var(--line); color: var(--dim); font-size: 9.5px; font-weight: 700; cursor: help; margin-left: 6px; flex-shrink: 0; font-family: var(--display); }
+        .qm:hover { color: var(--text); border-color: var(--muted); }
+        /* сводка: статус и сигналы */
+        .ins-grid { align-items: start; display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr); margin-bottom: 14px; }
+        @media (min-width: 1280px) { .ins-grid { grid-template-columns: minmax(260px, 3fr) minmax(0, 9fr); } }
+        .ins-list { display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr); }
+        @media (min-width: 640px) { .ins-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+        @media (min-width: 1536px) { .ins-list { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+        .ins, .ins-hero { --t: #38BDF8; border: 1px solid var(--line); border-radius: 20px; padding: 16px 16px 18px; display: flex; flex-direction: column; gap: 12px; position: relative; background: radial-gradient(120% 90% at 0 0, color-mix(in srgb, var(--t) 9%, transparent), transparent 60%), var(--card); }
+        .ins::before { content: ''; position: absolute; left: 16px; top: -1px; width: 34px; height: 2px; border-radius: 0 0 3px 3px; background: var(--t); }
+        .ins-top { display: flex; align-items: center; justify-content: space-between; }
+        .ins .si { width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; background: color-mix(in srgb, var(--t) 14%, transparent); color: var(--t); }
+        .ins .tag { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .09em; text-transform: uppercase; color: var(--t); }
+        .ins .t { font-family: var(--display); font-weight: 500; font-size: 16px; letter-spacing: -.015em; line-height: 1.25; }
+        .ins .d { font-size: 12.5px; color: var(--muted); line-height: 1.55; margin-top: -4px; }
+        .ins .go { margin-top: auto; align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+        .ins-hero { container-type: inline-size; justify-content: space-between; }
+        .ins-word { font-family: var(--display); font-weight: 500; font-size: clamp(28px, 15cqw, 50px); letter-spacing: -.04em; line-height: 1; }
+        .ins-ticks { display: flex; gap: 3px; height: 44px; }
+        .ins-ticks > i { flex: 1; border-radius: 2.5px; background: rgba(255,255,255,.08); }
+        .ins-leg { display: flex; flex-wrap: wrap; gap: 4px 14px; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(--dim); }
+        .ins-leg b { color: var(--muted); font-weight: 500; margin-left: 4px; }
+        .ins-leg .d { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; }
+        .mlabel { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); }
+
+        /* ===== Аудитория и продукт: карточки в стиле верхних виджетов ===== */
+        @keyframes audGrow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+        .cmp-track > i, .dau-bar > i, .fn-bar > i, .band-bar > i, .eng-bar > i { display: block; height: 100%; border-radius: inherit; transform-origin: left; animation: audGrow .8s cubic-bezier(.2,.8,.2,1) both; }
+        @media (prefers-reduced-motion: reduce) { .cmp-track > i, .dau-bar > i, .fn-bar > i, .band-bar > i, .eng-bar > i { animation: none; } }
+        .aud { --g: #5E6CF8; position: relative; container-type: inline-size; background: radial-gradient(110% 60% at 0% 0%, color-mix(in srgb, var(--g) 12%, transparent), transparent 62%), var(--card); transition: background .4s; }
+        .aud::before { content: ''; position: absolute; left: 20px; top: -1px; width: 38px; height: 2px; border-radius: 0 0 3px 3px; background: var(--g); }
+        .aud-big { font-family: var(--display); font-weight: 500; font-size: clamp(40px, 12cqw, 62px); line-height: .95; letter-spacing: -.045em; font-variant-numeric: tabular-nums; }
+        .act-hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: 18px; align-items: end; }
+        @container (max-width: 520px) { .act-hero { grid-template-columns: minmax(0, 1fr); } }
+        .cmp { display: flex; flex-direction: column; gap: 9px; }
+        .cmp-row { display: grid; grid-template-columns: 58px minmax(0, 1fr) auto; align-items: center; gap: 10px; font-size: 12px; font-variant-numeric: tabular-nums; }
+        .cmp-track, .band-bar, .eng-bar, .dau-bar, .fn-bar { display: block; height: 8px; border-radius: 99px; background: rgba(255,255,255,.07); overflow: hidden; }
+        .eng-bar { height: 4px; }
+        .dau-bar, .band-bar { height: 5px; }
+        .act-ins, .aud-grid { display: grid; gap: 8px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+        @container (max-width: 600px) { .act-ins, .aud-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+        .ms { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; }
+        .ms-v { font-family: var(--display); font-size: 20px; line-height: 1.05; letter-spacing: -.03em; font-variant-numeric: tabular-nums; display: flex; align-items: center; gap: 6px; }
+        .dau { --g: #34D399; border: 1px solid var(--line); border-radius: 14px; padding: 11px 12px 12px; display: flex; flex-direction: column; gap: 7px; background: radial-gradient(120% 100% at 0 0, color-mix(in srgb, var(--g) 13%, transparent), transparent 65%), var(--tile); transition: border-color .2s, transform .2s; }
+        .dau:hover { border-color: color-mix(in srgb, var(--g) 40%, transparent); transform: translateY(-1px); }
+        .dau-v { margin: 0; font-family: var(--display); font-weight: 500; font-size: 30px; line-height: 1; letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
+        .dau-bar > i { background: var(--g); }
+        .cmp-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; }
+        /* воронка */
+        .funnel { display: flex; flex-direction: column; gap: 9px; margin-top: 16px; padding: 0; list-style: none; }
+        .fn-step { --c: #5E6CF8; border: 1px solid var(--line); border-radius: 14px; padding: 11px 12px 12px; background: linear-gradient(90deg, color-mix(in srgb, var(--c) 9%, transparent), transparent 75%), var(--tile); transition: border-color .2s; }
+        .fn-step:hover { border-color: color-mix(in srgb, var(--c) 45%, transparent); }
+        .fn-step.worst { border-color: rgba(251,113,133,.5); box-shadow: 0 0 0 3px rgba(251,113,133,.08); }
+        .fn-head { display: flex; align-items: center; gap: 8px; }
+        .fn-n { width: 20px; height: 20px; border-radius: 7px; display: grid; place-items: center; font: 600 10.5px var(--display); background: color-mix(in srgb, var(--c) 18%, transparent); color: var(--c); flex: none; }
+        .fn-val { margin-left: auto; font-family: var(--display); font-size: 21px; font-weight: 500; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+        .fn-bar { margin-top: 9px; }
+        .fn-bar > i { background: var(--c); }
+        .fn-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin-top: 8px; }
+        /* результаты */
+        .bands { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+        .band { --c: #F97316; border: 1px solid var(--line); border-radius: 12px; padding: 9px 10px; background: linear-gradient(180deg, color-mix(in srgb, var(--c) 10%, transparent), transparent 80%), var(--tile); }
+        .band-v { margin: 6px 0 0; font-family: var(--display); font-size: 19px; letter-spacing: -.03em; line-height: 1; font-variant-numeric: tabular-nums; }
+        .band-bar { margin-top: 8px; }
+        .band-bar > i { background: var(--c); }
+        /* последние генерации */
+        .feed-row { --c: #38BDF8; display: flex; align-items: center; gap: 14px; padding: 11px 10px; margin: 0 -10px; border-radius: 14px; transition: background .18s; }
+        .feed-row:hover { background: rgba(255,255,255,.03); }
+        .feed-ic { width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; flex: none; background: color-mix(in srgb, var(--c) 14%, transparent); color: var(--c); }
+        .feed-meta { display: flex; flex-wrap: wrap; gap: 4px 6px; margin-top: 6px; }
+        .mchip { display: inline-flex; align-items: center; gap: 5px; max-width: 100%; font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: var(--muted); background: rgba(255,255,255,.045); border-radius: 7px; padding: 2px 7px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .mchip.guest { color: var(--dim); background: transparent; border: 1px dashed var(--line); }
+        .feed-eng { flex-direction: column; gap: 7px; width: 118px; flex: none; }
+        .eng-bar > i { background: var(--c); }
+        /* подписки заканчиваются */
+        .churn-row { --c: #2DD4BF; display: flex; align-items: center; gap: 13px; padding: 11px 10px; margin: 0 -10px; border-radius: 14px; transition: background .18s; }
+        .churn-row:hover { background: rgba(255,255,255,.03); }
+        .ring { --p: 0; width: 42px; height: 42px; border-radius: 99px; flex: none; display: grid; place-items: center; position: relative; font: 600 13px var(--display); background: conic-gradient(var(--c) calc(var(--p) * 1%), rgba(255,255,255,.08) 0); }
+        .ring::before { content: ''; position: absolute; inset: 4px; border-radius: inherit; background: var(--card); }
+        .ring > span { position: relative; color: var(--c); }
+        .aud-empty { display: flex; align-items: center; gap: 10px; padding: 26px 4px; color: var(--muted); font-size: 13px; }
+        .aud button, .feed-row, .churn-row .btn { cursor: pointer; }
+    </style>
 </head>
 <body>
 <div id="progress" aria-hidden="true"></div>
@@ -110,6 +202,7 @@
                 <div class="sect-head">
                     <div><h2 id="h-overview">Обзор</h2><p id="period-label">Период загружается</p></div>
                 </div>
+                <div id="insights" class="ins-grid" aria-label="Что сейчас происходит"></div>
                 <div id="kpi" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3.5"></div>
                 <div class="mt-3.5 grid grid-cols-1 xl:grid-cols-12 gap-3.5">
                     <article class="card xl:col-span-7 flex flex-col">
@@ -160,6 +253,7 @@
                             <ul id="plan-legend" class="space-y-2.5 min-w-0"></ul>
                         </div>
                         <p class="lbl mt-5 mb-2.5">Платежи за период по статусам</p>
+                        <div id="pay-status-bar" class="mb-2.5"></div>
                         <div id="pay-status" class="grid grid-cols-3 gap-2"></div>
                     </article>
                 </div>
@@ -267,7 +361,7 @@
                     <div><h2 id="h-product">Аудитория и продукт</h2><p>Что делают пользователи и где они отваливаются.</p></div>
                 </div>
                 <div class="grid grid-cols-1 xl:grid-cols-12 gap-3.5">
-                    <article class="card xl:col-span-6 flex flex-col">
+                    <article id="act-card" class="card aud xl:col-span-6 flex flex-col">
                         <div class="card-head">
                             <div class="card-title"><span class="ticon" data-icon="activity" data-size="15"></span><div><h3>Активность</h3><small id="act-sub">за период</small></div></div>
                             <div class="seg soft" id="act-mode" role="group" aria-label="Показатель">
@@ -276,33 +370,41 @@
                                 <button type="button" data-mode="users">Регистрации</button>
                             </div>
                         </div>
-                        <div id="ch-activity" class="chart mt-4 flex-1 min-h-[230px]"></div>
-                        <div id="act-foot" class="mt-4 grid grid-cols-3 gap-2.5"></div>
+                        <div id="act-hero" class="act-hero mt-4"></div>
+                        <div id="act-legend" class="cmp-legend mt-4"></div>
+                        <div id="ch-activity" class="chart mt-2 flex-1 min-h-[230px]"></div>
+                        <div id="act-ins" class="act-ins mt-3"></div>
+                        <div id="act-foot" class="aud-grid mt-2.5"></div>
                     </article>
-                    <article class="card xl:col-span-3">
+                    <article class="card aud xl:col-span-3" style="--g:#2DD4BF">
                         <div class="card-head">
-                            <div class="card-title"><span class="ticon" data-icon="funnel" data-size="15"></span><div><h3>Воронка новичков</h3><small>Зарегистрированы за период</small></div></div>
+                            <div class="card-title"><span class="ticon" data-icon="funnel" data-size="15"></span><div><h3>Воронка новичков<span class="qm" data-tip="Из всех, кто зарегистрировался за период, сколько дошли до каждого следующего шага. Самое узкое место — там, где полоска резко сокращается.">?</span></h3><small>Зарегистрированы за период</small></div></div>
                         </div>
-                        <ol id="funnel" class="mt-5 space-y-4"></ol>
+                        <ol id="funnel" class="funnel"></ol>
+                        <div id="funnel-foot" class="mt-3"></div>
                     </article>
-                    <article class="card xl:col-span-3 flex flex-col">
+                    <article class="card aud xl:col-span-3 flex flex-col" style="--g:#34D399">
                         <div class="card-head">
-                            <div class="card-title"><span class="ticon" data-icon="target" data-size="15"></span><div><h3>Результаты</h3><small>Доля верных ответов, %</small></div></div>
+                            <div class="card-title"><span class="ticon" data-icon="target" data-size="15"></span><div><h3>Результаты<span class="qm" data-tip="Распределение прохождений по проценту верных ответов. Оранжевые — до 50%, жёлтые — до 80%, зелёные — выше. Если всё сдвинуто влево, тесты слишком сложные.">?</span></h3><small>Доля верных ответов, %</small></div></div>
                         </div>
-                        <div id="ch-scores" class="chart mt-4 flex-1 min-h-[200px]"></div>
+                        <div id="scores-hero" class="mt-4"></div>
+                        <div id="ch-scores" class="chart mt-3 flex-1 min-h-[200px]"></div>
+                        <div id="scores-bands" class="mt-3"></div>
                         <p id="scores-foot" class="lbl mt-3"></p>
                     </article>
                 </div>
                 <div class="mt-3.5 grid grid-cols-1 xl:grid-cols-12 gap-3.5">
-                    <article class="card xl:col-span-7">
+                    <article class="card aud xl:col-span-7" style="--g:#38BDF8">
                         <div class="card-head">
                             <div class="card-title"><span class="ticon" data-icon="list" data-size="15"></span><div><h3>Последние генерации</h3><small>12 последних тестов на платформе</small></div></div>
+                            <div id="feed-sum" class="flex flex-wrap items-center gap-1.5"></div>
                         </div>
                         <ul id="feed" class="mt-3"></ul>
                     </article>
-                    <article class="card xl:col-span-5">
+                    <article class="card aud xl:col-span-5" style="--g:#F5B740">
                         <div class="card-head">
                             <div class="card-title"><span class="ticon" data-icon="clock" data-size="15"></span><div><h3>Подписки заканчиваются</h3><small>Платные: истекли за 3 дня или истекают за 7</small></div></div>
+                            <div id="churn-sum" class="flex flex-wrap items-center gap-1.5"></div>
                         </div>
                         <ul id="churn" class="mt-3"></ul>
                     </article>
@@ -524,6 +626,11 @@
         pulse: '<path d="M3 12h4l2-5 4 10 2-5h6"/>',
         calendar: '<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/>',
         arrowRight: '<path d="M5 12h14M13 6l6 6-6 6"/>',
+        shield: '<path d="M12 3 4 6v6c0 5 3.4 8.4 8 9.5 4.6-1.1 8-4.5 8-9.5V6z"/><path d="m9 12 2 2 4-4"/>',
+        gauge: '<path d="M12 14l4-4"/><path d="M3.3 17a9 9 0 1 1 17.4 0"/>',
+        check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
+        eye: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+        user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/>',
     };
     const icon = (name, size = 14, cls = '') =>
         `<svg class="${cls}" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name] || ''}</svg>`;
@@ -558,6 +665,7 @@
         `<span class="inline-flex items-center gap-2 text-[12px] text-[color:var(--muted)] font-semibold">${shape === 'line'
             ? `<i class="w-3.5 h-[3px] rounded-full" style="background:${color}"></i>`
             : `<i class="sw" style="background:${color}"></i>`}${esc(label)}${value != null ? `<span class="text-[color:var(--text)] font-extrabold">${esc(value)}</span>` : ''}</span>`;
+    const qm = (text) => `<span class="qm" tabindex="0" data-tip="${esc(text)}">?</span>`;
 
     function countUp(el, to, format) {
         if (!el) return;
@@ -592,11 +700,11 @@
     const hideTip = () => tip.classList.remove('on');
     document.addEventListener('pointerover', (e) => {
         const t = e.target.closest('[data-tip]');
-        if (t) showTip(`<div class="tt-r" style="white-space:normal">${esc(t.dataset.tip)}</div>`, e.clientX, e.clientY);
+        if (t) showTip(`<div class="tt-r" style="white-space:normal;max-width:280px">${esc(t.dataset.tip)}</div>`, e.clientX, e.clientY);
     });
     document.addEventListener('pointermove', (e) => {
         const t = e.target.closest('[data-tip]');
-        if (t) showTip(`<div class="tt-r" style="white-space:normal">${esc(t.dataset.tip)}</div>`, e.clientX, e.clientY);
+        if (t) showTip(`<div class="tt-r" style="white-space:normal;max-width:280px">${esc(t.dataset.tip)}</div>`, e.clientX, e.clientY);
     });
     document.addEventListener('pointerout', (e) => {
         if (e.target.closest('[data-tip]') && !e.relatedTarget?.closest?.('[data-tip]')) hideTip();
@@ -1128,6 +1236,7 @@
             </article>`).join('');
         $('#product-tiles').innerHTML = Array.from({ length: 4 }, () => '<div class="tile h-[138px]"><span class="skeleton h-3 w-20"></span><span class="skeleton h-6 w-24 mt-3"></span></div>').join('');
         $('#health-tiles').innerHTML = Array.from({ length: 6 }, () => '<div class="tile h-[138px]"><span class="skeleton h-3 w-16"></span><span class="skeleton h-6 w-14 mt-3"></span></div>').join('');
+        $('#insights').innerHTML = '<div class="ins-hero min-h-[200px]"><span class="skeleton h-8 w-40"></span><span class="skeleton h-10 w-full mt-auto"></span></div><div class="ins-list">' + Array.from({ length: 3 }, () => '<div class="ins min-h-[130px]"><span class="skeleton h-8 w-8"></span><span class="skeleton h-4 w-40"></span><span class="skeleton h-3 w-full"></span></div>').join('') + '</div>';
     }
 
     async function loadOverview() {
@@ -1148,8 +1257,9 @@
             renderScores();
             renderFeed();
             renderChurn();
+            renderInsights();
             if (sheet.isOpen()) renderTokensSheet();
-            
+
             const baseText = `Обновлено в ${data.generated_at} по Москве`;
             const weatherSuffix = data.weather ? ` · ${data.weather}` : '';
             $('#updated-at').textContent = `Обновлено в ${data.generated_at} по Москве ${weatherSuffix}`;
@@ -1199,6 +1309,118 @@
         if (e.target.closest('[data-open-logs]')) openServicesDrawer();
     });
 
+    /* ---------- Сводка: статус и сигналы (как в «Трафике») ---------- */
+    const TONE = {
+        bad: ['#FB7185', 'Тревога'], warn: ['#F5B740', 'Внимание'],
+        good: ['#34D399', 'Норма'], info: ['#38BDF8', 'К сведению'],
+    };
+    function collectInsights() {
+        const out = [];
+        const add = (lvl, ic, title, text, goto = null, gotoLabel = 'Открыть') => out.push({ lvl, ic, title, text, goto, gotoLabel });
+        const ov = state.ov, ai = state.ai;
+        if (!ov) return out;
+        const k = ov.kpi, p = ov.period;
+
+        // сервисы
+        const down = services.list.filter((s) => s.tone === 'bg-bad');
+        if (down.length) add('bad', 'alert', `Не работает: ${down.map((s) => s.name).join(', ')}`, 'Сервис остановлен или не отвечает. Открой логи и перезапусти его на сервере.', '#logs', 'Логи');
+        else if (services.list.length) add('good', 'shield', 'Все сервисы работают', `${services.list.length} из ${services.list.length} отвечают. Ничего делать не нужно.`);
+
+        // выручка
+        const rev = k.revenue;
+        if (rev.value === 0 && rev.prev === 0) add('info', 'wallet', 'Оплат за период не было', 'Ни в этом, ни в прошлом периоде выручки нет. Если ждёшь платежи, проверь, что платёжная форма работает.', '#sec-money');
+        else if (k.payments.value < 5) add('info', 'wallet', `Выручка ${fmt.rub(rev.value)} при ${fmt.int(k.payments.value)} ${plural(k.payments.value, 'оплате', 'оплатах', 'оплатах')}`, 'Оплат слишком мало, чтобы проценты что-то значили. Смотри на абсолютные суммы.', '#sec-money');
+        else if (rev.delta != null && rev.delta <= -20) add('warn', 'trend', `Выручка просела на ${NF0.format(Math.abs(rev.delta))}%`, `${fmt.rub(rev.value)} против ${fmt.rub(rev.prev)} в прошлом периоде. Посмотри, какой тариф провалился.`, '#sec-money');
+        else if (rev.delta != null && rev.delta >= 10) add('good', 'trend', `Выручка выросла на ${NF0.format(rev.delta)}%`, `${fmt.rub(rev.value)} против ${fmt.rub(rev.prev)}. Средний чек (ARPU) ${fmt.rub(k.arpu.value)}.`, '#sec-money');
+        else add('info', 'trend', `Выручка ${fmt.rub(rev.value)}`, `Почти без изменений к прошлому периоду (${fmt.rub(rev.prev)}).`, '#sec-money');
+
+        // платежи в ожидании
+        const pc = state.pay.data?.counts || {};
+        const pending = pc.pending?.count ?? ov.payment_status?.pending?.count ?? 0;
+        if (pending > 0) add('warn', 'card', `${fmt.int(pending)} ${plural(pending, 'платёж ждёт', 'платежа ждут', 'платежей ждут')} подтверждения`, 'Возможно, человек заплатил, а статус не обновился. Проверь и выдай доступ кнопкой «Доступ».', '#sec-payments');
+
+        // подписки
+        if (k.subs.expiring_7d > 0) add('warn', 'clock', `${fmt.int(k.subs.expiring_7d)} ${plural(k.subs.expiring_7d, 'подписка истекает', 'подписки истекают', 'подписок истекают')} за 7 дней`, 'Самое время написать этим людям. Список с кнопкой «Продлить» ниже, в блоке «Подписки заканчиваются».', '#churn');
+
+        // AI
+        const h = ov.health || {};
+        if (h.success_today != null && h.success_today < 90) add('bad', 'cpu', `AI отвечает успешно только в ${NF1.format(h.success_today)}% случаев`, 'Много ошибок: проверь ключи и лимиты провайдера, пользователи могут не получать тесты.', '#sec-keys', 'К ключам');
+        else if (h.errors_hour > 0) add('warn', 'cpu', `${fmt.int(h.errors_hour)} ${plural(h.errors_hour, 'ошибка', 'ошибки', 'ошибок')} AI за последний час`, `Всего вызовов за час ${fmt.int(h.calls_hour)}. Единичные ошибки бывают, но если растут, смотри ключи.`, '#sec-keys', 'К ключам');
+        else if (h.latency_today > 15000) add('warn', 'gauge', `AI отвечает медленно: ${fmt.ms(h.latency_today)}`, 'Среднее время ответа больше 15 секунд. Пользователи ждут генерацию, посмотри модель и провайдера.', '#sec-ai');
+        else if (h.success_today != null) add('good', 'cpu', `AI работает чисто: ${NF1.format(h.success_today)}% успешных`, `Задержка ${fmt.ms(h.latency_today)}, ошибок за час нет.`, '#sec-ai');
+
+        // ключи
+        if (ai) {
+            const dead = (ai.routing || []).filter((r) => r.critical && !r.active_key_id);
+            if (dead.length) add('bad', 'key', `Нет активного ключа: ${dead.map((r) => r.label).join(', ')}`, 'Запросы этого типа сейчас не обслуживаются. Включи ключ в «Маршрутизации».', '#sec-ai', 'К маршрутам');
+            const exp = (ai.keys || []).filter((x) => x.expires_at && x.expires_in_days != null && x.expires_in_days <= 7);
+            if (exp.length) add(exp.some((x) => x.expires_in_days < 0) ? 'bad' : 'warn', 'key', `${exp.length} ${plural(exp.length, 'ключ истекает', 'ключа истекают', 'ключей истекают')} в ближайшую неделю`, `Первый: «${exp[0].name}». Продли его у провайдера и обнови дату в карточке ключа.`, '#sec-keys', 'К ключам');
+            else if (ai.totals.stale_keys > 0) add('info', 'key', `${ai.totals.stale_keys} ${plural(ai.totals.stale_keys, 'ключ', 'ключа', 'ключей')} без вызовов дольше 30 дней`, 'Лишние ключи можно выключить или удалить кнопкой «Очистить неиспользуемые».', '#sec-keys', 'К ключам');
+        }
+
+        // воронка
+        const steps = ov.funnel || [];
+        if (steps.length > 1 && steps[0].value >= 10) {
+            let worst = null;
+            for (let i = 1; i < steps.length; i++) {
+                const conv = steps[i - 1].value ? steps[i].value / steps[i - 1].value * 100 : null;
+                if (conv != null && (!worst || conv < worst.conv)) worst = { i, conv };
+            }
+            if (worst && worst.conv < 50) add('warn', 'funnel', `Больше всего новичков теряется на шаге «${steps[worst.i].label}»`, `До него доходит ${NF0.format(worst.conv)}% от предыдущего шага. Это самое узкое место воронки.`, '#sec-product');
+        }
+
+        // регистрации
+        const u = k.users.new;
+        if (u.prev >= 10 && u.delta != null && u.delta <= -30) add('warn', 'userPlus', `Регистраций стало меньше на ${NF0.format(Math.abs(u.delta))}%`, `${fmt.int(u.value)} против ${fmt.int(u.prev)}. Посмотри, не менялись ли источники трафика.`, '#sec-product');
+
+        // сложность тестов
+        if (k.score.value != null && k.attempts.value >= 20) {
+            if (k.score.value < 50) add('warn', 'target', `Средний балл всего ${NF0.format(k.score.value)}%`, 'Тесты получаются сложными или вопросы неудачные. Загляни в «Результаты».', '#sec-product');
+            else if (k.score.value > 92) add('info', 'target', `Средний балл ${NF0.format(k.score.value)}%`, 'Почти все отвечают верно: возможно, тесты слишком лёгкие.', '#sec-product');
+        }
+        return out;
+    }
+
+    function renderInsights() {
+        const box = $('#insights');
+        if (!box || !state.ov) return;
+        const list = collectInsights();
+        const order = { bad: 0, warn: 1, good: 2, info: 3 };
+        list.sort((a, b) => order[a.lvl] - order[b.lvl]);
+        list.length = Math.min(list.length, 9);
+        const cnt = (l) => list.filter((x) => x.lvl === l).length;
+        const bad = cnt('bad'), warn = cnt('warn');
+        const word = bad ? ['Тревога', TONE.bad[0]] : warn ? ['Есть на что глянуть', TONE.warn[0]] : ['Всё спокойно', TONE.good[0]];
+        const N = 24;
+        const per = list.length ? Math.max(1, Math.floor(N / list.length)) : 0;
+        let seg = '';
+        list.forEach((x) => { seg += `<i style="background:${TONE[x.lvl][0]}"></i>`.repeat(per); });
+        seg += '<i></i>'.repeat(Math.max(0, N - per * list.length));
+        const legend = ['bad', 'warn', 'good', 'info'].filter(cnt).map((l) => `<span><span class="d" style="background:${TONE[l][0]}"></span>${TONE[l][1]}<b>${cnt(l)}</b></span>`).join('');
+        box.innerHTML = `
+            <div class="ins-hero" style="--t:${word[1]}">
+                <div class="flex items-center justify-between gap-2"><span class="mlabel">Статус</span><span class="chip ${bad ? 'bad' : warn ? 'warn' : 'ok'}">${bad + warn ? `${bad + warn} на заметку` : 'ок'}</span></div>
+                <div class="ins-word" style="color:${word[1]}">${word[0]}</div>
+                <p class="lbl m-0">${list.length} ${plural(list.length, 'сигнал', 'сигнала', 'сигналов')}: ${bad} тревог, ${warn} внимание, ${cnt('good')} норма</p>
+                <div class="ins-ticks">${seg}</div>
+                <div class="ins-leg">${legend}</div>
+            </div>
+            <div class="ins-list">${list.map((x) => `
+                <div class="ins" style="--t:${TONE[x.lvl][0]}">
+                    <div class="ins-top"><span class="si">${icon(x.ic, 16)}</span><span class="tag">${TONE[x.lvl][1]}</span></div>
+                    <div class="t">${esc(x.title)}</div>
+                    <p class="d m-0">${esc(x.text)}</p>
+                    ${x.goto ? `<button type="button" class="btn btn-ghost btn-sm go" data-ins-go="${esc(x.goto)}">${esc(x.gotoLabel)}${icon('arrowRight', 12)}</button>` : ''}
+                </div>`).join('') || '<div class="ins"><div class="t">Пока нечего сказать</div><p class="d m-0">Данные ещё загружаются.</p></div>'}</div>`;
+    }
+    $('#insights').addEventListener('click', (e) => {
+        const b = e.target.closest('[data-ins-go]');
+        if (!b) return;
+        const to = b.dataset.insGo;
+        if (to === '#logs') return openServicesDrawer();
+        $(to)?.scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth', block: 'start' });
+    });
+
     function renderKpis(first) {
         const k = state.ov.kpi;
         const p = state.ov.period;
@@ -1206,12 +1428,14 @@
         const cards = [
             {
                 id: 'revenue', label: 'Выручка', icon: 'trend', color: C.indigo, value: k.revenue.value, format: fmt.rub,
+                hint: 'Сумма только оплаченных платежей за выбранный период. Плашка сравнивает с предыдущим периодом такой же длины.',
                 delta: k.revenue.delta, sub: `${prevText}: ${fmt.rub(k.revenue.prev)}`,
                 series: k.revenue.series, seriesName: 'Выручка', seriesFormat: fmt.rub,
                 foot: [['Оплат', fmt.int(k.payments.value)], ['Сегодня', fmt.rub(k.revenue.today)]],
             },
             {
                 id: 'subs', label: 'Подписки', icon: 'crown', color: C.yellow, value: k.subs.active, format: fmt.int,
+                hint: 'Крупное число — сколько платных подписок активно прямо сейчас. Плашка и график — про новые подписки за период.',
                 delta: k.subs.new.delta, deltaTip: 'Новые подписки к прошлому периоду',
                 sub: `сейчас активны, новых ${fmt.int(k.subs.new.value)} против ${fmt.int(k.subs.new.prev)}`,
                 series: k.subs.series, seriesName: 'Новые подписки', seriesFormat: fmt.int,
@@ -1219,12 +1443,14 @@
             },
             {
                 id: 'users', label: 'Регистрации', icon: 'userPlus', color: C.teal, value: k.users.new.value, format: fmt.int,
+                hint: 'Новые пользователи за период. MAU — те, кто заходил за последние 30 дней: это ваша живая аудитория.',
                 delta: k.users.new.delta, sub: `${prevText}: ${fmt.int(k.users.new.prev)}`,
                 series: k.users.series, seriesName: 'Регистрации', seriesFormat: fmt.int,
                 foot: [['Всего', fmt.int(k.users.total)], ['MAU', fmt.int(k.users.mau)]],
             },
             {
                 id: 'ai', label: 'Расход на AI', icon: 'coin', color: C.green, value: k.ai_cost.value, format: fmt.usd,
+                hint: 'Сколько вы заплатили провайдерам AI за период по тарифам ключей. Здесь рост — плохо, поэтому плашка красная при росте.',
                 delta: k.ai_cost.delta, invert: true, sub: `${prevText}: ${fmt.usd(k.ai_cost.prev)}`,
                 series: k.ai_cost.series, seriesName: 'Стоимость', seriesFormat: fmt.usd, clickable: true,
                 foot: [['Вызовов', fmt.compact(k.ai_cost.calls)], ['Токенов', fmt.compact(k.tokens.value)]],
@@ -1232,10 +1458,10 @@
         ];
         if (first || !$('#kpi [data-kpi]')) {
             $('#kpi').innerHTML = cards.map((c, idx) => `
-                <article class="card flex flex-col reveal ${c.clickable ? 'clickable' : ''}" data-kpi="${c.id}" style="animation-delay:${idx * 60}ms"
+                <article class="card flex flex-col reveal ${c.clickable ? 'clickable' : ''}" data-kpi="${c.id}" style="--g:${c.color};animation-delay:${idx * 60}ms"
                     ${c.clickable ? 'role="button" tabindex="0" data-open-tokens aria-label="Открыть подробный расход токенов"' : ''}>
                     <div class="card-head nowrap">
-                        <div class="card-title"><span class="ticon" style="color:${c.color}">${icon(c.icon, 15)}</span><h3>${esc(c.label)}</h3></div>
+                        <div class="card-title"><span class="ticon" style="color:${c.color}">${icon(c.icon, 15)}</span><h3>${esc(c.label)}</h3>${qm(c.hint)}</div>
                         <span data-delta></span>
                     </div>
                     <div class="mt-4 flex items-end justify-between gap-3">
@@ -1243,7 +1469,7 @@
                         ${c.clickable ? `<span class="link">Подробнее${icon('arrowRight', 12)}</span>` : ''}
                     </div>
                     <p class="lbl mt-2 mb-0 truncate" data-sub></p>
-                    <div class="chart h-12 mt-3" data-spark></div>
+                    <div class="chart h-14 mt-3" data-spark></div>
                     <div class="grid grid-cols-2 gap-2 mt-3" data-foot></div>
                 </article>`).join('');
         }
@@ -1273,19 +1499,19 @@
         const k = state.ov.kpi;
         const labels = state.ov.period.labels;
         const tiles = [
-            { id: 'gen', label: 'Генерации тестов', value: fmt.int(k.generations.value), delta: k.generations.delta, note: `всего на платформе ${fmt.int(k.generations.total)}`, color: C.indigo, series: k.generations.series },
-            { id: 'att', label: 'Прохождения', value: fmt.int(k.attempts.value), delta: k.attempts.delta, note: k.generations.value ? `${NF1.format(k.attempts.value / k.generations.value)} на один новый тест` : 'новых тестов нет', color: C.yellow, series: k.attempts.series },
-            { id: 'score', label: 'Средний балл', value: fmt.pct(k.score.value), delta: k.score.delta, note: `в прошлом периоде ${fmt.pct(k.score.prev)}`, color: C.teal, meter: k.score.value },
-            { id: 'arpu', label: 'ARPU', value: fmt.rub(k.arpu.value), delta: k.arpu.delta, note: `платящих ${fmt.int(k.payers.value)}, оплат ${fmt.int(k.payments.value)}`, color: C.orange, meter: null },
+            { id: 'gen', label: 'Генерации тестов', hint: 'Сколько новых тестов создали за период.', value: fmt.int(k.generations.value), delta: k.generations.delta, note: `всего на платформе ${fmt.int(k.generations.total)}`, color: C.indigo, series: k.generations.series },
+            { id: 'att', label: 'Прохождения', hint: 'Сколько раз тесты проходили. Отношение к генерациям показывает, насколько тесты востребованы.', value: fmt.int(k.attempts.value), delta: k.attempts.delta, note: k.generations.value ? `${NF1.format(k.attempts.value / k.generations.value)} на один новый тест` : 'новых тестов нет', color: C.yellow, series: k.attempts.series },
+            { id: 'score', label: 'Средний балл', hint: 'Средняя доля верных ответов. Ниже 50% — тесты сложные, выше 90% — слишком лёгкие.', value: fmt.pct(k.score.value), delta: k.score.delta, note: `в прошлом периоде ${fmt.pct(k.score.prev)}`, color: C.teal, meter: k.score.value },
+            { id: 'arpu', label: 'ARPU', hint: 'Средняя выручка на одного платящего пользователя за период.', value: fmt.rub(k.arpu.value), delta: k.arpu.delta, note: `платящих ${fmt.int(k.payers.value)}, оплат ${fmt.int(k.payments.value)}`, color: C.orange, meter: null },
         ];
         $('#product-tiles').innerHTML = tiles.map((t) => `
-            <div class="tile flex flex-col">
+            <div class="tile flex flex-col" style="--g:${t.color}">
                 <div class="flex items-center justify-between gap-2">
-                    <p class="lbl m-0 flex items-center gap-2 truncate"><i class="dot" style="background:${t.color}"></i>${esc(t.label)}</p>${delta(t.delta)}
+                    <p class="lbl m-0 flex items-center gap-2 truncate"><i class="dot" style="background:${t.color}"></i>${esc(t.label)}${qm(t.hint)}</p>${delta(t.delta)}
                 </div>
                 <p class="mid m-0 mt-3">${esc(t.value)}</p>
                 <p class="lbl m-0 mt-1.5 truncate">${esc(t.note)}</p>
-                <div class="mt-auto pt-3">${t.series ? `<div class="chart h-9" data-ptile="${t.id}"></div>`
+                <div class="mt-auto pt-3">${t.series ? `<div class="chart h-10" data-ptile="${t.id}"></div>`
                     : t.meter != null ? ticks(t.meter, t.color, 28)
                     : `<div class="flex items-center gap-2"><span class="lbl">Выручка</span><span class="val">${fmt.rub(k.revenue.value)}</span></div>`}</div>
             </div>`).join('');
@@ -1302,20 +1528,20 @@
         const succDelta = success != null && h.success_yesterday != null ? +(success - h.success_yesterday).toFixed(1) : null;
         const latDelta = h.latency_yesterday ? Math.round((h.latency_today - h.latency_yesterday) / h.latency_yesterday * 100) : null;
         const succColor = success == null ? '#4b4b55' : success < 90 ? C.rose : success < 97 ? C.yellow : C.green;
-        const tile = (label, value, note, tone = '', extra = '') => `
-            <div class="tile flex flex-col">
-                <p class="lbl m-0">${esc(label)}</p>
+        const tile = (label, hint, color, value, note, tone = '', extra = '') => `
+            <div class="tile flex flex-col" style="--g:${color}">
+                <p class="lbl m-0 flex items-center gap-2"><i class="dot" style="background:${color}"></i>${esc(label)}${qm(hint)}</p>
                 <p class="mid m-0 mt-3 ${tone}">${value}</p>
                 ${extra}
                 <p class="lbl m-0 mt-auto pt-2 truncate">${note}</p>
             </div>`;
         $('#health-tiles').innerHTML = [
-            tile('Онлайн', `<span class="inline-flex items-center gap-2">${fmt.int(h.online_now)}<span class="dot bg-ok live"></span></span>`, `за ${h.online_window_min} минут`),
-            tile('Посетители', fmt.int(h.visitors_today), 'IP за сегодня'),
-            tile('Ошибки за час', fmt.int(h.errors_hour), h.calls_hour ? `из ${fmt.int(h.calls_hour)} вызовов` : 'вызовов не было', h.errors_hour > 0 ? 'tone-bad' : ''),
-            tile('Запросы к AI', fmt.int(h.calls_today), `${fmt.int(h.calls_hour)} за час`),
-            tile('Задержка AI', fmt.ms(h.latency_today), latDelta == null ? 'среднее сегодня' : `${latDelta > 0 ? '+' : ''}${latDelta}% ко вчера`, h.latency_today > 15000 ? 'tone-warn' : ''),
-            tile('Успешность AI', fmt.pct(success),
+            tile('Онлайн', 'Сколько разных адресов открывали сайт за последние минуты. Ночью ноль — это нормально.', C.green, `<span class="inline-flex items-center gap-2">${fmt.int(h.online_now)}<span class="dot bg-ok live"></span></span>`, `за ${h.online_window_min} минут`),
+            tile('Посетители', 'Разные IP-адреса за сегодня. Один человек с двух сетей считается дважды.', C.sky, fmt.int(h.visitors_today), 'IP за сегодня'),
+            tile('Ошибки за час', 'Вызовы AI, закончившиеся ошибкой за последний час. Единицы — норма, рост — повод проверить ключи.', C.rose, fmt.int(h.errors_hour), h.calls_hour ? `из ${fmt.int(h.calls_hour)} вызовов` : 'вызовов не было', h.errors_hour > 0 ? 'tone-bad' : ''),
+            tile('Запросы к AI', 'Сколько раз сегодня обращались к провайдерам AI.', C.indigo, fmt.int(h.calls_today), `${fmt.int(h.calls_hour)} за час`),
+            tile('Задержка AI', 'Среднее время ответа провайдера сегодня. Больше 15 секунд — пользователи заметно ждут.', C.yellow, fmt.ms(h.latency_today), latDelta == null ? 'среднее сегодня' : `${latDelta > 0 ? '+' : ''}${latDelta}% ко вчера`, h.latency_today > 15000 ? 'tone-warn' : ''),
+            tile('Успешность AI', 'Доля вызовов AI без ошибок сегодня. Ниже 97% — стоит посмотреть ключи.', succColor, fmt.pct(success),
                 succDelta == null ? 'сегодня' : `${succDelta >= 0 ? '+' : ''}${NF1.format(succDelta)} п.п. ко вчера`, '',
                 `<div class="mt-2.5">${ticks(success, succColor, 22)}</div>`),
         ].join('');
@@ -1348,6 +1574,7 @@
         if (services.error) state.serviceAlerts.push({ level: 'warning', target: 'services', text: `Статусы сервисов не получены: ${services.error}` });
         renderServices();
         renderAlerts();
+        renderInsights();
     }
     function renderServices() {
         $('#side-services').innerHTML = services.list.length
@@ -1442,6 +1669,7 @@
     function renderPaymentStatus() {
         const ps = state.ov.payment_status;
         const items = [['completed', 'Оплачены', C.green], ['pending', 'Ожидают', C.yellow], ['failed', 'Ошибка', C.rose]];
+        $('#pay-status-bar').innerHTML = shareBar(items.map(([key, label, color]) => ({ label, value: ps[key]?.count || 0, color })), (v) => `${fmt.int(v)} платежей`);
         $('#pay-status').innerHTML = items.map(([key, label, color]) => `
             <button type="button" data-pay-jump="${key}" class="tile btn-tile" data-tip="Открыть платежи со статусом «${label}» за период">
                 <span class="flex items-center gap-1.5 lbl"><i class="dot" style="background:${color}"></i>${label}</span>
@@ -1459,23 +1687,123 @@
     });
 
     /* ---------- Аудитория ---------- */
+    const unitWord = (b, n) => (b === 'week' ? plural(n, 'неделя', 'недели', 'недель')
+        : b === 'month' ? plural(n, 'месяц', 'месяца', 'месяцев') : plural(n, 'день', 'дня', 'дней'));
+    const mstat = (label, tipText, value, note) => `
+        <div class="tile ms" data-tip="${esc(tipText)}">
+            <p class="mlabel m-0">${esc(label)}</p>
+            <p class="ms-v m-0">${value}</p>
+            <p class="lbl m-0 truncate">${note}</p>
+        </div>`;
+
     function renderActivity() {
-        const k = state.ov.kpi;
+        const k = state.ov.kpi, p = state.ov.period;
         const map = {
-            generations: { series: k.generations.series, total: k.generations.value, d: k.generations.delta, name: 'Генерации', color: C.indigo },
-            attempts: { series: k.attempts.series, total: k.attempts.value, d: k.attempts.delta, name: 'Прохождения', color: C.yellow },
-            users: { series: k.users.series, total: k.users.new.value, d: k.users.new.delta, name: 'Регистрации', color: C.teal },
+            generations: { series: k.generations.series, total: k.generations.value, d: k.generations.delta, name: 'Генерации', color: C.indigo, what: 'тестов создано' },
+            attempts: { series: k.attempts.series, total: k.attempts.value, d: k.attempts.delta, name: 'Прохождения', color: C.yellow, what: 'прохождений' },
+            users: { series: k.users.series, total: k.users.new.value, d: k.users.new.delta, prev: k.users.new.prev, name: 'Регистрации', color: C.teal, what: 'новых пользователей' },
         };
         const cur = map[state.actMode];
-        const per = state.ov.period.days ? cur.total / state.ov.period.days : 0;
+        $('#act-card').style.setProperty('--g', cur.color);
+
+        const vals = (cur.series || []).map((v) => +v || 0);
+        const n = vals.length;
+        const days = p.days || 1;
+        const per = cur.total / days;
+        const exact = cur.prev != null;
+        const prev = exact ? cur.prev
+            : (cur.d != null && cur.d > -100 ? Math.round(cur.total / (1 + cur.d / 100)) : null);
+        const approx = exact ? '' : '≈ ';
         $('#act-sub').textContent = `${fmt.int(cur.total)} за период, ${NF1.format(per)} в день`;
+
+        /* --- шапка: число, сравнение с прошлым периодом --- */
+        const top = Math.max(cur.total, prev || 0, 1);
+        const cmpRow = (label, v, color, strong, tag = '') => `
+            <div class="cmp-row">
+                <span class="lbl">${label}</span>
+                <span class="cmp-track"><i style="background:${color};width:${Math.max(v ? 3 : 0, v / top * 100).toFixed(1)}%"></i></span>
+                <b class="${strong ? '' : 'text-[color:var(--muted)]'}">${tag}${fmt.int(v)}</b>
+            </div>`;
+        $('#act-hero').innerHTML = `
+            <div class="min-w-0">
+                <div class="flex flex-wrap items-end gap-3">
+                    <span class="aud-big" id="act-big">0</span>${delta(cur.d)}
+                </div>
+                <p class="lbl m-0 mt-2">${esc(cur.what)} за период${prev != null ? `, в прошлом ${approx}${fmt.int(prev)}` : ''}</p>
+            </div>
+            <div class="cmp" data-tip="${esc(exact ? 'Сравнение с предыдущим периодом такой же длины' : 'Прошлый период восстановлен по процентному изменению, поэтому значение приблизительное')}">
+                ${cmpRow('Сейчас', cur.total, cur.color, true)}
+                ${prev != null ? cmpRow('Прошлый', prev, 'rgba(255,255,255,.3)', false, approx) : '<p class="lbl m-0">В прошлом периоде данных нет</p>'}
+            </div>`;
+        countUp($('#act-big'), cur.total, fmt.int);
+
+        /* --- график + скользящее среднее --- */
+        const w = { day: 7, week: 4, month: 3 }[p.bucket] || 3;
+        const useMA = n >= w * 2 && cur.total > 0;
+        const ma = useMA ? vals.map((_, i) => {
+            const from = Math.max(0, i - w + 1);
+            return sum(vals.slice(from, i + 1)) / (i - from + 1);
+        }) : null;
+        const maName = `Среднее за ${w} ${unitWord(p.bucket, w)}`;
+        $('#act-legend').innerHTML = legendItem(cur.color, cur.name, null)
+            + (useMA ? legendItem('rgba(255,255,255,.85)', maName, null, 'line') : '');
         mountChart($('#ch-activity'), {
-            labels: state.ov.period.labels, integer: true,
-            series: [{ name: cur.name, values: cur.series, color: cur.color }],
+            labels: p.labels, integer: true,
+            series: [{ name: cur.name, values: vals, color: cur.color }],
+            line: useMA ? { name: maName, values: ma, color: 'rgba(255,255,255,.85)', dashed: true, format: (v) => NF1.format(v) } : null,
             emptyText: 'За период активности нет', ariaLabel: cur.name,
         });
-        $('#act-foot').innerHTML = [['DAU', k.users.dau, 'вошли сегодня'], ['WAU', k.users.wau, 'за 7 дней'], ['MAU', k.users.mau, 'за 30 дней']]
-            .map(([l, v, n]) => `<div class="tile py-2.5" data-tip="${esc(`${l}: пользователи, чей последний вход был ${n}`)}"><p class="lbl m-0">${l}</p><p class="val m-0 mt-1 text-[16px]">${fmt.int(v)}</p></div>`).join('');
+
+        /* --- ключевые показатели периода --- */
+        const peakI = vals.reduce((best, v, i) => (v > vals[best] ? i : best), 0);
+        const peakV = vals[peakI] || 0;
+        const peakLabel = p.labels[peakI] || '';
+        const active = vals.filter((v) => v > 0).length;
+        const q = Math.floor(n / 4);
+        let pace = null;
+        if (n >= 8 && q >= 2) {
+            const last = sum(vals.slice(n - q)), before = sum(vals.slice(n - 2 * q, n - q));
+            pace = before > 0 ? (last - before) / before * 100 : null;
+        }
+        $('#act-ins').innerHTML = [
+            mstat('Пик', 'Самый активный отрезок периода', fmt.int(peakV),
+                peakV ? esc(p.bucket === 'week' ? `неделя с ${peakLabel}` : peakLabel) : 'нет активности'),
+            mstat('В день', 'Среднее за день по всему периоду. Ниже — каким оно было в прошлом периоде', NF1.format(per),
+                prev != null ? `было ${approx}${NF1.format(prev / days)}` : 'в среднем'),
+            mstat('Активных', 'Сколько отрезков периода было с активностью', `${active}<span class="lbl" style="font-size:12px"> из ${n}</span>`,
+                `${esc(unitWord(p.bucket, active))}, ${n ? NF0.format(active / n * 100) : 0}%`),
+            mstat('Темп', 'Последняя четверть периода к предыдущей четверти. Показывает, ускоряется активность или затухает',
+                pace == null ? '—' : delta(pace), 'последняя ¼ к прошлой ¼'),
+        ].join('');
+
+        /* --- DAU / WAU / MAU и липкость --- */
+        const u = k.users;
+        const mau = u.mau || 0;
+        const share = (v) => (mau ? clamp(v / mau * 100, 0, 100) : 0);
+        const aud = [
+            ['DAU', u.dau, 'вошли сегодня', C.green, 'Ежедневная аудитория: последний вход был сегодня'],
+            ['WAU', u.wau, 'за 7 дней', C.sky, 'Недельная аудитория: последний вход был за 7 дней'],
+            ['MAU', u.mau, 'за 30 дней', C.violet, 'Месячная аудитория: последний вход был за 30 дней'],
+        ];
+        const sticky = mau ? u.dau / mau * 100 : null;
+        $('#act-foot').innerHTML = aud.map(([l, v, note, color, tipText]) => `
+            <div class="dau" style="--g:${color}" data-tip="${esc(tipText)}">
+                <div class="flex items-center justify-between gap-2">
+                    <span class="mlabel flex items-center gap-1.5"><i class="dot" style="background:${color}"></i>${l}</span>
+                    ${l === 'DAU' && v > 0 ? '<span class="dot bg-ok live"></span>' : ''}
+                </div>
+                <p class="dau-v">${fmt.int(v)}</p>
+                <span class="dau-bar"><i style="width:${share(v).toFixed(1)}%"></i></span>
+                <p class="lbl m-0 truncate">${l === 'MAU' ? esc(note) : `${NF0.format(share(v))}% от MAU, ${esc(note)}`}</p>
+            </div>`).join('') + `
+            <div class="dau" style="--g:${C.yellow}" data-tip="Липкость: какая доля месячной аудитории заходит каждый день. Чем выше, тем чаще люди возвращаются">
+                <div class="flex items-center justify-between gap-2">
+                    <span class="mlabel flex items-center gap-1.5"><i class="dot" style="background:${C.yellow}"></i>Липкость</span>
+                </div>
+                <p class="dau-v">${sticky == null ? '—' : fmt.pct(sticky)}</p>
+                <span class="dau-bar"><i style="width:${clamp(sticky || 0, 0, 100).toFixed(1)}%"></i></span>
+                <p class="lbl m-0 truncate">DAU / MAU</p>
+            </div>`;
     }
     $('#act-mode').addEventListener('click', (e) => {
         const b = e.target.closest('[data-mode]');
@@ -1486,62 +1814,138 @@
     });
 
     function renderFunnel() {
-        const steps = state.ov.funnel;
+        const steps = state.ov.funnel || [];
         const colors = [C.indigo, C.teal, C.yellow, C.green];
         const base = steps[0]?.value || 0;
+        let worst = -1, worstConv = 101;
+        for (let i = 1; i < steps.length; i++) {
+            const conv = steps[i - 1].value ? steps[i].value / steps[i - 1].value * 100 : null;
+            if (conv != null && conv < worstConv) { worstConv = conv; worst = i; }
+        }
+        if (!(base >= 10 && worstConv < 50)) worst = -1;
         $('#funnel').innerHTML = steps.map((s, i) => {
             const w = base ? (s.value / base) * 100 : 0;
             const prev = i ? steps[i - 1].value : null;
             const conv = i && prev ? (s.value / prev) * 100 : null;
-            return `<li data-tip="${esc(i ? `${s.label}: ${fmt.int(s.value)} — ${conv == null ? 'нет базы' : fmt.pct(conv)} от предыдущего шага, ${fmt.pct(w)} от зарегистрированных` : `${s.label}: ${fmt.int(s.value)}`)}">
-                <div class="flex items-baseline justify-between gap-3">
+            const lost = i && prev != null ? Math.max(0, prev - s.value) : 0;
+            const convTone = conv == null ? '' : conv >= 60 ? 'ok' : conv >= 30 ? 'warn' : 'bad';
+            const tipText = i
+                ? `${s.label}: ${fmt.int(s.value)} — ${conv == null ? 'нет базы' : fmt.pct(conv)} от предыдущего шага, ${fmt.pct(w)} от зарегистрированных`
+                : `${s.label}: ${fmt.int(s.value)}`;
+            return `<li class="fn-step ${i === worst ? 'worst' : ''}" style="--c:${colors[i % colors.length]}" data-tip="${esc(tipText)}">
+                <div class="fn-head">
+                    <span class="fn-n">${i + 1}</span>
                     <span class="text-[12.5px] font-semibold">${esc(s.label)}</span>
-                    <span class="font-extrabold">${fmt.int(s.value)}</span>
+                    <span class="fn-val">${fmt.int(s.value)}</span>
                 </div>
-                <div class="track mt-2 h-2.5"><i style="width:${Math.max(w, s.value ? 2 : 0).toFixed(2)}%;background:${colors[i % colors.length]};animation-delay:${i * 90}ms"></i></div>
-                ${i ? `<p class="lbl m-0 mt-1">${conv == null ? '—' : fmt.pct(conv)} от предыдущего шага</p>` : ''}
+                <div class="fn-bar"><i style="width:${Math.max(w, s.value ? 2 : 0).toFixed(2)}%;animation-delay:${i * 90}ms"></i></div>
+                <div class="fn-meta">
+                    ${i ? `<span class="chip ${convTone}">${conv == null ? '—' : fmt.pct(conv)} от пред. шага</span>` : '<span class="chip">база, 100%</span>'}
+                    ${i && lost ? `<span class="lbl">−${fmt.int(lost)}</span>` : ''}
+                    ${i === worst ? '<span class="chip bad">узкое место</span>' : ''}
+                </div>
             </li>`;
         }).join('');
+        const last = steps[steps.length - 1];
+        $('#funnel-foot').innerHTML = steps.length > 1 && base ? `
+            <div class="tile ms" data-tip="Какая доля зарегистрировавшихся дошла до последнего шага воронки">
+                <p class="mlabel m-0">Сквозная конверсия</p>
+                <p class="ms-v m-0">${fmt.pct(last.value / base * 100)}</p>
+                <p class="lbl m-0 truncate">${esc(steps[0].label)} → ${esc(last.label)}: ${fmt.int(last.value)} из ${fmt.int(base)}</p>
+            </div>` : '';
     }
 
     function renderScores() {
         const sc = state.ov.scores;
         const colorAt = (i) => (i < 5 ? C.orange : i < 8 ? C.yellow : C.green);
+        const data = (sc.data || []).map((v) => +v || 0);
+        const total = sum(data);
+        const s = state.ov.kpi.score;
+        $('#scores-hero').innerHTML = `
+            <div class="flex flex-wrap items-end gap-3">
+                <span class="aud-big" style="font-size:clamp(34px,10cqw,52px)">${fmt.pct(s.value)}</span>${delta(s.delta)}
+            </div>
+            <p class="lbl m-0 mt-2">средний балл, ${fmt.int(total)} ${plural(total, 'прохождение', 'прохождения', 'прохождений')}</p>`;
         mountChart($('#ch-scores'), {
             labels: sc.labels, integer: true, maxBar: 22,
             titles: sc.labels.map((l) => `${l}% верных ответов`),
-            series: [{ name: 'Прохождения', values: sc.data, color: colorAt }],
+            series: [{ name: 'Прохождения', values: data, color: colorAt }],
             emptyText: 'Прохождений за период нет', ariaLabel: 'Распределение баллов',
         });
-        const s = state.ov.kpi.score;
+        const bands = [
+            { l: 'Слабо', r: 'до 50%', v: sum(data.slice(0, 5)), c: C.orange },
+            { l: 'Средне', r: '50–79%', v: sum(data.slice(5, 8)), c: C.yellow },
+            { l: 'Сильно', r: '80%+', v: sum(data.slice(8)), c: C.green },
+        ];
+        $('#scores-bands').innerHTML = `
+            ${shareBar(bands.map((b) => ({ label: `${b.l} (${b.r})`, value: b.v, color: b.c })), (v) => `${fmt.int(v)} прохождений`)}
+            <div class="bands mt-2.5">${bands.map((b) => {
+                const pc = total ? b.v / total * 100 : 0;
+                return `<div class="band" style="--c:${b.c}" data-tip="${esc(`${b.l}: ${b.r} верных ответов — ${fmt.int(b.v)} ${plural(b.v, 'прохождение', 'прохождения', 'прохождений')}`)}">
+                    <p class="mlabel m-0 truncate">${b.l}</p>
+                    <p class="band-v">${NF0.format(pc)}%</p>
+                    <span class="band-bar"><i style="width:${pc.toFixed(1)}%"></i></span>
+                    <p class="lbl m-0 mt-1.5 truncate">${b.r}, ${fmt.int(b.v)}</p>
+                </div>`;
+            }).join('')}</div>`;
         $('#scores-foot').innerHTML = `Средний балл <span class="val">${fmt.pct(s.value)}</span>, в прошлом периоде <span class="val">${fmt.pct(s.prev)}</span>`;
     }
 
     function renderFeed() {
-        const feed = state.ov.feed;
-        $('#feed').innerHTML = feed.length ? feed.map((f) => `
-            <li class="flex items-center gap-4 py-2.5 border-b border-[color:var(--line)] last:border-0">
-                <span class="ticon" style="width:30px;height:30px">${icon('file', 13)}</span>
+        const feed = state.ov.feed || [];
+        const att = sum(feed.map((f) => f.attempts));
+        const vw = sum(feed.map((f) => f.views));
+        const idle = feed.filter((f) => !f.attempts).length;
+        $('#feed-sum').innerHTML = feed.length ? `
+            <span class="chip ok" data-tip="Всего прохождений у этих тестов">${icon('check', 11)}${fmt.int(att)} прох.</span>
+            <span class="chip" data-tip="Всего просмотров у этих тестов">${icon('eye', 11)}${fmt.int(vw)} просм.</span>
+            ${idle ? `<span class="chip warn" data-tip="Тесты, которые ещё никто не прошёл">${fmt.int(idle)} без прохождений</span>` : ''}` : '';
+        const maxAtt = Math.max(1, ...feed.map((f) => f.attempts || 0));
+        $('#feed').innerHTML = feed.length ? feed.map((f) => {
+            const hot = f.attempts > 0;
+            const color = hot ? C.green : f.views > 0 ? C.sky : '#6b6b75';
+            const guest = /^guest/i.test(f.author || '');
+            const conv = f.views ? f.attempts / f.views * 100 : null;
+            return `<li class="feed-row border-b border-[color:var(--line)] last:border-0" style="--c:${color}">
+                <span class="feed-ic">${icon('file', 15)}</span>
                 <div class="min-w-0 flex-1">
-                    <p class="m-0 text-[13px] font-bold truncate">${esc(f.title)}</p>
-                    <p class="lbl m-0 mt-0.5 truncate">${esc(f.author)}, ${fmt.int(f.questions)} ${plural(f.questions, 'вопрос', 'вопроса', 'вопросов')}, ${esc(f.model)}</p>
+                    <p class="m-0 text-[13px] font-bold truncate" title="${esc(f.title)}">${esc(f.title)}</p>
+                    <div class="feed-meta">
+                        <span class="mchip ${guest ? 'guest' : ''}" data-tip="${esc(guest ? 'Гость без регистрации' : 'Автор теста')}">${icon('user', 10)}${esc(f.author)}</span>
+                        <span class="mchip">${fmt.int(f.questions)} ${plural(f.questions, 'вопрос', 'вопроса', 'вопросов')}</span>
+                        <span class="mchip">${icon('cpu', 10)}${esc(f.model)}</span>
+                    </div>
                 </div>
-                <div class="hidden sm:flex gap-2">
-                    <span class="chip" data-tip="Прохождений">${fmt.int(f.attempts)} прох.</span>
-                    <span class="chip" data-tip="Просмотров">${fmt.int(f.views)} просм.</span>
+                <div class="feed-eng hidden sm:flex" data-tip="${esc(conv == null ? 'Просмотров ещё не было' : `Прошли ${fmt.pct(conv)} из тех, кто открыл тест`)}">
+                    <div class="flex gap-1.5">
+                        <span class="chip ${hot ? 'ok' : ''}" data-tip="Прохождений">${fmt.int(f.attempts)} прох.</span>
+                        <span class="chip" data-tip="Просмотров">${fmt.int(f.views)} просм.</span>
+                    </div>
+                    <span class="eng-bar"><i style="width:${(f.attempts / maxAtt * 100).toFixed(1)}%"></i></span>
                 </div>
-                <time class="lbl w-20 text-right">${esc(f.time)}</time>
-            </li>`).join('') : '<li class="lbl py-6">Тестов пока нет</li>';
+                <time class="lbl w-[74px] text-right">${esc(f.time)}</time>
+            </li>`;
+        }).join('') : `<li class="aud-empty">${icon('file', 16)}Тестов пока нет</li>`;
     }
 
     function renderChurn() {
-        const list = state.ov.churn;
+        const list = state.ov.churn || [];
+        const expired = list.filter((c) => c.days_left < 0).length;
+        const soon = list.filter((c) => c.days_left >= 0 && c.days_left <= 2).length;
+        $('#churn-sum').innerHTML = list.length ? `
+            ${expired ? `<span class="chip bad" data-tip="Подписка уже закончилась">${expired} истекло</span>` : ''}
+            ${soon ? `<span class="chip warn" data-tip="Истекает в ближайшие 2 дня">${soon} скоро</span>` : ''}
+            <span class="chip">${list.length} всего</span>` : '';
         $('#churn').innerHTML = list.length ? list.map((c, i) => {
-            const chip = c.days_left < 0
-                ? `<span class="chip bad">истекла ${Math.abs(c.days_left)} дн. назад</span>`
-                : c.days_left === 0 ? '<span class="chip warn">сегодня</span>'
-                : `<span class="chip ${c.days_left <= 2 ? 'warn' : ''}">через ${c.days_left} дн.</span>`;
-            return `<li class="flex items-center gap-3 py-2.5 border-b border-[color:var(--line)] last:border-0">
+            const dl = c.days_left;
+            const color = dl < 0 ? C.rose : dl <= 2 ? C.yellow : C.teal;
+            const fill = dl < 0 ? 100 : clamp(dl / 7 * 100, 8, 100);
+            const chip = dl < 0
+                ? `<span class="chip bad">истекла ${Math.abs(dl)} дн. назад</span>`
+                : dl === 0 ? '<span class="chip warn">сегодня</span>'
+                : `<span class="chip ${dl <= 2 ? 'warn' : ''}">через ${dl} дн.</span>`;
+            return `<li class="churn-row border-b border-[color:var(--line)] last:border-0" style="--c:${color}">
+                <span class="ring" style="--p:${fill}" data-tip="${esc(dl < 0 ? 'Подписка уже закончилась' : `До конца подписки ${dl} дн. из 7`)}"><span>${dl < 0 ? '!' : dl}</span></span>
                 <div class="min-w-0 flex-1">
                     <p class="m-0 text-[13px] font-bold truncate">${esc(c.username)}</p>
                     <p class="lbl m-0 mt-0.5 truncate" data-tip="${esc(c.email || 'без email')}">до ${esc(c.end_date)}, ${esc(c.plan)}</p>
@@ -1549,7 +1953,7 @@
                 ${chip}
                 <button type="button" class="btn btn-ghost btn-sm" data-churn="${i}">Продлить</button>
             </li>`;
-        }).join('') : '<li class="lbl py-6">В ближайшую неделю платные подписки не заканчиваются</li>';
+        }).join('') : `<li class="aud-empty">${icon('check', 16)}В ближайшую неделю платные подписки не заканчиваются</li>`;
     }
     $('#churn').addEventListener('click', (e) => {
         const b = e.target.closest('[data-churn]');
@@ -1584,6 +1988,7 @@
             renderRouting();
             renderKeyFilters();
             renderKeys();
+            renderInsights();
             if (sheet.isOpen()) renderTokensSheet();
         } catch (e) {
             $('#routing').innerHTML = `<div class="notice bad flex items-center justify-between gap-3">Данные по AI не загрузились: ${esc(e.message)}
@@ -1597,12 +2002,12 @@
         const providers = ai.series.providers;
         const isTokens = state.aiMode === 'tokens';
         $('#ai-tiles').innerHTML = [
-            ['Токенов', fmt.compact(t.tokens), 'по журналу API', C.indigo],
-            ['Стоимость', fmt.usd(t.cost), t.tokens ? `≈ ${fmt.usd(t.cost / t.tokens * 1e6)} за 1M` : 'нет расхода', C.green],
-            ['Вызовов', fmt.compact(t.calls), `активны ${fmt.int(t.active_keys)} из ${fmt.int(t.keys)} ключей`, C.yellow],
-            ['Успешность', fmt.pct(t.success_rate), `задержка ${fmt.ms(t.avg_ms)}`, t.success_rate != null && t.success_rate < 90 ? C.rose : C.teal],
-        ].map(([l, v, n, c]) => `<div class="tile">
-            <p class="lbl m-0 flex items-center gap-2"><i class="dot" style="background:${c}"></i>${l}</p>
+            ['Токенов', 'Сколько токенов потратили все ключи за период по журналу вызовов API.', fmt.compact(t.tokens), 'по журналу API', C.indigo],
+            ['Стоимость', 'Сколько это стоило по тарифам ключей. Ниже — цена за миллион токенов.', fmt.usd(t.cost), t.tokens ? `≈ ${fmt.usd(t.cost / t.tokens * 1e6)} за 1M` : 'нет расхода', C.green],
+            ['Вызовов', 'Сколько раз приложение обращалось к провайдерам. Активные ключи — те, что сейчас включены.', fmt.compact(t.calls), `активны ${fmt.int(t.active_keys)} из ${fmt.int(t.keys)} ключей`, C.yellow],
+            ['Успешность', 'Доля вызовов без ошибки. Ниже 90% — нужно проверять ключи и лимиты.', fmt.pct(t.success_rate), `задержка ${fmt.ms(t.avg_ms)}`, t.success_rate != null && t.success_rate < 90 ? C.rose : C.teal],
+        ].map(([l, h, v, n, c]) => `<div class="tile" style="--g:${c}">
+            <p class="lbl m-0 flex items-center gap-2"><i class="dot" style="background:${c}"></i>${l}${qm(h)}</p>
             <p class="mid m-0 mt-2.5">${esc(v)}</p><p class="lbl m-0 mt-1.5 truncate">${esc(n)}</p></div>`).join('');
         const shareItems = providers.map((p) => ({ label: p.provider, value: sum(isTokens ? p.tokens : p.calls), color: providerColor(p.provider) }));
         const f = isTokens ? (v) => `${fmt.compact(v)} токенов` : (v) => `${fmt.int(v)} вызовов`;
@@ -1639,7 +2044,9 @@
             const options = r.key_ids.map(keyById).filter(Boolean).map((k) =>
                 `<option value="${k.id}" ${k.is_active ? 'selected' : ''}>${esc(k.name)} — ${esc(k.provider)}${k.model_name ? ` / ${esc(k.model_name)}` : ''}</option>`).join('');
             const today = active?.today || {};
-            return `<div class="tile">
+            const sr = today.success_rate;
+            const srColor = sr == null ? '#4b4b55' : sr >= 97 ? C.green : sr >= 90 ? C.yellow : C.rose;
+            return `<div class="tile" style="--g:${stKey === 'healthy' ? C.green : stKey === 'degraded' ? C.yellow : stKey === 'down' || stKey === 'expired' ? C.rose : '#6b6b75'}">
                 <div class="flex items-center justify-between gap-3">
                     <div class="min-w-0">
                         <p class="m-0 text-[13px] font-extrabold truncate">${esc(r.label)}</p>
@@ -1652,6 +2059,7 @@
                         <option value="" ${active ? '' : 'selected'}>Выключено</option>${options}
                     </select>
                 </label>
+                <div class="mt-3">${ticks(sr, srColor, 24)}</div>
                 <div class="mt-3 grid grid-cols-[1fr_1fr_1fr_auto] items-end gap-2">
                     <div data-tip="Успешных запросов сегодня"><p class="lbl m-0 text-[11px]">Успех</p><p class="val m-0 mt-0.5">${fmt.pct(today.success_rate)}</p></div>
                     <div data-tip="Средняя задержка сегодня"><p class="lbl m-0 text-[11px]">Задержка</p><p class="val m-0 mt-0.5">${fmt.ms(today.avg_ms)}</p></div>
@@ -2034,7 +2442,7 @@
             ['Вызовов', fmt.compact(t.calls), `${fmt.int(sum(ai.series.errors))} с ошибкой`, C.yellow],
             ['Успешность', fmt.pct(t.success_rate), 'за период', t.success_rate != null && t.success_rate < 90 ? C.rose : C.green],
             ['Задержка', fmt.ms(t.avg_ms), 'средняя', C.orange],
-        ].map(([l, v, n, c]) => `<div class="tile"><p class="lbl m-0 flex items-center gap-2"><i class="dot" style="background:${c}"></i>${l}</p>
+        ].map(([l, v, n, c]) => `<div class="tile" style="--g:${c}"><p class="lbl m-0 flex items-center gap-2"><i class="dot" style="background:${c}"></i>${l}</p>
             <p class="mid m-0 mt-2.5">${esc(v)}</p><p class="lbl m-0 mt-1.5 truncate">${esc(n)}</p></div>`).join('');
 
         renderTokensChart();
@@ -2185,6 +2593,7 @@
             state.pay.page = data.page;
             renderPayTabs();
             renderPayments();
+            renderInsights();
         } catch (e) {
             $('#pay-body').innerHTML = `<tr><td colspan="8" class="py-10 text-center"><span class="tone-bad">Платежи не загрузились: ${esc(e.message)}</span>
                 <button type="button" class="btn btn-ghost btn-sm ml-3" data-pay-retry>Повторить</button></td></tr>`;
@@ -2507,7 +2916,7 @@
                     const temp = Math.round(+cur.temp_C);
                     const desc = cur.lang_ru?.[0]?.value?.toLowerCase() || cur.weatherDesc?.[0]?.value?.toLowerCase() || '';
                     const sign = temp > 0 ? '+' : '';
-                    
+
                     let icon = '⛅';
                     if (/ясно|солн|clear|sunny/i.test(desc)) icon = '☀️';
                     else if (/пасмурно|overcast/i.test(desc)) icon = '☁️';

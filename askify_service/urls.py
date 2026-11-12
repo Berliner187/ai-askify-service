@@ -32,6 +32,8 @@ from askify_app.settings import DEBUG
 from askify_service.views import telegram_magic_auth, telegram_code_auth, bot_generate_code, bot_generate_link
 from askify_service.media_views import media_index, blog_view, blog_view_beacon, media_rss
 
+from . import admin_db_views as dbv
+
 
 urlpatterns = [
     path('', index, name='home'),
@@ -207,9 +209,16 @@ urlpatterns = [
 
     path('api/bot/generate-login-code/', bot_generate_code),
     path('api/bot/generate-magic-link/', bot_generate_link),
-
-    path('ops/live/', admin_traffic_live_view, name='admin_traffic_live'),
-    path('api/admin/traffic/live/', api_admin_traffic_live, name='api_admin_traffic_live'),
+    
+    path("admin-traffic/", dbv.admin_traffic_live_view, name="admin_traffic_live"),
+    path("api/admin/traffic/live/", dbv.api_admin_traffic_live, name="api_admin_traffic_live"),
+    path("api/admin/db/snapshot/", dbv.api_admin_db_snapshot),
+    path("api/admin/db/history/", dbv.api_admin_db_history),
+    path("api/admin/db/activity/", dbv.api_admin_db_activity),
+    path("api/admin/db/count/", dbv.api_admin_db_count),
+    path("api/admin/db/statements/", dbv.api_admin_db_statements),
+    path("api/admin/db/statements/reset/", dbv.api_admin_db_statements_reset),
+    path("api/admin/perf/", dbv.api_admin_perf),
 
     path('auth/telegram/callback/<str:token>/', telegram_magic_auth, name='tg_magic_login'),
     path('auth/code/', telegram_code_auth, name='tg_code_login'),

@@ -928,7 +928,7 @@ class ManageSurveysView(View):
                 difficulty=difficulty,
                 question_types=question_types
             )
-            tracer_l.info('LOADED TEXT: ' + text_from_user)
+            tracer_l.info('LOADED TEXT: ' + text_from_user[:80])
 
             generated_data = await manage_generate_surveys.openai_generate()
 
@@ -1345,7 +1345,7 @@ class GenerationSurveysView(View):
             
             await sync_to_async(mark_session)()
 
-            tracer_l.info(f"DEMO_SURVEY_CREATED: {new_survey_id} for staff_id: {staff_id} text: {text_from_user}")
+            tracer_l.info(f"DEMO_SURVEY_CREATED: {text_from_user[:80]}")
 
             return JsonResponse(
                 {
@@ -3633,6 +3633,14 @@ def profile_view(request, username):
                 .replace(",", ""),
             }
         )
+    
+    base_qs = Survey.objects.filter(id_staff=staff_id, is_visible=False)
+    total_stats = base_qs.aggregate(
+        total_count=Count("id"),
+        total_views=Sum("view_count"),
+        total_questions=Sum("questions_count"),
+    )
+    print('SDIOFHDSOUIHFUID', total_stats["total_count"])
 
     user_data = {
         "page_title": f"Профиль {username}",
@@ -3643,6 +3651,7 @@ def profile_view(request, username):
         "phone": "Телефон: " + (user.phone if user.phone else "Не указан"),
         "date_join": date_join,
         "date_last_login": date_last_login,
+        "total_count": total_stats["total_count"] or 0,
         "tokens": {
             "tests_remaining_count_limit": tests_remaining,
             "tests_total_limit": access_info["daily_limit"] or extra_credits,
@@ -3859,7 +3868,6 @@ def user_profile_api(request):
     user = get_object_or_404(AuthUser, id_staff=staff_id)
     subscription = get_object_or_404(Subscription, staff_id=staff_id)
 
-    statistics = UserAnswers.calculate_user_statistics(staff_id)
     subscription_status = subscription.check_sub_status()
     subscription_level = get_subscription_level(request)
 
@@ -3876,6 +3884,14 @@ def user_profile_api(request):
     days_until_end = (end_date - timezone.now().date()).days
 
     percent_used = (used_today / tests_limit * 100) if tests_limit > 0 else 0
+    
+    base_qs = Survey.objects.filter(id_staff=staff_id, is_visible=False)
+    total_stats = base_qs.aggregate(
+        total_count=Count("id"),
+        total_views=Sum("view_count"),
+        total_questions=Sum("questions_count"),
+    )
+    print('SDIOFHDSOUIHFUID', total_stats["total_count"])
 
     return JsonResponse(
         {
@@ -3886,7 +3902,7 @@ def user_profile_api(request):
             "date_last_login": user.last_login.strftime("%d.%m.%Y")
             if user.last_login
             else None,
-            "statistics": statistics,
+            "statistics": total_stats["total_count"] or 0,
             "tokens": {
                 "remaining": max(0, tests_limit - used_today),
                 "used_percent": round(percent_used),
@@ -8289,6 +8305,10 @@ def document_view(request, slug):
         "canonical_url": request.build_absolute_uri(request.path),
         "year": get_year_now(),
     }
+    title = doc["title"]
+    
+    log_traffic(request, f"Дока | {title}")
+    
     return render(request, "document.html", context)
 
 
@@ -8325,6 +8345,7 @@ def blog_view(request, slug):
         "username": get_username(request) if get_username(request) else 0,
         "debug": DEBUG,
     }
+    log_traffic(request, f"Блог | {title}")
 
     return render(request, "blog.html", context)
 

@@ -10,7 +10,7 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com/3.4.17"></script>
     <script>
         tailwind.config = { theme: { extend: { fontFamily: {
@@ -27,6 +27,7 @@
             --indigo: #5E6CF8; --indigo-2: #7480ff; --yellow: #F5B740; --green: #34D399; --teal: #2DD4BF;
             --orange: #F97316; --rose: #FB7185; --sky: #38BDF8; --violet: #A78BFA;
             --ease: cubic-bezier(0.16, 1, 0.3, 1);
+            --display: 'Space Grotesk', 'Manrope', system-ui, sans-serif;
             --chev: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238b8b96' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
         }
         *, *::before, *::after { box-sizing: border-box; }
@@ -96,6 +97,7 @@
         .chip.ok { color: #4ade80; background: rgba(52,211,153,.12); }
         .chip.bad { color: #fb7185; background: rgba(251,113,133,.12); }
         .chip.warn { color: var(--yellow); background: rgba(245,183,64,.12); }
+        .chip.info { color: var(--sky); background: rgba(56,189,248,.12); }
         .chip.accent { color: #c7cbff; background: rgba(94,108,248,.16); }
         .chip.sm { height: 20px; padding: 0 7px; font-size: 10.5px; border-radius: 6px; }
         .dot { width: 7px; height: 7px; border-radius: 999px; display: inline-block; flex: none; }
@@ -103,8 +105,8 @@
         .live { position: relative; }
         .live::after { content: ''; position: absolute; inset: -3px; border-radius: inherit; background: inherit; opacity: .35; animation: ping 1.8s var(--ease) infinite; }
         @keyframes ping { 0% { transform: scale(.6); opacity: .5; } 100% { transform: scale(2.2); opacity: 0; } }
-        .tone-ok { color: #4ade80; } .tone-bad { color: #fb7185; } .tone-warn { color: var(--yellow); } .tone-muted { color: var(--muted); } .tone-accent { color: #c7cbff; }
-        .bg-ok { background: var(--green); } .bg-bad { background: var(--rose); } .bg-warn { background: var(--yellow); } .bg-muted { background: #4b4b55; } .bg-accent { background: var(--indigo); }
+        .tone-ok { color: #4ade80; } .tone-bad { color: #fb7185; } .tone-warn { color: var(--yellow); } .tone-muted { color: var(--muted); } .tone-accent { color: #c7cbff; } .tone-info { color: var(--sky); }
+        .bg-ok { background: var(--green); } .bg-bad { background: var(--rose); } .bg-warn { background: var(--yellow); } .bg-muted { background: #4b4b55; } .bg-accent { background: var(--indigo); } .bg-info { background: var(--sky); }
 
         .ava { width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; flex: none; font-weight: 800; font-size: 12px; letter-spacing: -0.01em; color: #fff; box-shadow: inset 0 1px 0 rgba(255,255,255,.18); }
         .ava.sm { width: 28px; height: 28px; border-radius: 9px; font-size: 11px; }
@@ -263,15 +265,17 @@
         .known-ip input { accent-color: #fb7185; width: 15px; height: 15px; }
 
         /* Сегменты рассылки */
-        .seg-opt { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 13px; background: var(--tile); border: 1px solid transparent; text-align: left; transition: all .15s var(--ease); }
-        .seg-opt:hover { border-color: var(--line-2); }
-        .seg-opt[aria-checked="true"] { background: rgba(94,108,248,.1); border-color: rgba(94,108,248,.55); }
+        .seg-opt { --c: var(--indigo); position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 11px 13px; border-radius: 14px; background: var(--tile); border: 1px solid transparent; text-align: left; cursor: pointer; transition: all .15s var(--ease); }
+        .seg-opt:hover { border-color: var(--line-2); transform: translateY(-1px); }
+        .seg-opt[aria-checked="true"] { background: linear-gradient(135deg, rgba(94,108,248,.16), rgba(94,108,248,.05)); border-color: rgba(94,108,248,.6); }
         .seg-opt .radio { width: 16px; height: 16px; border-radius: 99px; box-shadow: inset 0 0 0 1.5px #4b4b55; display: grid; place-items: center; }
         .seg-opt .radio::after { content: ''; width: 8px; height: 8px; border-radius: 99px; background: var(--indigo-2); transform: scale(0); transition: transform .2s var(--ease); }
         .seg-opt[aria-checked="true"] .radio { box-shadow: inset 0 0 0 1.5px var(--indigo-2); }
         .seg-opt[aria-checked="true"] .radio::after { transform: scale(1); }
-        .seg-opt .n { font-weight: 800; font-size: 13px; }
+        .seg-opt .n { font-weight: 800; font-size: 14px; letter-spacing: -0.02em; }
         .seg-opt .n.zero { color: var(--dim); }
+        .seg-opt .share { grid-column: 1 / -1; height: 3px; border-radius: 3px; background: rgba(255,255,255,.06); overflow: hidden; margin-top: 2px; }
+        .seg-opt .share i { display: block; height: 100%; border-radius: inherit; background: var(--indigo-2); opacity: .8; }
 
         .md-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding: 5px; border-radius: 11px 11px 0 0; background: var(--tile); border: 1px solid var(--line); border-bottom: 0; }
         .md-tools + textarea.field { border-radius: 0 0 11px 11px; }
@@ -291,6 +295,51 @@
         @keyframes spin { to { transform: rotate(360deg); } }
         .empty { padding: 34px 16px; text-align: center; color: var(--muted); font-size: 12.5px; }
         .empty .ticon { margin: 0 auto 10px; width: 40px; height: 40px; border-radius: 13px; }
+
+        /* =====================================================================
+           Ситуационный стиль (как на дашборде): Space Grotesk для цифр и заголовков,
+           спокойная подсветка, без лишних декоративных элементов
+           ===================================================================== */
+        h1, h2, h3, .brand-name, .big, .mid, .kbig, .kmid, .status-word, .ins-title, .font-display { font-family: var(--display); font-weight: 500; font-variant-numeric: tabular-nums; }
+        h1, h2, h3, .brand-name { letter-spacing: -0.02em; }
+        .big, .mid, .kmid, .kbig, .status-word { letter-spacing: -0.04em; }
+        .tbl .font-extrabold, .person .font-extrabold, .gs-item .font-bold:last-child, .seg-opt .n { font-family: var(--display); font-weight: 600; }
+        .eyebrow, .mlabel { font: 500 10.5px 'JetBrains Mono', monospace; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); }
+        hr.rule { border: 0; height: 1px; background: var(--line); margin: 8px 0 2px; }
+
+        .kcard { --c: var(--indigo); position: relative; border-radius: 20px; padding: 18px; min-width: 0; border: 1px solid var(--line); container-type: inline-size;
+            background: radial-gradient(110% 70% at 0% 0%, color-mix(in srgb, var(--c) 8%, transparent), transparent 62%), var(--card);
+            transition: border-color .2s var(--ease), background-color .2s var(--ease); }
+        .kcard:hover { border-color: var(--line-2); }
+        button.kcard { text-align: left; width: 100%; cursor: pointer; }
+        .kcard.sm { padding: 14px 16px; border-radius: 16px; }
+        .kbig { font-size: clamp(38px, 17cqw, 64px); line-height: .94; letter-spacing: -0.045em; white-space: nowrap; }
+        .kunit { font-size: 13px; font-weight: 600; color: var(--muted); margin-left: 5px; }
+        .kmid { font-size: clamp(24px, 14cqw, 36px); line-height: 1; white-space: nowrap; }
+        .kdot { display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 600; color: #cfcfd6; }
+        .kdot::before { content: ''; width: 7px; height: 7px; border-radius: 99px; background: var(--c); }
+        .hatch { background: repeating-linear-gradient(135deg, rgba(255,255,255,.05) 0 5px, transparent 5px 10px); border-radius: 10px; }
+        .ticks { display: flex; gap: 2px; height: 22px; }
+        .ticks i { flex: 1; border-radius: 2px; background: rgba(255,255,255,.08); }
+        .ticks i.on { background: var(--c); }
+        .ticks.tall { height: 44px; gap: 3px; }
+        .ticks.tall i { border-radius: 2.5px; }
+
+        /* Статус и сигналы */
+        .status-hero { --c: var(--green); display: flex; flex-direction: column; justify-content: space-between; gap: 12px; }
+        .status-word { font-size: clamp(28px, 15cqw, 50px); line-height: 1.02; color: var(--c); }
+        .ins { --c: var(--sky); position: relative; display: flex; flex-direction: column; gap: 12px; min-width: 0; text-align: left; padding: 16px 16px 18px; border-radius: 20px; border: 1px solid var(--line);
+            background: radial-gradient(120% 90% at 0 0, color-mix(in srgb, var(--c) 8%, transparent), transparent 60%), var(--card); }
+        .ins::before { content: ''; position: absolute; left: 16px; top: -1px; width: 34px; height: 2px; border-radius: 0 0 3px 3px; background: var(--c); }
+        .ins-ic { width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; color: var(--c); background: color-mix(in srgb, var(--c) 14%, transparent); }
+        .ins-tag { font: 500 10px 'JetBrains Mono', monospace; letter-spacing: .09em; text-transform: uppercase; color: var(--c); }
+        .ins-title { margin: 0; font-size: 16px; letter-spacing: -0.015em; line-height: 1.25; color: #f2f2f5; }
+        .ins-text { margin: -4px 0 0; font-size: 12.5px; line-height: 1.55; color: var(--muted); }
+        .ins .btn { margin-top: auto; align-self: flex-start; }
+        .ins-leg { display: flex; flex-wrap: wrap; gap: 4px 14px; font: 500 11.5px 'JetBrains Mono', monospace; color: var(--dim); }
+        .ins-leg b { color: var(--muted); font-weight: 500; margin-left: 4px; }
+        .ins-leg i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; }
+        .scen { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: start; padding: 12px 14px; border-radius: 14px; background: var(--tile); }
 
         @media (max-width: 1023px) {
             .shell { grid-template-columns: minmax(0, 1fr); }
@@ -323,7 +372,7 @@
         </div>
         <nav class="nav" id="side-nav">
             <p class="nav-label">CRM</p>
-            <a href="#overview" data-view="overview"><span data-icon="grid" data-size="16"></span>Обзор</a>
+            <a href="#overview" data-view="overview"><span data-icon="grid" data-size="16"></span>Обзор<span class="badge bad" id="nb-sig" title="Сигналы, требующие действий"></span></a>
             <a href="#users" data-view="users"><span data-icon="users" data-size="16"></span>Пользователи<span class="badge ok" id="nb-new" title="Новые за сегодня"></span></a>
             <a href="#mailing" data-view="mailing"><span data-icon="send" data-size="16"></span>Рассылки<span class="badge warn" id="nb-mail" title="Рассылки в работе"></span></a>
             <a href="#blocks" data-view="blocks"><span data-icon="shield" data-size="16"></span>Блокировки<span class="badge bad" id="nb-blocks" title="Действующие блокировки"></span></a>
@@ -380,8 +429,15 @@
 
         <div class="content">
             <!-- ============ ОБЗОР ============ -->
-            <section id="view-overview" class="view" data-view-panel="overview" aria-labelledby="h-ov">
+            <section id="view-overview" class="view" data-view-panel="overview" aria-labelledby="h-sig">
                 <div class="sect-head">
+                    <div><h2 id="h-sig">Что сейчас происходит</h2><p>Сигналы по цифрам CRM: пересчитываются при каждом обновлении. Нажмите на карточку, чтобы перейти к действию.</p></div>
+                    <button type="button" class="btn btn-ghost btn-sm" id="btn-scen"><span data-icon="book" data-size="13"></span>Сценарии сигналов</button>
+                </div>
+                <div id="ov-signals" class="grid grid-cols-1 xl:grid-cols-[minmax(280px,1fr)_minmax(0,3fr)] gap-3.5 items-start"></div>
+
+                <hr class="rule mt-4">
+                <div class="sect-head mt-2">
                     <div><h2 id="h-ov">Обзор аудитории</h2><p>Кто пришёл, кто платит и кому нужно внимание.</p></div>
                     <div class="flex gap-2">
                         <button type="button" class="btn btn-ghost btn-sm" data-go="mailing"><span data-icon="send" data-size="13"></span>Новая рассылка</button>
@@ -389,6 +445,10 @@
                     </div>
                 </div>
                 <div id="ov-kpi" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3.5"></div>
+                <div id="ov-mini" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3.5"></div>
+
+                <hr class="rule mt-4">
+                <div class="sect-head mt-2"><div><h2>Люди и деньги</h2><p>Свежие регистрации, лучшие клиенты, последние оплаты и что требует внимания.</p></div></div>
 
                 <div class="grid grid-cols-1 xl:grid-cols-12 gap-3.5">
                     <article class="card xl:col-span-7 flex flex-col">
@@ -556,7 +616,7 @@
                             <div class="card-title"><span class="ticon" data-icon="mail" data-size="15"></span><div><h3>Как увидит получатель</h3><small>Рендер того же шаблона, что уходит в почту</small></div></div>
                             <div class="seg soft" id="ml-dev" role="group" aria-label="Устройство">
                                 <button type="button" data-w="100%" aria-pressed="true">Компьютер</button>
-                                <button type="button" data-w="380px">Телефон</button>
+                                <button type="button" data-w="380px" aria-pressed="false">Телефон</button>
                             </div>
                         </div>
                         <div class="inbox-row mt-4">
@@ -802,6 +862,9 @@
         gift: '<rect x="3" y="8" width="18" height="13" rx="2"/><path d="M12 8v13M3 12h18M7.5 8a2.5 2.5 0 1 1 4.5-1.5V8M16.5 8A2.5 2.5 0 1 0 12 6.5"/>',
         wallet: '<rect x="2" y="6" width="20" height="14" rx="3"/><path d="M2 10h20"/><path d="M16 15h2"/>',
         check: '<path d="m5 12 5 5 9-10"/>',
+        book: '<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 21V5M9 8h6"/>',
+        repeat: '<path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14M7 22l-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/>',
+        spark: '<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18"/>',
     };
     const icon = (name, size = 14, cls = '') =>
         `<svg class="${cls}" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name] || ''}</svg>`;
@@ -817,6 +880,7 @@
         return `<span class="delta ${good ? 'up' : 'down'}">${up ? '↑' : '↓'} ${NF1.format(Math.abs(value))}%</span>`;
     };
     const empty = (text, ic = 'search') => `<div class="empty"><span class="ticon">${icon(ic, 18)}</span>${esc(text)}</div>`;
+    const ticks = (n, total = 30) => `<div class="ticks">${Array.from({ length: total }, (_, i) => `<i class="${i < n ? 'on' : ''}"></i>`).join('')}</div>`;
 
     function countUp(el, to, format) {
         if (!el) return;
@@ -1213,8 +1277,12 @@
     /* =================================================================== *
      *  ОБЗОР
      * =================================================================== */
+    const TRAFFIC_URL = "{% url 'admin_traffic_live' %}";
+    const STATS_URL = "{% url 'stats2975' %}";
+
     function ovSkeleton() {
-        $('#ov-kpi').innerHTML = Array.from({ length: 4 }, () => `<article class="card min-h-[232px] flex flex-col gap-4"><span class="skeleton h-8 w-36"></span><span class="skeleton h-8 w-28"></span><span class="skeleton h-12 w-full mt-auto"></span></article>`).join('');
+        $('#ov-signals').innerHTML = `<article class="kcard min-h-[220px]"><span class="skeleton h-5 w-24"></span><span class="skeleton h-14 w-48 mt-16"></span></article><div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5">${Array.from({ length: 3 }, () => '<span class="skeleton h-[132px] rounded-[20px]"></span>').join('')}</div>`;
+        $('#ov-kpi').innerHTML = Array.from({ length: 4 }, () => `<article class="kcard min-h-[260px] flex flex-col gap-4"><span class="skeleton h-5 w-36"></span><span class="skeleton h-12 w-32"></span><span class="skeleton h-12 w-full mt-auto"></span></article>`).join('');
     }
     async function loadOverview() {
         if (!state.ov) ovSkeleton();
@@ -1223,8 +1291,10 @@
             const first = !state.ov;
             state.ov = d;
             renderOverview(first);
+            loadAttnCounts();
             $('#updated-at').textContent = `Обновлено в ${d.generated_at} по Москве`;
         } catch (e) {
+            $('#ov-signals').innerHTML = '';
             $('#ov-kpi').innerHTML = `<div class="notice bad sm:col-span-2 xl:col-span-4 flex items-center justify-between gap-3">Сводка не загрузилась: ${esc(e.message)}<button type="button" class="btn btn-ghost btn-sm" data-retry-ov>Повторить</button></div>`;
         }
     }
@@ -1237,33 +1307,33 @@
         $('#side-mail [data-k="reach"]').textContent = fmt.int(k.mail_reachable);
         const titles = series.labels.map((l) => l);
         const cards = [
-            { id: 'users', label: 'Пользователи', icon: 'users', color: C.teal, value: k.users_total, f: fmt.int, d: k.new_7d_delta,
+            { id: 'users', label: 'Пользователи', color: C.teal, value: k.users_total, f: fmt.int, d: k.new_7d_delta,
               dTip: 'Регистрации за 7 дней к предыдущим 7 дням',
               sub: `сегодня +${fmt.int(k.new_today)}, за неделю +${fmt.int(k.new_7d)}`,
               spark: series.registrations, sName: 'Регистрации', sf: fmt.int,
               foot: [['Создали тест', `${fmt.int(k.activated_7d)} из ${fmt.int(k.new_7d)}`, 'Новые за 7 дней, создавшие хотя бы один тест'], ['На рассылку', fmt.int(k.mail_reachable), 'Подписаны на письма и имеют почту']] },
-            { id: 'rev', label: 'Выручка за 30 дней', icon: 'trend', color: C.indigo, value: k.revenue_30d, f: fmt.rub, d: k.revenue_30d_delta,
+            { id: 'rev', label: 'Выручка за 30 дней', color: C.indigo, value: k.revenue_30d, f: fmt.rub, d: k.revenue_30d_delta,
               dTip: 'К предыдущим 30 дням', sub: `за всё время ${fmt.rub(k.revenue_all)}`,
               spark: series.revenue, sName: 'Выручка', sf: fmt.rub,
               foot: [['Средний LTV', fmt.rub(k.avg_ltv), 'Выручка за всё время / число платящих'], ['Платящих', fmt.int(k.payers), null]] },
-            { id: 'pay', label: 'Платящие', icon: 'wallet', color: C.yellow, value: k.payers, f: fmt.int, d: null,
+            { id: 'pay', label: 'Платящие', color: C.yellow, value: k.payers, f: fmt.int, d: null,
               sub: `конверсия в оплату ${fmt.pct(k.conversion)}`, conv: k.conversion,
               foot: [['Повторные', fmt.int(k.repeat_payers), 'Две и больше успешных оплат'], ['Их доля', fmt.pct(k.payers ? k.repeat_payers / k.payers * 100 : null), null]] },
-            { id: 'subs', label: 'Подписки', icon: 'crown', color: C.green, value: k.active_subs, f: fmt.int, d: null,
+            { id: 'subs', label: 'Подписки', color: C.green, value: k.active_subs, f: fmt.int, d: null,
               sub: k.expiring_7d ? `${fmt.int(k.expiring_7d)} ${plural(k.expiring_7d, 'кончается', 'закончиваются', 'закончиваются')} на этой неделе` : 'на этой неделе никто не истекает',
               foot: [['Истекут', fmt.int(k.expiring_7d), 'Подписки, которые кончатся в ближайшие 7 дней'], ['Блокировок', fmt.int(k.blocked_active), 'Действующие блокировки по IP']] },
         ];
         if (first || !$('#ov-kpi [data-kpi]')) {
             $('#ov-kpi').innerHTML = cards.map((c, i) => `
-                <article class="card flex flex-col reveal" data-kpi="${c.id}" style="animation-delay:${i * 60}ms">
+                <article class="kcard flex flex-col reveal" data-kpi="${c.id}" style="--c:${c.color};animation-delay:${i * 60}ms">
                     <div class="card-head" style="flex-wrap:nowrap">
-                        <div class="card-title"><span class="ticon" style="color:${c.color}">${icon(c.icon, 15)}</span><h3>${esc(c.label)}</h3></div>
+                        <span class="kdot">${esc(c.label)}</span>
                         <span data-delta></span>
                     </div>
-                    <span class="big mt-4" data-value>—</span>
-                    <p class="lbl mt-2 mb-0 truncate" data-sub></p>
-                    <div class="h-12 mt-3" data-spark></div>
-                    <div class="grid grid-cols-2 gap-2 mt-3" data-foot></div>
+                    <span class="kbig mt-5" data-value>—</span>
+                    <p class="lbl mt-2.5 mb-0 truncate" data-sub></p>
+                    <div class="h-12 mt-4" data-spark></div>
+                    <div class="grid grid-cols-2 gap-2 mt-4" data-foot></div>
                 </article>`).join('');
         }
         cards.forEach((c) => {
@@ -1276,16 +1346,37 @@
                 `<div class="tile py-2 px-3" ${t ? `data-tip="${esc(t)}"` : ''}><p class="lbl m-0 truncate">${esc(l)}</p><p class="val m-0 mt-0.5 truncate">${esc(v)}</p></div>`).join('');
             const sp = $('[data-spark]', el);
             if (c.spark) {
-                sp.className = 'chart h-12 mt-3';
+                sp.className = 'chart hatch h-12 mt-4';
                 mountChart(sp, { mini: true, labels: series.labels, titles, series: [{ name: c.sName, values: c.spark, color: c.color, format: c.sf }], format: c.sf, ariaLabel: c.label });
             } else if (c.conv != null) {
                 const on = Math.round(clamp(c.conv * 4, 0, 100) / 100 * 30);
-                sp.innerHTML = `<div class="flex gap-[2px] h-[22px] mt-[26px]" data-tip="Шкала до 25%: ${esc(fmt.pct(c.conv))} зарегистрированных хоть раз оплатили">${Array.from({ length: 30 }, (_, i) => `<i style="flex:1;border-radius:2px;background:${i < on ? c.color : 'rgba(255,255,255,.07)'}"></i>`).join('')}</div>`;
+                sp.innerHTML = `<div class="mt-[26px]" data-tip="Шкала до 25%: ${esc(fmt.pct(c.conv))} зарегистрированных хоть раз оплатили">${ticks(on)}</div>`;
             } else {
                 const exp = k.active_subs ? k.expiring_7d / k.active_subs * 100 : 0;
-                sp.innerHTML = `<div class="mt-[20px]" data-tip="Доля подписок, которые кончатся в ближайшие 7 дней"><div class="track h-2"><i style="width:${clamp(100 - exp, 0, 100)}%;background:${C.green}"></i></div><p class="lbl m-0 mt-1.5 text-[11px]">${NF0.format(100 - exp)}% действуют дольше недели</p></div>`;
+                sp.innerHTML = `<div class="mt-[18px]" data-tip="Доля подписок, которые кончатся в ближайшие 7 дней">${ticks(Math.round(clamp(100 - exp, 0, 100) / 100 * 30))}<p class="lbl m-0 mt-1.5 text-[11px]">${NF0.format(100 - exp)}% действуют дольше недели</p></div>`;
             }
         });
+
+        /* Мини-виджеты под карточками */
+        const regMax = Math.max(1, ...(series.registrations || [0]));
+        const act = k.new_7d ? k.activated_7d / k.new_7d : 0;
+        const rep = k.payers ? k.repeat_payers / k.payers : 0;
+        const reach = k.users_total ? k.mail_reachable / k.users_total : 0;
+        const minis = [
+            { label: 'Новые сегодня', color: C.teal, v: `+${fmt.int(k.new_today)}`, unit: plural(k.new_today, 'человек', 'человека', 'человек'), sub: `за неделю +${fmt.int(k.new_7d)}`, r: k.new_today / regMax, attr: 'data-go-users="new_7d"' },
+            { label: 'Активация за 7 дн', color: C.violet, v: NF0.format(act * 100), unit: '%', sub: `${fmt.int(k.activated_7d)} из ${fmt.int(k.new_7d)} создали тест`, r: act, attr: 'data-go-users="no_tests"' },
+            { label: 'Конверсия в оплату', color: C.yellow, v: NF1.format(k.conversion || 0), unit: '%', sub: `${fmt.int(k.payers)} из ${fmt.int(k.users_total)}`, r: clamp((k.conversion || 0) / 25, 0, 1), attr: 'data-go-users="paying" data-sort="ltv"' },
+            { label: 'Повторные оплаты', color: C.indigo, v: NF0.format(rep * 100), unit: '%', sub: `${fmt.int(k.repeat_payers)} платят повторно`, r: rep, attr: 'data-go-users="paying" data-sort="ltv"' },
+            { label: 'Охват рассылки', color: C.green, v: NF0.format(reach * 100), unit: '%', sub: `${fmt.int(k.mail_reachable)} можно написать`, r: reach, attr: 'data-mail-seg="all"' },
+            { label: 'Блокировки', color: C.rose, v: fmt.int(k.blocked_active), unit: plural(k.blocked_active, 'адрес', 'адреса', 'адресов'), sub: k.blocked_active ? 'действуют сейчас' : 'никто не заблокирован', r: clamp(k.blocked_active / 10, 0, 1), attr: 'data-go="blocks"' },
+        ];
+        $('#ov-mini').innerHTML = minis.map((m, i) => `
+            <button type="button" class="kcard sm flex flex-col ${first ? 'reveal' : ''}" style="--c:${m.color};animation-delay:${i * 40}ms" ${m.attr}>
+                <span class="kdot">${esc(m.label)}</span>
+                <span class="mt-3 flex items-baseline"><span class="kmid">${esc(m.v)}</span><span class="kunit">${esc(m.unit)}</span></span>
+                <span class="lbl mt-1.5 truncate">${esc(m.sub)}</span>
+                <span class="mt-3 block">${ticks(Math.round(clamp(m.r, 0, 1) * 24), 24)}</span>
+            </button>`).join('');
 
         const top = state.ov.top_ltv;
         const maxLtv = Math.max(1, ...top.map((t) => t.ltv));
@@ -1309,24 +1400,230 @@
                 <td class="r lbl" data-tip="${esc(p.date)}">${esc(p.ago)}</td>
             </tr>`).join('') : `<tr><td>${empty('Оплат пока нет', 'card')}</td></tr>`;
 
-        const attn = [
-            ['expiring_7d', 'Подписка кончается', k.expiring_7d, 'clock', 'Напомните продлить', 'warn', { mail: 'expiring_7d' }],
-            ['no_tests', 'Без единого теста', null, 'file', 'Помогите сделать первый тест', '', { users: 'no_tests' }],
-            ['blocked', 'Заблокированы', k.blocked_active, 'shield', 'Проверить список', 'bad', { go: 'blocks' }],
-            ['dormant', 'Спящие 30+ дней', null, 'activity', 'Реактивационная рассылка', '', { users: 'dormant_30d' }],
+        renderAttn();
+        renderInsights();
+    }
+    /* ---------- «Требует внимания»: живые счётчики сегментов ---------- */
+    function renderAttn() {
+        const k = state.ov?.kpi;
+        if (!k) return;
+        const cnt = (code) => (state.users.segs || []).find((g) => g.code === code)?.count;
+        const total = Math.max(1, k.users_total || 1);
+        const items = [
+            { label: 'Подписка кончается', n: k.expiring_7d, c: C.yellow, ic: 'clock', hint: 'Напомните продлить', attr: 'data-mail-seg="expiring_7d"', of: k.active_subs },
+            { label: 'Без единого теста', n: cnt('no_tests'), c: C.violet, ic: 'file', hint: 'Помогите сделать первый тест', attr: 'data-go-users="no_tests"', of: total },
+            { label: 'Спящие 30+ дней', n: cnt('dormant_30d'), c: C.sky, ic: 'activity', hint: 'Реактивационная рассылка', attr: 'data-go-users="dormant_30d"', of: total },
+            { label: 'Заблокированы', n: k.blocked_active, c: C.rose, ic: 'shield', hint: 'Проверить список', attr: 'data-go="blocks"', of: null },
         ];
-        $('#ov-attn').innerHTML = attn.map(([id, label, n, ic, hint, tone, to]) => `
-            <button type="button" class="tile btn-tile flex flex-col gap-2" ${to.go ? `data-go="${to.go}"` : to.users ? `data-go-users="${to.users}"` : `data-mail-seg="${to.mail}"`}>
-                <span class="flex items-center justify-between w-full"><span class="ticon ${tone ? `tone-${tone}` : ''}" style="width:28px;height:28px">${icon(ic, 14)}</span>${n != null ? `<span class="mid">${fmt.int(n)}</span>` : `<span class="link">${icon('arrowRight', 13)}</span>`}</span>
-                <span class="font-bold">${esc(label)}</span>
-                <span class="lbl">${esc(hint)}</span>
-            </button>`).join('');
+        $('#ov-attn').innerHTML = items.map((it) => {
+            const r = it.of ? clamp((it.n || 0) / it.of, 0, 1) : clamp((it.n || 0) / 10, 0, 1);
+            return `<button type="button" class="kcard sm flex flex-col" style="--c:${it.c}" ${it.attr}>
+                <span class="flex items-center justify-between w-full"><span class="kdot">${esc(it.label)}</span><span style="color:${it.c}">${icon(it.ic, 15)}</span></span>
+                <span class="kmid mt-3">${it.n == null ? '…' : fmt.int(it.n)}</span>
+                <span class="lbl mt-1.5 truncate">${esc(it.hint)}</span>
+                <span class="mt-3 block">${ticks(Math.round(r * 24), 24)}</span>
+            </button>`;
+        }).join('');
+    }
+    async function loadAttnCounts() {
+        try {
+            const d = await api(`${CFG.urls.users}?${new URLSearchParams({ segment: 'all', sort: 'joined', counts: '1' })}`, { quiet: true });
+            if (d.segments) { state.users.segs = d.segments; renderAttn(); }
+        } catch (_) { /* счётчики необязательны */ }
+    }
+    function openMailSegment(code) {
+        state.mail.segment = code;
+        go('mailing');
+        renderSegments();
     }
     $('#ov-attn').addEventListener('click', (e) => {
         const b = e.target.closest('[data-mail-seg]');
+        if (b) openMailSegment(b.dataset.mailSeg);
+    });
+    $('#ov-mini').addEventListener('click', (e) => {
+        const b = e.target.closest('[data-mail-seg]');
+        if (b) openMailSegment(b.dataset.mailSeg);
+    });
+
+    /* ---------- Сигналы: сценарии и статус ---------- */
+    const TONE = {
+        bad: { word: 'ИНЦИДЕНТ', c: C.rose, rank: 3 },
+        warn: { word: 'ВНИМАНИЕ', c: C.yellow, rank: 2 },
+        info: { word: 'К СВЕДЕНИЮ', c: C.sky, rank: 1 },
+        ok: { word: 'НОРМА', c: C.green, rank: 0 },
+    };
+    function mailStats() {
+        const h = state.mail.history;
+        if (!h) return null;
+        const rows = h.history.filter((r) => r.stats.sent + r.stats.failed > 0);
+        const sent = sum(rows.map((r) => r.stats.sent)), failed = sum(rows.map((r) => r.stats.failed));
+        return { s: h.summary, sent, failed, delivery: sent + failed ? sent / (sent + failed) * 100 : null };
+    }
+    /* Каждый сценарий получает KPI и статистику почты и возвращает карточку сигнала.
+       Пороги (25 %, 50 %, −20 % и т. д.) — прямо в коде, их легко поменять. */
+    const SCENARIOS = [
+        { id: 'expiring', icon: 'clock', title: 'Истекающие подписки',
+          rule: 'Тревога, если за 7 дней истекает 25 % активных подписок и больше. Внимание — если истекает хоть одна.',
+          run(k) {
+              const n = k.expiring_7d || 0, a = k.active_subs || 0, share = a ? n / a * 100 : 0;
+              if (!n) return { tone: 'ok', title: 'Подписки не горят', text: a ? `Из ${fmt.int(a)} активных подписок на этой неделе не истекает ни одна.` : 'Активных подписок пока нет.', cta: 'Смотреть подписчиков', to: { users: 'active_subs' } };
+              return { tone: share >= 25 ? 'bad' : 'warn', title: `Истекает ${fmt.int(n)} ${plural(n, 'подписка', 'подписки', 'подписок')} за 7 дней`,
+                  text: `Это ${NF0.format(share)}% активных. Напомните о продлении, пока люди не ушли: сегмент уже готов.`, cta: 'Открыть рассылку', to: { mail: 'expiring_7d' } };
+          } },
+        { id: 'activation', icon: 'file', title: 'Активация новичков',
+          rule: 'Считается по новым за 7 дней: тревога, если тест создали меньше 25 %, внимание — меньше 50 %. Если новичков меньше 5, вывод не делаем.',
+          run(k) {
+              const n = k.new_7d || 0, rate = n ? k.activated_7d / n * 100 : 0;
+              if (n < 5) return { tone: 'ok', title: `Новичков за неделю: ${fmt.int(n)}`, text: 'Выборка маленькая: процент активации пока ничего не говорит.', cta: 'К новичкам', to: { users: 'new_7d' } };
+              const tone = rate < 25 ? 'bad' : rate < 50 ? 'warn' : 'ok';
+              return { tone, title: `Тест создали ${NF0.format(rate)}% новичков`, text: tone === 'ok' ? `${fmt.int(k.activated_7d)} из ${fmt.int(n)} новых за неделю дошли до первого теста. Хороший показатель.` : `Только ${fmt.int(k.activated_7d)} из ${fmt.int(n)} новых за неделю создали тест. Напишите остальным и покажите, как это сделать за минуту.`,
+                  cta: tone === 'ok' ? 'К новичкам' : 'Кто без тестов', to: { users: tone === 'ok' ? 'new_7d' : 'no_tests' } };
+          } },
+        { id: 'signups', icon: 'userPlus', title: 'Регистрации',
+          rule: 'Внимание, если сегодня ноль при непустой неделе или неделя просела на 30 % и больше к прошлой.',
+          run(k) {
+              const n = k.new_7d || 0, d = k.new_7d_delta;
+              if (!k.new_today && n > 0) return { tone: 'warn', title: 'Сегодня регистраций нет', text: `За неделю пришло ${fmt.int(n)}, а сегодня пока ноль. Если так весь день, загляните в «Пульс трафика» и проверьте форму регистрации.`, cta: 'Пульс трафика', to: { href: TRAFFIC_URL } };
+              if (d != null && d <= -30 && n >= 5) return { tone: 'warn', title: `Регистрации просели на ${NF0.format(Math.abs(d))}%`, text: 'Неделя заметно слабее предыдущей. Проверьте, не изменились ли источники трафика.', cta: 'Пульс трафика', to: { href: TRAFFIC_URL } };
+              if (d != null && d >= 30 && n >= 5) return { tone: 'ok', title: `Регистрации выросли на ${NF0.format(d)}%`, text: `За неделю +${fmt.int(n)} к предыдущим семи дням. Самое время проследить, чтобы новички дошли до теста.`, cta: 'К новичкам', to: { users: 'new_7d' } };
+              return { tone: 'ok', title: `Сегодня +${fmt.int(k.new_today)}, за неделю +${fmt.int(n)}`, text: 'Приток регистраций в обычных пределах.', cta: 'К новичкам', to: { users: 'new_7d' } };
+          } },
+        { id: 'revenue', icon: 'trend', title: 'Динамика выручки',
+          rule: 'Сравнение последних 30 дней с предыдущими 30: тревога при −20 % и ниже, внимание при −5 % и ниже, радуемся от +10 %.',
+          run(k) {
+              const d = k.revenue_30d_delta;
+              if (d == null) return { tone: 'info', title: 'Выручку не с чем сравнить', text: `За 30 дней ${fmt.rub(k.revenue_30d)}. В предыдущем периоде оплат не было, процент не считается.`, cta: 'Все платежи', to: { href: `${STATS_URL}#sec-payments` } };
+              if (d <= -20) return { tone: 'bad', title: `Выручка упала на ${NF0.format(Math.abs(d))}%`, text: `${fmt.rub(k.revenue_30d)} за 30 дней против более высокой базы раньше. Посмотрите последние оплаты и напишите тем, у кого кончается подписка.`, cta: 'Все платежи', to: { href: `${STATS_URL}#sec-payments` } };
+              if (d <= -5) return { tone: 'warn', title: `Выручка снизилась на ${NF0.format(Math.abs(d))}%`, text: `${fmt.rub(k.revenue_30d)} за 30 дней. Пока не критично, но тренд стоит держать в поле зрения.`, cta: 'Все платежи', to: { href: `${STATS_URL}#sec-payments` } };
+              if (d >= 10) return { tone: 'ok', title: `Выручка выросла на ${NF0.format(d)}%`, text: `${fmt.rub(k.revenue_30d)} за 30 дней, всего за время ${fmt.rub(k.revenue_all)}.`, cta: 'Все платящие', to: { users: 'paying', sort: 'ltv' } };
+              return { tone: 'ok', title: `Выручка ровная: ${fmt.rub(k.revenue_30d)}`, text: 'Изменение к предыдущим 30 дням в пределах нормы.', cta: 'Все платящие', to: { users: 'paying', sort: 'ltv' } };
+          } },
+        { id: 'conversion', icon: 'wallet', title: 'Конверсия в оплату',
+          rule: 'Внимание, если оплатили меньше 1 % зарегистрированных.',
+          run(k) {
+              const c = k.conversion || 0;
+              if (c < 1) return { tone: 'warn', title: `Платит только ${NF1.format(c)}% аудитории`, text: `${fmt.int(k.payers)} из ${fmt.int(k.users_total)} зарегистрированных хоть раз платили. Попробуйте оффер для триала и «Платили, но ушли».`, cta: 'Платящие', to: { users: 'paying', sort: 'ltv' } };
+              return { tone: 'ok', title: `Конверсия в оплату ${NF1.format(c)}%`, text: `${fmt.int(k.payers)} платящих из ${fmt.int(k.users_total)} зарегистрированных.`, cta: 'Платящие', to: { users: 'paying', sort: 'ltv' } };
+          } },
+        { id: 'repeat', icon: 'repeat', title: 'Повторные оплаты',
+          rule: 'Если платящих 5 и больше и повторно платят меньше 15 %, показываем «К сведению».',
+          run(k) {
+              const p = k.payers || 0, share = p ? k.repeat_payers / p * 100 : 0;
+              if (p >= 5 && share < 15) return { tone: 'info', title: `Повторно платят ${NF0.format(share)}%`, text: 'Большинство покупает один раз. Идея: письмо с напоминанием о пакетах и скидкой на годовой план.', cta: 'Платящие', to: { users: 'paying', sort: 'ltv' } };
+              return { tone: 'ok', title: p ? `Повторных платящих ${NF0.format(share)}%` : 'Платящих пока мало', text: p ? `${fmt.int(k.repeat_payers)} из ${fmt.int(p)} платили два раза и больше.` : 'Вывод по повторным оплатам появится, когда набежит хотя бы пять платящих.', cta: 'Платящие', to: { users: 'paying', sort: 'ltv' } };
+          } },
+        { id: 'mail', icon: 'mail', title: 'Здоровье почты',
+          rule: 'Тревога, если доставляемость по последним кампаниям ниже 95 % и есть ошибки сегодня. Внимание — просто есть ошибки сегодня. К сведению — рассылка идёт прямо сейчас.',
+          run(k, m) {
+              if (!m) return null;
+              const s = m.s, dl = m.delivery;
+              if (s.failed_today > 0) return { tone: dl != null && dl < 95 ? 'bad' : 'warn', title: `${fmt.int(s.failed_today)} ${plural(s.failed_today, 'письмо не ушло', 'письма не ушли', 'писем не ушло')} сегодня`, text: `Доставляемость по последним кампаниям ${fmt.pct(dl)}. Откройте кампанию, чтобы увидеть причины и повторить отправку.`, cta: 'Открыть рассылки', to: { go: 'mailing' } };
+              if (s.running) return { tone: 'info', title: `Идёт отправка: ${fmt.int(s.running)} ${plural(s.running, 'кампания', 'кампании', 'кампаний')}`, text: 'Прогресс виден в таблице «Кампании», её можно поставить на паузу.', cta: 'Открыть рассылки', to: { go: 'mailing' } };
+              return { tone: 'ok', title: 'Почта в порядке', text: dl != null ? `Доставляемость ${fmt.pct(dl)}, сегодня отправлено ${fmt.int(s.sent_today)}, ошибок нет.` : 'Ошибок отправки сегодня нет.', cta: 'Открыть рассылки', to: { go: 'mailing' } };
+          } },
+        { id: 'blocks', icon: 'shield', title: 'Блокировки',
+          rule: 'К сведению, если есть хотя бы одна действующая блокировка по IP.',
+          run(k) {
+              const n = k.blocked_active || 0;
+              if (n) return { tone: 'info', title: `Действует ${fmt.int(n)} ${plural(n, 'блокировка', 'блокировки', 'блокировок')}`, text: 'Проверьте, не пора ли снять временные ограничения или продлить нужные.', cta: 'К блокировкам', to: { go: 'blocks' } };
+              return { tone: 'ok', title: 'Блокировок нет', text: 'Сейчас ни один IP-адрес не заблокирован.', cta: 'К блокировкам', to: { go: 'blocks' } };
+          } },
+        { id: 'reach', icon: 'users', title: 'Охват рассылки',
+          rule: 'К сведению, если писать можно меньше чем половине аудитории (отписались или нет почты).',
+          run(k) {
+              const r = k.users_total ? k.mail_reachable / k.users_total * 100 : 0;
+              if (k.users_total >= 20 && r < 50) return { tone: 'info', title: `Писать можно ${NF0.format(r)}% аудитории`, text: `${fmt.int(k.mail_reachable)} из ${fmt.int(k.users_total)}: остальные отписались или без почты. Для них останутся только продуктовые каналы.`, cta: 'К рассылке', to: { mail: 'all' } };
+              return { tone: 'ok', title: `Можно написать ${fmt.int(k.mail_reachable)}`, text: `Это ${NF0.format(r)}% зарегистрированных. Охват здоровый.`, cta: 'К рассылке', to: { mail: 'all' } };
+          } },
+    ];
+    function evalSignals() {
+        const k = state.ov?.kpi;
+        if (!k) return [];
+        const m = mailStats();
+        return SCENARIOS.map((s) => { let r = null; try { r = s.run(k, m); } catch (_) { r = null; } return r ? { ...r, id: s.id, icon: s.icon, scenario: s.title } : null; })
+            .filter(Boolean).sort((a, b) => TONE[b.tone].rank - TONE[a.tone].rank);
+    }
+    function renderInsights() {
+        const res = evalSignals();
+        state.signals = res;
+        const host = $('#ov-signals');
+        if (!res.length) { host.innerHTML = ''; state.sigKey = null; return; }
+        const cnt = { bad: 0, warn: 0, info: 0, ok: 0 };
+        res.forEach((r) => { cnt[r.tone]++; });
+        const act = cnt.bad + cnt.warn;
+        $('#nb-sig').textContent = act || '';
+        $('#nb-sig').className = `badge ${cnt.bad ? 'bad' : 'warn'}`;
+        /* Если набор сигналов не изменился, карточки не перерисовываем: ни миганий, ни анимации */
+        const key = JSON.stringify(res.map((r) => [r.id, r.tone, r.title, r.text]));
+        if (key === state.sigKey && host.firstElementChild) return;
+        const first = !state.sigKey;
+        state.sigKey = key;
+        const worst = cnt.bad ? 'bad' : cnt.warn ? 'warn' : 'ok';
+        const word = { bad: 'Требует вмешательства', warn: 'Внимание', ok: 'Всё спокойно' }[worst];
+        const col = TONE[worst].c;
+        const per = Math.max(2, Math.floor(26 / res.length));
+        const bar = res.map((r) => Array.from({ length: per }, () => `<i style="background:${TONE[r.tone].c}"></i>`).join('')).join('');
+        const summary = [cnt.bad ? `${cnt.bad} ${plural(cnt.bad, 'тревога', 'тревоги', 'тревог')}` : '', cnt.warn ? `${cnt.warn} внимание` : '', cnt.info ? `${cnt.info} к сведению` : '', cnt.ok ? `${cnt.ok} ${plural(cnt.ok, 'норма', 'нормы', 'норм')}` : ''].filter(Boolean).join(', ');
+        const legend = [['bad', 'Инцидент'], ['warn', 'Внимание'], ['info', 'К сведению'], ['ok', 'Норма']].filter(([t]) => cnt[t]).map(([t, l]) => `<span><i style="background:${TONE[t].c}"></i>${l}<b>${cnt[t]}</b></span>`).join('');
+        const cards = res.slice(0, 8).map((r, i) => {
+            const t = TONE[r.tone];
+            return `<article class="ins ${first ? 'reveal' : ''}" style="--c:${t.c};animation-delay:${i * 45}ms">
+                <div class="flex items-center justify-between gap-3"><span class="ins-ic">${icon(r.icon, 16)}</span><span class="ins-tag">${t.word}</span></div>
+                <h3 class="ins-title">${esc(r.title)}</h3>
+                <p class="ins-text">${esc(r.text)}</p>
+                <button type="button" class="btn btn-ghost btn-sm" data-sig="${r.id}">${esc(r.cta || 'Открыть')}${icon('arrowRight', 12)}</button>
+            </article>`;
+        }).join('');
+        host.innerHTML = `
+            <article class="kcard status-hero" style="--c:${col}">
+                <div class="flex items-center justify-between gap-2">
+                    <span class="eyebrow">Статус</span>
+                    <span class="chip ${cnt.bad ? 'bad' : cnt.warn ? 'warn' : 'ok'}">${act ? `${act} на заметку` : 'всё спокойно'}</span>
+                </div>
+                <div class="status-word mt-6">${word}</div>
+                <p class="lbl m-0">${res.length} ${plural(res.length, 'сигнал', 'сигнала', 'сигналов')}: ${esc(summary)}</p>
+                <div class="ticks tall" style="--c:${col}">${bar}</div>
+                <div class="ins-leg">${legend}</div>
+            </article>
+            <div class="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-3.5 content-start">${cards}</div>`;
+    }
+    function navTo(to) {
+        if (!to) return;
+        if (to.href) { location.href = to.href; return; }
+        if (to.go) { go(to.go); return; }
+        if (to.mail) { openMailSegment(to.mail); return; }
+        if (to.users) {
+            Object.assign(state.users, { segment: to.users, sort: to.sort || state.users.sort, page: 1, q: '' });
+            $('#us-q').value = '';
+            state.loaded.users = 0;
+            go('users');
+        }
+    }
+    $('#ov-signals').addEventListener('click', (e) => {
+        const b = e.target.closest('[data-sig]');
         if (!b) return;
-        state.mail.segment = b.dataset.mailSeg;
-        go('mailing');
+        const r = (state.signals || []).find((x) => x.id === b.dataset.sig);
+        if (r) navTo(r.to);
+    });
+    $('#btn-scen').addEventListener('click', () => {
+        const k = state.ov?.kpi;
+        if (!k) { toast('Данные ещё загружаются, попробуйте через секунду', 'warn'); return; }
+        const m = mailStats();
+        const rows = SCENARIOS.map((s) => {
+            let r = null;
+            try { r = s.run(k, m); } catch (_) { r = null; }
+            const t = r ? TONE[r.tone] : null;
+            return `<li class="scen">
+                <span class="ins-ic" style="--c:${t ? t.c : '#5f5f69'}">${icon(s.icon, 16)}</span>
+                <div class="min-w-0">
+                    <p class="m-0 font-bold">${esc(s.title)}</p>
+                    <p class="lbl m-0 mt-1 leading-snug">${esc(s.rule)}</p>
+                    <p class="m-0 mt-2 text-[12.5px]" style="color:${t ? t.c : 'var(--dim)'}">${r ? esc(r.title) : 'Нет данных: загрузится вместе с историей рассылок'}</p>
+                </div>
+                <span class="chip ${r ? (r.tone === 'info' ? 'info' : r.tone) : ''}">${t ? t.word.toLowerCase() : '—'}</span>
+            </li>`;
+        }).join('');
+        dlg.open('Сценарии сигналов', 'По этим правилам строятся статус и карточки в «Что сейчас происходит»', `<ul class="p-6 pt-4 m-0 list-none space-y-2.5">${rows}</ul>`, 700);
     });
 
     /* ---------- Новые регистрации ---------- */
@@ -1560,7 +1857,7 @@
                         <div class="flex items-center gap-4 min-w-0">
                             ${ava(u.username, 'lg')}
                             <div class="min-w-0">
-                                <p class="m-0 text-[20px] font-extrabold tracking-[-0.03em] truncate">${esc(u.username)}</p>
+                                <p class="m-0 text-[22px] tracking-[-0.03em] truncate font-display">${esc(u.username)}</p>
                                 <p class="lbl m-0 truncate">${esc(u.email)}${u.phone && u.phone !== '—' ? ` · ${esc(u.phone)}` : ''}</p>
                                 <button type="button" class="mt-1 inline-flex items-center gap-1.5 mono text-[11px] text-[color:var(--dim)] hover:text-white" data-copy="${esc(u.id_staff)}" data-tip="Скопировать id_staff">#${u.id} · ${esc(u.id_staff)}${icon('copy', 11)}</button>
                             </div>
@@ -1608,8 +1905,8 @@
                 ];
                 box.innerHTML = `
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-2.5">${tiles.map(([l, v, n, c]) => `
-                        <div class="tile"><p class="lbl m-0 flex items-center gap-2"><i class="dot" style="background:${c}"></i>${esc(l)}</p>
-                        <p class="mid m-0 mt-2.5">${esc(v)}</p><p class="lbl m-0 mt-1.5 truncate" data-tip="${esc(n)}">${esc(n)}</p></div>`).join('')}</div>
+                        <div class="kcard sm" style="--c:${c}"><p class="kdot m-0">${esc(l)}</p>
+                        <p class="kmid m-0 mt-3">${esc(v)}</p><p class="lbl m-0 mt-1.5 truncate" data-tip="${esc(n)}">${esc(n)}</p></div>`).join('')}</div>
                     <div class="mt-3.5 grid grid-cols-1 lg:grid-cols-2 gap-3.5">
                         <div class="card"><div class="card-title"><span class="ticon">${icon('file', 15)}</span><div><h3>Создания тестов</h3><small>12 месяцев</small></div></div><div class="chart h-[190px] mt-3" id="dz-ch1"></div></div>
                         <div class="card"><div class="card-title"><span class="ticon">${icon('wallet', 15)}</span><div><h3>Оплаты</h3><small>12 месяцев, только успешные</small></div></div><div class="chart h-[190px] mt-3" id="dz-ch2"></div></div>
@@ -2037,11 +2334,14 @@
         const d = state.blocks.data, s = d.stats;
         $('#nb-blocks').textContent = s.active || '';
         $('#bl-kpi').innerHTML = [
-            ['Действуют', s.active, 'shield', s.active ? 'bad' : ''],
-            ['Временные', s.temporary, 'clock', ''],
-            ['Навсегда', s.forever, 'ban', ''],
-            ['Истекли за 30 дней', s.expired, 'check', ''],
-        ].map(([l, v, ic, tone]) => `<div class="card flex items-center gap-3"><span class="ticon ${tone ? `tone-${tone}` : ''}">${icon(ic, 15)}</span><div><p class="lbl m-0">${l}</p><p class="mid m-0 mt-1.5">${fmt.int(v)}</p></div></div>`).join('');
+            ['Действуют', s.active, C.rose, 24],
+            ['Временные', s.temporary, C.yellow, 24],
+            ['Навсегда', s.forever, C.violet, 24],
+            ['Истекли за 30 дней', s.expired, C.green, 24],
+        ].map(([l, v, c]) => {
+            const total = Math.max(1, (s.active || 0) + (s.expired || 0));
+            return `<div class="kcard sm" style="--c:${c}"><span class="kdot">${l}</span><p class="kmid m-0 mt-3">${fmt.int(v)}</p><div class="mt-3">${ticks(Math.round(clamp(v / total, 0, 1) * 24), 24)}</div></div>`;
+        }).join('');
         const f = state.blocks.filter;
         const rows = d.items.filter((b) => f === 'all' || (f === 'active' ? b.active : !b.active));
         $('#bl-body').innerHTML = rows.length ? rows.map((b) => `
@@ -2097,6 +2397,11 @@
         target_segment: state.mail.segment,
         scheduled_at: state.mail.when === 'later' ? mf.elements.scheduled_at.value : '',
     });
+    const updateSubjCount = () => {
+        const n = mf.elements.subject.value.length;
+        $('#ml-subj-n').textContent = `${n}/90`;
+        $('#ml-subj-n').className = n > 90 ? 'tone-warn' : '';
+    };
     const fillForm = (d) => {
         ['title', 'subject', 'preheader', 'message_body', 'button_text', 'button_url'].forEach((k) => { if (d[k] != null) mf.elements[k].value = d[k]; });
         if (d.target_segment) state.mail.segment = d.target_segment;
@@ -2104,13 +2409,8 @@
         renderSegments();
         renderPreview();
     };
-    (() => { const d = store.get(DRAFT_KEY); if (d) fillForm(d); })();
     const saveDraft = debounce(() => { store.set(DRAFT_KEY, formData()); $('#ml-draft-note').textContent = `Черновик сохранён в ${new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`; }, 600);
-    const updateSubjCount = () => {
-        const n = mf.elements.subject.value.length;
-        $('#ml-subj-n').textContent = `${n}/90`;
-        $('#ml-subj-n').className = n > 90 ? 'tone-warn' : '';
-    };
+    const renderPreviewDebounced = debounce(() => renderPreview(), 450);
     mf.addEventListener('input', (e) => {
         if (e.target.name === 'subject') updateSubjCount();
         saveDraft();
@@ -2127,7 +2427,7 @@
         renderPreview();
     });
 
-    // Мини-тулбар: оборачивает выделенный текст в HTML
+    // Мини-тулбар: оборачивает выделенный текст в HTML и вставляет подстановки
     $('#ml-tools').addEventListener('click', (e) => {
         const ta = mf.elements.message_body;
         const ph = e.target.closest('[data-ph]');
@@ -2152,25 +2452,36 @@
     });
 
     async function loadSegments() {
-        if (!state.mail.segments) $('#ml-segs').innerHTML = Array.from({ length: 6 }, () => '<span class="skeleton h-[52px] rounded-[13px]"></span>').join('');
+        if (!state.mail.segments) $('#ml-segs').innerHTML = Array.from({ length: 6 }, () => '<span class="skeleton h-[56px] rounded-[14px]"></span>').join('');
         try {
             const d = await api(CFG.urls.mlSegments, { quiet: true });
             state.mail.segments = d.segments;
             state.mail.placeholders = d.placeholders;
             $('#ml-ph').innerHTML = d.placeholders.map((p) => `<button type="button" class="ph" data-ph="${esc(p.token)}" data-tip="${esc(p.label)}">${esc(p.token)}</button>`).join('');
             renderSegments();
+            if (state.view === 'mailing' && state.mail.history) renderHistory();
         } catch (e) {
-            $('#ml-segs').innerHTML = `<div class="notice bad sm:col-span-2">Сегменты не загрузились: ${esc(e.message)}</div>`;
+            $('#ml-segs').innerHTML = `<div class="notice bad sm:col-span-2 flex items-center justify-between gap-3">Сегменты не загрузились: ${esc(e.message)}<button type="button" class="btn btn-ghost btn-sm" data-retry-seg>Повторить</button></div>`;
         }
     }
+    $('#ml-segs').addEventListener('click', (e) => {
+        if (e.target.closest('[data-retry-seg]')) { loadSegments(); return; }
+        const b = e.target.closest('[data-seg]');
+        if (!b) return;
+        state.mail.segment = b.dataset.seg;
+        renderSegments();
+        saveDraft();
+    });
     function renderSegments() {
         const segs = state.mail.segments;
         if (!segs) return;
+        const total = Math.max(1, segs.find((g) => g.code === 'all')?.count || Math.max(...segs.map((g) => g.count || 0)));
         $('#ml-segs').innerHTML = segs.map((g) => `
             <button type="button" class="seg-opt" role="radio" data-seg="${g.code}" aria-checked="${g.code === state.mail.segment}">
                 <span class="radio" aria-hidden="true"></span>
                 <span class="min-w-0"><span class="block font-bold truncate">${esc(g.label)}</span><span class="block lbl text-[11.5px] truncate">${esc(g.hint)}</span></span>
                 <span class="n ${g.count ? '' : 'zero'}">${fmt.int(g.count)}</span>
+                <span class="share" aria-hidden="true"><i style="width:${clamp((g.count || 0) / total * 100, 0, 100).toFixed(1)}%"></i></span>
             </button>`).join('');
         const cur = segs.find((g) => g.code === state.mail.segment) || segs[0];
         $('#ml-seg-note').textContent = `всего можно написать ${fmt.int(segs.find((g) => g.code === 'all')?.count || 0)}`;
@@ -2179,13 +2490,6 @@
         $('#ml-sum-time').textContent = cur?.count ? `Отправка займёт ≈ ${minutes < 60 ? `${minutes} мин` : `${NF1.format(minutes / 60)} ч`} при ${CFG.mailRate} писем в минуту` : 'В этом сегменте сейчас никого нет';
         $('#ml-start').disabled = !cur?.count;
     }
-    $('#ml-segs').addEventListener('click', (e) => {
-        const b = e.target.closest('[data-seg]');
-        if (!b) return;
-        state.mail.segment = b.dataset.seg;
-        renderSegments();
-        saveDraft();
-    });
     $('#ml-when').addEventListener('click', (e) => {
         const b = e.target.closest('[data-when]');
         if (!b) return;
@@ -2221,7 +2525,6 @@
             $('#pv-frame').srcdoc = r.html;
         } catch (_) { /* предпросмотр не критичен */ }
     }
-    const renderPreviewDebounced = debounce(renderPreview, 450);
     function fitPreview() {
         try {
             const doc = $('#pv-frame').contentDocument;
@@ -2303,12 +2606,14 @@
         $('#side-mail-chip').className = `chip ${sending ? 'warn' : 'ok'}`;
         const last30 = rows.filter((r) => r.stats.sent + r.stats.failed > 0);
         const sentAll = sum(last30.map((r) => r.stats.sent)), failAll = sum(last30.map((r) => r.stats.failed));
+        const delivery = sentAll + failAll ? sentAll / (sentAll + failAll) * 100 : null;
+        const reach = state.mail.segments?.find((g) => g.code === 'all')?.count ?? state.ov?.kpi?.mail_reachable ?? 0;
         $('#ml-kpi').innerHTML = [
-            ['Отправлено сегодня', fmt.int(s.sent_today), `ошибок ${fmt.int(s.failed_today)}`, 'send', ''],
-            ['Сейчас в работе', fmt.int(s.running), s.scheduled ? `и ${s.scheduled} запланировано` : 'нет запланированных', 'activity', s.running ? 'warn' : ''],
-            ['Доставляемость', fmt.pct(sentAll + failAll ? sentAll / (sentAll + failAll) * 100 : null), 'по последним кампаниям', 'check', ''],
-            ['Можно написать', fmt.int(state.mail.segments?.find((g) => g.code === 'all')?.count ?? state.ov?.kpi?.mail_reachable ?? 0), 'подписаны и с почтой', 'users', ''],
-        ].map(([l, v, n, ic, tone]) => `<div class="card flex items-center gap-3"><span class="ticon ${tone ? `tone-${tone}` : ''}">${icon(ic, 15)}</span><div class="min-w-0"><p class="lbl m-0">${l}</p><p class="mid m-0 mt-1.5">${v}</p><p class="lbl m-0 mt-1 truncate text-[11.5px]">${esc(n)}</p></div></div>`).join('');
+            ['Отправлено сегодня', fmt.int(s.sent_today), `ошибок ${fmt.int(s.failed_today)}`, C.sky, s.sent_today ? clamp(s.sent_today / Math.max(1, reach), 0, 1) : 0],
+            ['Сейчас в работе', fmt.int(s.running), s.scheduled ? `и ${s.scheduled} запланировано` : 'нет запланированных', C.yellow, s.running ? 1 : 0],
+            ['Доставляемость', fmt.pct(delivery), 'по последним кампаниям', C.green, delivery == null ? 0 : delivery / 100],
+            ['Можно написать', fmt.int(reach), 'подписаны и с почтой', C.indigo, state.ov?.kpi?.users_total ? clamp(reach / state.ov.kpi.users_total, 0, 1) : 0],
+        ].map(([l, v, n, c, r]) => `<div class="kcard sm" style="--c:${c}"><span class="kdot">${l}</span><p class="kmid m-0 mt-3">${v}</p><p class="lbl m-0 mt-1.5 truncate">${esc(n)}</p><div class="mt-3">${ticks(Math.round(clamp(r, 0, 1) * 24), 24)}</div></div>`).join('');
 
         $('#ml-hist').innerHTML = rows.length ? rows.map((m) => {
             const [sl, tone] = MAIL_STATUS[m.status] || [m.status_label, ''];
@@ -2334,6 +2639,7 @@
                 </td>
             </tr>`;
         }).join('') : `<tr><td colspan="8">${empty('Кампаний ещё не было. Первая — в форме выше.', 'send')}</td></tr>`;
+        if (state.ov) renderInsights();
     }
     function schedulePoll() {
         clearTimeout(state.mail.pollTimer);
@@ -2379,7 +2685,7 @@
                     <div class="min-w-0"><p class="m-0 text-[18px] font-extrabold tracking-[-0.02em]">${esc(m.title)}</p><p class="lbl m-0 mt-1">${esc(m.subject)}</p></div>
                     <span class="chip ${tone}">${sl}</span>
                 </div>
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-2.5">${[['Получателей', fmt.int(st.total)], ['Отправлено', fmt.int(st.sent)], ['Ошибок', fmt.int(st.failed)], ['В очереди', fmt.int(st.pending)]].map(([l, v]) => `<div class="tile"><p class="lbl m-0">${l}</p><p class="mid m-0 mt-2">${v}</p></div>`).join('')}</div>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-2.5">${[['Получателей', fmt.int(st.total), C.indigo], ['Отправлено', fmt.int(st.sent), C.green], ['Ошибок', fmt.int(st.failed), C.rose], ['В очереди', fmt.int(st.pending), C.yellow]].map(([l, v, c]) => `<div class="kcard sm" style="--c:${c}"><span class="kdot">${l}</span><p class="kmid m-0 mt-3">${v}</p></div>`).join('')}</div>
                 <ul class="tile p-0 m-0 list-none divide-y divide-[color:var(--line)]">${[['Сегмент', m.segment_label], ['Создана', `${m.created} · ${m.created_by || '—'}`], ['Запланирована', m.scheduled || '—'], ['Старт', m.started || '—'], ['Финиш', m.finished || '—'], ['Скорость', m.rate_per_min ? `${NF1.format(m.rate_per_min)} писем в минуту` : '—'], ['Доставляемость', fmt.pct(st.delivery)]].map(([l, v]) => `<li class="flex justify-between gap-4 px-4 py-2.5 text-[12.5px]"><span class="lbl">${l}</span><span class="font-semibold text-right">${esc(v)}</span></li>`).join('')}</ul>
                 <div class="flex flex-wrap gap-2">
                     ${CFG.isSuper && ['queued', 'processing', 'scheduled'].includes(m.status) ? `<button type="button" class="btn btn-ghost btn-sm" data-mlc="pause">${icon('pause', 13)}Пауза</button>` : ''}
@@ -2416,15 +2722,39 @@
         try {
             const [bl, ml] = await Promise.allSettled([api(CFG.urls.blocks, { quiet: true }), api(CFG.urls.mlHistory, { quiet: true })]);
             if (bl.status === 'fulfilled') $('#nb-blocks').textContent = bl.value.stats.active || '';
-            if (ml.status === 'fulfilled') { state.mail.history = ml.value; if (state.view === 'mailing') renderHistory(); else { const s = ml.value.summary; $('#nb-mail').textContent = s.running || s.scheduled || ''; $('#side-mail [data-k="today"]').textContent = fmt.int(s.sent_today); $('#side-mail [data-k="fail"]').textContent = fmt.int(s.failed_today); } schedulePoll(); }
+            if (ml.status === 'fulfilled') {
+                state.mail.history = ml.value;
+                if (state.view === 'mailing') renderHistory();
+                else {
+                    const s = ml.value.summary;
+                    $('#nb-mail').textContent = s.running || s.scheduled || '';
+                    $('#side-mail [data-k="today"]').textContent = fmt.int(s.sent_today);
+                    $('#side-mail [data-k="fail"]').textContent = fmt.int(s.failed_today);
+                    if (state.ov) renderInsights();
+                }
+                schedulePoll();
+            }
         } catch (_) { /* ignore */ }
     }
 
     document.addEventListener('visibilitychange', () => { if (!document.hidden) { schedulePoll(); } });
     setInterval(() => { if (!document.hidden && state.view === 'overview') { loadOverview(); loadNewcomers(); } }, 5 * 60 * 1000);
 
-    hydrateIcons();
-    updateSubjCount();
+    /* Любая неожиданная ошибка не должна оставлять пользователя с пустым экраном молча */
+    window.addEventListener('error', (e) => { if (e?.message && !/ResizeObserver/.test(e.message)) toast(`Ошибка на странице: ${e.message}`, 'bad'); });
+    window.addEventListener('unhandledrejection', (e) => { const m = e?.reason?.message; if (m) toast(`Ошибка: ${m}`, 'bad'); });
+
+    /* ---------- Старт ----------
+       Важно: восстановление черновика и первая отрисовка идут ПОСЛЕ того, как объявлены
+       все функции и константы выше. Раньше черновик восстанавливался в середине скрипта,
+       обращался к ещё не созданным переменным и обрывал запуск: страница оставалась пустой,
+       а обработчики рассылок не вешались. */
+    try {
+        hydrateIcons();
+        updateSubjCount();
+        const draft = store.get(DRAFT_KEY);
+        if (draft) fillForm(draft);
+    } catch (e) { console.error('draft restore failed', e); }
     const startView = location.hash.slice(1);
     go(VIEWS[startView] ? startView : 'overview', { push: false });
     if (state.view !== 'overview') loadOverview();

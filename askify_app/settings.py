@@ -64,8 +64,12 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'askify_app.middleware.BlockIPMiddleware',
     'corsheaders.middleware.CorsMiddleware',
+    'askify_service.perf_monitor.PerfMonitorMiddleware',
     # 'debug_toolbar.middleware.DebugToolbarMiddleware'
 ]
+
+PERF_MONITOR_SLOW_MS = 800
+PERF_MONITOR_SAMPLE_RATE = 1.0
 
 if DEBUG:
     INTERNAL_IPS = [

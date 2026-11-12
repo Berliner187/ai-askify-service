@@ -10,16 +10,19 @@
     <meta name="theme-color" content="#0F0E13">
     <link rel="canonical" href="https://letychka.ru/">
 
+    {% static 'img/letychka-og.png' as og_image %}
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://letychka.ru/">
     <meta property="og:title" content="Создать тест по тексту и документу | Генератор тестов онлайн с ответами">
     <meta property="og:description" content="Бесплатный генератор проверочных тестов по тексту, учебным файлам и методичкам. Автопроверка, печать бланков А4, ссылки для учеников без регистрации.">
-    <meta property="og:image" content="https://letychka.ru/static/letychka-banner-1703.webp">
+    <meta property="og:image" content="https://letychka.ru{{ og_image }}">
+    <meta property="og:image:secure_url" content="https://letychka.ru{{ og_image }}">
+    <meta property="og:image:type" content="image/png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta property="og:site_name" content="Летучка — ИИ-генератор тестов по тексту">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:image" content="https://letychka.ru/static/letychka-banner-1703.webp">
+    <meta name="twitter:image" content="https://letychka.ru{{ og_image }}">
 
     <link rel="icon" href="{% static 'img/favicon.ico' %}" type="image/x-icon">
     <link rel="apple-touch-icon" sizes="180x180" href="{% static 'img/apple-touch-icon.png' %}">
@@ -1724,7 +1727,7 @@
                     </div>
                     <div class="space-y-1">
                         <div class="flex items-baseline gap-2">
-                            <span class="text-4xl sm:text-5xl font-extrabold text-white tracking-tight font-display">1 440</span>
+                            <span class="text-4xl sm:text-5xl font-extrabold text-white tracking-tight font-display">1 650</span>
                             <span class="text-xl font-semibold text-indigo-400">₽</span>
                             <span class="text-xs text-zinc-500 line-through">2 070 ₽</span>
                         </div>
@@ -2043,7 +2046,7 @@
                 "name": "Сколько стоит составление тестов и есть ли автосписания?",
                 "acceptedAnswer": {
                     "@type": "Answer",
-                    "text": "Начать можно бесплатно, дальше — разовая оплата: 690 ₽ за месяц, 1 440 ₽ за 3 месяца или пакет из 5 тестов за 290 ₽. Автосписаний нет: карта не привязывается к регулярным платежам, а когда срок заканчивается, доступ просто приостанавливается. Оплатить можно картой банка РФ, через СБП, T-Pay, SberPay или частями через «Долями»."
+                    "text": "Начать можно бесплатно, дальше — разовая оплата: 690 ₽ за месяц, 1 650 ₽ за 3 месяца или пакет из 5 тестов за 290 ₽. Автосписаний нет: карта не привязывается к регулярным платежам, а когда срок заканчивается, доступ просто приостанавливается. Оплатить можно картой банка РФ, через СБП, T-Pay, SberPay или частями через «Долями»."
                 }
                 },
                 {
@@ -2154,7 +2157,7 @@
                         </a>
 
                         <!-- YouTube -->
-                        <a href="https://youtu.be/c83V0bXFuiU" target="_blank" rel="noopener" class="hover:text-white transition-colors opacity-80 hover:opacity-100" title="YouTube" aria-label="YouTube">
+                        <a href="https://youtu.be/Y12ldg547uo" target="_blank" rel="noopener" class="hover:text-white transition-colors opacity-80 hover:opacity-100" title="YouTube" aria-label="YouTube">
                             <svg class="icon w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                                 <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
                             </svg>
@@ -2186,6 +2189,7 @@
                         <a href="/docs/public-offer" class="hover:text-white transition-colors">Публичная оферта</a>
                         <a href="/docs/privacy-policy" class="hover:text-white transition-colors">Политика конфиденциальности</a>
                         <span class="text-zinc-600">ИНН 773613171558 / ОГРНИП 3245081071286</span>
+                        <a href="/media" class="hover:text-white transition-colors">Журнал Летучки</a>
                     </div>
                 </div>
 

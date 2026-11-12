@@ -656,7 +656,7 @@
                         {% if extra_credits and plan_type == 'subscription' %}
                         <div><span>В запасе</span><b>{{ extra_credits }}<small>пакетных</small></b></div>
                         {% endif %}
-                        <div><span>Создано всего</span><b>{{ statistics.total_tests|default:0 }}<small>тестов</small></b></div>
+                        <div><span>Создано всего</span><b>{{ total_count|default:0 }}<small>тестов</small></b></div>
                     </div>
 
                     <a href="{% url 'create' %}" class="btn btn--block{% if subscription_level >= 1 %} btn--primary{% endif %}" style="margin-top:auto">
