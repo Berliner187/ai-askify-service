@@ -167,7 +167,7 @@ urlpatterns = [
 
     path('auth/', passwordless_auth_view, name='passwordless_auth'),
     path('auth/magic-link/<str:token>/', magic_link_login_view, name='magic_link_login'),
-    
+
     path("auth/yandex/", yandex_start, name="yandex_login"),
     path("auth/yandex/callback/", yandex_callback, name="yandex_callback"),
 
@@ -209,7 +209,7 @@ urlpatterns = [
 
     path('api/bot/generate-login-code/', bot_generate_code),
     path('api/bot/generate-magic-link/', bot_generate_link),
-    
+
     path("admin-traffic/", dbv.admin_traffic_live_view, name="admin_traffic_live"),
     path("api/admin/traffic/live/", dbv.api_admin_traffic_live, name="api_admin_traffic_live"),
     path("api/admin/db/snapshot/", dbv.api_admin_db_snapshot),

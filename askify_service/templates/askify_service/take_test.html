@@ -258,13 +258,62 @@
         }
         .res-score { color: var(--c); }
 
+        /* РЕЙТИНГ И РАЗБОР (показываются, только если автор открыл ответы) */
+        .panel-title { font: 700 18px/1.25 'Wix Madefor Display', sans-serif; letter-spacing: -0.02em; color: #fff; overflow-wrap: anywhere; }
+        .panel-note { font: 400 12px/1.5 'Golos Text', sans-serif; color: var(--fg-2); }
+
+        .lb-list { display: flex; flex-direction: column; gap: 6px; }
+        .lb-row {
+            display: grid; grid-template-columns: 24px minmax(0, 1fr) auto 44px; align-items: center; gap: 10px;
+            min-height: 44px; padding: 6px 12px 6px 10px; border-radius: 14px;
+            background: rgba(255, 255, 255, 0.025); border: 1px solid rgba(255, 255, 255, 0.07);
+            animation: st-opt 0.4s var(--ease-out) backwards; animation-delay: calc(var(--i, 0) * 45ms + 200ms);
+        }
+        .lb-row.is-me { background: rgba(79, 70, 229, 0.14); border-color: rgba(99, 102, 241, 0.55); }
+        .lb-place {
+            width: 24px; height: 24px; border-radius: 8px; display: grid; place-items: center;
+            font: 700 12px/1 'Golos Text', sans-serif; color: #D4D4D8; background: rgba(255, 255, 255, 0.06);
+            font-variant-numeric: tabular-nums;
+        }
+        .lb-place.p1 { background: rgba(245, 158, 11, 0.18); color: #FBBF24; }
+        .lb-place.p2 { background: rgba(161, 161, 170, 0.2); color: #E4E4E7; }
+        .lb-place.p3 { background: rgba(194, 120, 60, 0.22); color: #F0B27A; }
+        .lb-name { display: flex; align-items: center; gap: 8px; min-width: 0; font: 600 14px/1.2 'Golos Text', sans-serif; color: #E4E4E7; }
+        .lb-name-t { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .lb-you {
+            flex-shrink: 0; font: 600 10px/1 'Golos Text', sans-serif; font-style: normal; letter-spacing: 0.08em; text-transform: uppercase;
+            padding: 4px 7px; border-radius: 9999px; background: var(--accent); color: #fff;
+        }
+        .lb-score { font: 700 13px/1 'Golos Text', sans-serif; color: #fff; font-variant-numeric: tabular-nums; }
+        .lb-time { font: 500 12px/1 'Golos Text', sans-serif; color: var(--fg-2); text-align: right; font-variant-numeric: tabular-nums; }
+        .lb-gap { height: 14px; text-align: center; line-height: 10px; letter-spacing: 0.3em; color: var(--fg-2); user-select: none; }
+
+        .rv-list { display: flex; flex-direction: column; gap: 10px; }
+        .rv-item {
+            padding: 14px 14px 12px; border-radius: 16px;
+            background: rgba(255, 255, 255, 0.025); border: 1px solid rgba(255, 255, 255, 0.07);
+            animation: st-opt 0.4s var(--ease-out) backwards; animation-delay: calc(var(--i, 0) * 45ms + 200ms);
+        }
+        .rv-q { margin-top: 8px; font: 600 14px/1.45 'Golos Text', sans-serif; color: #fff; overflow-wrap: anywhere; }
+        .rv-ans {
+            display: flex; align-items: flex-start; gap: 10px; margin-top: 10px; padding: 10px 12px; border-radius: 12px;
+            font: 500 13px/1.4 'Golos Text', sans-serif; overflow-wrap: anywhere;
+        }
+        .rv-ans > i { flex-shrink: 0; width: 14px; margin-top: 12px; text-align: center; font-size: 11px; }
+        .rv-ans > div { min-width: 0; }
+        .rv-ans.bad  { background: rgba(244, 63, 94, 0.09);  border: 1px solid rgba(244, 63, 94, 0.22);  color: #FDA4AF; }
+        .rv-ans.good { background: rgba(16, 185, 129, 0.09); border: 1px solid rgba(16, 185, 129, 0.22); color: #6EE7B7; }
+        .rv-lab { display: block; margin-bottom: 5px; font: 600 10px/1 'Golos Text', sans-serif; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.85; }
+        .rv-val > div + div { margin-top: 3px; }
+        .rv-empty { font-style: italic; }
+
         /* ДОКИ */
         .dock-link { width: 44px; height: 44px; border-radius: 16px; display: flex; align-items: center; justify-content: center; }
         @keyframes dockIn { from { opacity: 0; translate: 0 8px; } to { opacity: 1; translate: 0 0; } }
         .dock-in { animation: dockIn 0.5s var(--ease-out) backwards; animation-delay: 0.25s; }
 
         @media (prefers-reduced-motion: reduce) {
-            .enter, .enter [data-st], .opt, .dock-in { animation: none !important; }
+            .enter, .enter [data-st], .opt, .dock-in, .lb-row, .rv-item { animation: none !important; }
             .bar > i, .score-circle-fill { transition: none !important; }
         }
     </style>
@@ -378,7 +427,7 @@
         </section>
 
         <!-- 3. ИТОГ -->
-        <section id="result-view" class="enter hidden w-full max-w-[30rem]">
+        <section id="result-view" class="enter hidden w-full max-w-[32rem]">
             <div id="res" class="res start-card text-center">
 
                 <div data-st style="--i:0">
@@ -424,6 +473,21 @@
                 </div>
 
             </div>
+
+            <!-- Рейтинг: приходит с сервера только если автор открыл ответы -->
+            <section id="board-card" class="start-card mt-4 hidden" aria-labelledby="board-title">
+                <span class="kicker">Рейтинг</span>
+                <h3 id="board-title" class="panel-title mt-3"></h3>
+                <ol id="board-list" class="lb-list mt-4"></ol>
+                <p id="board-note" class="panel-note mt-4"></p>
+            </section>
+
+            <!-- Разбор ошибок: то же условие -->
+            <section id="review-card" class="start-card mt-4 hidden" aria-labelledby="review-title">
+                <span class="kicker">Разбор</span>
+                <h3 id="review-title" class="panel-title mt-3"></h3>
+                <ol id="review-list" class="rv-list mt-4"></ol>
+            </section>
         </section>
 
         <!-- 4. ЛОАДЕР ОТПРАВКИ -->
@@ -523,6 +587,7 @@
         let studentName = '';
         let studentAnswers = {};
         let submitting = false;
+        let boardInfo = null;   // { place, total } — если ученик попал в рейтинг
 
         const TIME_LIMIT = {{ time_limit_minutes|default:0 }} * 60;
         let attemptToken = null, timerId = null, deadlineAt = null, awaySince = null, armed = false;
@@ -819,6 +884,103 @@
             }
         });
 
+        // ---------- РЕЙТИНГ ----------
+        // Сервер присылает board/review только если автор открыл ответы и уже отрезал лишнее:
+        // в строках — первые слова имён, вокруг ученика — соседи сверху и снизу.
+        function renderBoard(b) {
+            const $card = $('#board-card');
+            boardInfo = null;
+            if (!b || !b.rows || !b.rows.length) { $card.addClass('hidden'); return; }
+
+            const place = b.my_place;
+            let title;
+            if (!place) title = 'Рейтинг группы';
+            else if (b.total === 1) title = 'Пока вы единственный в рейтинге';
+            else if (place === 1) title = 'Вы на первом месте из ' + b.total;
+            else title = 'Вы на ' + place + ' месте из ' + b.total;
+            $('#board-title').text(title);
+            if (place) boardInfo = { place: place, total: b.total };
+
+            const $list = $('#board-list').empty();
+            let prev = 0;
+            b.rows.forEach(function (r, i) {
+                if (prev && r.place - prev > 1) $list.append('<li class="lb-gap" aria-hidden="true">···</li>');
+                prev = r.place;
+
+                const $name = $('<span class="lb-name"></span>').append($('<span class="lb-name-t"></span>').text(r.name));
+                if (r.me) $name.append($('<em class="lb-you"></em>').text('Вы'));
+
+                $list.append(
+                    $('<li class="lb-row"></li>').toggleClass('is-me', !!r.me).css('--i', i).append(
+                        $('<span class="lb-place"></span>').addClass('p' + r.place).text(r.place),
+                        $name,
+                        $('<span class="lb-score"></span>').text(r.score + '/' + r.total),
+                        $('<span class="lb-time"></span>').text(r.time)
+                    )
+                );
+            });
+
+            const notes = [];
+            if (b.state === 'review') notes.push('Ваш результат не учтён в рейтинге — автор проверит прохождение.');
+            if (b.best_kept) notes.push('В рейтинге учтена ваша лучшая попытка.');
+            notes.push('Места: больше верных ответов, при равенстве — быстрее время. Видны только первые слова имён.');
+            const $note = $('#board-note').empty();
+            notes.forEach(function (t) { $note.append($('<span class="block"></span>').text(t)); });
+
+            $card.removeClass('hidden');
+        }
+
+        // ---------- РАЗБОР ОШИБОК ----------
+        function answerLines(list) {
+            return list.map(function (v) { return $('<div></div>').text(v); });
+        }
+
+        function renderReview(items, total) {
+            const $card = $('#review-card');
+            if (!Array.isArray(items)) { $card.addClass('hidden'); return; }
+
+            const $list = $('#review-list').empty();
+            if (!items.length) {
+                $('#review-title').text('Ошибок нет — все ответы верные');
+                $list.addClass('hidden');
+                $card.removeClass('hidden');
+                return;
+            }
+            $list.removeClass('hidden');
+            $('#review-title').text('Ошибок: ' + items.length + ' из ' + total);
+
+            // нумерация — как её видел ученик (порядок вопросов перемешан на странице)
+            const rows = items.map(function (m) {
+                return { m: m, n: questions.findIndex(function (x) { return x.question === m.q; }) + 1 };
+            }).sort(function (a, b) { return (a.n || 1e6) - (b.n || 1e6); });
+
+            rows.forEach(function (row, i) {
+                const m = row.m;
+                const $given = $('<div class="rv-val"></div>');
+                if (m.given.length) $given.append(answerLines(m.given));
+                else $given.append($('<div class="rv-empty"></div>').text('Нет ответа'));
+
+                $list.append(
+                    $('<li class="rv-item"></li>').css('--i', i).append(
+                        $('<span class="kicker"></span>').text(row.n ? 'Вопрос ' + row.n : 'Вопрос'),
+                        $('<p class="rv-q"></p>').text(m.q),
+                        $('<div class="rv-ans bad"></div>').append(
+                            '<i class="fas fa-xmark" aria-hidden="true"></i>',
+                            $('<div></div>').append($('<span class="rv-lab"></span>').text('Ваш ответ'), $given)
+                        ),
+                        $('<div class="rv-ans good"></div>').append(
+                            '<i class="fas fa-check" aria-hidden="true"></i>',
+                            $('<div></div>').append(
+                                $('<span class="rv-lab"></span>').text('Верный ответ'),
+                                $('<div class="rv-val"></div>').append(answerLines(m.correct))
+                            )
+                        )
+                    )
+                );
+            });
+            $card.removeClass('hidden');
+        }
+
         // ---------- ИТОГ ----------
         async function finishAndSubmitTest() {
             clearInterval(timerId);
@@ -863,12 +1025,16 @@
                 $('#result-badge').text(badge);
                 $('#result-verdict').text(verdict);
 
+                // сбой отрисовки рейтинга/разбора не должен ломать показ балла
+                try { renderBoard(data.board); } catch (e) { $('#board-card').addClass('hidden'); }
+                try { renderReview(data.review, total); } catch (e) { $('#review-card').addClass('hidden'); }
+
                 $('#submitting-overlay').addClass('hidden').removeClass('flex');
                 showView('result-view');
                 $('#header-progress-text').text('Готово');
 
                 setTimeout(function () { $('#score-ring').css('stroke-dashoffset', offset); }, 120);
-                if (percent >= 50) fireConfetti();
+                if (percent >= 50 || (boardInfo && boardInfo.place === 1 && boardInfo.total > 1)) fireConfetti();
             } catch (err) {
                 window.__allowLeave = true;
                 submitting = false;
@@ -882,8 +1048,9 @@
             const score = $('#final-score').text();
             const total = $('#final-total').text();
             const percent = $('#score-percent').text();
+            const placeLine = boardInfo && boardInfo.total > 1 ? '\nМесто в рейтинге: ' + boardInfo.place + ' из ' + boardInfo.total : '';
 
-            const shareText = 'Я прошел тест «{{ survey.title|escapejs }}» на Летучке!\nРезультат: ' + score + ' из ' + total + ' (' + percent + ') 🎯\n\nПопробуй набрать больше: ' + window.location.origin + '/t/' + surveyId + '/';
+            const shareText = 'Я прошел тест «{{ survey.title|escapejs }}» на Летучке!\nРезультат: ' + score + ' из ' + total + ' (' + percent + ') 🎯' + placeLine + '\n\nПопробуй набрать больше: ' + window.location.origin + '/t/' + surveyId + '/';
 
             if (navigator.clipboard && window.isSecureContext) {
                 navigator.clipboard.writeText(shareText).then(function () {

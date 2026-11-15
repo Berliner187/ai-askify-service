@@ -175,7 +175,7 @@ def index(request):
         'debug': DEBUG
     }
     log_traffic(request, "Главная страница")
-    
+
     return render(request, 'askify_service/index.html', context)
 
 
@@ -228,13 +228,13 @@ def page_create_survey(request):
         plan_type = "subscription" if access_info["daily_limit"] > 0 else ("package" if access_info["extra_credits"] > 0 else "none")
 
         recent_surveys = Survey.objects.filter(
-            id_staff=current_id_staff, 
+            id_staff=current_id_staff,
             is_visible=False
         ).order_by('-created_at')[:4]
 
     else:
         # НЕАВТОРИЗОВАННЫЙ ГОСТЬ (ДЕМО-РЕЖИМ)
-        
+
         current_id_staff, _ = get_or_create_guest_user(request)
         guest_surveys_count = Survey.objects.filter(id_staff=current_id_staff).count()
         has_session_demo = request.session.get('demo_test_created', False)
@@ -265,7 +265,7 @@ def page_create_survey(request):
         "recent_surveys": recent_surveys,
         "is_guest": not request.user.is_authenticated,
         "free_test_limit": FREE_TEST_LIMIT__TEXT,
-        "package_tests_count": total_available, 
+        "package_tests_count": total_available,
         "debug": settings.DEBUG,
     }
     log_traffic(request, "Создать тест")
@@ -539,12 +539,12 @@ def page_history_surveys(request):
     ).filter(view_count__gt=0).order_by("-view_count").first()
     if top_survey:
         _decorate_history_survey(top_survey)
-    
+
     subs_level = get_subscription_level(request)
     summary_initial = build_history_summary(base_qs, "7") if subs_level >= 1 else None
-    
+
     print(subs_level)
-    
+
     access_service = AccessService(get_staff_id(request))
     access_info = access_service.check_access()
 
@@ -733,41 +733,41 @@ def _day_counts(qs, field):
     """{date: count} по полю-дате. Группировка по дню в Москве (activate снаружи)."""
     key = f"{field}__date"
     return {r[key]: r["c"] for r in qs.values(key).annotate(c=Count("id"))}
- 
- 
+
+
 def build_history_summary(base_qs, period):
     """base_qs — тесты пользователя (те же, что на странице истории)."""
     with timezone.override(MOSCOW_TZ):
         today = timezone.now().astimezone(MOSCOW_TZ).date()
- 
+
         first = None
         if period == "all":
             m = base_qs.aggregate(m=Min("created_at"))["m"]
             first = m.astimezone(MOSCOW_TZ).date() if m else None
- 
+
         plan, cur, prev, span = hs_window(period, today, first)
         lo = prev[0] if prev else cur[0]
         hi = cur[1]
- 
+
         attempts = TestAttempt.objects.filter(survey__in=base_qs)
         views = SurveyUniqueView.objects.filter(survey__in=base_qs)
- 
+
         att_map = _day_counts(attempts.filter(created_at__date__gte=lo, created_at__date__lte=hi), "created_at")
         views_map = _day_counts(views.filter(timestamp__date__gte=lo, timestamp__date__lte=hi), "timestamp")
         created_map = _day_counts(base_qs.filter(created_at__date__gte=lo, created_at__date__lte=hi), "created_at")
- 
+
         def live(a, b):
             return (attempts.filter(created_at__date__gte=a, created_at__date__lte=b)
                     .values("survey_id").distinct().count())
- 
+
         live_cur = live(*cur)
         live_prev = live(*prev) if prev else 0
         total_tests = base_qs.count()
- 
+
     return assemble_summary(period, plan, span, att_map, views_map, created_map,
                             live_cur, live_prev, total_tests)
- 
- 
+
+
 @require_GET
 def api_history_summary(request):
     """Сводка по периодам. Только платным: бесплатному — 403 и ни байта данных."""
@@ -775,11 +775,11 @@ def api_history_summary(request):
         return JsonResponse({"premium": False, "reason": "auth"}, status=401)
     if get_subscription_level(request) < 1:
         return JsonResponse({"premium": False, "reason": "subscription"}, status=403)
-    
+
     period = normalize_period(request.GET.get("period"), True)
     base_qs = Survey.objects.filter(id_staff=get_staff_id(request), is_visible=False)
     resp = JsonResponse(build_history_summary(base_qs, period))
-    
+
     return resp
 
 
@@ -922,8 +922,8 @@ class ManageSurveysView(View):
 
             # Передаем расширенные параметры в генератор
             manage_generate_surveys = ManageGenerationSurveys(
-                request, 
-                text_from_user, 
+                request,
+                text_from_user,
                 question_count,
                 difficulty=difficulty,
                 question_types=question_types
@@ -1009,13 +1009,13 @@ def check_survey_edit_permissions(request, survey):
         return False, "Требуется авторизация"
     if survey.id_staff != request.user.id_staff:
         return False, "Вы не являетесь автором теста"
-    
+
     is_premium = get_subscription_level(request) >= 1
     has_balance = getattr(request.user, "test_balance", 0) > 0
 
     if not (is_premium or has_balance):
         return False, "Редактирование доступно в платных тарифах"
-    
+
     return True, None
 
 
@@ -1214,14 +1214,14 @@ async def api_regenerate_survey(request, survey_id):
                     tokens_used=int(tokens_used or 0),
                     model_name=model_used or "",
                 )
-            
+
         def commit_billing_and_save():
             # 1. Записываем потраченные токены и факт генерации
             TokensUsed.objects.create(
-                id_staff=user_staff_id, 
+                id_staff=user_staff_id,
                 tokens_survey_used=tokens_used
             )
-            
+
             TestAttempt.objects.filter(survey=survey).delete()
 
             # 3. Если генерация идет за счет штучных пакетов (Credits) — списываем 1 тест с баланса
@@ -1304,13 +1304,13 @@ class GenerationSurveysView(View):
 
             # Генерация через твой сервис
             manage_generate = ManageGenerationSurveys(
-                request, 
-                text_from_user, 
+                request,
+                text_from_user,
                 str(question_count),
                 difficulty=difficulty,
                 question_types=question_types
             )
-            
+
             start_time = time.perf_counter()
             generated_data = await manage_generate.openai_generate()
             end_time = time.perf_counter()
@@ -1324,7 +1324,7 @@ class GenerationSurveysView(View):
             # Создание Survey
             new_survey_id = uuid.uuid4()
             new_title = generated_data["generated_text"].get("title") or text_from_user[:60]
-            
+
             survey = Survey(
                 survey_id=new_survey_id,
                 title=new_title,
@@ -1342,7 +1342,7 @@ class GenerationSurveysView(View):
                 request.session["demo_test_created"] = True
                 request.session["demo_survey_id"] = str(new_survey_id)
                 request.session.modified = True
-            
+
             await sync_to_async(mark_session)()
 
             tracer_l.info(f"DEMO_SURVEY_CREATED: {text_from_user[:80]}")
@@ -1537,8 +1537,8 @@ class FileUploadView(View):
             start_time = time.perf_counter()
 
             manage_generate_surveys = ManageGenerationSurveys(
-                request, 
-                cleaned_data_for_llm, 
+                request,
+                cleaned_data_for_llm,
                 str(question_count),
                 difficulty=difficulty,
                 question_types=question_types
@@ -1569,7 +1569,7 @@ class FileUploadView(View):
 
             # 9. СОХРАНЕНИЕ В БАЗУ ДАННЫХ
             new_survey_id = uuid.uuid4()
-            
+
             def sanitize_val(val):
                 """Рекурсивно вычищает NUL-байты из строк, словарей и списков."""
                 if isinstance(val, str):
@@ -1604,7 +1604,7 @@ class FileUploadView(View):
                     survey.save()
 
                     TokensUsed.objects.create(id_staff=staff_id, tokens_survey_used=tokens_used)
-                    
+
                     response_time_ms = int((end_time - start_time) * 1000)
 
                     log_api_key = api_key_used or APIKey.objects.filter(purpose='SURVEY', is_active=True).first()
@@ -1740,7 +1740,7 @@ class FileUploadView(View):
                         file_path
                     ]
                     process = subprocess.run(cmd, capture_output=True, text=True, timeout=25, check=False)
-                    
+
                     base_name = os.path.splitext(os.path.basename(file_path))[0]
                     txt_path = os.path.join(out_dir, f"{base_name}.txt")
 
@@ -1783,7 +1783,7 @@ class FileUploadView(View):
                 extracted_pieces = []
                 with zipfile.ZipFile(file_path, 'r') as z:
                     xml_files = [
-                        name for name in z.namelist() 
+                        name for name in z.namelist()
                         if name.endswith('.xml') and ('word/' in name or 'document' in name.lower())
                     ]
 
@@ -1793,7 +1793,7 @@ class FileUploadView(View):
                         try:
                             raw_xml = z.read(xml_name).decode('utf-8', errors='ignore')
                             raw_xml = re.sub(r'</w:p>', '\n', raw_xml)
-                            
+
                             matches = re.findall(r'<w:t(?:\s+[^>]*)?>(.*?)</w:t>', raw_xml, flags=re.DOTALL)
                             if matches:
                                 piece_text = "".join(matches)
@@ -1820,7 +1820,7 @@ class FileUploadView(View):
 
         # МЕТОД 3: СТАРЫЙ БИНАРНЫЙ WORD 97-2003 (.DOC)
         tracer_l.info("[DOC] Попытка чтения через утилиты бинарного DOC (antiword / catdoc)...")
-        
+
         antiword_bin = shutil.which("antiword") or "/usr/bin/antiword"
         if os.path.exists(antiword_bin):
             try:
@@ -1880,7 +1880,7 @@ def survey_delete_question(request, survey_id, question_index):
     # Проверка прав авторства и подписки
     if survey.id_staff != request.user.id_staff:
         return JsonResponse({"error": "Доступ запрещен"}, status=403)
-        
+
     if get_subscription_level(request) < 1:
         return JsonResponse({"error": "Требуется Premium-подписка"}, status=403)
 
@@ -2364,18 +2364,16 @@ def take_test(request, survey_id):
 
     survey = get_object_or_404(Survey, survey_id=survey_id)
 
-    questions_list = survey.get_questions()
-    random.shuffle(questions_list)
-
     try:
         author_username = AuthUser.objects.get(id_staff=survey.id_staff).username
     except Exception:
         author_username = "Сообщество Летучки"
-    
-    questions_list = [
-        {"question": q["question"], "options": q["options"], "type": q["type"]}
-        for q in survey.get_normalized_questions()
-    ]
+
+    questions_list = []
+    for q in survey.get_normalized_questions():
+        options = list(q["options"] or [])
+        random.shuffle(options)
+        questions_list.append({"question": q["question"], "options": options, "type": q["type"]})
     random.shuffle(questions_list)
 
     context = {
@@ -2390,7 +2388,7 @@ def take_test(request, survey_id):
         "is_closed": survey.is_closed,
     }
     log_traffic(request, "Пройти тест")
-    
+
     return render(request, "askify_service/take_test.html", context)
 
 
@@ -2468,6 +2466,107 @@ def _build_integrity(survey, state, client, total_questions):
     }
 
 
+# ---------- РАЗБОР ОШИБОК И РЕЙТИНГ ДЛЯ УЧЕНИКА ----------
+# Отдаются в ответе submit_answers только если автор открыл ответы (Survey.show_answers).
+from fractions import Fraction
+
+
+def _rank_key(a):
+    """Порядок мест: больше верных -> быстрее прошёл -> раньше сдал.
+    Один ключ и для учеников, и для таблицы автора."""
+    ratio = Fraction(a.score, a.total_questions) if a.total_questions else Fraction(0)
+    spent = a.duration_seconds if getattr(a, "duration_seconds", None) is not None else 10 ** 9
+    return (-ratio, spent, a.created_at)
+
+
+def _as_list(v):
+    if v is None:
+        return []
+    return [str(x) for x in v] if isinstance(v, list) else [str(v)]
+
+
+def _public_name(name):
+    """В рейтинге - только первое слово имени: ФИО целиком светить нельзя."""
+    parts = (name or "").split()
+    first = parts[0] if parts else ""
+    if "@" in first or sum(ch.isdigit() for ch in first) >= 4:   # почта, телефон
+        return "Аноним"
+    return re.sub(r"[^\w\-]", "", first)[:16] or "Аноним"
+
+
+def _build_review(questions_data, answers):
+    """Только вопросы с ошибкой. Верный ответ отдаём лишь по ним."""
+    mistakes = []
+    for text, q in questions_data.items():
+        correct = q.get("correct_answer") or q.get("correct_answers")
+        if text in answers and _answer_ok(answers[text], correct):
+            continue
+        mistakes.append({
+            "q": text,
+            "given": _as_list(answers.get(text)),
+            "correct": _as_list(correct),
+        })
+    return mistakes
+
+
+def _board_window(n, me_idx):
+    """Какие места показать: топ-3 + сосед сверху, вы, сосед снизу."""
+    if n <= 7:
+        return list(range(n))
+    keep = {0, 1, 2}
+    if me_idx is None:
+        keep |= {3, 4}
+    else:
+        keep |= {me_idx - 1, me_idx, me_idx + 1}
+        if me_idx <= 2:
+            keep.add(3)
+    return sorted(i for i in keep if 0 <= i < n)
+
+
+def _build_board(survey, me):
+    """Упрощённая турнирная таблица. Считается по тому же правилу, что и таблица автора
+    (COUNTED_ATTEMPT, один ученик - одна строка); подозрительные прохождения не ранжируются."""
+    attempts = list(
+        survey.attempts.only(
+            "id", "student_name", "score", "total_questions",
+            "created_at", "duration_seconds", "is_suspicious",
+        ).order_by("created_at")
+    )
+    groups = {}
+    for a in attempts:
+        groups.setdefault(_student_key(a.student_name), []).append(a)
+
+    counted = [_pick_counted(items) for items in groups.values()]
+    ranked = sorted(
+        (c for c in counted if c.total_questions and not c.is_suspicious),
+        key=_rank_key,
+    )
+
+    my_key = _student_key(me.student_name)
+    my_idx = next((i for i, c in enumerate(ranked) if _student_key(c.student_name) == my_key), None)
+    my_counted = _pick_counted(groups[my_key]) if my_key in groups else me
+
+    rows = []
+    for i in _board_window(len(ranked), my_idx):
+        c = ranked[i]
+        rows.append({
+            "place": i + 1,
+            "name": _public_name(c.student_name),
+            "score": c.score,
+            "total": c.total_questions,
+            "time": _fmt_duration(c.duration_seconds),
+            "me": i == my_idx,
+        })
+
+    return {
+        "total": len(ranked),
+        "my_place": None if my_idx is None else my_idx + 1,
+        "state": "ranked" if my_idx is not None else "review",
+        "best_kept": my_idx is not None and my_counted.id != me.id,
+        "rows": rows,
+    }
+
+
 @csrf_exempt
 def submit_answers(request, survey_id):
     """
@@ -2476,7 +2575,7 @@ def submit_answers(request, survey_id):
     if request.method == "POST":
         survey = get_object_or_404(Survey, survey_id=survey_id)
         data = json.loads(request.body)
-        
+
         key, state = _load_attempt(data.get("token"), survey)
         if survey.is_closed and not (state and state["started"] <= survey.available_until.timestamp()):
             return JsonResponse({"success": False, "error": "Срок сдачи истёк"}, status=403)
@@ -2484,21 +2583,22 @@ def submit_answers(request, survey_id):
         student_name = data.get("student_name", "Аноним").strip()
         answers = data.get("answers", {})
 
+        if not isinstance(answers, dict):
+            answers = {}
+
         questions_data = {q["question"]: q for q in survey.get_questions()}
-        score = 0
         total_questions = len(questions_data)
 
-        for q_text, student_answer in answers.items():
-            if (
-                q_text in questions_data
-                and student_answer == questions_data[q_text]["correct_answer"]
-            ):
-                score += 1
-        
+        score = sum(
+            1 for q_text, q in questions_data.items()
+            if q_text in answers
+            and _answer_ok(answers[q_text], q.get("correct_answer") or q.get("correct_answers"))
+        )
+
         now_moscow = timezone.now().astimezone(MOSCOW_TZ)
-    
+
         integrity = _build_integrity(survey, state, data.get("client") or {}, total_questions)
-        TestAttempt.objects.create(
+        attempt = TestAttempt.objects.create(
             survey=survey,
             student_name=student_name if student_name else "Аноним",
             answers_json=json.dumps(answers, ensure_ascii=False),
@@ -2510,10 +2610,19 @@ def submit_answers(request, survey_id):
         if key:
             cache.delete(key)
         request.session.pop(f"att_{survey.survey_id}", None)
-        
+
         tracer_l.info(f"STUDENT {student_name} {get_client_ip(request)} TAKE TEST {survey.title}")
 
-        return JsonResponse({"success": True, "score": score, "total": total_questions})
+        payload = {"success": True, "score": score, "total": total_questions}
+
+        if survey.show_answers:
+            try:
+                payload["review"] = _build_review(questions_data, answers)
+                payload["board"] = _build_board(survey, attempt)
+            except Exception:
+                tracer_l.exception(f"BOARD failed survey={survey.survey_id}")
+
+        return JsonResponse(payload)
 
     return JsonResponse({"error": "Invalid request"}, status=400)
 
@@ -2743,8 +2852,8 @@ def main_test_card(request, survey_id):
 
     # Не индексируем гостей
     is_guest_author = (
-        not author_obj 
-        or raw_username.startswith("guest_") 
+        not author_obj
+        or raw_username.startswith("guest_")
         or raw_username == "Аноним"
     )
 
@@ -2812,14 +2921,14 @@ def redirect_to_dashboard(request, survey_id):
 
 
 COUNTED_ATTEMPT = "best"
- 
- 
+
+
 def _student_key(name):
     """Ключ ученика: без регистра, лишних пробелов, ё == е."""
     clean = " ".join((name or "").replace("ё", "е").replace("Ё", "Е").split())
     return clean.casefold() or "аноним"
- 
- 
+
+
 def _answer_ok(given, correct):
     """Сравнение без учёта порядка для мультивыбора."""
     if isinstance(correct, list):
@@ -2829,8 +2938,8 @@ def _answer_ok(given, correct):
     if isinstance(given, list):
         return len(given) == 1 and given[0] == correct
     return given == correct
- 
- 
+
+
 def _fmt_duration(sec):
     if sec is None:
         return "—"
@@ -2838,12 +2947,12 @@ def _fmt_duration(sec):
     h, rem = divmod(sec, 3600)
     m, s = divmod(rem, 60)
     return f"{h}:{m:02d}:{s:02d}" if h else f"{m}:{s:02d}"
- 
- 
+
+
 def _pct(a):
     return round(a.score * 100 / a.total_questions) if a.total_questions else 0
- 
- 
+
+
 def _pick_counted(items):
     """items отсортированы по created_at по возрастанию."""
     if COUNTED_ATTEMPT == "first":
@@ -2852,8 +2961,8 @@ def _pick_counted(items):
         return items[-1]
     # лучшая; при равенстве — более ранняя
     return max(items, key=lambda a: (_pct(a), -a.created_at.timestamp()))
- 
- 
+
+
 def _group_attempts(survey):
     """-> (groups: {key: [attempts asc]}, counted: [attempt], all_attempts)"""
     all_attempts = list(survey.attempts.all().order_by("created_at"))
@@ -2862,13 +2971,13 @@ def _group_attempts(survey):
         groups.setdefault(_student_key(a.student_name), []).append(a)
     counted = [_pick_counted(items) for items in groups.values()]
     return groups, counted, all_attempts
- 
- 
+
+
 def _json_for_script(obj):
     """JSON внутрь <script type=application/json> без риска закрыть тег."""
     return mark_safe(json.dumps(obj, ensure_ascii=False, default=str).replace("</", "<\\/"))
- 
- 
+
+
 def _integrity_log(a):
     log = getattr(a, "integrity_log", None) or []
     if isinstance(log, str):
@@ -2877,20 +2986,20 @@ def _integrity_log(a):
         except (json.JSONDecodeError, TypeError):
             log = []
     return log if isinstance(log, list) else []
- 
- 
+
+
 @login_required
 def view_results(request, survey_id):
     survey = get_object_or_404(Survey, survey_id=survey_id)
-    
+
     cur_staff_id = get_staff_id(request)
     if survey.id_staff != get_staff_id(request) and not request.user.is_superuser:
         return render(request, "404.html", status=404)
- 
+
     groups, counted, all_attempts = _group_attempts(survey)
     attempts_total = len(all_attempts)
     students_total = len(counted)
- 
+
     try:
         questions_map = {
             q["question"]: (q.get("correct_answer") or q.get("correct_answers"))
@@ -2899,9 +3008,9 @@ def view_results(request, survey_id):
         }
     except (json.JSONDecodeError, TypeError):
         questions_map = {}
- 
+
     answers_cache = {}
- 
+
     def answers_of(a):
         if a.id in answers_cache:
             return answers_cache[a.id]
@@ -2921,7 +3030,7 @@ def view_results(request, survey_id):
                 })
         answers_cache[a.id] = out
         return out
- 
+
     # ---------- KPI по зачётным попыткам (1 ученик = 1 результат) ----------
     average_score_percent = 0
     median_score = 0
@@ -2930,7 +3039,7 @@ def view_results(request, survey_id):
     question_insights = {"hardest": None, "easiest": None}
     leaderboard_attempts = []
     questions_breakdown = []
- 
+
     if students_total:
         percents = [_pct(a) for a in counted]
         average_score_percent = sum(percents) / students_total
@@ -2940,7 +3049,7 @@ def view_results(request, survey_id):
             / students_total * 100
         )
         success_rate = round(sum(1 for p in percents if p >= 50) / students_total * 100)
- 
+
         questions_stats = {}
         for a in counted:
             for ans in answers_of(a):
@@ -2950,7 +3059,7 @@ def view_results(request, survey_id):
                 st["total"] += 1
                 if ans["is_correct"]:
                     st["correct"] += 1
- 
+
         if questions_stats:
             question_insights = get_question_insights(questions_stats)
             for q_text, st in sorted(questions_stats.items(), key=lambda i: i[1]["correct"] / (i[1]["total"] or 1)):
@@ -2963,16 +3072,16 @@ def view_results(request, survey_id):
                     "stats": f'{st["correct"]}/{st["total"]}',
                     "color": "#EF4444" if rate < 33 else "#F59E0B" if rate < 66 else "#10B981",
                 })
- 
+
         leaderboard_attempts = sorted(counted, key=lambda a: (-a.score, a.created_at))[:5]
- 
+
     # ---------- Контроль прохождения ----------
     tracked = [a.duration_seconds for a in all_attempts if getattr(a, "duration_seconds", None) is not None]
     avg_duration_display = _fmt_duration(sum(tracked) / len(tracked)) if tracked else "—"
     suspicious_students = sum(
         1 for items in groups.values() if any(getattr(a, "is_suspicious", False) for a in items)
     )
- 
+
     # ---------- Журнал: одна строка на ученика ----------
     rows = []
     for items in sorted(groups.values(), key=lambda it: it[-1].created_at, reverse=True):
@@ -3012,17 +3121,17 @@ def view_results(request, survey_id):
             "answers_json": _json_for_script(answers_of(c)),
             "history_json": _json_for_script(history),
         })
- 
+
     author_username = AuthUser.objects.get(id_staff=survey.id_staff).username
- 
+
     conversion_rate = (students_total / survey.view_count) * 100 if survey.view_count > 0 else 0
- 
+
     success_rate_color = "#EF4444"
     if success_rate >= 75:
         success_rate_color = "#10B981"
     elif success_rate >= 40:
         success_rate_color = "#F59E0B"
- 
+
     context = {
         "survey": survey,
         "attempts": rows,
@@ -3080,9 +3189,9 @@ def export_results_to_excel(request, survey_id):
     attempts_qs = survey.attempts.all().order_by("-created_at")
 
     workbook = Workbook()
-    sheet = workbook.active
+    sheet = workbook.active or workbook.create_sheet()
 
-    # 1. СТРОГИЙ ЛИМИТ НАЗВАНИЯ ВКТАДКИ (макс 31 символ в Excel!)
+    # 1. СТРОГИЙ ЛИМИТ НАЗВАНИЯ в Excel
     raw_title = safe_clean(survey.title)
     sanitized_title = re.sub(r"[:\\/?*\[\]]", "", raw_title)
     # 10 символов на "Результаты" + 21 символ на тайтл = 31 символ
@@ -3104,7 +3213,7 @@ def export_results_to_excel(request, survey_id):
     # 2. ЗАПОЛНЕНИЕ ДАННЫМИ
     for attempt in attempts_qs:
         student_answers = attempt.get_answers()
-        
+
         # Считаем чистый float для процента (например 0.25 для 25%)
         percent_float = (
             (attempt.score / attempt.total_questions)
@@ -3253,7 +3362,7 @@ def quick_register_api(request):
     email = request.POST.get("email", "").strip().lower()
     password = request.POST.get("password1", "")
     terms_accepted = request.POST.get("terms") or request.POST.get("terms_accepted")
-    
+
     # Анти-фрод
     client_ip = get_client_ip(request)
     cache_key = f"reg_ip_limit_{client_ip}"
@@ -3283,7 +3392,7 @@ def quick_register_api(request):
                 # Конвертируем временного юзера в постоянного
                 user = temporary_user
                 base_username = email.split("@")[0]
-                
+
                 # Гарантируем уникальность username
                 candidate_username = base_username
                 counter = 1
@@ -3339,7 +3448,7 @@ def quick_register_api(request):
 
             if demo_survey_id:
                 Survey.objects.filter(survey_id=demo_survey_id).update(id_staff=user.id_staff)
-            
+
             request.session.pop('guest_staff_id', None)
             request.session.pop('demo_test_created', None)
             request.session.modified = True
@@ -3363,7 +3472,7 @@ def quick_register_api(request):
 def register_view(request):
     if request.user.is_authenticated:
         return redirect("create")
-    
+
     # Анти-фрод
     client_ip = get_client_ip(request)
     cache_key = f"reg_ip_limit_{client_ip}"
@@ -3504,9 +3613,9 @@ def login_view(request):
 
     context["next_url"] = request.GET.get("next", "/create")
     context["debug"] = DEBUG
-    
+
     log_traffic(request, "Логин")
-    
+
     return render(request, "login.html", context)
 
 
@@ -3633,7 +3742,7 @@ def profile_view(request, username):
                 .replace(",", ""),
             }
         )
-    
+
     base_qs = Survey.objects.filter(id_staff=staff_id, is_visible=False)
     total_stats = base_qs.aggregate(
         total_count=Count("id"),
@@ -3884,7 +3993,7 @@ def user_profile_api(request):
     days_until_end = (end_date - timezone.now().date()).days
 
     percent_used = (used_today / tests_limit * 100) if tests_limit > 0 else 0
-    
+
     base_qs = Survey.objects.filter(id_staff=staff_id, is_visible=False)
     total_stats = base_qs.aggregate(
         total_count=Count("id"),
@@ -4550,14 +4659,14 @@ def api_key_test_api(request, pk):
 
     model = obj.model_name or "gpt-4o-mini"
     base_url = obj.base_url or None
-    
+
     proxy_url = getattr(settings, 'OPENAI_PROXY_URL', None) or os.getenv("OPENAI_PROXY_URL")
-    
+
     is_local = base_url and ("localhost" in base_url or "127.0.0.1" in base_url)
     use_proxy = proxy_url if (proxy_url and not is_local) else None
 
     started = time.perf_counter()
-    
+
     http_client = httpx.Client(proxy=use_proxy, timeout=20.0) if use_proxy else None
 
     try:
@@ -6854,7 +6963,7 @@ def admin_stats(request):
         "end_date": end_date.strftime("%Y-%m-%d"),
         "range": range_param,
         "date_range_label": f"{start_date.strftime('%d.%m.%Y')} — {end_date.strftime('%d.%m.%Y')}",
-        
+
         "is_production": False if DEBUG else True,
         "is_production_text": "Local" if DEBUG else "Production",
 
@@ -7279,7 +7388,7 @@ class PaymentInitiateView(View):
         response_data = response.json()
 
         # if response_data.get('Success'):
-            
+
         if 'премиум' in description.lower():
             plan_name_for_db = 'Премиум'
         elif 'стандарт' in description.lower():
@@ -8173,13 +8282,13 @@ SHORT_TITLES = {
     "public-offer": "Публичная оферта",
     "privacy-policy": "Политика конфиденциальности",
 }
- 
+
 MONTHS_RU = [
     "января", "февраля", "марта", "апреля", "мая", "июня",
     "июля", "августа", "сентября", "октября", "ноября", "декабря",
 ]
- 
- 
+
+
 def _make_md():
     return markdown.Markdown(
         extensions=["meta", "extra", "sane_lists", "smarty", "toc"],
@@ -8199,30 +8308,30 @@ def _make_md():
         },
         output_format="html",
     )
- 
- 
+
+
 def _ru_date(dt):
     return f"{dt.day} {MONTHS_RU[dt.month - 1]} {dt.year}"
- 
- 
+
+
 def _plain(text):
     return html.unescape(TAG_RE.sub("", text)).strip()
- 
- 
+
+
 @lru_cache(maxsize=64)
 def _render_doc(path, mtime):
     """Кэш по (путь, mtime): правишь .md на сервере — страница обновляется сама."""
     with open(path, "r", encoding="utf-8") as f:
         source = f.read()
- 
+
     md = _make_md()
     body = md.convert(source)
     meta = {k: " ".join(v) for k, v in getattr(md, "Meta", {}).items()}
     tokens = md.toc_tokens
- 
+
     slug = os.path.splitext(os.path.basename(path))[0]
     title = meta.get("title")
- 
+
     if tokens and tokens[0]["level"] == 1:
         title = title or html.unescape(tokens[0]["name"])
         sections = tokens[0]["children"] + tokens[1:]
@@ -8230,12 +8339,12 @@ def _render_doc(path, mtime):
     else:
         sections = tokens
     title = title or slug.replace("-", " ").capitalize()
- 
+
     def _split_num(name):
         name = html.unescape(name)
         m = NUM_RE.match(name)
         return (m.group(1), name[m.end():]) if m else ("", name)
- 
+
     toc = []
     for t in sections:
         num, name = _split_num(t["name"])
@@ -8248,17 +8357,17 @@ def _render_doc(path, mtime):
                 for c in t["children"]
             ],
         })
- 
+
     body = HEAD_NUM_RE.sub(r'\1<span class="n">\2</span>', body)
     body = CLAUSE_RE.sub(r'<p class="cl"><span class="n">\1</span>', body)
     body = TABLE_RE.sub(r'<div class="doc-table">\1</div>', body)
- 
+
     first_p = FIRST_P_RE.search(body)
     description = _plain(first_p.group(1))[:160] if first_p else title
- 
+
     words = len(re.findall(r"\w+", _plain(body)))
     updated_dt = datetime.fromtimestamp(mtime)
- 
+
     return {
         "slug": slug,
         "title": title,
@@ -8270,12 +8379,12 @@ def _render_doc(path, mtime):
         "updated_iso": updated_dt.date().isoformat(),
         "minutes": max(1, round(words / 180)),
     }
- 
- 
+
+
 def _load_doc(path):
     return _render_doc(path, os.path.getmtime(path))
- 
- 
+
+
 def _list_docs():
     items = []
     for name in sorted(os.listdir(DOCS_DIR)):
@@ -8283,21 +8392,21 @@ def _list_docs():
             doc = _load_doc(os.path.join(DOCS_DIR, name))
             items.append({"slug": doc["slug"], "title": doc["short"]})
     return items
- 
- 
+
+
 @check_legal_process
 def document_view(request, slug):
     if not SLUG_RE.fullmatch(slug):
         return render(request, "404.html", status=404)
- 
+
     file_path = os.path.join(DOCS_DIR, f"{slug}.md")
     tracer_l.debug(f"{get_client_ip(request)} file_path: {file_path}")
- 
+
     if not os.path.isfile(file_path):
         return render(request, "404.html", status=404)
- 
+
     doc = _load_doc(file_path)
- 
+
     context = {
         "title": doc["title"],
         "doc": doc,
@@ -8306,9 +8415,9 @@ def document_view(request, slug):
         "year": get_year_now(),
     }
     title = doc["title"]
-    
+
     log_traffic(request, f"Дока | {title}")
-    
+
     return render(request, "document.html", context)
 
 
@@ -8433,7 +8542,7 @@ def send_password_reset_email_task(self, email: str, link: str):
     """Фоновая асинхронная отправка письма сброса пароля без блокировки HTTP."""
     try:
         html_message = render_to_string(
-            "confirmed_data/password_reset_email.html", 
+            "confirmed_data/password_reset_email.html",
             {"link": link}
         )
         plain_message = f"Для сброса пароля перейдите по ссылке:\n{link}\n\nЕсли вы не запрашивали сброс, проигнорируйте это письмо."
@@ -8690,7 +8799,7 @@ def get_user_details_api(request, user_id):
     if sub:
         sub_start_local = sub.start_date.astimezone(MOSCOW_TZ) if sub.start_date else None
         sub_end_local = sub.end_date.astimezone(MOSCOW_TZ) if sub.end_date else None
-        
+
         days_left = (sub_end_local.date() - today).days if sub_end_local else None
         subscription_data = {
             "plan_raw": sub.plan_name,
@@ -9203,11 +9312,11 @@ def impersonate_user_view(request, email):
         return HttpResponseForbidden("LAVE NIMA IDITE NAHUI")
 
     target_user = get_object_or_404(AuthUser, email=email)
-    
+
     login(request, target_user)
-    
+
     tracer_l.warning(f"ADMIN IMPERSONATION: {request.user.username} logged in as {target_user.email}")
-    
+
     return redirect('/create')
 
 
@@ -9232,7 +9341,7 @@ def unsubscribe_view(request, signed_user_id):
     Обработка отписки от рассылок.
     Поддерживает отмену отписки (resubscribe) и безопасный парсинг подписи.
     """
-    
+
     try:
         user_id = signer.unsign(signed_user_id)
         user = AuthUser.objects.filter(pk=user_id).first()
@@ -9240,8 +9349,8 @@ def unsubscribe_view(request, signed_user_id):
             raise AuthUser.DoesNotExist
     except (BadSignature, SignatureExpired, AuthUser.DoesNotExist, ValueError):
         return render(
-            request, 
-            "unsubscribe_status.html", 
+            request,
+            "unsubscribe_status.html",
             {"status": "error", "message": "Ссылка для отписки недействительна или устарела."},
             status=400
         )
@@ -9250,8 +9359,8 @@ def unsubscribe_view(request, signed_user_id):
         user.is_subscribed = True
         user.save(update_fields=["is_subscribed"])
         return render(
-            request, 
-            "unsubscribe_status.html", 
+            request,
+            "unsubscribe_status.html",
             {"status": "resubscribed", "user": user, "signed_user_id": signed_user_id}
         )
 
@@ -9259,7 +9368,7 @@ def unsubscribe_view(request, signed_user_id):
     user.save(update_fields=["is_subscribed"])
 
     return render(
-        request, 
+        request,
         "unsubscribe_status.html",
         {"status": "unsubscribed", "user": user, "signed_user_id": signed_user_id}
     )
@@ -9401,7 +9510,7 @@ def api_admin_search_surveys(request):
     date_from = request.GET.get("date_from", "").strip()
     date_to = request.GET.get("date_to", "").strip()
     order_by = request.GET.get("order_by", "-created_at").strip()
-    
+
     try:
         page = int(request.GET.get("page", 1))
         if page < 1:
@@ -9483,7 +9592,7 @@ def api_admin_search_surveys(request):
     results = []
     for s in surveys_slice:
         author_name = users_map.get(s.id_staff, "Гость")
-        
+
         moscow_dt = s.created_at.astimezone(MOSCOW_TZ) if timezone.is_aware(s.created_at) else timezone.make_aware(s.created_at).astimezone(MOSCOW_TZ)
 
         results.append({
@@ -9548,11 +9657,11 @@ def api_admin_traffic_live(request):
     """
     now = timezone.now()
     now_moscow = now.astimezone(MOSCOW_TZ)
-    
+
     # Границы времени
     one_min_ago = now - timedelta(seconds=60)
     five_min_ago = now - timedelta(minutes=5)
-    
+
     # Текущие сутки (с 00:00 МСК до текущей секунды)
     today_start = now_moscow.replace(hour=0, minute=0, second=0, microsecond=0)
     elapsed_today = now - today_start
@@ -9646,7 +9755,7 @@ def api_admin_traffic_live(request):
         ip_parts = log.ip.split(".")
         masked_ip = f"{ip_parts[0]}.{ip_parts[1]}.{ip_parts[2]}.{ip_parts[3]}" if len(ip_parts) == 4 else log.ip[:10] + "..."
         ua_lower = log.user_agent.lower()
-        
+
         ua_short = "Desktop"
         if "iphone" in ua_lower or "ipad" in ua_lower: ua_short = "iOS Safari"
         elif "android" in ua_lower: ua_short = "Android Web"
@@ -9754,7 +9863,7 @@ def transcribe_audio_view(request):
             language="ru",
             response_format="text"
         )
-        
+
         result_text = transcription.strip() if isinstance(transcription, str) else transcription.text.strip()
         elapsed_sec = round(time.time() - start_time, 2)
 
@@ -9809,7 +9918,7 @@ def _detect_subject_tag(title):
     Если нет — отдаем аккуратный нейтральный бейдж.
     """
     t_lower = title.lower()
-    
+
     # Быстрый маппинг ключевых слов на лаконичный бейдж
     keywords = [
         ("биолог", "Биология"),
@@ -9829,7 +9938,7 @@ def _detect_subject_tag(title):
         ("егэ", "ЕГЭ"),
         ("огэ", "ОГЭ")
     ]
-    
+
     for kw, label in keywords:
         if kw in t_lower:
             # Проверяем, указан ли класс (например, "8 класс", "10 кл")
@@ -9837,7 +9946,7 @@ def _detect_subject_tag(title):
             if class_match:
                 return f"{label} • {class_match.group(1)} класс"
             return label
-            
+
     return "Проверочный тест"
 
 
@@ -9849,7 +9958,7 @@ def api_public_recent_surveys(request):
     """
     cache_key = "landing_recent_surveys_feed_v1"
     cached_data = cache.get(cache_key)
-    
+
     if cached_data is not None:
         return JsonResponse(cached_data)
 
@@ -9865,7 +9974,7 @@ def api_public_recent_surveys(request):
     feed = []
     for s in surveys:
         created_dt = s.created_at if timezone.is_aware(s.created_at) else timezone.make_aware(s.created_at)
-        
+
         raw_title = (s.title or "").strip()
         cleaned_title = raw_title[:68] + "..." if len(raw_title) > 68 else raw_title
 
