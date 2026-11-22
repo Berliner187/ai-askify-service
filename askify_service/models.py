@@ -91,7 +91,7 @@ class Survey(models.Model):
         default=dict, blank=True,
         help_text="Параметры генерации (сложность, типы вопросов и т.д.)"
     )
-    
+
     time_limit_minutes = models.PositiveSmallIntegerField(null=True, blank=True)
     available_until = models.DateTimeField(null=True, blank=True, db_index=True)
     max_tab_switches = models.PositiveSmallIntegerField(default=2)
@@ -178,7 +178,7 @@ class Survey(models.Model):
                 "type": q_type,
             })
         return normalized
-    
+
     class Meta:
         indexes = [
             models.Index(fields=["id_staff", "created_at"], name="survey_staff_created"),
@@ -978,7 +978,7 @@ class TestAttempt(models.Model):
     total_questions = models.PositiveIntegerField()
 
     created_at = models.DateTimeField(auto_now_add=True)
-    
+
     started_at = models.DateTimeField(null=True, blank=True)
     duration_seconds = models.PositiveIntegerField(null=True, blank=True)
     tab_switches = models.PositiveSmallIntegerField(default=0)
@@ -1000,7 +1000,7 @@ class TestAttempt(models.Model):
             return "—"
         m, s = divmod(self.duration_seconds, 60)
         return f"{m}:{s:02d}"
-    
+
     class Meta:
         indexes = [
             models.Index(fields=["created_at"], name="attempt_created"),
@@ -1207,3 +1207,38 @@ class DbSnapshot(models.Model):
         if old_ids:
             cls.objects.filter(id__in=old_ids).delete()
         return obj
+
+
+class AdEvent(models.Model):
+    """Одна строка = одна рекламная попытка при генерации теста (Gradius). Источник статистики для админ-дашборда."""
+
+    STATUS_CHOICES = [
+        ("queued", "В очереди"),
+        ("found", "Реклама получена"),
+        ("empty", "Рекламы нет"),
+        ("error", "Ошибка"),
+    ]
+
+    survey_id = models.CharField(max_length=64, unique=True)          # chat_id в Gradius = id теста
+    created_at = models.DateTimeField(default=timezone.now, db_index=True)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="queued")
+    error_code = models.CharField(max_length=40, blank=True, default="")
+    source = models.CharField(max_length=8, default="text")           # text | file
+    is_guest = models.BooleanField(default=False)
+    latency_ms = models.PositiveIntegerField(null=True, blank=True)
+    # Цены из ответа Gradius (price.show_price / price.click_price). Валюта в их документации не указана.
+    show_price = models.DecimalField(max_digits=12, decimal_places=6, default=0)
+    click_price = models.DecimalField(max_digits=12, decimal_places=6, default=0)
+    snippet = models.CharField(max_length=160, blank=True, default="")
+    # Что реально произошло на странице теста (события приходят из браузера посетителя)
+    shown_count = models.PositiveIntegerField(default=0)
+    click_count = models.PositiveIntegerField(default=0)
+    first_shown_at = models.DateTimeField(null=True, blank=True)
+    last_click_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "ad_events"
+        indexes = [models.Index(fields=["created_at", "status"], name="adev_created_status")]
+
+    def __str__(self):
+        return f"AdEvent {self.survey_id} {self.status}"

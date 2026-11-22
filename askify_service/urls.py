@@ -8,7 +8,10 @@ from .admin_dashboard import (
     admin_dashboard_overview_api,
     admin_dashboard_ai_api,
     admin_dashboard_payments_api,
+    admin_dashboard_ads_api
 )
+
+from .ads import ad_track_event
 
 from .admin_surveys_views import (
     admin_surveys_ops_view,
@@ -183,6 +186,8 @@ urlpatterns = [
     path('api/admin/dashboard/overview/', admin_dashboard_overview_api, name='api_admin_dashboard_overview'),
     path('api/admin/dashboard/ai/', admin_dashboard_ai_api, name='api_admin_dashboard_ai'),
     path('api/admin/dashboard/payments/', admin_dashboard_payments_api, name='api_admin_dashboard_payments'),
+    path('api/admin/dashboard/ads/', admin_dashboard_ads_api, name='api_admin_dashboard_ads'),
+    path('api/ad/v1/<str:survey_id>/event/', ad_track_event, name='ad_track_event'),
     path('unsubscribe/<str:signed_user_id>/', unsubscribe_view, name='unsubscribe'),
     path('email-preview/', preview_release_email, name='preview_release_email'),
     path('api/unisender/webhook/', unisender_webhook_view, name='unisender_webhook'),

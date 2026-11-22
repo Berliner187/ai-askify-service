@@ -84,7 +84,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&family=Wix+Madefor+Display:wght@600;700;800&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+
     {% include 'components/shell_assets.html' %}
 
     <style>
@@ -912,7 +912,7 @@
             .insertAdjacentHTML('afterbegin',
             '<a href="{% url "preview_test_result" survey_id %}" class="ls-isl-btn"><svg class="ls-icon"><use href="#ls-i-list"/></svg><span>Аналитика</span></a>');
         </script>
-        
+
         <!-- BENTO GRID -->
         <main class="max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 mt-4 sm:mt-6 flex-grow">
 
@@ -1047,6 +1047,8 @@
                                 {% endfor %}
                             </div>
                         </article>
+
+                        <div id="ad-slot" hidden class="my-4"></div>
 
                         {% if forloop.counter == 2 or forloop.last and forloop.counter == 1 %}
                             {% if is_guest_owner %}
@@ -1320,8 +1322,8 @@
                                    class="mt-0.5 rounded border-white/20 bg-[#18171A] text-indigo-600 focus:ring-0 w-4 h-4 flex-shrink-0">
 
                             <span class="text-xs text-gray-400">
-                                Я принимаю условия <a href="{% url 'document_view' 'public-offer' %}" target="_blank" class="text-indigo-400 underline">Лицензионного договора</a>, 
-                                ознакомлен(-а) с <a href="{% url 'document_view' 'privacy-policy' %}" target="_blank" class="text-indigo-400 underline">Политикой конфиденциальности</a> 
+                                Я принимаю условия <a href="{% url 'document_view' 'public-offer' %}" target="_blank" class="text-indigo-400 underline">Лицензионного договора</a>,
+                                ознакомлен(-а) с <a href="{% url 'document_view' 'privacy-policy' %}" target="_blank" class="text-indigo-400 underline">Политикой конфиденциальности</a>
                                 и даю <a href="{% url 'document_view' 'consent' %}" target="_blank" class="text-indigo-400 underline">Согласие на обработку данных</a>.
                             </span>
                         </label>
@@ -1443,7 +1445,7 @@
     </div>
     {% endif %}
 
-    
+
     {{ questions|json_script:"questions-data" }}
 
     <!-- ============================================================== -->
@@ -2760,16 +2762,16 @@
             const totalEl = document.getElementById('qa-total-attempts');
             const rateEl = document.getElementById('qa-success-rate');
             if (!totalEl || !rateEl) return;
- 
+
             fetch(`/api/test-charts/${surveyId}/`)
                 .then(res => res.json())
                 .then(data => {
                     if (data.error) throw new Error(data.error);
                     const sum = (arr) => (arr || []).map(v => parseInt(v, 10) || 0).reduce((a, v) => a + v, 0);
- 
+
                     const total = sum(data.attempts_activity_chart && data.attempts_activity_chart.data);
                     totalEl.textContent = total;
- 
+
                     const scores = ((data.scores_distribution_chart && data.scores_distribution_chart.data) || []).map(v => parseInt(v, 10) || 0);
                     const records = scores.reduce((a, v) => a + v, 0);
                     if (records > 0 && scores.length >= 4) {
@@ -2785,5 +2787,60 @@
                 });
         });
     </script>
+
+    <!-- =====================================================================================
+      demo-view.html — ЗАМЕНИ целиком прежний <script> рекламы (тот, что опрашивает /api/ad/v1/<surveyId>/
+      и вешает Метрику ad_view / ad_click) на этот. Место то же: перед </body>, после основного скрипта.
+      Слот <div id="ad-slot" hidden class="my-4"></div> в разметке НЕ меняется.
+      Что нового: «показ» засчитывается, когда блок реально виден на экране (>= 50%), и уходит в статистику админки.
+    ====================================================================================== -->
+    {% if show_ads %}
+    <script>
+    (function () {
+        var slot = document.getElementById('ad-slot');
+        if (!slot || typeof surveyId === 'undefined' || !surveyId) return;
+        var base = '/api/ad/v1/' + encodeURIComponent(surveyId) + '/';
+        var delays = [1500, 2500, 3500, 5000, 8000], tries = 0, done = false;
+
+        function goal(name) { try { if (window.ym) ym(98823704, 'reachGoal', name); } catch (e) {} }
+        function track(type) {
+            try {
+                var body = JSON.stringify({ type: type });
+                if (navigator.sendBeacon) navigator.sendBeacon(base + 'event/', new Blob([body], { type: 'text/plain' }));
+                else fetch(base + 'event/', { method: 'POST', body: body, keepalive: true, headers: { 'Content-Type': 'text/plain' } });
+            } catch (e) {}
+        }
+        function onVisible(cb) {
+            if (!('IntersectionObserver' in window)) { cb(); return; }
+            var io = new IntersectionObserver(function (entries) {
+                if (entries.some(function (en) { return en.isIntersecting; })) { io.disconnect(); cb(); }
+            }, { threshold: 0.5 });
+            io.observe(slot);
+        }
+        function show(html) {
+            done = true;
+            slot.innerHTML = html;
+            slot.hidden = false;
+            onVisible(function () { goal('ad_view'); track('view'); });
+            slot.addEventListener('click', function (e) {
+                if (e.target.closest && e.target.closest('[data-ad-link]')) { goal('ad_click'); track('click'); }
+            });
+        }
+        function retry() { if (!done && tries < delays.length) setTimeout(poll, delays[tries++]); }
+        function poll() {
+            if (done) return;
+            fetch(base, { credentials: 'same-origin' })
+                .then(function (r) { return r.ok ? r.json() : null; })
+                .then(function (d) {
+                    if (!d) return retry();
+                    if (d.state === 'ready' && d.html) show(d.html);
+                    else if (d.state === 'pending') retry();
+                })
+                .catch(retry);
+        }
+        retry();
+    })();
+    </script>
+    {% endif %}
 </body>
 </html>

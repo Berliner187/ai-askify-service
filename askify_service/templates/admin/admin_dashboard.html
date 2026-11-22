@@ -6,7 +6,7 @@
     <meta name="robots" content="noindex, nofollow">
     <meta name="csrf-token" content="{{ csrf_token }}">
     <title>Ситуационный центр Летучки</title>
-    <link rel="shortcut icon" href="{% static 'img/logo.png' %}" type="image/png">
+    <link rel="shortcut icon" href="{% static 'img/apple-touch-icon.png' %}" type="image/png">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -140,6 +140,7 @@
             <a href="#sec-keys" data-nav><span data-icon="key" data-size="16"></span>API-ключи</a>
             <a href="#sec-payments" data-nav><span data-icon="card" data-size="16"></span>Платежи<span class="badge" id="nav-pending" title="Платежи в ожидании"></span></a>
             <a href="#sec-product" data-nav><span data-icon="users" data-size="16"></span>Аудитория</a>
+            <a href="#sec-ads" data-nav><span data-icon="megaphone" data-size="16"></span>Реклама</a>
             <p class="nav-label">Инструменты</p>
             <a href="{% url 'user_ops_center' %}"><span data-icon="users" data-size="16"></span>CRM</a>
             <a href="{% url 'admin_surveys_ops' %}"><span data-icon="file" data-size="16"></span>Тесты<span class="ext" data-icon="ext" data-size="13"></span></a>
@@ -372,7 +373,7 @@
                         </div>
                         <div id="act-hero" class="act-hero mt-4"></div>
                         <div id="act-legend" class="cmp-legend mt-4"></div>
-                        <div id="ch-activity" class="chart mt-2 flex-1 min-h-[230px]"></div>
+                        <div id="ch-activity" class="chart mt-2 h-[270px] flex-none"></div>
                         <div id="act-ins" class="act-ins mt-3"></div>
                         <div id="act-foot" class="aud-grid mt-2.5"></div>
                     </article>
@@ -388,7 +389,7 @@
                             <div class="card-title"><span class="ticon" data-icon="target" data-size="15"></span><div><h3>Результаты<span class="qm" data-tip="Распределение прохождений по проценту верных ответов. Оранжевые — до 50%, жёлтые — до 80%, зелёные — выше. Если всё сдвинуто влево, тесты слишком сложные.">?</span></h3><small>Доля верных ответов, %</small></div></div>
                         </div>
                         <div id="scores-hero" class="mt-4"></div>
-                        <div id="ch-scores" class="chart mt-3 flex-1 min-h-[200px]"></div>
+                        <div id="ch-scores" class="chart mt-3 h-[240px] flex-none"></div>
                         <div id="scores-bands" class="mt-3"></div>
                         <p id="scores-foot" class="lbl mt-3"></p>
                     </article>
@@ -410,6 +411,67 @@
                     </article>
                 </div>
             </section>
+
+                <!-- ============ Реклама ============ -->
+                <section id="sec-ads" class="sect" aria-labelledby="h-ads">
+                    <div class="sect-head">
+                        <div><h2 id="h-ads">Реклама</h2><p id="ads-sub">Gradius: объявления в тестах для тех, кто ни разу не платил.</p></div>
+                        <span id="ads-status" class="chip"></span>
+                    </div>
+
+                    <div id="ads-kpi" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3.5">
+                        <article class="card min-h-[250px] flex flex-col gap-4"><span class="skeleton h-8 w-40"></span><span class="skeleton h-8 w-32"></span><span class="skeleton h-12 w-full mt-auto"></span></article>
+                        <article class="card min-h-[250px] flex flex-col gap-4"><span class="skeleton h-8 w-40"></span><span class="skeleton h-8 w-32"></span><span class="skeleton h-12 w-full mt-auto"></span></article>
+                        <article class="card min-h-[250px] flex flex-col gap-4"><span class="skeleton h-8 w-40"></span><span class="skeleton h-8 w-32"></span><span class="skeleton h-12 w-full mt-auto"></span></article>
+                        <article class="card min-h-[250px] flex flex-col gap-4"><span class="skeleton h-8 w-40"></span><span class="skeleton h-8 w-32"></span><span class="skeleton h-12 w-full mt-auto"></span></article>
+                    </div>
+
+                    <div class="mt-3.5 grid grid-cols-1 xl:grid-cols-12 gap-3.5">
+                        <article class="card aud xl:col-span-8 flex flex-col" style="--g:#F5B740">
+                            <div class="card-head">
+                                <div class="card-title"><span class="ticon" data-icon="megaphone" data-size="15"></span><div><h3>Реклама по дням<span class="qm" data-tip="Столбцы — чем закончились рекламные запросы: реклама получена, рекламы нет, ошибка. Линия — оценка заработка по show_price.">?</span></h3><small id="ads-chart-sub">по дням</small></div></div>
+                            </div>
+                            <div id="ads-legend" class="cmp-legend mt-4"></div>
+                            <div id="ch-ads" class="chart mt-3 h-[270px] flex-none"></div>
+                        </article>
+                        <article class="card aud xl:col-span-4" style="--g:#34D399">
+                            <div class="card-head">
+                                <div class="card-title"><span class="ticon" data-icon="funnel" data-size="15"></span><div><h3>Путь рекламы<span class="qm" data-tip="Считаем тесты. Сколько тестов дошло до каждого шага. «Показана» и «Клик» приходят из браузера посетителя страницы теста.">?</span></h3><small>От генерации до клика</small></div></div>
+                            </div>
+                            <ol id="ads-funnel" class="funnel"></ol>
+                        </article>
+                    </div>
+
+                    <div class="mt-3.5 grid grid-cols-1 xl:grid-cols-12 gap-3.5">
+                        <article class="card aud xl:col-span-4" style="--g:#5E6CF8">
+                            <div class="card-head"><div class="card-title"><span class="ticon" data-icon="users" data-size="15"></span><div><h3>Кому показываем</h3><small>Гости и зарегистрированные</small></div></div></div>
+                            <div id="ads-audience" class="mt-4 flex flex-col gap-3"></div>
+                        </article>
+                        <article class="card aud xl:col-span-4" style="--g:#2DD4BF">
+                            <div class="card-head"><div class="card-title"><span class="ticon" data-icon="file" data-size="15"></span><div><h3>Откуда тест</h3><small>Текст или файл, скорость ответа</small></div></div></div>
+                            <div id="ads-sources" class="mt-4 flex flex-col gap-3"></div>
+                        </article>
+                        <article class="card aud xl:col-span-4" style="--g:#F97316">
+                            <div class="card-head"><div class="card-title"><span class="ticon" data-icon="coin" data-size="15"></span><div><h3>Итоги и прогноз</h3><small>Оценка, не выписка из кабинета</small></div></div></div>
+                            <div id="ads-totals" class="mt-4"></div>
+                        </article>
+                    </div>
+
+                    <div class="mt-3.5 grid grid-cols-1 xl:grid-cols-12 gap-3.5">
+                        <article class="card aud xl:col-span-7" style="--g:#38BDF8">
+                            <div class="card-head">
+                                <div class="card-title"><span class="ticon" data-icon="list" data-size="15"></span><div><h3>Последние рекламные попытки</h3><small>12 последних генераций с рекламным запросом</small></div></div>
+                            </div>
+                            <ul id="ads-feed" class="mt-3"></ul>
+                        </article>
+                        <article class="card aud xl:col-span-5" style="--g:#FB7185">
+                            <div class="card-head">
+                                <div class="card-title"><span class="ticon" data-icon="alert" data-size="15"></span><div><h3>Ошибки и сбои</h3><small>Почему реклама не пришла</small></div></div>
+                            </div>
+                            <div id="ads-errors" class="mt-3"></div>
+                        </article>
+                    </div>
+                </section>
         </div>
     </main>
 </div>
@@ -509,6 +571,7 @@
             overview: "{% url 'api_admin_dashboard_overview' %}",
             ai: "{% url 'api_admin_dashboard_ai' %}",
             payments: "{% url 'api_admin_dashboard_payments' %}",
+            ads: "{% url 'api_admin_dashboard_ads' %}",
             live: "{% url 'api_admin_live_stats' %}",
             paymentStatus: "{% url 'api_admin_set_payment_status' %}",
             grant: "{% url 'api_admin_grant_premium' %}",
@@ -1206,6 +1269,7 @@
         syncUrl();
         loadOverview();
         loadAI();
+        loadAds();
         if (state.pay.scope === 'period') { state.pay.page = 1; loadPayments(); }
     }
 
@@ -1220,7 +1284,7 @@
             navLinks.forEach((a) => a.setAttribute('aria-current', String(a.getAttribute('href') === id)));
         });
     }, { rootMargin: '-90px 0px -60% 0px', threshold: 0 });
-    ['#sec-overview', '#sec-money', '#sec-ai', '#sec-keys', '#sec-payments', '#sec-product'].forEach((s) => sectionObserver.observe($(s)));
+    ['#sec-overview', '#sec-money', '#sec-ai', '#sec-keys', '#sec-payments', '#sec-product', '#sec-ads'].forEach((s) => sectionObserver.observe($(s)));
     navLinks.forEach((a) => a.addEventListener('click', (e) => {
         e.preventDefault();
         $(a.getAttribute('href'))?.scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth', block: 'start' });
@@ -1378,6 +1442,18 @@
             if (k.score.value < 50) add('warn', 'target', `Средний балл всего ${NF0.format(k.score.value)}%`, 'Тесты получаются сложными или вопросы неудачные. Загляни в «Результаты».', '#sec-product');
             else if (k.score.value > 92) add('info', 'target', `Средний балл ${NF0.format(k.score.value)}%`, 'Почти все отвечают верно: возможно, тесты слишком лёгкие.', '#sec-product');
         }
+
+        // реклама
+        const ad = state.ads;
+        if (ad) {
+            const ak = ad.kpi;
+            if (ad.config.enabled && !ad.config.token_set) add('bad', 'megaphone', 'Реклама: не задан AD_API_TOKEN', 'Токен Gradius не найден в .env. Реклама не запрашивается, заработка нет.', '#sec-ads');
+            else if (ad.config.enabled && ak.requests.value >= 5 && ak.fill_rate != null && ak.found.value === 0) add('warn', 'megaphone', 'Реклама не приходит', `За период ${fmt.int(ak.requests.value)} запросов и ни одной рекламы. Проверь токен и логи воркера.`, '#sec-ads');
+            else if (ak.requests.value >= 5 && ak.error_rate != null && ak.error_rate >= 30) add('warn', 'megaphone', `Реклама: ${NF0.format(ak.error_rate)}% запросов с ошибкой`, 'Gradius часто не отвечает или не принимает ключ. Подробности в блоке «Ошибки и сбои».', '#sec-ads');
+            else if (ak.lost > 0) add('warn', 'megaphone', `Реклама: ${fmt.int(ak.lost)} ${plural(ak.lost, 'задача не дошла', 'задачи не дошли', 'задач не дошли')} до воркера`, 'Celery мог быть остановлен во время генерации. Проверь сервис очереди.', '#sec-ads');
+            else if (ak.found.value > 0) add('good', 'megaphone', `Реклама: ${fmt.rubExact(ak.earned.value)} за период`, `Получено ${fmt.int(ak.found.value)} реклам, fill rate ${fmt.pct(ak.fill_rate)}. Сумма оценочная.`, '#sec-ads');
+        }
+
         return out;
     }
 
@@ -1745,11 +1821,20 @@
             return sum(vals.slice(from, i + 1)) / (i - from + 1);
         }) : null;
         const maName = `Среднее за ${w} ${unitWord(p.bucket, w)}`;
-        $('#act-legend').innerHTML = legendItem(cur.color, cur.name, null)
-            + (useMA ? legendItem('rgba(255,255,255,.85)', maName, null, 'line') : '');
+        const sp = state.actMode === 'generations' ? k.generations.split : null;
+        const segs = sp ? [
+            { name: 'Платные', color: C.yellow, values: sp.paid, total: sp.totals.paid },
+            { name: 'Бесплатные', color: C.indigo, values: sp.free, total: sp.totals.free },
+            { name: 'Гости', color: C.sky, values: sp.guests, total: sp.totals.guests },
+        ] : [{ name: cur.name, values: vals, color: cur.color, total: cur.total }];
+        const segSum = sum(segs.map((x) => x.total)) || 1;
+        $('#act-legend').innerHTML = segs.map((x) => legendItem(x.color, x.name,
+                sp ? `${fmt.int(x.total)} · ${NF0.format(x.total / segSum * 100)}%` : null)).join('')
+            + (useMA ? legendItem('rgba(255,255,255,.85)', maName, null, 'line') : '')
+            + (sp ? qm('Платные: у автора есть хотя бы один завершённый платёж. Бесплатные: зарегистрированы, но ни разу не платили. Гости: временные аккаунты guest_ и удалённые.') : '');
         mountChart($('#ch-activity'), {
-            labels: p.labels, integer: true,
-            series: [{ name: cur.name, values: vals, color: cur.color }],
+            labels: p.labels, integer: true, totalLabel: 'Всего',
+            series: segs.map((x) => ({ name: x.name, values: x.values, color: x.color })),
             line: useMA ? { name: maName, values: ma, color: 'rgba(255,255,255,.85)', dashed: true, format: (v) => NF1.format(v) } : null,
             emptyText: 'За период активности нет', ariaLabel: cur.name,
         });
@@ -2941,6 +3026,217 @@
     /* =================================================================== *
      *  Запуск и автообновление (каждые 5 минут)
      * =================================================================== */
+
+     /* =================================================================== *
+      *  Реклама
+      * =================================================================== */
+      ICONS.megaphone = '<path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 6a9 9 0 0 1 0 12"/>';
+
+      const NF3 = new Intl.NumberFormat('ru-RU', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+      const fmtPrice = (v) => `${NF3.format(+v || 0)} ₽`;
+      const AD_ERR = {
+          no_token: 'Токен не задан в .env', http_401: 'Ключ не принят (401)', http_403: 'Доступ запрещён (403)',
+          bad_json: 'Ответ не JSON', lost: 'Задача не дошла до воркера', unknown: 'Причина не записана',
+      };
+      const adErrLabel = (c) => AD_ERR[c]
+          || (/Timeout/i.test(c) ? 'Таймаут запроса' : /Connection/i.test(c) ? 'Сеть недоступна'
+              : /^http_(\d+)$/.test(c) ? `Ответ HTTP ${c.slice(5)}` : c);
+      const AD_STATUS = {
+          found: ['Получена', C.green, 'ok'], empty: ['Нет рекламы', '#6b6b75', ''],
+          error: ['Ошибка', C.rose, 'bad'], queued: ['В очереди', C.yellow, 'warn'], lost: ['Не дошла до воркера', C.rose, 'bad'],
+      };
+
+      async function loadAds() {
+          try {
+              state.ads = await api(`${CFG.urls.ads}?${periodQuery()}`);
+              renderAds();
+              renderInsights();
+          } catch (e) {
+              $('#ads-kpi').innerHTML = `<div class="notice bad flex items-center justify-between gap-3 col-span-full">Данные по рекламе не загрузились: ${esc(e.message)}
+                  <button type="button" class="btn btn-ghost btn-sm" data-ads-retry>Повторить</button></div>`;
+          }
+      }
+      $('#sec-ads').addEventListener('click', (e) => { if (e.target.closest('[data-ads-retry]')) loadAds(); });
+
+      function adsCard(c, idx) {
+          return `<article class="card flex flex-col reveal" data-kpi="${c.id}" style="--g:${c.color};animation-delay:${idx * 60}ms">
+              <div class="card-head nowrap">
+                  <div class="card-title"><span class="ticon" style="color:${c.color}">${icon(c.icon, 15)}</span><h3>${esc(c.label)}</h3>${qm(c.hint)}</div>
+                  <span data-delta></span>
+              </div>
+              <div class="mt-4 flex items-end justify-between gap-3"><span class="big" data-value>—</span></div>
+              <p class="lbl mt-2 mb-0 truncate" data-sub></p>
+              <div class="chart h-14 mt-3" data-spark></div>
+              <div class="grid grid-cols-2 gap-2 mt-3" data-foot></div>
+          </article>`;
+      }
+
+      function renderAds() {
+          const a = state.ads;
+          if (!a) return;
+          const k = a.kpi, p = a.period, cfg = a.config, s = a.series;
+          const days = p.days || 1;
+
+          /* --- статус и подзаголовок --- */
+          const st = !cfg.enabled ? ['Выключена (ADS_ENABLED)', 'warn', 'bg-warn']
+              : !cfg.token_set ? ['Нет токена', 'bad', 'bg-bad'] : ['Включена', 'ok', 'bg-ok'];
+          $('#ads-status').className = `chip ${st[1]}`;
+          $('#ads-status').innerHTML = `<span class="dot ${st[2]}${st[1] === 'ok' ? ' live' : ''}"></span>${st[0]}`;
+          $('#ads-sub').textContent = `Gradius: объявления в тестах для тех, кто ни разу не платил. ${periodText(p)}. Сумма — оценка по show_price из ответов Gradius.`;
+          $('#ads-chart-sub').textContent = `${bucketWord(p.bucket)}, линия — оценка заработка`;
+
+          /* --- 4 карточки --- */
+          const forecast = k.earned.value / days * 30;
+          const share = k.generations.value ? k.requests.value / k.generations.value * 100 : null;
+          const cards = [
+              {
+                  id: 'earn', label: 'Заработано (оценка)', icon: 'coin', color: C.yellow, value: k.earned.value, format: fmt.rubExact,
+                  hint: 'Сумма show_price по всем полученным рекламам за период. Это оценка: в документации Gradius не сказано, когда показ засчитывается и в какой валюте цена. Сверяйте с их кабинетом.',
+                  delta: k.earned.delta, sub: `в прошлом периоде: ${fmt.rubExact(k.earned.prev)}`,
+                  series: s.earned, name: 'Заработок', sf: fmt.rubExact,
+                  foot: [['За всё время', fmt.rubExact(a.totals.earned)], ['Прогноз на 30 дн.', fmt.rub(forecast)]],
+              },
+              {
+                  id: 'found', label: 'Рекламы получено', icon: 'megaphone', color: C.green, value: k.found.value, format: fmt.int,
+                  hint: 'Сколько раз Gradius вернул объявление. Fill rate — доля ответов с рекламой среди всех ответов (без ошибок).',
+                  delta: k.found.delta, sub: `fill rate ${fmt.pct(k.fill_rate)}, ответов ${fmt.int(k.found.value + k.empty)}`,
+                  series: s.found, name: 'Получено', sf: fmt.int,
+                  foot: [['Рекламы нет', fmt.int(k.empty)], ['Цена показа', k.avg_price == null ? '—' : fmtPrice(k.avg_price)]],
+              },
+              {
+                  id: 'shown', label: 'Показано посетителям', icon: 'eye', color: C.sky, value: k.shown.value, format: fmt.int,
+                  hint: 'Сколько раз блок рекламы реально попал в экран посетителя страницы теста. Один посетитель считается раз в 30 минут. Данные приходят из браузера.',
+                  delta: k.shown.delta, sub: `тестов с рекламой на экране: ${fmt.int(k.shown_tests)} из ${fmt.int(k.found.value)}`,
+                  series: s.shown, name: 'Показы', sf: fmt.int,
+                  foot: [['Кликов', fmt.int(k.clicks.value)], ['CTR', fmt.pct(k.ctr)]],
+              },
+              {
+                  id: 'req', label: 'Запросов к Gradius', icon: 'activity', color: C.indigo, value: k.requests.value, format: fmt.int,
+                  hint: 'Каждая генерация теста бесплатным пользователем без оплат — один запрос. Ошибки включают сбои сети, неверный ключ и задачи, которые не дошли до воркера.',
+                  delta: k.requests.delta, sub: share == null ? 'генераций за период нет' : `${fmt.int(k.generations.value)} генераций, ${NF0.format(share)}% идут в рекламу`,
+                  series: s.requests, name: 'Запросы', sf: fmt.int,
+                  foot: [['Ошибки', `${fmt.int(k.failed)}${k.error_rate != null ? `, ${NF0.format(k.error_rate)}%` : ''}`], ['Ответ', fmt.ms(k.avg_ms)]],
+              },
+          ];
+          const box = $('#ads-kpi');
+          if (!box.querySelector('[data-kpi]')) box.innerHTML = cards.map(adsCard).join('');
+          cards.forEach((c) => {
+              const el = box.querySelector(`[data-kpi="${c.id}"]`);
+              countUp($('[data-value]', el), c.value, c.format);
+              $('[data-delta]', el).innerHTML = delta(c.delta);
+              $('[data-sub]', el).textContent = c.sub;
+              $('[data-foot]', el).innerHTML = c.foot.map(([l, v]) =>
+                  `<div class="tile py-2 px-3"><p class="lbl m-0 truncate">${esc(l)}</p><p class="val m-0 mt-0.5 truncate">${esc(v)}</p></div>`).join('');
+              mountChart($('[data-spark]', el), {
+                  mini: true, labels: p.labels, ariaLabel: c.label,
+                  series: [{ name: c.name, values: c.series, color: c.color, format: c.sf }], format: c.sf,
+              });
+          });
+
+          /* --- график по дням --- */
+          $('#ads-legend').innerHTML = legendItem(C.green, 'Получено', fmt.int(k.found.value))
+              + legendItem('#6b6b75', 'Рекламы нет', fmt.int(k.empty))
+              + legendItem(C.rose, 'Ошибка', fmt.int(k.failed))
+              + legendItem(C.yellow, 'Заработок', fmt.rubExact(k.earned.value), 'line');
+          mountChart($('#ch-ads'), {
+              labels: p.labels, integer: true, totalLabel: 'Запросов',
+              series: [
+                  { name: 'Получено', values: s.found, color: C.green },
+                  { name: 'Рекламы нет', values: s.empty, color: '#6b6b75' },
+                  { name: 'Ошибка', values: s.failed, color: C.rose },
+              ],
+              line: { name: 'Заработок', values: s.earned, color: C.yellow, axis: 'right', format: fmt.rubExact, axisFormat: (v) => `${fmt.compact(v)} ₽` },
+              emptyText: 'За период рекламных запросов не было', ariaLabel: 'Реклама по дням',
+          });
+
+          /* --- путь рекламы --- */
+          const steps = [
+              ['Генераций тестов', k.generations.value, C.indigo],
+              ['Запрос в Gradius', k.requests.value, C.sky],
+              ['Реклама получена', k.found.value, C.green],
+              ['Показана на странице', k.shown_tests, C.yellow],
+              ['Был клик', k.clicked_tests, C.orange],
+          ];
+          const base = steps[0][1] || 0;
+          $('#ads-funnel').innerHTML = steps.map(([label, v, color], i) => {
+              const prevV = i ? steps[i - 1][1] : null;
+              const conv = i && prevV ? v / prevV * 100 : null;
+              const w = base ? Math.min(100, v / base * 100) : 0;
+              const tone = conv == null ? '' : conv >= 60 ? 'ok' : conv >= 30 ? 'warn' : 'bad';
+              return `<li class="fn-step" style="--c:${color}" data-tip="${esc(i ? `${label}: ${fmt.int(v)} — ${conv == null ? 'нет базы' : fmt.pct(conv)} от предыдущего шага` : `${label}: ${fmt.int(v)}`)}">
+                  <div class="fn-head"><span class="fn-n">${i + 1}</span><span class="text-[12.5px] font-semibold">${esc(label)}</span><span class="fn-val">${fmt.int(v)}</span></div>
+                  <div class="fn-bar"><i style="width:${Math.max(w, v ? 2 : 0).toFixed(2)}%;animation-delay:${i * 90}ms"></i></div>
+                  <div class="fn-meta">${i ? `<span class="chip ${tone}">${conv == null ? '—' : fmt.pct(conv)} от пред. шага</span>` : '<span class="chip">база, 100%</span>'}</div>
+              </li>`;
+          }).join('');
+
+          /* --- разрезы --- */
+          const splitBlock = (rows, colors) => {
+              const total = sum(rows.map((r) => r.requests));
+              if (!rows.length) return '<p class="lbl m-0">За период рекламных запросов не было</p>';
+              return rows.map((r, i) => {
+                  const pc = total ? r.requests / total * 100 : 0;
+                  const fill = r.found + r.empty ? r.found / (r.found + r.empty) * 100 : null;
+                  const color = colors[i % colors.length];
+                  return `<div class="tile" style="--g:${color}" data-tip="${esc(`${r.label}: ${fmt.int(r.requests)} запросов, получено ${fmt.int(r.found)}, ошибок ${fmt.int(r.error)}, показов ${fmt.int(r.shown)}, кликов ${fmt.int(r.clicks)}`)}">
+                      <div class="flex items-center justify-between gap-2"><span class="mlabel flex items-center gap-1.5"><i class="dot" style="background:${color}"></i>${esc(r.label)}</span><b class="text-[13px]">${fmt.int(r.requests)}</b></div>
+                      <span class="cmp-track block mt-2"><i style="background:${color};width:${Math.max(r.requests ? 3 : 0, pc).toFixed(1)}%"></i></span>
+                      <div class="feed-meta">
+                          <span class="mchip">получено ${fmt.int(r.found)}</span>
+                          <span class="mchip">fill ${fmt.pct(fill)}</span>
+                          <span class="mchip">${fmt.rubExact(r.earned)}</span>
+                          ${r.error ? `<span class="mchip" style="color:${C.rose}">ошибок ${fmt.int(r.error)}</span>` : ''}
+                      </div>
+                  </div>`;
+              }).join('');
+          };
+          $('#ads-audience').innerHTML = splitBlock(a.audience, [C.indigo, C.teal]);
+          $('#ads-sources').innerHTML = splitBlock(a.sources, [C.sky, C.violet])
+              + `<div class="tile ms" data-tip="Среднее время ответа Gradius за период"><p class="mlabel m-0">Скорость ответа</p><p class="ms-v m-0">${fmt.ms(k.avg_ms)}</p><p class="lbl m-0 truncate">тайм-аут запроса 10 секунд</p></div>`;
+
+          /* --- итоги и прогноз --- */
+          const lowBound = k.earned_shown;
+          $('#ads-totals').innerHTML = `
+              <div class="aud-grid" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+                  ${mstat('За всё время', 'Сумма show_price по всем полученным рекламам с первого запроса', fmt.rubExact(a.totals.earned), a.totals.first ? `с ${esc(a.totals.first)}` : 'данных пока нет')}
+                  ${mstat('Прогноз на 30 дн.', 'Заработок за период, пересчитанный на 30 дней. Грубая прикидка', fmt.rub(forecast), `по ${NF1.format(k.earned.value / days)} ₽ в день`)}
+                  ${mstat('Только показанные', 'Заработок только по тестам, где блок рекламы реально был на экране. Нижняя граница оценки', fmt.rubExact(lowBound), `${fmt.int(k.shown_tests)} ${plural(k.shown_tests, 'тест', 'теста', 'тестов')}`)}
+                  ${mstat('С кликов', 'click_price × клики. Платят ли за клик, зависит от рекламодателя', fmt.rubExact(k.click_earned), `${fmt.int(k.clicks.value)} ${plural(k.clicks.value, 'клик', 'клика', 'кликов')}`)}
+              </div>
+              <p class="lbl mt-3 leading-snug">Последний ответ с рекламой: ${esc(a.totals.last_found || 'ещё не было')}.
+              Сумму считаем по show_price: Gradius не уточняет, когда показ засчитывается и в какой валюте цена. Сверяйте с их кабинетом.</p>`;
+
+          /* --- лента --- */
+          $('#ads-feed').innerHTML = a.feed.length ? a.feed.map((f) => {
+              const [label, color, tone] = AD_STATUS[f.status] || ['—', '#6b6b75', ''];
+              const detail = f.status === 'found' ? (f.snippet || 'без текста') : f.status === 'error' ? adErrLabel(f.error_code || 'unknown') : label;
+              return `<li class="feed-row border-b border-[color:var(--line)] last:border-0" style="--c:${color}">
+                  <span class="feed-ic">${icon('megaphone', 15)}</span>
+                  <div class="min-w-0 flex-1">
+                      <p class="m-0 text-[13px] font-bold truncate" title="${esc(f.title)}">${esc(f.title)}</p>
+                      <p class="lbl m-0 mt-0.5 truncate" title="${esc(detail)}">${esc(detail)}</p>
+                      <div class="feed-meta">
+                          <span class="chip ${tone}">${esc(label)}</span>
+                          <span class="mchip ${f.guest ? 'guest' : ''}">${f.guest ? 'гость' : 'пользователь'}</span>
+                          <span class="mchip">${f.source === 'file' ? 'из файла' : 'из текста'}</span>
+                          ${f.status === 'found' ? `<span class="mchip">${fmtPrice(f.price)}</span><span class="mchip">${icon('eye', 10)}${fmt.int(f.shown)}</span><span class="mchip">клики ${fmt.int(f.clicks)}</span>` : ''}
+                      </div>
+                  </div>
+                  <time class="lbl w-[74px] text-right">${esc(f.time)}</time>
+              </li>`;
+          }).join('') : `<li class="aud-empty">${icon('megaphone', 16)}Рекламных запросов пока не было. Они появятся после генерации теста бесплатным пользователем.</li>`;
+
+          /* --- ошибки --- */
+          const errTotal = sum(a.errors.map((e) => e.count));
+          $('#ads-errors').innerHTML = a.errors.length
+              ? `<ul class="space-y-3">${a.errors.map((e) => `<li>
+                      <div class="flex items-center justify-between gap-2 text-[12.5px]"><span class="font-semibold truncate">${esc(adErrLabel(e.code))}</span><b>${fmt.int(e.count)}</b></div>
+                      <span class="cmp-track block mt-1.5"><i style="background:${C.rose};width:${(e.count / errTotal * 100).toFixed(1)}%"></i></span>
+                  </li>`).join('')}</ul>`
+              : `<div class="aud-empty">${icon('check', 16)}За период ошибок не было</div>`;
+          hydrateIcons($('#sec-ads'));
+      }
+
     const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
     let autoRefreshTimer = null;
     let isRefreshing = false;
@@ -2956,7 +3252,7 @@
         }
 
         try {
-            await Promise.allSettled([loadOverview(), loadAI(), loadPayments(), loadServices()]);
+            await Promise.allSettled([loadOverview(), loadAI(), loadPayments(), loadServices(), loadAds()]);
         } finally {
             if (btn) {
                 btn.disabled = false;

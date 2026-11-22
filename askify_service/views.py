@@ -65,6 +65,9 @@ from .models import AccessService, SurveyManager
 from .traffic import log_traffic
 from .history_summary import window as hs_window, assemble_summary
 from .stats_periods import normalize_period
+from .ads import ads_enabled, ad_eligible, queue_ad_for_survey, get_cached_ad
+
+# from .quant import Quant
 
 # from .quant import Quant
 from askify_service.services.guest_auth import get_or_create_guest_user
@@ -966,6 +969,12 @@ class ManageSurveysView(View):
             if access_info["source"] == "credits":
                 access_service.consume_credits()
 
+            # Реклама только тем, кто ни разу не платил
+            await sync_to_async(queue_ad_for_survey)(
+                staff_id, sub_level, new_survey_id,
+                cleaned_text.get("title", ""), cleaned_text.get("questions", [])
+            )
+
             # Рекламный таск для бесплатных
             if sub_level < 1:
                 from .tasks import fetch_ad_for_test
@@ -1011,10 +1020,13 @@ def check_survey_edit_permissions(request, survey):
         return False, "Вы не являетесь автором теста"
 
     is_premium = get_subscription_level(request) >= 1
-    has_balance = getattr(request.user, "test_balance", 0) > 0
+    # has_balance = getattr(request.user, "test_balance", 0) > 0
 
-    if not (is_premium or has_balance):
+    if not (is_premium):
         return False, "Редактирование доступно в платных тарифах"
+
+    if Payment.objects.filter(staff_id=request.user.id_staff, status="completed").exists():
+        return True, None
 
     return True, None
 
@@ -1247,9 +1259,19 @@ async def api_regenerate_survey(request, survey_id):
         return JsonResponse({"error": f"Ошибка перегенерации: {str(e)}"}, status=500)
 
 
+@require_GET
 def get_survey_ad(request, survey_id):
-    ad_html = cache.get(f"ad_content_{survey_id}")
-    return JsonResponse({"html": ad_html if ad_html else None})
+    def _resp(payload):
+        r = JsonResponse(payload)
+        r["Cache-Control"] = "no-store"
+        return r
+
+    none = {"html": None, "state": "none"}
+    if not ads_enabled() or not is_valid_uuid(survey_id):
+        return _resp(none)
+    if request.user.is_authenticated and not ad_eligible(request.user.id_staff, get_subscription_level(request)):
+        return _resp(none)
+    return _resp(get_cached_ad(survey_id))
 
 
 @method_decorator(csrf_exempt, name="dispatch")
@@ -1336,6 +1358,11 @@ class GenerationSurveysView(View):
                 generated_data["generated_text"]["questions"]
             )
             await sync_to_async(survey.save)()
+
+            await sync_to_async(queue_ad_for_survey)(
+                staff_id, 0, new_survey_id, new_title,
+                generated_data["generated_text"]["questions"]
+            )
 
             # Фиксируем флаг в сессии
             def mark_session():
@@ -1622,6 +1649,14 @@ class FileUploadView(View):
 
             if not is_guest and access_info.get("source") == "credits":
                 await sync_to_async(access_service.consume_credits)()
+
+            ad_sub_level = 0 if is_guest else await sync_to_async(get_subscription_level)(request)
+            await sync_to_async(queue_ad_for_survey)(
+                staff_id, ad_sub_level, new_survey_id,
+                cleaned_generated_text.get("title", file_name[:60]),
+                cleaned_generated_text.get("questions", []),
+                source="file", is_guest=is_guest,
+            )
 
             if is_guest:
                 def mark_guest_session():
@@ -2878,7 +2913,8 @@ def main_test_card(request, survey_id):
     if request.user.is_authenticated and survey.id_staff == request.user.id_staff:
         can_edit = (subscription_level >= 1) or (getattr(request.user, "test_balance", 0) > 0)
 
-    show_ads = (subscription_level < 1) or (not is_authenticated)
+    # Реклама только автору на странице теста (не ученикам) и только если он ни разу не платил
+    show_ads = bool(ad_eligible(current_user_id_staff, subscription_level))
 
     json_response = {
         "page_title": f"{survey.title} ({date_create}) | Генератор тестов с ИИ | Создать тест в Летучке",
@@ -7478,6 +7514,18 @@ def get_payment_data(status, description, plan_name, end_date, payment_id, order
 
 
 class PaymentSuccessView(View):
+    """
+    Возврат с оплаты. Начисление идемпотентно: один платёж = одно начисление,
+    сколько бы раз страницу ни открывали/обновляли и в скольких вкладках.
+    Гарант — блокировка строки Payment (select_for_update) + смена статуса
+    на 'completed' в той же транзакции, что и начисление.
+    """
+
+    class _CreditFailed(Exception):
+        pass
+
+    PACKAGE_TESTS = {"Пакет S": 5, "Пакет M": 15, "Пакет L": 35}
+
     def get(self, request):
         success = request.GET.get("Success")
         error_code = request.GET.get("ErrorCode")
@@ -7487,7 +7535,12 @@ class PaymentSuccessView(View):
         if success == "true" and error_code == "0":
             try:
                 payment = Payment.objects.get(payment_id=payment_id)
-                # subscription = Subscription.objects.get(staff_id=get_staff_id(request))
+
+                # Быстрый выход: платёж уже обработан (повторное открытие / обновление страницы).
+                # Раньше тут проверялась подписка, а для пакетов она не active — защита не работала.
+                if payment.status == 'completed':
+                    tracer_l.info(f"[PAY] Повторное открытие оплаченного платежа {payment.payment_id}, начисление пропущено")
+                    return redirect('create')
 
                 subscription, created = Subscription.objects.get_or_create(
                     staff_id=get_staff_id(request),
@@ -7501,9 +7554,6 @@ class PaymentSuccessView(View):
                 payment_manager = PaymentManager()
                 payment_parameters = [payment.order_id, TERMINAL_PASSWORD, TERMINAL_KEY]
                 payment_status = payment_manager.check_order(payment_parameters)['response']['Payments'][0]['Status']
-
-                if subscription.status == 'active' and payment.status == 'completed':
-                    return redirect('create')
 
                 description_payment = PAYMENT_STATUSES.get(payment_status, 'Статус не найден')
 
@@ -7519,37 +7569,71 @@ class PaymentSuccessView(View):
                     return render(request, 'payments/pay_status.html', error_payment_data)
 
                 elif payment_status == 'CONFIRMED':
-                    payment.status = 'completed'
-                    payment.save()
+                    staff_id = get_staff_id(request)
 
+                    # --- ЕДИНСТВЕННОЕ место, где что-то начисляется ---------------------
+                    try:
+                        with transaction.atomic():
+                            # Параллельный запрос по тому же платежу будет ждать здесь,
+                            # а после разблокировки увидит status == 'completed'.
+                            locked = Payment.objects.select_for_update().get(pk=payment.pk)
+                            if locked.status == 'completed':
+                                already_processed = True
+                            else:
+                                already_processed = False
+
+                                locked.status = 'completed'
+                                locked.save(update_fields=['status'])
+
+                                cnt_tests = 0
+                                if subscription.billing_cycle == 'package':
+                                    cnt_tests = self.PACKAGE_TESTS.get(subscription.plan_name, 0)
+
+                                if cnt_tests > 0:
+                                    credit = AccessService(staff_id).add_credits(cnt_tests)
+                                    if not credit.get("success"):
+                                        # add_credits глотает исключения; без этого статус
+                                        # остался бы completed без начисленных тестов
+                                        raise self._CreditFailed(credit.get("error"))
+
+                                if subscription.billing_cycle == "yearly":
+                                    subscription.end_date = datetime.now() + timedelta(days=365)
+                                elif subscription.billing_cycle == "monthly3":
+                                    subscription.end_date = datetime.now() + timedelta(days=92)
+                                elif subscription.billing_cycle == "weekly":
+                                    subscription.end_date = datetime.now() + timedelta(days=7)
+                                else:
+                                    subscription.end_date = datetime.now() + timedelta(days=30)
+
+                                if subscription.billing_cycle != 'package':
+                                    subscription.start_date = datetime.now()
+                                    subscription.status = "active"
+                                    subscription.save()
+
+                                TransactionTracker.objects.create(
+                                    staff_id=staff_id,
+                                    payment_id=payment.payment_id,
+                                    description=(
+                                        f"{payment.amount / 100:,.2f} RUB, {subscription.get_human_plan()}, "
+                                        f"completed: {payment_status}"
+                                    ),
+                                    order_id=payment.order_id,
+                                    amount=int(amount),
+                                )
+                    except self._CreditFailed as fail:
+                        tracer_l.critical(
+                            f"[PAY] НЕ НАЧИСЛЕНЫ тесты по оплаченному платежу {payment.payment_id} "
+                            f"(staff_id={staff_id}): {fail}. Транзакция откатена, платёж остался не completed."
+                        )
+                        return render(request, 'payments/pay_status.html', error_payment_data)
+
+                    if already_processed:
+                        tracer_l.info(f"[PAY] Платёж {payment.payment_id} уже обработан параллельным запросом")
+                        return redirect('create')
+                    # ---------------------------------------------------------------------
+
+                    payment.refresh_from_db()
                     tracer_l.info(f'SUCCESS BUY - {request.user.username} - {description_payment}')
-
-                    cnt_tests = 0
-                    if subscription.billing_cycle == 'package':
-                        if subscription.plan_name == 'Пакет S':
-                            cnt_tests = 5
-                        elif subscription.plan_name == 'Пакет M':
-                            cnt_tests = 15
-                        elif subscription.plan_name == 'Пакет L':
-                            cnt_tests = 35
-
-                    # Начисление пакетов
-                    access_service = AccessService(get_staff_id(request))
-                    access_service.add_credits(cnt_tests)
-
-                    if subscription.billing_cycle == "yearly":
-                        subscription.end_date = datetime.now() + timedelta(days=365)
-                    elif subscription.billing_cycle == "monthly3":
-                        subscription.end_date = datetime.now() + timedelta(days=92)
-                    elif subscription.billing_cycle == "weekly":
-                        subscription.end_date = datetime.now() + timedelta(days=7)
-                    else:
-                        subscription.end_date = datetime.now() + timedelta(days=30)
-
-                    if subscription.billing_cycle != 'package':
-                        subscription.start_date = datetime.now()
-                        subscription.status = "active"
-                        subscription.save()
 
                     formatted_amount = f"{payment.amount / 100:,.2f}".replace(',', ' ').replace('.', ',') + " RUB"
 
@@ -7576,16 +7660,7 @@ class PaymentSuccessView(View):
                         "username": get_username(request),
                     }
 
-                    # Запись в транзакции
-                    new_transaction = TransactionTracker.objects.create(
-                        staff_id=get_staff_id(request),
-                        payment_id=payment.payment_id,
-                        description=f"{formatted_amount}, {subscription.get_human_plan()}, completed: {payment_status}",
-                        order_id=payment.order_id,
-                        amount=int(amount),
-                    )
-                    new_transaction.save()
-
+                    # Письмо и уведомление — только после успешного коммита и только один раз
                     try:
                         message = render_to_string(
                             "payments/payment_success_email.html",
@@ -7601,11 +7676,9 @@ class PaymentSuccessView(View):
                             },
                         )
 
-                        user_data = AuthUser.objects.filter(
-                            id_staff=get_staff_id(request)
-                        ).first()
+                        user_data = AuthUser.objects.filter(id_staff=staff_id).first()
 
-                        if user_data.email:
+                        if user_data and user_data.email:
                             send_mail(
                                 "✅ Спасибо за покупку! | Успешная оплата",
                                 message,
@@ -7636,7 +7709,7 @@ class PaymentSuccessView(View):
                         f"<b>План:</b> {payment_data['plan_name']}\n\n"
                         f"<b>Детали платежа:</b>\n"
                         f"{payment_details_text}\n\n"
-                        f"<b>ID пользователя:</b> {get_staff_id(request)}"
+                        f"<b>ID пользователя:</b> {staff_id}"
                     )
 
                     tracer_l.warning(f"{message}")
